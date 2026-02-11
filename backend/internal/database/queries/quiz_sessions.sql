@@ -61,6 +61,9 @@ RETURNING *;
 UPDATE quiz_sessions
 SET
     state = @state::text,
+    open_at = CASE WHEN @state::text = 'OPEN' AND open_at IS NULL THEN now() ELSE open_at END,
+    lock_at = CASE WHEN @state::text = 'LOCKED' AND lock_at IS NULL THEN now() ELSE lock_at END,
+    finish_at = CASE WHEN @state::text = 'FINISHED' AND finish_at IS NULL THEN now() ELSE finish_at END,
     updated_at = now()
 WHERE id = @id::text
 RETURNING *;

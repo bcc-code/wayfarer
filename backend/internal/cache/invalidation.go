@@ -296,6 +296,13 @@ func (c *CacheWithRegistry) invalidateEventLocal(eventID string) {
 	// These are invalidated globally since filter query cache keys are hashed
 	c.DeletePrefix(PrefixEventsFilter)
 	c.DeletePrefix(PrefixEventsCount)
+
+	// All leaderboard data for this event
+	// Leaderboard keys use pattern: leaderboard:{context}:{contextID}:...
+	c.DeletePrefix("leaderboard:event:" + eventID)
+	c.DeletePrefix("leaderboard:position:event:" + eventID)
+	c.DeletePrefix("leaderboard:count:event:" + eventID)
+	c.DeletePrefix("leaderboard:full:event:" + eventID)
 }
 
 // InvalidateTeam invalidates all cache entries related to a team and broadcasts to other instances

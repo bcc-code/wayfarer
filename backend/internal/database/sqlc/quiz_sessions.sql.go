@@ -996,6 +996,9 @@ const UpdateQuizSessionState = `-- name: UpdateQuizSessionState :one
 UPDATE quiz_sessions
 SET
     state = $1::text,
+    open_at = CASE WHEN $1::text = 'OPEN' AND open_at IS NULL THEN now() ELSE open_at END,
+    lock_at = CASE WHEN $1::text = 'LOCKED' AND lock_at IS NULL THEN now() ELSE lock_at END,
+    finish_at = CASE WHEN $1::text = 'FINISHED' AND finish_at IS NULL THEN now() ELSE finish_at END,
     updated_at = now()
 WHERE id = $2::text
 RETURNING id, quiz_id, name, state, open_at, lock_at, finish_at, created_by, created_at, updated_at

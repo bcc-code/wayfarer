@@ -551,6 +551,7 @@ func convertToPredefinedResponse(row *sqlc.QuizResponse, answeredAt *scalars.Dat
 		TimeSpentSeconds:  timeSpentSeconds,
 		PointsEarned:      pointsEarned,
 		BetAmount:         betAmount,
+		ScoreJournalID:    row.ScoreJournalID,
 	}
 }
 
@@ -568,6 +569,7 @@ func convertToFreeTextResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateT
 		TimeSpentSeconds: timeSpentSeconds,
 		PointsEarned:     pointsEarned,
 		BetAmount:        betAmount,
+		ScoreJournalID:   row.ScoreJournalID,
 	}
 }
 
@@ -586,6 +588,7 @@ func convertToNumberResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTim
 		TimeSpentSeconds: timeSpentSeconds,
 		PointsEarned:     pointsEarned,
 		BetAmount:        betAmount,
+		ScoreJournalID:   row.ScoreJournalID,
 	}
 }
 
@@ -603,6 +606,7 @@ func convertToJsonResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime,
 		TimeSpentSeconds: timeSpentSeconds,
 		PointsEarned:     pointsEarned,
 		BetAmount:        betAmount,
+		ScoreJournalID:   row.ScoreJournalID,
 	}
 }
 
@@ -621,6 +625,7 @@ func convertToOrderingResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateT
 		TimeSpentSeconds: timeSpentSeconds,
 		PointsEarned:     pointsEarned,
 		BetAmount:        betAmount,
+		ScoreJournalID:   row.ScoreJournalID,
 	}
 }
 
@@ -631,6 +636,80 @@ func convertGetSubmissionByUserAndSessionRow(row *sqlc.GetSubmissionByUserAndSes
 		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
 		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
 	})
+}
+
+// convertUpdateBetResultRowToQuizResponse converts UpdateBetResultRow to sqlc.QuizResponse
+func convertUpdateBetResultRowToQuizResponse(row *sqlc.UpdateBetResultRow) *sqlc.QuizResponse {
+	return &sqlc.QuizResponse{
+		ID:                row.ID,
+		SubmissionID:      row.SubmissionID,
+		QuestionID:        row.QuestionID,
+		SelectedAnswerIds: row.SelectedAnswerIds,
+		TextResponse:      row.TextResponse,
+		NumberResponse:    row.NumberResponse,
+		JsonResponse:      row.JsonResponse,
+		IsCorrect:         row.IsCorrect,
+		PointsEarned:      row.PointsEarned,
+		AnsweredAt:        row.AnsweredAt,
+		TimeSpentSeconds:  row.TimeSpentSeconds,
+		BetAmount:         row.BetAmount,
+	}
+}
+
+// convertUpdateBetResultsRowToQuizResponse converts UpdateBetResultsRow to sqlc.QuizResponse
+func convertUpdateBetResultsRowToQuizResponse(row *sqlc.UpdateBetResultsRow) *sqlc.QuizResponse {
+	return &sqlc.QuizResponse{
+		ID:                row.ID,
+		SubmissionID:      row.SubmissionID,
+		QuestionID:        row.QuestionID,
+		SelectedAnswerIds: row.SelectedAnswerIds,
+		TextResponse:      row.TextResponse,
+		NumberResponse:    row.NumberResponse,
+		JsonResponse:      row.JsonResponse,
+		IsCorrect:         row.IsCorrect,
+		PointsEarned:      row.PointsEarned,
+		AnsweredAt:        row.AnsweredAt,
+		TimeSpentSeconds:  row.TimeSpentSeconds,
+		BetAmount:         row.BetAmount,
+	}
+}
+
+// convertUpdateBetResultWithJournalRowToQuizResponse converts UpdateBetResultWithJournalRow to sqlc.QuizResponse
+func convertUpdateBetResultWithJournalRowToQuizResponse(row *sqlc.UpdateBetResultWithJournalRow) *sqlc.QuizResponse {
+	return &sqlc.QuizResponse{
+		ID:                row.ID,
+		SubmissionID:      row.SubmissionID,
+		QuestionID:        row.QuestionID,
+		SelectedAnswerIds: row.SelectedAnswerIds,
+		TextResponse:      row.TextResponse,
+		NumberResponse:    row.NumberResponse,
+		JsonResponse:      row.JsonResponse,
+		IsCorrect:         row.IsCorrect,
+		PointsEarned:      row.PointsEarned,
+		AnsweredAt:        row.AnsweredAt,
+		TimeSpentSeconds:  row.TimeSpentSeconds,
+		BetAmount:         row.BetAmount,
+		ScoreJournalID:    row.ScoreJournalID,
+	}
+}
+
+// convertUpdateBetResultsWithJournalRowToQuizResponse converts UpdateBetResultsWithJournalRow to sqlc.QuizResponse
+func convertUpdateBetResultsWithJournalRowToQuizResponse(row *sqlc.UpdateBetResultsWithJournalRow) *sqlc.QuizResponse {
+	return &sqlc.QuizResponse{
+		ID:                row.ID,
+		SubmissionID:      row.SubmissionID,
+		QuestionID:        row.QuestionID,
+		SelectedAnswerIds: row.SelectedAnswerIds,
+		TextResponse:      row.TextResponse,
+		NumberResponse:    row.NumberResponse,
+		JsonResponse:      row.JsonResponse,
+		IsCorrect:         row.IsCorrect,
+		PointsEarned:      row.PointsEarned,
+		AnsweredAt:        row.AnsweredAt,
+		TimeSpentSeconds:  row.TimeSpentSeconds,
+		BetAmount:         row.BetAmount,
+		ScoreJournalID:    row.ScoreJournalID,
+	}
 }
 
 // convertQuizSessionToModel converts a sqlc.QuizSession to model.QuizSession

@@ -19,6 +19,7 @@ type NotificationType string
 const (
 	NotificationTypeAchievementUnlocked NotificationType = "achievement_unlocked"
 	NotificationTypeChallengeAvailable  NotificationType = "challenge_available"
+	NotificationTypeBetResult           NotificationType = "bet_result"
 	NotificationTypeGeneric             NotificationType = "generic"
 )
 
@@ -189,6 +190,15 @@ type ChallengeInfo struct {
 	Image            string
 }
 
+// BetResultInfo contains the information needed to send a bet result notification
+type BetResultInfo struct {
+	QuizID   string
+	QuizName string
+	Points   int
+	Title    string // Already resolved from i18n based on user language
+	Message  string // Already resolved from i18n based on user language
+}
+
 // SendAchievementNotification sends a push notification for an achievement award.
 // This is fire-and-forget - errors are logged but do not propagate.
 // It should be called in a goroutine to avoid blocking the main flow.
@@ -276,6 +286,47 @@ func (s *Service) SendChallengeEnrollmentNotification(ctx context.Context, userI
 	s.logger.Info("challenge enrollment notification sent",
 		"user_id", userID,
 		"challenge_id", challenge.ID,
+		"successful", result.SuccessfulDeliveries,
+		"failed", result.FailedDeliveries,
+	)
+}
+
+// SendBetResultNotification sends a push notification for a bet result.
+// This is fire-and-forget - errors are logged but do not propagate.
+// It should be called in a goroutine to avoid blocking the main flow.
+func (s *Service) SendBetResultNotification(ctx context.Context, userID string, info BetResultInfo) {
+	if s == nil || !s.IsConfigured() {
+		return
+	}
+
+	payload := PushPayload{
+		Title: info.Title,
+		Body:  info.Message,
+		Type:  NotificationTypeBetResult,
+		URL:   "/?quiz=" + info.QuizID,
+		Data: map[string]any{
+			"quizId": info.QuizID,
+			"points": info.Points,
+		},
+	}
+
+	// Use background context since this may outlive the request context
+	bgCtx := context.Background()
+
+	result, err := s.SendToUser(bgCtx, userID, payload)
+	if err != nil {
+		s.logger.Error("failed to send bet result notification",
+			"error", err,
+			"user_id", userID,
+			"quiz_id", info.QuizID,
+		)
+		return
+	}
+
+	s.logger.Info("bet result notification sent",
+		"user_id", userID,
+		"quiz_id", info.QuizID,
+		"points", info.Points,
 		"successful", result.SuccessfulDeliveries,
 		"failed", result.FailedDeliveries,
 	)

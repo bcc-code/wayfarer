@@ -1,0 +1,47 @@
+type: http_request
+model: http_request
+id: rq_FinishQuizSession
+createdAt: 2026-02-11T12:00:00
+updatedAt: 2026-02-11T14:33:33.286225
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation FinishQuizSession($id: ID!) {
+      finishQuizSession(id: $id) {
+        id
+        name
+        state
+        openAt
+        lockAt
+        finishAt
+        createdAt
+        accessCount
+        quiz {
+          id
+          name
+        }
+        createdBy {
+          id
+          name
+        }
+      }
+    }
+  variables: |
+    {
+      "id": "QN01KH3GQEN42Q4RHVR43S4EW5VH"
+    }
+bodyType: graphql
+description: Finish a quiz session (transitions state to FINISHED)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_FinishQuizSession
+method: POST
+name: Finish Quiz Session
+sortPriority: 4410.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

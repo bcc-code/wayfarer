@@ -65,6 +65,7 @@ enum ScoreSourceType {
     CHALLENGE
     EVENT
     MANUAL
+    BET
 }
 
 enum LeaderboardEntryTag {

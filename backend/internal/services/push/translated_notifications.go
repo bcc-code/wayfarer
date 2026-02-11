@@ -3,6 +3,7 @@ package push
 import (
 	"context"
 
+	"github.com/bcc-media/wayfarer/i18n"
 	"github.com/bcc-media/wayfarer/internal/loaders"
 )
 
@@ -102,5 +103,48 @@ func SendTranslatedChallengeEnrollmentNotification(
 		Name:             name,
 		NotificationText: notificationText,
 		Image:            challenge.Image,
+	})
+}
+
+// SendTranslatedBetResultNotification sends a push notification for a bet result
+// with translated content based on the user's language preference.
+// This is fire-and-forget - errors are logged but do not propagate.
+// It should be called in a goroutine to avoid blocking the main flow.
+// No notification is sent if points is 0 (no change).
+func SendTranslatedBetResultNotification(
+	pushService *Service,
+	loadersInstance *loaders.Loaders,
+	userID string,
+	quizID string,
+	quizName string,
+	points int,
+) {
+	if pushService == nil || !pushService.IsConfigured() || loadersInstance == nil {
+		return
+	}
+
+	// Don't send notification if there's no change in points
+	if points == 0 {
+		return
+	}
+
+	bgCtx := context.Background()
+
+	// Get user's language
+	userLang := "nb" // default
+	userThunk := loadersInstance.UserByIDLoader.Load(bgCtx, userID)
+	if user, err := userThunk(); err == nil && user != nil {
+		userLang = user.Language
+	}
+
+	// Get translated title and message
+	title, message := i18n.FormatBetResultMessage(userLang, points)
+
+	pushService.SendBetResultNotification(bgCtx, userID, BetResultInfo{
+		QuizID:   quizID,
+		QuizName: quizName,
+		Points:   points,
+		Title:    title,
+		Message:  message,
 	})
 }

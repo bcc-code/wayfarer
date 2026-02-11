@@ -180,6 +180,7 @@ interface QuizResponse {
     timeSpentSeconds: Int
     pointsEarned: Int
     betAmount: Int
+    journalEntry: ScoreJournal @goField(forceResolver: true)
 }
 
 type PredefinedResponse implements QuizResponse {
@@ -190,6 +191,7 @@ type PredefinedResponse implements QuizResponse {
     timeSpentSeconds: Int
     pointsEarned: Int
     betAmount: Int
+    journalEntry: ScoreJournal @goField(forceResolver: true)
     selectedAnswerIds: [ID!]!
     selectedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
     isCorrect: Boolean
@@ -203,6 +205,7 @@ type FreeTextResponse implements QuizResponse {
     timeSpentSeconds: Int
     pointsEarned: Int
     betAmount: Int
+    journalEntry: ScoreJournal @goField(forceResolver: true)
     textResponse: String!
 }
 
@@ -214,6 +217,7 @@ type NumberResponse implements QuizResponse {
     timeSpentSeconds: Int
     pointsEarned: Int
     betAmount: Int
+    journalEntry: ScoreJournal @goField(forceResolver: true)
     numberResponse: Float!
 }
 
@@ -225,6 +229,7 @@ type JsonResponse implements QuizResponse {
     timeSpentSeconds: Int
     pointsEarned: Int
     betAmount: Int
+    journalEntry: ScoreJournal @goField(forceResolver: true)
     jsonResponse: JSON!
 }
 
@@ -236,6 +241,7 @@ type OrderingResponse implements QuizResponse {
     timeSpentSeconds: Int
     pointsEarned: Int
     betAmount: Int
+    journalEntry: ScoreJournal @goField(forceResolver: true)
     submittedOrder: [ID!]!
     isCorrect: Boolean @goField(forceResolver: true)
 }
@@ -347,6 +353,12 @@ input UpdateQuizAnswerInput {
     submittedOrder: [ID!]  # For ordering questions
 }
 
+input RecordBetResultInput {
+    responseId: ID!
+    pointsEarned: Int!
+    sendNotification: Boolean
+}
+
 input QuizFilter {
     projectId: ID
     challengeId: ID
@@ -430,4 +442,8 @@ extend type Mutation {
         responses: [SubmitQuizAnswerInput!]!
         completedAt: DateTime
     ): QuizSubmission! @requireRole(roles: ["m2m", "admin", "superadmin"])
+
+    # M2M: Record bet results (points earned from betting)
+    recordBetResult(input: RecordBetResultInput!): QuizResponse! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    recordBetResults(inputs: [RecordBetResultInput!]!): [QuizResponse!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
 }

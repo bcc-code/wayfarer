@@ -1,0 +1,7 @@
+{
+  "bet_result": {
+    "title": "Wynik",
+    "won": "Wygrales {points} punktow!",
+    "lost": "Straciles {points} punktow."
+  }
+}

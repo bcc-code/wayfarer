@@ -370,6 +370,7 @@ type ComplexityRoot struct {
 		AnsweredAt       func(childComplexity int) int
 		BetAmount        func(childComplexity int) int
 		ID               func(childComplexity int) int
+		JournalEntry     func(childComplexity int) int
 		PointsEarned     func(childComplexity int) int
 		Question         func(childComplexity int) int
 		Submission       func(childComplexity int) int
@@ -403,6 +404,7 @@ type ComplexityRoot struct {
 		BetAmount        func(childComplexity int) int
 		ID               func(childComplexity int) int
 		JSONResponse     func(childComplexity int) int
+		JournalEntry     func(childComplexity int) int
 		PointsEarned     func(childComplexity int) int
 		Question         func(childComplexity int) int
 		Submission       func(childComplexity int) int
@@ -511,6 +513,8 @@ type ComplexityRoot struct {
 		OpenQuizSession                             func(childComplexity int, id string) int
 		PublishChallenge                            func(childComplexity int, id string, publishedAt scalars.DateTime) int
 		RecalculateContentAchievements              func(childComplexity int, projectID string, achievementID string) int
+		RecordBetResult                             func(childComplexity int, input model.RecordBetResultInput) int
+		RecordBetResults                            func(childComplexity int, inputs []model.RecordBetResultInput) int
 		RecordStreakActivity                        func(childComplexity int, userID string, achievementID string, currentStreak int) int
 		RegenerateJoinCode                          func(childComplexity int, teamID string) int
 		RegisterPushSubscription                    func(childComplexity int, input model.RegisterPushSubscriptionInput) int
@@ -585,6 +589,7 @@ type ComplexityRoot struct {
 		AnsweredAt       func(childComplexity int) int
 		BetAmount        func(childComplexity int) int
 		ID               func(childComplexity int) int
+		JournalEntry     func(childComplexity int) int
 		NumberResponse   func(childComplexity int) int
 		PointsEarned     func(childComplexity int) int
 		Question         func(childComplexity int) int
@@ -612,6 +617,7 @@ type ComplexityRoot struct {
 		BetAmount        func(childComplexity int) int
 		ID               func(childComplexity int) int
 		IsCorrect        func(childComplexity int) int
+		JournalEntry     func(childComplexity int) int
 		PointsEarned     func(childComplexity int) int
 		Question         func(childComplexity int) int
 		Submission       func(childComplexity int) int
@@ -668,6 +674,7 @@ type ComplexityRoot struct {
 		BetAmount         func(childComplexity int) int
 		ID                func(childComplexity int) int
 		IsCorrect         func(childComplexity int) int
+		JournalEntry      func(childComplexity int) int
 		PointsEarned      func(childComplexity int) int
 		Question          func(childComplexity int) int
 		SelectedAnswerIds func(childComplexity int) int
@@ -1275,6 +1282,8 @@ type FreeTextQuestionResolver interface {
 type FreeTextResponseResolver interface {
 	Submission(ctx context.Context, obj *model.FreeTextResponse) (*model.QuizSubmission, error)
 	Question(ctx context.Context, obj *model.FreeTextResponse) (model.QuizQuestion, error)
+
+	JournalEntry(ctx context.Context, obj *model.FreeTextResponse) (*model.ScoreJournal, error)
 }
 type JsonQuestionResolver interface {
 	Quiz(ctx context.Context, obj *model.JSONQuestion) (*model.Quiz, error)
@@ -1282,6 +1291,8 @@ type JsonQuestionResolver interface {
 type JsonResponseResolver interface {
 	Submission(ctx context.Context, obj *model.JSONResponse) (*model.QuizSubmission, error)
 	Question(ctx context.Context, obj *model.JSONResponse) (model.QuizQuestion, error)
+
+	JournalEntry(ctx context.Context, obj *model.JSONResponse) (*model.ScoreJournal, error)
 }
 type LeaderboardEntryResolver interface {
 	ImageObject(ctx context.Context, obj *model.LeaderboardEntry) (*model.Image, error)
@@ -1386,6 +1397,8 @@ type MutationResolver interface {
 	UpdateQuizAnswer(ctx context.Context, responseID string, input model.UpdateQuizAnswerInput) (model.QuizResponse, error)
 	FinalizeQuiz(ctx context.Context, submissionID string) (*model.QuizSubmission, error)
 	CreateQuizSubmission(ctx context.Context, quizID string, userID string, responses []model.SubmitQuizAnswerInput, completedAt *scalars.DateTime) (*model.QuizSubmission, error)
+	RecordBetResult(ctx context.Context, input model.RecordBetResultInput) (model.QuizResponse, error)
+	RecordBetResults(ctx context.Context, inputs []model.RecordBetResultInput) ([]model.QuizResponse, error)
 	CreateQuizSession(ctx context.Context, input model.CreateQuizSessionInput) (*model.QuizSession, error)
 	UpdateQuizSession(ctx context.Context, id string, input model.UpdateQuizSessionInput) (*model.QuizSession, error)
 	DeleteQuizSession(ctx context.Context, id string) (bool, error)
@@ -1420,6 +1433,8 @@ type NumberQuestionResolver interface {
 type NumberResponseResolver interface {
 	Submission(ctx context.Context, obj *model.NumberResponse) (*model.QuizSubmission, error)
 	Question(ctx context.Context, obj *model.NumberResponse) (model.QuizQuestion, error)
+
+	JournalEntry(ctx context.Context, obj *model.NumberResponse) (*model.ScoreJournal, error)
 }
 type OrderingQuestionResolver interface {
 	Quiz(ctx context.Context, obj *model.OrderingQuestion) (*model.Quiz, error)
@@ -1429,6 +1444,8 @@ type OrderingQuestionResolver interface {
 type OrderingResponseResolver interface {
 	Submission(ctx context.Context, obj *model.OrderingResponse) (*model.QuizSubmission, error)
 	Question(ctx context.Context, obj *model.OrderingResponse) (model.QuizQuestion, error)
+
+	JournalEntry(ctx context.Context, obj *model.OrderingResponse) (*model.ScoreJournal, error)
 
 	IsCorrect(ctx context.Context, obj *model.OrderingResponse) (*bool, error)
 }
@@ -1448,6 +1465,8 @@ type PredefinedQuestionResolver interface {
 type PredefinedResponseResolver interface {
 	Submission(ctx context.Context, obj *model.PredefinedResponse) (*model.QuizSubmission, error)
 	Question(ctx context.Context, obj *model.PredefinedResponse) (model.QuizQuestion, error)
+
+	JournalEntry(ctx context.Context, obj *model.PredefinedResponse) (*model.ScoreJournal, error)
 
 	SelectedAnswers(ctx context.Context, obj *model.PredefinedResponse) ([]model.QuizPredefinedAnswer, error)
 }
@@ -2835,6 +2854,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.FreeTextResponse.ID(childComplexity), true
+	case "FreeTextResponse.journalEntry":
+		if e.complexity.FreeTextResponse.JournalEntry == nil {
+			break
+		}
+
+		return e.complexity.FreeTextResponse.JournalEntry(childComplexity), true
 	case "FreeTextResponse.pointsEarned":
 		if e.complexity.FreeTextResponse.PointsEarned == nil {
 			break
@@ -2982,6 +3007,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.JsonResponse.JSONResponse(childComplexity), true
+	case "JsonResponse.journalEntry":
+		if e.complexity.JsonResponse.JournalEntry == nil {
+			break
+		}
+
+		return e.complexity.JsonResponse.JournalEntry(childComplexity), true
 	case "JsonResponse.pointsEarned":
 		if e.complexity.JsonResponse.PointsEarned == nil {
 			break
@@ -3895,6 +3926,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.RecalculateContentAchievements(childComplexity, args["projectId"].(string), args["achievementId"].(string)), true
+	case "Mutation.recordBetResult":
+		if e.complexity.Mutation.RecordBetResult == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_recordBetResult_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RecordBetResult(childComplexity, args["input"].(model.RecordBetResultInput)), true
+	case "Mutation.recordBetResults":
+		if e.complexity.Mutation.RecordBetResults == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_recordBetResults_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RecordBetResults(childComplexity, args["inputs"].([]model.RecordBetResultInput)), true
 	case "Mutation.recordStreakActivity":
 		if e.complexity.Mutation.RecordStreakActivity == nil {
 			break
@@ -4560,6 +4613,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.NumberResponse.ID(childComplexity), true
+	case "NumberResponse.journalEntry":
+		if e.complexity.NumberResponse.JournalEntry == nil {
+			break
+		}
+
+		return e.complexity.NumberResponse.JournalEntry(childComplexity), true
 	case "NumberResponse.numberResponse":
 		if e.complexity.NumberResponse.NumberResponse == nil {
 			break
@@ -4688,6 +4747,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.OrderingResponse.IsCorrect(childComplexity), true
+	case "OrderingResponse.journalEntry":
+		if e.complexity.OrderingResponse.JournalEntry == nil {
+			break
+		}
+
+		return e.complexity.OrderingResponse.JournalEntry(childComplexity), true
 	case "OrderingResponse.pointsEarned":
 		if e.complexity.OrderingResponse.PointsEarned == nil {
 			break
@@ -4956,6 +5021,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PredefinedResponse.IsCorrect(childComplexity), true
+	case "PredefinedResponse.journalEntry":
+		if e.complexity.PredefinedResponse.JournalEntry == nil {
+			break
+		}
+
+		return e.complexity.PredefinedResponse.JournalEntry(childComplexity), true
 	case "PredefinedResponse.pointsEarned":
 		if e.complexity.PredefinedResponse.PointsEarned == nil {
 			break
@@ -7711,6 +7782,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputLeaderboardFilter,
 		ec.unmarshalInputProjectFilter,
 		ec.unmarshalInputQuizFilter,
+		ec.unmarshalInputRecordBetResultInput,
 		ec.unmarshalInputRegisterPushSubscriptionInput,
 		ec.unmarshalInputRevokeRoleInput,
 		ec.unmarshalInputScoreJournalFilter,
@@ -7902,6 +7974,7 @@ enum ScoreSourceType {
     CHALLENGE
     EVENT
     MANUAL
+    BET
 }
 
 enum LeaderboardEntryTag {
@@ -9619,6 +9692,7 @@ interface QuizResponse {
     timeSpentSeconds: Int
     pointsEarned: Int
     betAmount: Int
+    journalEntry: ScoreJournal @goField(forceResolver: true)
 }
 
 type PredefinedResponse implements QuizResponse {
@@ -9629,6 +9703,7 @@ type PredefinedResponse implements QuizResponse {
     timeSpentSeconds: Int
     pointsEarned: Int
     betAmount: Int
+    journalEntry: ScoreJournal @goField(forceResolver: true)
     selectedAnswerIds: [ID!]!
     selectedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
     isCorrect: Boolean
@@ -9642,6 +9717,7 @@ type FreeTextResponse implements QuizResponse {
     timeSpentSeconds: Int
     pointsEarned: Int
     betAmount: Int
+    journalEntry: ScoreJournal @goField(forceResolver: true)
     textResponse: String!
 }
 
@@ -9653,6 +9729,7 @@ type NumberResponse implements QuizResponse {
     timeSpentSeconds: Int
     pointsEarned: Int
     betAmount: Int
+    journalEntry: ScoreJournal @goField(forceResolver: true)
     numberResponse: Float!
 }
 
@@ -9664,6 +9741,7 @@ type JsonResponse implements QuizResponse {
     timeSpentSeconds: Int
     pointsEarned: Int
     betAmount: Int
+    journalEntry: ScoreJournal @goField(forceResolver: true)
     jsonResponse: JSON!
 }
 
@@ -9675,6 +9753,7 @@ type OrderingResponse implements QuizResponse {
     timeSpentSeconds: Int
     pointsEarned: Int
     betAmount: Int
+    journalEntry: ScoreJournal @goField(forceResolver: true)
     submittedOrder: [ID!]!
     isCorrect: Boolean @goField(forceResolver: true)
 }
@@ -9786,6 +9865,12 @@ input UpdateQuizAnswerInput {
     submittedOrder: [ID!]  # For ordering questions
 }
 
+input RecordBetResultInput {
+    responseId: ID!
+    pointsEarned: Int!
+    sendNotification: Boolean
+}
+
 input QuizFilter {
     projectId: ID
     challengeId: ID
@@ -9869,6 +9954,10 @@ extend type Mutation {
         responses: [SubmitQuizAnswerInput!]!
         completedAt: DateTime
     ): QuizSubmission! @requireRole(roles: ["m2m", "admin", "superadmin"])
+
+    # M2M: Record bet results (points earned from betting)
+    recordBetResult(input: RecordBetResultInput!): QuizResponse! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    recordBetResults(inputs: [RecordBetResultInput!]!): [QuizResponse!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/quiz_sessions.graphqls", Input: `# Quiz Session queries and mutations
@@ -10284,6 +10373,7 @@ enum WebhookEventType {
     POINTS_AWARDED
     QUIZ_SESSION_FINISHED
     TEAM_NAME_CHANGED
+    QUIZ_FINALIZED
 }
 
 type Webhook {
@@ -11407,6 +11497,28 @@ func (ec *executionContext) field_Mutation_recalculateContentAchievements_args(c
 		return nil, err
 	}
 	args["achievementId"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_recordBetResult_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNRecordBetResultInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐRecordBetResultInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_recordBetResults_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "inputs", ec.unmarshalNRecordBetResultInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐRecordBetResultInputᚄ)
+	if err != nil {
+		return nil, err
+	}
+	args["inputs"] = arg0
 	return args, nil
 }
 
@@ -19202,6 +19314,59 @@ func (ec *executionContext) fieldContext_FreeTextResponse_betAmount(_ context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _FreeTextResponse_journalEntry(ctx context.Context, field graphql.CollectedField, obj *model.FreeTextResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FreeTextResponse_journalEntry,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.FreeTextResponse().JournalEntry(ctx, obj)
+		},
+		nil,
+		ec.marshalOScoreJournal2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐScoreJournal,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FreeTextResponse_journalEntry(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FreeTextResponse",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ScoreJournal_id(ctx, field)
+			case "project":
+				return ec.fieldContext_ScoreJournal_project(ctx, field)
+			case "user":
+				return ec.fieldContext_ScoreJournal_user(ctx, field)
+			case "event":
+				return ec.fieldContext_ScoreJournal_event(ctx, field)
+			case "challenge":
+				return ec.fieldContext_ScoreJournal_challenge(ctx, field)
+			case "points":
+				return ec.fieldContext_ScoreJournal_points(ctx, field)
+			case "sourceType":
+				return ec.fieldContext_ScoreJournal_sourceType(ctx, field)
+			case "source":
+				return ec.fieldContext_ScoreJournal_source(ctx, field)
+			case "reason":
+				return ec.fieldContext_ScoreJournal_reason(ctx, field)
+			case "awardedBy":
+				return ec.fieldContext_ScoreJournal_awardedBy(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_ScoreJournal_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ScoreJournal", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _FreeTextResponse_textResponse(ctx context.Context, field graphql.CollectedField, obj *model.FreeTextResponse) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -19940,6 +20105,59 @@ func (ec *executionContext) fieldContext_JsonResponse_betAmount(_ context.Contex
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JsonResponse_journalEntry(ctx context.Context, field graphql.CollectedField, obj *model.JSONResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_JsonResponse_journalEntry,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.JsonResponse().JournalEntry(ctx, obj)
+		},
+		nil,
+		ec.marshalOScoreJournal2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐScoreJournal,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_JsonResponse_journalEntry(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JsonResponse",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ScoreJournal_id(ctx, field)
+			case "project":
+				return ec.fieldContext_ScoreJournal_project(ctx, field)
+			case "user":
+				return ec.fieldContext_ScoreJournal_user(ctx, field)
+			case "event":
+				return ec.fieldContext_ScoreJournal_event(ctx, field)
+			case "challenge":
+				return ec.fieldContext_ScoreJournal_challenge(ctx, field)
+			case "points":
+				return ec.fieldContext_ScoreJournal_points(ctx, field)
+			case "sourceType":
+				return ec.fieldContext_ScoreJournal_sourceType(ctx, field)
+			case "source":
+				return ec.fieldContext_ScoreJournal_source(ctx, field)
+			case "reason":
+				return ec.fieldContext_ScoreJournal_reason(ctx, field)
+			case "awardedBy":
+				return ec.fieldContext_ScoreJournal_awardedBy(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_ScoreJournal_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ScoreJournal", field.Name)
 		},
 	}
 	return fc, nil
@@ -27409,6 +27627,124 @@ func (ec *executionContext) fieldContext_Mutation_createQuizSubmission(ctx conte
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_recordBetResult(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_recordBetResult,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().RecordBetResult(ctx, fc.Args["input"].(model.RecordBetResultInput))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
+				if err != nil {
+					var zeroVal model.QuizResponse
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal model.QuizResponse
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNQuizResponse2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizResponse,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_recordBetResult(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_recordBetResult_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_recordBetResults(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_recordBetResults,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().RecordBetResults(ctx, fc.Args["inputs"].([]model.RecordBetResultInput))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
+				if err != nil {
+					var zeroVal []model.QuizResponse
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal []model.QuizResponse
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNQuizResponse2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizResponseᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_recordBetResults(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_recordBetResults_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_createQuizSession(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -29879,6 +30215,59 @@ func (ec *executionContext) fieldContext_NumberResponse_betAmount(_ context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _NumberResponse_journalEntry(ctx context.Context, field graphql.CollectedField, obj *model.NumberResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberResponse_journalEntry,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.NumberResponse().JournalEntry(ctx, obj)
+		},
+		nil,
+		ec.marshalOScoreJournal2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐScoreJournal,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberResponse_journalEntry(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberResponse",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ScoreJournal_id(ctx, field)
+			case "project":
+				return ec.fieldContext_ScoreJournal_project(ctx, field)
+			case "user":
+				return ec.fieldContext_ScoreJournal_user(ctx, field)
+			case "event":
+				return ec.fieldContext_ScoreJournal_event(ctx, field)
+			case "challenge":
+				return ec.fieldContext_ScoreJournal_challenge(ctx, field)
+			case "points":
+				return ec.fieldContext_ScoreJournal_points(ctx, field)
+			case "sourceType":
+				return ec.fieldContext_ScoreJournal_sourceType(ctx, field)
+			case "source":
+				return ec.fieldContext_ScoreJournal_source(ctx, field)
+			case "reason":
+				return ec.fieldContext_ScoreJournal_reason(ctx, field)
+			case "awardedBy":
+				return ec.fieldContext_ScoreJournal_awardedBy(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_ScoreJournal_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ScoreJournal", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _NumberResponse_numberResponse(ctx context.Context, field graphql.CollectedField, obj *model.NumberResponse) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -30538,6 +30927,59 @@ func (ec *executionContext) fieldContext_OrderingResponse_betAmount(_ context.Co
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrderingResponse_journalEntry(ctx context.Context, field graphql.CollectedField, obj *model.OrderingResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingResponse_journalEntry,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.OrderingResponse().JournalEntry(ctx, obj)
+		},
+		nil,
+		ec.marshalOScoreJournal2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐScoreJournal,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingResponse_journalEntry(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingResponse",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ScoreJournal_id(ctx, field)
+			case "project":
+				return ec.fieldContext_ScoreJournal_project(ctx, field)
+			case "user":
+				return ec.fieldContext_ScoreJournal_user(ctx, field)
+			case "event":
+				return ec.fieldContext_ScoreJournal_event(ctx, field)
+			case "challenge":
+				return ec.fieldContext_ScoreJournal_challenge(ctx, field)
+			case "points":
+				return ec.fieldContext_ScoreJournal_points(ctx, field)
+			case "sourceType":
+				return ec.fieldContext_ScoreJournal_sourceType(ctx, field)
+			case "source":
+				return ec.fieldContext_ScoreJournal_source(ctx, field)
+			case "reason":
+				return ec.fieldContext_ScoreJournal_reason(ctx, field)
+			case "awardedBy":
+				return ec.fieldContext_ScoreJournal_awardedBy(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_ScoreJournal_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ScoreJournal", field.Name)
 		},
 	}
 	return fc, nil
@@ -31972,6 +32414,59 @@ func (ec *executionContext) fieldContext_PredefinedResponse_betAmount(_ context.
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PredefinedResponse_journalEntry(ctx context.Context, field graphql.CollectedField, obj *model.PredefinedResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PredefinedResponse_journalEntry,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.PredefinedResponse().JournalEntry(ctx, obj)
+		},
+		nil,
+		ec.marshalOScoreJournal2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐScoreJournal,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_PredefinedResponse_journalEntry(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PredefinedResponse",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ScoreJournal_id(ctx, field)
+			case "project":
+				return ec.fieldContext_ScoreJournal_project(ctx, field)
+			case "user":
+				return ec.fieldContext_ScoreJournal_user(ctx, field)
+			case "event":
+				return ec.fieldContext_ScoreJournal_event(ctx, field)
+			case "challenge":
+				return ec.fieldContext_ScoreJournal_challenge(ctx, field)
+			case "points":
+				return ec.fieldContext_ScoreJournal_points(ctx, field)
+			case "sourceType":
+				return ec.fieldContext_ScoreJournal_sourceType(ctx, field)
+			case "source":
+				return ec.fieldContext_ScoreJournal_source(ctx, field)
+			case "reason":
+				return ec.fieldContext_ScoreJournal_reason(ctx, field)
+			case "awardedBy":
+				return ec.fieldContext_ScoreJournal_awardedBy(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_ScoreJournal_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ScoreJournal", field.Name)
 		},
 	}
 	return fc, nil
@@ -51858,6 +52353,47 @@ func (ec *executionContext) unmarshalInputQuizFilter(ctx context.Context, obj an
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputRecordBetResultInput(ctx context.Context, obj any) (model.RecordBetResultInput, error) {
+	var it model.RecordBetResultInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"responseId", "pointsEarned", "sendNotification"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "responseId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("responseId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResponseID = data
+		case "pointsEarned":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pointsEarned"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PointsEarned = data
+		case "sendNotification":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sendNotification"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SendNotification = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputRegisterPushSubscriptionInput(ctx context.Context, obj any) (model.RegisterPushSubscriptionInput, error) {
 	var it model.RegisterPushSubscriptionInput
 	asMap := map[string]any{}
@@ -56736,6 +57272,39 @@ func (ec *executionContext) _FreeTextResponse(ctx context.Context, sel ast.Selec
 			out.Values[i] = ec._FreeTextResponse_pointsEarned(ctx, field, obj)
 		case "betAmount":
 			out.Values[i] = ec._FreeTextResponse_betAmount(ctx, field, obj)
+		case "journalEntry":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._FreeTextResponse_journalEntry(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "textResponse":
 			out.Values[i] = ec._FreeTextResponse_textResponse(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -57007,6 +57576,39 @@ func (ec *executionContext) _JsonResponse(ctx context.Context, sel ast.Selection
 			out.Values[i] = ec._JsonResponse_pointsEarned(ctx, field, obj)
 		case "betAmount":
 			out.Values[i] = ec._JsonResponse_betAmount(ctx, field, obj)
+		case "journalEntry":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._JsonResponse_journalEntry(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "jsonResponse":
 			out.Values[i] = ec._JsonResponse_jsonResponse(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -57991,6 +58593,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "recordBetResult":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_recordBetResult(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "recordBetResults":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_recordBetResults(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "createQuizSession":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createQuizSession(ctx, field)
@@ -58407,6 +59023,39 @@ func (ec *executionContext) _NumberResponse(ctx context.Context, sel ast.Selecti
 			out.Values[i] = ec._NumberResponse_pointsEarned(ctx, field, obj)
 		case "betAmount":
 			out.Values[i] = ec._NumberResponse_betAmount(ctx, field, obj)
+		case "journalEntry":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NumberResponse_journalEntry(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "numberResponse":
 			out.Values[i] = ec._NumberResponse_numberResponse(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -58669,6 +59318,39 @@ func (ec *executionContext) _OrderingResponse(ctx context.Context, sel ast.Selec
 			out.Values[i] = ec._OrderingResponse_pointsEarned(ctx, field, obj)
 		case "betAmount":
 			out.Values[i] = ec._OrderingResponse_betAmount(ctx, field, obj)
+		case "journalEntry":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._OrderingResponse_journalEntry(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "submittedOrder":
 			out.Values[i] = ec._OrderingResponse_submittedOrder(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -59266,6 +59948,39 @@ func (ec *executionContext) _PredefinedResponse(ctx context.Context, sel ast.Sel
 			out.Values[i] = ec._PredefinedResponse_pointsEarned(ctx, field, obj)
 		case "betAmount":
 			out.Values[i] = ec._PredefinedResponse_betAmount(ctx, field, obj)
+		case "journalEntry":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._PredefinedResponse_journalEntry(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "selectedAnswerIds":
 			out.Values[i] = ec._PredefinedResponse_selectedAnswerIds(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -69603,6 +70318,26 @@ func (ec *executionContext) marshalNRecalculateResult2ᚖgithubᚗcomᚋbccᚑme
 	return ec._RecalculateResult(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNRecordBetResultInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐRecordBetResultInput(ctx context.Context, v any) (model.RecordBetResultInput, error) {
+	res, err := ec.unmarshalInputRecordBetResultInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNRecordBetResultInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐRecordBetResultInputᚄ(ctx context.Context, v any) ([]model.RecordBetResultInput, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]model.RecordBetResultInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNRecordBetResultInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐRecordBetResultInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
 func (ec *executionContext) unmarshalNRegisterPushSubscriptionInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐRegisterPushSubscriptionInput(ctx context.Context, v any) (model.RegisterPushSubscriptionInput, error) {
 	res, err := ec.unmarshalInputRegisterPushSubscriptionInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -71733,6 +72468,13 @@ func (ec *executionContext) marshalOScopeType2ᚖgithubᚗcomᚋbccᚑmediaᚋwa
 		return graphql.Null
 	}
 	return v
+}
+
+func (ec *executionContext) marshalOScoreJournal2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐScoreJournal(ctx context.Context, sel ast.SelectionSet, v *model.ScoreJournal) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ScoreJournal(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOScoreJournalFilter2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐScoreJournalFilter(ctx context.Context, v any) (*model.ScoreJournalFilter, error) {
