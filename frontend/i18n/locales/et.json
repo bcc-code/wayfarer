@@ -39,7 +39,9 @@
       "receivedPoints": "Sa kogusid {points} punkti.",
       "betterLuckNextTime": "Järgmine kord läheb paremini!",
       "wellDone": "Hästi tehtud!",
-      "perfect": "Ideaalne!"
+      "perfect": "Ideaalne!",
+      "thanksForAnswers": "Täname vastuste eest!",
+      "resultsRevealedLater": "Tulemused avaldatakse hiljem."
     }
   },
   "challenges": {
