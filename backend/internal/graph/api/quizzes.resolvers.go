@@ -52,7 +52,8 @@ func (r *freeTextResponseResolver) Question(ctx context.Context, obj *model.Free
 	if err != nil {
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
-	return convertGetQuizQuestionByIDRowToInterface(row), nil
+	question := convertGetQuizQuestionByIDRowToInterface(row)
+	return r.ApplyTranslationToQuizQuestion(ctx, question), nil
 }
 
 // JournalEntry is the resolver for the journalEntry field.
@@ -89,7 +90,8 @@ func (r *jsonResponseResolver) Question(ctx context.Context, obj *model.JSONResp
 	if err != nil {
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
-	return convertGetQuizQuestionByIDRowToInterface(row), nil
+	question := convertGetQuizQuestionByIDRowToInterface(row)
+	return r.ApplyTranslationToQuizQuestion(ctx, question), nil
 }
 
 // JournalEntry is the resolver for the journalEntry field.
@@ -1932,7 +1934,8 @@ func (r *numberResponseResolver) Question(ctx context.Context, obj *model.Number
 	if err != nil {
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
-	return convertGetQuizQuestionByIDRowToInterface(row), nil
+	question := convertGetQuizQuestionByIDRowToInterface(row)
+	return r.ApplyTranslationToQuizQuestion(ctx, question), nil
 }
 
 // JournalEntry is the resolver for the journalEntry field.
@@ -1991,7 +1994,8 @@ func (r *orderingResponseResolver) Question(ctx context.Context, obj *model.Orde
 	if err != nil {
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
-	return convertGetQuizQuestionByIDRowToInterface(row), nil
+	question := convertGetQuizQuestionByIDRowToInterface(row)
+	return r.ApplyTranslationToQuizQuestion(ctx, question), nil
 }
 
 // JournalEntry is the resolver for the journalEntry field.
@@ -2070,7 +2074,8 @@ func (r *predefinedResponseResolver) Question(ctx context.Context, obj *model.Pr
 	if err != nil {
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
-	return convertGetQuizQuestionByIDRowToInterface(row), nil
+	question := convertGetQuizQuestionByIDRowToInterface(row)
+	return r.ApplyTranslationToQuizQuestion(ctx, question), nil
 }
 
 // JournalEntry is the resolver for the journalEntry field.
@@ -2698,7 +2703,7 @@ func (r *quizSubmissionResolver) OrderedQuestions(ctx context.Context, obj *mode
 	orderedQuestions := make([]model.QuizQuestion, 0, len(obj.QuestionOrder))
 	for _, questionID := range obj.QuestionOrder {
 		if q, ok := questionMap[questionID]; ok {
-			orderedQuestions = append(orderedQuestions, q)
+			orderedQuestions = append(orderedQuestions, r.ApplyTranslationToQuizQuestion(ctx, q))
 		}
 	}
 

@@ -21,6 +21,9 @@ function onChallengeClick() {
 }
 
 const isCompleted = computed(() => {
+  if (props.challenge.__typename === 'QuizChallenge') {
+    return props.challenge.quiz.userSubmissions.some((s) => s.completedAt)
+  }
   return props.challenge.userCompletedAt !== null
 })
 </script>

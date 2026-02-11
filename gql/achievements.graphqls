@@ -304,4 +304,7 @@ extend type Mutation {
 
     # Mark achievement as celebrated (any authenticated user)
     markAchievementCelebrated(achievementId: ID!): Boolean!
+
+    # Force recalculate content achievements - awards achievements to users who completed all items but weren't awarded
+    recalculateContentAchievements(projectId: ID!, achievementId: ID!): RecalculateResult! @requireRole(roles: ["admin", "superadmin"])
 }

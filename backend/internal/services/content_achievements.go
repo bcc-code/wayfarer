@@ -371,6 +371,67 @@ func (s *ContentAchievementService) processAchievements(ctx context.Context, use
 	}
 }
 
+// RecalculateAchievement finds users who completed all items for a content achievement but weren't awarded,
+// and awards the achievement to them. Returns the list of user IDs that were awarded.
+func (s *ContentAchievementService) RecalculateAchievement(ctx context.Context, projectID, achievementID string) ([]string, error) {
+	// 1. Load achievement data
+	achievementRow, err := s.DB.Queries.GetContentAchievementForAward(ctx, sqlc.GetContentAchievementForAwardParams{
+		AchievementID: achievementID,
+		ProjectID:     projectID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to load achievement: %w", err)
+	}
+
+	// 2. Get users who completed all items but weren't awarded
+	userIDs, err := s.DB.Queries.GetUsersWithUnclaimedContentAchievement(ctx, sqlc.GetUsersWithUnclaimedContentAchievementParams{
+		AchievementID: achievementID,
+		ProjectID:     projectID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get users with unclaimed achievement: %w", err)
+	}
+
+	if len(userIDs) == 0 {
+		return []string{}, nil
+	}
+
+	// 3. Convert to the type expected by awardAchievement
+	achievement := &sqlc.GetPublishedContentAchievementsByExternalContentRow{
+		ID:                   achievementRow.ID,
+		AchievementType:      achievementRow.AchievementType,
+		ProjectID:            achievementRow.ProjectID,
+		EventID:              achievementRow.EventID,
+		ChallengeID:          achievementRow.ChallengeID,
+		Name:                 achievementRow.Name,
+		DescriptionPending:   achievementRow.DescriptionPending,
+		DescriptionCompleted: achievementRow.DescriptionCompleted,
+		NotificationText:     achievementRow.NotificationText,
+		ImagePending:         achievementRow.ImagePending,
+		ImageCompleted:       achievementRow.ImageCompleted,
+		Points:               achievementRow.Points,
+		Hidden:               achievementRow.Hidden,
+		AwardableFrom:        achievementRow.AwardableFrom,
+		CreatedAt:            achievementRow.CreatedAt,
+		UpdatedAt:            achievementRow.UpdatedAt,
+		ContentItems:         achievementRow.ContentItems,
+	}
+
+	// 4. Award to each user
+	awardedUserIDs := make([]string, 0, len(userIDs))
+	for _, userID := range userIDs {
+		s.awardAchievement(ctx, userID, achievement)
+		awardedUserIDs = append(awardedUserIDs, userID)
+	}
+
+	slog.Info("content_achievements: recalculated achievement awards",
+		"achievement_id", achievementID,
+		"project_id", projectID,
+		"awarded_count", len(awardedUserIDs))
+
+	return awardedUserIDs, nil
+}
+
 // awardAchievement awards an achievement to a user, creates a score journal entry,
 // and invalidates relevant caches. Only awards if not already awarded.
 func (s *ContentAchievementService) awardAchievement(ctx context.Context, userID string, achievement *sqlc.GetPublishedContentAchievementsByExternalContentRow) {

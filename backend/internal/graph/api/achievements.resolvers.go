@@ -16,6 +16,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -1421,6 +1422,34 @@ func (r *mutationResolver) MarkAchievementCelebrated(ctx context.Context, achiev
 	r.Cache.Delete(cache.UserAchievementCelebratedTimestampKey(userID, achievementID))
 
 	return true, nil
+}
+
+// RecalculateContentAchievements is the resolver for the recalculateContentAchievements field.
+func (r *mutationResolver) RecalculateContentAchievements(ctx context.Context, projectID string, achievementID string) (*model.RecalculateResult, error) {
+	// Create ContentAchievementService to handle the recalculation
+	contentAchievementService := &services.ContentAchievementService{
+		DB:             r.DB,
+		Cache:          r.Cache,
+		PushService:    r.PushService,
+		Loaders:        r.Loaders,
+		WebhookService: r.WebhookService,
+	}
+
+	// Call the recalculation method
+	awardedUserIDs, err := contentAchievementService.RecalculateAchievement(ctx, projectID, achievementID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to recalculate content achievements: %w", err)
+	}
+
+	// Notify Firebase for each awarded user (same pattern as AwardAchievement resolver)
+	for _, userID := range awardedUserIDs {
+		go r.FirebaseService.NotifyUserAchievements(context.Background(), userID)
+	}
+
+	return &model.RecalculateResult{
+		Awarded: len(awardedUserIDs),
+		UserIds: awardedUserIDs,
+	}, nil
 }
 
 // Achievement is the resolver for the achievement field.

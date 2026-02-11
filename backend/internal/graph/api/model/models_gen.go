@@ -1391,6 +1391,11 @@ type QuizSubmissionEdge struct {
 	Node   *QuizSubmission `json:"node"`
 }
 
+type RecalculateResult struct {
+	Awarded int      `json:"awarded"`
+	UserIds []string `json:"userIds"`
+}
+
 type RecordBetResultInput struct {
 	ResponseID       string `json:"responseId"`
 	PointsEarned     int    `json:"pointsEarned"`

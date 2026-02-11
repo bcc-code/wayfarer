@@ -36,10 +36,30 @@ const headerClasses = cva(
       },
     },
     compoundVariants: [
-      { size: 'small', hasScrolled: true, class: 'pt-6 min-h-20' },
-      { size: 'large', hasScrolled: true, class: 'pt-12 min-h-20' },
-      { size: 'small', hasScrolled: false, class: 'pt-6 min-h-20' },
-      { size: 'large', hasScrolled: false, class: 'pt-12 min-h-24' },
+      {
+        size: 'small',
+        hasScrolled: true,
+        class:
+          'pt-[calc((var(--spacing)*6)-env(safe-area-inset-top))] min-h-[calc((var(--spacing)*20)-env(safe-area-inset-top))]',
+      },
+      {
+        size: 'large',
+        hasScrolled: true,
+        class:
+          'pt-[calc((var(--spacing)*12)-env(safe-area-inset-top))] min-h-[calc((var(--spacing)*20)-env(safe-area-inset-top))]',
+      },
+      {
+        size: 'small',
+        hasScrolled: false,
+        class:
+          'pt-[calc((var(--spacing)*6)-env(safe-area-inset-top))] min-h-[calc((var(--spacing)*20)-env(safe-area-inset-top))]',
+      },
+      {
+        size: 'large',
+        hasScrolled: false,
+        class:
+          'pt-[calc((var(--spacing)*12)-env(safe-area-inset-top))] min-h-[calc((var(--spacing)*24)-env(safe-area-inset-top))]',
+      },
     ],
     defaultVariants: {
       size: 'large',

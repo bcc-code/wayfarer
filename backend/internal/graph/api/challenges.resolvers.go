@@ -1161,7 +1161,7 @@ func (r *quizChallengeResolver) Quiz(ctx context.Context, obj *model.QuizChallen
 	if err != nil {
 		return nil, err
 	}
-	return quiz, nil
+	return r.ApplyTranslationToQuiz(ctx, quiz), nil
 }
 
 // ImageObject is the resolver for the imageObject field.
