@@ -228,3 +228,8 @@ type FirebaseTokenResponse {
     token: String!
     expiresIn: Int!
 }
+
+type RecalculateResult {
+    awarded: Int!
+    userIds: [ID!]!
+}

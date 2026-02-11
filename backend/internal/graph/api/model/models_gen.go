@@ -1375,6 +1375,11 @@ type QuizSubmissionEdge struct {
 	Node   *QuizSubmission `json:"node"`
 }
 
+type RecalculateResult struct {
+	Awarded int      `json:"awarded"`
+	UserIds []string `json:"userIds"`
+}
+
 type RegisterPushSubscriptionInput struct {
 	Endpoint string `json:"endpoint"`
 	P256dh   string `json:"p256dh"`

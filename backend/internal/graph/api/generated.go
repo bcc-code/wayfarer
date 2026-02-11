@@ -510,6 +510,7 @@ type ComplexityRoot struct {
 		MoveEvent                                   func(childComplexity int, id string, newProjectID string) int
 		OpenQuizSession                             func(childComplexity int, id string) int
 		PublishChallenge                            func(childComplexity int, id string, publishedAt scalars.DateTime) int
+		RecalculateContentAchievements              func(childComplexity int, projectID string, achievementID string) int
 		RecordStreakActivity                        func(childComplexity int, userID string, achievementID string, currentStreak int) int
 		RegenerateJoinCode                          func(childComplexity int, teamID string) int
 		RegisterPushSubscription                    func(childComplexity int, input model.RegisterPushSubscriptionInput) int
@@ -911,6 +912,11 @@ type ComplexityRoot struct {
 	QuizSubmissionEdge struct {
 		Cursor func(childComplexity int) int
 		Node   func(childComplexity int) int
+	}
+
+	RecalculateResult struct {
+		Awarded func(childComplexity int) int
+		UserIds func(childComplexity int) int
 	}
 
 	RoleScope struct {
@@ -1328,6 +1334,7 @@ type MutationResolver interface {
 	UnmarkContentItemCompleted(ctx context.Context, userID string, externalContentID string) ([]model.ContentAchievement, error)
 	RecordStreakActivity(ctx context.Context, userID string, achievementID string, currentStreak int) (*model.StreakAchievement, error)
 	MarkAchievementCelebrated(ctx context.Context, achievementID string) (bool, error)
+	RecalculateContentAchievements(ctx context.Context, projectID string, achievementID string) (*model.RecalculateResult, error)
 	CreateChallenge(ctx context.Context, projectID string, eventID *string, input model.CreateChallengeInput) (model.Challenge, error)
 	UpdateChallenge(ctx context.Context, id string, input model.UpdateChallengeInput) (model.Challenge, error)
 	DeleteChallenge(ctx context.Context, id string) (bool, error)
@@ -3877,6 +3884,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.PublishChallenge(childComplexity, args["id"].(string), args["publishedAt"].(scalars.DateTime)), true
+	case "Mutation.recalculateContentAchievements":
+		if e.complexity.Mutation.RecalculateContentAchievements == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_recalculateContentAchievements_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RecalculateContentAchievements(childComplexity, args["projectId"].(string), args["achievementId"].(string)), true
 	case "Mutation.recordStreakActivity":
 		if e.complexity.Mutation.RecordStreakActivity == nil {
 			break
@@ -6314,6 +6332,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.QuizSubmissionEdge.Node(childComplexity), true
 
+	case "RecalculateResult.awarded":
+		if e.complexity.RecalculateResult.Awarded == nil {
+			break
+		}
+
+		return e.complexity.RecalculateResult.Awarded(childComplexity), true
+	case "RecalculateResult.userIds":
+		if e.complexity.RecalculateResult.UserIds == nil {
+			break
+		}
+
+		return e.complexity.RecalculateResult.UserIds(childComplexity), true
+
 	case "RoleScope.church":
 		if e.complexity.RoleScope.Church == nil {
 			break
@@ -8034,6 +8065,11 @@ type FirebaseTokenResponse {
     token: String!
     expiresIn: Int!
 }
+
+type RecalculateResult {
+    awarded: Int!
+    userIds: [ID!]!
+}
 `, BuiltIn: false},
 	{Name: "../../../../gql/schema.graphqls", Input: `# GraphQL Schema
 # Root type definitions - extended by domain-specific files
@@ -8695,6 +8731,9 @@ extend type Mutation {
 
     # Mark achievement as celebrated (any authenticated user)
     markAchievementCelebrated(achievementId: ID!): Boolean!
+
+    # Force recalculate content achievements - awards achievements to users who completed all items but weren't awarded
+    recalculateContentAchievements(projectId: ID!, achievementId: ID!): RecalculateResult! @requireRole(roles: ["admin", "superadmin"])
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/challenges.graphqls", Input: `# Challenge queries and mutations
@@ -11352,6 +11391,22 @@ func (ec *executionContext) field_Mutation_publishChallenge_args(ctx context.Con
 		return nil, err
 	}
 	args["publishedAt"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_recalculateContentAchievements_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "projectId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["projectId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "achievementId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["achievementId"] = arg1
 	return args, nil
 }
 
@@ -23742,6 +23797,71 @@ func (ec *executionContext) fieldContext_Mutation_markAchievementCelebrated(ctx 
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_markAchievementCelebrated_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_recalculateContentAchievements(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_recalculateContentAchievements,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().RecalculateContentAchievements(ctx, fc.Args["projectId"].(string), fc.Args["achievementId"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				if err != nil {
+					var zeroVal *model.RecalculateResult
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.RecalculateResult
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNRecalculateResult2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐRecalculateResult,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_recalculateContentAchievements(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "awarded":
+				return ec.fieldContext_RecalculateResult_awarded(ctx, field)
+			case "userIds":
+				return ec.fieldContext_RecalculateResult_userIds(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RecalculateResult", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_recalculateContentAchievements_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -40088,6 +40208,64 @@ func (ec *executionContext) fieldContext_QuizSubmissionEdge_node(_ context.Conte
 				return ec.fieldContext_QuizSubmission_pointsAwarded(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type QuizSubmission", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RecalculateResult_awarded(ctx context.Context, field graphql.CollectedField, obj *model.RecalculateResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RecalculateResult_awarded,
+		func(ctx context.Context) (any, error) {
+			return obj.Awarded, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RecalculateResult_awarded(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RecalculateResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RecalculateResult_userIds(ctx context.Context, field graphql.CollectedField, obj *model.RecalculateResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RecalculateResult_userIds,
+		func(ctx context.Context) (any, error) {
+			return obj.UserIds, nil
+		},
+		nil,
+		ec.marshalNID2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RecalculateResult_userIds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RecalculateResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
 		},
 	}
 	return fc, nil
@@ -57449,6 +57627,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "recalculateContentAchievements":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_recalculateContentAchievements(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "createChallenge":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createChallenge(ctx, field)
@@ -62966,6 +63151,50 @@ func (ec *executionContext) _QuizSubmissionEdge(ctx context.Context, sel ast.Sel
 			}
 		case "node":
 			out.Values[i] = ec._QuizSubmissionEdge_node(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var recalculateResultImplementors = []string{"RecalculateResult"}
+
+func (ec *executionContext) _RecalculateResult(ctx context.Context, sel ast.SelectionSet, obj *model.RecalculateResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, recalculateResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RecalculateResult")
+		case "awarded":
+			out.Values[i] = ec._RecalculateResult_awarded(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "userIds":
+			out.Values[i] = ec._RecalculateResult_userIds(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -69358,6 +69587,20 @@ func (ec *executionContext) marshalNQuizSubmissionEdge2ᚕgithubᚗcomᚋbccᚑm
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalNRecalculateResult2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐRecalculateResult(ctx context.Context, sel ast.SelectionSet, v model.RecalculateResult) graphql.Marshaler {
+	return ec._RecalculateResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNRecalculateResult2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐRecalculateResult(ctx context.Context, sel ast.SelectionSet, v *model.RecalculateResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RecalculateResult(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNRegisterPushSubscriptionInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐRegisterPushSubscriptionInput(ctx context.Context, v any) (model.RegisterPushSubscriptionInput, error) {

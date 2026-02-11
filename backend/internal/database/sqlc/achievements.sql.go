@@ -1047,6 +1047,92 @@ func (q *Queries) GetBulkUserContentProgress(ctx context.Context, arg GetBulkUse
 	return items, nil
 }
 
+const GetContentAchievementForAward = `-- name: GetContentAchievementForAward :one
+SELECT
+    a.id,
+    a.achievement_type,
+    a.project_id,
+    a.event_id,
+    a.challenge_id,
+    a.name,
+    a.description_pending,
+    a.description_completed,
+    a.notification_text,
+    a.image_pending,
+    a.image_completed,
+    a.points,
+    a.hidden,
+    a.awardable_from,
+    a.created_at,
+    a.updated_at,
+    COALESCE(
+        (SELECT jsonb_agg(
+            jsonb_build_object(
+                'id', cai.id,
+                'external_content_id', cai.external_content_id,
+                'sort_order', cai.sort_order
+            ) ORDER BY cai.sort_order
+        )
+        FROM content_achievement_items cai
+        WHERE cai.achievement_id = a.id),
+        '[]'::jsonb
+    ) AS content_items
+FROM achievements a
+INNER JOIN content_achievements ca ON ca.achievement_id = a.id
+WHERE a.id = $1::text AND a.project_id = $2::text
+`
+
+type GetContentAchievementForAwardParams struct {
+	AchievementID string `json:"achievement_id"`
+	ProjectID     string `json:"project_id"`
+}
+
+type GetContentAchievementForAwardRow struct {
+	ID                   string             `json:"id"`
+	AchievementType      string             `json:"achievement_type"`
+	ProjectID            string             `json:"project_id"`
+	EventID              *string            `json:"event_id"`
+	ChallengeID          *string            `json:"challenge_id"`
+	Name                 string             `json:"name"`
+	DescriptionPending   string             `json:"description_pending"`
+	DescriptionCompleted string             `json:"description_completed"`
+	NotificationText     string             `json:"notification_text"`
+	ImagePending         string             `json:"image_pending"`
+	ImageCompleted       string             `json:"image_completed"`
+	Points               int32              `json:"points"`
+	Hidden               *bool              `json:"hidden"`
+	AwardableFrom        pgtype.Timestamptz `json:"awardable_from"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+	ContentItems         interface{}        `json:"content_items"`
+}
+
+// Get content achievement data for awarding (same fields as GetPublishedContentAchievementsByExternalContent)
+func (q *Queries) GetContentAchievementForAward(ctx context.Context, arg GetContentAchievementForAwardParams) (*GetContentAchievementForAwardRow, error) {
+	row := q.db.QueryRow(ctx, GetContentAchievementForAward, arg.AchievementID, arg.ProjectID)
+	var i GetContentAchievementForAwardRow
+	err := row.Scan(
+		&i.ID,
+		&i.AchievementType,
+		&i.ProjectID,
+		&i.EventID,
+		&i.ChallengeID,
+		&i.Name,
+		&i.DescriptionPending,
+		&i.DescriptionCompleted,
+		&i.NotificationText,
+		&i.ImagePending,
+		&i.ImageCompleted,
+		&i.Points,
+		&i.Hidden,
+		&i.AwardableFrom,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ContentItems,
+	)
+	return &i, err
+}
+
 const GetContentItemCounts = `-- name: GetContentItemCounts :many
 SELECT achievement_id, COUNT(*)::int AS item_count
 FROM content_achievement_items
@@ -1410,6 +1496,58 @@ func (q *Queries) GetUserProgressCounts(ctx context.Context, arg GetUserProgress
 			return nil, err
 		}
 		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetUsersWithUnclaimedContentAchievement = `-- name: GetUsersWithUnclaimedContentAchievement :many
+SELECT DISTINCT u.id AS user_id
+FROM users u
+INNER JOIN achievements a ON a.id = $1::text
+INNER JOIN content_achievements ca ON ca.achievement_id = a.id
+WHERE a.project_id = $2::text
+  AND NOT EXISTS (
+    SELECT 1 FROM user_achievements ua
+    WHERE ua.user_id = u.id AND ua.achievement_id = a.id
+  )
+  AND NOT EXISTS (
+    SELECT 1 FROM content_achievement_items cai
+    WHERE cai.achievement_id = a.id
+    AND NOT EXISTS (
+      SELECT 1 FROM user_content_progress ucp
+      WHERE ucp.user_id = u.id
+      AND ucp.achievement_id = a.id
+      AND ucp.external_content_id = cai.external_content_id
+    )
+  )
+  AND EXISTS (
+    SELECT 1 FROM content_achievement_items cai
+    WHERE cai.achievement_id = a.id
+  )
+`
+
+type GetUsersWithUnclaimedContentAchievementParams struct {
+	AchievementID string `json:"achievement_id"`
+	ProjectID     string `json:"project_id"`
+}
+
+// Find users who completed all items for a content achievement but weren't awarded
+func (q *Queries) GetUsersWithUnclaimedContentAchievement(ctx context.Context, arg GetUsersWithUnclaimedContentAchievementParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, GetUsersWithUnclaimedContentAchievement, arg.AchievementID, arg.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var user_id string
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
