@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_FinalizeQuiz
 createdAt: 2025-12-08T12:00:00
-updatedAt: 2025-12-08T21:19:56.518471
+updatedAt: 2026-02-11T14:30:42.755267
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_Quizzes
 authentication: {}
@@ -49,7 +49,7 @@ body:
     }
   variables: |
     {
-      "submissionId": "QS01KBZXB9XAGZZ38CRCXHDQE192"
+      "submissionId": "QN01KH3GQEN42Q4RHVR43S4EW5VH"
     }
 bodyType: graphql
 description: Finalize and score a quiz submission (user)
