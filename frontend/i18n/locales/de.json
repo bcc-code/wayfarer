@@ -39,7 +39,9 @@
       "receivedPoints": "Du hast {points} Punkte gesammelt.",
       "betterLuckNextTime": "Viel Glück beim nächsten Mal!",
       "wellDone": "Gut gemacht!",
-      "perfect": "Perfekt."
+      "perfect": "Perfekt.",
+      "thanksForAnswers": "Danke für deine Antworten!",
+      "resultsRevealedLater": "Die Ergebnisse werden später bekannt gegeben."
     }
   },
   "challenges": {
