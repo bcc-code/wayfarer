@@ -68,6 +68,17 @@ func (p *LadderToHeavenPlugin) Register(router gin.IRouter, deps plugins.Depende
 
 	router.POST("/plugins/ladder-to-heaven/team-name-changed", teamRenameHandler.handle)
 
+	// Quiz finalized handler for ordering question betting
+	quizFinalizedHandler := &quizFinalizedHandler{
+		db:        deps.DB,
+		cache:     deps.Cache,
+		loaders:   deps.Loaders,
+		secretKey: p.config.SecretKey,
+		firebase:  deps.Firebase,
+	}
+
+	router.POST("/plugins/ladder-to-heaven/quiz-finalized", quizFinalizedHandler.handle)
+
 	// Cryptex admin URL endpoint (requires JWT authentication)
 	cryptexHandler := &cryptexAdminURLHandler{
 		db:              deps.DB,

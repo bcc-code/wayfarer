@@ -7,6 +7,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/firebase"
+	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/gin-gonic/gin"
 )
@@ -16,6 +17,7 @@ import (
 type Dependencies struct {
 	DB              *database.DB
 	Cache           *cache.CacheWithRegistry
+	Loaders         *loaders.Loaders
 	SettingsService *services.SettingsService
 	JWTConfig       config.JWTConfig
 	Firebase        *firebase.Service

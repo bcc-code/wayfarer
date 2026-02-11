@@ -192,11 +192,11 @@ type ChallengeInfo struct {
 
 // BetResultInfo contains the information needed to send a bet result notification
 type BetResultInfo struct {
-	QuizID     string
-	QuizName   string
-	Points     int
-	Title      string // Already resolved from i18n based on user language
-	Message    string // Already resolved from i18n based on user language
+	QuizID   string
+	QuizName string
+	Points   int
+	Title    string // Already resolved from i18n based on user language
+	Message  string // Already resolved from i18n based on user language
 }
 
 // SendAchievementNotification sends a push notification for an achievement award.

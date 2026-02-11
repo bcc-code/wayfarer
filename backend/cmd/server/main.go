@@ -469,6 +469,7 @@ func main() {
 	pluginDeps := plugins.Dependencies{
 		DB:              db,
 		Cache:           cacheInstance,
+		Loaders:         dataLoaders,
 		SettingsService: settingsService,
 		JWTConfig:       cfg.JWT,
 		Firebase:        firebaseService,

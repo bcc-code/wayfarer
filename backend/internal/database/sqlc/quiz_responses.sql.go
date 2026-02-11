@@ -333,7 +333,7 @@ SELECT
     r.id, r.submission_id, r.question_id, r.selected_answer_ids,
     r.text_response, r.number_response, r.json_response,
     r.is_correct, r.points_earned, r.answered_at, r.time_spent_seconds,
-    r.bet_amount, r.score_journal_id, q.question_type
+    r.bet_amount, r.score_journal_id, q.question_type, q.betting_enabled
 FROM quiz_responses r
 JOIN quiz_questions q ON r.question_id = q.id
 WHERE r.submission_id = ANY($1::text[])
@@ -355,6 +355,7 @@ type GetQuizResponsesBySubmissionIDsRow struct {
 	BetAmount         *int32             `json:"bet_amount"`
 	ScoreJournalID    *string            `json:"score_journal_id"`
 	QuestionType      string             `json:"question_type"`
+	BettingEnabled    bool               `json:"betting_enabled"`
 }
 
 func (q *Queries) GetQuizResponsesBySubmissionIDs(ctx context.Context, submissionIds []string) ([]*GetQuizResponsesBySubmissionIDsRow, error) {
@@ -381,6 +382,7 @@ func (q *Queries) GetQuizResponsesBySubmissionIDs(ctx context.Context, submissio
 			&i.BetAmount,
 			&i.ScoreJournalID,
 			&i.QuestionType,
+			&i.BettingEnabled,
 		); err != nil {
 			return nil, err
 		}

@@ -13,7 +13,7 @@ SELECT
     r.id, r.submission_id, r.question_id, r.selected_answer_ids,
     r.text_response, r.number_response, r.json_response,
     r.is_correct, r.points_earned, r.answered_at, r.time_spent_seconds,
-    r.bet_amount, r.score_journal_id, q.question_type
+    r.bet_amount, r.score_journal_id, q.question_type, q.betting_enabled
 FROM quiz_responses r
 JOIN quiz_questions q ON r.question_id = q.id
 WHERE r.submission_id = ANY(@submission_ids::text[])
