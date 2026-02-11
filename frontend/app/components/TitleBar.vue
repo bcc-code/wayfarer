@@ -36,10 +36,30 @@ const headerClasses = cva(
       },
     },
     compoundVariants: [
-      { size: 'small', hasScrolled: true, class: 'pt-6 min-h-20' },
-      { size: 'large', hasScrolled: true, class: 'pt-12 min-h-20' },
-      { size: 'small', hasScrolled: false, class: 'pt-6 min-h-20' },
-      { size: 'large', hasScrolled: false, class: 'pt-12 min-h-24' },
+      {
+        size: 'small',
+        hasScrolled: true,
+        class:
+          'pt-[calc((var(--spacing)*6)-env(safe-area-inset-top))] min-h-20',
+      },
+      {
+        size: 'large',
+        hasScrolled: true,
+        class:
+          'pt-[calc((var(--spacing)*12)-env(safe-area-inset-top))] min-h-20',
+      },
+      {
+        size: 'small',
+        hasScrolled: false,
+        class:
+          'pt-[calc((var(--spacing)*6)-env(safe-area-inset-top))] min-h-20',
+      },
+      {
+        size: 'large',
+        hasScrolled: false,
+        class:
+          'pt-[calc((var(--spacing)*12)-env(safe-area-inset-top))] min-h-24',
+      },
     ],
     defaultVariants: {
       size: 'large',
