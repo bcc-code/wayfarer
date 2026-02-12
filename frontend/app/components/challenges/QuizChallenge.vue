@@ -259,11 +259,6 @@ const isBettingEnabled = computed(() => {
   return currentQuestion.value?.bettingEnabled ?? false
 })
 
-// Reset bet amount when question changes
-watch(currentQuestionIndex, () => {
-  currentBetAmount.value = 0
-})
-
 // Get session state for ordering questions betting mode
 const sessionState = computed(() => {
   return props.challenge.quiz.userActiveSession?.state
@@ -284,6 +279,15 @@ const currentResponse = computed(() => {
 
   return undefined
 })
+
+// Populate bet amount from existing response, or reset to 0
+watch(
+  [currentQuestionIndex, currentResponse],
+  () => {
+    currentBetAmount.value = currentResponse.value?.betAmount ?? 0
+  },
+  { immediate: true },
+)
 
 async function handleAnswerSubmitted(result: QuestionResult) {
   // Update existing result or add new one (avoid duplicates when resuming)

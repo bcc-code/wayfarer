@@ -58,6 +58,10 @@ const maxBetMessage = computed(() => {
 const remainingAvailablePoints = computed(() => {
   return props.availablePoints - betAmount.value
 })
+
+const potentialWinnings = computed(() => {
+  return betAmount.value * 2
+})
 </script>
 
 <template>
@@ -85,7 +89,7 @@ const remainingAvailablePoints = computed(() => {
       v-if="disabled"
       class="bg-background-indent text-center p-small rounded-modal text-accent-contrast text-caption"
     >
-      {{ t('quiz.betting.potentialWinnings', { amount: betAmount }) }}
+      {{ t('quiz.betting.potentialWinnings', { amount: potentialWinnings }) }}
     </div>
     <div v-else class="space-y-2">
       <DesignSlider

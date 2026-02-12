@@ -126,6 +126,7 @@ async function handleSaveBet() {
       responseId: savedResponseId.value,
       input: {
         submittedOrder,
+        betAmount: props.betAmount,
       },
     })
 

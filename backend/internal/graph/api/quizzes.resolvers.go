@@ -1040,6 +1040,31 @@ func (r *mutationResolver) UpdateQuizAnswer(ctx context.Context, responseID stri
 		ID: responseID,
 	}
 
+	// Handle betAmount update if provided
+	if input.BetAmount != nil {
+		// Load quiz to get project ID for score lookup
+		quizThunk := r.Loaders.QuizByIDLoader.Load(ctx, submission.QuizID)
+		quiz, quizErr := quizThunk()
+		if quizErr != nil {
+			otel.RecordError(span, quizErr)
+			return nil, fmt.Errorf("failed to load quiz for bet validation: %w", quizErr)
+		}
+
+		betConfig := BetValidationConfig{
+			BettingEnabled:       question.BettingEnabled,
+			BettingMinPercentage: question.BettingMinPercentage,
+			BettingMaxPercentage: question.BettingMaxPercentage,
+			BettingMinAbsolute:   question.BettingMinAbsolute,
+			BettingMaxAbsolute:   question.BettingMaxAbsolute,
+		}
+
+		if err := ValidateBet(ctx, r.DB.Queries, userID, quiz.ProjectID, betConfig, input.BetAmount); err != nil {
+			return nil, err
+		}
+		betAmount := int32(*input.BetAmount)
+		params.Betamount = &betAmount
+	}
+
 	// Only handle ORDERING questions for now
 	if question.QuestionType == "ORDERING" && input.SubmittedOrder != nil {
 		// Store submitted order as JSON

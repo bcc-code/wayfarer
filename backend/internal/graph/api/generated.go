@@ -9838,6 +9838,9 @@ input UpdateQuizQuestionInput {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    # Set to true to clear betting absolute values (set them to null)
+    clearBettingMinAbsolute: Boolean
+    clearBettingMaxAbsolute: Boolean
 
     allowMultipleSelection: Boolean
     predefinedAnswers: [CreatePredefinedAnswerInput!]
@@ -9864,6 +9867,7 @@ input SubmitQuizAnswerInput {
 
 input UpdateQuizAnswerInput {
     submittedOrder: [ID!]  # For ordering questions
+    betAmount: Int
 }
 
 input RecordBetResultInput {
@@ -53582,7 +53586,7 @@ func (ec *executionContext) unmarshalInputUpdateQuizAnswerInput(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"submittedOrder"}
+	fieldsInOrder := [...]string{"submittedOrder", "betAmount"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -53596,6 +53600,13 @@ func (ec *executionContext) unmarshalInputUpdateQuizAnswerInput(ctx context.Cont
 				return it, err
 			}
 			it.SubmittedOrder = data
+		case "betAmount":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("betAmount"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BetAmount = data
 		}
 	}
 
@@ -53692,7 +53703,7 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"questionText", "questionOrder", "timeoutSeconds", "points", "bettingEnabled", "bettingMinPercentage", "bettingMaxPercentage", "bettingMinAbsolute", "bettingMaxAbsolute", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
+	fieldsInOrder := [...]string{"questionText", "questionOrder", "timeoutSeconds", "points", "bettingEnabled", "bettingMinPercentage", "bettingMaxPercentage", "bettingMinAbsolute", "bettingMaxAbsolute", "clearBettingMinAbsolute", "clearBettingMaxAbsolute", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -53762,6 +53773,20 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 				return it, err
 			}
 			it.BettingMaxAbsolute = data
+		case "clearBettingMinAbsolute":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearBettingMinAbsolute"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClearBettingMinAbsolute = data
+		case "clearBettingMaxAbsolute":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearBettingMaxAbsolute"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClearBettingMaxAbsolute = data
 		case "allowMultipleSelection":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowMultipleSelection"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)

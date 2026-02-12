@@ -2909,6 +2909,7 @@ export type UpdateQuizAchievementInput = {
 };
 
 export type UpdateQuizAnswerInput = {
+  betAmount?: InputMaybe<Scalars['Int']['input']>;
   submittedOrder?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 

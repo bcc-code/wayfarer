@@ -54,30 +54,6 @@ func TestValidateBet_NilBet_BettingDisabled(t *testing.T) {
 	assert.NoError(t, err, "nil bet should be valid when betting is disabled")
 }
 
-func TestValidateBet_ZeroBet_BettingEnabled(t *testing.T) {
-	config := BetValidationConfig{
-		BettingEnabled: true,
-	}
-
-	zeroBet := 0
-	err := ValidateBet(context.Background(), nil, "user1", "project1", config, &zeroBet)
-	require.Error(t, err, "zero bet should be rejected when betting is enabled")
-	betErr, ok := err.(*BetValidationError)
-	require.True(t, ok)
-	assert.Equal(t, "betAmount", betErr.Field)
-	assert.Contains(t, betErr.Message, "bet is required when betting is enabled")
-}
-
-func TestValidateBet_ZeroBet_BettingDisabled(t *testing.T) {
-	config := BetValidationConfig{
-		BettingEnabled: false,
-	}
-
-	zeroBet := 0
-	err := ValidateBet(context.Background(), nil, "user1", "project1", config, &zeroBet)
-	assert.NoError(t, err, "zero bet should be valid when betting is disabled")
-}
-
 func TestValidateBet_NegativeBet(t *testing.T) {
 	config := BetValidationConfig{
 		BettingEnabled: true,

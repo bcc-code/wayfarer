@@ -354,6 +354,7 @@ input SubmitQuizAnswerInput {
 
 input UpdateQuizAnswerInput {
     submittedOrder: [ID!]  # For ordering questions
+    betAmount: Int
 }
 
 input RecordBetResultInput {
