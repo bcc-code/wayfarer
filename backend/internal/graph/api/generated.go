@@ -8416,6 +8416,7 @@ input UpdateSuperTeamInput {
 }
 
 input TeamFilter {
+    churchId: ID  # Filter teams by team lead's church membership
     projectId: ID
     superTeamId: ID
     ids: [ID!]  # Support bulk ID lookup for M2M API
@@ -52903,13 +52904,20 @@ func (ec *executionContext) unmarshalInputTeamFilter(ctx context.Context, obj an
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"projectId", "superTeamId", "ids", "noSuperTeam", "minMembers", "maxMembers"}
+	fieldsInOrder := [...]string{"churchId", "projectId", "superTeamId", "ids", "noSuperTeam", "minMembers", "maxMembers"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "churchId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("churchId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChurchID = data
 		case "projectId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectId"))
 			data, err := ec.unmarshalOID2ᚖstring(ctx, v)

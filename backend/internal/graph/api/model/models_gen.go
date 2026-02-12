@@ -1742,6 +1742,7 @@ type TeamEdge struct {
 }
 
 type TeamFilter struct {
+	ChurchID    *string  `json:"churchId,omitempty"`
 	ProjectID   *string  `json:"projectId,omitempty"`
 	SuperTeamID *string  `json:"superTeamId,omitempty"`
 	Ids         []string `json:"ids,omitempty"`

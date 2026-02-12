@@ -71,6 +71,8 @@ LEFT JOIN (
     FROM team_members
     GROUP BY team_id
 ) tm ON t.id = tm.team_id
+LEFT JOIN user_roles ur ON ur.team_id = t.id AND ur.role = 'TEAM_LEAD'
+LEFT JOIN users lead_user ON ur.user_id = lead_user.id
 WHERE
     ($1::text[] IS NULL OR t.id = ANY($1::text[]))
     AND ($2::text = '' OR t.project_id = $2::text)
@@ -78,6 +80,7 @@ WHERE
     AND ($4::bool = false OR ($4::bool = true AND t.super_team_id IS NULL))
     AND ($5::int <= 0 OR COALESCE(tm.member_count, 0) >= $5::int)
     AND ($6::int <= 0 OR COALESCE(tm.member_count, 0) <= $6::int)
+    AND ($7::text = '' OR lead_user.church_id = $7::text)
 `
 
 type CountTeamsFilteredParams struct {
@@ -87,6 +90,7 @@ type CountTeamsFilteredParams struct {
 	Nosuperteam bool     `json:"nosuperteam"`
 	Minmembers  int32    `json:"minmembers"`
 	Maxmembers  int32    `json:"maxmembers"`
+	Churchid    string   `json:"churchid"`
 }
 
 func (q *Queries) CountTeamsFiltered(ctx context.Context, arg CountTeamsFilteredParams) (int64, error) {
@@ -97,6 +101,7 @@ func (q *Queries) CountTeamsFiltered(ctx context.Context, arg CountTeamsFiltered
 		arg.Nosuperteam,
 		arg.Minmembers,
 		arg.Maxmembers,
+		arg.Churchid,
 	)
 	var count int64
 	err := row.Scan(&count)
@@ -649,6 +654,8 @@ LEFT JOIN (
     FROM team_members
     GROUP BY team_id
 ) tm ON t.id = tm.team_id
+LEFT JOIN user_roles ur ON ur.team_id = t.id AND ur.role = 'TEAM_LEAD'
+LEFT JOIN users lead_user ON ur.user_id = lead_user.id
 WHERE
     ($1::text[] IS NULL OR t.id = ANY($1::text[]))
     AND ($2::text = '' OR t.project_id = $2::text)
@@ -656,12 +663,13 @@ WHERE
     AND ($4::bool = false OR ($4::bool = true AND t.super_team_id IS NULL))
     AND ($5::int <= 0 OR COALESCE(tm.member_count, 0) >= $5::int)
     AND ($6::int <= 0 OR COALESCE(tm.member_count, 0) <= $6::int)
-    AND ($7::text = '' OR t.id > $7::text)
-    AND ($8::text = '' OR t.id < $8::text)
+    AND ($7::text = '' OR lead_user.church_id = $7::text)
+    AND ($8::text = '' OR t.id > $8::text)
+    AND ($9::text = '' OR t.id < $9::text)
 ORDER BY
-    CASE WHEN $9::bool = true THEN t.id END DESC,
-    CASE WHEN $9::bool = false OR $9::bool IS NULL THEN t.id END ASC
-LIMIT CASE WHEN $10::int IS NULL THEN NULL ELSE $10::int END
+    CASE WHEN $10::bool = true THEN t.id END DESC,
+    CASE WHEN $10::bool = false OR $10::bool IS NULL THEN t.id END ASC
+LIMIT CASE WHEN $11::int IS NULL THEN NULL ELSE $11::int END
 `
 
 type GetTeamsFilteredCursorParams struct {
@@ -671,6 +679,7 @@ type GetTeamsFilteredCursorParams struct {
 	Nosuperteam  bool     `json:"nosuperteam"`
 	Minmembers   int32    `json:"minmembers"`
 	Maxmembers   int32    `json:"maxmembers"`
+	Churchid     string   `json:"churchid"`
 	Aftercursor  string   `json:"aftercursor"`
 	Beforecursor string   `json:"beforecursor"`
 	Isbackward   bool     `json:"isbackward"`
@@ -697,6 +706,7 @@ func (q *Queries) GetTeamsFilteredCursor(ctx context.Context, arg GetTeamsFilter
 		arg.Nosuperteam,
 		arg.Minmembers,
 		arg.Maxmembers,
+		arg.Churchid,
 		arg.Aftercursor,
 		arg.Beforecursor,
 		arg.Isbackward,
