@@ -39,26 +39,22 @@ const headerClasses = cva(
       {
         size: 'small',
         hasScrolled: true,
-        class:
-          'pt-[calc((var(--spacing)*6)-env(safe-area-inset-top))] min-h-20',
+        class: 'pt-6 min-h-20',
       },
       {
         size: 'large',
         hasScrolled: true,
-        class:
-          'pt-[calc((var(--spacing)*12)-env(safe-area-inset-top))] min-h-20',
+        class: 'pt-12 min-h-20',
       },
       {
         size: 'small',
         hasScrolled: false,
-        class:
-          'pt-[calc((var(--spacing)*6)-env(safe-area-inset-top))] min-h-20',
+        class: 'pt-6 min-h-20',
       },
       {
         size: 'large',
         hasScrolled: false,
-        class:
-          'pt-[calc((var(--spacing)*12)-env(safe-area-inset-top))] min-h-24',
+        class: 'pt-12 min-h-24',
       },
     ],
     defaultVariants: {
