@@ -19,6 +19,7 @@ import type {
 
 const props = defineProps<{
   challenge: QuizChallengeData
+  userScore?: number
 }>()
 
 const emit = defineEmits<{
@@ -33,6 +34,7 @@ const { executeMutation: finalizeQuiz } = useFinalizeQuizMutation()
 const currentQuestionIndex = ref(0)
 const questionResults = ref<QuestionResult[]>([])
 const quizCompleted = ref(false)
+const currentBetAmount = ref(0)
 const finalResult = ref<FinalizeQuizMutation['finalizeQuiz'] | null>(null)
 const startedSubmission = ref<
   StartQuizSessionMutation['startQuizSession'] | null
@@ -233,7 +235,11 @@ function initializeFromExistingResponses() {
 watch(
   activeSubmission,
   (submission) => {
-    if (submission && 'responses' in submission && submission.responses.length > 0) {
+    if (
+      submission &&
+      'responses' in submission &&
+      submission.responses.length > 0
+    ) {
       initializeFromExistingResponses()
     }
   },
@@ -246,6 +252,16 @@ const currentQuestion = computed(() => {
 
 const isLastQuestion = computed(() => {
   return currentQuestionIndex.value === questions.value.length - 1
+})
+
+// Check if current question has betting enabled
+const isBettingEnabled = computed(() => {
+  return currentQuestion.value?.bettingEnabled ?? false
+})
+
+// Reset bet amount when question changes
+watch(currentQuestionIndex, () => {
+  currentBetAmount.value = 0
 })
 
 // Get session state for ordering questions betting mode
@@ -499,6 +515,7 @@ const progressResults = computed(() => {
         "
         :is-last-question="isLastQuestion"
         :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
+        :bet-amount="isBettingEnabled ? currentBetAmount : undefined"
         @answer-submitted="handleAnswerSubmitted"
       />
       <QuizOrderingQuestion
@@ -517,6 +534,7 @@ const progressResults = computed(() => {
         "
         :is-last-question="isLastQuestion"
         :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
+        :bet-amount="isBettingEnabled ? currentBetAmount : undefined"
         @answer-submitted="handleAnswerSubmitted"
       />
       <QuizNumberQuestion
@@ -534,6 +552,7 @@ const progressResults = computed(() => {
         "
         :is-last-question="isLastQuestion"
         :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
+        :bet-amount="isBettingEnabled ? currentBetAmount : undefined"
         @answer-submitted="handleAnswerSubmitted"
       />
       <QuizJsonQuestion
@@ -563,6 +582,7 @@ const progressResults = computed(() => {
         "
         :is-last-question="isLastQuestion"
         :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
+        :bet-amount="isBettingEnabled ? currentBetAmount : undefined"
         @answer-submitted="handleAnswerSubmitted"
       />
     </template>
@@ -609,10 +629,24 @@ const progressResults = computed(() => {
     <template #footer>
       <div
         v-if="actionState && !quizCompleted"
-        class="w-full p-default flex flex-col"
+        :class="[
+          'w-full p-default flex flex-col gap-4',
+          { 'bg-background-raised': isBettingEnabled },
+        ]"
       >
         <!-- Normal mode -->
         <template v-if="actionState.mode === 'normal'">
+          <!-- Betting module -->
+          <QuizBettingModule
+            v-if="isBettingEnabled && !actionState.isAnswerLocked"
+            v-model="currentBetAmount"
+            :available-points="userScore ?? 0"
+            :min-percentage="currentQuestion?.bettingMinPercentage"
+            :max-percentage="currentQuestion?.bettingMaxPercentage"
+            :min-absolute="currentQuestion?.bettingMinAbsolute"
+            :max-absolute="currentQuestion?.bettingMaxAbsolute"
+            :disabled="actionState.isAnswerLocked"
+          />
           <DesignButton
             v-if="!actionState.isAnswerLocked"
             size="large"
@@ -633,6 +667,17 @@ const progressResults = computed(() => {
 
         <!-- Session betting mode -->
         <template v-else-if="actionState.mode === 'session-betting'">
+          <!-- Betting module -->
+          <QuizBettingModule
+            v-if="isBettingEnabled && !actionState.isAnswerLocked"
+            v-model="currentBetAmount"
+            :available-points="userScore ?? 0"
+            :min-percentage="currentQuestion?.bettingMinPercentage"
+            :max-percentage="currentQuestion?.bettingMaxPercentage"
+            :min-absolute="currentQuestion?.bettingMinAbsolute"
+            :max-absolute="currentQuestion?.bettingMaxAbsolute"
+            :disabled="!actionState.isEditing"
+          />
           <DesignButton
             v-if="!actionState.isBetSaved || actionState.isEditing"
             size="large"

@@ -34,6 +34,13 @@
     "finishReview": "Avslutt gjennomgang",
     "yourNumber": "Ditt tall",
     "writeYourAnswer": "Skriv ditt svar...",
+    "betting": {
+      "remainingPoints": "Gjenstående poeng",
+      "yourBet": "Din innsats",
+      "maxBetMessage": "Du kan maks. satse {percentage}% av dine poeng",
+      "sessionLocked": "Svaret er låst",
+      "potentialWinnings": "{amount} poeng i potensiell gevinst"
+    },
     "result": {
       "receivedNoPoints": "Du samlet ingen poeng.",
       "receivedPoints": "Du samlet {points} poeng.",

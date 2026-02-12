@@ -325,6 +325,9 @@ input UpdateQuizQuestionInput {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    # Set to true to clear betting absolute values (set them to null)
+    clearBettingMinAbsolute: Boolean
+    clearBettingMaxAbsolute: Boolean
 
     allowMultipleSelection: Boolean
     predefinedAnswers: [CreatePredefinedAnswerInput!]

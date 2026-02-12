@@ -25,6 +25,8 @@ const props = defineProps<{
   showCorrectAnswers?: boolean
   showPreviousButton?: boolean
   isLastQuestion?: boolean
+  // Betting
+  betAmount?: number
 }>()
 
 const emit = defineEmits<{
@@ -147,6 +149,7 @@ async function handleSaveBet() {
       input: {
         questionId: props.question.id,
         submittedOrder,
+        betAmount: props.betAmount,
       },
     })
 
@@ -187,6 +190,7 @@ async function handleLockAnswer() {
     input: {
       questionId: props.question.id,
       submittedOrder,
+      betAmount: props.betAmount ?? undefined,
     },
   })
 
@@ -334,7 +338,6 @@ defineExpose({ actionState, handlers })
         </VueDraggable>
       </div>
     </div>
-
   </div>
 </template>
 
