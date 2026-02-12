@@ -40,25 +40,25 @@ const headerClasses = cva(
         size: 'small',
         hasScrolled: true,
         class:
-          'pt-[calc((var(--spacing)*6)-env(safe-area-inset-top))] min-h-[calc((var(--spacing)*20)-env(safe-area-inset-top))]',
+          'pt-[calc((var(--spacing)*6)-env(safe-area-inset-top))] min-h-20',
       },
       {
         size: 'large',
         hasScrolled: true,
         class:
-          'pt-[calc((var(--spacing)*12)-env(safe-area-inset-top))] min-h-[calc((var(--spacing)*20)-env(safe-area-inset-top))]',
+          'pt-[calc((var(--spacing)*12)-env(safe-area-inset-top))] min-h-20',
       },
       {
         size: 'small',
         hasScrolled: false,
         class:
-          'pt-[calc((var(--spacing)*6)-env(safe-area-inset-top))] min-h-[calc((var(--spacing)*20)-env(safe-area-inset-top))]',
+          'pt-[calc((var(--spacing)*6)-env(safe-area-inset-top))] min-h-20',
       },
       {
         size: 'large',
         hasScrolled: false,
         class:
-          'pt-[calc((var(--spacing)*12)-env(safe-area-inset-top))] min-h-[calc((var(--spacing)*24)-env(safe-area-inset-top))]',
+          'pt-[calc((var(--spacing)*12)-env(safe-area-inset-top))] min-h-24',
       },
     ],
     defaultVariants: {
