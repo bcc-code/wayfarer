@@ -22,7 +22,10 @@ const localQuestion = reactive<QuizQuestionFormData>({
 watch(
   () => localQuestion.questionType,
   (newType) => {
-    if (newType === QuizQuestionType.Ordering && !localQuestion.orderingItems?.length) {
+    if (
+      newType === QuizQuestionType.Ordering &&
+      !localQuestion.orderingItems?.length
+    ) {
       localQuestion.orderingItems = [
         { itemText: '', correctOrder: 1 },
         { itemText: '', correctOrder: 2 },
@@ -118,10 +121,16 @@ function handleSave() {
     questionOrder: localQuestion.questionOrder,
     timeoutSeconds: localQuestion.timeoutSeconds,
     points: localQuestion.points,
+    bettingEnabled: localQuestion.bettingEnabled,
+    bettingMinPercentage: localQuestion.bettingMinPercentage,
+    bettingMaxPercentage: localQuestion.bettingMaxPercentage,
+    bettingMinAbsolute: localQuestion.bettingMinAbsolute,
+    bettingMaxAbsolute: localQuestion.bettingMaxAbsolute,
   }
 
   if (localQuestion.questionType === QuizQuestionType.Predefined) {
-    cleanedQuestion.allowMultipleSelection = localQuestion.allowMultipleSelection
+    cleanedQuestion.allowMultipleSelection =
+      localQuestion.allowMultipleSelection
     cleanedQuestion.predefinedAnswers = localQuestion.predefinedAnswers
   } else if (localQuestion.questionType === QuizQuestionType.Number) {
     cleanedQuestion.minValue = localQuestion.minValue
@@ -183,6 +192,76 @@ function handleSave() {
       </UFormField>
     </div>
 
+    <!-- Betting Settings -->
+    <div class="space-y-4 border border-default rounded-lg p-4">
+      <UFormField name="bettingEnabled">
+        <UCheckbox
+          v-model="localQuestion.bettingEnabled"
+          label="Aktiver betting"
+        />
+      </UFormField>
+
+      <template v-if="localQuestion.bettingEnabled">
+        <div class="space-y-4 pl-6">
+          <div>
+            <label class="text-sm font-medium">
+              Prosent-grenser (valgfritt)
+            </label>
+            <div class="grid grid-cols-2 gap-4 mt-2">
+              <UFormField name="bettingMinPercentage" label="Min %">
+                <UInput
+                  v-model.number="localQuestion.bettingMinPercentage"
+                  type="number"
+                  :min="0"
+                  :max="100"
+                  size="xl"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField name="bettingMaxPercentage" label="Maks %">
+                <UInput
+                  v-model.number="localQuestion.bettingMaxPercentage"
+                  type="number"
+                  :min="0"
+                  :max="100"
+                  size="xl"
+                  class="w-full"
+                />
+              </UFormField>
+            </div>
+          </div>
+
+          <div>
+            <label class="text-sm font-medium">
+              Absolutte grenser (valgfritt)
+            </label>
+            <div class="grid grid-cols-2 gap-4 mt-2">
+              <UFormField name="bettingMinAbsolute" label="Min poeng">
+                <UInput
+                  v-model.number="localQuestion.bettingMinAbsolute"
+                  type="number"
+                  :min="0"
+                  size="xl"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField name="bettingMaxAbsolute" label="Maks poeng">
+                <UInput
+                  v-model.number="localQuestion.bettingMaxAbsolute"
+                  type="number"
+                  :min="0"
+                  size="xl"
+                  class="w-full"
+                />
+              </UFormField>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+
     <!-- Predefined Question Options -->
     <template v-if="localQuestion.questionType === QuizQuestionType.Predefined">
       <UFormField name="allowMultipleSelection">
@@ -223,9 +302,7 @@ function handleSave() {
           </UButton>
         </div>
 
-        <p class="text-xs text-text-muted">
-          Kryss av for riktig(e) svar
-        </p>
+        <p class="text-xs text-text-muted">Kryss av for riktig(e) svar</p>
       </div>
     </template>
 
@@ -265,14 +342,17 @@ function handleSave() {
     <template v-if="localQuestion.questionType === QuizQuestionType.Ordering">
       <div class="space-y-3">
         <div class="flex items-center justify-between">
-          <label class="text-sm font-medium">Elementer (i riktig rekkefølge)</label>
+          <label class="text-sm font-medium">
+            Elementer (i riktig rekkefølge)
+          </label>
           <UButton size="xs" variant="ghost" @click="addOrderingItem">
             Legg til element
           </UButton>
         </div>
 
         <p class="text-xs text-text-muted">
-          Dra for å endre rekkefølge. Rekkefølgen i listen er den korrekte rekkefølgen.
+          Dra for å endre rekkefølge. Rekkefølgen i listen er den korrekte
+          rekkefølgen.
         </p>
 
         <VueDraggable

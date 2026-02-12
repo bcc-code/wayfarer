@@ -12,6 +12,11 @@ fragment QuizQuestionFields on QuizQuestion {
   questionOrder
   timeoutSeconds
   points
+  bettingEnabled
+  bettingMinPercentage
+  bettingMaxPercentage
+  bettingMinAbsolute
+  bettingMaxAbsolute
   ... on PredefinedQuestion {
     allowMultipleSelection
     predefinedAnswers {

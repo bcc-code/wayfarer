@@ -791,6 +791,7 @@ export type FreeTextResponse = QuizResponse & {
   answeredAt?: Maybe<Scalars['DateTime']['output']>;
   betAmount?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
+  journalEntry?: Maybe<ScoreJournal>;
   pointsEarned?: Maybe<Scalars['Int']['output']>;
   question: QuizQuestion;
   submission: QuizSubmission;
@@ -840,6 +841,7 @@ export type JsonResponse = QuizResponse & {
   answeredAt?: Maybe<Scalars['DateTime']['output']>;
   betAmount?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
+  journalEntry?: Maybe<ScoreJournal>;
   jsonResponse: Scalars['JSON']['output'];
   pointsEarned?: Maybe<Scalars['Int']['output']>;
   question: QuizQuestion;
@@ -980,6 +982,8 @@ export type Mutation = {
   openQuizSession: QuizSession;
   publishChallenge: Challenge;
   recalculateContentAchievements: RecalculateResult;
+  recordBetResult: QuizResponse;
+  recordBetResults: Array<QuizResponse>;
   recordStreakActivity: StreakAchievement;
   regenerateJoinCode: Team;
   registerPushSubscription: PushSubscription;
@@ -1427,6 +1431,16 @@ export type MutationRecalculateContentAchievementsArgs = {
 };
 
 
+export type MutationRecordBetResultArgs = {
+  input: RecordBetResultInput;
+};
+
+
+export type MutationRecordBetResultsArgs = {
+  inputs: Array<RecordBetResultInput>;
+};
+
+
 export type MutationRecordStreakActivityArgs = {
   achievementId: Scalars['ID']['input'];
   currentStreak: Scalars['Int']['input'];
@@ -1751,6 +1765,7 @@ export type NumberResponse = QuizResponse & {
   answeredAt?: Maybe<Scalars['DateTime']['output']>;
   betAmount?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
+  journalEntry?: Maybe<ScoreJournal>;
   numberResponse: Scalars['Float']['output'];
   pointsEarned?: Maybe<Scalars['Int']['output']>;
   question: QuizQuestion;
@@ -1780,6 +1795,7 @@ export type OrderingResponse = QuizResponse & {
   betAmount?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
   isCorrect?: Maybe<Scalars['Boolean']['output']>;
+  journalEntry?: Maybe<ScoreJournal>;
   pointsEarned?: Maybe<Scalars['Int']['output']>;
   question: QuizQuestion;
   submission: QuizSubmission;
@@ -1841,6 +1857,7 @@ export type PredefinedResponse = QuizResponse & {
   betAmount?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
   isCorrect?: Maybe<Scalars['Boolean']['output']>;
+  journalEntry?: Maybe<ScoreJournal>;
   pointsEarned?: Maybe<Scalars['Int']['output']>;
   question: QuizQuestion;
   selectedAnswerIds: Array<Scalars['ID']['output']>;
@@ -2385,6 +2402,7 @@ export type QuizResponse = {
   answeredAt?: Maybe<Scalars['DateTime']['output']>;
   betAmount?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
+  journalEntry?: Maybe<ScoreJournal>;
   pointsEarned?: Maybe<Scalars['Int']['output']>;
   question: QuizQuestion;
   submission: QuizSubmission;
@@ -2451,6 +2469,12 @@ export type RecalculateResult = {
   __typename?: 'RecalculateResult';
   awarded: Scalars['Int']['output'];
   userIds: Array<Scalars['ID']['output']>;
+};
+
+export type RecordBetResultInput = {
+  pointsEarned: Scalars['Int']['input'];
+  responseId: Scalars['ID']['input'];
+  sendNotification?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export type RegisterPushSubscriptionInput = {
@@ -2532,6 +2556,7 @@ export type ScoreSource = ContentAchievement | Event | ExternalChallenge | Plugi
 
 export enum ScoreSourceType {
   Achievement = 'ACHIEVEMENT',
+  Bet = 'BET',
   Challenge = 'CHALLENGE',
   Event = 'EVENT',
   Manual = 'MANUAL'
@@ -2771,6 +2796,7 @@ export type TeamEdge = {
 };
 
 export type TeamFilter = {
+  churchId?: InputMaybe<Scalars['ID']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   maxMembers?: InputMaybe<Scalars['Int']['input']>;
   minMembers?: InputMaybe<Scalars['Int']['input']>;
@@ -3095,6 +3121,7 @@ export type WebhookRecentLogsArgs = {
 export enum WebhookEventType {
   ExternalContentEvent = 'EXTERNAL_CONTENT_EVENT',
   PointsAwarded = 'POINTS_AWARDED',
+  QuizFinalized = 'QUIZ_FINALIZED',
   QuizSessionFinished = 'QUIZ_SESSION_FINISHED',
   TeamNameChanged = 'TEAM_NAME_CHANGED'
 }
@@ -3152,15 +3179,15 @@ export type LeaderboardEntryWithDescriptionFieldsFragment = { __typename?: 'Lead
 
 export type PredefinedAnswerFieldsFragment = { __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null };
 
-type QuizQuestionFields_FreeTextQuestion_Fragment = { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null };
+type QuizQuestionFields_FreeTextQuestion_Fragment = { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null };
 
-type QuizQuestionFields_JsonQuestion_Fragment = { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null };
+type QuizQuestionFields_JsonQuestion_Fragment = { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null };
 
-type QuizQuestionFields_NumberQuestion_Fragment = { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null };
+type QuizQuestionFields_NumberQuestion_Fragment = { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null };
 
-type QuizQuestionFields_OrderingQuestion_Fragment = { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string }> };
+type QuizQuestionFields_OrderingQuestion_Fragment = { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string }> };
 
-type QuizQuestionFields_PredefinedQuestion_Fragment = { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> };
+type QuizQuestionFields_PredefinedQuestion_Fragment = { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> };
 
 export type QuizQuestionFieldsFragment =
   | QuizQuestionFields_FreeTextQuestion_Fragment
@@ -3480,11 +3507,11 @@ export type AddQuizQuestionMutationVariables = Exact<{
 
 
 export type AddQuizQuestionMutation = { __typename?: 'Mutation', addQuizQuestion:
-    | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
-    | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
-    | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
-    | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string }> }
-    | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
+    | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null }
+    | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null }
+    | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null }
+    | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string }> }
+    | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
    };
 
 export type UpdateQuizQuestionMutationVariables = Exact<{
@@ -3494,11 +3521,11 @@ export type UpdateQuizQuestionMutationVariables = Exact<{
 
 
 export type UpdateQuizQuestionMutation = { __typename?: 'Mutation', updateQuizQuestion:
-    | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
-    | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
-    | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
-    | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string }> }
-    | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
+    | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null }
+    | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null }
+    | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null }
+    | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string }> }
+    | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
    };
 
 export type DeleteQuizQuestionMutationVariables = Exact<{
@@ -3941,11 +3968,11 @@ export type AdminChallengeQuizPageQuery = { __typename?: 'Query', challenge:
     | { __typename: 'ExternalChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
     | { __typename: 'PluginChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
     | { __typename: 'QuizChallenge', id: string, name: string, quiz: { __typename?: 'Quiz', id: string, name: string, description: string, image?: string | null, timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, questions: Array<
-          | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
-          | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
-          | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
-          | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string }> }
-          | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
+          | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null }
+          | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null }
+          | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null }
+          | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string }> }
+          | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
         > }, project: { __typename?: 'Project', id: string, name: string } }
     | { __typename: 'SimpleChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
    };
@@ -4185,6 +4212,11 @@ export const QuizQuestionFieldsFragmentDoc = gql`
   questionOrder
   timeoutSeconds
   points
+  bettingEnabled
+  bettingMinPercentage
+  bettingMaxPercentage
+  bettingMinAbsolute
+  bettingMaxAbsolute
   ... on PredefinedQuestion {
     allowMultipleSelection
     predefinedAnswers {

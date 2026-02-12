@@ -37,6 +37,11 @@ export interface QuizQuestionFormData {
     itemText: string
     correctOrder: number
   }[]
+  bettingEnabled?: boolean
+  bettingMinPercentage?: number
+  bettingMaxPercentage?: number
+  bettingMinAbsolute?: number
+  bettingMaxAbsolute?: number
 }
 
 const props = defineProps<{
@@ -109,6 +114,7 @@ function addQuestion() {
       { answerText: '', isCorrect: true, answerOrder: 1 },
       { answerText: '', isCorrect: false, answerOrder: 2 },
     ],
+    bettingEnabled: false,
   }
   isAddingQuestion.value = true
 }

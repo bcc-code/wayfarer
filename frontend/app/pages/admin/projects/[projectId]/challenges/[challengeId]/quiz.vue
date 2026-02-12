@@ -40,7 +40,12 @@ const route = useRoute('admin-projects-projectId-challenges-challengeId-quiz')
 const toast = useToast()
 
 const { isAuthReady } = useAuthReady()
-const { data, fetching, error, executeQuery: refetchQuiz } = useAdminChallengeQuizPageQuery({
+const {
+  data,
+  fetching,
+  error,
+  executeQuery: refetchQuiz,
+} = useAdminChallengeQuizPageQuery({
   variables: {
     challengeId: route.params.challengeId,
   },
@@ -123,6 +128,11 @@ const quizData = computed<QuizFormData | undefined>(() => {
         q.__typename === 'NumberQuestion'
           ? (q.stepValue ?? undefined)
           : undefined,
+      bettingEnabled: q.bettingEnabled ?? undefined,
+      bettingMinPercentage: q.bettingMinPercentage ?? undefined,
+      bettingMaxPercentage: q.bettingMaxPercentage ?? undefined,
+      bettingMinAbsolute: q.bettingMinAbsolute ?? undefined,
+      bettingMaxAbsolute: q.bettingMaxAbsolute ?? undefined,
     })),
   }
 })
@@ -190,6 +200,11 @@ async function saveQuiz(quizFormData: QuizFormData) {
             minValue: question.minValue,
             maxValue: question.maxValue,
             stepValue: question.stepValue,
+            bettingEnabled: question.bettingEnabled,
+            bettingMinPercentage: question.bettingMinPercentage,
+            bettingMaxPercentage: question.bettingMaxPercentage,
+            bettingMinAbsolute: question.bettingMinAbsolute,
+            bettingMaxAbsolute: question.bettingMaxAbsolute,
           },
         })
       } else {
@@ -215,6 +230,11 @@ async function saveQuiz(quizFormData: QuizFormData) {
             minValue: question.minValue,
             maxValue: question.maxValue,
             stepValue: question.stepValue,
+            bettingEnabled: question.bettingEnabled,
+            bettingMinPercentage: question.bettingMinPercentage,
+            bettingMaxPercentage: question.bettingMaxPercentage,
+            bettingMinAbsolute: question.bettingMinAbsolute,
+            bettingMaxAbsolute: question.bettingMaxAbsolute,
           },
         })
       }
@@ -278,6 +298,11 @@ async function saveQuiz(quizFormData: QuizFormData) {
           minValue: question.minValue,
           maxValue: question.maxValue,
           stepValue: question.stepValue,
+          bettingEnabled: question.bettingEnabled,
+          bettingMinPercentage: question.bettingMinPercentage,
+          bettingMaxPercentage: question.bettingMaxPercentage,
+          bettingMinAbsolute: question.bettingMinAbsolute,
+          bettingMaxAbsolute: question.bettingMaxAbsolute,
         },
       })
     }
