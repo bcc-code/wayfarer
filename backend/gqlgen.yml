@@ -381,10 +381,12 @@ models:
     fields:
       question:
         resolver: true
+      correctOrder:
+        resolver: true
     extraFields:
       QuestionID:
         type: string
-      CorrectOrder:
+      CorrectOrderValue:
         type: int
 
   QuizPredefinedAnswer:

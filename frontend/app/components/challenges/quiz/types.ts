@@ -77,6 +77,7 @@ export type QuizActionMode =
   | 'normal' // Standard: lock answer -> continue
   | 'session-betting' // Ordering with session: save -> change workflow
   | 'session-locked' // Session locked, no actions
+  | 'session-results' // Session finished, show results with correctness indicators
   | 'review' // Review mode: previous/next navigation
 
 export interface QuizActionState {

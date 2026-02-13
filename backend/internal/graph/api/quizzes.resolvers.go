@@ -1040,6 +1040,31 @@ func (r *mutationResolver) UpdateQuizAnswer(ctx context.Context, responseID stri
 		ID: responseID,
 	}
 
+	// Handle betAmount update if provided
+	if input.BetAmount != nil {
+		// Load quiz to get project ID for score lookup
+		quizThunk := r.Loaders.QuizByIDLoader.Load(ctx, submission.QuizID)
+		quiz, quizErr := quizThunk()
+		if quizErr != nil {
+			otel.RecordError(span, quizErr)
+			return nil, fmt.Errorf("failed to load quiz for bet validation: %w", quizErr)
+		}
+
+		betConfig := BetValidationConfig{
+			BettingEnabled:       question.BettingEnabled,
+			BettingMinPercentage: question.BettingMinPercentage,
+			BettingMaxPercentage: question.BettingMaxPercentage,
+			BettingMinAbsolute:   question.BettingMinAbsolute,
+			BettingMaxAbsolute:   question.BettingMaxAbsolute,
+		}
+
+		if err := ValidateBet(ctx, r.DB.Queries, userID, quiz.ProjectID, betConfig, input.BetAmount); err != nil {
+			return nil, err
+		}
+		betAmount := int32(*input.BetAmount)
+		params.Betamount = &betAmount
+	}
+
 	// Only handle ORDERING questions for now
 	if question.QuestionType == "ORDERING" && input.SubmittedOrder != nil {
 		// Store submitted order as JSON
@@ -1972,10 +1997,10 @@ func (r *orderingQuestionResolver) OrderingItems(ctx context.Context, obj *model
 	result := make([]model.QuizOrderingItem, len(answers))
 	for i, a := range answers {
 		result[i] = model.QuizOrderingItem{
-			ID:           a.ID,
-			QuestionID:   a.QuestionID,
-			ItemText:     a.AnswerText,
-			CorrectOrder: a.AnswerOrder,
+			ID:                a.ID,
+			QuestionID:        a.QuestionID,
+			ItemText:          a.AnswerText,
+			CorrectOrderValue: a.AnswerOrder,
 		}
 	}
 	return result, nil
@@ -2618,6 +2643,47 @@ func (r *quizOrderingItemResolver) Question(ctx context.Context, obj *model.Quiz
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
 	return convertGetQuizQuestionByIDRowToInterface(row), nil
+}
+
+// CorrectOrder is the resolver for the correctOrder field on QuizOrderingItem.
+// It hides the correct order until the session is FINISHED to prevent cheating.
+func (r *quizOrderingItemResolver) CorrectOrder(ctx context.Context, obj *model.QuizOrderingItem) (*int, error) {
+	// Get the current user
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		// No user context, hide the correct order
+		return nil, nil
+	}
+
+	// Get the question to find the quiz ID
+	question, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load question: %w", err)
+	}
+
+	// Get user's accessible sessions for this quiz
+	sessions, err := r.DB.Queries.GetUserAccessibleSessions(ctx, sqlc.GetUserAccessibleSessionsParams{
+		Userid: userID,
+		Quizid: question.QuizID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user sessions: %w", err)
+	}
+
+	// If no sessions, this is a legacy quiz without sessions - show the correct order
+	if len(sessions) == 0 {
+		return &obj.CorrectOrderValue, nil
+	}
+
+	// Only reveal correct order when session is FINISHED (not LOCKED)
+	// Sessions are ordered by created_at DESC, so the first one is the most recent
+	mostRecentSession := sessions[0]
+	if mostRecentSession.State == string(model.QuizSessionStateFinished) {
+		return &obj.CorrectOrderValue, nil
+	}
+
+	// Session is OPEN, DRAFT, or LOCKED - hide the correct order
+	return nil, nil
 }
 
 // Question is the resolver for the question field on QuizPredefinedAnswer.

@@ -27,7 +27,7 @@ const activeChallenges = computed(() =>
         challenge.quiz.endTime &&
         new Date(challenge.quiz.endTime).getTime() < Date.now()
       const quizCompleted = challenge.quiz.userSubmissions?.some(
-        (s) => s.completedAt,
+        (s) => s.completedAt && !s.autoSubmitted,
       )
 
       return !quizCompleted && !challengePastEndTime && !quizPastEndTime
@@ -47,7 +47,7 @@ const completedChallenges = computed(() =>
         challenge.quiz.endTime &&
         new Date(challenge.quiz.endTime).getTime() < Date.now()
       const quizCompleted = challenge.quiz.userSubmissions?.some(
-        (s) => s.completedAt,
+        (s) => s.completedAt && !s.autoSubmitted,
       )
 
       return quizCompleted || challengePastEndTime || quizPastEndTime

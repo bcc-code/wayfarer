@@ -113,19 +113,26 @@ function handleSave() {
     }
   }
 
+  // Helper to convert empty/NaN/0 to undefined for optional number fields
+  const toOptionalNumber = (value: number | undefined): number | undefined => {
+    if (value === undefined || value === null) return undefined
+    if (typeof value === 'number' && isNaN(value)) return undefined
+    return value
+  }
+
   // Clean up data based on question type - only include relevant fields
   const cleanedQuestion: QuizQuestionFormData = {
     id: localQuestion.id,
     questionType: localQuestion.questionType,
     questionText: localQuestion.questionText,
     questionOrder: localQuestion.questionOrder,
-    timeoutSeconds: localQuestion.timeoutSeconds,
+    timeoutSeconds: toOptionalNumber(localQuestion.timeoutSeconds),
     points: localQuestion.points,
     bettingEnabled: localQuestion.bettingEnabled,
-    bettingMinPercentage: localQuestion.bettingMinPercentage,
-    bettingMaxPercentage: localQuestion.bettingMaxPercentage,
-    bettingMinAbsolute: localQuestion.bettingMinAbsolute,
-    bettingMaxAbsolute: localQuestion.bettingMaxAbsolute,
+    bettingMinPercentage: toOptionalNumber(localQuestion.bettingMinPercentage),
+    bettingMaxPercentage: toOptionalNumber(localQuestion.bettingMaxPercentage),
+    bettingMinAbsolute: toOptionalNumber(localQuestion.bettingMinAbsolute),
+    bettingMaxAbsolute: toOptionalNumber(localQuestion.bettingMaxAbsolute),
   }
 
   if (localQuestion.questionType === QuizQuestionType.Predefined) {

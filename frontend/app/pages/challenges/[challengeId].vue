@@ -12,6 +12,7 @@ const {
     challengeId: route.params.challengeId,
   },
   pause: computed(() => !isAuthReady.value),
+  requestPolicy: 'network-only', // prevents some race conditions
 })
 
 // Listen for Firestore realtime updates
@@ -34,6 +35,7 @@ const isInitialLoading = computed(() => fetching.value && !data.value)
       <QuizChallenge
         v-if="data.challenge.__typename === 'QuizChallenge'"
         :challenge="data.challenge"
+        :user-score="data.myCurrentProject?.leaderboard.me?.score ?? 0"
       />
       <PluginChallenge
         v-if="data.challenge.__typename === 'PluginChallenge'"

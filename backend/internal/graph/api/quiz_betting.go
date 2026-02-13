@@ -51,15 +51,15 @@ func ValidateBet(
 	betAmount *int,
 ) error {
 	// If betting is enabled, a bet is required
-	if config.BettingEnabled && (betAmount == nil || *betAmount == 0) {
+	if config.BettingEnabled && betAmount == nil {
 		return &BetValidationError{
 			Field:   "betAmount",
 			Message: "bet is required when betting is enabled",
 		}
 	}
 
-	// No bet or zero bet is valid when betting is not enabled
-	if betAmount == nil || *betAmount == 0 {
+	// No bet is valid when betting is not enabled
+	if betAmount == nil {
 		return nil
 	}
 

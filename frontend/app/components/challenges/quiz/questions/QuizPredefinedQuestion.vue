@@ -22,6 +22,8 @@ const props = defineProps<{
   showCorrectAnswers?: boolean
   showPreviousButton?: boolean
   isLastQuestion?: boolean
+  // Betting
+  betAmount?: number
 }>()
 
 const emit = defineEmits<{
@@ -57,6 +59,7 @@ async function handleLockAnswer() {
     input: {
       questionId: props.question.id,
       selectedAnswerIds: [selectedAnswer.value],
+      betAmount: props.betAmount ?? undefined,
     },
   })
 
