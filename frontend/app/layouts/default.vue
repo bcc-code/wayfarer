@@ -237,7 +237,7 @@ const { $pwa } = useNuxtApp()
 </script>
 
 <template>
-  <div class="text-default relative mx-auto h-full w-full max-w-xl">
+  <div class="text-default relative mx-auto h-dvh w-full max-w-xl">
     <div class="h-full">
       <slot />
     </div>
