@@ -1027,24 +1027,24 @@ func (q *Queries) UpdateQuizSessionState(ctx context.Context, arg UpdateQuizSess
 	return &i, err
 }
 
-const UserHasAccessToOpenSession = `-- name: UserHasAccessToOpenSession :one
+const UserHasAccessToVisibleSession = `-- name: UserHasAccessToVisibleSession :one
 SELECT EXISTS (
     SELECT 1
     FROM quiz_sessions qs
     JOIN quiz_session_access qsa ON qsa.session_id = qs.id
     WHERE qs.quiz_id = $1::text
         AND qsa.user_id = $2::text
-        AND qs.state = 'OPEN'
+        AND qs.state IN ('OPEN', 'LOCKED', 'FINISHED')
 ) AS has_access
 `
 
-type UserHasAccessToOpenSessionParams struct {
+type UserHasAccessToVisibleSessionParams struct {
 	Quizid string `json:"quizid"`
 	Userid string `json:"userid"`
 }
 
-func (q *Queries) UserHasAccessToOpenSession(ctx context.Context, arg UserHasAccessToOpenSessionParams) (bool, error) {
-	row := q.db.QueryRow(ctx, UserHasAccessToOpenSession, arg.Quizid, arg.Userid)
+func (q *Queries) UserHasAccessToVisibleSession(ctx context.Context, arg UserHasAccessToVisibleSessionParams) (bool, error) {
+	row := q.db.QueryRow(ctx, UserHasAccessToVisibleSession, arg.Quizid, arg.Userid)
 	var has_access bool
 	err := row.Scan(&has_access)
 	return has_access, err
