@@ -73,7 +73,7 @@ const potentialWinnings = computed(() => {
 const isWin = computed(() => {
   if (props.pointsEarned === null || props.pointsEarned === undefined)
     return null
-  return props.pointsEarned > 0
+  return props.pointsEarned >= 0
 })
 
 const resultAmount = computed(() => {
@@ -84,21 +84,30 @@ const resultAmount = computed(() => {
 
 <template>
   <!-- Results mode: show win/loss -->
-  <div v-if="mode === 'results'" class="flex flex-col gap-default pb-default">
-    <div
-      class="text-center p-default rounded-modal"
-      :class="isWin ? 'bg-success/10' : 'bg-error/10'"
-    >
-      <p
-        class="text-heading tabular-nums"
-        :class="isWin ? 'text-success' : 'text-error'"
-      >
-        {{
-          isWin
-            ? t('quiz.betting.youWon', { amount: resultAmount })
-            : t('quiz.betting.youLost', { amount: resultAmount })
-        }}
-      </p>
+  <div
+    v-if="mode === 'results'"
+    class="flex flex-col gap-default pb-default text-on-accent"
+  >
+    <p class="text-center text-caption opacity-50">
+      {{ t('quiz.betting.results') }}
+    </p>
+    <div class="grid grid-cols-2 divide-x divide-on-accent/20">
+      <div class="text-center pr-default pl-medium">
+        <p class="text-caption">
+          {{ isWin ? t('quiz.betting.winnings') : t('quiz.betting.losses') }}
+        </p>
+        <p class="text-heading tabular-nums">
+          {{ resultAmount }}
+        </p>
+      </div>
+      <div class="text-center pl-default pr-medium">
+        <p class="text-caption">
+          {{ t('quiz.betting.yourPoints') }}
+        </p>
+        <p class="text-heading tabular-nums">
+          {{ availablePoints + resultAmount }}
+        </p>
+      </div>
     </div>
   </div>
 

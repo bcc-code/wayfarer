@@ -42,8 +42,10 @@
       "sessionLocked": "Svaret er låst",
       "potentialWinnings": "{amount} poeng i potensiell gevinst",
       "bettingClosed": "Tippingen er over. Du kan lukke quizen.",
-      "youWon": "Du vant {amount} poeng!",
-      "youLost": "Du tapte {amount} poeng"
+      "results": "Resultat",
+      "yourPoints": "Dine poeng",
+      "winnings": "Gevinst",
+      "losses": "Poeng tapt"
     },
     "result": {
       "receivedNoPoints": "Du samlet ingen poeng.",

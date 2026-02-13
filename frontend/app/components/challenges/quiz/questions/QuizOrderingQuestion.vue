@@ -337,20 +337,16 @@ defineExpose({ actionState, handlers })
             :class="{
               'ring ring-border-default ring-inset':
                 !canDrag && !isSessionFinished,
-              'bg-background-raised shadow-small': canDrag,
-              'ring ring-success ring-inset bg-success/5':
-                isSessionFinished && itemResults?.[index]?.isCorrect,
-              'ring ring-error ring-inset bg-error/5':
-                isSessionFinished && !itemResults?.[index]?.isCorrect,
+              'bg-background-raised shadow-small': canDrag || isSessionFinished,
             }"
           >
             <div
               class="rounded-full aspect-square size-6 text-center shrink-0 grid place-items-center text-label"
               :class="{
                 'bg-accent text-on-accent': !isSessionFinished,
-                'bg-success text-white':
+                'bg-accent-positive text-on-accent':
                   isSessionFinished && itemResults?.[index]?.isCorrect,
-                'bg-error text-white':
+                'bg-accent-negative text-on-accent':
                   isSessionFinished && !itemResults?.[index]?.isCorrect,
               }"
             >
@@ -359,24 +355,11 @@ defineExpose({ actionState, handlers })
             <span class="text-label text-text-default flex-1 text-left">
               {{ item.itemText }}
             </span>
-            <!-- Show drag handle when can drag -->
             <div
               v-if="canDrag"
               class="text-text-hint shrink-0 flex items-center cursor-default"
             >
               <UIcon name="lucide:grip-vertical" class="size-4" />
-            </div>
-            <!-- Show correct/incorrect icon when session is finished -->
-            <div
-              v-else-if="isSessionFinished"
-              class="shrink-0 flex items-center"
-            >
-              <UIcon
-                v-if="itemResults?.[index]?.isCorrect"
-                name="lucide:check"
-                class="size-5 text-success"
-              />
-              <UIcon v-else name="lucide:x" class="size-5 text-error" />
             </div>
           </div>
         </VueDraggable>

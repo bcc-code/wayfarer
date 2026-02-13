@@ -676,7 +676,14 @@ const progressResults = computed(() => {
         v-if="actionState && !quizCompleted"
         :class="[
           'w-full p-default flex flex-col gap-4',
-          { 'bg-background-raised': isBettingEnabled },
+          {
+            'bg-background-raised':
+              isBettingEnabled && sessionState !== QuizSessionState.Finished,
+            'bg-accent-positive':
+              isBettingEnabled && sessionState === QuizSessionState.Finished,
+            'bg-accent-negative':
+              isBettingEnabled && sessionState === QuizSessionState.Finished,
+          },
         ]"
       >
         <!-- Normal mode -->
@@ -757,6 +764,21 @@ const progressResults = computed(() => {
             :points-earned="currentResponse?.pointsEarned"
             :available-points="userScore ?? 0"
           />
+          <NuxtLink :to="{ name: 'challenges' }" class="flex">
+            <DesignButton
+              size="large"
+              variant="primary"
+              :class="[
+                'bg-black',
+                {
+                  'text-accent-positive!': isBettingEnabled,
+                  'text-accent-negative!': !isBettingEnabled,
+                },
+              ]"
+            >
+              {{ $t('quiz.done') }}
+            </DesignButton>
+          </NuxtLink>
         </template>
 
         <!-- Review mode -->
