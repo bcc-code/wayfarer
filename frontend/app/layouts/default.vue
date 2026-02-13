@@ -68,7 +68,11 @@ function applyTheme(colors: BrandingColorsFieldsFragment) {
 }
 
 // Initialize Firestore sync for realtime updates
-const { initialize: initFirestoreSync } = useFirestoreSync()
+const {
+  initialize: initFirestoreSync,
+  subscribeProject,
+  isAuthenticated: firestoreAuthenticated,
+} = useFirestoreSync()
 onMounted(() => {
   initFirestoreSync()
 
@@ -107,6 +111,7 @@ const links = computed<NavigationMenuItem[]>(() => [
 gql(`
   query CurrentProject {
     myCurrentProject {
+      id
       branding {
         ...BrandingFields
       }
@@ -135,6 +140,33 @@ watch(data, (newData) => {
   const colors = newData.myCurrentProject.branding.colors
   applyTheme(colors)
   cachedTheme.value = JSON.parse(JSON.stringify(colors))
+})
+
+// Subscribe to project-level quiz session notifications
+const projectSubscriptionCleanup = ref<(() => void) | null>(null)
+watch(
+  [() => data.value?.myCurrentProject.id, firestoreAuthenticated],
+  ([projectId, isAuth]) => {
+    // Cleanup previous subscription if any
+    if (projectSubscriptionCleanup.value) {
+      projectSubscriptionCleanup.value()
+      projectSubscriptionCleanup.value = null
+    }
+
+    if (projectId && isAuth) {
+      projectSubscriptionCleanup.value = subscribeProject(
+        projectId,
+        'quiz_sessions',
+      )
+    }
+  },
+  { immediate: true },
+)
+
+onUnmounted(() => {
+  if (projectSubscriptionCleanup.value) {
+    projectSubscriptionCleanup.value()
+  }
 })
 
 const route = useRoute()
