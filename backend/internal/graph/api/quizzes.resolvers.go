@@ -1997,10 +1997,10 @@ func (r *orderingQuestionResolver) OrderingItems(ctx context.Context, obj *model
 	result := make([]model.QuizOrderingItem, len(answers))
 	for i, a := range answers {
 		result[i] = model.QuizOrderingItem{
-			ID:           a.ID,
-			QuestionID:   a.QuestionID,
-			ItemText:     a.AnswerText,
-			CorrectOrder: a.AnswerOrder,
+			ID:                a.ID,
+			QuestionID:        a.QuestionID,
+			ItemText:          a.AnswerText,
+			CorrectOrderValue: a.AnswerOrder,
 		}
 	}
 	return result, nil
@@ -2643,6 +2643,47 @@ func (r *quizOrderingItemResolver) Question(ctx context.Context, obj *model.Quiz
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
 	return convertGetQuizQuestionByIDRowToInterface(row), nil
+}
+
+// CorrectOrder is the resolver for the correctOrder field on QuizOrderingItem.
+// It hides the correct order until the session is FINISHED to prevent cheating.
+func (r *quizOrderingItemResolver) CorrectOrder(ctx context.Context, obj *model.QuizOrderingItem) (*int, error) {
+	// Get the current user
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		// No user context, hide the correct order
+		return nil, nil
+	}
+
+	// Get the question to find the quiz ID
+	question, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load question: %w", err)
+	}
+
+	// Get user's accessible sessions for this quiz
+	sessions, err := r.DB.Queries.GetUserAccessibleSessions(ctx, sqlc.GetUserAccessibleSessionsParams{
+		Userid: userID,
+		Quizid: question.QuizID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user sessions: %w", err)
+	}
+
+	// If no sessions, this is a legacy quiz without sessions - show the correct order
+	if len(sessions) == 0 {
+		return &obj.CorrectOrderValue, nil
+	}
+
+	// Only reveal correct order when session is FINISHED (not LOCKED)
+	// Sessions are ordered by created_at DESC, so the first one is the most recent
+	mostRecentSession := sessions[0]
+	if mostRecentSession.State == string(model.QuizSessionStateFinished) {
+		return &obj.CorrectOrderValue, nil
+	}
+
+	// Session is OPEN, DRAFT, or LOCKED - hide the correct order
+	return nil, nil
 }
 
 // Question is the resolver for the question field on QuizPredefinedAnswer.

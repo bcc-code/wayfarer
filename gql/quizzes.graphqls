@@ -136,7 +136,8 @@ type QuizOrderingItem {
     id: ID!
     question: QuizQuestion! @goField(forceResolver: true)
     itemText: String!
-    # correctOrder intentionally NOT exposed to prevent cheating
+    # correctOrder is conditionally exposed - only returns value when session is FINISHED to prevent cheating
+    correctOrder: Int @goField(forceResolver: true)
 }
 
 type QuizPredefinedAnswer {

@@ -863,9 +863,10 @@ type ComplexityRoot struct {
 	}
 
 	QuizOrderingItem struct {
-		ID       func(childComplexity int) int
-		ItemText func(childComplexity int) int
-		Question func(childComplexity int) int
+		CorrectOrder func(childComplexity int) int
+		ID           func(childComplexity int) int
+		ItemText     func(childComplexity int) int
+		Question     func(childComplexity int) int
 	}
 
 	QuizPredefinedAnswer struct {
@@ -1577,6 +1578,8 @@ type QuizChallengeResolver interface {
 }
 type QuizOrderingItemResolver interface {
 	Question(ctx context.Context, obj *model.QuizOrderingItem) (model.QuizQuestion, error)
+
+	CorrectOrder(ctx context.Context, obj *model.QuizOrderingItem) (*int, error)
 }
 type QuizPredefinedAnswerResolver interface {
 	Question(ctx context.Context, obj *model.QuizPredefinedAnswer) (model.QuizQuestion, error)
@@ -6151,6 +6154,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.QuizEdge.Node(childComplexity), true
 
+	case "QuizOrderingItem.correctOrder":
+		if e.complexity.QuizOrderingItem.CorrectOrder == nil {
+			break
+		}
+
+		return e.complexity.QuizOrderingItem.CorrectOrder(childComplexity), true
 	case "QuizOrderingItem.id":
 		if e.complexity.QuizOrderingItem.ID == nil {
 			break
@@ -9649,7 +9658,8 @@ type QuizOrderingItem {
     id: ID!
     question: QuizQuestion! @goField(forceResolver: true)
     itemText: String!
-    # correctOrder intentionally NOT exposed to prevent cheating
+    # correctOrder is conditionally exposed - only returns value when session is FINISHED to prevent cheating
+    correctOrder: Int @goField(forceResolver: true)
 }
 
 type QuizPredefinedAnswer {
@@ -30693,6 +30703,8 @@ func (ec *executionContext) fieldContext_OrderingQuestion_orderingItems(_ contex
 				return ec.fieldContext_QuizOrderingItem_question(ctx, field)
 			case "itemText":
 				return ec.fieldContext_QuizOrderingItem_itemText(ctx, field)
+			case "correctOrder":
+				return ec.fieldContext_QuizOrderingItem_correctOrder(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type QuizOrderingItem", field.Name)
 		},
@@ -39324,6 +39336,35 @@ func (ec *executionContext) fieldContext_QuizOrderingItem_itemText(_ context.Con
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizOrderingItem_correctOrder(ctx context.Context, field graphql.CollectedField, obj *model.QuizOrderingItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizOrderingItem_correctOrder,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.QuizOrderingItem().CorrectOrder(ctx, obj)
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizOrderingItem_correctOrder(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizOrderingItem",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -63147,6 +63188,39 @@ func (ec *executionContext) _QuizOrderingItem(ctx context.Context, sel ast.Selec
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "correctOrder":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._QuizOrderingItem_correctOrder(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

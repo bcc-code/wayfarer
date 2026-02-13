@@ -7,6 +7,9 @@ const props = withDefaults(
     minAbsolute?: number | null
     maxAbsolute?: number | null
     disabled?: boolean
+    mode?: 'betting' | 'locked' | 'results'
+    pointsEarned?: number | null
+    betAmount?: number | null
   }>(),
   {
     minPercentage: null,
@@ -14,10 +17,13 @@ const props = withDefaults(
     minAbsolute: null,
     maxAbsolute: null,
     disabled: false,
+    mode: 'betting',
+    pointsEarned: null,
+    betAmount: null,
   },
 )
 
-const betAmount = defineModel<number>({ default: 0 })
+const betAmountModel = defineModel<number>({ default: 0 })
 
 const { t } = useI18n()
 
@@ -56,16 +62,48 @@ const maxBetMessage = computed(() => {
 })
 
 const remainingAvailablePoints = computed(() => {
-  return props.availablePoints - betAmount.value
+  return props.availablePoints - betAmountModel.value
 })
 
 const potentialWinnings = computed(() => {
-  return betAmount.value * 2
+  return betAmountModel.value * 2
+})
+
+// Results mode computations
+const isWin = computed(() => {
+  if (props.pointsEarned === null || props.pointsEarned === undefined)
+    return null
+  return props.pointsEarned > 0
+})
+
+const resultAmount = computed(() => {
+  if (props.pointsEarned === null || props.pointsEarned === undefined) return 0
+  return Math.abs(props.pointsEarned)
 })
 </script>
 
 <template>
-  <div class="flex flex-col gap-default pb-default">
+  <!-- Results mode: show win/loss -->
+  <div v-if="mode === 'results'" class="flex flex-col gap-default pb-default">
+    <div
+      class="text-center p-default rounded-modal"
+      :class="isWin ? 'bg-success/10' : 'bg-error/10'"
+    >
+      <p
+        class="text-heading tabular-nums"
+        :class="isWin ? 'text-success' : 'text-error'"
+      >
+        {{
+          isWin
+            ? t('quiz.betting.youWon', { amount: resultAmount })
+            : t('quiz.betting.youLost', { amount: resultAmount })
+        }}
+      </p>
+    </div>
+  </div>
+
+  <!-- Betting mode: show slider and stats -->
+  <div v-else class="flex flex-col gap-default pb-default">
     <div class="grid grid-cols-2 divide-x divide-border-default">
       <div class="text-center pr-default pl-medium">
         <p class="text-text-hint text-caption">
@@ -80,7 +118,7 @@ const potentialWinnings = computed(() => {
           {{ t('quiz.betting.yourBet') }}
         </p>
         <p class="text-heading tabular-nums text-text-default">
-          {{ betAmount }}
+          {{ betAmountModel }}
         </p>
       </div>
     </div>
@@ -93,7 +131,7 @@ const potentialWinnings = computed(() => {
     </div>
     <div v-else class="space-y-2">
       <DesignSlider
-        v-model="betAmount"
+        v-model="betAmountModel"
         :min="effectiveMin"
         :max="effectiveMax"
         :step="stepSize"

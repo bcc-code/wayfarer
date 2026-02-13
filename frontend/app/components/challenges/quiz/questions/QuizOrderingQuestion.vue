@@ -7,7 +7,7 @@ import type {
   QuizActionState,
   QuizActionHandlers,
 } from '../types'
-import type { QuizSessionState } from '~/api/generated'
+import { QuizSessionState } from '~/api/generated'
 
 const props = defineProps<{
   question: OrderingQuestionData
@@ -43,6 +43,7 @@ const { executeMutation: updateAnswer } = useUpdateQuizAnswerMutation()
 interface OrderingItem {
   id: string
   itemText: string
+  correctOrder?: number | null
 }
 
 // Shuffle items on mount (Fisher-Yates shuffle)
@@ -65,18 +66,34 @@ const savedResponseId = ref<string | null>(props.existingResponse?.id ?? null)
 const isBetSaved = ref(!!props.existingResponse)
 const isEditing = ref(false)
 
-// Determine if session is locked (LOCKED or FINISHED)
+// Determine if session is locked (only LOCKED, not FINISHED - FINISHED shows results)
 const isSessionLocked = computed(() => {
-  return props.sessionState === 'LOCKED' || props.sessionState === 'FINISHED'
+  return props.sessionState === QuizSessionState.Locked
+})
+
+// Determine if session is finished (shows results)
+const isSessionFinished = computed(() => {
+  return props.sessionState === QuizSessionState.Finished
 })
 
 // Determine if items can be dragged
 const canDrag = computed(() => {
-  // Cannot drag if readonly, session locked, or bet is saved and not editing
+  // Cannot drag if readonly, session locked/finished, or bet is saved and not editing
   if (props.readonly) return false
-  if (isSessionLocked.value) return false
+  if (isSessionLocked.value || isSessionFinished.value) return false
   if (isBetSaved.value && !isEditing.value) return false
   return true
+})
+
+// Compute item results for finished state
+const itemResults = computed(() => {
+  if (!isSessionFinished.value) return null
+  return items.value.map((item, index) => ({
+    id: item.id,
+    userPosition: index + 1,
+    correctPosition: item.correctOrder,
+    isCorrect: item.correctOrder != null && index + 1 === item.correctOrder,
+  }))
 })
 
 onMounted(() => {
@@ -266,6 +283,7 @@ const isSessionBettingMode = computed(() => {
 // Compute action mode for parent component
 const actionMode = computed(() => {
   if (props.readonly) return 'review' as const
+  if (isSessionFinished.value) return 'session-results' as const
   if (isSessionLocked.value) return 'session-locked' as const
   if (isSessionBettingMode.value) return 'session-betting' as const
   return 'normal' as const
@@ -317,23 +335,48 @@ defineExpose({ actionState, handlers })
             :key="item.id"
             class="flex items-center gap-medium p-medium rounded-list-inset"
             :class="{
-              'ring ring-border-default ring-inset': !canDrag,
+              'ring ring-border-default ring-inset':
+                !canDrag && !isSessionFinished,
               'bg-background-raised shadow-small': canDrag,
+              'ring ring-success ring-inset bg-success/5':
+                isSessionFinished && itemResults?.[index]?.isCorrect,
+              'ring ring-error ring-inset bg-error/5':
+                isSessionFinished && !itemResults?.[index]?.isCorrect,
             }"
           >
             <div
-              class="bg-accent rounded-full aspect-square size-6 text-center shrink-0 grid place-items-center text-label text-on-accent"
+              class="rounded-full aspect-square size-6 text-center shrink-0 grid place-items-center text-label"
+              :class="{
+                'bg-accent text-on-accent': !isSessionFinished,
+                'bg-success text-white':
+                  isSessionFinished && itemResults?.[index]?.isCorrect,
+                'bg-error text-white':
+                  isSessionFinished && !itemResults?.[index]?.isCorrect,
+              }"
             >
               {{ index + 1 }}
             </div>
             <span class="text-label text-text-default flex-1 text-left">
               {{ item.itemText }}
             </span>
+            <!-- Show drag handle when can drag -->
             <div
               v-if="canDrag"
               class="text-text-hint shrink-0 flex items-center cursor-default"
             >
               <UIcon name="lucide:grip-vertical" class="size-4" />
+            </div>
+            <!-- Show correct/incorrect icon when session is finished -->
+            <div
+              v-else-if="isSessionFinished"
+              class="shrink-0 flex items-center"
+            >
+              <UIcon
+                v-if="itemResults?.[index]?.isCorrect"
+                name="lucide:check"
+                class="size-5 text-success"
+              />
+              <UIcon v-else name="lucide:x" class="size-5 text-error" />
             </div>
           </div>
         </VueDraggable>

@@ -1324,11 +1324,12 @@ type QuizFilter struct {
 }
 
 type QuizOrderingItem struct {
-	ID           string       `json:"id"`
-	Question     QuizQuestion `json:"question"`
-	ItemText     string       `json:"itemText"`
-	CorrectOrder int          `json:"-"`
-	QuestionID   string       `json:"-"`
+	ID                string       `json:"id"`
+	Question          QuizQuestion `json:"question"`
+	ItemText          string       `json:"itemText"`
+	CorrectOrder      *int         `json:"correctOrder,omitempty"`
+	CorrectOrderValue int          `json:"-"`
+	QuestionID        string       `json:"-"`
 }
 
 type QuizPredefinedAnswer struct {

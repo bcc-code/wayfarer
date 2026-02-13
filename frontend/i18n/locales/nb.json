@@ -34,12 +34,16 @@
     "finishReview": "Avslutt gjennomgang",
     "yourNumber": "Ditt tall",
     "writeYourAnswer": "Skriv ditt svar...",
+    "close": "Lukk quiz",
     "betting": {
       "remainingPoints": "Gjenstående poeng",
       "yourBet": "Din innsats",
       "maxBetMessage": "Du kan maks. satse {percentage}% av dine poeng",
       "sessionLocked": "Svaret er låst",
-      "potentialWinnings": "{amount} poeng i potensiell gevinst"
+      "potentialWinnings": "{amount} poeng i potensiell gevinst",
+      "bettingClosed": "Tippingen er over. Du kan lukke quizen.",
+      "youWon": "Du vant {amount} poeng!",
+      "youLost": "Du tapte {amount} poeng"
     },
     "result": {
       "receivedNoPoints": "Du samlet ingen poeng.",
