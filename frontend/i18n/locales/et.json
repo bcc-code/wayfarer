@@ -34,6 +34,19 @@
     "finishReview": "Lõpetada läbivaatamine",
     "yourNumber": "Sinu number",
     "writeYourAnswer": "Kirjuta oma vastus...",
+    "close": "Sulge küsimustik",
+    "betting": {
+      "remainingPoints": "Järelejäänud punktid",
+      "yourBet": "Sinu panus",
+      "maxBetMessage": "Sa võid panustada maksimaalselt {percentage}% oma punktidest.",
+      "sessionLocked": "Vastus on lukustatud",
+      "potentialWinnings": "{amount} potentsiaalsete võitude punktid",
+      "bettingClosed": "Ennustamine on lõppenud. Võid küsimustiku sulgeda.",
+      "results": "Tulemus",
+      "yourPoints": "Sinu punktid",
+      "winnings": "Võit:",
+      "losses": "Kaotatud punktid"
+    },
     "result": {
       "receivedNoPoints": "Sa ei saanud ühtegi punkti.",
       "receivedPoints": "Sa kogusid {points} punkti.",
