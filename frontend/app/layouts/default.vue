@@ -120,8 +120,13 @@ gql(`
 `)
 
 const { isAuthReady } = useAuthReady()
-const { data } = useCurrentProjectQuery({
+const { data, executeQuery: refresh } = useCurrentProjectQuery({
   pause: computed(() => !isAuthReady.value),
+})
+
+// Listen for Firestore realtime updates
+useFirestoreRefresh(['CurrentProjectDocument'], () => {
+  refresh({ requestPolicy: 'network-only' })
 })
 
 watch(data, (newData) => {
