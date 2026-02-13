@@ -118,10 +118,10 @@ function descriptionFor(achievement: ProjectCardAchievement) {
             <p class="text-label" v-html="descriptionFor(achievement)" />
           </div>
           <div
-            v-if="achievement.achievedAt"
+            v-if="achievement.achievedAt && achievement.points"
             class="rounded-full bg-background-indent py-2 px-3 text-label text-accent-contrast"
           >
-            +{{ formatNumber(achievement.points ?? 0) }} {{ $t('points') }}
+            +{{ formatNumber(achievement.points) }} {{ $t('points') }}
           </div>
           <div
             v-else-if="achievement.points"

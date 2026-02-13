@@ -39,7 +39,9 @@
       "receivedPoints": "Ai acumulat {points} punct(e).",
       "betterLuckNextTime": "Mai mult succes data viitoare!",
       "wellDone": "Bravo!",
-      "perfect": "Perfect!"
+      "perfect": "Perfect!",
+      "thanksForAnswers": "Mulțumim pentru răspunsurile tale!",
+      "resultsRevealedLater": "Rezultatele vor fi dezvăluite mai târziu."
     }
   },
   "challenges": {
@@ -171,13 +173,18 @@
       "gameNights": "Game Nights",
       "comingSoon": "Apare în curând",
       "kickOff": "Kick-off",
-      "kickOffDescription": "Această pagină este destinată utilizării numai în timpul kick-off-ului. Dacă nu participați la kick-off în acest moment, vă rugăm să părăsiți această pagină.",
-      "kickOffButton": "Start unit-onboarding",
-      "kickOffOnboardingDescription": "Când începeți unit-onboarding, tuturor liderilor de unitate din biserica voastră locală li se va da sarcina de a schimba numele unității lor.",
-      "kickOffConfirmation": "Confirm că în acest moment participăm la kick-off și că suntem pregătiți să începem unit-onboarding.",
+      "statistics": "Statistici",
+      "kickOffButton": "Începe unit-onboarding acum",
+      "kickOffOnboardingDescription": "Această acțiune inițiază unit-onboarding pentru întreaga adunare locală.",
+      "kickOffOnboardingDescriptionWarning": "⚠ Nu începeți dacă nu sunteți pregătiți.",
+      "kickOffOnboardingExplanationTitle": "Ce se întâmplă când începi?",
+      "kickOffOnboardingExplanation1": "Toți liderii unității din adunarea locală primesc o provocare în Interact (aplicație web).",
+      "kickOffOnboardingExplanation2": "Ei pot schimba numele unității - și veți primi 300 de puncte când a fost făcut acest lucru.",
+      "kickOffConfirmation": "Confirm că kick-off se desfășoară acum și că suntem gata să începem.",
       "kickOffOnboardingCountdown": "Începe în {seconds} secunde | Începe în {seconds} secunde",
       "kickOffSuccessTitle": "Unit-onboarding este în curs de desfășurare!",
-      "kickOffSuccessDescription": "Toți liderii de unități au primit acum o sarcină în aplicație și pot schimba numele unității lor."
+      "kickOffSuccessDescription": "Toți liderii de unități au primit acum o sarcină în aplicație și pot schimba numele unității lor.",
+      "noAccess": "Nu ai acces la această pagină deoarece nu ești administrator. Roagă alt administrator să îți dea acces."
     },
     "admins": {
       "searchPlaceholder": "Caută administratori...",
@@ -263,6 +270,21 @@
       "excludeFromLeaderboard": "Exclude din clasament",
       "excludeFromLeaderboardTooltip": "Când este activată, această unitate nu va apărea în clasament.",
       "excludedFromLeaderboard": "Exclusă din clasament"
+    },
+    "statistics": {
+      "totalUsersInTeams": "Persoane în unități",
+      "averageScoresByAgeGroup": "Scorul mediu pe grupe de vârstă",
+      "averageScoresByAgeGroupDescription": "Aici se află o prezentare generală a scorului mediu pe grupe de vârstă. Sunt luate în calcul numai persoanele care se află într-o unitate.",
+      "ageGroup": "Grupa de vârstă",
+      "users": "Utilizatori",
+      "averageScore": "Scorul mediu",
+      "yearsOld": "ani",
+      "noData": "Nu există date disponibile",
+      "pointsDistribution": "Distribuirea punctelor",
+      "pointsDistributionDescription": "Aici aveți o prezentare generală a punctelor tuturor persoanelor din adunarea ta locală care sunt membri ai unei unități.",
+      "points": "Puncte",
+      "peopleInAUnit": "Persoane dintr-o unitate",
+      "lastUpdated": "Ultima actualizare"
     }
   }
 }

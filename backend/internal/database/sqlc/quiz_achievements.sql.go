@@ -138,3 +138,47 @@ func (q *Queries) GetQuizAchievementsByQuizIDs(ctx context.Context, quizIds []st
 	}
 	return items, nil
 }
+
+const UpsertQuizAchievement = `-- name: UpsertQuizAchievement :one
+INSERT INTO quiz_achievements (
+    achievement_id,
+    quiz_id,
+    min_score_percentage,
+    require_completion
+)
+VALUES (
+    $1::text,
+    $2::text,
+    $3::int,
+    $4::bool
+)
+ON CONFLICT (achievement_id) DO UPDATE SET
+    quiz_id = EXCLUDED.quiz_id,
+    min_score_percentage = EXCLUDED.min_score_percentage,
+    require_completion = EXCLUDED.require_completion
+RETURNING achievement_id, quiz_id, min_score_percentage, require_completion
+`
+
+type UpsertQuizAchievementParams struct {
+	Achievementid      string `json:"achievementid"`
+	Quizid             string `json:"quizid"`
+	Minscorepercentage *int32 `json:"minscorepercentage"`
+	Requirecompletion  bool   `json:"requirecompletion"`
+}
+
+func (q *Queries) UpsertQuizAchievement(ctx context.Context, arg UpsertQuizAchievementParams) (*QuizAchievement, error) {
+	row := q.db.QueryRow(ctx, UpsertQuizAchievement,
+		arg.Achievementid,
+		arg.Quizid,
+		arg.Minscorepercentage,
+		arg.Requirecompletion,
+	)
+	var i QuizAchievement
+	err := row.Scan(
+		&i.AchievementID,
+		&i.QuizID,
+		&i.MinScorePercentage,
+		&i.RequireCompletion,
+	)
+	return &i, err
+}

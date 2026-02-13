@@ -11,6 +11,8 @@ LEFT JOIN (
     FROM team_members
     GROUP BY team_id
 ) tm ON t.id = tm.team_id
+LEFT JOIN user_roles ur ON ur.team_id = t.id AND ur.role = 'TEAM_LEAD'
+LEFT JOIN users lead_user ON ur.user_id = lead_user.id
 WHERE
     (@ids::text[] IS NULL OR t.id = ANY(@ids::text[]))
     AND (@projectid::text = '' OR t.project_id = @projectid::text)
@@ -18,6 +20,7 @@ WHERE
     AND (@nosuperteam::bool = false OR (@nosuperteam::bool = true AND t.super_team_id IS NULL))
     AND (@minmembers::int <= 0 OR COALESCE(tm.member_count, 0) >= @minmembers::int)
     AND (@maxmembers::int <= 0 OR COALESCE(tm.member_count, 0) <= @maxmembers::int)
+    AND (@churchid::text = '' OR lead_user.church_id = @churchid::text)
     AND (@aftercursor::text = '' OR t.id > @aftercursor::text)
     AND (@beforecursor::text = '' OR t.id < @beforecursor::text)
 ORDER BY
@@ -33,13 +36,16 @@ LEFT JOIN (
     FROM team_members
     GROUP BY team_id
 ) tm ON t.id = tm.team_id
+LEFT JOIN user_roles ur ON ur.team_id = t.id AND ur.role = 'TEAM_LEAD'
+LEFT JOIN users lead_user ON ur.user_id = lead_user.id
 WHERE
     (@ids::text[] IS NULL OR t.id = ANY(@ids::text[]))
     AND (@projectid::text = '' OR t.project_id = @projectid::text)
     AND (@superteamid::text = '' OR t.super_team_id = @superteamid::text)
     AND (@nosuperteam::bool = false OR (@nosuperteam::bool = true AND t.super_team_id IS NULL))
     AND (@minmembers::int <= 0 OR COALESCE(tm.member_count, 0) >= @minmembers::int)
-    AND (@maxmembers::int <= 0 OR COALESCE(tm.member_count, 0) <= @maxmembers::int);
+    AND (@maxmembers::int <= 0 OR COALESCE(tm.member_count, 0) <= @maxmembers::int)
+    AND (@churchid::text = '' OR lead_user.church_id = @churchid::text);
 
 -- name: GetTeamsByUserIDs :many
 SELECT t.id, t.project_id, t.name, t.description, t.join_code, t.super_team_id, t.leaderboard_excluded, t.created_at, t.updated_at, tm.user_id

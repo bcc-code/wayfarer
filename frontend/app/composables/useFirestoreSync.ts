@@ -20,8 +20,13 @@ const ADMIN_NOTIFICATION_QUERY_MAP = {
   feedback: ['AdminFeedbackPageDocument'],
 } as const
 
+const PROJECT_NOTIFICATION_QUERY_MAP = {
+  quiz_sessions: ['ChallengesPageDocument', 'ChallengePageDocument'],
+} as const
+
 type NotificationCategory = keyof typeof NOTIFICATION_QUERY_MAP
 type AdminNotificationCategory = keyof typeof ADMIN_NOTIFICATION_QUERY_MAP
+type ProjectNotificationCategory = keyof typeof PROJECT_NOTIFICATION_QUERY_MAP
 
 // Shared state - singleton pattern for app-wide listeners
 const isInitialized = ref(false)
@@ -162,6 +167,44 @@ export function useFirestoreSync() {
     )
   }
 
+  function subscribeToProjectCategory(
+    projectId: string,
+    category: ProjectNotificationCategory,
+  ): Unsubscribe {
+    const firestore = $firestore as Firestore | null
+    if (!firestore) return () => {}
+    const path = `projects/${projectId}/notifications/${category}`
+    const docRef = doc(firestore, path)
+    let isInitialSnapshot = true
+
+    return onSnapshot(
+      docRef,
+      (snapshot: DocumentSnapshot) => {
+        if (isInitialSnapshot) {
+          isInitialSnapshot = false
+          return
+        }
+
+        if (!snapshot.exists()) return
+
+        const queries = PROJECT_NOTIFICATION_QUERY_MAP[category]
+        for (const queryName of queries) {
+          window.dispatchEvent(
+            new CustomEvent('firestore-update', {
+              detail: { query: queryName },
+            }),
+          )
+        }
+      },
+      (err: Error) => {
+        console.error(
+          `Firestore project listener error for ${category}:`,
+          err,
+        )
+      },
+    )
+  }
+
   function subscribeAdmin(category: AdminNotificationCategory): () => void {
     if (!isAuthenticated.value) {
       console.warn('Cannot subscribe to admin notifications: not authenticated')
@@ -174,6 +217,34 @@ export function useFirestoreSync() {
     }
 
     const unsubscribe = subscribeToAdminCategory(category)
+    listeners.set(key, unsubscribe)
+
+    return () => {
+      const unsub = listeners.get(key)
+      if (unsub) {
+        unsub()
+        listeners.delete(key)
+      }
+    }
+  }
+
+  function subscribeProject(
+    projectId: string,
+    category: ProjectNotificationCategory,
+  ): () => void {
+    if (!isAuthenticated.value) {
+      console.warn(
+        'Cannot subscribe to project notifications: not authenticated',
+      )
+      return () => {}
+    }
+
+    const key = `project/${projectId}/${category}`
+    if (listeners.has(key)) {
+      return () => {}
+    }
+
+    const unsubscribe = subscribeToProjectCategory(projectId, category)
     listeners.set(key, unsubscribe)
 
     return () => {
@@ -259,5 +330,6 @@ export function useFirestoreSync() {
     initialize,
     cleanup,
     subscribeAdmin,
+    subscribeProject,
   }
 }

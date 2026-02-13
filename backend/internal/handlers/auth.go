@@ -33,6 +33,7 @@ type AuthHandler struct {
 	RoleService               *services.RoleService
 	ContentAchievementService *services.ContentAchievementService
 	ChurchResolver            *services.ChurchResolver
+	UserSyncService           *services.UserSyncService
 }
 
 // BrunstadTVClaims represents the JWT claims from Brunstad TV
@@ -708,6 +709,22 @@ func (h *AuthHandler) ProcessPendingConsentEvents(ctx context.Context, userID, p
 			"consent_key", event.ConsentKey,
 			"action", event.Action,
 		)
+
+		// Trigger SSF backfill synchronously when SSF consent is granted
+		if event.ConsentKey == SSFConsentKey && event.Action == "ACCEPTED" && h.UserSyncService != nil {
+			processed, err := h.UserSyncService.SyncContentEventsFromSSF(ctx, userID)
+			if err != nil {
+				slog.Error("auth: SSF backfill failed for new user",
+					"user_id", userID,
+					"error", err,
+				)
+			} else {
+				slog.Info("auth: SSF backfill completed for new user",
+					"user_id", userID,
+					"events_processed", processed,
+				)
+			}
+		}
 	}
 
 	// Delete all processed pending events

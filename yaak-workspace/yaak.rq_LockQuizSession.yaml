@@ -1,0 +1,47 @@
+type: http_request
+model: http_request
+id: rq_LockQuizSession
+createdAt: 2026-02-11T12:00:00
+updatedAt: 2026-02-11T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation LockQuizSession($id: ID!) {
+      lockQuizSession(id: $id) {
+        id
+        name
+        state
+        openAt
+        lockAt
+        finishAt
+        createdAt
+        accessCount
+        quiz {
+          id
+          name
+        }
+        createdBy {
+          id
+          name
+        }
+      }
+    }
+  variables: |
+    {
+      "id": "QN01KH3GQEN42Q4RHVR43S4EW5VH"
+    }
+bodyType: graphql
+description: Lock a quiz session (transitions state to LOCKED, prevents new submissions)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_LockQuizSession
+method: POST
+name: Lock Quiz Session
+sortPriority: 4405.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

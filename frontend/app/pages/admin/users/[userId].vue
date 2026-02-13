@@ -69,7 +69,7 @@ gql(`
 				}
 			}
 		}
-		adminScoreJournal(filter: { userId: $id }, first: 20) {
+		adminScoreJournal(filter: { userId: $id }, first: 100) {
 			totalCount
 			edges {
 				node {
@@ -89,7 +89,7 @@ gql(`
 				}
 			}
 		}
-		feedback(filter: { userId: $id }, first: 10) {
+		feedback(filter: { userId: $id }, first: 100) {
 			totalCount
 			edges {
 				node {
@@ -186,8 +186,7 @@ const { executeMutation: revokeRole } = useRevokeRoleMutation()
 const { executeMutation: adminSetUserConsent } =
   useAdminSetUserConsentMutation()
 const { executeMutation: syncUserMutation } = useSyncUserMutation()
-const { executeMutation: lockUserChurchMutation } =
-  useLockUserChurchMutation()
+const { executeMutation: lockUserChurchMutation } = useLockUserChurchMutation()
 const { executeMutation: unlockUserChurchMutation } =
   useUnlockUserChurchMutation()
 const toast = useToast()
@@ -359,7 +358,8 @@ async function handleSyncUser() {
       details.push(`${syncResult.contentEventsProcessed} innholdseventer`)
     if (syncResult.genderUpdated) details.push('kjønn oppdatert')
     if (syncResult.churchUpdated) details.push('menighet oppdatert')
-    if (syncResult.churchLockSkipped) details.push('menighet hoppet over (last)')
+    if (syncResult.churchLockSkipped)
+      details.push('menighet hoppet over (last)')
     if (syncResult.personUuidUpdated) details.push('person-UUID oppdatert')
   }
 
@@ -773,70 +773,6 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
           </div>
         </UCard>
 
-        <!-- Score Journal Card -->
-        <UCard>
-          <template #header>
-            <div class="flex items-center justify-between">
-              <h2 class="text-xl font-semibold">
-                Poenglogg
-                <template v-if="scoreTotalCount > 0">
-                  <UBadge color="neutral" variant="soft">
-                    {{ scoreTotal }} poeng
-                  </UBadge>
-                  <span class="text-dimmed text-sm font-normal">
-                    ({{ scoreTotalCount }} oppføringer)
-                  </span>
-                </template>
-              </h2>
-              <UButton variant="ghost" size="sm" :to="{ name: 'admin-scores' }">
-                Vis alle
-              </UButton>
-            </div>
-          </template>
-
-          <div v-if="scoreEntries.length > 0" class="space-y-2">
-            <div
-              v-for="entry in scoreEntries"
-              :key="entry.id"
-              class="border-default flex items-center justify-between rounded-md border p-3"
-            >
-              <div class="flex items-center gap-3">
-                <UBadge
-                  :color="entry.points >= 0 ? 'success' : 'error'"
-                  variant="soft"
-                >
-                  {{ entry.points >= 0 ? '+' : ''
-                  }}{{ formatNumber(entry.points) }}
-                </UBadge>
-                <div>
-                  <span class="font-medium">{{ entry.project.name }}</span>
-                  <UBadge variant="subtle" size="xs" class="ml-2">
-                    {{ formatSourceType(entry.sourceType) }}
-                  </UBadge>
-                </div>
-              </div>
-              <div class="text-right">
-                <div
-                  v-if="entry.reason"
-                  class="text-dimmed max-w-xs truncate text-sm"
-                >
-                  {{ entry.reason }}
-                </div>
-                <div class="text-dimmed text-xs">
-                  {{ formatDateTime(entry.createdAt) }}
-                </div>
-              </div>
-            </div>
-            <div
-              v-if="scoreTotalCount > 20"
-              class="text-dimmed pt-2 text-center text-sm"
-            >
-              Viser 20 av {{ scoreTotalCount }} oppføringer
-            </div>
-          </div>
-          <div v-else class="text-dimmed">Ingen poengoppføringer</div>
-        </UCard>
-
         <!-- Feedback Card -->
         <UCard>
           <template #header>
@@ -896,6 +832,70 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
             </div>
           </div>
           <div v-else class="text-dimmed">Ingen tilbakemeldinger</div>
+        </UCard>
+
+        <!-- Score Journal Card -->
+        <UCard>
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h2 class="text-xl font-semibold">
+                Poenglogg
+                <template v-if="scoreTotalCount > 0">
+                  <UBadge color="neutral" variant="soft">
+                    {{ scoreTotal }} poeng
+                  </UBadge>
+                  <span class="text-dimmed text-sm font-normal">
+                    ({{ scoreTotalCount }} oppføringer)
+                  </span>
+                </template>
+              </h2>
+              <UButton variant="ghost" size="sm" :to="{ name: 'admin-scores' }">
+                Vis alle
+              </UButton>
+            </div>
+          </template>
+
+          <div v-if="scoreEntries.length > 0" class="space-y-2">
+            <div
+              v-for="entry in scoreEntries"
+              :key="entry.id"
+              class="border-default flex items-center justify-between rounded-md border p-3"
+            >
+              <div class="flex items-center gap-3">
+                <UBadge
+                  :color="entry.points >= 0 ? 'success' : 'error'"
+                  variant="soft"
+                >
+                  {{ entry.points >= 0 ? '+' : ''
+                  }}{{ formatNumber(entry.points) }}
+                </UBadge>
+                <div>
+                  <span class="font-medium">{{ entry.project.name }}</span>
+                  <UBadge variant="subtle" size="xs" class="ml-2">
+                    {{ formatSourceType(entry.sourceType) }}
+                  </UBadge>
+                </div>
+              </div>
+              <div class="text-right">
+                <div
+                  v-if="entry.reason"
+                  class="text-dimmed max-w-xs truncate text-sm"
+                >
+                  {{ entry.reason }}
+                </div>
+                <div class="text-dimmed text-xs">
+                  {{ formatDateTime(entry.createdAt) }}
+                </div>
+              </div>
+            </div>
+            <div
+              v-if="scoreTotalCount > 100"
+              class="text-dimmed pt-2 text-center text-sm"
+            >
+              Viser 100 av {{ scoreTotalCount }} oppføringer
+            </div>
+          </div>
+          <div v-else class="text-dimmed">Ingen poengoppføringer</div>
         </UCard>
       </div>
     </UContainer>

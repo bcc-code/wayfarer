@@ -437,7 +437,7 @@ func (r *projectResolver) Challenges(ctx context.Context, obj *model.Project) ([
 			quizThunk := r.Loaders.QuizByChallengeIDLoader.Load(ctx, ch.GetID())
 			quiz, err := quizThunk()
 			if err == nil && quiz != nil {
-				hasAccess, err := r.DB.Queries.UserHasAccessToOpenSession(ctx, sqlc.UserHasAccessToOpenSessionParams{
+				hasAccess, err := r.DB.Queries.UserHasAccessToVisibleSession(ctx, sqlc.UserHasAccessToVisibleSessionParams{
 					Quizid: quiz.ID,
 					Userid: userID,
 				})

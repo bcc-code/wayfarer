@@ -1,4 +1,4 @@
-.PHONY: help generate migrate seed test build clean test-e2e test-e2e-short test-e2e-coverage test-all
+.PHONY: help generate migrate seed test build clean test-e2e test-e2e-short test-e2e-coverage test-all update-db-url
 
 help: ## Display this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -93,15 +93,15 @@ dev: ## Run development server with Neon branch
 		echo "Starting development server..." && \
 		go run ./cmd/server
 
-debug: ## Run debug TUI tool
-	@echo "Starting debug tool..."
-	@go run ./cmd/debug
-
 update-db-url: ## Update DATABASE_URL in .env with current Neon branch
 	@echo "Getting connection string for current branch..."
 	@CONNECTION=$$(./scripts/neon-branch.sh) && \
 		sed -i "s|^DATABASE_URL=.*|DATABASE_URL=$$CONNECTION|" .env && \
 		echo "Updated DATABASE_URL in .env"
+
+debug: ## Run debug TUI tool
+	@echo "Starting debug tool..."
+	@go run ./cmd/debug
 
 ## Token Generation Commands
 

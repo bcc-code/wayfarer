@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
@@ -18,7 +19,9 @@ import (
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/otel"
 	"github.com/bcc-media/wayfarer/internal/services/push"
+	"github.com/bcc-media/wayfarer/internal/services/webhooks"
 	"github.com/bcc-media/wayfarer/internal/ulid"
+	pgx "github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"go.opentelemetry.io/otel/attribute"
@@ -49,7 +52,17 @@ func (r *freeTextResponseResolver) Question(ctx context.Context, obj *model.Free
 	if err != nil {
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
-	return convertGetQuizQuestionByIDRowToInterface(row), nil
+	question := convertGetQuizQuestionByIDRowToInterface(row)
+	return r.ApplyTranslationToQuizQuestion(ctx, question), nil
+}
+
+// JournalEntry is the resolver for the journalEntry field.
+func (r *freeTextResponseResolver) JournalEntry(ctx context.Context, obj *model.FreeTextResponse) (*model.ScoreJournal, error) {
+	if obj.ScoreJournalID == nil {
+		return nil, nil
+	}
+	thunk := r.Loaders.ScoreJournalByIDLoader.Load(ctx, *obj.ScoreJournalID)
+	return thunk()
 }
 
 // Quiz is the resolver for the quiz field.
@@ -77,7 +90,17 @@ func (r *jsonResponseResolver) Question(ctx context.Context, obj *model.JSONResp
 	if err != nil {
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
-	return convertGetQuizQuestionByIDRowToInterface(row), nil
+	question := convertGetQuizQuestionByIDRowToInterface(row)
+	return r.ApplyTranslationToQuizQuestion(ctx, question), nil
+}
+
+// JournalEntry is the resolver for the journalEntry field.
+func (r *jsonResponseResolver) JournalEntry(ctx context.Context, obj *model.JSONResponse) (*model.ScoreJournal, error) {
+	if obj.ScoreJournalID == nil {
+		return nil, nil
+	}
+	thunk := r.Loaders.ScoreJournalByIDLoader.Load(ctx, *obj.ScoreJournalID)
+	return thunk()
 }
 
 // CreateQuiz is the resolver for the createQuiz field.
@@ -193,7 +216,7 @@ func (r *mutationResolver) UpdateQuiz(ctx context.Context, id string, input mode
 	}
 
 	// Invalidate caches
-	r.Cache.InvalidateQuiz(id)
+	r.Cache.InvalidateQuizWithChallenge(id, existingQuiz.ChallengeID)
 	r.Cache.InvalidateProject(existingQuiz.ProjectID)
 
 	// Convert to GraphQL model
@@ -227,7 +250,7 @@ func (r *mutationResolver) DeleteQuiz(ctx context.Context, id string) (bool, err
 	}
 
 	// Invalidate caches
-	r.Cache.InvalidateQuiz(id)
+	r.Cache.InvalidateQuizWithChallenge(id, existingQuiz.ChallengeID)
 	r.Cache.InvalidateProject(existingQuiz.ProjectID)
 
 	return true, nil
@@ -282,14 +305,15 @@ func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, i
 	if input.AllowMultipleSelection != nil {
 		params.Allowmultipleselection = input.AllowMultipleSelection
 	}
+	// pgtype.Numeric.Scan() requires a string representation to properly set Valid=true
 	if input.MinValue != nil {
-		_ = params.Minvalue.Scan(*input.MinValue)
+		_ = params.Minvalue.Scan(fmt.Sprintf("%f", *input.MinValue))
 	}
 	if input.MaxValue != nil {
-		_ = params.Maxvalue.Scan(*input.MaxValue)
+		_ = params.Maxvalue.Scan(fmt.Sprintf("%f", *input.MaxValue))
 	}
 	if input.StepValue != nil {
-		_ = params.Stepvalue.Scan(*input.StepValue)
+		_ = params.Stepvalue.Scan(fmt.Sprintf("%f", *input.StepValue))
 	}
 	if input.TimeoutSeconds != nil {
 		ts := int32(*input.TimeoutSeconds)
@@ -298,6 +322,25 @@ func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, i
 	if input.Points != nil {
 		pts := int32(*input.Points)
 		params.Points = &pts
+	}
+
+	// Set betting configuration
+	if input.BettingEnabled != nil {
+		params.Bettingenabled = input.BettingEnabled
+	}
+	if input.BettingMinPercentage != nil {
+		_ = params.Bettingminpercentage.Scan(fmt.Sprintf("%f", *input.BettingMinPercentage))
+	}
+	if input.BettingMaxPercentage != nil {
+		_ = params.Bettingmaxpercentage.Scan(fmt.Sprintf("%f", *input.BettingMaxPercentage))
+	}
+	if input.BettingMinAbsolute != nil {
+		minAbs := int32(*input.BettingMinAbsolute)
+		params.Bettingminabsolute = &minAbs
+	}
+	if input.BettingMaxAbsolute != nil {
+		maxAbs := int32(*input.BettingMaxAbsolute)
+		params.Bettingmaxabsolute = &maxAbs
 	}
 
 	// Create question
@@ -346,7 +389,7 @@ func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, i
 	}
 
 	// Invalidate caches
-	r.Cache.InvalidateQuiz(quizID)
+	r.Cache.InvalidateQuizWithChallenge(quizID, quiz.ChallengeID)
 
 	// Convert to GraphQL model
 	return convertCreateQuizQuestionRowToInterface(questionRow), nil
@@ -398,14 +441,15 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 	if input.AllowMultipleSelection != nil {
 		params.Allowmultipleselection = input.AllowMultipleSelection
 	}
+	// pgtype.Numeric.Scan() requires a string representation to properly set Valid=true
 	if input.MinValue != nil {
-		_ = params.Minvalue.Scan(*input.MinValue)
+		_ = params.Minvalue.Scan(fmt.Sprintf("%f", *input.MinValue))
 	}
 	if input.MaxValue != nil {
-		_ = params.Maxvalue.Scan(*input.MaxValue)
+		_ = params.Maxvalue.Scan(fmt.Sprintf("%f", *input.MaxValue))
 	}
 	if input.StepValue != nil {
-		_ = params.Stepvalue.Scan(*input.StepValue)
+		_ = params.Stepvalue.Scan(fmt.Sprintf("%f", *input.StepValue))
 	}
 	if input.TimeoutSeconds != nil {
 		ts := int32(*input.TimeoutSeconds)
@@ -414,6 +458,25 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 	if input.Points != nil {
 		pts := int32(*input.Points)
 		params.Points = &pts
+	}
+
+	// Set betting configuration
+	if input.BettingEnabled != nil {
+		params.Bettingenabled = input.BettingEnabled
+	}
+	if input.BettingMinPercentage != nil {
+		_ = params.Bettingminpercentage.Scan(fmt.Sprintf("%f", *input.BettingMinPercentage))
+	}
+	if input.BettingMaxPercentage != nil {
+		_ = params.Bettingmaxpercentage.Scan(fmt.Sprintf("%f", *input.BettingMaxPercentage))
+	}
+	if input.BettingMinAbsolute != nil {
+		minAbs := int32(*input.BettingMinAbsolute)
+		params.Bettingminabsolute = &minAbs
+	}
+	if input.BettingMaxAbsolute != nil {
+		maxAbs := int32(*input.BettingMaxAbsolute)
+		params.Bettingmaxabsolute = &maxAbs
 	}
 
 	// Update question
@@ -474,7 +537,7 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	r.Cache.InvalidateQuiz(question.QuizID)
+	r.Cache.InvalidateQuizWithChallenge(question.QuizID, quiz.ChallengeID)
 	// Also invalidate answers cache if answers or ordering items were updated
 	if len(input.PredefinedAnswers) > 0 || len(input.OrderingItems) > 0 {
 		r.Cache.InvalidateQuizAnswers(id)
@@ -513,7 +576,7 @@ func (r *mutationResolver) DeleteQuizQuestion(ctx context.Context, id string) (b
 		return false, fmt.Errorf("failed to delete question: %w", err)
 	}
 
-	r.Cache.InvalidateQuiz(question.QuizID)
+	r.Cache.InvalidateQuizWithChallenge(question.QuizID, quiz.ChallengeID)
 
 	return true, nil
 }
@@ -547,7 +610,7 @@ func (r *mutationResolver) ReorderQuizQuestions(ctx context.Context, quizID stri
 		}
 	}
 
-	r.Cache.InvalidateQuiz(quizID)
+	r.Cache.InvalidateQuizWithChallenge(quizID, quiz.ChallengeID)
 
 	// Load and return reordered questions
 	thunk2 := r.Loaders.QuizQuestionsByQuizLoader.Load(ctx, quizID)
@@ -744,6 +807,30 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 		return nil, fmt.Errorf("question does not belong to this quiz")
 	}
 
+	// Validate bet - always validate when betting is enabled to enforce required bets
+	if question.BettingEnabled || (input.BetAmount != nil && *input.BetAmount > 0) {
+		// Load quiz to get project ID for score lookup
+		quizThunk := r.Loaders.QuizByIDLoader.Load(ctx, submission.QuizID)
+		quiz, quizErr := quizThunk()
+		if quizErr != nil {
+			otel.RecordError(span, quizErr)
+			return nil, fmt.Errorf("failed to load quiz for bet validation: %w", quizErr)
+		}
+
+		betConfig := BetValidationConfig{
+			BettingEnabled:       question.BettingEnabled,
+			BettingMinPercentage: question.BettingMinPercentage,
+			BettingMaxPercentage: question.BettingMaxPercentage,
+			BettingMinAbsolute:   question.BettingMinAbsolute,
+			BettingMaxAbsolute:   question.BettingMaxAbsolute,
+		}
+
+		if err := ValidateBet(ctx, r.DB.Queries, userID, quiz.ProjectID, betConfig, input.BetAmount); err != nil {
+			otel.RecordError(span, err)
+			return nil, fmt.Errorf("invalid bet: %w", err)
+		}
+	}
+
 	// Build response params
 	responseID := ulid.NewQuizResponseID()
 	params := sqlc.CreateQuizResponseParams{
@@ -790,7 +877,7 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 		// FREE_TEXT is not graded - leave is_correct NULL
 	case "NUMBER":
 		if input.NumberResponse != nil {
-			_ = params.Numberresponse.Scan(*input.NumberResponse)
+			_ = params.Numberresponse.Scan(strconv.FormatFloat(*input.NumberResponse, 'f', -1, 64))
 		}
 		// NUMBER could be graded if we stored correct answer, but for now leave NULL
 	case "JSON":
@@ -831,6 +918,12 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 		params.Timespentseconds = &tss
 	}
 
+	// Set bet amount if provided
+	if input.BetAmount != nil {
+		ba := int32(*input.BetAmount)
+		params.Betamount = &ba
+	}
+
 	// Try to create new response
 	response, err := r.DB.Queries.CreateQuizResponse(ctx, params)
 	if err != nil {
@@ -847,6 +940,7 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 				return nil, fmt.Errorf("failed to fetch existing response: %w", fetchErr)
 			}
 			r.Cache.InvalidateQuizSubmission(submissionID)
+			r.Cache.InvalidateUserQuizSubmissions(userID)
 			// Convert existing response to QuizResponse model
 			existingAsModel := &sqlc.QuizResponse{
 				ID:                existing.ID,
@@ -860,6 +954,7 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 				PointsEarned:      existing.PointsEarned,
 				AnsweredAt:        existing.AnsweredAt,
 				TimeSpentSeconds:  existing.TimeSpentSeconds,
+				BetAmount:         existing.BetAmount,
 			}
 			return convertResponseRowToInterface(existingAsModel, question.QuestionType), nil
 		}
@@ -867,6 +962,7 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 	}
 
 	r.Cache.InvalidateQuizSubmission(submissionID)
+	r.Cache.InvalidateUserQuizSubmissions(userID)
 
 	// Convert response to QuizResponse model
 	responseAsModel := &sqlc.QuizResponse{
@@ -881,6 +977,7 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 		PointsEarned:      response.PointsEarned,
 		AnsweredAt:        response.AnsweredAt,
 		TimeSpentSeconds:  response.TimeSpentSeconds,
+		BetAmount:         response.BetAmount,
 	}
 	return convertResponseRowToInterface(responseAsModel, question.QuestionType), nil
 }
@@ -943,6 +1040,31 @@ func (r *mutationResolver) UpdateQuizAnswer(ctx context.Context, responseID stri
 		ID: responseID,
 	}
 
+	// Handle betAmount update if provided
+	if input.BetAmount != nil {
+		// Load quiz to get project ID for score lookup
+		quizThunk := r.Loaders.QuizByIDLoader.Load(ctx, submission.QuizID)
+		quiz, quizErr := quizThunk()
+		if quizErr != nil {
+			otel.RecordError(span, quizErr)
+			return nil, fmt.Errorf("failed to load quiz for bet validation: %w", quizErr)
+		}
+
+		betConfig := BetValidationConfig{
+			BettingEnabled:       question.BettingEnabled,
+			BettingMinPercentage: question.BettingMinPercentage,
+			BettingMaxPercentage: question.BettingMaxPercentage,
+			BettingMinAbsolute:   question.BettingMinAbsolute,
+			BettingMaxAbsolute:   question.BettingMaxAbsolute,
+		}
+
+		if err := ValidateBet(ctx, r.DB.Queries, userID, quiz.ProjectID, betConfig, input.BetAmount); err != nil {
+			return nil, err
+		}
+		betAmount := int32(*input.BetAmount)
+		params.Betamount = &betAmount
+	}
+
 	// Only handle ORDERING questions for now
 	if question.QuestionType == "ORDERING" && input.SubmittedOrder != nil {
 		// Store submitted order as JSON
@@ -982,6 +1104,7 @@ func (r *mutationResolver) UpdateQuizAnswer(ctx context.Context, responseID stri
 	}
 
 	r.Cache.InvalidateQuizSubmission(submission.ID)
+	r.Cache.InvalidateUserQuizSubmissions(userID)
 
 	// Convert to QuizResponse model
 	responseAsModel := &sqlc.QuizResponse{
@@ -1175,6 +1298,20 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 
 		// Award achievement if criteria met
 		if shouldAward {
+			// Check if user already has this achievement to avoid duplicate key errors
+			// which would abort the entire transaction
+			alreadyHas, checkErr := qtx.CheckUserHasAchievement(ctx, sqlc.CheckUserHasAchievementParams{
+				UserID:        userID,
+				AchievementID: ach.AchievementID,
+			})
+			if checkErr != nil {
+				fmt.Printf("warning: failed to check achievement %s for user %s: %v\n", ach.AchievementID, userID, checkErr)
+				continue
+			}
+			if alreadyHas {
+				continue
+			}
+
 			err = qtx.AwardUserAchievement(ctx, sqlc.AwardUserAchievementParams{
 				UserID:        userID,
 				AchievementID: ach.AchievementID,
@@ -1235,6 +1372,7 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 	// Invalidate caches
 	ctx, cacheSpan := otel.StartSpan(ctx, "quiz.finalize.cache_invalidation")
 	r.Cache.InvalidateQuizSubmission(submissionID)
+	r.Cache.InvalidateUserQuizSubmissions(userID)
 	r.Cache.InvalidateProject(quiz.ProjectID)
 
 	// Load challenge to get eventID for cache invalidation
@@ -1256,6 +1394,48 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 	// Also notify about achievements if any were awarded
 	if len(awardedAchievementIDs) > 0 {
 		go r.FirebaseService.NotifyUserAchievements(context.Background(), userID)
+	}
+
+	// Dispatch quiz_finalized webhook
+	if r.WebhookService != nil {
+		go func(projectID string, targetUserID string, data webhooks.QuizFinalizedData) {
+			bgCtx := context.Background()
+			user, err := r.DB.Queries.GetUserByID(bgCtx, targetUserID)
+			if err != nil {
+				fmt.Printf("warning: failed to load user for quiz_finalized webhook: %v\n", err)
+				return
+			}
+			r.WebhookService.DispatchQuizFinalized(bgCtx, projectID, webhooks.NewUserData(user), data)
+		}(quiz.ProjectID, userID, webhooks.QuizFinalizedData{
+			SubmissionID: submissionID,
+			QuizID:       quiz.ID,
+			QuizName:     quiz.Name,
+			ChallengeID:  quiz.ChallengeID,
+			ChallengeName: func() string {
+				if challengeErr == nil {
+					return challenge.GetName()
+				}
+				return ""
+			}(),
+			EventID: func() *string {
+				if challengeErr == nil {
+					return getChallengeEventID(challenge)
+				}
+				return nil
+			}(),
+			SessionID: updatedSubmission.SessionID,
+			Score:     scoreVal,
+			MaxScore:  int32(maxScore),
+			ScorePercentage: func() float64 {
+				if maxScore > 0 {
+					return (float64(score) / float64(maxScore)) * 100
+				}
+				return 0
+			}(),
+			PointsAwarded:       totalPoints,
+			AchievementsAwarded: awardedAchievementIDs,
+			CompletedAt:         now,
+		})
 	}
 
 	return convertUpdateQuizSubmissionRow(updatedSubmission), nil
@@ -1526,9 +1706,234 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 
 	// Invalidate caches
 	r.Cache.InvalidateQuizSubmission(submissionID)
+	r.Cache.InvalidateUserQuizSubmissions(userID)
 	r.Cache.InvalidateProject(quiz.ProjectID)
 
 	return submission, nil
+}
+
+// RecordBetResult is the resolver for the recordBetResult field.
+func (r *mutationResolver) RecordBetResult(ctx context.Context, input model.RecordBetResultInput) (model.QuizResponse, error) {
+	// Get response context for score journal entry
+	responseCtx, err := r.DB.Queries.GetQuizResponseWithContext(ctx, input.ResponseID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("quiz response not found: %s", input.ResponseID)
+		}
+		return nil, fmt.Errorf("failed to get response context: %w", err)
+	}
+
+	// Begin transaction
+	tx, err := r.DB.Pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := r.DB.Queries.WithTx(tx)
+
+	// Create score journal entry
+	journalID := ulid.NewScoreJournalID()
+	_, err = qtx.CreateScoreJournalEntry(ctx, sqlc.CreateScoreJournalEntryParams{
+		ID:          journalID,
+		ProjectID:   responseCtx.ProjectID,
+		UserID:      responseCtx.UserID,
+		EventID:     responseCtx.EventID,
+		ChallengeID: &responseCtx.ChallengeID,
+		Points:      int32(input.PointsEarned),
+		SourceType:  "BET",
+		SourceID:    &input.ResponseID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create score journal entry: %w", err)
+	}
+
+	// Update the bet result with journal link
+	row, err := qtx.UpdateBetResultWithJournal(ctx, sqlc.UpdateBetResultWithJournalParams{
+		ID:             input.ResponseID,
+		Pointsearned:   int32(input.PointsEarned),
+		Scorejournalid: journalID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update bet result: %w", err)
+	}
+
+	// Commit transaction
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	// Invalidate caches
+	r.Cache.InvalidateUser(responseCtx.UserID)
+	r.Cache.InvalidateProject(responseCtx.ProjectID)
+	r.Cache.InvalidateQuizSubmission(responseCtx.SubmissionID)
+	r.Cache.InvalidateUserQuizSubmissions(responseCtx.UserID)
+
+	// Send notification if requested
+	if input.SendNotification != nil && *input.SendNotification {
+		go push.SendTranslatedBetResultNotification(
+			r.PushService,
+			r.Loaders,
+			responseCtx.UserID,
+			responseCtx.QuizID,
+			responseCtx.QuizName,
+			input.PointsEarned,
+		)
+	}
+
+	// Get the question to determine its type for proper response conversion
+	question, err := r.DB.Queries.GetQuizQuestionByID(ctx, row.QuestionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get question type: %w", err)
+	}
+
+	// Convert to the appropriate response type
+	response := convertUpdateBetResultWithJournalRowToQuizResponse(row)
+	return convertResponseRowToInterface(response, question.QuestionType), nil
+}
+
+// RecordBetResults is the resolver for the recordBetResults field.
+func (r *mutationResolver) RecordBetResults(ctx context.Context, inputs []model.RecordBetResultInput) ([]model.QuizResponse, error) {
+	if len(inputs) == 0 {
+		return []model.QuizResponse{}, nil
+	}
+
+	// Prepare the arrays for context lookup
+	responseIDs := make([]string, len(inputs))
+	for i, input := range inputs {
+		responseIDs[i] = input.ResponseID
+	}
+
+	// Get response contexts for score journal entries
+	responseContexts, err := r.DB.Queries.GetQuizResponsesWithContext(ctx, responseIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get response contexts: %w", err)
+	}
+
+	// Build a map of response ID to context
+	contextMap := make(map[string]*sqlc.GetQuizResponsesWithContextRow)
+	for _, rc := range responseContexts {
+		contextMap[rc.ID] = rc
+	}
+
+	// Begin transaction
+	tx, err := r.DB.Pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := r.DB.Queries.WithTx(tx)
+
+	// Prepare arrays for batch operations
+	ids := make([]string, len(inputs))
+	pointsEarned := make([]int32, len(inputs))
+	journalIDs := make([]string, len(inputs))
+	affectedUsers := make(map[string]bool)
+	affectedProjects := make(map[string]bool)
+	affectedSubmissions := make(map[string]bool)
+
+	// Create score journal entries for each response
+	for i, input := range inputs {
+		ids[i] = input.ResponseID
+		pointsEarned[i] = int32(input.PointsEarned)
+
+		rc, ok := contextMap[input.ResponseID]
+		if !ok {
+			return nil, fmt.Errorf("response context not found for response %s", input.ResponseID)
+		}
+
+		journalID := ulid.NewScoreJournalID()
+		journalIDs[i] = journalID
+
+		_, err = qtx.CreateScoreJournalEntry(ctx, sqlc.CreateScoreJournalEntryParams{
+			ID:          journalID,
+			ProjectID:   rc.ProjectID,
+			UserID:      rc.UserID,
+			EventID:     rc.EventID,
+			ChallengeID: &rc.ChallengeID,
+			Points:      int32(input.PointsEarned),
+			SourceType:  "BET",
+			SourceID:    &input.ResponseID,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create score journal entry for response %s: %w", input.ResponseID, err)
+		}
+
+		affectedUsers[rc.UserID] = true
+		affectedProjects[rc.ProjectID] = true
+		affectedSubmissions[rc.SubmissionID] = true
+	}
+
+	// Update all responses with journal links
+	rows, err := qtx.UpdateBetResultsWithJournal(ctx, sqlc.UpdateBetResultsWithJournalParams{
+		Ids:             ids,
+		Pointsearned:    pointsEarned,
+		Scorejournalids: journalIDs,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update bet results: %w", err)
+	}
+
+	// Commit transaction
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	// Invalidate caches
+	for userID := range affectedUsers {
+		r.Cache.InvalidateUser(userID)
+		r.Cache.InvalidateUserQuizSubmissions(userID)
+	}
+	for projectID := range affectedProjects {
+		r.Cache.InvalidateProject(projectID)
+	}
+	for submissionID := range affectedSubmissions {
+		r.Cache.InvalidateQuizSubmission(submissionID)
+	}
+
+	// Send notifications if requested (in parallel goroutines)
+	for _, input := range inputs {
+		if input.SendNotification != nil && *input.SendNotification {
+			rc := contextMap[input.ResponseID]
+			if rc != nil {
+				go push.SendTranslatedBetResultNotification(
+					r.PushService,
+					r.Loaders,
+					rc.UserID,
+					rc.QuizID,
+					rc.QuizName,
+					input.PointsEarned,
+				)
+			}
+		}
+	}
+
+	// Collect question IDs for type lookup
+	questionIDs := make([]string, len(rows))
+	for i, row := range rows {
+		questionIDs[i] = row.QuestionID
+	}
+
+	// Get all questions to determine their types
+	questions, err := r.DB.Queries.GetQuizQuestionsByIDs(ctx, questionIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get question types: %w", err)
+	}
+
+	// Build a map of question ID to type
+	questionTypes := make(map[string]string)
+	for _, q := range questions {
+		questionTypes[q.ID] = q.QuestionType
+	}
+
+	// Convert all responses
+	results := make([]model.QuizResponse, len(rows))
+	for i, row := range rows {
+		response := convertUpdateBetResultsWithJournalRowToQuizResponse(row)
+		questionType := questionTypes[row.QuestionID]
+		results[i] = convertResponseRowToInterface(response, questionType)
+	}
+
+	return results, nil
 }
 
 // Quiz is the resolver for the quiz field.
@@ -1556,7 +1961,17 @@ func (r *numberResponseResolver) Question(ctx context.Context, obj *model.Number
 	if err != nil {
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
-	return convertGetQuizQuestionByIDRowToInterface(row), nil
+	question := convertGetQuizQuestionByIDRowToInterface(row)
+	return r.ApplyTranslationToQuizQuestion(ctx, question), nil
+}
+
+// JournalEntry is the resolver for the journalEntry field.
+func (r *numberResponseResolver) JournalEntry(ctx context.Context, obj *model.NumberResponse) (*model.ScoreJournal, error) {
+	if obj.ScoreJournalID == nil {
+		return nil, nil
+	}
+	thunk := r.Loaders.ScoreJournalByIDLoader.Load(ctx, *obj.ScoreJournalID)
+	return thunk()
 }
 
 // Quiz is the resolver for the quiz field.
@@ -1582,10 +1997,10 @@ func (r *orderingQuestionResolver) OrderingItems(ctx context.Context, obj *model
 	result := make([]model.QuizOrderingItem, len(answers))
 	for i, a := range answers {
 		result[i] = model.QuizOrderingItem{
-			ID:           a.ID,
-			QuestionID:   a.QuestionID,
-			ItemText:     a.AnswerText,
-			CorrectOrder: a.AnswerOrder,
+			ID:                a.ID,
+			QuestionID:        a.QuestionID,
+			ItemText:          a.AnswerText,
+			CorrectOrderValue: a.AnswerOrder,
 		}
 	}
 	return result, nil
@@ -1606,7 +2021,17 @@ func (r *orderingResponseResolver) Question(ctx context.Context, obj *model.Orde
 	if err != nil {
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
-	return convertGetQuizQuestionByIDRowToInterface(row), nil
+	question := convertGetQuizQuestionByIDRowToInterface(row)
+	return r.ApplyTranslationToQuizQuestion(ctx, question), nil
+}
+
+// JournalEntry is the resolver for the journalEntry field.
+func (r *orderingResponseResolver) JournalEntry(ctx context.Context, obj *model.OrderingResponse) (*model.ScoreJournal, error) {
+	if obj.ScoreJournalID == nil {
+		return nil, nil
+	}
+	thunk := r.Loaders.ScoreJournalByIDLoader.Load(ctx, *obj.ScoreJournalID)
+	return thunk()
 }
 
 // IsCorrect is the resolver for the isCorrect field on OrderingResponse.
@@ -1676,7 +2101,17 @@ func (r *predefinedResponseResolver) Question(ctx context.Context, obj *model.Pr
 	if err != nil {
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
-	return convertGetQuizQuestionByIDRowToInterface(row), nil
+	question := convertGetQuizQuestionByIDRowToInterface(row)
+	return r.ApplyTranslationToQuizQuestion(ctx, question), nil
+}
+
+// JournalEntry is the resolver for the journalEntry field.
+func (r *predefinedResponseResolver) JournalEntry(ctx context.Context, obj *model.PredefinedResponse) (*model.ScoreJournal, error) {
+	if obj.ScoreJournalID == nil {
+		return nil, nil
+	}
+	thunk := r.Loaders.ScoreJournalByIDLoader.Load(ctx, *obj.ScoreJournalID)
+	return thunk()
 }
 
 // SelectedAnswers is the resolver for the selectedAnswers field.
@@ -2210,6 +2645,47 @@ func (r *quizOrderingItemResolver) Question(ctx context.Context, obj *model.Quiz
 	return convertGetQuizQuestionByIDRowToInterface(row), nil
 }
 
+// CorrectOrder is the resolver for the correctOrder field on QuizOrderingItem.
+// It hides the correct order until the session is FINISHED to prevent cheating.
+func (r *quizOrderingItemResolver) CorrectOrder(ctx context.Context, obj *model.QuizOrderingItem) (*int, error) {
+	// Get the current user
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		// No user context, hide the correct order
+		return nil, nil
+	}
+
+	// Get the question to find the quiz ID
+	question, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load question: %w", err)
+	}
+
+	// Get user's accessible sessions for this quiz
+	sessions, err := r.DB.Queries.GetUserAccessibleSessions(ctx, sqlc.GetUserAccessibleSessionsParams{
+		Userid: userID,
+		Quizid: question.QuizID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user sessions: %w", err)
+	}
+
+	// If no sessions, this is a legacy quiz without sessions - show the correct order
+	if len(sessions) == 0 {
+		return &obj.CorrectOrderValue, nil
+	}
+
+	// Only reveal correct order when session is FINISHED (not LOCKED)
+	// Sessions are ordered by created_at DESC, so the first one is the most recent
+	mostRecentSession := sessions[0]
+	if mostRecentSession.State == string(model.QuizSessionStateFinished) {
+		return &obj.CorrectOrderValue, nil
+	}
+
+	// Session is OPEN, DRAFT, or LOCKED - hide the correct order
+	return nil, nil
+}
+
 // Question is the resolver for the question field on QuizPredefinedAnswer.
 func (r *quizPredefinedAnswerResolver) Question(ctx context.Context, obj *model.QuizPredefinedAnswer) (model.QuizQuestion, error) {
 	// Query directly
@@ -2295,7 +2771,7 @@ func (r *quizSubmissionResolver) OrderedQuestions(ctx context.Context, obj *mode
 	orderedQuestions := make([]model.QuizQuestion, 0, len(obj.QuestionOrder))
 	for _, questionID := range obj.QuestionOrder {
 		if q, ok := questionMap[questionID]; ok {
-			orderedQuestions = append(orderedQuestions, q)
+			orderedQuestions = append(orderedQuestions, r.ApplyTranslationToQuizQuestion(ctx, q))
 		}
 	}
 

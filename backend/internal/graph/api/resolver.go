@@ -113,7 +113,7 @@ func (r *Resolver) LoadChallengeWithVisibility(ctx context.Context, challengeID 
 		quizThunk := r.Loaders.QuizByChallengeIDLoader.Load(ctx, challengeID)
 		quiz, err := quizThunk()
 		if err == nil && quiz != nil {
-			hasAccess, err := r.DB.Queries.UserHasAccessToOpenSession(ctx, sqlc.UserHasAccessToOpenSessionParams{
+			hasAccess, err := r.DB.Queries.UserHasAccessToVisibleSession(ctx, sqlc.UserHasAccessToVisibleSessionParams{
 				Quizid: quiz.ID,
 				Userid: userID,
 			})

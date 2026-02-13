@@ -14,6 +14,7 @@ const (
 	EventTypePointsAwarded       EventType = "points_awarded"
 	EventTypeQuizSessionFinished EventType = "quiz_session_finished"
 	EventTypeTeamNameChanged     EventType = "team_name_changed"
+	EventTypeQuizFinalized       EventType = "quiz_finalized"
 )
 
 // WebhookPayload is the base structure sent to webhook endpoints
@@ -120,4 +121,21 @@ type TeamNameChangedData struct {
 	TeamID  string `json:"team_id"`
 	OldName string `json:"old_name"`
 	NewName string `json:"new_name"`
+}
+
+// QuizFinalizedData contains data for quiz finalized webhook (user completes their submission)
+type QuizFinalizedData struct {
+	SubmissionID        string    `json:"submission_id"`
+	QuizID              string    `json:"quiz_id"`
+	QuizName            string    `json:"quiz_name"`
+	ChallengeID         string    `json:"challenge_id"`
+	ChallengeName       string    `json:"challenge_name,omitempty"`
+	EventID             *string   `json:"event_id,omitempty"`
+	SessionID           *string   `json:"session_id,omitempty"`
+	Score               int32     `json:"score"`
+	MaxScore            int32     `json:"max_score"`
+	ScorePercentage     float64   `json:"score_percentage"`
+	PointsAwarded       int32     `json:"points_awarded"`
+	AchievementsAwarded []string  `json:"achievements_awarded"`
+	CompletedAt         time.Time `json:"completed_at"`
 }

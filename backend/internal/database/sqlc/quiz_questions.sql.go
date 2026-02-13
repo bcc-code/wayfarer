@@ -69,7 +69,12 @@ INSERT INTO quiz_questions (
     max_value,
     step_value,
     timeout_seconds,
-    points
+    points,
+    betting_enabled,
+    betting_min_percentage,
+    betting_max_percentage,
+    betting_min_absolute,
+    betting_max_absolute
 )
 VALUES (
     $1::text,
@@ -82,9 +87,14 @@ VALUES (
     $8::decimal,
     $9::decimal,
     $10::int,
-    $11::int
+    $11::int,
+    COALESCE($12::bool, false),
+    $13::decimal,
+    $14::decimal,
+    $15::int,
+    $16::int
 )
-RETURNING id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, created_at, updated_at
+RETURNING id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, created_at, updated_at
 `
 
 type CreateQuizQuestionParams struct {
@@ -99,6 +109,11 @@ type CreateQuizQuestionParams struct {
 	Stepvalue              pgtype.Numeric `json:"stepvalue"`
 	Timeoutseconds         *int32         `json:"timeoutseconds"`
 	Points                 *int32         `json:"points"`
+	Bettingenabled         *bool          `json:"bettingenabled"`
+	Bettingminpercentage   pgtype.Numeric `json:"bettingminpercentage"`
+	Bettingmaxpercentage   pgtype.Numeric `json:"bettingmaxpercentage"`
+	Bettingminabsolute     *int32         `json:"bettingminabsolute"`
+	Bettingmaxabsolute     *int32         `json:"bettingmaxabsolute"`
 }
 
 type CreateQuizQuestionRow struct {
@@ -113,6 +128,11 @@ type CreateQuizQuestionRow struct {
 	StepValue              pgtype.Numeric     `json:"step_value"`
 	TimeoutSeconds         *int32             `json:"timeout_seconds"`
 	Points                 *int32             `json:"points"`
+	BettingEnabled         bool               `json:"betting_enabled"`
+	BettingMinPercentage   pgtype.Numeric     `json:"betting_min_percentage"`
+	BettingMaxPercentage   pgtype.Numeric     `json:"betting_max_percentage"`
+	BettingMinAbsolute     *int32             `json:"betting_min_absolute"`
+	BettingMaxAbsolute     *int32             `json:"betting_max_absolute"`
 	CreatedAt              pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
 }
@@ -130,6 +150,11 @@ func (q *Queries) CreateQuizQuestion(ctx context.Context, arg CreateQuizQuestion
 		arg.Stepvalue,
 		arg.Timeoutseconds,
 		arg.Points,
+		arg.Bettingenabled,
+		arg.Bettingminpercentage,
+		arg.Bettingmaxpercentage,
+		arg.Bettingminabsolute,
+		arg.Bettingmaxabsolute,
 	)
 	var i CreateQuizQuestionRow
 	err := row.Scan(
@@ -144,6 +169,11 @@ func (q *Queries) CreateQuizQuestion(ctx context.Context, arg CreateQuizQuestion
 		&i.StepValue,
 		&i.TimeoutSeconds,
 		&i.Points,
+		&i.BettingEnabled,
+		&i.BettingMinPercentage,
+		&i.BettingMaxPercentage,
+		&i.BettingMinAbsolute,
+		&i.BettingMaxAbsolute,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -292,7 +322,7 @@ func (q *Queries) GetPredefinedAnswersByQuestionIDs(ctx context.Context, questio
 }
 
 const GetQuizQuestionByID = `-- name: GetQuizQuestionByID :one
-SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, created_at, updated_at
 FROM quiz_questions
 WHERE id = $1::text
 `
@@ -309,6 +339,11 @@ type GetQuizQuestionByIDRow struct {
 	StepValue              pgtype.Numeric     `json:"step_value"`
 	TimeoutSeconds         *int32             `json:"timeout_seconds"`
 	Points                 *int32             `json:"points"`
+	BettingEnabled         bool               `json:"betting_enabled"`
+	BettingMinPercentage   pgtype.Numeric     `json:"betting_min_percentage"`
+	BettingMaxPercentage   pgtype.Numeric     `json:"betting_max_percentage"`
+	BettingMinAbsolute     *int32             `json:"betting_min_absolute"`
+	BettingMaxAbsolute     *int32             `json:"betting_max_absolute"`
 	CreatedAt              pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
 }
@@ -328,6 +363,11 @@ func (q *Queries) GetQuizQuestionByID(ctx context.Context, id string) (*GetQuizQ
 		&i.StepValue,
 		&i.TimeoutSeconds,
 		&i.Points,
+		&i.BettingEnabled,
+		&i.BettingMinPercentage,
+		&i.BettingMaxPercentage,
+		&i.BettingMinAbsolute,
+		&i.BettingMaxAbsolute,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -335,7 +375,7 @@ func (q *Queries) GetQuizQuestionByID(ctx context.Context, id string) (*GetQuizQ
 }
 
 const GetQuizQuestionsByIDs = `-- name: GetQuizQuestionsByIDs :many
-SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, created_at, updated_at
 FROM quiz_questions
 WHERE id = ANY($1::text[])
 `
@@ -352,6 +392,11 @@ type GetQuizQuestionsByIDsRow struct {
 	StepValue              pgtype.Numeric     `json:"step_value"`
 	TimeoutSeconds         *int32             `json:"timeout_seconds"`
 	Points                 *int32             `json:"points"`
+	BettingEnabled         bool               `json:"betting_enabled"`
+	BettingMinPercentage   pgtype.Numeric     `json:"betting_min_percentage"`
+	BettingMaxPercentage   pgtype.Numeric     `json:"betting_max_percentage"`
+	BettingMinAbsolute     *int32             `json:"betting_min_absolute"`
+	BettingMaxAbsolute     *int32             `json:"betting_max_absolute"`
 	CreatedAt              pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
 }
@@ -377,6 +422,11 @@ func (q *Queries) GetQuizQuestionsByIDs(ctx context.Context, ids []string) ([]*G
 			&i.StepValue,
 			&i.TimeoutSeconds,
 			&i.Points,
+			&i.BettingEnabled,
+			&i.BettingMinPercentage,
+			&i.BettingMaxPercentage,
+			&i.BettingMinAbsolute,
+			&i.BettingMaxAbsolute,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -391,7 +441,7 @@ func (q *Queries) GetQuizQuestionsByIDs(ctx context.Context, ids []string) ([]*G
 }
 
 const GetQuizQuestionsByQuizID = `-- name: GetQuizQuestionsByQuizID :many
-SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, created_at, updated_at
 FROM quiz_questions
 WHERE quiz_id = $1::text
 ORDER BY question_order ASC
@@ -409,6 +459,11 @@ type GetQuizQuestionsByQuizIDRow struct {
 	StepValue              pgtype.Numeric     `json:"step_value"`
 	TimeoutSeconds         *int32             `json:"timeout_seconds"`
 	Points                 *int32             `json:"points"`
+	BettingEnabled         bool               `json:"betting_enabled"`
+	BettingMinPercentage   pgtype.Numeric     `json:"betting_min_percentage"`
+	BettingMaxPercentage   pgtype.Numeric     `json:"betting_max_percentage"`
+	BettingMinAbsolute     *int32             `json:"betting_min_absolute"`
+	BettingMaxAbsolute     *int32             `json:"betting_max_absolute"`
 	CreatedAt              pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
 }
@@ -434,6 +489,11 @@ func (q *Queries) GetQuizQuestionsByQuizID(ctx context.Context, quizid string) (
 			&i.StepValue,
 			&i.TimeoutSeconds,
 			&i.Points,
+			&i.BettingEnabled,
+			&i.BettingMinPercentage,
+			&i.BettingMaxPercentage,
+			&i.BettingMinAbsolute,
+			&i.BettingMaxAbsolute,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -448,7 +508,7 @@ func (q *Queries) GetQuizQuestionsByQuizID(ctx context.Context, quizid string) (
 }
 
 const GetQuizQuestionsByQuizIDs = `-- name: GetQuizQuestionsByQuizIDs :many
-SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, created_at, updated_at
 FROM quiz_questions
 WHERE quiz_id = ANY($1::text[])
 ORDER BY quiz_id, question_order ASC
@@ -466,6 +526,11 @@ type GetQuizQuestionsByQuizIDsRow struct {
 	StepValue              pgtype.Numeric     `json:"step_value"`
 	TimeoutSeconds         *int32             `json:"timeout_seconds"`
 	Points                 *int32             `json:"points"`
+	BettingEnabled         bool               `json:"betting_enabled"`
+	BettingMinPercentage   pgtype.Numeric     `json:"betting_min_percentage"`
+	BettingMaxPercentage   pgtype.Numeric     `json:"betting_max_percentage"`
+	BettingMinAbsolute     *int32             `json:"betting_min_absolute"`
+	BettingMaxAbsolute     *int32             `json:"betting_max_absolute"`
 	CreatedAt              pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
 }
@@ -491,6 +556,11 @@ func (q *Queries) GetQuizQuestionsByQuizIDs(ctx context.Context, quizIds []strin
 			&i.StepValue,
 			&i.TimeoutSeconds,
 			&i.Points,
+			&i.BettingEnabled,
+			&i.BettingMinPercentage,
+			&i.BettingMaxPercentage,
+			&i.BettingMinAbsolute,
+			&i.BettingMaxAbsolute,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -515,9 +585,14 @@ SET
     step_value = COALESCE($6::decimal, step_value),
     timeout_seconds = COALESCE($7::int, timeout_seconds),
     points = COALESCE($8::int, points),
+    betting_enabled = COALESCE($9::bool, betting_enabled),
+    betting_min_percentage = COALESCE($10::decimal, betting_min_percentage),
+    betting_max_percentage = COALESCE($11::decimal, betting_max_percentage),
+    betting_min_absolute = COALESCE($12::int, betting_min_absolute),
+    betting_max_absolute = COALESCE($13::int, betting_max_absolute),
     updated_at = now()
-WHERE id = $9::text
-RETURNING id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, created_at, updated_at
+WHERE id = $14::text
+RETURNING id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, created_at, updated_at
 `
 
 type UpdateQuizQuestionParams struct {
@@ -529,6 +604,11 @@ type UpdateQuizQuestionParams struct {
 	Stepvalue              pgtype.Numeric `json:"stepvalue"`
 	Timeoutseconds         *int32         `json:"timeoutseconds"`
 	Points                 *int32         `json:"points"`
+	Bettingenabled         *bool          `json:"bettingenabled"`
+	Bettingminpercentage   pgtype.Numeric `json:"bettingminpercentage"`
+	Bettingmaxpercentage   pgtype.Numeric `json:"bettingmaxpercentage"`
+	Bettingminabsolute     *int32         `json:"bettingminabsolute"`
+	Bettingmaxabsolute     *int32         `json:"bettingmaxabsolute"`
 	ID                     string         `json:"id"`
 }
 
@@ -544,6 +624,11 @@ type UpdateQuizQuestionRow struct {
 	StepValue              pgtype.Numeric     `json:"step_value"`
 	TimeoutSeconds         *int32             `json:"timeout_seconds"`
 	Points                 *int32             `json:"points"`
+	BettingEnabled         bool               `json:"betting_enabled"`
+	BettingMinPercentage   pgtype.Numeric     `json:"betting_min_percentage"`
+	BettingMaxPercentage   pgtype.Numeric     `json:"betting_max_percentage"`
+	BettingMinAbsolute     *int32             `json:"betting_min_absolute"`
+	BettingMaxAbsolute     *int32             `json:"betting_max_absolute"`
 	CreatedAt              pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
 }
@@ -558,6 +643,11 @@ func (q *Queries) UpdateQuizQuestion(ctx context.Context, arg UpdateQuizQuestion
 		arg.Stepvalue,
 		arg.Timeoutseconds,
 		arg.Points,
+		arg.Bettingenabled,
+		arg.Bettingminpercentage,
+		arg.Bettingmaxpercentage,
+		arg.Bettingminabsolute,
+		arg.Bettingmaxabsolute,
 		arg.ID,
 	)
 	var i UpdateQuizQuestionRow
@@ -573,6 +663,11 @@ func (q *Queries) UpdateQuizQuestion(ctx context.Context, arg UpdateQuizQuestion
 		&i.StepValue,
 		&i.TimeoutSeconds,
 		&i.Points,
+		&i.BettingEnabled,
+		&i.BettingMinPercentage,
+		&i.BettingMaxPercentage,
+		&i.BettingMinAbsolute,
+		&i.BettingMaxAbsolute,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

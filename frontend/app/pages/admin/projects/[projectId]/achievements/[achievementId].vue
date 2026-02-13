@@ -91,6 +91,7 @@ const { data, fetching, error } = useAdminProjectAchievementPageQuery({
 const { executeMutation: updateSimple } = useUpdateAchievementMutation()
 const { executeMutation: updateContent } = useUpdateContentAchievementMutation()
 const { executeMutation: updateStreak } = useUpdateStreakAchievementMutation()
+const { executeMutation: updateQuiz } = useUpdateQuizAchievementMutation()
 const { executeMutation: executeDelete } = useDeleteAchievementMutation()
 
 type AchievementType = 'SIMPLE' | 'CONTENT' | 'STREAK' | 'QUIZ'
@@ -153,7 +154,7 @@ const initialData = computed(() => {
   if (a.__typename === 'QuizAchievement') {
     return {
       ...base,
-      quizId: a.quiz.id,
+      quizId: a.quiz?.id,
       minScorePercentage: a.minScorePercentage ?? undefined,
       requireCompletion: a.requireCompletion,
     }
@@ -210,10 +211,14 @@ async function handleSubmit(formData: AchievementFormData) {
       break
 
     case 'QUIZ':
-      // No updateQuizAchievement mutation exists, use generic update for common fields
-      response = await updateSimple({
+      response = await updateQuiz({
         id: route.params.achievementId,
-        input: baseInput,
+        input: {
+          ...baseInput,
+          quizId: formData.quizId,
+          minScorePercentage: formData.minScorePercentage,
+          requireCompletion: formData.requireCompletion,
+        },
       })
       break
   }

@@ -150,7 +150,7 @@ watch(isWindowFocused, (focused) => {
 })
 
 // Listen for Firestore realtime updates
-useFirestoreRefresh(['ProfilePageDocument', 'CurrentProjectDocument'], () => {
+useFirestoreRefresh(['ProfilePageDocument'], () => {
   refresh({ requestPolicy: 'network-only' })
 })
 

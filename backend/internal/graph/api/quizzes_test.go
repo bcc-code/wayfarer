@@ -445,19 +445,29 @@ type mockQuestionRow struct {
 	allowMultipleSelection *bool
 	timeoutSeconds         *int32
 	points                 *int32
+	bettingEnabled         bool
+	bettingMinPercentage   pgtype.Numeric
+	bettingMaxPercentage   pgtype.Numeric
+	bettingMinAbsolute     *int32
+	bettingMaxAbsolute     *int32
 }
 
-func (m *mockQuestionRow) GetID() string                    { return m.id }
-func (m *mockQuestionRow) GetQuizID() string                { return m.quizID }
-func (m *mockQuestionRow) GetQuestionType() string          { return m.questionType }
-func (m *mockQuestionRow) GetQuestionText() string          { return m.questionText }
-func (m *mockQuestionRow) GetQuestionOrder() int32          { return m.questionOrder }
-func (m *mockQuestionRow) GetAllowMultipleSelection() *bool { return m.allowMultipleSelection }
-func (m *mockQuestionRow) GetMinValue() pgtype.Numeric      { return pgtype.Numeric{} }
-func (m *mockQuestionRow) GetMaxValue() pgtype.Numeric      { return pgtype.Numeric{} }
-func (m *mockQuestionRow) GetStepValue() pgtype.Numeric     { return pgtype.Numeric{} }
-func (m *mockQuestionRow) GetTimeoutSeconds() *int32        { return m.timeoutSeconds }
-func (m *mockQuestionRow) GetPoints() *int32                { return m.points }
+func (m *mockQuestionRow) GetID() string                           { return m.id }
+func (m *mockQuestionRow) GetQuizID() string                       { return m.quizID }
+func (m *mockQuestionRow) GetQuestionType() string                 { return m.questionType }
+func (m *mockQuestionRow) GetQuestionText() string                 { return m.questionText }
+func (m *mockQuestionRow) GetQuestionOrder() int32                 { return m.questionOrder }
+func (m *mockQuestionRow) GetAllowMultipleSelection() *bool        { return m.allowMultipleSelection }
+func (m *mockQuestionRow) GetMinValue() pgtype.Numeric             { return pgtype.Numeric{} }
+func (m *mockQuestionRow) GetMaxValue() pgtype.Numeric             { return pgtype.Numeric{} }
+func (m *mockQuestionRow) GetStepValue() pgtype.Numeric            { return pgtype.Numeric{} }
+func (m *mockQuestionRow) GetTimeoutSeconds() *int32               { return m.timeoutSeconds }
+func (m *mockQuestionRow) GetPoints() *int32                       { return m.points }
+func (m *mockQuestionRow) GetBettingEnabled() bool                 { return m.bettingEnabled }
+func (m *mockQuestionRow) GetBettingMinPercentage() pgtype.Numeric { return m.bettingMinPercentage }
+func (m *mockQuestionRow) GetBettingMaxPercentage() pgtype.Numeric { return m.bettingMaxPercentage }
+func (m *mockQuestionRow) GetBettingMinAbsolute() *int32           { return m.bettingMinAbsolute }
+func (m *mockQuestionRow) GetBettingMaxAbsolute() *int32           { return m.bettingMaxAbsolute }
 
 // Helper functions for tests
 func int32Ptr(v int32) *int32 {

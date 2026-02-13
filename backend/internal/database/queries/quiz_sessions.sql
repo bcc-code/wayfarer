@@ -61,6 +61,9 @@ RETURNING *;
 UPDATE quiz_sessions
 SET
     state = @state::text,
+    open_at = CASE WHEN @state::text = 'OPEN' AND open_at IS NULL THEN now() ELSE open_at END,
+    lock_at = CASE WHEN @state::text = 'LOCKED' AND lock_at IS NULL THEN now() ELSE lock_at END,
+    finish_at = CASE WHEN @state::text = 'FINISHED' AND finish_at IS NULL THEN now() ELSE finish_at END,
     updated_at = now()
 WHERE id = @id::text
 RETURNING *;
@@ -245,16 +248,16 @@ FROM quiz_sessions qs
 JOIN quiz_session_access qsa ON qsa.session_id = qs.id
 WHERE qs.quiz_id = @quizid::text
     AND qsa.user_id = @userid::text
-    AND qs.state = 'OPEN'
+    AND qs.state IN ('OPEN', 'LOCKED', 'FINISHED')
 ORDER BY qs.created_at DESC
 LIMIT 1;
 
--- name: UserHasAccessToOpenSession :one
+-- name: UserHasAccessToVisibleSession :one
 SELECT EXISTS (
     SELECT 1
     FROM quiz_sessions qs
     JOIN quiz_session_access qsa ON qsa.session_id = qs.id
     WHERE qs.quiz_id = @quizid::text
         AND qsa.user_id = @userid::text
-        AND qs.state = 'OPEN'
+        AND qs.state IN ('OPEN', 'LOCKED', 'FINISHED')
 ) AS has_access;

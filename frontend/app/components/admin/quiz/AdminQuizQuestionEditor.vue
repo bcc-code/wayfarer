@@ -22,7 +22,10 @@ const localQuestion = reactive<QuizQuestionFormData>({
 watch(
   () => localQuestion.questionType,
   (newType) => {
-    if (newType === QuizQuestionType.Ordering && !localQuestion.orderingItems?.length) {
+    if (
+      newType === QuizQuestionType.Ordering &&
+      !localQuestion.orderingItems?.length
+    ) {
       localQuestion.orderingItems = [
         { itemText: '', correctOrder: 1 },
         { itemText: '', correctOrder: 2 },
@@ -110,7 +113,41 @@ function handleSave() {
     }
   }
 
-  emit('save', { ...localQuestion })
+  // Helper to convert empty/NaN/0 to undefined for optional number fields
+  const toOptionalNumber = (value: number | undefined): number | undefined => {
+    if (value === undefined || value === null) return undefined
+    if (typeof value === 'number' && isNaN(value)) return undefined
+    return value
+  }
+
+  // Clean up data based on question type - only include relevant fields
+  const cleanedQuestion: QuizQuestionFormData = {
+    id: localQuestion.id,
+    questionType: localQuestion.questionType,
+    questionText: localQuestion.questionText,
+    questionOrder: localQuestion.questionOrder,
+    timeoutSeconds: toOptionalNumber(localQuestion.timeoutSeconds),
+    points: localQuestion.points,
+    bettingEnabled: localQuestion.bettingEnabled,
+    bettingMinPercentage: toOptionalNumber(localQuestion.bettingMinPercentage),
+    bettingMaxPercentage: toOptionalNumber(localQuestion.bettingMaxPercentage),
+    bettingMinAbsolute: toOptionalNumber(localQuestion.bettingMinAbsolute),
+    bettingMaxAbsolute: toOptionalNumber(localQuestion.bettingMaxAbsolute),
+  }
+
+  if (localQuestion.questionType === QuizQuestionType.Predefined) {
+    cleanedQuestion.allowMultipleSelection =
+      localQuestion.allowMultipleSelection
+    cleanedQuestion.predefinedAnswers = localQuestion.predefinedAnswers
+  } else if (localQuestion.questionType === QuizQuestionType.Number) {
+    cleanedQuestion.minValue = localQuestion.minValue
+    cleanedQuestion.maxValue = localQuestion.maxValue
+    cleanedQuestion.stepValue = localQuestion.stepValue
+  } else if (localQuestion.questionType === QuizQuestionType.Ordering) {
+    cleanedQuestion.orderingItems = localQuestion.orderingItems
+  }
+
+  emit('save', cleanedQuestion)
 }
 </script>
 
@@ -162,6 +199,76 @@ function handleSave() {
       </UFormField>
     </div>
 
+    <!-- Betting Settings -->
+    <div class="space-y-4 border border-default rounded-lg p-4">
+      <UFormField name="bettingEnabled">
+        <UCheckbox
+          v-model="localQuestion.bettingEnabled"
+          label="Aktiver betting"
+        />
+      </UFormField>
+
+      <template v-if="localQuestion.bettingEnabled">
+        <div class="space-y-4 pl-6">
+          <div>
+            <label class="text-sm font-medium">
+              Prosent-grenser (valgfritt)
+            </label>
+            <div class="grid grid-cols-2 gap-4 mt-2">
+              <UFormField name="bettingMinPercentage" label="Min %">
+                <UInput
+                  v-model.number="localQuestion.bettingMinPercentage"
+                  type="number"
+                  :min="0"
+                  :max="100"
+                  size="xl"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField name="bettingMaxPercentage" label="Maks %">
+                <UInput
+                  v-model.number="localQuestion.bettingMaxPercentage"
+                  type="number"
+                  :min="0"
+                  :max="100"
+                  size="xl"
+                  class="w-full"
+                />
+              </UFormField>
+            </div>
+          </div>
+
+          <div>
+            <label class="text-sm font-medium">
+              Absolutte grenser (valgfritt)
+            </label>
+            <div class="grid grid-cols-2 gap-4 mt-2">
+              <UFormField name="bettingMinAbsolute" label="Min poeng">
+                <UInput
+                  v-model.number="localQuestion.bettingMinAbsolute"
+                  type="number"
+                  :min="0"
+                  size="xl"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField name="bettingMaxAbsolute" label="Maks poeng">
+                <UInput
+                  v-model.number="localQuestion.bettingMaxAbsolute"
+                  type="number"
+                  :min="0"
+                  size="xl"
+                  class="w-full"
+                />
+              </UFormField>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+
     <!-- Predefined Question Options -->
     <template v-if="localQuestion.questionType === QuizQuestionType.Predefined">
       <UFormField name="allowMultipleSelection">
@@ -202,9 +309,7 @@ function handleSave() {
           </UButton>
         </div>
 
-        <p class="text-xs text-text-muted">
-          Kryss av for riktig(e) svar
-        </p>
+        <p class="text-xs text-text-muted">Kryss av for riktig(e) svar</p>
       </div>
     </template>
 
@@ -244,14 +349,17 @@ function handleSave() {
     <template v-if="localQuestion.questionType === QuizQuestionType.Ordering">
       <div class="space-y-3">
         <div class="flex items-center justify-between">
-          <label class="text-sm font-medium">Elementer (i riktig rekkefølge)</label>
+          <label class="text-sm font-medium">
+            Elementer (i riktig rekkefølge)
+          </label>
           <UButton size="xs" variant="ghost" @click="addOrderingItem">
             Legg til element
           </UButton>
         </div>
 
         <p class="text-xs text-text-muted">
-          Dra for å endre rekkefølge. Rekkefølgen i listen er den korrekte rekkefølgen.
+          Dra for å endre rekkefølge. Rekkefølgen i listen er den korrekte
+          rekkefølgen.
         </p>
 
         <VueDraggable

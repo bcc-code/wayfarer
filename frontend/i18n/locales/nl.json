@@ -171,6 +171,7 @@
       "gameNights": "Game Nights",
       "comingSoon": "Binnenkort",
       "kickOff": "Kick-off",
+      "statistics": "Statistieken",
       "kickOffButton": "Start de unit-onboarding",
       "kickOffOnboardingDescription": "Deze actie start de unit-onboarding voor de hele lokale gemeente.",
       "kickOffOnboardingDescriptionWarning": "⚠ Niet starten als jullie nog niet klaar zijn.",
@@ -267,6 +268,21 @@
       "excludeFromLeaderboard": "Uitsluiten van rankings",
       "excludeFromLeaderboardTooltip": "Wanneer geactiveerd, wordt deze unit niet weergegeven in rankinglijsten",
       "excludedFromLeaderboard": "Uitgesloten van rankings"
+    },
+    "statistics": {
+      "totalUsersInTeams": "Personen in units",
+      "averageScoresByAgeGroup": "Gemiddelde score per leeftijdsgroep",
+      "averageScoresByAgeGroupDescription": "Hier vind je een overzicht van de gemiddelde scores per leeftijdsgroep. Alleen personen die in een unit zitten, worden meegeteld.",
+      "ageGroup": "Leeftijdsgroep",
+      "users": "Gebruikers",
+      "averageScore": "Gemiddelde score",
+      "yearsOld": "jaar",
+      "noData": "Geen gegevens beschikbaar",
+      "pointsDistribution": "Puntenverdeling",
+      "pointsDistributionDescription": "Hier vind je een overzicht van de scores van alle personen in je lokale gemeente die lid zijn van een unit.",
+      "points": "Punten",
+      "peopleInAUnit": "Personen in een unit",
+      "lastUpdated": "Laatst bijgewerkt"
     }
   }
 }

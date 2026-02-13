@@ -19,6 +19,8 @@ func webhookEventTypeToDBString(eventType model.WebhookEventType) string {
 		return "quiz_session_finished"
 	case model.WebhookEventTypeTeamNameChanged:
 		return "team_name_changed"
+	case model.WebhookEventTypeQuizFinalized:
+		return "quiz_finalized"
 	default:
 		return string(eventType)
 	}
@@ -34,6 +36,8 @@ func dbStringToWebhookEventType(eventType string) model.WebhookEventType {
 		return model.WebhookEventTypeQuizSessionFinished
 	case "team_name_changed":
 		return model.WebhookEventTypeTeamNameChanged
+	case "quiz_finalized":
+		return model.WebhookEventTypeQuizFinalized
 	default:
 		return model.WebhookEventType(eventType)
 	}

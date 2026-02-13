@@ -12,6 +12,11 @@ fragment QuizQuestionFields on QuizQuestion {
   questionOrder
   timeoutSeconds
   points
+  bettingEnabled
+  bettingMinPercentage
+  bettingMaxPercentage
+  bettingMinAbsolute
+  bettingMaxAbsolute
   ... on PredefinedQuestion {
     allowMultipleSelection
     predefinedAnswers {
@@ -27,6 +32,7 @@ fragment QuizQuestionFields on QuizQuestion {
     orderingItems {
       id
       itemText
+      correctOrder
     }
   }
 }
@@ -38,6 +44,11 @@ fragment QuizQuestionUserFields on QuizQuestion {
   questionText
   questionOrder
   timeoutSeconds
+  bettingEnabled
+  bettingMinAbsolute
+  bettingMaxAbsolute
+  bettingMinPercentage
+  bettingMaxPercentage
   ... on PredefinedQuestion {
     allowMultipleSelection
     predefinedAnswers {
@@ -53,6 +64,7 @@ fragment QuizQuestionUserFields on QuizQuestion {
     orderingItems {
       id
       itemText
+      correctOrder
     }
   }
 }
