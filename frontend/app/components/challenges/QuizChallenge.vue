@@ -640,17 +640,6 @@ const progressResults = computed(() => {
       >
         <!-- Normal mode -->
         <template v-if="actionState.mode === 'normal'">
-          <!-- Betting module -->
-          <QuizBettingModule
-            v-if="isBettingEnabled && !actionState.isAnswerLocked"
-            v-model="currentBetAmount"
-            :available-points="userScore ?? 0"
-            :min-percentage="currentQuestion?.bettingMinPercentage"
-            :max-percentage="currentQuestion?.bettingMaxPercentage"
-            :min-absolute="currentQuestion?.bettingMinAbsolute"
-            :max-absolute="currentQuestion?.bettingMaxAbsolute"
-            :disabled="actionState.isAnswerLocked"
-          />
           <DesignButton
             v-if="!actionState.isAnswerLocked"
             size="large"
@@ -680,7 +669,7 @@ const progressResults = computed(() => {
             :max-percentage="currentQuestion?.bettingMaxPercentage"
             :min-absolute="currentQuestion?.bettingMinAbsolute"
             :max-absolute="currentQuestion?.bettingMaxAbsolute"
-            :disabled="!actionState.isEditing"
+            :disabled="actionState.isBetSaved && !actionState.isEditing"
           />
           <DesignButton
             v-if="!actionState.isBetSaved || actionState.isEditing"

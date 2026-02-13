@@ -12,6 +12,7 @@ const {
     challengeId: route.params.challengeId,
   },
   pause: computed(() => !isAuthReady.value),
+  requestPolicy: 'network-only', // prevents some race conditions
 })
 
 // Listen for Firestore realtime updates

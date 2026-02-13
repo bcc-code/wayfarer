@@ -54,6 +54,7 @@ mutation SubmitQuizAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
     id
     answeredAt
     timeSpentSeconds
+    betAmount
     question {
       id
     }
@@ -83,6 +84,7 @@ mutation UpdateQuizAnswer($responseId: ID!, $input: UpdateQuizAnswerInput!) {
   updateQuizAnswer(responseId: $responseId, input: $input) {
     __typename
     id
+    betAmount
     ... on OrderingResponse {
       isCorrect
       submittedOrder
