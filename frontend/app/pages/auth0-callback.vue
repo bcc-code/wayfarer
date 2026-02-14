@@ -70,16 +70,45 @@ onMounted(async () => {
       await navigateTo('/', { replace: true })
     }
   } catch (error) {
-    console.error('Callback error:', error)
+    // Don't log errors about missing query params - this is expected when
+    // navigating directly to /auth0-callback without OAuth flow
+    const message = error instanceof Error ? error.message : String(error)
+    if (!message.includes('query params')) {
+      console.error('Callback error:', error)
+    }
     await navigateTo('/', { replace: true })
   } finally {
     processing.value = false
   }
 })
+
+const showResetButton = ref(false)
+useCountdown(10, {
+  immediate: true,
+  onComplete: () => (showResetButton.value = true),
+})
+function resetAndRetry() {
+  processing.value = false
+  auth0.logout({
+    logoutParams: {
+      returnTo: window.location.origin,
+    },
+  })
+}
 </script>
 
 <template>
   <div class="h-dvh">
-    <LoadingState />
+    <LoadingState>
+      <DesignButton
+        v-if="showResetButton"
+        variant="secondary"
+        size="small"
+        class="grow-0"
+        @click="resetAndRetry"
+      >
+        {{ $t('error.retry') }}
+      </DesignButton>
+    </LoadingState>
   </div>
 </template>
