@@ -39,7 +39,9 @@
       "receivedPoints": "Je hebt {points} punten verzameld.",
       "betterLuckNextTime": "Meer geluk de volgende keer!",
       "wellDone": "Goed gedaan!",
-      "perfect": "Perfect!"
+      "perfect": "Perfect!",
+      "thanksForAnswers": "Bedankt voor je antwoorden!",
+      "resultsRevealedLater": "De resultaten worden later bekendgemaakt."
     }
   },
   "challenges": {
