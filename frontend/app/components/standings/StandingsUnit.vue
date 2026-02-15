@@ -189,6 +189,7 @@ const showEditButton = computed(
           (entry) =>
             isMemberTeamLead(entry) ? $t('unit.unitLeader') : undefined
         "
+        :should-hide-score="(entry) => (entry.rank ?? 0) > 3 && !isTeamLead"
         hide-medals
       />
     </template>
