@@ -192,7 +192,6 @@ const showEditButton = computed(
         :should-hide-score="
           (entry) => (entry.rank ?? 0) > 3 && !isTeamLead && entry.id !== me?.id
         "
-        hide-medals
       />
     </template>
     <EmptyState v-else :title="$t('emptyStates.unit')" />
