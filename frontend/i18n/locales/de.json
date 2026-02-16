@@ -112,7 +112,8 @@
     "saveChanges": "Änderungen speichern",
     "unitName": "Name der Unit",
     "noUnitLeader": "Kein Unit-Leiter",
-    "selectUnitLeader": "Wähle den Unit-Leiter"
+    "selectUnitLeader": "Wähle den Unit-Leiter",
+    "description": "Nur die Punkte der Top 3 sind für alle sichtbar."
   },
   "place": "Platzierung",
   "points": "Punkte",
