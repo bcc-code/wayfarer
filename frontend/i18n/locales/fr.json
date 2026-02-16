@@ -34,6 +34,19 @@
     "finishReview": "Terminer la révision",
     "yourNumber": "Ton chiffre",
     "writeYourAnswer": "Écris ta réponse...",
+    "close": "Fermer le quiz",
+    "betting": {
+      "remainingPoints": "Points restants",
+      "yourBet": "Ta mise",
+      "maxBetMessage": "Tu peux miser au maximum {percentage}% de tes points.",
+      "sessionLocked": "La réponse est verrouillée",
+      "potentialWinnings": "{amount} points en gains potentiels",
+      "bettingClosed": "Les paris sont clos. Tu peux fermer le quiz.",
+      "results": "Résultats",
+      "yourPoints": "Tes points",
+      "winnings": "Gain :",
+      "losses": "Points perdus"
+    },
     "result": {
       "receivedNoPoints": "Tu n’as marqué aucun point.",
       "receivedPoints": "Tu as marqué {points} points.",

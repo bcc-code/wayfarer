@@ -4,6 +4,7 @@ defineProps<{
   badge?: string
   hideMedal?: boolean
   isMe?: boolean
+  hideScore?: boolean
 }>()
 
 const colorClasses = [
@@ -78,6 +79,7 @@ const getColorClasses = (
       </p>
     </div>
     <p
+      v-if="!hideScore"
       :class="[
         'text-label tabular-nums',
         { 'text-accent-contrast': hideMedal || (item.rank && item.rank > 3) },

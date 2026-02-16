@@ -39,7 +39,9 @@
       "receivedPoints": "Zdobyłeś {points} pkt.",
       "betterLuckNextTime": "Powodzenia następnym razem!",
       "wellDone": "Dobra robota!",
-      "perfect": "Idealnie!"
+      "perfect": "Idealnie!",
+      "thanksForAnswers": "Dziękujemy za odpowiedzi!",
+      "resultsRevealedLater": "Wyniki zostaną ogłoszone później."
     }
   },
   "challenges": {
@@ -171,6 +173,7 @@
       "gameNights": "Game Nights",
       "comingSoon": "Pojawi się wkrótce",
       "kickOff": "Kick-off",
+      "statistics": "Statystyki",
       "kickOffButton": "Rozpocznij onboarding do unitów",
       "kickOffOnboardingDescription": "Ta akcja rozpoczyna proces onboardingu do unitów dla całego zboru.",
       "kickOffOnboardingDescriptionWarning": "⚠ Nie zaczynajcie, jeśli nie jesteście gotowi.",
@@ -267,6 +270,21 @@
       "excludeFromLeaderboard": "Wyklucz z listy rankingowej",
       "excludeFromLeaderboardTooltip": "Po aktywacji ten unit nie będzie wyświetlany na liście rankingowej.",
       "excludedFromLeaderboard": "Ukryty z list rankingowych"
+    },
+    "statistics": {
+      "totalUsersInTeams": "Osoby w unitach",
+      "averageScoresByAgeGroup": "Średnia liczba punktów w poszczególnych grupach wiekowych",
+      "averageScoresByAgeGroupDescription": "Oto przegląd średnich wyników w poszczególnych grupach wiekowych. Uwzględniane są wyłącznie osoby należące do jakiegoś unitu.",
+      "ageGroup": "Grupa wiekowa",
+      "users": "Użytkownicy",
+      "averageScore": "Średnia liczba pkt",
+      "yearsOld": "lat",
+      "noData": "Brak danych",
+      "pointsDistribution": "Podział punktów",
+      "pointsDistributionDescription": "Oto przegląd punktów wszystkich osób, które są członkami unitów z Twojego zboru.",
+      "points": "Punkty",
+      "peopleInAUnit": "Osoby w unicie",
+      "lastUpdated": "Ostatnia aktualizacja"
     }
   }
 }

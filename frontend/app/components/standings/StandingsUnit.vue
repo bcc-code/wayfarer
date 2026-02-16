@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { findTeamLeader, findMemberById, isMemberTeamLead } from '~/utils/teams'
 
-const { isTeamLead } = useAuth()
+const { isTeamLead, me } = useAuth()
 const { isAuthReady } = useAuthReady()
 const {
   data,
@@ -189,7 +189,9 @@ const showEditButton = computed(
           (entry) =>
             isMemberTeamLead(entry) ? $t('unit.unitLeader') : undefined
         "
-        hide-medals
+        :should-hide-score="
+          (entry) => (entry.rank ?? 0) > 3 && !isTeamLead && entry.id !== me?.id
+        "
       />
     </template>
     <EmptyState v-else :title="$t('emptyStates.unit')" />

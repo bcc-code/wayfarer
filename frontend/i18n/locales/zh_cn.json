@@ -1,6 +1,11 @@
 {
   "error": {
-    "title": "糟糕！出问题了"
+    "title": "糟糕！出问题了",
+    "hint": "请重试。如果问题仍然存在，请尝试刷新页面。",
+    "networkHint": "看起来你的连接出现了问题。请检查你的网络连接并重试。",
+    "retry": "请重试",
+    "showDetails": "显示技术详情",
+    "hideDetails": "隐藏技术详情"
   },
   "emptyStates": {
     "standings": "目前还没有排行榜",
@@ -17,17 +22,31 @@
     "correctAnswer": "答案正确",
     "yourAnswer": "你的回答",
     "lockAnswer": "锁定回答",
+    "saveAnswer": "保存答案",
+    "changeAnswer": "更改答案",
     "questionNumber": "{current} 的 {total}",
     "continue": "继续",
     "nextQuestion": "下一个问题",
+    "previousQuestion": "上一页",
     "done": "完成",
+    "unavailable": "该测验目前不可用。",
+    "reviewAnswers": "查看答案",
+    "finishReview": "结束测验",
+    "yourNumber": "你的得分",
+    "writeYourAnswer": "请写下你的答案……",
     "result": {
       "receivedNoPoints": "你没有获得任何积分。",
       "receivedPoints": "你收集了 {points} 积分。",
       "betterLuckNextTime": "下次好运！",
       "wellDone": "做得好！",
-      "perfect": "完美！"
+      "perfect": "完美！",
+      "thanksForAnswers": "谢谢你们的回答！",
+      "resultsRevealedLater": "结果稍后公布。"
     }
+  },
+  "challenges": {
+    "active": "进行中",
+    "completed": "已完成"
   },
   "pages": {
     "standings": "排行榜",
@@ -117,11 +136,155 @@
     "thankYouDescription": "你的意见将有助于我们进一步完善这项服务。",
     "close": "不客气",
     "canContactMe": "是的，我同意您可以就我的反馈与我联系。",
-    "regards": "问候 {name}"
+    "disclosure": "反馈将与你的用户帐户关联。"
   },
   "pwa": {
     "updateAvailableTitle": "有更新版本可用。",
     "updateAvailableButton": "立即更新"
   },
-  "goToHiddenTreasures": "参加圣经学习"
+  "notifications": {
+    "promptTitle": "领取所有奖励，开启通知",
+    "promptDescription": "你在获得新成就或新挑战时会收到通知。",
+    "turnOn": "开启通知",
+    "notNow": "稍后再说"
+  },
+  "goToHiddenTreasures": "参加圣经学习",
+  "gameNights": {
+    "yourCode": "游戏之夜所在小队代码",
+    "yourCodeHint": "在电脑上打开页面并输入代码"
+  },
+  "admin": {
+    "common": {
+      "back": "返回",
+      "cancel": "取消",
+      "save": "保存",
+      "create": "新建",
+      "delete": "删除",
+      "deleteAll": "删除全部",
+      "copyLink": "复制管理页面链接",
+      "linkCopied": "链接已复制"
+    },
+    "breadcrumb": {
+      "home": "主页"
+    },
+    "churchHome": {
+      "administrators": "管理员",
+      "unitsAndPeople": "团队和队员",
+      "gameNights": "游戏活动之夜",
+      "comingSoon": "即将来临",
+      "kickOff": "正式启动",
+      "statistics": "统计数据",
+      "kickOffButton": "立即开始创建小队",
+      "kickOffOnboardingDescription": "执行此操作后，将为整个教会开启小队组建流程。",
+      "kickOffOnboardingDescriptionWarning": "⚠ 未准备就绪，请勿开始。",
+      "kickOffOnboardingExplanationTitle": "开始之后会发生什么？",
+      "kickOffOnboardingExplanation1": "当地教会的所有小队队长都会在 Interact（网页）中收到一项挑战。",
+      "kickOffOnboardingExplanation2": "他们可以更改队名——完成后可获得 300 积分。",
+      "kickOffConfirmation": "我确认挑战已经开始，我们已做好开始准备。",
+      "kickOffOnboardingCountdown": "重新开始 {seconds} 第二 | 从……开始 {seconds} 秒",
+      "kickOffSuccessTitle": "团队注册工作正在进行中！",
+      "kickOffSuccessDescription": "所有队长现在都已在应用程序中被分配了任务，并且可以更改该队队名。",
+      "noAccess": "你没有权限访问此页面，因为你不是管理员。请其他管理员授予你访问权限。"
+    },
+    "admins": {
+      "searchPlaceholder": "管理员",
+      "addPlaceholder": "添加管理员...",
+      "you": "你",
+      "noAdminsFound": "未找到管理员",
+      "confirmRemove": {
+        "title": "移除管理员？",
+        "message": "确定要移除{name} 此管理员身份吗？",
+        "confirm": "移除"
+      },
+      "success": {
+        "added": "添加管理员",
+        "removed": "移除管理员"
+      },
+      "errors": {
+        "addFailed": "无法添加管理员",
+        "removeFailed": "无法移除管理员"
+      },
+      "copyLinkDescription": "与其他管理员分享此链接"
+    },
+    "units": {
+      "title": "团队",
+      "people": "队员",
+      "filter": {
+        "title": "筛选",
+        "all": "全部",
+        "notInUnit": "不在一队",
+        "inUnit": "一队",
+        "showO36": "显示 36 岁以上人员",
+        "showO36Description": "36岁以上的人不会出现在排行榜上，也不会参加年轻人比赛"
+      },
+      "searchPlaceholder": "搜索团队或成员……",
+      "searchPeoplePlaceholder": "寻找成员……",
+      "expandAll": "所有小队",
+      "createOneUnit": "创建一个小队",
+      "createMultipleUnits": "创建多个小队",
+      "namePlaceholder": "小队名称（可选）",
+      "selectAll": "全选",
+      "noActiveProject": "当前没有进行中的竞赛",
+      "noUnitsFound": "未找到小队",
+      "noPeopleFound": "未找到成员",
+      "years": "{years} 年",
+      "selectedCount": "{count} 已选择小队 | {count} 选定小队",
+      "deleteSelected": "删除所选",
+      "bulkCreate": {
+        "countLabel": "小队数量",
+        "autoGenerateInfo": "小队名称是自动生成的，之后可以更改。"
+      },
+      "confirmDelete": {
+        "title": "删除小队？",
+        "message": "确定要删除吗？ {name}？所有成员将被移出该队。"
+      },
+      "confirmBulkDelete": {
+        "title": "创建多个小队",
+        "message": "确定要删除吗？ {count}？所有成员将被移出该队。"
+      },
+      "success": {
+        "created": "小队已创建",
+        "bulkCreated": "已创建的小队",
+        "deleted": "小队已删除",
+        "bulkDeleted": "{count} 已删除的小队"
+      },
+      "errors": {
+        "createFailed": "无法创建小队",
+        "bulkCreateFailed": "无法创建小队",
+        "addMemberFailed": "无法添加成员",
+        "removeMemberFailed": "无法移除成员",
+        "assignLeaderFailed": "无法设置队长",
+        "deleteFailed": "无法删除小队",
+        "bulkDeleteFailed": "无法删除小队",
+        "renameFailed": "无法更改队名",
+        "exclusionToggleFailed": "无法修改排行榜显示状态"
+      },
+      "ageWarning": "该队的平均年龄超过 36 岁，因此不会出现在排行榜上与参与年轻人比赛。如果信息有误，该队应该参加年轻人比赛，请告知我们。 {email}"
+    },
+    "unit": {
+      "noLeaderSelected": "尚未选择队长",
+      "members": "{count} 队员 | {count} 队员",
+      "makeLead": "设为队长",
+      "dragPeopleHere": "无成员 - 导入成员",
+      "addPersonPlaceholder": "添加成员...",
+      "excludeFromLeaderboard": "排除出排行榜",
+      "excludeFromLeaderboardTooltip": "启用后，该小队将不会显示在排行榜中。",
+      "excludedFromLeaderboard": "已从排行榜中隐藏"
+    },
+    "statistics": {
+      "totalUsersInTeams": "小队成员",
+      "averageScoresByAgeGroup": "各年龄组平均得分",
+      "averageScoresByAgeGroupDescription": "这里是各年龄组的平均得分概览。只统计队内的人员。",
+      "ageGroup": "年龄组",
+      "users": "用户",
+      "averageScore": "平均得分",
+      "yearsOld": " 年",
+      "noData": "暂无数据",
+      "pointsDistribution": "积分分布",
+      "pointsDistributionDescription": "这里是你本地教会中所有小队成员的得分概览。",
+      "points": "积分",
+      "peopleInAUnit": "小队成员",
+      "lastUpdated": "最近更新"
+    }
+  }
 }

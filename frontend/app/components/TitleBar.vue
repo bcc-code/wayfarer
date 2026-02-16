@@ -39,8 +39,7 @@ const headerClasses = cva(
       {
         size: 'small',
         hasScrolled: true,
-        class:
-          'pt-[max(calc(env(safe-area-inset-top)+0.75rem),1.5rem)] min-h-20',
+        class: 'pt-6 min-h-20',
       },
       {
         size: 'large',
@@ -50,8 +49,7 @@ const headerClasses = cva(
       {
         size: 'small',
         hasScrolled: false,
-        class:
-          'pt-[max(calc(env(safe-area-inset-top)+0.75rem),1.5rem)] min-h-20',
+        class: 'pt-6 min-h-20',
       },
       {
         size: 'large',

@@ -34,6 +34,19 @@
     "finishReview": "Finalizați revizuirea",
     "yourNumber": "Numărul tău",
     "writeYourAnswer": "Scrie răspunsul tău...",
+    "close": "Închide quiz-ul",
+    "betting": {
+      "remainingPoints": "Puncte rămase",
+      "yourBet": "Contribuția ta",
+      "maxBetMessage": "Poți paria maximum {percentage}% din punctele tale",
+      "sessionLocked": "Răspunsul este blocat",
+      "potentialWinnings": "{amount} puncte în câștiguri potențiale",
+      "bettingClosed": "Pariurile s-au încheiat. Puteți închide quiz-ul.",
+      "results": "Rezultate",
+      "yourPoints": "Punctele tale",
+      "winnings": "Câștiguri",
+      "losses": "Puncte pierdute"
+    },
     "result": {
       "receivedNoPoints": "Nu ai obținut niciun punct.",
       "receivedPoints": "Ai acumulat {points} punct(e).",

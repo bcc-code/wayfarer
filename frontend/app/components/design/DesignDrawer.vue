@@ -22,7 +22,7 @@ const close = () => {
     v-model:open="open"
     :ui="{
       content:
-        'bg-background-default rounded-t-modal h-full gradient-border ring-0 max-w-xl mx-auto',
+        'bg-background-default rounded-t-modal h-full gradient-border ring-0 max-w-xl mx-auto mt-[max(calc(var(--spacing)*24),env(safe-area-inset-top))] max-h-[min(96%,calc(100%-calc(env(safe-area-inset-top)+0.75rem)))]',
       overlay: 'bg-black/50',
     }"
     :set-background-color-on-scale="false"
