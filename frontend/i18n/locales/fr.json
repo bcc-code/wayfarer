@@ -112,7 +112,8 @@
     "saveChanges": "Enregistrer les modifications",
     "unitName": "Nom de l’unité",
     "noUnitLeader": "Aucun chef d’unité",
-    "selectUnitLeader": "Choisir un chef d’unité"
+    "selectUnitLeader": "Choisir un chef d’unité",
+    "description": "Seuls les 3 meilleurs scores sont visibles par tous."
   },
   "place": "place",
   "points": "points",
