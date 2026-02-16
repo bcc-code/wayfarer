@@ -112,7 +112,8 @@
     "saveChanges": "Tallenna muutokset",
     "unitName": "Yksikön nimi",
     "noUnitLeader": "Ei yksikön johtajaa",
-    "selectUnitLeader": "Valitse yksikön johtaja"
+    "selectUnitLeader": "Valitse yksikön johtaja",
+    "description": "Vain kolmen parhaan pisteet ovat kaikkien nähtävissä"
   },
   "place": "sijoitus",
   "points": "pisteet",
