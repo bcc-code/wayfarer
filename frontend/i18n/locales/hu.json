@@ -9,7 +9,7 @@
   },
   "emptyStates": {
     "standings": "Még nincs top lista",
-    "unit": "Még nincs top lista a unitod számára",
+    "unit": "Még nincs top lista a Unitod számára",
     "challenges": "Még nincs kihívás",
     "pointHistory": "Még nincs pont"
   },
@@ -34,13 +34,32 @@
     "finishReview": "Átnézés befejezése",
     "yourNumber": "A számod",
     "writeYourAnswer": "Írd meg a válaszodat...",
+    "close": "Kvíz bezárása",
+    "betting": {
+      "remainingPoints": "Maradék pontok",
+      "yourBet": "A hozzájárulásod",
+      "maxBetMessage": "A pontjaid maximum {percentage}%-át teheted fel tétként.",
+      "sessionLocked": "A válasz zárolva van",
+      "potentialWinnings": "{amount} pont a potenciális nyereményben",
+      "bettingClosed": "A fogadásnak vége. Bezárhatod a kvízt.",
+      "results": "Eredmény",
+      "yourPoints": "A pontjaid",
+      "winnings": "Nyeressék",
+      "losses": "Elvesztett pontok"
+    },
     "result": {
       "receivedNoPoints": "Nem szereztél pontot.",
       "receivedPoints": "{points} pontot gyűjtöttél.",
       "betterLuckNextTime": "Legközelebb több szerencsét!",
       "wellDone": "Szép munka!",
-      "perfect": "Tökéletes!"
+      "perfect": "Tökéletes!",
+      "thanksForAnswers": "Köszönjük a válaszaidat!",
+      "resultsRevealedLater": "Az eredményeket később hozzák nyilvánosságra."
     }
+  },
+  "challenges": {
+    "active": "Aktív",
+    "completed": "Befejezett"
   },
   "pages": {
     "standings": "Top listák",
@@ -74,7 +93,7 @@
   },
   "standings": {
     "global": "Globális",
-    "unit": "Az én unitom",
+    "unit": "Az én Unitom",
     "local": "Helyi",
     "you": "Te",
     "rules": "Szabályok",
@@ -92,8 +111,9 @@
     "unitLeader": "Unitvezető",
     "saveChanges": "Módosítások mentése",
     "unitName": "Unit neve",
-    "noUnitLeader": "Nincs unitvezető",
-    "selectUnitLeader": "Unitvezető választása"
+    "noUnitLeader": "Nincs Unitvezető",
+    "selectUnitLeader": "Unitvezető választása",
+    "description": "Csak a legjobb 3 pontjait láthatók mindenki számára."
   },
   "place": "helyezés",
   "points": "pont",
@@ -144,7 +164,7 @@
   },
   "goToHiddenTreasures": "Menj a Biblia tanulmányozására",
   "gameNights": {
-    "yourCode": "A Game Night unitkódod",
+    "yourCode": "A Game Night Unitkódod",
     "yourCodeHint": "Nyisd meg az oldalt a számítógépén, és írd be a kódot."
   },
   "admin": {
@@ -165,7 +185,20 @@
       "administrators": "Adminisztrátorok",
       "unitsAndPeople": "Unitok és személyek",
       "gameNights": "Játékesték",
-      "comingSoon": "Hamarosan jön"
+      "comingSoon": "Hamarosan jön",
+      "kickOff": "Kick-off",
+      "statistics": "Statisztika",
+      "kickOffButton": "Kezdje el most a Unitok bevezetését",
+      "kickOffOnboardingDescription": "Ez a lépés elindítja az egész helyi gyülekezet Unitok bevezetését",
+      "kickOffOnboardingDescriptionWarning": "⚠ Ne kezdj el, ha még nem állsz készen.",
+      "kickOffOnboardingExplanationTitle": "Mi történik, amikor elkezdesz?",
+      "kickOffOnboardingExplanation1": "A helyi közösség összes Unitvezetője kihívást kap az Interact (webalkalmazás) alkalmazásban.",
+      "kickOffOnboardingExplanation2": "Megváltoztathatják a Unit nevét – és ezzel 300 pontot kapnak.",
+      "kickOffConfirmation": "Megerősítem, hogy a kezdés már folyamatban van, és készen állunk a kezdésre.",
+      "kickOffOnboardingCountdown": "{seconds} másodperc múlva indul | {seconds} másodperc múlva indul",
+      "kickOffSuccessTitle": "A Unitok bevezetése folyamatban van!",
+      "kickOffSuccessDescription": "Minden Unitvezetőnek kiosztottak egy feladatot az alkalmazásban, és megváltoztathatják Unitjuk nevét.",
+      "noAccess": "Nem rendelkezel hozzáféréssel ehhez az oldalhoz, mert nem vagy adminisztrátor. Kérj meg egy másik adminisztrátort, hogy biztosítson neked hozzáférést."
     },
     "admins": {
       "searchPlaceholder": "Adminisztrátorok keresése...",
@@ -251,6 +284,21 @@
       "excludeFromLeaderboard": "Kizárás a toplistából",
       "excludeFromLeaderboardTooltip": "Aktiválás esetén ez a unit nem jelenik meg a felső listán.",
       "excludedFromLeaderboard": "Elrejtve a toplistákról"
+    },
+    "statistics": {
+      "totalUsersInTeams": "Unitokban lévő személyek",
+      "averageScoresByAgeGroup": "Átlagos pontszám korcsoportonként",
+      "averageScoresByAgeGroupDescription": "Itt található az átlagos pontszámok áttekintése korcsoportonként. Csak egy Unitban lévő személyeket számolják.",
+      "ageGroup": "Korcsoport",
+      "users": "Felhasználók",
+      "averageScore": "Átlagos pontszám",
+      "yearsOld": "év",
+      "noData": "Nincs elérhető adat",
+      "pointsDistribution": "Pontok elosztása",
+      "pointsDistributionDescription": "Itt találsz egy áttekintést azokról a pontszámokról, amelyeket a helyi gyülekezetedben egy Unit tagjai értek el.",
+      "points": "Pont",
+      "peopleInAUnit": "Egy Unitban lévő személyek",
+      "lastUpdated": "Utolsó frissítés"
     }
   }
 }
