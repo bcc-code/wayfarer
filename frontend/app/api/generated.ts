@@ -3539,6 +3539,41 @@ export type DeleteQuizQuestionMutationVariables = Exact<{
 
 export type DeleteQuizQuestionMutation = { __typename?: 'Mutation', deleteQuizQuestion: boolean };
 
+export type CreateQuizSessionMutationVariables = Exact<{
+  input: CreateQuizSessionInput;
+}>;
+
+
+export type CreateQuizSessionMutation = { __typename?: 'Mutation', createQuizSession: { __typename?: 'QuizSession', id: string, name?: string | null, state: QuizSessionState, openAt?: any | null, lockAt?: any | null, finishAt?: any | null, createdAt: any, quiz: { __typename?: 'Quiz', id: string, name: string } } };
+
+export type GrantQuizSessionAccessMutationVariables = Exact<{
+  input: GrantQuizSessionAccessInput;
+}>;
+
+
+export type GrantQuizSessionAccessMutation = { __typename?: 'Mutation', grantQuizSessionAccess: number };
+
+export type LockQuizSessionMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type LockQuizSessionMutation = { __typename?: 'Mutation', lockQuizSession: { __typename?: 'QuizSession', id: string, name?: string | null, state: QuizSessionState, openAt?: any | null, lockAt?: any | null, finishAt?: any | null, createdAt: any, accessCount: number, quiz: { __typename?: 'Quiz', id: string, name: string }, createdBy: { __typename?: 'User', id: string, name: string } } };
+
+export type ReopenQuizSessionMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type ReopenQuizSessionMutation = { __typename?: 'Mutation', reopenQuizSession: { __typename?: 'QuizSession', id: string, name?: string | null, state: QuizSessionState, openAt?: any | null, lockAt?: any | null, finishAt?: any | null, createdAt: any, accessCount: number, quiz: { __typename?: 'Quiz', id: string, name: string }, createdBy: { __typename?: 'User', id: string, name: string } } };
+
+export type FinishQuizSessionMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type FinishQuizSessionMutation = { __typename?: 'Mutation', finishQuizSession: { __typename?: 'QuizSession', id: string, name?: string | null, state: QuizSessionState, openAt?: any | null, lockAt?: any | null, finishAt?: any | null, createdAt: any, accessCount: number, quiz: { __typename?: 'Quiz', id: string, name: string }, createdBy: { __typename?: 'User', id: string, name: string } } };
+
 export type StartQuizSessionMutationVariables = Exact<{
   sessionId: Scalars['ID']['input'];
 }>;
@@ -4796,6 +4831,114 @@ export const DeleteQuizQuestionDocument = gql`
 
 export function useDeleteQuizQuestionMutation() {
   return Urql.useMutation<DeleteQuizQuestionMutation, DeleteQuizQuestionMutationVariables>(DeleteQuizQuestionDocument);
+};
+export const CreateQuizSessionDocument = gql`
+    mutation CreateQuizSession($input: CreateQuizSessionInput!) {
+  createQuizSession(input: $input) {
+    id
+    name
+    state
+    openAt
+    lockAt
+    finishAt
+    createdAt
+    quiz {
+      id
+      name
+    }
+  }
+}
+    `;
+
+export function useCreateQuizSessionMutation() {
+  return Urql.useMutation<CreateQuizSessionMutation, CreateQuizSessionMutationVariables>(CreateQuizSessionDocument);
+};
+export const GrantQuizSessionAccessDocument = gql`
+    mutation GrantQuizSessionAccess($input: GrantQuizSessionAccessInput!) {
+  grantQuizSessionAccess(input: $input)
+}
+    `;
+
+export function useGrantQuizSessionAccessMutation() {
+  return Urql.useMutation<GrantQuizSessionAccessMutation, GrantQuizSessionAccessMutationVariables>(GrantQuizSessionAccessDocument);
+};
+export const LockQuizSessionDocument = gql`
+    mutation LockQuizSession($id: ID!) {
+  lockQuizSession(id: $id) {
+    id
+    name
+    state
+    openAt
+    lockAt
+    finishAt
+    createdAt
+    accessCount
+    quiz {
+      id
+      name
+    }
+    createdBy {
+      id
+      name
+    }
+  }
+}
+    `;
+
+export function useLockQuizSessionMutation() {
+  return Urql.useMutation<LockQuizSessionMutation, LockQuizSessionMutationVariables>(LockQuizSessionDocument);
+};
+export const ReopenQuizSessionDocument = gql`
+    mutation ReopenQuizSession($id: ID!) {
+  reopenQuizSession(id: $id) {
+    id
+    name
+    state
+    openAt
+    lockAt
+    finishAt
+    createdAt
+    accessCount
+    quiz {
+      id
+      name
+    }
+    createdBy {
+      id
+      name
+    }
+  }
+}
+    `;
+
+export function useReopenQuizSessionMutation() {
+  return Urql.useMutation<ReopenQuizSessionMutation, ReopenQuizSessionMutationVariables>(ReopenQuizSessionDocument);
+};
+export const FinishQuizSessionDocument = gql`
+    mutation FinishQuizSession($id: ID!) {
+  finishQuizSession(id: $id) {
+    id
+    name
+    state
+    openAt
+    lockAt
+    finishAt
+    createdAt
+    accessCount
+    quiz {
+      id
+      name
+    }
+    createdBy {
+      id
+      name
+    }
+  }
+}
+    `;
+
+export function useFinishQuizSessionMutation() {
+  return Urql.useMutation<FinishQuizSessionMutation, FinishQuizSessionMutationVariables>(FinishQuizSessionDocument);
 };
 export const StartQuizSessionDocument = gql`
     mutation StartQuizSession($sessionId: ID!) {
