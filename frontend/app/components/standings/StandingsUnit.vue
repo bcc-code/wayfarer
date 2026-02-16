@@ -112,6 +112,9 @@ const showEditButton = computed(
         <h2 class="text-heading text-balance">
           {{ data.myCurrentProject.myTeam.name }}
         </h2>
+        <p class="text-caption text-text-muted">
+          {{ $t('unit.description') }}
+        </p>
         <DesignDrawer
           v-if="isTeamLead"
           v-model:open="showEditDrawer"
@@ -192,6 +195,7 @@ const showEditButton = computed(
         :should-hide-score="
           (entry) => (entry.rank ?? 0) > 3 && !isTeamLead && entry.id !== me?.id
         "
+        hide-medals
       />
     </template>
     <EmptyState v-else :title="$t('emptyStates.unit')" />

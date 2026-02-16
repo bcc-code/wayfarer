@@ -112,7 +112,8 @@
     "saveChanges": "Lagre endringer",
     "unitName": "Unitnavn",
     "noUnitLeader": "Ingen unitleder",
-    "selectUnitLeader": "Velg unitleder"
+    "selectUnitLeader": "Velg unitleder",
+    "description": "Kun topp 3 sine poeng er synlig for alle"
   },
   "place": "plassering",
   "points": "poeng",
