@@ -9,6 +9,14 @@ definePageMeta({
 gql(`
   query AdminGameNightPage {
     frontendConfig
+    myCurrentProject {
+      myChurchTeams {
+        members {
+          id
+          isTeamLead
+        }
+      }
+    }
   }
 `)
 
@@ -24,6 +32,21 @@ const quizId = computed(() => {
   return frontendConfigJson[`gamenight_${gamenight.value}_betting_quiz_id`] as
     | string
     | undefined
+})
+
+const unitLeaders = computed(() =>
+  pageData.value?.myCurrentProject.myChurchTeams.flatMap((team) =>
+    team.members.filter((member) => member.isTeamLead),
+  ),
+)
+
+const unitLeaderChallengeId = computed(() => {
+  const frontendConfig = pageData.value?.frontendConfig
+  if (!frontendConfig) return
+  const frontendConfigJson = JSON.parse(frontendConfig)
+  return frontendConfigJson[
+    `gamenight_${gamenight.value}_unit_leader_challenge_id`
+  ] as string | undefined
 })
 
 // We need to keep track of quite a bit of state
@@ -195,6 +218,19 @@ async function enrollUsersInChallenge() {
       },
     },
   })
+}
+
+async function enrollUnitLeadersInChallenge() {
+  if (!unitLeaderChallengeId.value || !unitLeaders.value?.length) return
+
+  await bulkEnrollUsersInChallenge({
+    challengeId: unitLeaderChallengeId.value,
+    target: {
+      userIds: unitLeaders.value.map((leader) => leader.id),
+    },
+  })
+
+  state.value.step++
 }
 </script>
 
@@ -376,6 +412,9 @@ async function enrollUsersInChallenge() {
           title="Send ut login-kode til pc26.bcc.media"
           :active="state.step === 5"
         >
+          <UButton size="xl" @click="enrollUnitLeadersInChallenge">
+            Gi unitledere tilgang til utfordringen
+          </UButton>
         </AdminStep>
         <AdminStep
           :step="6"

@@ -3972,7 +3972,7 @@ export type ChurchAdminsPageQuery = { __typename?: 'Query', usersWithRole: Array
 export type AdminGameNightPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminGameNightPageQuery = { __typename?: 'Query', frontendConfig: any };
+export type AdminGameNightPageQuery = { __typename?: 'Query', frontendConfig: any, myCurrentProject: { __typename?: 'Project', myChurchTeams: Array<{ __typename?: 'Team', members: Array<{ __typename?: 'TeamMember', id: string, isTeamLead: boolean }> }> } };
 
 export type AdminKickOffPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -5940,6 +5940,14 @@ export function useChurchAdminsPageQuery(options?: Omit<Urql.UseQueryArgs<never,
 export const AdminGameNightPageDocument = gql`
     query AdminGameNightPage {
   frontendConfig
+  myCurrentProject {
+    myChurchTeams {
+      members {
+        id
+        isTeamLead
+      }
+    }
+  }
 }
     `;
 
