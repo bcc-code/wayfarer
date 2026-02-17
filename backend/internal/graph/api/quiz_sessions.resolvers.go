@@ -507,8 +507,8 @@ func (r *mutationResolver) GrantQuizSessionAccess(ctx context.Context, input mod
 		return 0, fmt.Errorf("quiz not found")
 	}
 
-	// Check if user can grant access
-	if !r.RoleService.CanManageProject(ctx, userID, quiz.ProjectID) {
+	// Check if user can grant access (project manager OR session creator)
+	if session.CreatedBy != userID && !r.RoleService.CanManageProject(ctx, userID, quiz.ProjectID) {
 		return 0, fmt.Errorf("unauthorized to grant session access")
 	}
 
