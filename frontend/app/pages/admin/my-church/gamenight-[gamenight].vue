@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { onKeyDown } from '@vueuse/core'
+
 definePageMeta({
   layout: 'church-admin',
   middleware: ['admin'],
@@ -32,6 +34,13 @@ const state = useLocalStorage(`state:gamenight-${gamenight.value}`, {
   step: 1,
   quizSessionId: undefined as string | undefined,
   quizSessionState: undefined as QuizSessionState | undefined,
+})
+
+onKeyDown('ArrowUp', () => {
+  state.value.step++
+})
+onKeyDown('ArrowDown', () => {
+  state.value.step--
 })
 
 const config = useRuntimeConfig()
