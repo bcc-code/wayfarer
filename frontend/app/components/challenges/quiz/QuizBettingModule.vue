@@ -93,7 +93,7 @@ const resultAmount = computed(() => {
           {{ isWin ? t('quiz.betting.winnings') : t('quiz.betting.losses') }}
         </p>
         <p class="text-heading tabular-nums">
-          {{ resultAmount }}
+          {{ resultAmount >= 0 ? '+' : '-' }}{{ resultAmount }}
         </p>
       </div>
       <div class="text-center pl-default pr-medium">
@@ -101,7 +101,7 @@ const resultAmount = computed(() => {
           {{ t('quiz.betting.yourPoints') }}
         </p>
         <p class="text-heading tabular-nums">
-          {{ availablePoints + resultAmount }}
+          {{ availablePoints }}
         </p>
       </div>
     </div>
