@@ -34,6 +34,19 @@
     "finishReview": "结束测验",
     "yourNumber": "你的得分",
     "writeYourAnswer": "请写下你的答案……",
+    "close": "关闭测验",
+    "betting": {
+      "remainingPoints": "剩余积分",
+      "yourBet": "你的投入",
+      "maxBetMessage": "你可以下注最高金额。 {percentage}你的积分百分比",
+      "sessionLocked": "答案已锁定。",
+      "potentialWinnings": "{amount} 潜在奖金积分",
+      "bettingClosed": "下注结束了。你可以关闭测验",
+      "results": "结果",
+      "yourPoints": "你的积分",
+      "winnings": "奖励",
+      "losses": "失分"
+    },
     "result": {
       "receivedNoPoints": "你没有获得任何积分。",
       "receivedPoints": "你收集了 {points} 积分。",
@@ -99,7 +112,8 @@
     "saveChanges": "保存更改",
     "unitName": "队名",
     "noUnitLeader": "队长缺失",
-    "selectUnitLeader": "选择队长"
+    "selectUnitLeader": "选择队长",
+    "description": "只有前三名的得分对所有人可见。"
   },
   "place": "地点",
   "points": "积分",
@@ -174,6 +188,7 @@
       "comingSoon": "即将来临",
       "kickOff": "正式启动",
       "statistics": "统计数据",
+      "gameNight": "游戏活动之夜 1:",
       "kickOffButton": "立即开始创建小队",
       "kickOffOnboardingDescription": "执行此操作后，将为整个教会开启小队组建流程。",
       "kickOffOnboardingDescriptionWarning": "⚠ 未准备就绪，请勿开始。",
