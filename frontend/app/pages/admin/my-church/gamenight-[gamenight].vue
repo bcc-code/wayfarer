@@ -1,13 +1,28 @@
 <script lang="ts" setup>
-import { onKeyDown } from '@vueuse/core'
-
 definePageMeta({
   layout: 'church-admin',
   middleware: ['admin'],
 })
 
+gql(`
+  query AdminGameNightPage {
+    frontendConfig
+  }
+`)
+
+const { data: pageData } = useAdminGameNightPageQuery()
+
 const route = useRoute('admin-my-church-gamenight-gamenight')
 const gamenight = computed(() => route.params.gamenight)
+
+const quizId = computed(() => {
+  const frontendConfig = pageData.value?.frontendConfig
+  if (!frontendConfig) return
+  const frontendConfigJson = JSON.parse(frontendConfig)
+  return frontendConfigJson[`gamenight_${gamenight.value}_betting_quiz_id`] as
+    | string
+    | undefined
+})
 
 // We need to keep track of quite a bit of state
 // that should be persisted between refreshes
@@ -19,15 +34,8 @@ const state = useLocalStorage(`state:gamenight-${gamenight.value}`, {
   quizSessionState: undefined as QuizSessionState | undefined,
 })
 
-onKeyDown('ArrowDown', () => {
-  state.value.step = Math.min(9, state.value.step + 1)
-})
-onKeyDown('ArrowUp', () => {
-  state.value.step = Math.max(1, state.value.step - 1)
-})
-
 const config = useRuntimeConfig()
-const { getAccessToken } = useAuth()
+const { getAccessToken, me } = useAuth()
 const { data: cryptexUrl, status: cryptexUrlStatus } = useFetch<{
   url: string
 }>(
@@ -51,20 +59,48 @@ const toast = useToast()
 
 // Betting
 const { executeMutation: createQuizSession } = useCreateQuizSessionMutation()
+const { executeMutation: openQuizSession } = useOpenQuizSessionMutation()
+const { executeMutation: grantQuizSessionAccess } =
+  useGrantQuizSessionAccessMutation()
 const { executeMutation: lockQuizSession } = useLockQuizSessionMutation()
 const { executeMutation: reopenQuizSession } = useReopenQuizSessionMutation()
 const { executeMutation: finishQuizSession } = useFinishQuizSessionMutation()
+const { executeMutation: bulkEnrollUsersInChallenge } =
+  useBulkEnrollUsersInChallengeMutation()
+const { data: quizDetails, executeQuery: getQuizDetails } = useQuizDetailsQuery(
+  {
+    variables: computed(() => ({
+      id: quizId.value ?? '',
+    })),
+  },
+)
 
 async function createBetting() {
-  const { data } = await createQuizSession({ input: { quizId: '' } }) // TODO: use quiz id from frontend config
+  if (!quizId.value) {
+    throw new Error('Quiz ID not configured for this gamenight')
+  }
+
+  const { data } = await createQuizSession({
+    input: {
+      quizId: quizId.value,
+      name: `Gamenight ${gamenight.value} Betting for ${me.value?.church.name}`,
+    },
+  })
   state.value.quizSessionId = data?.createQuizSession.id
-  state.value.quizSessionState = data?.createQuizSession.state
+
+  if (data?.createQuizSession.id) {
+    const { data: openData } = await openQuizSession({
+      id: data.createQuizSession.id,
+    })
+    state.value.quizSessionState = openData?.openQuizSession.state
+  }
 }
 
 async function startBetting() {
   try {
     await createBetting()
     await giveUsersBettingAccess()
+    await enrollUsersInChallenge()
   } catch (err) {
     console.error(err)
     toast.add({
@@ -125,7 +161,31 @@ async function finishBetting() {
 }
 
 async function giveUsersBettingAccess() {
-  // TODO: implement the same way as in kickoff basically
+  if (!state.value.quizSessionId || !me.value?.church.id) return
+
+  await grantQuizSessionAccess({
+    input: {
+      sessionId: state.value.quizSessionId,
+      churchIds: [me.value.church.id],
+    },
+  })
+}
+
+async function enrollUsersInChallenge() {
+  if (!quizId.value || !me.value?.church.id) return
+
+  await getQuizDetails()
+  if (!quizDetails.value?.quiz.challenge.id) return
+
+  await bulkEnrollUsersInChallenge({
+    challengeId: quizDetails.value.quiz.challenge.id,
+    target: {
+      churchInProject: {
+        churchId: me.value.church.id,
+        projectId: quizDetails.value?.quiz.project.id,
+      },
+    },
+  })
 }
 </script>
 

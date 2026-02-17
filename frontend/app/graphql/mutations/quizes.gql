@@ -45,6 +45,27 @@ mutation CreateQuizSession($input: CreateQuizSessionInput!) {
   }
 }
 
+mutation OpenQuizSession($id: ID!) {
+  openQuizSession(id: $id) {
+    id
+    name
+    state
+    openAt
+    lockAt
+    finishAt
+    createdAt
+    accessCount
+    quiz {
+      id
+      name
+    }
+    createdBy {
+      id
+      name
+    }
+  }
+}
+
 mutation GrantQuizSessionAccess($input: GrantQuizSessionAccessInput!) {
   grantQuizSessionAccess(input: $input)
 }
