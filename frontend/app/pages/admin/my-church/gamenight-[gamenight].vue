@@ -15,8 +15,8 @@ const state = useLocalStorage(`state:gamenight-${gamenight.value}`, {
   filmsReady: false,
   bigScreenReady: false,
   step: 1,
-  quizSessionId: null as string | null,
-  quizSessionState: null as QuizSessionState | null,
+  quizSessionId: undefined as string | undefined,
+  quizSessionState: undefined as QuizSessionState | undefined,
 })
 
 onKeyDown('ArrowDown', () => {
@@ -46,6 +46,87 @@ const bigScreenUrl = computed(() => {
 })
 
 const filmsUrl = 'https://pc26.bcc.media/gamenight-filmer-1237'
+
+const toast = useToast()
+
+// Betting
+const { executeMutation: createQuizSession } = useCreateQuizSessionMutation()
+const { executeMutation: lockQuizSession } = useLockQuizSessionMutation()
+const { executeMutation: reopenQuizSession } = useReopenQuizSessionMutation()
+const { executeMutation: finishQuizSession } = useFinishQuizSessionMutation()
+
+async function createBetting() {
+  const { data } = await createQuizSession({ input: { quizId: '' } }) // TODO: use quiz id from frontend config
+  state.value.quizSessionId = data?.createQuizSession.id
+  state.value.quizSessionState = data?.createQuizSession.state
+}
+
+async function startBetting() {
+  try {
+    await createBetting()
+    await giveUsersBettingAccess()
+  } catch (err) {
+    console.error(err)
+    toast.add({
+      color: 'error',
+      icon: 'lucide:alert-triangle',
+      title: 'Kunne ikke starte tipping',
+    })
+  }
+}
+
+async function lockBetting() {
+  if (!state.value.quizSessionId) return
+
+  try {
+    const { data } = await lockQuizSession({ id: state.value.quizSessionId })
+    state.value.quizSessionState = data?.lockQuizSession.state
+  } catch (err) {
+    console.error(err)
+    toast.add({
+      color: 'error',
+      icon: 'lucide:alert-triangle',
+      title: 'Kunne ikke låse tipping',
+    })
+  }
+}
+
+async function reopenBetting() {
+  if (!state.value.quizSessionId) return
+
+  try {
+    const { data } = await reopenQuizSession({ id: state.value.quizSessionId })
+    state.value.quizSessionState = data?.reopenQuizSession.state
+  } catch (err) {
+    console.error(err)
+    toast.add({
+      color: 'error',
+      icon: 'lucide:alert-triangle',
+      title: 'Kunne ikkeåpne tipping',
+    })
+  }
+}
+
+async function finishBetting() {
+  if (!state.value.quizSessionId) return
+
+  try {
+    const { data } = await finishQuizSession({ id: state.value.quizSessionId })
+    state.value.quizSessionState = data?.finishQuizSession.state
+    state.value.step++
+  } catch (err) {
+    console.error(err)
+    toast.add({
+      color: 'error',
+      icon: 'lucide:alert-triangle',
+      title: 'Kunne ikke avslutte tipping',
+    })
+  }
+}
+
+async function giveUsersBettingAccess() {
+  // TODO: implement the same way as in kickoff basically
+}
 </script>
 
 <template>
@@ -84,7 +165,9 @@ const filmsUrl = 'https://pc26.bcc.media/gamenight-filmer-1237'
         {{ $t('admin.churchHome.gameNight', { number: gamenight }) }}
       </h1>
 
-      <section class="space-y-8 my-6 rounded-2xl p-8 border border-muted">
+      <section
+        class="space-y-8 my-6 rounded-2xl p-8 pr-12 border border-muted w-max"
+      >
         <h2 class="text-2xl font-semibold">Før du starter</h2>
         <div>
           <UCheckbox
@@ -174,7 +257,27 @@ const filmsUrl = 'https://pc26.bcc.media/gamenight-filmer-1237'
           description="Alle må gå inn på 'Utfordringer' siden i Interact appen"
           :active="state.step === 3"
         >
-          <UButton size="xl">Start tipping</UButton>
+          <UButton
+            v-if="!state.quizSessionState"
+            size="xl"
+            @click="startBetting"
+          >
+            Start tipping
+          </UButton>
+          <UButton
+            v-if="state.quizSessionState === QuizSessionState.Open"
+            size="xl"
+            @click="lockBetting"
+          >
+            Lås tipping
+          </UButton>
+          <UButton
+            v-if="state.quizSessionState === QuizSessionState.Locked"
+            size="xl"
+            @click="reopenBetting"
+          >
+            Gjenåpne tipping
+          </UButton>
         </AdminStep>
         <AdminStep
           :step="4"
@@ -230,13 +333,35 @@ const filmsUrl = 'https://pc26.bcc.media/gamenight-filmer-1237'
           title="Spill av film 3"
           :active="state.step === 7"
         >
+          <UButton
+            size="xl"
+            :to="`${filmsUrl}?film=3`"
+            trailing-icon="lucide:external-link"
+          >
+            Gå til film 3
+          </UButton>
+          <UButton
+            class="flex mt-2"
+            variant="ghost"
+            trailing-icon="lucide:check"
+            size="xl"
+            @click="state.step++"
+          >
+            Filmen er avspilt
+          </UButton>
         </AdminStep>
         <AdminStep
           :step="13"
           title="Gi deltakerne poeng for tippingen"
           :active="state.step === 8"
         >
-          <UButton size="xl">Frigi poeng nå</UButton>
+          <UButton
+            size="xl"
+            :disabled="state.quizSessionState !== QuizSessionState.Locked"
+            @click="finishBetting"
+          >
+            Frigi poeng nå
+          </UButton>
         </AdminStep>
         <div
           class="py-24 text-center text-2xl font-semibold data-[active=false]:pointer-events-none data-[active=false]:opacity-50"

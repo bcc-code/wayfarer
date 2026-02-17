@@ -54,7 +54,11 @@ async function copyLink() {
           {{ $t('admin.churchHome.kickOff') }}
         </NuxtLink>
         <NuxtLink
-          :to="{ name: 'admin-my-church-gamenights' }"
+          :to="
+            $config.public.isStaging
+              ? { name: 'admin-my-church-gamenights' }
+              : undefined
+          "
           class="rounded-2xl bg-muted p-12 gap-2 flex flex-col items-center justify-center text-center hover:bg-accented"
         >
           <Icon name="lucide:gamepad-2" class="size-8 text-dimmed shrink-0" />
