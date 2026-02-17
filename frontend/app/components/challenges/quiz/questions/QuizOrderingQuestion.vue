@@ -123,6 +123,26 @@ onMounted(() => {
   }
 })
 
+// Watch for prop changes to update correctOrder values when session finishes
+watch(
+  () => props.question.orderingItems,
+  (newItems) => {
+    if (!items.value.length) return
+
+    // Create a map of id -> correctOrder from new props
+    const correctOrderMap = new Map(
+      newItems.map((item) => [item.id, item.correctOrder]),
+    )
+
+    // Update correctOrder in existing items (preserves user's order)
+    items.value = items.value.map((item) => ({
+      ...item,
+      correctOrder: correctOrderMap.get(item.id),
+    }))
+  },
+  { deep: true },
+)
+
 const isAnswerConfirmed = ref(props.readonly ?? false)
 const isSubmitting = ref(false)
 const submittedResult = ref<{ isCorrect: boolean | null } | null>(null)
