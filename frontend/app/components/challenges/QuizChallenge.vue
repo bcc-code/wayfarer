@@ -520,10 +520,13 @@ const progressResults = computed(() => {
     <template v-else-if="currentQuestion">
       <div
         v-show="isBettingEnabled && sessionState === QuizSessionState.Locked"
-        class="grow flex py-6 px-default items-center justify-center"
+        class="grow flex flex-col py-6 px-default items-center justify-center"
       >
         <p class="text-heading text-balance text-center">
           {{ $t('quiz.betting.bettingClosed') }}
+        </p>
+        <p class="text-title text-text-muted">
+          {{ $t('quiz.betting.yourBetIs', { bet: currentBetAmount }) }}
         </p>
       </div>
       <div
@@ -717,6 +720,7 @@ const progressResults = computed(() => {
             :min-absolute="currentQuestion?.bettingMinAbsolute"
             :max-absolute="currentQuestion?.bettingMaxAbsolute"
             :disabled="actionState.isBetSaved && !actionState.isEditing"
+            mode="betting"
           />
           <DesignButton
             v-if="!actionState.isBetSaved || actionState.isEditing"
@@ -748,6 +752,7 @@ const progressResults = computed(() => {
             :min-absolute="currentQuestion?.bettingMinAbsolute"
             :max-absolute="currentQuestion?.bettingMaxAbsolute"
             :disabled="actionState.isBetSaved && !actionState.isEditing"
+            mode="locked"
           />
           <NuxtLink :to="{ name: 'challenges' }" class="flex">
             <DesignButton size="large" variant="secondary">

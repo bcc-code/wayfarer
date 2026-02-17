@@ -47,7 +47,7 @@ func (r *mutationResolver) CreateQuizSession(ctx context.Context, input model.Cr
 	}
 
 	// Check if user can manage sessions (admin, superadmin, project_admin, or church_admin)
-	if !r.RoleService.CanManageProject(ctx, userID, quiz.ProjectID) {
+	if !r.RoleService.CanCreateTeamInProject(ctx, userID, quiz.ProjectID) {
 		return nil, fmt.Errorf("unauthorized to create quiz sessions")
 	}
 
@@ -293,13 +293,6 @@ func (r *mutationResolver) LockQuizSession(ctx context.Context, id string) (*mod
 		return nil, fmt.Errorf("can only lock session from OPEN state")
 	}
 
-	// Auto-submit all active submissions
-	err = r.DB.Queries.AutoSubmitSessionSubmissions(ctx, id)
-	if err != nil {
-		otel.RecordError(span, err)
-		return nil, fmt.Errorf("failed to auto-submit submissions: %w", err)
-	}
-
 	row, err := r.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
 		ID:    id,
 		State: "LOCKED",
@@ -355,6 +348,13 @@ func (r *mutationResolver) FinishQuizSession(ctx context.Context, id string) (*m
 	// Only allow finishing from LOCKED state
 	if session.State != "LOCKED" {
 		return nil, fmt.Errorf("can only finish session from LOCKED state")
+	}
+
+	// Auto-submit all active submissions before finishing
+	err = r.DB.Queries.AutoSubmitSessionSubmissions(ctx, id)
+	if err != nil {
+		otel.RecordError(span, err)
+		return nil, fmt.Errorf("failed to auto-submit submissions: %w", err)
 	}
 
 	row, err := r.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
@@ -450,8 +450,8 @@ func (r *mutationResolver) ReopenQuizSession(ctx context.Context, id string) (*m
 		return nil, fmt.Errorf("quiz not found")
 	}
 
-	// Only admin/superadmin can reopen
-	if !r.RoleService.CanManageProject(ctx, userID, quiz.ProjectID) {
+	// Check if user can manage this session
+	if session.CreatedBy != userID && !r.RoleService.CanManageProject(ctx, userID, quiz.ProjectID) {
 		return nil, fmt.Errorf("unauthorized to reopen this session")
 	}
 

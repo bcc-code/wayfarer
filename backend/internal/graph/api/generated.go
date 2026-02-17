@@ -9985,15 +9985,15 @@ extend type Query {
 
 extend type Mutation {
     # Session CRUD
-    createQuizSession(input: CreateQuizSessionInput!): QuizSession!
-    updateQuizSession(id: ID!, input: UpdateQuizSessionInput!): QuizSession!
-    deleteQuizSession(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    createQuizSession(input: CreateQuizSessionInput!): QuizSession! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    updateQuizSession(id: ID!, input: UpdateQuizSessionInput!): QuizSession! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    deleteQuizSession(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin", "church_admin"])
 
     # Session state transitions
-    openQuizSession(id: ID!): QuizSession!
-    lockQuizSession(id: ID!): QuizSession!
-    finishQuizSession(id: ID!): QuizSession!
-    reopenQuizSession(id: ID!): QuizSession! @requireRole(roles: ["admin", "superadmin"])
+    openQuizSession(id: ID!): QuizSession! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    lockQuizSession(id: ID!): QuizSession! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    finishQuizSession(id: ID!): QuizSession! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    reopenQuizSession(id: ID!): QuizSession! @requireRole(roles: ["admin", "superadmin", "church_admin"])
 
     # Session access management
     grantQuizSessionAccess(input: GrantQuizSessionAccessInput!): Int!
@@ -27770,7 +27770,25 @@ func (ec *executionContext) _Mutation_createQuizSession(ctx context.Context, fie
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().CreateQuizSession(ctx, fc.Args["input"].(model.CreateQuizSessionInput))
 		},
-		nil,
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "church_admin"})
+				if err != nil {
+					var zeroVal *model.QuizSession
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.QuizSession
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
 		ec.marshalNQuizSession2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSession,
 		true,
 		true,
@@ -27837,7 +27855,25 @@ func (ec *executionContext) _Mutation_updateQuizSession(ctx context.Context, fie
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().UpdateQuizSession(ctx, fc.Args["id"].(string), fc.Args["input"].(model.UpdateQuizSessionInput))
 		},
-		nil,
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "church_admin"})
+				if err != nil {
+					var zeroVal *model.QuizSession
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.QuizSession
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
 		ec.marshalNQuizSession2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSession,
 		true,
 		true,
@@ -27908,7 +27944,7 @@ func (ec *executionContext) _Mutation_deleteQuizSession(ctx context.Context, fie
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "church_admin"})
 				if err != nil {
 					var zeroVal bool
 					return zeroVal, err
@@ -27963,7 +27999,25 @@ func (ec *executionContext) _Mutation_openQuizSession(ctx context.Context, field
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().OpenQuizSession(ctx, fc.Args["id"].(string))
 		},
-		nil,
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "church_admin"})
+				if err != nil {
+					var zeroVal *model.QuizSession
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.QuizSession
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
 		ec.marshalNQuizSession2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSession,
 		true,
 		true,
@@ -28030,7 +28084,25 @@ func (ec *executionContext) _Mutation_lockQuizSession(ctx context.Context, field
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().LockQuizSession(ctx, fc.Args["id"].(string))
 		},
-		nil,
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "church_admin"})
+				if err != nil {
+					var zeroVal *model.QuizSession
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.QuizSession
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
 		ec.marshalNQuizSession2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSession,
 		true,
 		true,
@@ -28097,7 +28169,25 @@ func (ec *executionContext) _Mutation_finishQuizSession(ctx context.Context, fie
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().FinishQuizSession(ctx, fc.Args["id"].(string))
 		},
-		nil,
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "church_admin"})
+				if err != nil {
+					var zeroVal *model.QuizSession
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.QuizSession
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
 		ec.marshalNQuizSession2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSession,
 		true,
 		true,
@@ -28168,7 +28258,7 @@ func (ec *executionContext) _Mutation_reopenQuizSession(ctx context.Context, fie
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "church_admin"})
 				if err != nil {
 					var zeroVal *model.QuizSession
 					return zeroVal, err

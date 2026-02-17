@@ -60,10 +60,10 @@ const state = useLocalStorage(`state:gamenight-${gamenight.value}`, {
 })
 
 onKeyDown('ArrowUp', () => {
-  state.value.step++
+  state.value.step--
 })
 onKeyDown('ArrowDown', () => {
-  state.value.step--
+  state.value.step++
 })
 
 const config = useRuntimeConfig()
@@ -88,6 +88,9 @@ const bigScreenUrl = computed(() => {
 const filmsUrl = 'https://pc26.bcc.media/gamenight-filmer-1237'
 
 const toast = useToast()
+
+// Betting action loading state to prevent spam clicking
+const bettingActionLoading = ref(false)
 
 // Betting
 const { executeMutation: createQuizSession } = useCreateQuizSessionMutation()
@@ -129,6 +132,8 @@ async function createBetting() {
 }
 
 async function startBetting() {
+  if (bettingActionLoading.value) return
+  bettingActionLoading.value = true
   try {
     await createBetting()
     await giveUsersBettingAccess()
@@ -140,15 +145,20 @@ async function startBetting() {
       icon: 'lucide:alert-triangle',
       title: 'Kunne ikke starte tipping',
     })
+  } finally {
+    bettingActionLoading.value = false
   }
 }
 
 async function lockBetting() {
-  if (!state.value.quizSessionId) return
+  if (!state.value.quizSessionId || bettingActionLoading.value) return
+  bettingActionLoading.value = true
 
   try {
     const { data } = await lockQuizSession({ id: state.value.quizSessionId })
-    state.value.quizSessionState = data?.lockQuizSession.state
+    if (data?.lockQuizSession.state) {
+      state.value.quizSessionState = data.lockQuizSession.state
+    }
   } catch (err) {
     console.error(err)
     toast.add({
@@ -156,22 +166,29 @@ async function lockBetting() {
       icon: 'lucide:alert-triangle',
       title: 'Kunne ikke låse tipping',
     })
+  } finally {
+    bettingActionLoading.value = false
   }
 }
 
 async function reopenBetting() {
-  if (!state.value.quizSessionId) return
+  if (!state.value.quizSessionId || bettingActionLoading.value) return
+  bettingActionLoading.value = true
 
   try {
     const { data } = await reopenQuizSession({ id: state.value.quizSessionId })
-    state.value.quizSessionState = data?.reopenQuizSession.state
+    if (data?.reopenQuizSession.state) {
+      state.value.quizSessionState = data.reopenQuizSession.state
+    }
   } catch (err) {
     console.error(err)
     toast.add({
       color: 'error',
       icon: 'lucide:alert-triangle',
-      title: 'Kunne ikkeåpne tipping',
+      title: 'Kunne ikke gjenåpne tipping',
     })
+  } finally {
+    bettingActionLoading.value = false
   }
 }
 
@@ -180,8 +197,10 @@ async function finishBetting() {
 
   try {
     const { data } = await finishQuizSession({ id: state.value.quizSessionId })
-    state.value.quizSessionState = data?.finishQuizSession.state
-    state.value.step++
+    if (data?.finishQuizSession.state) {
+      state.value.quizSessionState = data.finishQuizSession.state
+      state.value.step++
+    }
   } catch (err) {
     console.error(err)
     toast.add({
@@ -362,27 +381,33 @@ async function enrollUnitLeadersInChallenge() {
           description="Alle må gå inn på 'Utfordringer' siden i Interact appen"
           :active="state.step === 3"
         >
-          <UButton
-            v-if="!state.quizSessionState"
-            size="xl"
-            @click="startBetting"
-          >
-            Start tipping
-          </UButton>
-          <UButton
-            v-if="state.quizSessionState === QuizSessionState.Open"
-            size="xl"
-            @click="lockBetting"
-          >
-            Lås tipping
-          </UButton>
-          <UButton
-            v-if="state.quizSessionState === QuizSessionState.Locked"
-            size="xl"
-            @click="reopenBetting"
-          >
-            Gjenåpne tipping
-          </UButton>
+          <div class="flex gap-2 items-center">
+            <UButton
+              size="xl"
+              :loading="bettingActionLoading && !state.quizSessionState"
+              :disabled="state.quizSessionState !== undefined"
+              :variant="state.quizSessionState !== undefined ? 'soft' : 'solid'"
+              @click="startBetting"
+            >
+              Start tipping
+            </UButton>
+            <UButton
+              v-if="state.quizSessionState === QuizSessionState.Open"
+              size="xl"
+              :loading="bettingActionLoading"
+              @click="lockBetting"
+            >
+              Lås tipping
+            </UButton>
+            <UButton
+              v-if="state.quizSessionState === QuizSessionState.Locked"
+              size="xl"
+              :loading="bettingActionLoading"
+              @click="reopenBetting"
+            >
+              Gjenåpne tipping
+            </UButton>
+          </div>
         </AdminStep>
         <AdminStep
           :step="4"

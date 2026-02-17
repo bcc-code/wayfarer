@@ -65,10 +65,6 @@ const remainingAvailablePoints = computed(() => {
   return props.availablePoints - betAmountModel.value
 })
 
-const potentialWinnings = computed(() => {
-  return betAmountModel.value * 2
-})
-
 // Results mode computations
 const isWin = computed(() => {
   if (props.pointsEarned === null || props.pointsEarned === undefined)
@@ -133,10 +129,11 @@ const resultAmount = computed(() => {
     </div>
 
     <div
-      v-if="disabled"
-      class="bg-background-indent text-center p-small rounded-modal text-accent-contrast text-caption"
+      v-if="disabled || mode === 'locked'"
+      class="bg-background-indent text-center p-small rounded-modal text-accent-positive text-caption flex items-center justify-center gap-1"
     >
-      {{ t('quiz.betting.potentialWinnings', { amount: potentialWinnings }) }}
+      {{ t('quiz.betting.registeredBet') }}
+      <Icon name="lucide:check" />
     </div>
     <div v-else class="space-y-2">
       <DesignSlider
