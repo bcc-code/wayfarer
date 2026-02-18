@@ -779,6 +779,7 @@ const progressResults = computed(() => {
             v-if="isBettingEnabled"
             mode="results"
             :points-earned="currentResponse?.pointsEarned"
+            :bet-amount="currentResponse?.betAmount"
             :available-points="userScore ?? 0"
           />
           <NuxtLink :to="{ name: 'challenges' }" class="flex">

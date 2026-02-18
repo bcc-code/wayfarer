@@ -74,7 +74,13 @@ const isWin = computed(() => {
 
 const resultAmount = computed(() => {
   if (props.pointsEarned === null || props.pointsEarned === undefined) return 0
-  return Math.abs(props.pointsEarned)
+  if (isWin.value) {
+    // For wins, show actual winnings (pointsEarned is net, so add back the stake)
+    return props.pointsEarned + (props.betAmount ?? 0)
+  } else {
+    // For losses, show the stake lost
+    return Math.abs(props.pointsEarned)
+  }
 })
 </script>
 
