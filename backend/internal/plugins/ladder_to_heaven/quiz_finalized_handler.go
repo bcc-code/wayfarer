@@ -228,16 +228,50 @@ func (h *quizFinalizedHandler) handle(c *gin.Context) {
 		"total_points_awarded", totalPointsAwarded,
 		"users_affected", len(usersAffected))
 
-	if processedCount > 0 {
-		c.JSON(http.StatusCreated, gin.H{
-			"message":              "processed betting responses",
-			"responses_processed":  processedCount,
-			"total_points_awarded": totalPointsAwarded,
-			"users_affected":       len(usersAffected),
-		})
-	} else {
-		c.JSON(http.StatusOK, gin.H{"message": "no ordering questions with betting to process"})
+	// Complete challenge for all users who participated in the session
+	challengeCompletedCount := 0
+	if req.Data.ChallengeID != "" {
+		// Collect all user IDs from submissions
+		allUserIDs := make([]string, 0, len(submissionUserMap))
+		for _, userID := range submissionUserMap {
+			allUserIDs = append(allUserIDs, userID)
+		}
+
+		if len(allUserIDs) > 0 {
+			err := h.db.Queries.BulkCompleteChallenges(ctx, sqlc.BulkCompleteChallengesParams{
+				Userids:     allUserIDs,
+				Challengeid: req.Data.ChallengeID,
+			})
+			if err != nil {
+				slog.Error("ladder_to_heaven: session_finished: failed to complete challenge for users",
+					"error", err, "challenge_id", req.Data.ChallengeID)
+			} else {
+				challengeCompletedCount = len(allUserIDs)
+				slog.Info("ladder_to_heaven: session_finished: completed challenge for users",
+					"challenge_id", req.Data.ChallengeID,
+					"users_completed", challengeCompletedCount)
+
+				// Invalidate challenge cache
+				h.cache.InvalidateChallenge(req.Data.ChallengeID, req.ProjectID, eventID)
+
+				// Invalidate user caches and notify for challenge completion
+				for _, userID := range allUserIDs {
+					h.cache.InvalidateUser(userID)
+					if h.firebase != nil {
+						go h.firebase.NotifyUserChallenges(context.Background(), userID)
+					}
+				}
+			}
+		}
 	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":                   "session finished processed",
+		"responses_processed":       processedCount,
+		"total_points_awarded":      totalPointsAwarded,
+		"users_affected":            len(usersAffected),
+		"challenge_completed_count": challengeCompletedCount,
+	})
 }
 
 // getEventIDFromChallenge retrieves the event_id for a challenge using the dataloader.
