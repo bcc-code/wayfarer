@@ -181,6 +181,7 @@ func (h *quizFinalizedHandler) handle(c *gin.Context) {
 	processedCount := 0
 	totalPointsAwarded := 0
 	usersAffected := make(map[string]bool)
+	submissionsAffected := make(map[string]bool)
 
 	for _, response := range responses {
 		userID := submissionUserMap[response.SubmissionID]
@@ -195,6 +196,7 @@ func (h *quizFinalizedHandler) handle(c *gin.Context) {
 			processedCount++
 			totalPointsAwarded += points
 			usersAffected[userID] = true
+			submissionsAffected[response.SubmissionID] = true
 		}
 	}
 
@@ -205,9 +207,15 @@ func (h *quizFinalizedHandler) handle(c *gin.Context) {
 			h.cache.InvalidateEvent(*eventID)
 		}
 
+		// Invalidate cache for all affected submissions (includes responses cache)
+		for submissionID := range submissionsAffected {
+			h.cache.InvalidateQuizSubmission(submissionID)
+		}
+
 		// Invalidate cache for all affected users and notify via Firestore
 		for userID := range usersAffected {
 			h.cache.InvalidateUser(userID)
+			h.cache.InvalidateUserQuizSubmissions(userID)
 			if h.firebase != nil {
 				go h.firebase.NotifyUserContent(context.Background(), userID)
 			}

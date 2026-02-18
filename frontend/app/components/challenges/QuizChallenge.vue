@@ -277,6 +277,14 @@ const isBettingEnabled = computed(() => {
   return currentQuestion.value?.bettingEnabled ?? false
 })
 
+// Determine if the user won or lost the bet (for background color styling)
+const isBettingWin = computed(() => {
+  if (!isBettingEnabled.value) return null
+  const pointsEarned = currentResponse.value?.pointsEarned
+  if (pointsEarned === null || pointsEarned === undefined) return null
+  return pointsEarned > 0
+})
+
 // Get session state for ordering questions betting mode
 const sessionState = computed(() => {
   return props.challenge.quiz.userActiveSession?.state
@@ -683,9 +691,13 @@ const progressResults = computed(() => {
             'bg-background-raised':
               isBettingEnabled && sessionState !== QuizSessionState.Finished,
             'bg-accent-positive':
-              isBettingEnabled && sessionState === QuizSessionState.Finished,
+              isBettingEnabled &&
+              sessionState === QuizSessionState.Finished &&
+              isBettingWin === true,
             'bg-accent-negative':
-              isBettingEnabled && sessionState === QuizSessionState.Finished,
+              isBettingEnabled &&
+              sessionState === QuizSessionState.Finished &&
+              isBettingWin === false,
           },
         ]"
       >
@@ -776,8 +788,8 @@ const progressResults = computed(() => {
               :class="[
                 'bg-black',
                 {
-                  'text-accent-positive!': isBettingEnabled,
-                  'text-accent-negative!': !isBettingEnabled,
+                  'text-accent-positive!': isBettingEnabled && isBettingWin,
+                  'text-accent-negative!': isBettingEnabled && !isBettingWin,
                 },
               ]"
             >
