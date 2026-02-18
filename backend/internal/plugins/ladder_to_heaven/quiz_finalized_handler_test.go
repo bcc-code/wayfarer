@@ -170,19 +170,19 @@ func TestCalculateBetMultiplier(t *testing.T) {
 			name:         "one correct out of four",
 			correctCount: 1,
 			totalItems:   4,
-			expected:     1.2,
+			expected:     1.25,
 		},
 		{
 			name:         "one correct out of three",
 			correctCount: 1,
 			totalItems:   3,
-			expected:     1.2,
+			expected:     1.25,
 		},
 		{
-			name:         "none correct out of four - penalty",
+			name:         "none correct out of four - no winnings (stake lost separately)",
 			correctCount: 0,
 			totalItems:   4,
-			expected:     -1.0,
+			expected:     0.0,
 		},
 		{
 			name:         "none correct out of three - no penalty (not 4 items)",
@@ -412,81 +412,94 @@ func TestSessionFinishedRequest_ValidationErrors(t *testing.T) {
 func TestBettingConstants(t *testing.T) {
 	assert.Equal(t, 2.0, multiplierAllCorrect, "Multiplier for all correct should be 2.0")
 	assert.Equal(t, 1.5, multiplierTwoCorrect, "Multiplier for two correct should be 1.5")
-	assert.Equal(t, 1.2, multiplierOneCorrect, "Multiplier for one correct should be 1.2")
-	assert.Equal(t, -1.0, multiplierAllWrong, "Multiplier for all wrong should be -1.0 (penalty)")
+	assert.Equal(t, 1.25, multiplierOneCorrect, "Multiplier for one correct should be 1.25")
+	assert.Equal(t, 0.0, multiplierAllWrong, "Multiplier for all wrong should be 0.0 (no winnings)")
 }
 
-func TestBettingPointsCalculation(t *testing.T) {
+// TestBettingWinningsCalculation tests the winnings calculation (bet * multiplier).
+// Note: With the two-entry system, net points = winnings - stake.
+func TestBettingWinningsCalculation(t *testing.T) {
 	tests := []struct {
-		name         string
-		betAmount    int
-		correctCount int
-		totalItems   int
-		expected     int
+		name             string
+		betAmount        int
+		correctCount     int
+		totalItems       int
+		expectedWinnings int
+		expectedNet      int // winnings - stake
 	}{
 		{
-			name:         "100 bet, all correct (4 items) = 200 points",
-			betAmount:    100,
-			correctCount: 4,
-			totalItems:   4,
-			expected:     200,
+			name:             "100 bet, all correct (4 items) = 200 winnings, +100 net",
+			betAmount:        100,
+			correctCount:     4,
+			totalItems:       4,
+			expectedWinnings: 200,
+			expectedNet:      100,
 		},
 		{
-			name:         "100 bet, two correct = 150 points",
-			betAmount:    100,
-			correctCount: 2,
-			totalItems:   4,
-			expected:     150,
+			name:             "100 bet, two correct = 150 winnings, +50 net",
+			betAmount:        100,
+			correctCount:     2,
+			totalItems:       4,
+			expectedWinnings: 150,
+			expectedNet:      50,
 		},
 		{
-			name:         "100 bet, one correct = 120 points",
-			betAmount:    100,
-			correctCount: 1,
-			totalItems:   4,
-			expected:     120,
+			name:             "100 bet, one correct = 125 winnings, +25 net",
+			betAmount:        100,
+			correctCount:     1,
+			totalItems:       4,
+			expectedWinnings: 125,
+			expectedNet:      25,
 		},
 		{
-			name:         "100 bet, none correct (4 items) = -100 points (penalty)",
-			betAmount:    100,
-			correctCount: 0,
-			totalItems:   4,
-			expected:     -100,
+			name:             "100 bet, none correct (4 items) = 0 winnings, -100 net (stake lost)",
+			betAmount:        100,
+			correctCount:     0,
+			totalItems:       4,
+			expectedWinnings: 0,
+			expectedNet:      -100,
 		},
 		{
-			name:         "50 bet, all correct = 100 points",
-			betAmount:    50,
-			correctCount: 3,
-			totalItems:   3,
-			expected:     100,
+			name:             "50 bet, all correct = 100 winnings, +50 net",
+			betAmount:        50,
+			correctCount:     3,
+			totalItems:       3,
+			expectedWinnings: 100,
+			expectedNet:      50,
 		},
 		{
-			name:         "75 bet, two correct = 112 points (truncated)",
-			betAmount:    75,
-			correctCount: 2,
-			totalItems:   4,
-			expected:     112, // 75 * 1.5 = 112.5, truncated to 112
+			name:             "75 bet, two correct = 112 winnings (truncated), +37 net",
+			betAmount:        75,
+			correctCount:     2,
+			totalItems:       4,
+			expectedWinnings: 112, // 75 * 1.5 = 112.5, truncated to 112
+			expectedNet:      37,
 		},
 		{
-			name:         "100 bet, three correct out of four = 0 points (no bonus)",
-			betAmount:    100,
-			correctCount: 3,
-			totalItems:   4,
-			expected:     0,
+			name:             "100 bet, three correct out of four = 0 winnings, -100 net (stake lost)",
+			betAmount:        100,
+			correctCount:     3,
+			totalItems:       4,
+			expectedWinnings: 0,
+			expectedNet:      -100,
 		},
 		{
-			name:         "100 bet, none correct out of 3 items = 0 points (no penalty for non-4 items)",
-			betAmount:    100,
-			correctCount: 0,
-			totalItems:   3,
-			expected:     0,
+			name:             "100 bet, none correct out of 3 items = 0 winnings, -100 net (stake lost)",
+			betAmount:        100,
+			correctCount:     0,
+			totalItems:       3,
+			expectedWinnings: 0,
+			expectedNet:      -100,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			multiplier := calculateBetMultiplier(tt.correctCount, tt.totalItems)
-			bonusPoints := int(float64(tt.betAmount) * multiplier)
-			assert.Equal(t, tt.expected, bonusPoints)
+			winnings := int(float64(tt.betAmount) * multiplier)
+			netPoints := winnings - tt.betAmount
+			assert.Equal(t, tt.expectedWinnings, winnings, "Winnings should match")
+			assert.Equal(t, tt.expectedNet, netPoints, "Net points should match")
 		})
 	}
 }
@@ -521,26 +534,23 @@ func TestCountCorrectPositions_WithRealAnswerStructure(t *testing.T) {
 	assert.Equal(t, 2, result, "Should count 2 correct positions (first and last)")
 }
 
-func TestPenaltyOnlyAppliesTo4Items(t *testing.T) {
+func TestAllWrongReturnsZeroWinnings(t *testing.T) {
+	// With the two-entry betting system, all-wrong returns 0x multiplier (no winnings).
+	// The stake is deducted separately, so the net effect is losing the stake.
 	tests := []struct {
-		name        string
-		totalItems  int
-		wantPenalty bool
+		name       string
+		totalItems int
 	}{
-		{"3 items - no penalty", 3, false},
-		{"4 items - penalty", 4, true},
-		{"5 items - no penalty", 5, false},
-		{"2 items - no penalty", 2, false},
+		{"3 items", 3},
+		{"4 items", 4},
+		{"5 items", 5},
+		{"2 items", 2},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			multiplier := calculateBetMultiplier(0, tt.totalItems)
-			if tt.wantPenalty {
-				assert.Equal(t, -1.0, multiplier, "Should apply penalty for 4 items")
-			} else {
-				assert.Equal(t, 0.0, multiplier, "Should not apply penalty for non-4 items")
-			}
+			assert.Equal(t, 0.0, multiplier, "All-wrong should return 0x multiplier (no winnings)")
 		})
 	}
 }

@@ -75,8 +75,8 @@ const (
 const (
 	multiplierAllCorrect = 2.0
 	multiplierTwoCorrect = 1.5
-	multiplierOneCorrect = 1.2
-	multiplierAllWrong   = -1.0 // Penalty: lose the bet amount
+	multiplierOneCorrect = 1.25
+	multiplierAllWrong   = 0.0 // All wrong: no winnings (stake is lost)
 )
 
 // handle processes incoming quiz session finished webhook requests.
@@ -298,7 +298,8 @@ func (h *quizFinalizedHandler) loadPredefinedAnswers(ctx context.Context, questi
 }
 
 // processResponse processes a single quiz response for betting points.
-// Returns the points awarded (can be negative for penalty), whether it was processed, and any error.
+// Creates two score journal entries: stake (negative) and winnings (positive, if any).
+// Returns the net points (winnings - stake), whether it was processed, and any error.
 func (h *quizFinalizedHandler) processResponse(
 	ctx context.Context,
 	response *sqlc.GetQuizResponsesBySubmissionIDsRow,
@@ -344,38 +345,57 @@ func (h *quizFinalizedHandler) processResponse(
 	correctCount := countCorrectPositions(submittedOrder, correctAnswers)
 	totalItems := len(correctAnswers)
 
-	// Calculate points (can be negative for all-wrong penalty)
+	// Calculate points with two-entry system: stake (negative) + winnings (positive)
+	betAmount := int(*response.BetAmount)
 	multiplier := calculateBetMultiplier(correctCount, totalItems)
-	points := int(float64(*response.BetAmount) * multiplier)
+	winnings := int(float64(betAmount) * multiplier)
+	netPoints := winnings - betAmount
 
-	// Create score journal entry (even for penalties)
-	journalID := ulid.NewScoreJournalID()
-	var reason string
-	if points >= 0 {
-		reason = "Ordering bet bonus"
-	} else {
-		reason = "Ordering bet penalty (all wrong)"
-	}
-
+	// Create stake entry (always - this is what the user "put in the pool")
+	stakeJournalID := ulid.NewScoreJournalID()
+	stakeReason := "Bet stake"
 	_, err = h.db.Queries.CreateScoreJournalEntry(ctx, sqlc.CreateScoreJournalEntryParams{
-		ID:         journalID,
+		ID:         stakeJournalID,
 		ProjectID:  projectID,
 		UserID:     userID,
 		EventID:    eventID,
-		Points:     int32(points),
+		Points:     int32(-betAmount),
 		SourceType: sourceTypeBet,
 		SourceID:   &response.ID,
-		Reason:     &reason,
+		Reason:     &stakeReason,
 	})
 	if err != nil {
 		return 0, false, err
 	}
 
-	// Update response with points earned and journal ID
+	// Create winnings entry (only if positive - this is what the user "wins back")
+	var resultJournalID string
+	if winnings > 0 {
+		winningsJournalID := ulid.NewScoreJournalID()
+		winningsReason := "Bet winnings"
+		_, err = h.db.Queries.CreateScoreJournalEntry(ctx, sqlc.CreateScoreJournalEntryParams{
+			ID:         winningsJournalID,
+			ProjectID:  projectID,
+			UserID:     userID,
+			EventID:    eventID,
+			Points:     int32(winnings),
+			SourceType: sourceTypeBet,
+			SourceID:   &response.ID,
+			Reason:     &winningsReason,
+		})
+		if err != nil {
+			return 0, false, err
+		}
+		resultJournalID = winningsJournalID
+	} else {
+		resultJournalID = stakeJournalID
+	}
+
+	// Update response with net points earned and journal ID
 	_, err = h.db.Queries.UpdateBetResultWithJournal(ctx, sqlc.UpdateBetResultWithJournalParams{
 		ID:             response.ID,
-		Pointsearned:   int32(points),
-		Scorejournalid: journalID,
+		Pointsearned:   int32(netPoints),
+		Scorejournalid: resultJournalID,
 	})
 	if err != nil {
 		return 0, false, err
@@ -384,13 +404,14 @@ func (h *quizFinalizedHandler) processResponse(
 	slog.Debug("ladder_to_heaven: session_finished: processed bet",
 		"response_id", response.ID,
 		"user_id", userID,
-		"bet_amount", *response.BetAmount,
+		"bet_amount", betAmount,
 		"correct_positions", correctCount,
 		"total_items", totalItems,
 		"multiplier", multiplier,
-		"points", points)
+		"winnings", winnings,
+		"net_points", netPoints)
 
-	return points, true, nil
+	return netPoints, true, nil
 }
 
 // parseOrderingResponse extracts the ordered item IDs from the JSON response.
@@ -418,12 +439,14 @@ func countCorrectPositions(submitted []string, correct []*model.QuizPredefinedAn
 	return count
 }
 
-// calculateBetMultiplier returns the multiplier based on correct positions.
-// - All positions correct: 2.0x (double the bet)
-// - 2 positions correct: 1.5x
-// - 1 position correct: 1.2x
-// - 0 positions correct (all 4 wrong): -1.0x (lose the bet)
-// - Other cases (e.g., 3 correct out of 4): 0 (no bonus, no penalty)
+// calculateBetMultiplier returns the winnings multiplier based on correct positions.
+// The multiplier is applied to the bet amount to determine winnings (not net).
+// Net points = (bet * multiplier) - bet = bet * (multiplier - 1)
+// - All positions correct: 2.0x winnings (net: +bet)
+// - 2 positions correct: 1.5x winnings (net: +0.5*bet)
+// - 1 position correct: 1.25x winnings (net: +0.25*bet)
+// - 0 positions correct (all 4 wrong): 0x winnings (net: -bet, stake lost)
+// - Other cases (e.g., 3 correct out of 4): 0x winnings (net: -bet, stake lost)
 func calculateBetMultiplier(correctCount, totalItems int) float64 {
 	if totalItems == 0 {
 		return 0
