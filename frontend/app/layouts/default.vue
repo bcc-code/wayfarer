@@ -154,10 +154,12 @@ watch(
     }
 
     if (projectId && isAuth) {
-      projectSubscriptionCleanup.value = subscribeProject(
-        projectId,
-        'quiz_sessions',
-      )
+      const quizCleanup = subscribeProject(projectId, 'quiz_sessions')
+      const challengesCleanup = subscribeProject(projectId, 'challenges')
+      projectSubscriptionCleanup.value = () => {
+        quizCleanup()
+        challengesCleanup()
+      }
     }
   },
   { immediate: true },

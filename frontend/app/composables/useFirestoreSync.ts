@@ -10,7 +10,11 @@ import { useClientHandle } from '@urql/vue'
 
 const NOTIFICATION_QUERY_MAP = {
   achievements: ['ProfilePageDocument'],
-  challenges: ['ChallengesPageDocument', 'ChallengePageDocument'],
+  challenges: [
+    'ChallengesPageDocument',
+    'ChallengePageDocument',
+    'CurrentProjectDocument',
+  ],
   content: ['ProfilePageDocument'],
   quizzes: ['ChallengesPageDocument', 'ChallengePageDocument'],
   projects: ['ProfilePageDocument', 'CurrentProjectDocument'],
@@ -22,6 +26,11 @@ const ADMIN_NOTIFICATION_QUERY_MAP = {
 
 const PROJECT_NOTIFICATION_QUERY_MAP = {
   quiz_sessions: ['ChallengesPageDocument', 'ChallengePageDocument'],
+  challenges: [
+    'ChallengesPageDocument',
+    'ChallengePageDocument',
+    'CurrentProjectDocument',
+  ],
 } as const
 
 type NotificationCategory = keyof typeof NOTIFICATION_QUERY_MAP
