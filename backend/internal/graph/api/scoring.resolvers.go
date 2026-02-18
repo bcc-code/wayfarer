@@ -136,14 +136,11 @@ func (r *mutationResolver) CreateTeamScoreAdjustment(ctx context.Context, input 
 		ids[i] = ulid.NewScoreJournalID()
 	}
 
-	// Build reason with distribution mode info
-	var reason *string
-	if input.Reason != nil {
-		reasonWithMode := fmt.Sprintf("%s (team: %s, mode: %s)", *input.Reason, input.TeamID, input.DistributionMode)
-		reason = &reasonWithMode
-	} else {
-		reasonWithMode := fmt.Sprintf("Team score adjustment (team: %s, mode: %s)", input.TeamID, input.DistributionMode)
-		reason = &reasonWithMode
+	// Use reason as-is, or default to "Team score adjustment"
+	reason := input.Reason
+	if reason == nil {
+		defaultReason := "Team score adjustment"
+		reason = &defaultReason
 	}
 
 	// Create batch params
