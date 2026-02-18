@@ -395,7 +395,7 @@ func (h *quizFinalizedHandler) processResponse(
 
 	// Create stake entry (always - this is what the user "put in the pool")
 	stakeJournalID := ulid.NewScoreJournalID()
-	stakeReason := "Bet stake"
+	stakeReason := "Bet placed"
 	_, err = h.db.Queries.CreateScoreJournalEntry(ctx, sqlc.CreateScoreJournalEntryParams{
 		ID:         stakeJournalID,
 		ProjectID:  projectID,
@@ -412,7 +412,7 @@ func (h *quizFinalizedHandler) processResponse(
 
 	// Create winnings entry (always created, even if 0 - this is what the user "wins back")
 	winningsJournalID := ulid.NewScoreJournalID()
-	winningsReason := "Bet winnings"
+	winningsReason := "Bet payout"
 	_, err = h.db.Queries.CreateScoreJournalEntry(ctx, sqlc.CreateScoreJournalEntryParams{
 		ID:         winningsJournalID,
 		ProjectID:  projectID,
