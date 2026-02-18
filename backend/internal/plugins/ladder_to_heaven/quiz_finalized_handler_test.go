@@ -554,3 +554,95 @@ func TestAllWrongReturnsZeroWinnings(t *testing.T) {
 		})
 	}
 }
+
+func TestSelectResultJournalID(t *testing.T) {
+	stakeID := "SJ01STAKE000000000000000000"
+	winningsID := "SJ01WINNINGS0000000000000000"
+
+	tests := []struct {
+		name       string
+		winnings   int
+		expectedID string
+	}{
+		{
+			name:       "positive winnings - use winnings journal ID",
+			winnings:   100,
+			expectedID: winningsID,
+		},
+		{
+			name:       "zero winnings (lost bet) - use stake journal ID",
+			winnings:   0,
+			expectedID: stakeID,
+		},
+		{
+			name:       "small positive winnings - use winnings journal ID",
+			winnings:   1,
+			expectedID: winningsID,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := selectResultJournalID(tt.winnings, stakeID, winningsID)
+			assert.Equal(t, tt.expectedID, result)
+		})
+	}
+}
+
+func TestSelectResultJournalID_IntegrationWithMultiplier(t *testing.T) {
+	// This test verifies that the journal ID selection works correctly
+	// with the actual multiplier calculations for different bet outcomes.
+	stakeID := "SJ01STAKE000000000000000000"
+	winningsID := "SJ01WINNINGS0000000000000000"
+
+	tests := []struct {
+		name         string
+		betAmount    int
+		correctCount int
+		totalItems   int
+		expectedID   string
+		description  string
+	}{
+		{
+			name:         "all correct - should use winnings ID",
+			betAmount:    100,
+			correctCount: 4,
+			totalItems:   4,
+			expectedID:   winningsID,
+			description:  "User won, show positive winnings entry",
+		},
+		{
+			name:         "two correct - should use winnings ID",
+			betAmount:    100,
+			correctCount: 2,
+			totalItems:   4,
+			expectedID:   winningsID,
+			description:  "User won, show positive winnings entry",
+		},
+		{
+			name:         "one correct - should use winnings ID",
+			betAmount:    100,
+			correctCount: 1,
+			totalItems:   4,
+			expectedID:   winningsID,
+			description:  "User won, show positive winnings entry",
+		},
+		{
+			name:         "none correct - should use stake ID",
+			betAmount:    100,
+			correctCount: 0,
+			totalItems:   4,
+			expectedID:   stakeID,
+			description:  "User lost everything, show negative stake entry",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			multiplier := calculateBetMultiplier(tt.correctCount, tt.totalItems)
+			winnings := int(float64(tt.betAmount) * multiplier)
+			result := selectResultJournalID(winnings, stakeID, winningsID)
+			assert.Equal(t, tt.expectedID, result, tt.description)
+		})
+	}
+}

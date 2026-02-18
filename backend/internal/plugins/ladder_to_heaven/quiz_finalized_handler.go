@@ -368,28 +368,25 @@ func (h *quizFinalizedHandler) processResponse(
 		return 0, false, err
 	}
 
-	// Create winnings entry (only if positive - this is what the user "wins back")
-	var resultJournalID string
-	if winnings > 0 {
-		winningsJournalID := ulid.NewScoreJournalID()
-		winningsReason := "Bet winnings"
-		_, err = h.db.Queries.CreateScoreJournalEntry(ctx, sqlc.CreateScoreJournalEntryParams{
-			ID:         winningsJournalID,
-			ProjectID:  projectID,
-			UserID:     userID,
-			EventID:    eventID,
-			Points:     int32(winnings),
-			SourceType: sourceTypeBet,
-			SourceID:   &response.ID,
-			Reason:     &winningsReason,
-		})
-		if err != nil {
-			return 0, false, err
-		}
-		resultJournalID = winningsJournalID
-	} else {
-		resultJournalID = stakeJournalID
+	// Create winnings entry (always created, even if 0 - this is what the user "wins back")
+	winningsJournalID := ulid.NewScoreJournalID()
+	winningsReason := "Bet winnings"
+	_, err = h.db.Queries.CreateScoreJournalEntry(ctx, sqlc.CreateScoreJournalEntryParams{
+		ID:         winningsJournalID,
+		ProjectID:  projectID,
+		UserID:     userID,
+		EventID:    eventID,
+		Points:     int32(winnings), // Will be 0 when user loses
+		SourceType: sourceTypeBet,
+		SourceID:   &response.ID,
+		Reason:     &winningsReason,
+	})
+	if err != nil {
+		return 0, false, err
 	}
+
+	// Use stake journal ID when user lost (no winnings), otherwise use winnings journal ID
+	resultJournalID := selectResultJournalID(winnings, stakeJournalID, winningsJournalID)
 
 	// Update response with net points earned and journal ID
 	_, err = h.db.Queries.UpdateBetResultWithJournal(ctx, sqlc.UpdateBetResultWithJournalParams{
@@ -415,6 +412,16 @@ func (h *quizFinalizedHandler) processResponse(
 }
 
 // parseOrderingResponse extracts the ordered item IDs from the JSON response.
+// selectResultJournalID returns the appropriate journal ID to store as the result.
+// When user has winnings (won bet), use the winnings journal ID (positive entry).
+// When user has no winnings (lost bet), use the stake journal ID (negative entry).
+func selectResultJournalID(winnings int, stakeJournalID, winningsJournalID string) string {
+	if winnings > 0 {
+		return winningsJournalID
+	}
+	return stakeJournalID
+}
+
 // The json_response is expected to be an array of answer IDs in the user's submitted order.
 func parseOrderingResponse(jsonResponse []byte) ([]string, error) {
 	if len(jsonResponse) == 0 {

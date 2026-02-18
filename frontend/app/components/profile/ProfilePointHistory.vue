@@ -118,7 +118,7 @@ function getScoreJournalName(
                 },
               ]"
             >
-              {{ journal.node.points > 0 ? '+' : ''
+              {{ journal.node.points >= 0 ? '+' : ''
               }}{{ formatNumber(journal.node.points) }}
             </span>
           </div>
