@@ -189,7 +189,7 @@
       "comingSoon": "Bientôt disponible",
       "kickOff": "Lancement",
       "statistics": "Statistiques",
-      "gameNight": "Game Night 2",
+      "gameNight": "Game Night {number}",
       "kickOffButton": "Débutez l’inscription des unités maintenant",
       "kickOffOnboardingDescription": "Cette action marque le début de l'inscription des unités de l’assemblée locale.",
       "kickOffOnboardingDescriptionWarning": "⚠ Ne démarrez pas si vous n'êtes pas prêts.",
