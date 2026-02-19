@@ -113,7 +113,7 @@ function getScoreJournalName(
               :class="[
                 'text-label',
                 {
-                  'text-accent-positive': journal.node.points >= 0,
+                  'text-accent-contrast': journal.node.points >= 0,
                   'text-accent-negative': journal.node.points < 0,
                 },
               ]"
