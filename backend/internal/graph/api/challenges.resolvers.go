@@ -670,6 +670,9 @@ func (r *mutationResolver) EnrollUserInChallenge(ctx context.Context, userID str
 	eventID := getChallengeEventID(challenge)
 	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
 
+	// Notify Firestore listeners
+	go r.FirebaseService.NotifyUserChallenges(context.Background(), userID)
+
 	// Prime the cache with the enrollment timestamp AFTER invalidation
 	if enrolledAt.Valid {
 		ts := enrolledAt.Time
