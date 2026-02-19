@@ -470,6 +470,7 @@ func main() {
 		DB:              db,
 		Cache:           cacheInstance,
 		Loaders:         dataLoaders,
+		PushService:     pushService,
 		SettingsService: settingsService,
 		JWTConfig:       cfg.JWT,
 		Firebase:        firebaseService,

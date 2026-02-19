@@ -15,6 +15,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/firebase"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/loaders"
+	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/bcc-media/wayfarer/internal/webhook"
 	"github.com/gin-gonic/gin"
@@ -24,11 +25,12 @@ import (
 // Despite the name (kept for compatibility), this processes the quiz_session_finished
 // webhook which fires when an admin finishes a session, processing all users' betting.
 type quizFinalizedHandler struct {
-	db        *database.DB
-	cache     *cache.CacheWithRegistry
-	loaders   *loaders.Loaders
-	secretKey string
-	firebase  *firebase.Service
+	db          *database.DB
+	cache       *cache.CacheWithRegistry
+	loaders     *loaders.Loaders
+	pushService *push.Service
+	secretKey   string
+	firebase    *firebase.Service
 }
 
 // sessionFinishedRequest matches the outbound WebhookPayload format for quiz_session_finished events
@@ -182,6 +184,7 @@ func (h *quizFinalizedHandler) handle(c *gin.Context) {
 	totalPointsAwarded := 0
 	usersAffected := make(map[string]bool)
 	submissionsAffected := make(map[string]bool)
+	userPoints := make(map[string]int) // userID -> net points for notifications
 
 	for _, response := range responses {
 		userID := submissionUserMap[response.SubmissionID]
@@ -197,6 +200,7 @@ func (h *quizFinalizedHandler) handle(c *gin.Context) {
 			totalPointsAwarded += points
 			usersAffected[userID] = true
 			submissionsAffected[response.SubmissionID] = true
+			userPoints[userID] += points
 		}
 	}
 
@@ -218,6 +222,21 @@ func (h *quizFinalizedHandler) handle(c *gin.Context) {
 			h.cache.InvalidateUserQuizSubmissions(userID)
 			if h.firebase != nil {
 				go h.firebase.NotifyUserContent(context.Background(), userID)
+			}
+		}
+
+		// Send bet result notifications
+		if h.pushService != nil && req.Data.ChallengeID != "" {
+			for userID, points := range userPoints {
+				go push.SendTranslatedBetResultNotification(
+					h.pushService,
+					h.loaders,
+					userID,
+					req.Data.ChallengeID,
+					req.Data.QuizID,
+					req.Data.QuizName,
+					points,
+				)
 			}
 		}
 	}

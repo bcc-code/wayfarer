@@ -70,11 +70,12 @@ func (p *LadderToHeavenPlugin) Register(router gin.IRouter, deps plugins.Depende
 
 	// Quiz finalized handler for ordering question betting
 	quizFinalizedHandler := &quizFinalizedHandler{
-		db:        deps.DB,
-		cache:     deps.Cache,
-		loaders:   deps.Loaders,
-		secretKey: p.config.SecretKey,
-		firebase:  deps.Firebase,
+		db:          deps.DB,
+		cache:       deps.Cache,
+		loaders:     deps.Loaders,
+		pushService: deps.PushService,
+		secretKey:   p.config.SecretKey,
+		firebase:    deps.Firebase,
 	}
 
 	router.POST("/plugins/ladder-to-heaven/quiz-finalized", quizFinalizedHandler.handle)
