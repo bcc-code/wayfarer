@@ -261,6 +261,11 @@ func (h *quizFinalizedHandler) handle(c *gin.Context) {
 						go h.firebase.NotifyUserChallenges(context.Background(), userID)
 					}
 				}
+
+				// Notify project-level challenge listeners for UI refresh
+				if h.firebase != nil {
+					go h.firebase.NotifyProjectChallenges(context.Background(), req.ProjectID)
+				}
 			}
 		}
 	}

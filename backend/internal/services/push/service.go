@@ -192,11 +192,12 @@ type ChallengeInfo struct {
 
 // BetResultInfo contains the information needed to send a bet result notification
 type BetResultInfo struct {
-	QuizID   string
-	QuizName string
-	Points   int
-	Title    string // Already resolved from i18n based on user language
-	Message  string // Already resolved from i18n based on user language
+	ChallengeID string
+	QuizID      string
+	QuizName    string
+	Points      int
+	Title       string // Already resolved from i18n based on user language
+	Message     string // Already resolved from i18n based on user language
 }
 
 // SendAchievementNotification sends a push notification for an achievement award.
@@ -263,7 +264,7 @@ func (s *Service) SendChallengeEnrollmentNotification(ctx context.Context, userI
 		Title: challenge.Name,
 		Body:  challenge.NotificationText,
 		Type:  NotificationTypeChallengeAvailable,
-		URL:   "/?challenge=" + challenge.ID,
+		URL:   "/challenges/" + challenge.ID,
 		Icon:  challenge.Image,
 		Data: map[string]interface{}{
 			"challengeId": challenge.ID,
@@ -303,7 +304,7 @@ func (s *Service) SendBetResultNotification(ctx context.Context, userID string, 
 		Title: info.Title,
 		Body:  info.Message,
 		Type:  NotificationTypeBetResult,
-		URL:   "/?quiz=" + info.QuizID,
+		URL:   "/challenges/" + info.ChallengeID,
 		Data: map[string]any{
 			"quizId": info.QuizID,
 			"points": info.Points,
