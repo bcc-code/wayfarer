@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/bcc-media/wayfarer/i18n"
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
@@ -162,10 +163,11 @@ func (h *quizFinalizedHandler) handle(c *gin.Context) {
 		return
 	}
 
-	// Get challenge to find event_id if quiz is linked to a challenge (using cache)
+	// Get challenge to find event_id and challenge name if quiz is linked to a challenge (using cache)
 	var eventID *string
+	var challengeName string
 	if req.Data.ChallengeID != "" {
-		eventID = h.getEventIDFromChallenge(ctx, req.Data.ChallengeID)
+		eventID, challengeName = h.getChallengeInfo(ctx, req.Data.ChallengeID)
 	}
 
 	// Collect unique question IDs that need predefined answers
@@ -188,7 +190,7 @@ func (h *quizFinalizedHandler) handle(c *gin.Context) {
 
 	for _, response := range responses {
 		userID := submissionUserMap[response.SubmissionID]
-		points, processed, err := h.processResponse(ctx, response, userID, req.ProjectID, eventID, questionAnswers)
+		points, processed, err := h.processResponse(ctx, response, userID, req.ProjectID, eventID, req.Data.ChallengeID, challengeName, questionAnswers)
 		if err != nil {
 			slog.Error("ladder_to_heaven: session_finished: failed to process response",
 				"error", err, "response_id", response.ID)
@@ -305,27 +307,27 @@ func (h *quizFinalizedHandler) handle(c *gin.Context) {
 	})
 }
 
-// getEventIDFromChallenge retrieves the event_id for a challenge using the dataloader.
-func (h *quizFinalizedHandler) getEventIDFromChallenge(ctx context.Context, challengeID string) *string {
+// getChallengeInfo retrieves the event_id and name for a challenge using the dataloader.
+func (h *quizFinalizedHandler) getChallengeInfo(ctx context.Context, challengeID string) (*string, string) {
 	thunk := h.loaders.ChallengeByIDLoader.Load(ctx, challengeID)
 	challenge, err := thunk()
 	if err != nil {
 		slog.Warn("ladder_to_heaven: session_finished: failed to get challenge",
 			"error", err, "challenge_id", challengeID)
-		return nil
+		return nil, ""
 	}
 
 	switch c := challenge.(type) {
 	case *model.SimpleChallenge:
-		return c.EventID
+		return c.EventID, c.Name
 	case *model.QuizChallenge:
-		return c.EventID
+		return c.EventID, c.Name
 	case *model.ExternalChallenge:
-		return c.EventID
+		return c.EventID, c.Name
 	case *model.PluginChallenge:
-		return c.EventID
+		return c.EventID, c.Name
 	}
-	return nil
+	return nil, ""
 }
 
 // loadPredefinedAnswers loads predefined answers for the given question IDs using the dataloader.
@@ -379,6 +381,8 @@ func (h *quizFinalizedHandler) processResponse(
 	userID string,
 	projectID string,
 	eventID *string,
+	challengeID string,
+	challengeName string,
 	questionAnswers map[string][]*model.QuizPredefinedAnswer,
 ) (int, bool, error) {
 	// Skip if no bet was placed
@@ -424,9 +428,33 @@ func (h *quizFinalizedHandler) processResponse(
 	winnings := int(float64(betAmount) * multiplier)
 	netPoints := winnings - betAmount
 
+	// Get user's language for localized reasons
+	userLang := i18n.DefaultLanguage
+	if userThunk := h.loaders.UserByIDLoader.Load(ctx, userID); userThunk != nil {
+		if user, err := userThunk(); err == nil && user != nil && user.Language != "" {
+			userLang = user.Language
+		}
+	}
+
+	// Get translated challenge name for the user's language
+	translatedChallengeName := challengeName
+	if challengeID != "" && challengeName != "" {
+		transKey := loaders.TranslationKey{
+			EntityType: "challenge",
+			EntityID:   challengeID,
+			LangCode:   userLang,
+		}
+		// Try to get the translation, but if it fails, use the base name
+		if transThunk := h.loaders.TranslationLoader.Load(ctx, transKey); transThunk != nil {
+			if trans, err := transThunk(); err == nil && trans != nil && trans.Name != nil && *trans.Name != "" {
+				translatedChallengeName = *trans.Name
+			}
+		}
+	}
+
 	// Create stake entry (always - this is what the user "put in the pool")
 	stakeJournalID := ulid.NewScoreJournalID()
-	stakeReason := "Bet placed"
+	stakeReason := i18n.FormatBetStakeReason(userLang, translatedChallengeName)
 	_, err = h.db.Queries.CreateScoreJournalEntry(ctx, sqlc.CreateScoreJournalEntryParams{
 		ID:         stakeJournalID,
 		ProjectID:  projectID,
@@ -443,7 +471,7 @@ func (h *quizFinalizedHandler) processResponse(
 
 	// Create winnings entry (always created, even if 0 - this is what the user "wins back")
 	winningsJournalID := ulid.NewScoreJournalID()
-	winningsReason := "Bet payout"
+	winningsReason := i18n.FormatBetWinningsReason(userLang, translatedChallengeName)
 	_, err = h.db.Queries.CreateScoreJournalEntry(ctx, sqlc.CreateScoreJournalEntryParams{
 		ID:         winningsJournalID,
 		ProjectID:  projectID,
