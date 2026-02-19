@@ -165,8 +165,8 @@
   },
   "goToHiddenTreasures": "Zum Bibelstudium",
   "gameNights": {
-    "yourCode": "Dein Unit-Code für die Game Night",
-    "yourCodeHint": "Öffne die Seite auf deinem PC und gib den Code ein"
+    "yourCode": "Gib deinen Unit-Code ein:",
+    "yourCodeHint": "Gehe mit einem PC auf diese Website:"
   },
   "admin": {
     "common": {
