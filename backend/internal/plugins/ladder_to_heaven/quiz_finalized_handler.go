@@ -186,11 +186,12 @@ func (h *quizFinalizedHandler) handle(c *gin.Context) {
 	totalPointsAwarded := 0
 	usersAffected := make(map[string]bool)
 	submissionsAffected := make(map[string]bool)
-	userPoints := make(map[string]int) // userID -> net points for notifications
+	userNetPoints := make(map[string]int) // userID -> net points for internal tracking
+	userWinnings := make(map[string]int)  // userID -> total winnings for notifications
 
 	for _, response := range responses {
 		userID := submissionUserMap[response.SubmissionID]
-		points, processed, err := h.processResponse(ctx, response, userID, req.ProjectID, eventID, req.Data.ChallengeID, challengeName, questionAnswers)
+		netPts, winnings, processed, err := h.processResponse(ctx, response, userID, req.ProjectID, eventID, req.Data.ChallengeID, challengeName, questionAnswers)
 		if err != nil {
 			slog.Error("ladder_to_heaven: session_finished: failed to process response",
 				"error", err, "response_id", response.ID)
@@ -199,10 +200,11 @@ func (h *quizFinalizedHandler) handle(c *gin.Context) {
 		}
 		if processed {
 			processedCount++
-			totalPointsAwarded += points
+			totalPointsAwarded += netPts
 			usersAffected[userID] = true
 			submissionsAffected[response.SubmissionID] = true
-			userPoints[userID] += points
+			userNetPoints[userID] += netPts
+			userWinnings[userID] += winnings
 		}
 	}
 
@@ -228,8 +230,16 @@ func (h *quizFinalizedHandler) handle(c *gin.Context) {
 		}
 
 		// Send bet result notifications
+		// For wins (netPoints > 0): show total winnings
+		// For losses (netPoints < 0): show net points (negative value shows loss amount)
 		if h.pushService != nil && req.Data.ChallengeID != "" {
-			for userID, points := range userPoints {
+			for userID, netPts := range userNetPoints {
+				var notificationPoints int
+				if netPts > 0 {
+					notificationPoints = userWinnings[userID]
+				} else {
+					notificationPoints = netPts
+				}
 				go push.SendTranslatedBetResultNotification(
 					h.pushService,
 					h.loaders,
@@ -237,7 +247,7 @@ func (h *quizFinalizedHandler) handle(c *gin.Context) {
 					req.Data.ChallengeID,
 					req.Data.QuizID,
 					req.Data.QuizName,
-					points,
+					notificationPoints,
 				)
 			}
 		}
@@ -374,7 +384,7 @@ func (h *quizFinalizedHandler) loadPredefinedAnswers(ctx context.Context, questi
 
 // processResponse processes a single quiz response for betting points.
 // Creates two score journal entries: stake (negative) and winnings (positive, if any).
-// Returns the net points (winnings - stake), whether it was processed, and any error.
+// Returns the net points (winnings - stake), total winnings, whether it was processed, and any error.
 func (h *quizFinalizedHandler) processResponse(
 	ctx context.Context,
 	response *sqlc.GetQuizResponsesBySubmissionIDsRow,
@@ -384,30 +394,30 @@ func (h *quizFinalizedHandler) processResponse(
 	challengeID string,
 	challengeName string,
 	questionAnswers map[string][]*model.QuizPredefinedAnswer,
-) (int, bool, error) {
+) (netPoints int, winnings int, processed bool, err error) {
 	// Skip if no bet was placed
 	if response.BetAmount == nil || *response.BetAmount == 0 {
-		return 0, false, nil
+		return 0, 0, false, nil
 	}
 
 	// Skip if not an ordering question or betting not enabled
 	if response.QuestionType != questionTypeOrdering || !response.BettingEnabled {
-		return 0, false, nil
+		return 0, 0, false, nil
 	}
 
 	// Check idempotency - skip if already processed
 	if response.ScoreJournalID != nil && *response.ScoreJournalID != "" {
 		slog.Debug("ladder_to_heaven: session_finished: response already processed",
 			"response_id", response.ID, "journal_id", *response.ScoreJournalID)
-		return 0, false, nil
+		return 0, 0, false, nil
 	}
 
 	// Parse the submitted order from json_response
-	submittedOrder, err := parseOrderingResponse(response.JsonResponse)
-	if err != nil {
+	submittedOrder, parseErr := parseOrderingResponse(response.JsonResponse)
+	if parseErr != nil {
 		slog.Warn("ladder_to_heaven: session_finished: failed to parse ordering response",
-			"error", err, "response_id", response.ID)
-		return 0, false, nil
+			"error", parseErr, "response_id", response.ID)
+		return 0, 0, false, nil
 	}
 
 	// Get the correct order from predefined answers
@@ -415,7 +425,7 @@ func (h *quizFinalizedHandler) processResponse(
 	if !ok || len(correctAnswers) == 0 {
 		slog.Warn("ladder_to_heaven: session_finished: no predefined answers found",
 			"response_id", response.ID, "question_id", response.QuestionID)
-		return 0, false, nil
+		return 0, 0, false, nil
 	}
 
 	// Count correct positions
@@ -425,8 +435,8 @@ func (h *quizFinalizedHandler) processResponse(
 	// Calculate points with two-entry system: stake (negative) + winnings (positive)
 	betAmount := int(*response.BetAmount)
 	multiplier := calculateBetMultiplier(correctCount, totalItems)
-	winnings := int(float64(betAmount) * multiplier)
-	netPoints := winnings - betAmount
+	winnings = int(float64(betAmount) * multiplier)
+	netPoints = winnings - betAmount
 
 	// Get user's language for localized reasons
 	userLang := i18n.DefaultLanguage
@@ -466,7 +476,7 @@ func (h *quizFinalizedHandler) processResponse(
 		Reason:     &stakeReason,
 	})
 	if err != nil {
-		return 0, false, err
+		return 0, 0, false, err
 	}
 
 	// Create winnings entry (always created, even if 0 - this is what the user "wins back")
@@ -483,7 +493,7 @@ func (h *quizFinalizedHandler) processResponse(
 		Reason:     &winningsReason,
 	})
 	if err != nil {
-		return 0, false, err
+		return 0, 0, false, err
 	}
 
 	// Use stake journal ID when user lost (no winnings), otherwise use winnings journal ID
@@ -496,7 +506,7 @@ func (h *quizFinalizedHandler) processResponse(
 		Scorejournalid: resultJournalID,
 	})
 	if err != nil {
-		return 0, false, err
+		return 0, 0, false, err
 	}
 
 	slog.Debug("ladder_to_heaven: session_finished: processed bet",
@@ -509,7 +519,7 @@ func (h *quizFinalizedHandler) processResponse(
 		"winnings", winnings,
 		"net_points", netPoints)
 
-	return netPoints, true, nil
+	return netPoints, winnings, true, nil
 }
 
 // parseOrderingResponse extracts the ordered item IDs from the JSON response.
