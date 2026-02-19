@@ -239,6 +239,13 @@ func (h *quizFinalizedHandler) handle(c *gin.Context) {
 				)
 			}
 		}
+
+		// Notify challenge page to refetch with updated bet results.
+		// This triggers a second refetch after betting is processed, ensuring
+		// the UI shows the correct win/loss state (green/red background).
+		if h.firebase != nil {
+			go h.firebase.NotifyProjectQuizSessions(context.Background(), req.ProjectID)
+		}
 	}
 
 	slog.Info("ladder_to_heaven: session_finished: processed betting responses",
