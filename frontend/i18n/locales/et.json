@@ -34,14 +34,15 @@
     "finishReview": "Lõpetada läbivaatamine",
     "yourNumber": "Sinu number",
     "writeYourAnswer": "Kirjuta oma vastus...",
-    "close": "Sulge küsimustik",
+    "close": "Sulge",
     "betting": {
       "remainingPoints": "Järelejäänud punktid",
       "yourBet": "Sinu panus",
       "maxBetMessage": "Sa võid panustada maksimaalselt {percentage}% oma punktidest.",
       "sessionLocked": "Vastus on lukustatud",
-      "potentialWinnings": "{amount} potentsiaalsete võitude punktid",
-      "bettingClosed": "Ennustamine on lõppenud. Võid küsimustiku sulgeda.",
+      "registeredBet": "Ennustus on registreeritud",
+      "bettingClosed": "Ennustamine on lõppenud",
+      "yourBetIs": "Sa panustasid {bet} punkti",
       "results": "Tulemus",
       "yourPoints": "Sinu punktid",
       "winnings": "Võit:",
@@ -112,7 +113,8 @@
     "saveChanges": "Salvesta muudatused",
     "unitName": "Üksuse nimi",
     "noUnitLeader": "Üksuse juht puudub",
-    "selectUnitLeader": "Vali üksuse juht"
+    "selectUnitLeader": "Vali üksuse juht",
+    "description": "Ainult 3-e parima punktid on kõigile nähtavad"
   },
   "place": "koht",
   "points": "punktid",
@@ -163,8 +165,8 @@
   },
   "goToHiddenTreasures": "Mine piibliõppe juurde",
   "gameNights": {
-    "yourCode": "Sinu üksuse kood mänguõhtuks",
-    "yourCodeHint": "Ava leht oma arvutis ja sisesta kood."
+    "yourCode": "Sisesta oma üksuse kood:",
+    "yourCodeHint": "Külasta arvutis seda veebisaiti:"
   },
   "admin": {
     "common": {
@@ -187,6 +189,7 @@
       "comingSoon": "Peagi saadaval",
       "kickOff": "Avaüritus",
       "statistics": "Statistika",
+      "gameNight": "Mänguõhtu {number}",
       "kickOffButton": "Käivita üksuste registreerimine nüüd",
       "kickOffOnboardingDescription": "See tegevus käivitab üksuste registreerimise kogu kohalikule kogudusele.",
       "kickOffOnboardingDescriptionWarning": "⚠ Ära käivita, kui te pole valmis.",

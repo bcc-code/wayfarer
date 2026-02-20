@@ -165,8 +165,8 @@
   },
   "goToHiddenTreasures": "Aller à l’étude biblique",
   "gameNights": {
-    "yourCode": "Ton code d'unité pour la Game Night",
-    "yourCodeHint": "Ouvre la page sur ton PC et saisis le code."
+    "yourCode": "Inscris ton code d’unité :",
+    "yourCodeHint": "Accéder à cette page Web sur un PC :"
   },
   "admin": {
     "common": {

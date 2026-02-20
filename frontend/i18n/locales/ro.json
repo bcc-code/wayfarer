@@ -34,14 +34,15 @@
     "finishReview": "Finalizați revizuirea",
     "yourNumber": "Numărul tău",
     "writeYourAnswer": "Scrie răspunsul tău...",
-    "close": "Închide quiz-ul",
+    "close": "Închide",
     "betting": {
       "remainingPoints": "Puncte rămase",
       "yourBet": "Contribuția ta",
       "maxBetMessage": "Poți paria maximum {percentage}% din punctele tale",
       "sessionLocked": "Răspunsul este blocat",
-      "potentialWinnings": "{amount} puncte în câștiguri potențiale",
-      "bettingClosed": "Pariurile s-au încheiat. Puteți închide quiz-ul.",
+      "registeredBet": "Pariul a fost înregistrat.",
+      "bettingClosed": "Pariurile s-au încheiat.",
+      "yourBetIs": "Ai pariat {bet} puncte",
       "results": "Rezultate",
       "yourPoints": "Punctele tale",
       "winnings": "Câștiguri",
@@ -112,7 +113,8 @@
     "saveChanges": "Salvează modificările",
     "unitName": "Numele unității",
     "noUnitLeader": "Lipsește liderul de unitate",
-    "selectUnitLeader": "Alege lider de unitate"
+    "selectUnitLeader": "Alege lider de unitate",
+    "description": "Doar primele 3 puncte sunt vizibile pentru toți"
   },
   "place": "plasare",
   "points": "puncte",
@@ -163,8 +165,8 @@
   },
   "goToHiddenTreasures": "Mergi la studiul biblic",
   "gameNights": {
-    "yourCode": "Codul unității tale pentru Game Night",
-    "yourCodeHint": "Deschideți pagina pe computer și introduceți codul"
+    "yourCode": "Introdu codul unității tale:",
+    "yourCodeHint": "Mergi către acest site pe un PC:"
   },
   "admin": {
     "common": {
@@ -187,6 +189,7 @@
       "comingSoon": "Apare în curând",
       "kickOff": "Kick-off",
       "statistics": "Statistici",
+      "gameNight": "Game Night {number}",
       "kickOffButton": "Începe unit-onboarding acum",
       "kickOffOnboardingDescription": "Această acțiune inițiază unit-onboarding pentru întreaga adunare locală.",
       "kickOffOnboardingDescriptionWarning": "⚠ Nu începeți dacă nu sunteți pregătiți.",
