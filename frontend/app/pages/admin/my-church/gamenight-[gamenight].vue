@@ -311,7 +311,8 @@ async function enrollUnitLeadersInChallenge() {
         <div>
           <UCheckbox
             v-model="state.bigScreenReady"
-            label="Ha storskjermvisningen for spillet klart"
+            label="Ha storskjermvisningen for unit-oppgaven klart"
+            description="Denne skal brukes i steg 7"
           />
           <NuxtLink
             :to="bigScreenUrl"
@@ -329,10 +330,20 @@ async function enrollUnitLeadersInChallenge() {
       <div class="divide-y divide-muted mb-24">
         <AdminStep
           :step="1"
-          title="Vis Ladder to Heaven logo på storskjermen"
-          description="Dette kan være på storskjermen når ungdommene kommer inn i salen"
+          title="Vis Ladder to Heaven bakgrunnen på storskjermen"
+          description="Denne kan vises på storskjermen når ungdommene kommer inn i salen"
           :active="state.step === 1"
         >
+          <UAlert
+            title="Tips"
+            description="Trykk på 'Fullskjerm' nederst til høyre på
+            storskjermvisningen."
+            color="info"
+            icon="lucide:lightbulb"
+            variant="subtle"
+            :ui="{ description: 'text-default' }"
+            class="mb-6"
+          />
           <UButton
             size="xl"
             trailing-icon="lucide:external-link"
@@ -344,18 +355,18 @@ async function enrollUnitLeadersInChallenge() {
           </UButton>
           <UButton
             class="flex mt-2"
-            variant="ghost"
+            variant="outline"
             trailing-icon="lucide:check"
             size="xl"
             @click="state.step++"
           >
-            Logo vises på storskjermen
+            Gå videre til neste steg
           </UButton>
         </AdminStep>
         <AdminStep
           :step="2"
           title="Spill av film 1"
-          description="Dette gjøres når ungdommene satt seg og kvelden er i gang"
+          description="Dette gjøres når ungdommene har satt seg, og kvelden er i gang"
           :active="state.step === 2"
         >
           <UButton
@@ -367,12 +378,12 @@ async function enrollUnitLeadersInChallenge() {
           </UButton>
           <UButton
             class="flex mt-2"
-            variant="ghost"
+            variant="outline"
             trailing-icon="lucide:check"
             size="xl"
             @click="state.step++"
           >
-            Filmen er avspilt
+            Filmen er ferdig, gå til neste steg
           </UButton>
         </AdminStep>
         <AdminStep
@@ -391,22 +402,48 @@ async function enrollUnitLeadersInChallenge() {
             >
               Start tipping
             </UButton>
-            <UButton
+            <div
               v-if="state.quizSessionState === QuizSessionState.Open"
-              size="xl"
-              :loading="bettingActionLoading"
-              @click="lockBetting"
+              class="flex gap-4 items-center"
             >
-              Lås tipping
-            </UButton>
-            <UButton
+              <UButton
+                size="xl"
+                :loading="bettingActionLoading"
+                @click="lockBetting"
+              >
+                Lås tipping
+              </UButton>
+              <p>
+                Deltakerne får beskjed om at tipping er låst. <br />
+                Sjekk at alle har tippet før du låser.
+              </p>
+            </div>
+            <div
               v-if="state.quizSessionState === QuizSessionState.Locked"
-              size="xl"
-              :loading="bettingActionLoading"
-              @click="reopenBetting"
+              class="flex gap-4 items-center"
             >
-              Gjenåpne tipping
+              <UButton
+                size="xl"
+                :loading="bettingActionLoading"
+                @click="reopenBetting"
+              >
+                Gjenåpne tipping
+              </UButton>
+              <p>(Hvis noen ikke rakk å tippe kan du gjenåpne tippingen)</p>
+            </div>
+          </div>
+          <div
+            v-if="state.quizSessionState === QuizSessionState.Locked"
+            class="flex gap-4 items-center"
+          >
+            <UButton
+              trailing-icon="lucide:check"
+              size="xl"
+              @click="state.step++"
+            >
+              Alle har tippet, gå videre til neste steg
             </UButton>
+            <p>Hvis du går videre kan du ikke gjenåpne tippingen lenger.</p>
           </div>
         </AdminStep>
         <AdminStep
@@ -424,26 +461,65 @@ async function enrollUnitLeadersInChallenge() {
           </UButton>
           <UButton
             class="flex mt-2"
-            variant="ghost"
+            variant="outline"
             trailing-icon="lucide:check"
             size="xl"
             @click="state.step++"
           >
-            Filmen er avspilt
+            Filmen er ferdig, gå til neste steg
           </UButton>
         </AdminStep>
         <AdminStep
           :step="5"
-          title="Send ut login-kode til pc26.bcc.media"
+          title="Send ut login-kode til unit-oppgaven"
+          description="Unitledere må gå inn på 'Utfordringer' siden i Interact appen"
           :active="state.step === 5"
         >
+          <UAlert
+            title="Tips"
+            color="info"
+            variant="subtle"
+            icon="lucide:lightbulb"
+            :ui="{ description: 'text-default' }"
+            class="mb-6"
+          >
+            <template #description>
+              <ul class="list-disc list-inside">
+                <li>
+                  Unitleder må gå inn på
+                  <NuxtLink
+                    to="pc26.bcc.media"
+                    target="_blank"
+                    class="underline text-info inline-flex items-center gap-0.5"
+                  >
+                    pc26.bcc.media
+                    <Icon name="lucide:external-link" />
+                  </NuxtLink>
+                  på en PC
+                </li>
+                <li>
+                  Hvis unitleder mangler i en unit kan du finne unitens
+                  spill-kode på
+                  <NuxtLink
+                    :to="{ name: 'admin-my-church-units' }"
+                    target="_blank"
+                    class="underline text-info inline-flex items-center gap-0.5"
+                  >
+                    unit-admin siden
+                    <Icon name="lucide:external-link" />
+                  </NuxtLink>
+                </li>
+              </ul>
+            </template>
+          </UAlert>
           <UButton size="xl" @click="enrollUnitLeadersInChallenge">
             Gi unitledere tilgang til utfordringen
           </UButton>
         </AdminStep>
         <AdminStep
           :step="6"
-          title="Gå til adminsiden for å starte spillet"
+          title="Gå til adminsiden for å starte unit-oppgaven"
+          description="Unit-oppgaven er et separat system, så det må ha sin egen admin-side. Fortsett der, og så ledes du tilbake hit senere."
           :active="state.step === 6"
         >
           <UButton
@@ -452,7 +528,7 @@ async function enrollUnitLeadersInChallenge() {
             :to="cryptexUrl?.url"
             trailing-icon="lucide:arrow-right"
           >
-            Gå til adminsiden for spillet
+            Gå til adminsiden for unit-oppgaven
           </UButton>
         </AdminStep>
         <div
@@ -475,17 +551,18 @@ async function enrollUnitLeadersInChallenge() {
           </UButton>
           <UButton
             class="flex mt-2"
-            variant="ghost"
+            variant="outline"
             trailing-icon="lucide:check"
             size="xl"
             @click="state.step++"
           >
-            Filmen er avspilt
+            Filmen er ferdig, gå til neste steg
           </UButton>
         </AdminStep>
         <AdminStep
           :step="13"
           title="Gi deltakerne poeng for tippingen"
+          description="Alle må gå inn på 'Utfordringer' siden i Interact appen og åpne tippingen igjen for å se resultatet."
           :active="state.step === 8"
         >
           <UButton
@@ -501,7 +578,10 @@ async function enrollUnitLeadersInChallenge() {
           :data-active="state.step === 9"
         >
           <p>Du er nå ferdig! 🎉</p>
-          <p>Game Night {{ gamenight }} kan trygt avsluttes.</p>
+          <p>
+            Game Night {{ gamenight }} kan trygt avsluttes, og du kan lukke
+            denne siden.
+          </p>
         </div>
       </div>
     </UContainer>
