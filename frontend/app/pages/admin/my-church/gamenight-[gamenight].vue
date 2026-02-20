@@ -88,6 +88,7 @@ const bigScreenUrl = computed(() => {
 const filmsUrl = 'https://pc26.bcc.media/gamenight-filmer-1237'
 
 const toast = useToast()
+const { t } = useI18n()
 
 // Betting action loading state to prevent spam clicking
 const bettingActionLoading = ref(false)
@@ -143,7 +144,7 @@ async function startBetting() {
     toast.add({
       color: 'error',
       icon: 'lucide:alert-triangle',
-      title: 'Kunne ikke starte tipping',
+      title: t('admin.gamenight.errors.couldNotStartBetting'),
     })
   } finally {
     bettingActionLoading.value = false
@@ -164,7 +165,7 @@ async function lockBetting() {
     toast.add({
       color: 'error',
       icon: 'lucide:alert-triangle',
-      title: 'Kunne ikke låse tipping',
+      title: t('admin.gamenight.errors.couldNotLockBetting'),
     })
   } finally {
     bettingActionLoading.value = false
@@ -185,7 +186,7 @@ async function reopenBetting() {
     toast.add({
       color: 'error',
       icon: 'lucide:alert-triangle',
-      title: 'Kunne ikke gjenåpne tipping',
+      title: t('admin.gamenight.errors.couldNotReopenBetting'),
     })
   } finally {
     bettingActionLoading.value = false
@@ -206,7 +207,7 @@ async function finishBetting() {
     toast.add({
       color: 'error',
       icon: 'lucide:alert-triangle',
-      title: 'Kunne ikke avslutte tipping',
+      title: t('admin.gamenight.errors.couldNotFinishBetting'),
     })
   }
 }
@@ -292,11 +293,13 @@ async function enrollUnitLeadersInChallenge() {
       <section
         class="space-y-8 my-6 rounded-2xl p-8 pr-12 border border-muted w-max"
       >
-        <h2 class="text-2xl font-semibold">Før du starter</h2>
+        <h2 class="text-2xl font-semibold">
+          {{ $t('admin.gamenight.beforeYouStart') }}
+        </h2>
         <div>
           <UCheckbox
             v-model="state.filmsReady"
-            label="Pass på at filmer er klare for avspilling"
+            :label="$t('admin.gamenight.ensureFilmsReady')"
           />
           <NuxtLink
             :to="filmsUrl"
@@ -304,15 +307,15 @@ async function enrollUnitLeadersInChallenge() {
             target="_blank"
             class="pl-7 underline text-primary flex items-center gap-1"
           >
-            Du finner filmene her
+            {{ $t('admin.gamenight.findFilmsHere') }}
             <Icon name="lucide:external-link" />
           </NuxtLink>
         </div>
         <div>
           <UCheckbox
             v-model="state.bigScreenReady"
-            label="Ha storskjermvisningen for unit-oppgaven klart"
-            description="Denne skal brukes i steg 7"
+            :label="$t('admin.gamenight.haveBigScreenReady')"
+            :description="$t('admin.gamenight.usedInStep5')"
           />
           <NuxtLink
             :to="bigScreenUrl"
@@ -321,7 +324,7 @@ async function enrollUnitLeadersInChallenge() {
             :data-loading="!bigScreenUrl"
             class="pl-7 underline text-primary data-[loading=true]:pointer-events-none data-[loading=true]:opacity-50 flex items-center gap-1"
           >
-            Du finner storskjermvisningen her
+            {{ $t('admin.gamenight.findBigScreenHere') }}
             <Icon name="lucide:external-link" />
           </NuxtLink>
         </div>
@@ -330,14 +333,13 @@ async function enrollUnitLeadersInChallenge() {
       <div class="divide-y divide-muted mb-24">
         <AdminStep
           :step="1"
-          title="Vis Ladder to Heaven bakgrunnen på storskjermen"
-          description="Denne kan vises på storskjermen når ungdommene kommer inn i salen"
+          :title="$t('admin.gamenight.step1Title')"
+          :description="$t('admin.gamenight.step1Description')"
           :active="state.step === 1"
         >
           <UAlert
-            title="Tips"
-            description="Trykk på 'Fullskjerm' nederst til høyre på
-            storskjermvisningen."
+            :title="$t('admin.gamenight.tip')"
+            :description="$t('admin.gamenight.fullscreenTip')"
             color="info"
             icon="lucide:lightbulb"
             variant="subtle"
@@ -351,7 +353,7 @@ async function enrollUnitLeadersInChallenge() {
             target="_blank"
             external
           >
-            Åpne storskjermvisningen i ny fane
+            {{ $t('admin.gamenight.openBigScreenNewTab') }}
           </UButton>
           <UButton
             class="flex mt-2"
@@ -360,13 +362,13 @@ async function enrollUnitLeadersInChallenge() {
             size="xl"
             @click="state.step++"
           >
-            Gå videre til neste steg
+            {{ $t('admin.gamenight.goToNextStep') }}
           </UButton>
         </AdminStep>
         <AdminStep
           :step="2"
-          title="Spill av film 1"
-          description="Dette gjøres når ungdommene har satt seg, og kvelden er i gang"
+          :title="$t('admin.gamenight.step2Title')"
+          :description="$t('admin.gamenight.step2Description')"
           :active="state.step === 2"
         >
           <UButton
@@ -374,7 +376,7 @@ async function enrollUnitLeadersInChallenge() {
             :to="`${filmsUrl}?film=1`"
             trailing-icon="lucide:external-link"
           >
-            Gå til film 1
+            {{ $t('admin.gamenight.goToFilm', { number: 1 }) }}
           </UButton>
           <UButton
             class="flex mt-2"
@@ -383,13 +385,13 @@ async function enrollUnitLeadersInChallenge() {
             size="xl"
             @click="state.step++"
           >
-            Filmen er ferdig, gå til neste steg
+            {{ $t('admin.gamenight.filmFinishedNextStep') }}
           </UButton>
         </AdminStep>
         <AdminStep
           :step="3"
-          title="Start tippingen"
-          description="Alle må gå inn på 'Utfordringer' siden i Interact appen"
+          :title="$t('admin.gamenight.step3Title')"
+          :description="$t('admin.gamenight.step3Description')"
           :active="state.step === 3"
         >
           <div class="flex gap-2 items-center">
@@ -400,7 +402,7 @@ async function enrollUnitLeadersInChallenge() {
               :variant="state.quizSessionState !== undefined ? 'soft' : 'solid'"
               @click="startBetting"
             >
-              Start tipping
+              {{ $t('admin.gamenight.startBetting') }}
             </UButton>
             <div
               v-if="state.quizSessionState === QuizSessionState.Open"
@@ -411,11 +413,11 @@ async function enrollUnitLeadersInChallenge() {
                 :loading="bettingActionLoading"
                 @click="lockBetting"
               >
-                Lås tipping
+                {{ $t('admin.gamenight.lockBetting') }}
               </UButton>
               <p>
-                Deltakerne får beskjed om at tipping er låst. <br />
-                Sjekk at alle har tippet før du låser.
+                {{ $t('admin.gamenight.bettingLockedNotice') }} <br />
+                {{ $t('admin.gamenight.checkAllBetBeforeLock') }}
               </p>
             </div>
             <div
@@ -427,9 +429,9 @@ async function enrollUnitLeadersInChallenge() {
                 :loading="bettingActionLoading"
                 @click="reopenBetting"
               >
-                Gjenåpne tipping
+                {{ $t('admin.gamenight.reopenBetting') }}
               </UButton>
-              <p>(Hvis noen ikke rakk å tippe kan du gjenåpne tippingen)</p>
+              <p>{{ $t('admin.gamenight.reopenBettingHint') }}</p>
             </div>
           </div>
           <div
@@ -441,15 +443,15 @@ async function enrollUnitLeadersInChallenge() {
               size="xl"
               @click="state.step++"
             >
-              Alle har tippet, gå videre til neste steg
+              {{ $t('admin.gamenight.allBetNextStep') }}
             </UButton>
-            <p>Hvis du går videre kan du ikke gjenåpne tippingen lenger.</p>
+            <p>{{ $t('admin.gamenight.cannotReopenAfterContinue') }}</p>
           </div>
         </AdminStep>
         <AdminStep
           :step="4"
-          title="Spill av film 2"
-          description="Dette gjøres etter at tipping er gjennomført"
+          :title="$t('admin.gamenight.step4Title')"
+          :description="$t('admin.gamenight.step4Description')"
           :active="state.step === 4"
         >
           <UButton
@@ -457,7 +459,7 @@ async function enrollUnitLeadersInChallenge() {
             :to="`${filmsUrl}?film=2`"
             trailing-icon="lucide:external-link"
           >
-            Gå til film 2
+            {{ $t('admin.gamenight.goToFilm', { number: 2 }) }}
           </UButton>
           <UButton
             class="flex mt-2"
@@ -466,17 +468,26 @@ async function enrollUnitLeadersInChallenge() {
             size="xl"
             @click="state.step++"
           >
-            Filmen er ferdig, gå til neste steg
+            {{ $t('admin.gamenight.filmFinishedNextStep') }}
           </UButton>
         </AdminStep>
         <AdminStep
           :step="5"
-          title="Send ut login-kode til unit-oppgaven"
-          description="Unitledere må gå inn på 'Utfordringer' siden i Interact appen"
+          :title="$t('admin.gamenight.step5TitleBigScreen')"
           :active="state.step === 5"
         >
+          <UButton size="xl" trailing-icon="lucide:check" @click="state.step++">
+            {{ $t('admin.gamenight.goToNextStep') }}
+          </UButton>
+        </AdminStep>
+        <AdminStep
+          :step="6"
+          :title="$t('admin.gamenight.step5Title')"
+          :description="$t('admin.gamenight.step5Description')"
+          :active="state.step === 6"
+        >
           <UAlert
-            title="Tips"
+            :title="$t('admin.gamenight.tip')"
             color="info"
             variant="subtle"
             icon="lucide:lightbulb"
@@ -486,26 +497,26 @@ async function enrollUnitLeadersInChallenge() {
             <template #description>
               <ul class="list-disc list-inside">
                 <li>
-                  Unitleder må gå inn på
+                  {{ $t('admin.gamenight.unitLeaderMustGoTo') }}
                   <NuxtLink
-                    to="pc26.bcc.media"
+                    to="https://pc26.bcc.media"
                     target="_blank"
+                    external
                     class="underline text-info inline-flex items-center gap-0.5"
                   >
                     pc26.bcc.media
                     <Icon name="lucide:external-link" />
                   </NuxtLink>
-                  på en PC
+                  {{ $t('admin.gamenight.onAPC') }}
                 </li>
                 <li>
-                  Hvis unitleder mangler i en unit kan du finne unitens
-                  spill-kode på
+                  {{ $t('admin.gamenight.ifUnitLeaderMissing') }}
                   <NuxtLink
                     :to="{ name: 'admin-my-church-units' }"
                     target="_blank"
                     class="underline text-info inline-flex items-center gap-0.5"
                   >
-                    unit-admin siden
+                    {{ $t('admin.gamenight.unitAdminPage') }}
                     <Icon name="lucide:external-link" />
                   </NuxtLink>
                 </li>
@@ -513,14 +524,14 @@ async function enrollUnitLeadersInChallenge() {
             </template>
           </UAlert>
           <UButton size="xl" @click="enrollUnitLeadersInChallenge">
-            Gi unitledere tilgang til utfordringen
+            {{ $t('admin.gamenight.giveUnitLeadersAccess') }}
           </UButton>
         </AdminStep>
         <AdminStep
-          :step="6"
-          title="Gå til adminsiden for å starte unit-oppgaven"
-          description="Unit-oppgaven er et separat system, så det må ha sin egen admin-side. Fortsett der, og så ledes du tilbake hit senere."
-          :active="state.step === 6"
+          :step="7"
+          :title="$t('admin.gamenight.step6Title')"
+          :description="$t('admin.gamenight.step6Description')"
+          :active="state.step === 7"
         >
           <UButton
             :loading="cryptexUrlStatus !== 'success'"
@@ -528,26 +539,26 @@ async function enrollUnitLeadersInChallenge() {
             :to="cryptexUrl?.url"
             trailing-icon="lucide:arrow-right"
           >
-            Gå til adminsiden for unit-oppgaven
+            {{ $t('admin.gamenight.goToUnitTaskAdmin') }}
           </UButton>
         </AdminStep>
         <div
           class="py-12 pl-22.75 text-2xl font-semibold data-[active=false]:pointer-events-none data-[active=false]:opacity-50"
-          :data-active="state.step === 6"
+          :data-active="state.step === 7"
         >
-          <p>Fullfør steg 7 til 11 på den andre siden</p>
+          <p>{{ $t('admin.gamenight.completeStepsOnOtherPage') }}</p>
         </div>
         <AdminStep
-          :step="12"
-          title="Spill av film 3"
-          :active="state.step === 7"
+          :step="13"
+          :title="$t('admin.gamenight.step12Title')"
+          :active="state.step === 8"
         >
           <UButton
             size="xl"
             :to="`${filmsUrl}?film=3`"
             trailing-icon="lucide:external-link"
           >
-            Gå til film 3
+            {{ $t('admin.gamenight.goToFilm', { number: 3 }) }}
           </UButton>
           <UButton
             class="flex mt-2"
@@ -556,31 +567,32 @@ async function enrollUnitLeadersInChallenge() {
             size="xl"
             @click="state.step++"
           >
-            Filmen er ferdig, gå til neste steg
+            {{ $t('admin.gamenight.filmFinishedNextStep') }}
           </UButton>
         </AdminStep>
         <AdminStep
-          :step="13"
-          title="Gi deltakerne poeng for tippingen"
-          description="Alle må gå inn på 'Utfordringer' siden i Interact appen og åpne tippingen igjen for å se resultatet."
-          :active="state.step === 8"
+          :step="14"
+          :title="$t('admin.gamenight.step13Title')"
+          :description="$t('admin.gamenight.step13Description')"
+          :active="state.step === 9"
         >
           <UButton
             size="xl"
             :disabled="state.quizSessionState !== QuizSessionState.Locked"
             @click="finishBetting"
           >
-            Frigi poeng nå
+            {{ $t('admin.gamenight.releasePointsNow') }}
           </UButton>
         </AdminStep>
         <div
           class="py-24 text-center text-2xl font-semibold data-[active=false]:pointer-events-none data-[active=false]:opacity-50"
-          :data-active="state.step === 9"
+          :data-active="state.step === 10"
         >
-          <p>Du er nå ferdig! 🎉</p>
+          <p>{{ $t('admin.gamenight.youAreDone') }}</p>
           <p>
-            Game Night {{ gamenight }} kan trygt avsluttes, og du kan lukke
-            denne siden.
+            {{
+              $t('admin.gamenight.canClosePageSafely', { number: gamenight })
+            }}
           </p>
         </div>
       </div>
