@@ -57,6 +57,7 @@ const state = useLocalStorage(`state:gamenight-${gamenight.value}`, {
   step: 1,
   quizSessionId: undefined as string | undefined,
   quizSessionState: undefined as QuizSessionState | undefined,
+  externalAdminVisited: false,
 })
 
 onKeyDown('ArrowUp', () => {
@@ -538,15 +539,27 @@ async function enrollUnitLeadersInChallenge() {
             size="xl"
             :to="cryptexUrl?.url"
             trailing-icon="lucide:arrow-right"
+            @click="state.externalAdminVisited = true"
           >
             {{ $t('admin.gamenight.goToUnitTaskAdmin') }}
           </UButton>
         </AdminStep>
         <div
-          class="py-12 pl-22.75 text-2xl font-semibold data-[active=false]:pointer-events-none data-[active=false]:opacity-50"
+          class="py-12 pl-22.75 data-[active=false]:pointer-events-none data-[active=false]:opacity-50"
           :data-active="state.step === 7"
         >
-          <p>{{ $t('admin.gamenight.completeStepsOnOtherPage') }}</p>
+          <p class="text-2xl font-semibold mb-4">
+            {{ $t('admin.gamenight.completeStepsOnOtherPage') }}
+          </p>
+          <UButton
+            v-if="state.externalAdminVisited"
+            variant="outline"
+            trailing-icon="lucide:check"
+            size="xl"
+            @click="state.step++"
+          >
+            {{ $t('admin.gamenight.goToNextStep') }}
+          </UButton>
         </div>
         <AdminStep
           :step="13"
