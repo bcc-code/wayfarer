@@ -42,7 +42,7 @@ definePageMeta({
           v-for="gamenight in 2"
           :key="gamenight"
           :to="{
-            name: 'admin-my-church-gamenight-gamenight',
+            name: 'admin-my-church-gamenights-gamenight-gamenight',
             params: { gamenight },
           }"
           class="rounded-2xl grow bg-muted p-12 gap-2 flex flex-col items-center justify-center text-center hover:bg-accented data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50"

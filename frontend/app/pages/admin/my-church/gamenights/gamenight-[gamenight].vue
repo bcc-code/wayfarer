@@ -22,7 +22,7 @@ gql(`
 
 const { data: pageData } = useAdminGameNightPageQuery()
 
-const route = useRoute('admin-my-church-gamenight-gamenight')
+const route = useRoute('admin-my-church-gamenights-gamenight-gamenight')
 const gamenight = computed(() => route.params.gamenight)
 
 const quizId = computed(() => {
