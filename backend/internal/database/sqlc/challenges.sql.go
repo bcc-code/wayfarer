@@ -902,25 +902,35 @@ WHERE
     AND ($4::text = '' OR challenge_type = $4::text)
     AND ($5::timestamptz IS NULL OR published_at >= $5::timestamptz)
     AND ($6::timestamptz IS NULL OR published_at <= $6::timestamptz)
-    AND ($7::text = '' OR id > $7::text)
-    AND ($8::text = '' OR id < $8::text)
+    AND (
+        $7::timestamptz IS NULL
+        OR (COALESCE(published_at, created_at), id) < ($7::timestamptz, $8::text)
+    )
+    AND (
+        $9::timestamptz IS NULL
+        OR (COALESCE(published_at, created_at), id) > ($9::timestamptz, $10::text)
+    )
 ORDER BY
-    CASE WHEN $9::bool = true THEN id END DESC,
-    CASE WHEN $9::bool = false OR $9::bool IS NULL THEN id END ASC
-LIMIT CASE WHEN $10::int IS NULL THEN NULL ELSE $10::int END
+    CASE WHEN $11::bool = true THEN COALESCE(published_at, created_at) END ASC,
+    CASE WHEN $11::bool = true THEN id END ASC,
+    CASE WHEN $11::bool = false OR $11::bool IS NULL THEN COALESCE(published_at, created_at) END DESC,
+    CASE WHEN $11::bool = false OR $11::bool IS NULL THEN id END DESC
+LIMIT CASE WHEN $12::int IS NULL THEN NULL ELSE $12::int END
 `
 
 type GetChallengesFilteredCursorParams struct {
-	Ids             []string           `json:"ids"`
-	Projectid       string             `json:"projectid"`
-	Eventid         string             `json:"eventid"`
-	Challengetype   string             `json:"challengetype"`
-	Publishedafter  pgtype.Timestamptz `json:"publishedafter"`
-	Publishedbefore pgtype.Timestamptz `json:"publishedbefore"`
-	Aftercursor     string             `json:"aftercursor"`
-	Beforecursor    string             `json:"beforecursor"`
-	Isbackward      bool               `json:"isbackward"`
-	Querylimit      int32              `json:"querylimit"`
+	Ids                     []string           `json:"ids"`
+	Projectid               string             `json:"projectid"`
+	Eventid                 string             `json:"eventid"`
+	Challengetype           string             `json:"challengetype"`
+	Publishedafter          pgtype.Timestamptz `json:"publishedafter"`
+	Publishedbefore         pgtype.Timestamptz `json:"publishedbefore"`
+	Aftercursorpublishedat  pgtype.Timestamptz `json:"aftercursorpublishedat"`
+	Aftercursorid           string             `json:"aftercursorid"`
+	Beforecursorpublishedat pgtype.Timestamptz `json:"beforecursorpublishedat"`
+	Beforecursorid          string             `json:"beforecursorid"`
+	Isbackward              bool               `json:"isbackward"`
+	Querylimit              int32              `json:"querylimit"`
 }
 
 type GetChallengesFilteredCursorRow struct {
@@ -946,6 +956,7 @@ type GetChallengesFilteredCursorRow struct {
 	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
 }
 
+// Sorted by published_at DESC (newest first) by default, using COALESCE to handle NULL published_at
 func (q *Queries) GetChallengesFilteredCursor(ctx context.Context, arg GetChallengesFilteredCursorParams) ([]*GetChallengesFilteredCursorRow, error) {
 	rows, err := q.db.Query(ctx, GetChallengesFilteredCursor,
 		arg.Ids,
@@ -954,8 +965,10 @@ func (q *Queries) GetChallengesFilteredCursor(ctx context.Context, arg GetChalle
 		arg.Challengetype,
 		arg.Publishedafter,
 		arg.Publishedbefore,
-		arg.Aftercursor,
-		arg.Beforecursor,
+		arg.Aftercursorpublishedat,
+		arg.Aftercursorid,
+		arg.Beforecursorpublishedat,
+		arg.Beforecursorid,
 		arg.Isbackward,
 		arg.Querylimit,
 	)
