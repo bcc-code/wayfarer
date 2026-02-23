@@ -58,6 +58,7 @@ input UpdateSuperTeamInput {
 }
 
 input TeamFilter {
+    churchId: ID  # Filter teams by team lead's church membership
     projectId: ID
     superTeamId: ID
     ids: [ID!]  # Support bulk ID lookup for M2M API

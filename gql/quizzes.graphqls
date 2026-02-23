@@ -49,6 +49,11 @@ interface QuizQuestion {
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
+    bettingEnabled: Boolean!
+    bettingMinPercentage: Float
+    bettingMaxPercentage: Float
+    bettingMinAbsolute: Int
+    bettingMaxAbsolute: Int
 }
 
 type PredefinedQuestion implements QuizQuestion {
@@ -58,6 +63,11 @@ type PredefinedQuestion implements QuizQuestion {
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
+    bettingEnabled: Boolean!
+    bettingMinPercentage: Float
+    bettingMaxPercentage: Float
+    bettingMinAbsolute: Int
+    bettingMaxAbsolute: Int
     allowMultipleSelection: Boolean!
     predefinedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
 }
@@ -69,6 +79,11 @@ type FreeTextQuestion implements QuizQuestion {
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
+    bettingEnabled: Boolean!
+    bettingMinPercentage: Float
+    bettingMaxPercentage: Float
+    bettingMinAbsolute: Int
+    bettingMaxAbsolute: Int
 }
 
 type NumberQuestion implements QuizQuestion {
@@ -78,6 +93,11 @@ type NumberQuestion implements QuizQuestion {
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
+    bettingEnabled: Boolean!
+    bettingMinPercentage: Float
+    bettingMaxPercentage: Float
+    bettingMinAbsolute: Int
+    bettingMaxAbsolute: Int
     minValue: Float
     maxValue: Float
     stepValue: Float
@@ -90,6 +110,11 @@ type JsonQuestion implements QuizQuestion {
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
+    bettingEnabled: Boolean!
+    bettingMinPercentage: Float
+    bettingMaxPercentage: Float
+    bettingMinAbsolute: Int
+    bettingMaxAbsolute: Int
 }
 
 type OrderingQuestion implements QuizQuestion {
@@ -99,6 +124,11 @@ type OrderingQuestion implements QuizQuestion {
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
+    bettingEnabled: Boolean!
+    bettingMinPercentage: Float
+    bettingMaxPercentage: Float
+    bettingMinAbsolute: Int
+    bettingMaxAbsolute: Int
     orderingItems: [QuizOrderingItem!]! @goField(forceResolver: true)
 }
 
@@ -106,7 +136,8 @@ type QuizOrderingItem {
     id: ID!
     question: QuizQuestion! @goField(forceResolver: true)
     itemText: String!
-    # correctOrder intentionally NOT exposed to prevent cheating
+    # correctOrder is conditionally exposed - only returns value when session is FINISHED to prevent cheating
+    correctOrder: Int @goField(forceResolver: true)
 }
 
 type QuizPredefinedAnswer {
@@ -149,6 +180,8 @@ interface QuizResponse {
     answeredAt: DateTime
     timeSpentSeconds: Int
     pointsEarned: Int
+    betAmount: Int
+    journalEntry: ScoreJournal @goField(forceResolver: true)
 }
 
 type PredefinedResponse implements QuizResponse {
@@ -158,6 +191,8 @@ type PredefinedResponse implements QuizResponse {
     answeredAt: DateTime
     timeSpentSeconds: Int
     pointsEarned: Int
+    betAmount: Int
+    journalEntry: ScoreJournal @goField(forceResolver: true)
     selectedAnswerIds: [ID!]!
     selectedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
     isCorrect: Boolean
@@ -170,6 +205,8 @@ type FreeTextResponse implements QuizResponse {
     answeredAt: DateTime
     timeSpentSeconds: Int
     pointsEarned: Int
+    betAmount: Int
+    journalEntry: ScoreJournal @goField(forceResolver: true)
     textResponse: String!
 }
 
@@ -180,6 +217,8 @@ type NumberResponse implements QuizResponse {
     answeredAt: DateTime
     timeSpentSeconds: Int
     pointsEarned: Int
+    betAmount: Int
+    journalEntry: ScoreJournal @goField(forceResolver: true)
     numberResponse: Float!
 }
 
@@ -190,6 +229,8 @@ type JsonResponse implements QuizResponse {
     answeredAt: DateTime
     timeSpentSeconds: Int
     pointsEarned: Int
+    betAmount: Int
+    journalEntry: ScoreJournal @goField(forceResolver: true)
     jsonResponse: JSON!
 }
 
@@ -200,6 +241,8 @@ type OrderingResponse implements QuizResponse {
     answeredAt: DateTime
     timeSpentSeconds: Int
     pointsEarned: Int
+    betAmount: Int
+    journalEntry: ScoreJournal @goField(forceResolver: true)
     submittedOrder: [ID!]!
     isCorrect: Boolean @goField(forceResolver: true)
 }
@@ -245,6 +288,12 @@ input CreateQuizQuestionInput {
     timeoutSeconds: Int
     points: Int
 
+    bettingEnabled: Boolean
+    bettingMinPercentage: Float
+    bettingMaxPercentage: Float
+    bettingMinAbsolute: Int
+    bettingMaxAbsolute: Int
+
     allowMultipleSelection: Boolean
     predefinedAnswers: [CreatePredefinedAnswerInput!]
 
@@ -272,6 +321,15 @@ input UpdateQuizQuestionInput {
     timeoutSeconds: Int
     points: Int
 
+    bettingEnabled: Boolean
+    bettingMinPercentage: Float
+    bettingMaxPercentage: Float
+    bettingMinAbsolute: Int
+    bettingMaxAbsolute: Int
+    # Set to true to clear betting absolute values (set them to null)
+    clearBettingMinAbsolute: Boolean
+    clearBettingMaxAbsolute: Boolean
+
     allowMultipleSelection: Boolean
     predefinedAnswers: [CreatePredefinedAnswerInput!]
 
@@ -292,10 +350,18 @@ input SubmitQuizAnswerInput {
     submittedOrder: [ID!]
 
     timeSpentSeconds: Int
+    betAmount: Int
 }
 
 input UpdateQuizAnswerInput {
     submittedOrder: [ID!]  # For ordering questions
+    betAmount: Int
+}
+
+input RecordBetResultInput {
+    responseId: ID!
+    pointsEarned: Int!
+    sendNotification: Boolean
 }
 
 input QuizFilter {
@@ -381,4 +447,8 @@ extend type Mutation {
         responses: [SubmitQuizAnswerInput!]!
         completedAt: DateTime
     ): QuizSubmission! @requireRole(roles: ["m2m", "admin", "superadmin"])
+
+    # M2M: Record bet results (points earned from betting)
+    recordBetResult(input: RecordBetResultInput!): QuizResponse! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    recordBetResults(inputs: [RecordBetResultInput!]!): [QuizResponse!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
 }

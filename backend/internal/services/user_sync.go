@@ -84,6 +84,36 @@ func (s *UserSyncService) SyncUser(ctx context.Context, userID string) (*SyncUse
 	return result, nil
 }
 
+// SyncContentEventsFromSSF fetches content events from SSF for a user.
+// Used when SSF consent is granted to backfill historical events.
+func (s *UserSyncService) SyncContentEventsFromSSF(ctx context.Context, userID string) (int, error) {
+	if s.SSFClient == nil {
+		return 0, fmt.Errorf("SSF client not configured")
+	}
+
+	user, err := s.DB.Queries.GetUserByID(ctx, userID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get user: %w", err)
+	}
+
+	if !user.PersonUuid.Valid {
+		return 0, fmt.Errorf("user has no person_uuid")
+	}
+
+	personUUIDStr := uuid.UUID(user.PersonUuid.Bytes).String()
+	processed, err := s.syncContentEvents(ctx, userID, user.PersonUuid, personUUIDStr)
+	if err != nil {
+		return processed, err
+	}
+
+	// Invalidate user cache after sync
+	if s.Cache != nil {
+		s.Cache.InvalidateUser(userID)
+	}
+
+	return processed, nil
+}
+
 // syncContentEvents fetches content events from SSF and processes them through the pipeline.
 // Returns the number of events processed.
 func (s *UserSyncService) syncContentEvents(ctx context.Context, userID string, personUUID pgtype.UUID, personUUIDStr string) (int, error) {

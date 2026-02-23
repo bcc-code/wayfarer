@@ -1,0 +1,93 @@
+type: http_request
+model: http_request
+id: rq_GetQuizResponseWithJournal
+createdAt: 2026-02-10T12:00:00
+updatedAt: 2026-02-10T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    query GetQuizSubmission($id: ID!) {
+      quizSubmission(id: $id) {
+        id
+        startedAt
+        completedAt
+        score
+        maxScore
+        pointsAwarded
+        responses {
+          id
+          answeredAt
+          timeSpentSeconds
+          pointsEarned
+          betAmount
+          journalEntry {
+            id
+            sourceType
+            points
+            reason
+            createdAt
+            user {
+              id
+              displayName
+            }
+            project {
+              id
+              name
+            }
+          }
+          question {
+            id
+            questionText
+            bettingEnabled
+            ... on PredefinedQuestion {
+              bettingMinPercentage
+              bettingMaxPercentage
+              bettingMinAbsolute
+              bettingMaxAbsolute
+            }
+          }
+          ... on PredefinedResponse {
+            selectedAnswerIds
+            isCorrect
+          }
+          ... on FreeTextResponse {
+            textResponse
+          }
+          ... on NumberResponse {
+            numberResponse
+          }
+          ... on OrderingResponse {
+            submittedOrder
+            isCorrect
+          }
+        }
+      }
+    }
+  variables: |
+    {
+      "id": "QS01ARZ3NDEKTSV4RRFFQ69G5FAV"
+    }
+bodyType: graphql
+description: |
+  Query a quiz submission with full response details including journal entries.
+
+  The journalEntry field on each response links to the score journal entry
+  created when recordBetResult was called.
+
+  This is useful for:
+  - Verifying bet results were recorded correctly
+  - Displaying bet history to users
+  - Auditing point changes from betting
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_GetQuizResponseWithJournal
+method: POST
+name: Get Quiz Response (With Journal)
+sortPriority: 4062.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

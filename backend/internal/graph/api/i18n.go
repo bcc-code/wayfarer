@@ -146,18 +146,31 @@ func applyChallengeTranslation(challenge model.Challenge, trans *loaders.Transla
 		translated.Name = applyStringTranslation(trans.Name, c.Name)
 		translated.Description = applyHTMLTranslation(trans.Description, c.Description)
 		translated.ButtonText = applyStringTranslation(trans.ButtonText, c.ButtonText)
+		translated.NotificationText = applyStringTranslation(trans.NotificationText, c.NotificationText)
 		return &translated
 	case *model.QuizChallenge:
 		translated := *c
 		translated.Name = applyStringTranslation(trans.Name, c.Name)
 		translated.Description = applyHTMLTranslation(trans.Description, c.Description)
 		translated.ButtonText = applyStringTranslation(trans.ButtonText, c.ButtonText)
+		translated.NotificationText = applyStringTranslation(trans.NotificationText, c.NotificationText)
 		return &translated
 	case *model.ExternalChallenge:
 		translated := *c
 		translated.Name = applyStringTranslation(trans.Name, c.Name)
 		translated.Description = applyHTMLTranslation(trans.Description, c.Description)
 		translated.ButtonText = applyStringTranslation(trans.ButtonText, c.ButtonText)
+		translated.NotificationText = applyStringTranslation(trans.NotificationText, c.NotificationText)
+		return &translated
+	case *model.PluginChallenge:
+		translated := *c
+		translated.Name = applyStringTranslation(trans.Name, c.Name)
+		translated.Description = applyHTMLTranslation(trans.Description, c.Description)
+		if c.ButtonText != nil {
+			bt := applyStringTranslation(trans.ButtonText, *c.ButtonText)
+			translated.ButtonText = &bt
+		}
+		translated.NotificationText = applyStringTranslation(trans.NotificationText, c.NotificationText)
 		return &translated
 	default:
 		return challenge
@@ -349,6 +362,10 @@ func applyQuizQuestionTranslation(question model.QuizQuestion, trans *loaders.Tr
 		translated.QuestionText = applyStringTranslation(trans.QuestionText, q.QuestionText)
 		return &translated
 	case *model.JSONQuestion:
+		translated := *q
+		translated.QuestionText = applyStringTranslation(trans.QuestionText, q.QuestionText)
+		return &translated
+	case *model.OrderingQuestion:
 		translated := *q
 		translated.QuestionText = applyStringTranslation(trans.QuestionText, q.QuestionText)
 		return &translated

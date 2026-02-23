@@ -17,11 +17,12 @@ type ProjectTranslation struct {
 	Rules       []string `json:"rules"`
 }
 
-// ChallengeTranslation includes button_text in addition to name and description
+// ChallengeTranslation includes button_text and notification_text in addition to name and description
 type ChallengeTranslation struct {
-	Name        string      `json:"name"`
-	Description null.String `json:"description"`
-	ButtonText  string      `json:"button_text"`
+	Name             string      `json:"name"`
+	Description      null.String `json:"description"`
+	ButtonText       string      `json:"button_text"`
+	NotificationText null.String `json:"notification_text"`
 }
 
 // AchievementTranslation includes multiple description variants

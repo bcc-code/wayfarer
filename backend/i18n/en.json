@@ -1,0 +1,11 @@
+{
+  "bet_result": {
+    "title": "Result",
+    "won": "You won {points} points!",
+    "lost": "You lost {points} points."
+  },
+  "bet_reason": {
+    "stake": "{challenge} - stake",
+    "winnings": "{challenge} - winnings"
+  }
+}

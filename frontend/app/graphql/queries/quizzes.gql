@@ -1,0 +1,12 @@
+query QuizDetails($id: ID!) {
+  quiz(id: $id) {
+    id
+    name
+    challenge {
+      id
+    }
+    project {
+      id
+    }
+  }
+}

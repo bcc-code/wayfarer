@@ -1,0 +1,34 @@
+type: http_request
+model: http_request
+id: rq_RecalculateContentAchievements
+createdAt: 2026-02-11T12:00:00
+updatedAt: 2026-02-11T14:29:18.055266
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Achievements
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation RecalculateContentAchievements($projectId: ID!, $achievementId: ID!) {
+      recalculateContentAchievements(projectId: $projectId, achievementId: $achievementId) {
+        awarded
+        userIds
+      }
+    }
+  variables: |
+    {
+      "projectId": "PR01K9VZ8684DP9R4W3ZEV526E5X",
+      "achievementId": "AC01KCCNMRWECKQG6W0WCXGFRE6X"
+    }
+bodyType: graphql
+description: Force recalculate content achievements - awards to users who completed all items but weren't awarded (admin only)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_RecalculateContentAchievements
+method: POST
+name: Recalculate Content Achievements
+sortPriority: 3700.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

@@ -1,0 +1,11 @@
+{
+  "bet_result": {
+    "title": "Resultat",
+    "won": "Du vant {points} poeng!",
+    "lost": "Du tapte {points} poeng."
+  },
+  "bet_reason": {
+    "stake": "{challenge} - satset",
+    "winnings": "{challenge} - gevinst"
+  }
+}

@@ -17,7 +17,7 @@ SET
     event_id = $1::text,
     updated_at = now()
 WHERE id = $2::text
-RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
+RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 `
 
 type AssignChallengeToEventParams struct {
@@ -35,6 +35,7 @@ type AssignChallengeToEventRow struct {
 	ImageUrl                    *string            `json:"image_url"`
 	Url                         *string            `json:"url"`
 	ButtonText                  string             `json:"button_text"`
+	NotificationText            string             `json:"notification_text"`
 	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
@@ -60,6 +61,7 @@ func (q *Queries) AssignChallengeToEvent(ctx context.Context, arg AssignChalleng
 		&i.ImageUrl,
 		&i.Url,
 		&i.ButtonText,
+		&i.NotificationText,
 		&i.PublishedAt,
 		&i.VisibleAt,
 		&i.StartedAt,
@@ -85,6 +87,7 @@ INSERT INTO challenges (
     image_url,
     url,
     button_text,
+    notification_text,
     published_at,
     visible_at,
     end_time,
@@ -103,14 +106,15 @@ SELECT
     unnest($7::text[]),
     unnest($8::text[]),
     unnest($9::text[]),
-    unnest($10::timestamptz[]),
+    unnest($10::text[]),
     unnest($11::timestamptz[]),
     unnest($12::timestamptz[]),
-    unnest($13::bool[]),
+    unnest($13::timestamptz[]),
     unnest($14::bool[]),
     unnest($15::bool[]),
-    unnest($16::text[])
-RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
+    unnest($16::bool[]),
+    unnest($17::text[])
+RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 `
 
 type BulkCreateChallengesParams struct {
@@ -123,6 +127,7 @@ type BulkCreateChallengesParams struct {
 	Imageurls                    []string             `json:"imageurls"`
 	Urls                         []string             `json:"urls"`
 	Buttontexts                  []string             `json:"buttontexts"`
+	Notificationtexts            []string             `json:"notificationtexts"`
 	Publishedats                 []pgtype.Timestamptz `json:"publishedats"`
 	Visibleats                   []pgtype.Timestamptz `json:"visibleats"`
 	Endtimes                     []pgtype.Timestamptz `json:"endtimes"`
@@ -142,6 +147,7 @@ type BulkCreateChallengesRow struct {
 	ImageUrl                    *string            `json:"image_url"`
 	Url                         *string            `json:"url"`
 	ButtonText                  string             `json:"button_text"`
+	NotificationText            string             `json:"notification_text"`
 	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
@@ -165,6 +171,7 @@ func (q *Queries) BulkCreateChallenges(ctx context.Context, arg BulkCreateChalle
 		arg.Imageurls,
 		arg.Urls,
 		arg.Buttontexts,
+		arg.Notificationtexts,
 		arg.Publishedats,
 		arg.Visibleats,
 		arg.Endtimes,
@@ -190,6 +197,7 @@ func (q *Queries) BulkCreateChallenges(ctx context.Context, arg BulkCreateChalle
 			&i.ImageUrl,
 			&i.Url,
 			&i.ButtonText,
+			&i.NotificationText,
 			&i.PublishedAt,
 			&i.VisibleAt,
 			&i.StartedAt,
@@ -217,7 +225,7 @@ SET
     published_at = $1::timestamptz,
     updated_at = now()
 WHERE id = ANY($2::text[])
-RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
+RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 `
 
 type BulkPublishChallengesParams struct {
@@ -235,6 +243,7 @@ type BulkPublishChallengesRow struct {
 	ImageUrl                    *string            `json:"image_url"`
 	Url                         *string            `json:"url"`
 	ButtonText                  string             `json:"button_text"`
+	NotificationText            string             `json:"notification_text"`
 	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
@@ -266,6 +275,7 @@ func (q *Queries) BulkPublishChallenges(ctx context.Context, arg BulkPublishChal
 			&i.ImageUrl,
 			&i.Url,
 			&i.ButtonText,
+			&i.NotificationText,
 			&i.PublishedAt,
 			&i.VisibleAt,
 			&i.StartedAt,
@@ -333,6 +343,7 @@ INSERT INTO challenges (
     image_url,
     url,
     button_text,
+    notification_text,
     published_at,
     visible_at,
     end_time,
@@ -351,15 +362,16 @@ VALUES (
     $7::text,
     $8::text,
     $9::text,
-    COALESCE($10::timestamptz, now()),
-    $11::timestamptz,
+    COALESCE($10::text, ''),
+    COALESCE($11::timestamptz, now()),
     $12::timestamptz,
-    COALESCE($13::bool, true),
-    COALESCE($14::bool, false),
+    $13::timestamptz,
+    COALESCE($14::bool, true),
     COALESCE($15::bool, false),
-    $16::text
+    COALESCE($16::bool, false),
+    $17::text
 )
-RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
+RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 `
 
 type CreateChallengeParams struct {
@@ -372,6 +384,7 @@ type CreateChallengeParams struct {
 	Imageurl                    *string            `json:"imageurl"`
 	Url                         *string            `json:"url"`
 	Buttontext                  string             `json:"buttontext"`
+	Notificationtext            *string            `json:"notificationtext"`
 	Publishedat                 pgtype.Timestamptz `json:"publishedat"`
 	Visibleat                   pgtype.Timestamptz `json:"visibleat"`
 	Endtime                     pgtype.Timestamptz `json:"endtime"`
@@ -391,6 +404,7 @@ type CreateChallengeRow struct {
 	ImageUrl                    *string            `json:"image_url"`
 	Url                         *string            `json:"url"`
 	ButtonText                  string             `json:"button_text"`
+	NotificationText            string             `json:"notification_text"`
 	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
@@ -414,6 +428,7 @@ func (q *Queries) CreateChallenge(ctx context.Context, arg CreateChallengeParams
 		arg.Imageurl,
 		arg.Url,
 		arg.Buttontext,
+		arg.Notificationtext,
 		arg.Publishedat,
 		arg.Visibleat,
 		arg.Endtime,
@@ -433,6 +448,7 @@ func (q *Queries) CreateChallenge(ctx context.Context, arg CreateChallengeParams
 		&i.ImageUrl,
 		&i.Url,
 		&i.ButtonText,
+		&i.NotificationText,
 		&i.PublishedAt,
 		&i.VisibleAt,
 		&i.StartedAt,
@@ -458,7 +474,7 @@ func (q *Queries) DeleteChallenge(ctx context.Context, id string) error {
 }
 
 const GetAllChallengesByEventIDs = `-- name: GetAllChallengesByEventIDs :many
-SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
+SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 FROM challenges
 WHERE event_id = ANY($1::text[])
 ORDER BY event_id, COALESCE(published_at, created_at) DESC
@@ -474,6 +490,7 @@ type GetAllChallengesByEventIDsRow struct {
 	ImageUrl                    *string            `json:"image_url"`
 	Url                         *string            `json:"url"`
 	ButtonText                  string             `json:"button_text"`
+	NotificationText            string             `json:"notification_text"`
 	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
@@ -507,6 +524,7 @@ func (q *Queries) GetAllChallengesByEventIDs(ctx context.Context, eventIds []str
 			&i.ImageUrl,
 			&i.Url,
 			&i.ButtonText,
+			&i.NotificationText,
 			&i.PublishedAt,
 			&i.VisibleAt,
 			&i.StartedAt,
@@ -529,7 +547,7 @@ func (q *Queries) GetAllChallengesByEventIDs(ctx context.Context, eventIds []str
 }
 
 const GetAllChallengesByProjectIDs = `-- name: GetAllChallengesByProjectIDs :many
-SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
+SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 FROM challenges
 WHERE project_id = ANY($1::text[])
 ORDER BY project_id, COALESCE(published_at, created_at) DESC
@@ -545,6 +563,7 @@ type GetAllChallengesByProjectIDsRow struct {
 	ImageUrl                    *string            `json:"image_url"`
 	Url                         *string            `json:"url"`
 	ButtonText                  string             `json:"button_text"`
+	NotificationText            string             `json:"notification_text"`
 	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
@@ -578,6 +597,7 @@ func (q *Queries) GetAllChallengesByProjectIDs(ctx context.Context, projectIds [
 			&i.ImageUrl,
 			&i.Url,
 			&i.ButtonText,
+			&i.NotificationText,
 			&i.PublishedAt,
 			&i.VisibleAt,
 			&i.StartedAt,
@@ -600,7 +620,7 @@ func (q *Queries) GetAllChallengesByProjectIDs(ctx context.Context, projectIds [
 }
 
 const GetChallengeByPluginChallengeID = `-- name: GetChallengeByPluginChallengeID :one
-SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
+SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 FROM challenges
 WHERE plugin_challenge_id = $1::text
 `
@@ -615,6 +635,7 @@ type GetChallengeByPluginChallengeIDRow struct {
 	ImageUrl                    *string            `json:"image_url"`
 	Url                         *string            `json:"url"`
 	ButtonText                  string             `json:"button_text"`
+	NotificationText            string             `json:"notification_text"`
 	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
@@ -640,6 +661,7 @@ func (q *Queries) GetChallengeByPluginChallengeID(ctx context.Context, plugincha
 		&i.ImageUrl,
 		&i.Url,
 		&i.ButtonText,
+		&i.NotificationText,
 		&i.PublishedAt,
 		&i.VisibleAt,
 		&i.StartedAt,
@@ -655,7 +677,7 @@ func (q *Queries) GetChallengeByPluginChallengeID(ctx context.Context, plugincha
 }
 
 const GetChallengesByEventIDs = `-- name: GetChallengesByEventIDs :many
-SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
+SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 FROM challenges
 WHERE event_id = ANY($1::text[])
     AND published_at IS NOT NULL
@@ -673,6 +695,7 @@ type GetChallengesByEventIDsRow struct {
 	ImageUrl                    *string            `json:"image_url"`
 	Url                         *string            `json:"url"`
 	ButtonText                  string             `json:"button_text"`
+	NotificationText            string             `json:"notification_text"`
 	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
@@ -704,6 +727,7 @@ func (q *Queries) GetChallengesByEventIDs(ctx context.Context, eventIds []string
 			&i.ImageUrl,
 			&i.Url,
 			&i.ButtonText,
+			&i.NotificationText,
 			&i.PublishedAt,
 			&i.VisibleAt,
 			&i.StartedAt,
@@ -726,7 +750,7 @@ func (q *Queries) GetChallengesByEventIDs(ctx context.Context, eventIds []string
 }
 
 const GetChallengesByIDs = `-- name: GetChallengesByIDs :many
-SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
+SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 FROM challenges
 WHERE id = ANY($1::text[])
 `
@@ -741,6 +765,7 @@ type GetChallengesByIDsRow struct {
 	ImageUrl                    *string            `json:"image_url"`
 	Url                         *string            `json:"url"`
 	ButtonText                  string             `json:"button_text"`
+	NotificationText            string             `json:"notification_text"`
 	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
@@ -772,6 +797,7 @@ func (q *Queries) GetChallengesByIDs(ctx context.Context, ids []string) ([]*GetC
 			&i.ImageUrl,
 			&i.Url,
 			&i.ButtonText,
+			&i.NotificationText,
 			&i.PublishedAt,
 			&i.VisibleAt,
 			&i.StartedAt,
@@ -794,7 +820,7 @@ func (q *Queries) GetChallengesByIDs(ctx context.Context, ids []string) ([]*GetC
 }
 
 const GetChallengesByProjectIDs = `-- name: GetChallengesByProjectIDs :many
-SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
+SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 FROM challenges
 WHERE project_id = ANY($1::text[])
     AND published_at IS NOT NULL
@@ -812,6 +838,7 @@ type GetChallengesByProjectIDsRow struct {
 	ImageUrl                    *string            `json:"image_url"`
 	Url                         *string            `json:"url"`
 	ButtonText                  string             `json:"button_text"`
+	NotificationText            string             `json:"notification_text"`
 	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
@@ -843,6 +870,7 @@ func (q *Queries) GetChallengesByProjectIDs(ctx context.Context, projectIds []st
 			&i.ImageUrl,
 			&i.Url,
 			&i.ButtonText,
+			&i.NotificationText,
 			&i.PublishedAt,
 			&i.VisibleAt,
 			&i.StartedAt,
@@ -865,7 +893,7 @@ func (q *Queries) GetChallengesByProjectIDs(ctx context.Context, projectIds []st
 }
 
 const GetChallengesFilteredCursor = `-- name: GetChallengesFilteredCursor :many
-SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
+SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 FROM challenges
 WHERE
     ($1::text[] IS NULL OR id = ANY($1::text[]))
@@ -905,6 +933,7 @@ type GetChallengesFilteredCursorRow struct {
 	ImageUrl                    *string            `json:"image_url"`
 	Url                         *string            `json:"url"`
 	ButtonText                  string             `json:"button_text"`
+	NotificationText            string             `json:"notification_text"`
 	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
@@ -947,6 +976,7 @@ func (q *Queries) GetChallengesFilteredCursor(ctx context.Context, arg GetChalle
 			&i.ImageUrl,
 			&i.Url,
 			&i.ButtonText,
+			&i.NotificationText,
 			&i.PublishedAt,
 			&i.VisibleAt,
 			&i.StartedAt,
@@ -1000,7 +1030,7 @@ SET
     published_at = $1::timestamptz,
     updated_at = now()
 WHERE id = $2::text
-RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
+RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 `
 
 type PublishChallengeParams struct {
@@ -1018,6 +1048,7 @@ type PublishChallengeRow struct {
 	ImageUrl                    *string            `json:"image_url"`
 	Url                         *string            `json:"url"`
 	ButtonText                  string             `json:"button_text"`
+	NotificationText            string             `json:"notification_text"`
 	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
@@ -1043,6 +1074,7 @@ func (q *Queries) PublishChallenge(ctx context.Context, arg PublishChallengePara
 		&i.ImageUrl,
 		&i.Url,
 		&i.ButtonText,
+		&i.NotificationText,
 		&i.PublishedAt,
 		&i.VisibleAt,
 		&i.StartedAt,
@@ -1065,18 +1097,19 @@ SET
     image_url = COALESCE($3::text, image_url),
     url = COALESCE($4::text, url),
     button_text = COALESCE($5::text, button_text),
-    event_id = COALESCE($6::text, event_id),
-    published_at = COALESCE($7::timestamptz, published_at),
-    visible_at = COALESCE($8::timestamptz, visible_at),
-    started_at = COALESCE($9::timestamptz, started_at),
-    end_time = COALESCE($10::timestamptz, end_time),
-    allow_self_completion = COALESCE($11::bool, allow_self_completion),
-    requires_team_membership = COALESCE($12::bool, requires_team_membership),
-    requires_super_team_membership = COALESCE($13::bool, requires_super_team_membership),
-    plugin_challenge_id = COALESCE($14::text, plugin_challenge_id),
+    notification_text = COALESCE($6::text, notification_text),
+    event_id = COALESCE($7::text, event_id),
+    published_at = COALESCE($8::timestamptz, published_at),
+    visible_at = COALESCE($9::timestamptz, visible_at),
+    started_at = COALESCE($10::timestamptz, started_at),
+    end_time = COALESCE($11::timestamptz, end_time),
+    allow_self_completion = COALESCE($12::bool, allow_self_completion),
+    requires_team_membership = COALESCE($13::bool, requires_team_membership),
+    requires_super_team_membership = COALESCE($14::bool, requires_super_team_membership),
+    plugin_challenge_id = COALESCE($15::text, plugin_challenge_id),
     updated_at = now()
-WHERE id = $15::text
-RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
+WHERE id = $16::text
+RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 `
 
 type UpdateChallengeParams struct {
@@ -1085,6 +1118,7 @@ type UpdateChallengeParams struct {
 	Imageurl                    *string            `json:"imageurl"`
 	Url                         *string            `json:"url"`
 	Buttontext                  *string            `json:"buttontext"`
+	Notificationtext            *string            `json:"notificationtext"`
 	Eventid                     *string            `json:"eventid"`
 	Publishedat                 pgtype.Timestamptz `json:"publishedat"`
 	Visibleat                   pgtype.Timestamptz `json:"visibleat"`
@@ -1107,6 +1141,7 @@ type UpdateChallengeRow struct {
 	ImageUrl                    *string            `json:"image_url"`
 	Url                         *string            `json:"url"`
 	ButtonText                  string             `json:"button_text"`
+	NotificationText            string             `json:"notification_text"`
 	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
@@ -1126,6 +1161,7 @@ func (q *Queries) UpdateChallenge(ctx context.Context, arg UpdateChallengeParams
 		arg.Imageurl,
 		arg.Url,
 		arg.Buttontext,
+		arg.Notificationtext,
 		arg.Eventid,
 		arg.Publishedat,
 		arg.Visibleat,
@@ -1148,6 +1184,7 @@ func (q *Queries) UpdateChallenge(ctx context.Context, arg UpdateChallengeParams
 		&i.ImageUrl,
 		&i.Url,
 		&i.ButtonText,
+		&i.NotificationText,
 		&i.PublishedAt,
 		&i.VisibleAt,
 		&i.StartedAt,
@@ -1169,7 +1206,7 @@ SET
     requires_super_team_membership = COALESCE($2::bool, requires_super_team_membership),
     updated_at = now()
 WHERE id = $3::text
-RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
+RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 `
 
 type UpdateChallengeRequirementsParams struct {
@@ -1188,6 +1225,7 @@ type UpdateChallengeRequirementsRow struct {
 	ImageUrl                    *string            `json:"image_url"`
 	Url                         *string            `json:"url"`
 	ButtonText                  string             `json:"button_text"`
+	NotificationText            string             `json:"notification_text"`
 	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
@@ -1213,6 +1251,7 @@ func (q *Queries) UpdateChallengeRequirements(ctx context.Context, arg UpdateCha
 		&i.ImageUrl,
 		&i.Url,
 		&i.ButtonText,
+		&i.NotificationText,
 		&i.PublishedAt,
 		&i.VisibleAt,
 		&i.StartedAt,
@@ -1234,7 +1273,7 @@ SET
     started_at = COALESCE($2::timestamptz, started_at),
     updated_at = now()
 WHERE id = $3::text
-RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
+RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 `
 
 type UpdateChallengeTimestampsParams struct {
@@ -1253,6 +1292,7 @@ type UpdateChallengeTimestampsRow struct {
 	ImageUrl                    *string            `json:"image_url"`
 	Url                         *string            `json:"url"`
 	ButtonText                  string             `json:"button_text"`
+	NotificationText            string             `json:"notification_text"`
 	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
@@ -1278,6 +1318,7 @@ func (q *Queries) UpdateChallengeTimestamps(ctx context.Context, arg UpdateChall
 		&i.ImageUrl,
 		&i.Url,
 		&i.ButtonText,
+		&i.NotificationText,
 		&i.PublishedAt,
 		&i.VisibleAt,
 		&i.StartedAt,

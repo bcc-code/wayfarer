@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type {
   FreeTextQuestionData,
+  FreeTextResponseData,
   QuestionResult,
   QuizActionHandlers,
   QuizActionState,
@@ -11,12 +12,18 @@ const props = defineProps<{
   totalQuestions: number
   currentIndex: number
   submissionId: string
+  // Controls whether to show correct/incorrect after answering
+  revealCorrectAnswers?: boolean
+  // Existing response (for resuming quiz)
+  existingResponse?: FreeTextResponseData
   // Review mode props
   readonly?: boolean
-  preSelectedAnswer?: number
+  preSelectedAnswer?: string
   showCorrectAnswers?: boolean
   showPreviousButton?: boolean
   isLastQuestion?: boolean
+  // Betting
+  betAmount?: number
 }>()
 
 const emit = defineEmits<{
@@ -28,10 +35,15 @@ const emit = defineEmits<{
 const { track } = useAnalytics()
 const { executeMutation: submitAnswer } = useSubmitQuizAnswerMutation()
 
-const currentValue = ref('')
+// Pre-populate from existing response (resuming quiz) or review mode props
+const currentValue = ref(
+  props.existingResponse?.textResponse ?? props.preSelectedAnswer ?? '',
+)
 const isSubmitting = ref(false)
-const isAnswerConfirmed = ref(false)
-const submittedResult = ref<{ isCorrect: boolean | null } | null>(null)
+const isAnswerConfirmed = ref(!!props.existingResponse)
+const submittedResult = ref<{ isCorrect: boolean | null } | null>(
+  props.existingResponse ? { isCorrect: null } : null,
+)
 
 async function handleLockAnswer() {
   if (!currentValue.value || isSubmitting.value) return
@@ -43,6 +55,7 @@ async function handleLockAnswer() {
     input: {
       questionId: props.question.id,
       textResponse: currentValue.value,
+      betAmount: props.betAmount ?? undefined,
     },
   })
 
@@ -108,6 +121,7 @@ defineExpose({ actionState, handlers })
     <DesignTextarea
       v-model="currentValue"
       :placeholder="$t('quiz.writeYourAnswer')"
+      :disabled="readonly"
     />
   </div>
 </template>

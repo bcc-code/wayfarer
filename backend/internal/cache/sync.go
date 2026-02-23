@@ -37,10 +37,11 @@ const (
 
 // InvalidationMessage is the payload sent via NOTIFY
 type InvalidationMessage struct {
-	Type      InvalidationType `json:"t"`
-	ID        string           `json:"id,omitempty"`
-	ProjectID string           `json:"pid,omitempty"`
-	EventID   string           `json:"eid,omitempty"`
+	Type        InvalidationType `json:"t"`
+	ID          string           `json:"id,omitempty"`
+	ProjectID   string           `json:"pid,omitempty"`
+	EventID     string           `json:"eid,omitempty"`
+	ChallengeID string           `json:"cid,omitempty"`
 }
 
 // Executor is the interface for executing SQL statements (satisfied by pgxpool.Pool and pgx.Conn)
@@ -213,7 +214,7 @@ func (s *CacheSync) applyInvalidation(msg InvalidationMessage) {
 	case InvalidationTypeAchievement:
 		s.cache.invalidateAchievementLocal(msg.ID)
 	case InvalidationTypeQuiz:
-		s.cache.invalidateQuizLocal(msg.ID)
+		s.cache.invalidateQuizLocal(msg.ID, msg.ChallengeID)
 	case InvalidationTypeClear:
 		s.cache.Clear()
 	default:

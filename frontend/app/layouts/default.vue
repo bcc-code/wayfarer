@@ -68,7 +68,11 @@ function applyTheme(colors: BrandingColorsFieldsFragment) {
 }
 
 // Initialize Firestore sync for realtime updates
-const { initialize: initFirestoreSync } = useFirestoreSync()
+const {
+  initialize: initFirestoreSync,
+  subscribeProject,
+  isAuthenticated: firestoreAuthenticated,
+} = useFirestoreSync()
 onMounted(() => {
   initFirestoreSync()
 
@@ -76,6 +80,12 @@ onMounted(() => {
   if (isValidTheme(cachedTheme.value)) {
     applyTheme(cachedTheme.value)
   }
+})
+
+const availableChallengesBadge = computed(() => {
+  return data.value?.myCurrentProject.challenges.filter(
+    (challenge) => !challenge.userCompletedAt,
+  )?.length
 })
 
 const links = computed<NavigationMenuItem[]>(() => [
@@ -93,23 +103,35 @@ const links = computed<NavigationMenuItem[]>(() => [
     label: t('navigation.challenges'),
     icon: 'IconChallenges',
     to: { name: 'challenges' },
+    badge: availableChallengesBadge.value,
   },
 ])
 
-// Current project theme
+// Current project config
 gql(`
   query CurrentProject {
     myCurrentProject {
+      id
       branding {
         ...BrandingFields
+      }
+      challenges {
+        id
+        userCompletedAt
+        endTime
       }
     }
   }
 `)
 
 const { isAuthReady } = useAuthReady()
-const { data } = useCurrentProjectQuery({
+const { data, executeQuery: refresh } = useCurrentProjectQuery({
   pause: computed(() => !isAuthReady.value),
+})
+
+// Listen for Firestore realtime updates
+useFirestoreRefresh(['CurrentProjectDocument'], () => {
+  refresh({ requestPolicy: 'network-only' })
 })
 
 watch(data, (newData) => {
@@ -118,6 +140,35 @@ watch(data, (newData) => {
   const colors = newData.myCurrentProject.branding.colors
   applyTheme(colors)
   cachedTheme.value = JSON.parse(JSON.stringify(colors))
+})
+
+// Subscribe to project-level quiz session notifications
+const projectSubscriptionCleanup = ref<(() => void) | null>(null)
+watch(
+  [() => data.value?.myCurrentProject.id, firestoreAuthenticated],
+  ([projectId, isAuth]) => {
+    // Cleanup previous subscription if any
+    if (projectSubscriptionCleanup.value) {
+      projectSubscriptionCleanup.value()
+      projectSubscriptionCleanup.value = null
+    }
+
+    if (projectId && isAuth) {
+      const quizCleanup = subscribeProject(projectId, 'quiz_sessions')
+      const challengesCleanup = subscribeProject(projectId, 'challenges')
+      projectSubscriptionCleanup.value = () => {
+        quizCleanup()
+        challengesCleanup()
+      }
+    }
+  },
+  { immediate: true },
+)
+
+onUnmounted(() => {
+  if (projectSubscriptionCleanup.value) {
+    projectSubscriptionCleanup.value()
+  }
 })
 
 const route = useRoute()
@@ -188,7 +239,7 @@ const { $pwa } = useNuxtApp()
 </script>
 
 <template>
-  <div class="text-default relative mx-auto h-full w-full max-w-xl">
+  <div class="text-default relative mx-auto h-dvh w-full max-w-xl">
     <div class="h-full">
       <slot />
     </div>
@@ -212,11 +263,20 @@ const { $pwa } = useNuxtApp()
               class="px-default text-center rounded-navigation-inset text-tiny flex h-14 flex-col items-center justify-center gap-0.5"
               active-class="text-accent-contrast"
             >
-              <UIcon
-                v-if="link.icon"
-                :name="link.icon"
-                class="size-7 shrink-0"
-              />
+              <span class="relative">
+                <UIcon
+                  v-if="link.icon"
+                  :name="link.icon"
+                  class="size-7 shrink-0"
+                />
+
+                <span
+                  v-if="link.badge"
+                  class="rounded-full h-4.5 min-w-4.5 px-1.25 bg-accent-negative flex items-center justify-center absolute -top-0.5 left-5 text-caption text-text-default text-start"
+                >
+                  {{ link.badge }}
+                </span>
+              </span>
               <span class="text-xs">{{ link.label }}</span>
             </NuxtLink>
           </li>

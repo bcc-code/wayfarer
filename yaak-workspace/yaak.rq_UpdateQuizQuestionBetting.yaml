@@ -1,0 +1,78 @@
+type: http_request
+model: http_request
+id: rq_UpdateQuizQuestionBetting
+createdAt: 2026-01-27T12:00:00
+updatedAt: 2026-01-27T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation UpdateQuizQuestion($id: ID!, $input: UpdateQuizQuestionInput!) {
+      updateQuizQuestion(id: $id, input: $input) {
+        id
+        questionText
+        ... on PredefinedQuestion {
+          bettingEnabled
+          bettingMinPercentage
+          bettingMaxPercentage
+          bettingMinAbsolute
+          bettingMaxAbsolute
+        }
+        ... on FreeTextQuestion {
+          bettingEnabled
+          bettingMinPercentage
+          bettingMaxPercentage
+          bettingMinAbsolute
+          bettingMaxAbsolute
+        }
+        ... on NumberQuestion {
+          bettingEnabled
+          bettingMinPercentage
+          bettingMaxPercentage
+          bettingMinAbsolute
+          bettingMaxAbsolute
+        }
+        ... on OrderingQuestion {
+          bettingEnabled
+          bettingMinPercentage
+          bettingMaxPercentage
+          bettingMinAbsolute
+          bettingMaxAbsolute
+        }
+      }
+    }
+  variables: |
+    {
+      "id": "QQ01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "input": {
+        "bettingEnabled": true,
+        "bettingMinPercentage": 10,
+        "bettingMaxPercentage": 75,
+        "bettingMinAbsolute": 5,
+        "bettingMaxAbsolute": 200
+      }
+    }
+bodyType: graphql
+description: |
+  Update betting configuration on an existing quiz question (admin only).
+
+  All betting fields are optional in the update:
+  - bettingEnabled: Enable/disable betting
+  - bettingMinPercentage: Minimum bet as percentage of user's score (0-100)
+  - bettingMaxPercentage: Maximum bet as percentage of user's score (0-100)
+  - bettingMinAbsolute: Minimum bet amount in absolute points
+  - bettingMaxAbsolute: Maximum bet amount in absolute points
+
+  You can update just the fields you want to change.
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_UpdateQuizQuestionBetting
+method: POST
+name: Update Quiz Question (Betting Config)
+sortPriority: 3350.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

@@ -1,0 +1,7 @@
+{
+  "bet_result": {
+    "title": "Sonuc",
+    "won": "{points} puan kazandin!",
+    "lost": "{points} puan kaybettin."
+  }
+}

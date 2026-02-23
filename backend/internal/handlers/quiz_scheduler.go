@@ -121,18 +121,7 @@ func (h *QuizSchedulerHandler) processLockTransitions(ctx context.Context) (int,
 	errors := 0
 
 	for _, session := range sessions {
-		// Auto-submit active submissions first
-		err := h.DB.Queries.AutoSubmitSessionSubmissions(ctx, session.ID)
-		if err != nil {
-			slog.Error("quiz_scheduler: failed to auto-submit submissions",
-				"session_id", session.ID,
-				"error", err,
-			)
-			errors++
-			continue
-		}
-
-		_, err = h.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
+		_, err := h.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
 			ID:    session.ID,
 			State: "LOCKED",
 		})
@@ -179,7 +168,18 @@ func (h *QuizSchedulerHandler) processFinishTransitions(ctx context.Context) (in
 	errors := 0
 
 	for _, session := range sessions {
-		_, err := h.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
+		// Auto-submit active submissions before finishing
+		err := h.DB.Queries.AutoSubmitSessionSubmissions(ctx, session.ID)
+		if err != nil {
+			slog.Error("quiz_scheduler: failed to auto-submit submissions",
+				"session_id", session.ID,
+				"error", err,
+			)
+			errors++
+			continue
+		}
+
+		_, err = h.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
 			ID:    session.ID,
 			State: "FINISHED",
 		})

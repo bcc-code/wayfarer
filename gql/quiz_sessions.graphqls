@@ -8,15 +8,15 @@ extend type Query {
 
 extend type Mutation {
     # Session CRUD
-    createQuizSession(input: CreateQuizSessionInput!): QuizSession!
-    updateQuizSession(id: ID!, input: UpdateQuizSessionInput!): QuizSession!
-    deleteQuizSession(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    createQuizSession(input: CreateQuizSessionInput!): QuizSession! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    updateQuizSession(id: ID!, input: UpdateQuizSessionInput!): QuizSession! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    deleteQuizSession(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin", "church_admin"])
 
     # Session state transitions
-    openQuizSession(id: ID!): QuizSession!
-    lockQuizSession(id: ID!): QuizSession!
-    finishQuizSession(id: ID!): QuizSession!
-    reopenQuizSession(id: ID!): QuizSession! @requireRole(roles: ["admin", "superadmin"])
+    openQuizSession(id: ID!): QuizSession! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    lockQuizSession(id: ID!): QuizSession! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    finishQuizSession(id: ID!): QuizSession! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    reopenQuizSession(id: ID!): QuizSession! @requireRole(roles: ["admin", "superadmin", "church_admin"])
 
     # Session access management
     grantQuizSessionAccess(input: GrantQuizSessionAccessInput!): Int!

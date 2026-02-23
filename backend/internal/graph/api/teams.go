@@ -79,6 +79,10 @@ func buildTeamFilterParamsCursor(filter *model.TeamFilter, first *int, after *st
 		if filter.MaxMembers != nil {
 			params.Maxmembers = int32(*filter.MaxMembers)
 		}
+
+		if filter.ChurchID != nil {
+			params.Churchid = *filter.ChurchID
+		}
 	}
 
 	// Handle cursor pagination
@@ -144,6 +148,10 @@ func buildCountTeamsFilterParams(filter *model.TeamFilter) sqlc.CountTeamsFilter
 		if filter.MaxMembers != nil {
 			params.Maxmembers = int32(*filter.MaxMembers)
 		}
+
+		if filter.ChurchID != nil {
+			params.Churchid = *filter.ChurchID
+		}
 	}
 
 	return params
@@ -172,6 +180,9 @@ func buildTeamCacheKeyParams(filter *model.TeamFilter, first *int, after *string
 		}
 		if filter.MaxMembers != nil {
 			params["maxmembers"] = fmt.Sprintf("%d", *filter.MaxMembers)
+		}
+		if filter.ChurchID != nil {
+			params["churchid"] = *filter.ChurchID
 		}
 	}
 

@@ -152,7 +152,7 @@ INSERT INTO push_notification_log (
     @url::text,
     @data::jsonb,
     @targetcriteria::jsonb,
-    @sentby::text,
+    sqlc.narg('sentby')::text,
     @totalrecipients::int,
     @successfuldeliveries::int,
     @faileddeliveries::int

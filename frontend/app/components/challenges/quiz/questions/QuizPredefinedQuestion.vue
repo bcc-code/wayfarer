@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type {
   PredefinedQuestionData,
+  PredefinedResponseData,
   QuestionResult,
   QuizActionState,
   QuizActionHandlers,
@@ -11,12 +12,18 @@ const props = defineProps<{
   totalQuestions: number
   currentIndex: number
   submissionId: string
+  // Controls whether to show correct/incorrect after answering
+  revealCorrectAnswers?: boolean
+  // Existing response (for resuming quiz)
+  existingResponse?: PredefinedResponseData
   // Review mode props
   readonly?: boolean
   preSelectedAnswerIds?: string[]
   showCorrectAnswers?: boolean
   showPreviousButton?: boolean
   isLastQuestion?: boolean
+  // Betting
+  betAmount?: number
 }>()
 
 const emit = defineEmits<{
@@ -28,11 +35,19 @@ const emit = defineEmits<{
 const { track } = useAnalytics()
 const { executeMutation: submitAnswer } = useSubmitQuizAnswerMutation()
 
-// In readonly mode, pre-populate selected answer from props
-const selectedAnswer = ref<string | undefined>(props.preSelectedAnswerIds?.[0])
-const isAnswerConfirmed = ref(props.readonly ?? false)
+// Pre-populate from existing response (resuming quiz) or review mode props
+const selectedAnswer = ref<string | undefined>(
+  props.existingResponse?.selectedAnswers[0]?.id ?? props.preSelectedAnswerIds?.[0],
+)
+const isAnswerConfirmed = ref(
+  props.readonly ?? !!props.existingResponse,
+)
 const isSubmitting = ref(false)
-const submittedResult = ref<{ isCorrect: boolean | null } | null>(null)
+const submittedResult = ref<{ isCorrect: boolean | null } | null>(
+  props.existingResponse
+    ? { isCorrect: props.existingResponse.isCorrect ?? null }
+    : null,
+)
 
 async function handleLockAnswer() {
   if (!selectedAnswer.value || isSubmitting.value) return
@@ -44,6 +59,7 @@ async function handleLockAnswer() {
     input: {
       questionId: props.question.id,
       selectedAnswerIds: [selectedAnswer.value],
+      betAmount: props.betAmount ?? undefined,
     },
   })
 
@@ -102,11 +118,12 @@ function handleNext() {
 }
 
 // Determine if we should show correct/wrong highlighting
-// In normal mode: always show after confirmation
+// In normal mode: only show if revealCorrectAnswers is true (defaults to true)
 // In readonly mode: only show if showCorrectAnswers is true
 function shouldShowCorrect(alternative: { isCorrect: boolean | null }) {
   if (!isAnswerConfirmed.value) return false
   if (props.readonly && !props.showCorrectAnswers) return false
+  if (!props.readonly && props.revealCorrectAnswers === false) return false
   return alternative.isCorrect === true
 }
 
@@ -116,6 +133,7 @@ function shouldShowWrong(alternative: {
 }) {
   if (!isAnswerConfirmed.value) return false
   if (props.readonly && !props.showCorrectAnswers) return false
+  if (!props.readonly && props.revealCorrectAnswers === false) return false
   return (
     selectedAnswer.value === alternative.id && alternative.isCorrect === false
   )

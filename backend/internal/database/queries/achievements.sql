@@ -32,10 +32,15 @@ SELECT
     ) AS content_items,
     -- Streak achievement data
     sa.streak_id,
-    sa.needed_streak
+    sa.needed_streak,
+    -- Quiz achievement data
+    qa.quiz_id,
+    qa.min_score_percentage,
+    qa.require_completion
 FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
+LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
 WHERE a.id = ANY(@ids::text[]);
 
 -- name: GetAchievementsByProjectIDs :many
@@ -59,10 +64,15 @@ SELECT
     -- Type-specific fields needed for model construction
     ca.achievement_id AS content_achievement_id,
     sa.streak_id,
-    sa.needed_streak
+    sa.needed_streak,
+    -- Quiz achievement data
+    qa.quiz_id,
+    qa.min_score_percentage,
+    qa.require_completion
 FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
+LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
 WHERE a.project_id = ANY(@project_ids::text[])
     AND a.hidden = false
 ORDER BY a.project_id, a.sort_order, a.created_at DESC;
@@ -89,10 +99,15 @@ SELECT
     a.updated_at,
     ca.achievement_id AS content_achievement_id,
     sa.streak_id,
-    sa.needed_streak
+    sa.needed_streak,
+    -- Quiz achievement data
+    qa.quiz_id,
+    qa.min_score_percentage,
+    qa.require_completion
 FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
+LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
 WHERE a.project_id = @project_id::text
 ORDER BY a.sort_order, a.created_at DESC;
 
@@ -131,10 +146,15 @@ SELECT
     ) AS content_items,
     -- Streak achievement data
     sa.streak_id,
-    sa.needed_streak
+    sa.needed_streak,
+    -- Quiz achievement data
+    qa.quiz_id,
+    qa.min_score_percentage,
+    qa.require_completion
 FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
+LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
 WHERE
     (@ids::text[] IS NULL OR a.id = ANY(@ids::text[]))
     AND (@projectid::text = '' OR a.project_id = @projectid::text)
@@ -523,3 +543,64 @@ SELECT
     a.updated_at
 FROM achievements a
 WHERE a.id = @id::text;
+
+-- name: GetContentAchievementForAward :one
+-- Get content achievement data for awarding (same fields as GetPublishedContentAchievementsByExternalContent)
+SELECT
+    a.id,
+    a.achievement_type,
+    a.project_id,
+    a.event_id,
+    a.challenge_id,
+    a.name,
+    a.description_pending,
+    a.description_completed,
+    a.notification_text,
+    a.image_pending,
+    a.image_completed,
+    a.points,
+    a.hidden,
+    a.awardable_from,
+    a.created_at,
+    a.updated_at,
+    COALESCE(
+        (SELECT jsonb_agg(
+            jsonb_build_object(
+                'id', cai.id,
+                'external_content_id', cai.external_content_id,
+                'sort_order', cai.sort_order
+            ) ORDER BY cai.sort_order
+        )
+        FROM content_achievement_items cai
+        WHERE cai.achievement_id = a.id),
+        '[]'::jsonb
+    ) AS content_items
+FROM achievements a
+INNER JOIN content_achievements ca ON ca.achievement_id = a.id
+WHERE a.id = @achievement_id::text AND a.project_id = @project_id::text;
+
+-- name: GetUsersWithUnclaimedContentAchievement :many
+-- Find users who completed all items for a content achievement but weren't awarded
+SELECT DISTINCT u.id AS user_id
+FROM users u
+INNER JOIN achievements a ON a.id = @achievement_id::text
+INNER JOIN content_achievements ca ON ca.achievement_id = a.id
+WHERE a.project_id = @project_id::text
+  AND NOT EXISTS (
+    SELECT 1 FROM user_achievements ua
+    WHERE ua.user_id = u.id AND ua.achievement_id = a.id
+  )
+  AND NOT EXISTS (
+    SELECT 1 FROM content_achievement_items cai
+    WHERE cai.achievement_id = a.id
+    AND NOT EXISTS (
+      SELECT 1 FROM user_content_progress ucp
+      WHERE ucp.user_id = u.id
+      AND ucp.achievement_id = a.id
+      AND ucp.external_content_id = cai.external_content_id
+    )
+  )
+  AND EXISTS (
+    SELECT 1 FROM content_achievement_items cai
+    WHERE cai.achievement_id = a.id
+  );

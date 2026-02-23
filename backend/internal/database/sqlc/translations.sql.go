@@ -105,7 +105,7 @@ func (q *Queries) GetAchievementTranslationsByIDs(ctx context.Context, arg GetAc
 }
 
 const GetChallengeTranslationsByIDs = `-- name: GetChallengeTranslationsByIDs :many
-SELECT challenge_id, language_code, name, description, button_text
+SELECT challenge_id, language_code, name, description, button_text, notification_text
 FROM challenge_translations
 WHERE challenge_id = ANY($1::text[])
   AND language_code = $2::text
@@ -117,11 +117,12 @@ type GetChallengeTranslationsByIDsParams struct {
 }
 
 type GetChallengeTranslationsByIDsRow struct {
-	ChallengeID  string  `json:"challenge_id"`
-	LanguageCode string  `json:"language_code"`
-	Name         *string `json:"name"`
-	Description  *string `json:"description"`
-	ButtonText   *string `json:"button_text"`
+	ChallengeID      string  `json:"challenge_id"`
+	LanguageCode     string  `json:"language_code"`
+	Name             *string `json:"name"`
+	Description      *string `json:"description"`
+	ButtonText       *string `json:"button_text"`
+	NotificationText *string `json:"notification_text"`
 }
 
 func (q *Queries) GetChallengeTranslationsByIDs(ctx context.Context, arg GetChallengeTranslationsByIDsParams) ([]*GetChallengeTranslationsByIDsRow, error) {
@@ -139,6 +140,7 @@ func (q *Queries) GetChallengeTranslationsByIDs(ctx context.Context, arg GetChal
 			&i.Name,
 			&i.Description,
 			&i.ButtonText,
+			&i.NotificationText,
 		); err != nil {
 			return nil, err
 		}

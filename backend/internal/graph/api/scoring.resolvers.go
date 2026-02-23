@@ -7,6 +7,8 @@ package api
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"slices"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
@@ -23,6 +25,13 @@ func (r *mutationResolver) CreateScoreAdjustment(ctx context.Context, input mode
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
+	// M2M services don't have a real user in the database, so awarded_by should be NULL
+	var awardedByPtr *string
+	roles := middleware.GetUserRoles(ctx)
+	if !slices.Contains(roles, "m2m") {
+		awardedByPtr = &awardedByUserID
+	}
+
 	// Generate new score journal entry ID
 	journalID := ulid.NewScoreJournalID()
 
@@ -33,7 +42,7 @@ func (r *mutationResolver) CreateScoreAdjustment(ctx context.Context, input mode
 		UserID:      input.UserID,
 		Points:      int32(input.Points),
 		SourceType:  "MANUAL",
-		AwardedBy:   &awardedByUserID,
+		AwardedBy:   awardedByPtr,
 		EventID:     input.EventID,
 		ChallengeID: input.ChallengeID,
 		Reason:      input.Reason,
@@ -68,6 +77,13 @@ func (r *mutationResolver) CreateTeamScoreAdjustment(ctx context.Context, input 
 	awardedByUserID, ok := middleware.GetUserID(ctx)
 	if !ok || awardedByUserID == "" {
 		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// M2M services don't have a real user in the database, so awarded_by should be NULL
+	var awardedByPtr *string
+	roles := middleware.GetUserRoles(ctx)
+	if !slices.Contains(roles, "m2m") {
+		awardedByPtr = &awardedByUserID
 	}
 
 	// Verify the team exists
@@ -120,14 +136,11 @@ func (r *mutationResolver) CreateTeamScoreAdjustment(ctx context.Context, input 
 		ids[i] = ulid.NewScoreJournalID()
 	}
 
-	// Build reason with distribution mode info
-	var reason *string
-	if input.Reason != nil {
-		reasonWithMode := fmt.Sprintf("%s (team: %s, mode: %s)", *input.Reason, input.TeamID, input.DistributionMode)
-		reason = &reasonWithMode
-	} else {
-		reasonWithMode := fmt.Sprintf("Team score adjustment (team: %s, mode: %s)", input.TeamID, input.DistributionMode)
-		reason = &reasonWithMode
+	// Use reason as-is, or default to "Team score adjustment"
+	reason := input.Reason
+	if reason == nil {
+		defaultReason := "Team score adjustment"
+		reason = &defaultReason
 	}
 
 	// Create batch params
@@ -138,7 +151,7 @@ func (r *mutationResolver) CreateTeamScoreAdjustment(ctx context.Context, input 
 		EventID:   input.EventID,
 		Points:    pointsArray,
 		Reason:    reason,
-		AwardedBy: &awardedByUserID,
+		AwardedBy: awardedByPtr,
 	}
 
 	// Create entries
@@ -238,11 +251,18 @@ func (r *scoreJournalResolver) Source(ctx context.Context, obj *model.ScoreJourn
 	}
 
 	// Load appropriate source based on sourceType
+	// Note: We return nil (not error) when the source entity is not found,
+	// as the referenced entity may have been deleted. This allows the query
+	// to succeed with source=null rather than failing entirely.
 	switch obj.SourceType {
 	case model.ScoreSourceTypeAchievement:
 		achievement, err := r.LoadAchievementWithTranslation(ctx, *obj.SourceID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load achievement: %w", err)
+			slog.Warn("score_journal: referenced achievement not found",
+				"journal_id", obj.ID,
+				"source_id", *obj.SourceID,
+				"error", err)
+			return nil, nil
 		}
 		// Type switch to return the concrete achievement type
 		switch ach := achievement.(type) {
@@ -252,14 +272,20 @@ func (r *scoreJournalResolver) Source(ctx context.Context, obj *model.ScoreJourn
 			return ach, nil
 		case *model.StreakAchievement:
 			return ach, nil
+		case *model.QuizAchievement:
+			return ach, nil
 		default:
-			return nil, fmt.Errorf("unexpected achievement type: %T", achievement)
+			return nil, nil
 		}
 
 	case model.ScoreSourceTypeChallenge:
 		challenge, err := r.LoadChallengeWithTranslation(ctx, *obj.SourceID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load challenge: %w", err)
+			slog.Warn("score_journal: referenced challenge not found",
+				"journal_id", obj.ID,
+				"source_id", *obj.SourceID,
+				"error", err)
+			return nil, nil
 		}
 		// Type switch to return the concrete challenge type that implements ScoreSource
 		switch ch := challenge.(type) {
@@ -270,13 +296,17 @@ func (r *scoreJournalResolver) Source(ctx context.Context, obj *model.ScoreJourn
 		case *model.ExternalChallenge:
 			return ch, nil
 		default:
-			return nil, fmt.Errorf("unexpected challenge type: %T", challenge)
+			return nil, nil
 		}
 
 	case model.ScoreSourceTypeEvent:
 		event, err := r.LoadEventWithTranslation(ctx, *obj.SourceID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load event: %w", err)
+			slog.Warn("score_journal: referenced event not found",
+				"journal_id", obj.ID,
+				"source_id", *obj.SourceID,
+				"error", err)
+			return nil, nil
 		}
 		return event, nil
 
@@ -285,7 +315,7 @@ func (r *scoreJournalResolver) Source(ctx context.Context, obj *model.ScoreJourn
 		return nil, nil
 
 	default:
-		return nil, fmt.Errorf("unknown source type: %s", obj.SourceType)
+		return nil, nil
 	}
 }
 

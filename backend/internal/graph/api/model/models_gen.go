@@ -42,6 +42,7 @@ type Challenge interface {
 	GetProject() *Project
 	GetEvent() *Event
 	GetButtonText() *string
+	GetNotificationText() string
 	GetPublishedAt() *scalars.DateTime
 	GetVisibleAt() *scalars.DateTime
 	GetStartedAt() *scalars.DateTime
@@ -60,6 +61,11 @@ type QuizQuestion interface {
 	GetQuestionOrder() int
 	GetTimeoutSeconds() *int
 	GetPoints() *int
+	GetBettingEnabled() bool
+	GetBettingMinPercentage() *float64
+	GetBettingMaxPercentage() *float64
+	GetBettingMinAbsolute() *int
+	GetBettingMaxAbsolute() *int
 }
 
 type QuizResponse interface {
@@ -70,6 +76,8 @@ type QuizResponse interface {
 	GetAnsweredAt() *scalars.DateTime
 	GetTimeSpentSeconds() *int
 	GetPointsEarned() *int
+	GetBetAmount() *int
+	GetJournalEntry() *ScoreJournal
 }
 
 type ScoreSource interface {
@@ -328,6 +336,7 @@ type CreateChallengeInput struct {
 	Description                 *scalars.HTML     `json:"description,omitempty"`
 	Image                       *string           `json:"image,omitempty"`
 	ButtonText                  *string           `json:"buttonText,omitempty"`
+	NotificationText            *string           `json:"notificationText,omitempty"`
 	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
 	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
 	EndTime                     *scalars.DateTime `json:"endTime,omitempty"`
@@ -405,19 +414,20 @@ type CreateProjectInput struct {
 }
 
 type CreateQuizAchievementInput struct {
-	Name                 string  `json:"name"`
-	DescriptionPending   string  `json:"descriptionPending"`
-	DescriptionCompleted string  `json:"descriptionCompleted"`
-	NotificationText     string  `json:"notificationText"`
-	ImagePending         string  `json:"imagePending"`
-	ImageCompleted       string  `json:"imageCompleted"`
-	ProjectID            string  `json:"projectId"`
-	ChallengeID          *string `json:"challengeId,omitempty"`
-	Points               int     `json:"points"`
-	Hidden               bool    `json:"hidden"`
-	QuizID               string  `json:"quizId"`
-	MinScorePercentage   *int    `json:"minScorePercentage,omitempty"`
-	RequireCompletion    bool    `json:"requireCompletion"`
+	Name                 string            `json:"name"`
+	DescriptionPending   string            `json:"descriptionPending"`
+	DescriptionCompleted string            `json:"descriptionCompleted"`
+	NotificationText     string            `json:"notificationText"`
+	ImagePending         string            `json:"imagePending"`
+	ImageCompleted       string            `json:"imageCompleted"`
+	ProjectID            string            `json:"projectId"`
+	ChallengeID          *string           `json:"challengeId,omitempty"`
+	Points               int               `json:"points"`
+	Hidden               bool              `json:"hidden"`
+	AwardableFrom        *scalars.DateTime `json:"awardableFrom,omitempty"`
+	QuizID               string            `json:"quizId"`
+	MinScorePercentage   *int              `json:"minScorePercentage,omitempty"`
+	RequireCompletion    bool              `json:"requireCompletion"`
 }
 
 type CreateQuizInput struct {
@@ -440,6 +450,11 @@ type CreateQuizQuestionInput struct {
 	QuestionOrder          int                           `json:"questionOrder"`
 	TimeoutSeconds         *int                          `json:"timeoutSeconds,omitempty"`
 	Points                 *int                          `json:"points,omitempty"`
+	BettingEnabled         *bool                         `json:"bettingEnabled,omitempty"`
+	BettingMinPercentage   *float64                      `json:"bettingMinPercentage,omitempty"`
+	BettingMaxPercentage   *float64                      `json:"bettingMaxPercentage,omitempty"`
+	BettingMinAbsolute     *int                          `json:"bettingMinAbsolute,omitempty"`
+	BettingMaxAbsolute     *int                          `json:"bettingMaxAbsolute,omitempty"`
 	AllowMultipleSelection *bool                         `json:"allowMultipleSelection,omitempty"`
 	PredefinedAnswers      []CreatePredefinedAnswerInput `json:"predefinedAnswers,omitempty"`
 	MinValue               *float64                      `json:"minValue,omitempty"`
@@ -615,6 +630,7 @@ type ExternalChallenge struct {
 	Project                     *Project          `json:"project"`
 	Event                       *Event            `json:"event,omitempty"`
 	ButtonText                  string            `json:"buttonText"`
+	NotificationText            string            `json:"notificationText"`
 	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
 	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
 	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
@@ -637,6 +653,7 @@ func (this ExternalChallenge) GetImageObject() *Image            { return this.I
 func (this ExternalChallenge) GetProject() *Project              { return this.Project }
 func (this ExternalChallenge) GetEvent() *Event                  { return this.Event }
 func (this ExternalChallenge) GetButtonText() *string            { return &this.ButtonText }
+func (this ExternalChallenge) GetNotificationText() string       { return this.NotificationText }
 func (this ExternalChallenge) GetPublishedAt() *scalars.DateTime { return this.PublishedAt }
 func (this ExternalChallenge) GetVisibleAt() *scalars.DateTime   { return this.VisibleAt }
 func (this ExternalChallenge) GetStartedAt() *scalars.DateTime   { return this.StartedAt }
@@ -729,22 +746,32 @@ type FirebaseTokenResponse struct {
 }
 
 type FreeTextQuestion struct {
-	ID             string `json:"id"`
-	Quiz           *Quiz  `json:"quiz"`
-	QuestionText   string `json:"questionText"`
-	QuestionOrder  int    `json:"questionOrder"`
-	TimeoutSeconds *int   `json:"timeoutSeconds,omitempty"`
-	Points         *int   `json:"points,omitempty"`
-	QuizID         string `json:"-"`
+	ID                   string   `json:"id"`
+	Quiz                 *Quiz    `json:"quiz"`
+	QuestionText         string   `json:"questionText"`
+	QuestionOrder        int      `json:"questionOrder"`
+	TimeoutSeconds       *int     `json:"timeoutSeconds,omitempty"`
+	Points               *int     `json:"points,omitempty"`
+	BettingEnabled       bool     `json:"bettingEnabled"`
+	BettingMinPercentage *float64 `json:"bettingMinPercentage,omitempty"`
+	BettingMaxPercentage *float64 `json:"bettingMaxPercentage,omitempty"`
+	BettingMinAbsolute   *int     `json:"bettingMinAbsolute,omitempty"`
+	BettingMaxAbsolute   *int     `json:"bettingMaxAbsolute,omitempty"`
+	QuizID               string   `json:"-"`
 }
 
-func (FreeTextQuestion) IsQuizQuestion()              {}
-func (this FreeTextQuestion) GetID() string           { return this.ID }
-func (this FreeTextQuestion) GetQuiz() *Quiz          { return this.Quiz }
-func (this FreeTextQuestion) GetQuestionText() string { return this.QuestionText }
-func (this FreeTextQuestion) GetQuestionOrder() int   { return this.QuestionOrder }
-func (this FreeTextQuestion) GetTimeoutSeconds() *int { return this.TimeoutSeconds }
-func (this FreeTextQuestion) GetPoints() *int         { return this.Points }
+func (FreeTextQuestion) IsQuizQuestion()                        {}
+func (this FreeTextQuestion) GetID() string                     { return this.ID }
+func (this FreeTextQuestion) GetQuiz() *Quiz                    { return this.Quiz }
+func (this FreeTextQuestion) GetQuestionText() string           { return this.QuestionText }
+func (this FreeTextQuestion) GetQuestionOrder() int             { return this.QuestionOrder }
+func (this FreeTextQuestion) GetTimeoutSeconds() *int           { return this.TimeoutSeconds }
+func (this FreeTextQuestion) GetPoints() *int                   { return this.Points }
+func (this FreeTextQuestion) GetBettingEnabled() bool           { return this.BettingEnabled }
+func (this FreeTextQuestion) GetBettingMinPercentage() *float64 { return this.BettingMinPercentage }
+func (this FreeTextQuestion) GetBettingMaxPercentage() *float64 { return this.BettingMaxPercentage }
+func (this FreeTextQuestion) GetBettingMinAbsolute() *int       { return this.BettingMinAbsolute }
+func (this FreeTextQuestion) GetBettingMaxAbsolute() *int       { return this.BettingMaxAbsolute }
 
 type FreeTextResponse struct {
 	ID               string            `json:"id"`
@@ -753,8 +780,11 @@ type FreeTextResponse struct {
 	AnsweredAt       *scalars.DateTime `json:"answeredAt,omitempty"`
 	TimeSpentSeconds *int              `json:"timeSpentSeconds,omitempty"`
 	PointsEarned     *int              `json:"pointsEarned,omitempty"`
+	BetAmount        *int              `json:"betAmount,omitempty"`
+	JournalEntry     *ScoreJournal     `json:"journalEntry,omitempty"`
 	TextResponse     string            `json:"textResponse"`
 	QuestionID       string            `json:"-"`
+	ScoreJournalID   *string           `json:"-"`
 	SubmissionID     string            `json:"-"`
 }
 
@@ -765,6 +795,8 @@ func (this FreeTextResponse) GetQuestion() QuizQuestion        { return this.Que
 func (this FreeTextResponse) GetAnsweredAt() *scalars.DateTime { return this.AnsweredAt }
 func (this FreeTextResponse) GetTimeSpentSeconds() *int        { return this.TimeSpentSeconds }
 func (this FreeTextResponse) GetPointsEarned() *int            { return this.PointsEarned }
+func (this FreeTextResponse) GetBetAmount() *int               { return this.BetAmount }
+func (this FreeTextResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
 
 type GrantQuizSessionAccessInput struct {
 	SessionID       string   `json:"sessionId"`
@@ -783,22 +815,32 @@ type Image struct {
 }
 
 type JSONQuestion struct {
-	ID             string `json:"id"`
-	Quiz           *Quiz  `json:"quiz"`
-	QuestionText   string `json:"questionText"`
-	QuestionOrder  int    `json:"questionOrder"`
-	TimeoutSeconds *int   `json:"timeoutSeconds,omitempty"`
-	Points         *int   `json:"points,omitempty"`
-	QuizID         string `json:"-"`
+	ID                   string   `json:"id"`
+	Quiz                 *Quiz    `json:"quiz"`
+	QuestionText         string   `json:"questionText"`
+	QuestionOrder        int      `json:"questionOrder"`
+	TimeoutSeconds       *int     `json:"timeoutSeconds,omitempty"`
+	Points               *int     `json:"points,omitempty"`
+	BettingEnabled       bool     `json:"bettingEnabled"`
+	BettingMinPercentage *float64 `json:"bettingMinPercentage,omitempty"`
+	BettingMaxPercentage *float64 `json:"bettingMaxPercentage,omitempty"`
+	BettingMinAbsolute   *int     `json:"bettingMinAbsolute,omitempty"`
+	BettingMaxAbsolute   *int     `json:"bettingMaxAbsolute,omitempty"`
+	QuizID               string   `json:"-"`
 }
 
-func (JSONQuestion) IsQuizQuestion()              {}
-func (this JSONQuestion) GetID() string           { return this.ID }
-func (this JSONQuestion) GetQuiz() *Quiz          { return this.Quiz }
-func (this JSONQuestion) GetQuestionText() string { return this.QuestionText }
-func (this JSONQuestion) GetQuestionOrder() int   { return this.QuestionOrder }
-func (this JSONQuestion) GetTimeoutSeconds() *int { return this.TimeoutSeconds }
-func (this JSONQuestion) GetPoints() *int         { return this.Points }
+func (JSONQuestion) IsQuizQuestion()                        {}
+func (this JSONQuestion) GetID() string                     { return this.ID }
+func (this JSONQuestion) GetQuiz() *Quiz                    { return this.Quiz }
+func (this JSONQuestion) GetQuestionText() string           { return this.QuestionText }
+func (this JSONQuestion) GetQuestionOrder() int             { return this.QuestionOrder }
+func (this JSONQuestion) GetTimeoutSeconds() *int           { return this.TimeoutSeconds }
+func (this JSONQuestion) GetPoints() *int                   { return this.Points }
+func (this JSONQuestion) GetBettingEnabled() bool           { return this.BettingEnabled }
+func (this JSONQuestion) GetBettingMinPercentage() *float64 { return this.BettingMinPercentage }
+func (this JSONQuestion) GetBettingMaxPercentage() *float64 { return this.BettingMaxPercentage }
+func (this JSONQuestion) GetBettingMinAbsolute() *int       { return this.BettingMinAbsolute }
+func (this JSONQuestion) GetBettingMaxAbsolute() *int       { return this.BettingMaxAbsolute }
 
 type JSONResponse struct {
 	ID               string            `json:"id"`
@@ -807,8 +849,11 @@ type JSONResponse struct {
 	AnsweredAt       *scalars.DateTime `json:"answeredAt,omitempty"`
 	TimeSpentSeconds *int              `json:"timeSpentSeconds,omitempty"`
 	PointsEarned     *int              `json:"pointsEarned,omitempty"`
+	BetAmount        *int              `json:"betAmount,omitempty"`
+	JournalEntry     *ScoreJournal     `json:"journalEntry,omitempty"`
 	JSONResponse     string            `json:"jsonResponse"`
 	QuestionID       string            `json:"-"`
+	ScoreJournalID   *string           `json:"-"`
 	SubmissionID     string            `json:"-"`
 }
 
@@ -819,6 +864,8 @@ func (this JSONResponse) GetQuestion() QuizQuestion        { return this.Questio
 func (this JSONResponse) GetAnsweredAt() *scalars.DateTime { return this.AnsweredAt }
 func (this JSONResponse) GetTimeSpentSeconds() *int        { return this.TimeSpentSeconds }
 func (this JSONResponse) GetPointsEarned() *int            { return this.PointsEarned }
+func (this JSONResponse) GetBetAmount() *int               { return this.BetAmount }
+func (this JSONResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
 
 type LeaderboardConnection struct {
 	Edges      []LeaderboardEdge `json:"edges"`
@@ -860,25 +907,35 @@ type Mutation struct {
 }
 
 type NumberQuestion struct {
-	ID             string   `json:"id"`
-	Quiz           *Quiz    `json:"quiz"`
-	QuestionText   string   `json:"questionText"`
-	QuestionOrder  int      `json:"questionOrder"`
-	TimeoutSeconds *int     `json:"timeoutSeconds,omitempty"`
-	Points         *int     `json:"points,omitempty"`
-	MinValue       *float64 `json:"minValue,omitempty"`
-	MaxValue       *float64 `json:"maxValue,omitempty"`
-	StepValue      *float64 `json:"stepValue,omitempty"`
-	QuizID         string   `json:"-"`
+	ID                   string   `json:"id"`
+	Quiz                 *Quiz    `json:"quiz"`
+	QuestionText         string   `json:"questionText"`
+	QuestionOrder        int      `json:"questionOrder"`
+	TimeoutSeconds       *int     `json:"timeoutSeconds,omitempty"`
+	Points               *int     `json:"points,omitempty"`
+	BettingEnabled       bool     `json:"bettingEnabled"`
+	BettingMinPercentage *float64 `json:"bettingMinPercentage,omitempty"`
+	BettingMaxPercentage *float64 `json:"bettingMaxPercentage,omitempty"`
+	BettingMinAbsolute   *int     `json:"bettingMinAbsolute,omitempty"`
+	BettingMaxAbsolute   *int     `json:"bettingMaxAbsolute,omitempty"`
+	MinValue             *float64 `json:"minValue,omitempty"`
+	MaxValue             *float64 `json:"maxValue,omitempty"`
+	StepValue            *float64 `json:"stepValue,omitempty"`
+	QuizID               string   `json:"-"`
 }
 
-func (NumberQuestion) IsQuizQuestion()              {}
-func (this NumberQuestion) GetID() string           { return this.ID }
-func (this NumberQuestion) GetQuiz() *Quiz          { return this.Quiz }
-func (this NumberQuestion) GetQuestionText() string { return this.QuestionText }
-func (this NumberQuestion) GetQuestionOrder() int   { return this.QuestionOrder }
-func (this NumberQuestion) GetTimeoutSeconds() *int { return this.TimeoutSeconds }
-func (this NumberQuestion) GetPoints() *int         { return this.Points }
+func (NumberQuestion) IsQuizQuestion()                        {}
+func (this NumberQuestion) GetID() string                     { return this.ID }
+func (this NumberQuestion) GetQuiz() *Quiz                    { return this.Quiz }
+func (this NumberQuestion) GetQuestionText() string           { return this.QuestionText }
+func (this NumberQuestion) GetQuestionOrder() int             { return this.QuestionOrder }
+func (this NumberQuestion) GetTimeoutSeconds() *int           { return this.TimeoutSeconds }
+func (this NumberQuestion) GetPoints() *int                   { return this.Points }
+func (this NumberQuestion) GetBettingEnabled() bool           { return this.BettingEnabled }
+func (this NumberQuestion) GetBettingMinPercentage() *float64 { return this.BettingMinPercentage }
+func (this NumberQuestion) GetBettingMaxPercentage() *float64 { return this.BettingMaxPercentage }
+func (this NumberQuestion) GetBettingMinAbsolute() *int       { return this.BettingMinAbsolute }
+func (this NumberQuestion) GetBettingMaxAbsolute() *int       { return this.BettingMaxAbsolute }
 
 type NumberResponse struct {
 	ID               string            `json:"id"`
@@ -887,8 +944,11 @@ type NumberResponse struct {
 	AnsweredAt       *scalars.DateTime `json:"answeredAt,omitempty"`
 	TimeSpentSeconds *int              `json:"timeSpentSeconds,omitempty"`
 	PointsEarned     *int              `json:"pointsEarned,omitempty"`
+	BetAmount        *int              `json:"betAmount,omitempty"`
+	JournalEntry     *ScoreJournal     `json:"journalEntry,omitempty"`
 	NumberResponse   float64           `json:"numberResponse"`
 	QuestionID       string            `json:"-"`
+	ScoreJournalID   *string           `json:"-"`
 	SubmissionID     string            `json:"-"`
 }
 
@@ -899,25 +959,37 @@ func (this NumberResponse) GetQuestion() QuizQuestion        { return this.Quest
 func (this NumberResponse) GetAnsweredAt() *scalars.DateTime { return this.AnsweredAt }
 func (this NumberResponse) GetTimeSpentSeconds() *int        { return this.TimeSpentSeconds }
 func (this NumberResponse) GetPointsEarned() *int            { return this.PointsEarned }
+func (this NumberResponse) GetBetAmount() *int               { return this.BetAmount }
+func (this NumberResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
 
 type OrderingQuestion struct {
-	ID             string             `json:"id"`
-	Quiz           *Quiz              `json:"quiz"`
-	QuestionText   string             `json:"questionText"`
-	QuestionOrder  int                `json:"questionOrder"`
-	TimeoutSeconds *int               `json:"timeoutSeconds,omitempty"`
-	Points         *int               `json:"points,omitempty"`
-	OrderingItems  []QuizOrderingItem `json:"orderingItems"`
-	QuizID         string             `json:"-"`
+	ID                   string             `json:"id"`
+	Quiz                 *Quiz              `json:"quiz"`
+	QuestionText         string             `json:"questionText"`
+	QuestionOrder        int                `json:"questionOrder"`
+	TimeoutSeconds       *int               `json:"timeoutSeconds,omitempty"`
+	Points               *int               `json:"points,omitempty"`
+	BettingEnabled       bool               `json:"bettingEnabled"`
+	BettingMinPercentage *float64           `json:"bettingMinPercentage,omitempty"`
+	BettingMaxPercentage *float64           `json:"bettingMaxPercentage,omitempty"`
+	BettingMinAbsolute   *int               `json:"bettingMinAbsolute,omitempty"`
+	BettingMaxAbsolute   *int               `json:"bettingMaxAbsolute,omitempty"`
+	OrderingItems        []QuizOrderingItem `json:"orderingItems"`
+	QuizID               string             `json:"-"`
 }
 
-func (OrderingQuestion) IsQuizQuestion()              {}
-func (this OrderingQuestion) GetID() string           { return this.ID }
-func (this OrderingQuestion) GetQuiz() *Quiz          { return this.Quiz }
-func (this OrderingQuestion) GetQuestionText() string { return this.QuestionText }
-func (this OrderingQuestion) GetQuestionOrder() int   { return this.QuestionOrder }
-func (this OrderingQuestion) GetTimeoutSeconds() *int { return this.TimeoutSeconds }
-func (this OrderingQuestion) GetPoints() *int         { return this.Points }
+func (OrderingQuestion) IsQuizQuestion()                        {}
+func (this OrderingQuestion) GetID() string                     { return this.ID }
+func (this OrderingQuestion) GetQuiz() *Quiz                    { return this.Quiz }
+func (this OrderingQuestion) GetQuestionText() string           { return this.QuestionText }
+func (this OrderingQuestion) GetQuestionOrder() int             { return this.QuestionOrder }
+func (this OrderingQuestion) GetTimeoutSeconds() *int           { return this.TimeoutSeconds }
+func (this OrderingQuestion) GetPoints() *int                   { return this.Points }
+func (this OrderingQuestion) GetBettingEnabled() bool           { return this.BettingEnabled }
+func (this OrderingQuestion) GetBettingMinPercentage() *float64 { return this.BettingMinPercentage }
+func (this OrderingQuestion) GetBettingMaxPercentage() *float64 { return this.BettingMaxPercentage }
+func (this OrderingQuestion) GetBettingMinAbsolute() *int       { return this.BettingMinAbsolute }
+func (this OrderingQuestion) GetBettingMaxAbsolute() *int       { return this.BettingMaxAbsolute }
 
 type OrderingResponse struct {
 	ID               string            `json:"id"`
@@ -926,10 +998,13 @@ type OrderingResponse struct {
 	AnsweredAt       *scalars.DateTime `json:"answeredAt,omitempty"`
 	TimeSpentSeconds *int              `json:"timeSpentSeconds,omitempty"`
 	PointsEarned     *int              `json:"pointsEarned,omitempty"`
+	BetAmount        *int              `json:"betAmount,omitempty"`
+	JournalEntry     *ScoreJournal     `json:"journalEntry,omitempty"`
 	SubmittedOrder   []string          `json:"submittedOrder"`
 	IsCorrect        *bool             `json:"isCorrect,omitempty"`
 	IsCorrectValue   *bool             `json:"-"`
 	QuestionID       string            `json:"-"`
+	ScoreJournalID   *string           `json:"-"`
 	SubmissionID     string            `json:"-"`
 }
 
@@ -940,6 +1015,8 @@ func (this OrderingResponse) GetQuestion() QuizQuestion        { return this.Que
 func (this OrderingResponse) GetAnsweredAt() *scalars.DateTime { return this.AnsweredAt }
 func (this OrderingResponse) GetTimeSpentSeconds() *int        { return this.TimeSpentSeconds }
 func (this OrderingResponse) GetPointsEarned() *int            { return this.PointsEarned }
+func (this OrderingResponse) GetBetAmount() *int               { return this.BetAmount }
+func (this OrderingResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
 
 type PageInfo struct {
 	HasNextPage     bool    `json:"hasNextPage"`
@@ -957,6 +1034,7 @@ type PluginChallenge struct {
 	Project                     *Project          `json:"project"`
 	Event                       *Event            `json:"event,omitempty"`
 	ButtonText                  *string           `json:"buttonText,omitempty"`
+	NotificationText            string            `json:"notificationText"`
 	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
 	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
 	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
@@ -979,6 +1057,7 @@ func (this PluginChallenge) GetImageObject() *Image            { return this.Ima
 func (this PluginChallenge) GetProject() *Project              { return this.Project }
 func (this PluginChallenge) GetEvent() *Event                  { return this.Event }
 func (this PluginChallenge) GetButtonText() *string            { return this.ButtonText }
+func (this PluginChallenge) GetNotificationText() string       { return this.NotificationText }
 func (this PluginChallenge) GetPublishedAt() *scalars.DateTime { return this.PublishedAt }
 func (this PluginChallenge) GetVisibleAt() *scalars.DateTime   { return this.VisibleAt }
 func (this PluginChallenge) GetStartedAt() *scalars.DateTime   { return this.StartedAt }
@@ -999,18 +1078,28 @@ type PredefinedQuestion struct {
 	QuestionOrder          int                    `json:"questionOrder"`
 	TimeoutSeconds         *int                   `json:"timeoutSeconds,omitempty"`
 	Points                 *int                   `json:"points,omitempty"`
+	BettingEnabled         bool                   `json:"bettingEnabled"`
+	BettingMinPercentage   *float64               `json:"bettingMinPercentage,omitempty"`
+	BettingMaxPercentage   *float64               `json:"bettingMaxPercentage,omitempty"`
+	BettingMinAbsolute     *int                   `json:"bettingMinAbsolute,omitempty"`
+	BettingMaxAbsolute     *int                   `json:"bettingMaxAbsolute,omitempty"`
 	AllowMultipleSelection bool                   `json:"allowMultipleSelection"`
 	PredefinedAnswers      []QuizPredefinedAnswer `json:"predefinedAnswers"`
 	QuizID                 string                 `json:"-"`
 }
 
-func (PredefinedQuestion) IsQuizQuestion()              {}
-func (this PredefinedQuestion) GetID() string           { return this.ID }
-func (this PredefinedQuestion) GetQuiz() *Quiz          { return this.Quiz }
-func (this PredefinedQuestion) GetQuestionText() string { return this.QuestionText }
-func (this PredefinedQuestion) GetQuestionOrder() int   { return this.QuestionOrder }
-func (this PredefinedQuestion) GetTimeoutSeconds() *int { return this.TimeoutSeconds }
-func (this PredefinedQuestion) GetPoints() *int         { return this.Points }
+func (PredefinedQuestion) IsQuizQuestion()                        {}
+func (this PredefinedQuestion) GetID() string                     { return this.ID }
+func (this PredefinedQuestion) GetQuiz() *Quiz                    { return this.Quiz }
+func (this PredefinedQuestion) GetQuestionText() string           { return this.QuestionText }
+func (this PredefinedQuestion) GetQuestionOrder() int             { return this.QuestionOrder }
+func (this PredefinedQuestion) GetTimeoutSeconds() *int           { return this.TimeoutSeconds }
+func (this PredefinedQuestion) GetPoints() *int                   { return this.Points }
+func (this PredefinedQuestion) GetBettingEnabled() bool           { return this.BettingEnabled }
+func (this PredefinedQuestion) GetBettingMinPercentage() *float64 { return this.BettingMinPercentage }
+func (this PredefinedQuestion) GetBettingMaxPercentage() *float64 { return this.BettingMaxPercentage }
+func (this PredefinedQuestion) GetBettingMinAbsolute() *int       { return this.BettingMinAbsolute }
+func (this PredefinedQuestion) GetBettingMaxAbsolute() *int       { return this.BettingMaxAbsolute }
 
 type PredefinedResponse struct {
 	ID                string                 `json:"id"`
@@ -1019,10 +1108,13 @@ type PredefinedResponse struct {
 	AnsweredAt        *scalars.DateTime      `json:"answeredAt,omitempty"`
 	TimeSpentSeconds  *int                   `json:"timeSpentSeconds,omitempty"`
 	PointsEarned      *int                   `json:"pointsEarned,omitempty"`
+	BetAmount         *int                   `json:"betAmount,omitempty"`
+	JournalEntry      *ScoreJournal          `json:"journalEntry,omitempty"`
 	SelectedAnswerIds []string               `json:"selectedAnswerIds"`
 	SelectedAnswers   []QuizPredefinedAnswer `json:"selectedAnswers"`
 	IsCorrect         *bool                  `json:"isCorrect,omitempty"`
 	QuestionID        string                 `json:"-"`
+	ScoreJournalID    *string                `json:"-"`
 	SubmissionID      string                 `json:"-"`
 }
 
@@ -1033,6 +1125,8 @@ func (this PredefinedResponse) GetQuestion() QuizQuestion        { return this.Q
 func (this PredefinedResponse) GetAnsweredAt() *scalars.DateTime { return this.AnsweredAt }
 func (this PredefinedResponse) GetTimeSpentSeconds() *int        { return this.TimeSpentSeconds }
 func (this PredefinedResponse) GetPointsEarned() *int            { return this.PointsEarned }
+func (this PredefinedResponse) GetBetAmount() *int               { return this.BetAmount }
+func (this PredefinedResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
 
 type Project struct {
 	ID               string                  `json:"id"`
@@ -1136,7 +1230,7 @@ type QuizAchievement struct {
 	Points               int               `json:"points"`
 	Hidden               bool              `json:"hidden"`
 	AwardableFrom        *scalars.DateTime `json:"awardableFrom,omitempty"`
-	Quiz                 *Quiz             `json:"quiz"`
+	Quiz                 *Quiz             `json:"quiz,omitempty"`
 	MinScorePercentage   *int              `json:"minScorePercentage,omitempty"`
 	RequireCompletion    bool              `json:"requireCompletion"`
 	ChallengeID          *string           `json:"-"`
@@ -1175,6 +1269,7 @@ type QuizChallenge struct {
 	Project                     *Project          `json:"project"`
 	Event                       *Event            `json:"event,omitempty"`
 	ButtonText                  string            `json:"buttonText"`
+	NotificationText            string            `json:"notificationText"`
 	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
 	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
 	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
@@ -1197,6 +1292,7 @@ func (this QuizChallenge) GetImageObject() *Image            { return this.Image
 func (this QuizChallenge) GetProject() *Project              { return this.Project }
 func (this QuizChallenge) GetEvent() *Event                  { return this.Event }
 func (this QuizChallenge) GetButtonText() *string            { return &this.ButtonText }
+func (this QuizChallenge) GetNotificationText() string       { return this.NotificationText }
 func (this QuizChallenge) GetPublishedAt() *scalars.DateTime { return this.PublishedAt }
 func (this QuizChallenge) GetVisibleAt() *scalars.DateTime   { return this.VisibleAt }
 func (this QuizChallenge) GetStartedAt() *scalars.DateTime   { return this.StartedAt }
@@ -1228,11 +1324,12 @@ type QuizFilter struct {
 }
 
 type QuizOrderingItem struct {
-	ID           string       `json:"id"`
-	Question     QuizQuestion `json:"question"`
-	ItemText     string       `json:"itemText"`
-	CorrectOrder int          `json:"-"`
-	QuestionID   string       `json:"-"`
+	ID                string       `json:"id"`
+	Question          QuizQuestion `json:"question"`
+	ItemText          string       `json:"itemText"`
+	CorrectOrder      *int         `json:"correctOrder,omitempty"`
+	CorrectOrderValue int          `json:"-"`
+	QuestionID        string       `json:"-"`
 }
 
 type QuizPredefinedAnswer struct {
@@ -1293,6 +1390,17 @@ type QuizSubmissionConnection struct {
 type QuizSubmissionEdge struct {
 	Cursor string          `json:"cursor"`
 	Node   *QuizSubmission `json:"node"`
+}
+
+type RecalculateResult struct {
+	Awarded int      `json:"awarded"`
+	UserIds []string `json:"userIds"`
+}
+
+type RecordBetResultInput struct {
+	ResponseID       string `json:"responseId"`
+	PointsEarned     int    `json:"pointsEarned"`
+	SendNotification *bool  `json:"sendNotification,omitempty"`
 }
 
 type RegisterPushSubscriptionInput struct {
@@ -1434,6 +1542,7 @@ type SimpleChallenge struct {
 	Project                     *Project          `json:"project"`
 	Event                       *Event            `json:"event,omitempty"`
 	ButtonText                  string            `json:"buttonText"`
+	NotificationText            string            `json:"notificationText"`
 	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
 	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
 	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
@@ -1456,6 +1565,7 @@ func (this SimpleChallenge) GetImageObject() *Image            { return this.Ima
 func (this SimpleChallenge) GetProject() *Project              { return this.Project }
 func (this SimpleChallenge) GetEvent() *Event                  { return this.Event }
 func (this SimpleChallenge) GetButtonText() *string            { return &this.ButtonText }
+func (this SimpleChallenge) GetNotificationText() string       { return this.NotificationText }
 func (this SimpleChallenge) GetPublishedAt() *scalars.DateTime { return this.PublishedAt }
 func (this SimpleChallenge) GetVisibleAt() *scalars.DateTime   { return this.VisibleAt }
 func (this SimpleChallenge) GetStartedAt() *scalars.DateTime   { return this.StartedAt }
@@ -1564,6 +1674,7 @@ type SubmitQuizAnswerInput struct {
 	JSONResponse      *string  `json:"jsonResponse,omitempty"`
 	SubmittedOrder    []string `json:"submittedOrder,omitempty"`
 	TimeSpentSeconds  *int     `json:"timeSpentSeconds,omitempty"`
+	BetAmount         *int     `json:"betAmount,omitempty"`
 }
 
 type SuperTeam struct {
@@ -1632,6 +1743,7 @@ type TeamEdge struct {
 }
 
 type TeamFilter struct {
+	ChurchID    *string  `json:"churchId,omitempty"`
 	ProjectID   *string  `json:"projectId,omitempty"`
 	SuperTeamID *string  `json:"superTeamId,omitempty"`
 	Ids         []string `json:"ids,omitempty"`
@@ -1671,6 +1783,7 @@ type UpdateChallengeInput struct {
 	Image                       *string           `json:"image,omitempty"`
 	EventID                     *string           `json:"eventId,omitempty"`
 	ButtonText                  *string           `json:"buttonText,omitempty"`
+	NotificationText            *string           `json:"notificationText,omitempty"`
 	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
 	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
 	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
@@ -1722,8 +1835,25 @@ type UpdateProjectInput struct {
 	Branding         *BrandingInput    `json:"branding,omitempty"`
 }
 
+type UpdateQuizAchievementInput struct {
+	Name                 *string           `json:"name,omitempty"`
+	DescriptionPending   *string           `json:"descriptionPending,omitempty"`
+	DescriptionCompleted *string           `json:"descriptionCompleted,omitempty"`
+	NotificationText     *string           `json:"notificationText,omitempty"`
+	ImagePending         *string           `json:"imagePending,omitempty"`
+	ImageCompleted       *string           `json:"imageCompleted,omitempty"`
+	EventID              *string           `json:"eventId,omitempty"`
+	Points               *int              `json:"points,omitempty"`
+	Hidden               *bool             `json:"hidden,omitempty"`
+	AwardableFrom        *scalars.DateTime `json:"awardableFrom,omitempty"`
+	QuizID               *string           `json:"quizId,omitempty"`
+	MinScorePercentage   *int              `json:"minScorePercentage,omitempty"`
+	RequireCompletion    *bool             `json:"requireCompletion,omitempty"`
+}
+
 type UpdateQuizAnswerInput struct {
 	SubmittedOrder []string `json:"submittedOrder,omitempty"`
+	BetAmount      *int     `json:"betAmount,omitempty"`
 }
 
 type UpdateQuizInput struct {
@@ -1739,16 +1869,23 @@ type UpdateQuizInput struct {
 }
 
 type UpdateQuizQuestionInput struct {
-	QuestionText           *string                       `json:"questionText,omitempty"`
-	QuestionOrder          *int                          `json:"questionOrder,omitempty"`
-	TimeoutSeconds         *int                          `json:"timeoutSeconds,omitempty"`
-	Points                 *int                          `json:"points,omitempty"`
-	AllowMultipleSelection *bool                         `json:"allowMultipleSelection,omitempty"`
-	PredefinedAnswers      []CreatePredefinedAnswerInput `json:"predefinedAnswers,omitempty"`
-	MinValue               *float64                      `json:"minValue,omitempty"`
-	MaxValue               *float64                      `json:"maxValue,omitempty"`
-	StepValue              *float64                      `json:"stepValue,omitempty"`
-	OrderingItems          []CreateOrderingItemInput     `json:"orderingItems,omitempty"`
+	QuestionText            *string                       `json:"questionText,omitempty"`
+	QuestionOrder           *int                          `json:"questionOrder,omitempty"`
+	TimeoutSeconds          *int                          `json:"timeoutSeconds,omitempty"`
+	Points                  *int                          `json:"points,omitempty"`
+	BettingEnabled          *bool                         `json:"bettingEnabled,omitempty"`
+	BettingMinPercentage    *float64                      `json:"bettingMinPercentage,omitempty"`
+	BettingMaxPercentage    *float64                      `json:"bettingMaxPercentage,omitempty"`
+	BettingMinAbsolute      *int                          `json:"bettingMinAbsolute,omitempty"`
+	BettingMaxAbsolute      *int                          `json:"bettingMaxAbsolute,omitempty"`
+	ClearBettingMinAbsolute *bool                         `json:"clearBettingMinAbsolute,omitempty"`
+	ClearBettingMaxAbsolute *bool                         `json:"clearBettingMaxAbsolute,omitempty"`
+	AllowMultipleSelection  *bool                         `json:"allowMultipleSelection,omitempty"`
+	PredefinedAnswers       []CreatePredefinedAnswerInput `json:"predefinedAnswers,omitempty"`
+	MinValue                *float64                      `json:"minValue,omitempty"`
+	MaxValue                *float64                      `json:"maxValue,omitempty"`
+	StepValue               *float64                      `json:"stepValue,omitempty"`
+	OrderingItems           []CreateOrderingItemInput     `json:"orderingItems,omitempty"`
 }
 
 type UpdateQuizSessionInput struct {
@@ -2929,6 +3066,7 @@ const (
 	ScoreSourceTypeChallenge   ScoreSourceType = "CHALLENGE"
 	ScoreSourceTypeEvent       ScoreSourceType = "EVENT"
 	ScoreSourceTypeManual      ScoreSourceType = "MANUAL"
+	ScoreSourceTypeBet         ScoreSourceType = "BET"
 )
 
 var AllScoreSourceType = []ScoreSourceType{
@@ -2936,11 +3074,12 @@ var AllScoreSourceType = []ScoreSourceType{
 	ScoreSourceTypeChallenge,
 	ScoreSourceTypeEvent,
 	ScoreSourceTypeManual,
+	ScoreSourceTypeBet,
 }
 
 func (e ScoreSourceType) IsValid() bool {
 	switch e {
-	case ScoreSourceTypeAchievement, ScoreSourceTypeChallenge, ScoreSourceTypeEvent, ScoreSourceTypeManual:
+	case ScoreSourceTypeAchievement, ScoreSourceTypeChallenge, ScoreSourceTypeEvent, ScoreSourceTypeManual, ScoreSourceTypeBet:
 		return true
 	}
 	return false
@@ -3043,6 +3182,7 @@ const (
 	WebhookEventTypePointsAwarded        WebhookEventType = "POINTS_AWARDED"
 	WebhookEventTypeQuizSessionFinished  WebhookEventType = "QUIZ_SESSION_FINISHED"
 	WebhookEventTypeTeamNameChanged      WebhookEventType = "TEAM_NAME_CHANGED"
+	WebhookEventTypeQuizFinalized        WebhookEventType = "QUIZ_FINALIZED"
 )
 
 var AllWebhookEventType = []WebhookEventType{
@@ -3050,11 +3190,12 @@ var AllWebhookEventType = []WebhookEventType{
 	WebhookEventTypePointsAwarded,
 	WebhookEventTypeQuizSessionFinished,
 	WebhookEventTypeTeamNameChanged,
+	WebhookEventTypeQuizFinalized,
 }
 
 func (e WebhookEventType) IsValid() bool {
 	switch e {
-	case WebhookEventTypeExternalContentEvent, WebhookEventTypePointsAwarded, WebhookEventTypeQuizSessionFinished, WebhookEventTypeTeamNameChanged:
+	case WebhookEventTypeExternalContentEvent, WebhookEventTypePointsAwarded, WebhookEventTypeQuizSessionFinished, WebhookEventTypeTeamNameChanged, WebhookEventTypeQuizFinalized:
 		return true
 	}
 	return false

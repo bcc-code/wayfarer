@@ -1,4 +1,11 @@
 query ChallengePage($challengeId: ID!) {
+  myCurrentProject {
+    leaderboard(entityType: PERSONS) {
+      me {
+        score
+      }
+    }
+  }
   challenge(id: $challengeId) {
     __typename
     id
@@ -54,6 +61,8 @@ query ChallengePage($challengeId: ID!) {
             id
             answeredAt
             timeSpentSeconds
+            betAmount
+            pointsEarned
             question {
               id
             }

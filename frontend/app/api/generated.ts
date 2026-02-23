@@ -128,6 +128,7 @@ export type Challenge = {
   image?: Maybe<Scalars['String']['output']>;
   imageObject?: Maybe<Image>;
   name: Scalars['String']['output'];
+  notificationText: Scalars['String']['output'];
   project: Project;
   publishedAt?: Maybe<Scalars['DateTime']['output']>;
   requiresSuperTeamMembership: Scalars['Boolean']['output'];
@@ -337,6 +338,7 @@ export type CreateChallengeInput = {
   endTime?: InputMaybe<Scalars['DateTime']['input']>;
   image?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
+  notificationText?: InputMaybe<Scalars['String']['input']>;
   pluginChallengeId?: InputMaybe<Scalars['String']['input']>;
   publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
   requiresSuperTeamMembership?: InputMaybe<Scalars['Boolean']['input']>;
@@ -413,6 +415,7 @@ export type CreateProjectInput = {
 };
 
 export type CreateQuizAchievementInput = {
+  awardableFrom?: InputMaybe<Scalars['DateTime']['input']>;
   challengeId?: InputMaybe<Scalars['ID']['input']>;
   descriptionCompleted: Scalars['String']['input'];
   descriptionPending: Scalars['String']['input'];
@@ -444,6 +447,11 @@ export type CreateQuizInput = {
 
 export type CreateQuizQuestionInput = {
   allowMultipleSelection?: InputMaybe<Scalars['Boolean']['input']>;
+  bettingEnabled?: InputMaybe<Scalars['Boolean']['input']>;
+  bettingMaxAbsolute?: InputMaybe<Scalars['Int']['input']>;
+  bettingMaxPercentage?: InputMaybe<Scalars['Float']['input']>;
+  bettingMinAbsolute?: InputMaybe<Scalars['Int']['input']>;
+  bettingMinPercentage?: InputMaybe<Scalars['Float']['input']>;
   maxValue?: InputMaybe<Scalars['Float']['input']>;
   minValue?: InputMaybe<Scalars['Float']['input']>;
   orderingItems?: InputMaybe<Array<CreateOrderingItemInput>>;
@@ -642,6 +650,7 @@ export type ExternalChallenge = Challenge & {
   image?: Maybe<Scalars['String']['output']>;
   imageObject?: Maybe<Image>;
   name: Scalars['String']['output'];
+  notificationText: Scalars['String']['output'];
   project: Project;
   publishedAt?: Maybe<Scalars['DateTime']['output']>;
   requiresSuperTeamMembership: Scalars['Boolean']['output'];
@@ -764,6 +773,11 @@ export enum ForwardDestination {
 
 export type FreeTextQuestion = QuizQuestion & {
   __typename?: 'FreeTextQuestion';
+  bettingEnabled: Scalars['Boolean']['output'];
+  bettingMaxAbsolute?: Maybe<Scalars['Int']['output']>;
+  bettingMaxPercentage?: Maybe<Scalars['Float']['output']>;
+  bettingMinAbsolute?: Maybe<Scalars['Int']['output']>;
+  bettingMinPercentage?: Maybe<Scalars['Float']['output']>;
   id: Scalars['ID']['output'];
   points?: Maybe<Scalars['Int']['output']>;
   questionOrder: Scalars['Int']['output'];
@@ -775,7 +789,9 @@ export type FreeTextQuestion = QuizQuestion & {
 export type FreeTextResponse = QuizResponse & {
   __typename?: 'FreeTextResponse';
   answeredAt?: Maybe<Scalars['DateTime']['output']>;
+  betAmount?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
+  journalEntry?: Maybe<ScoreJournal>;
   pointsEarned?: Maybe<Scalars['Int']['output']>;
   question: QuizQuestion;
   submission: QuizSubmission;
@@ -807,6 +823,11 @@ export type Image = {
 
 export type JsonQuestion = QuizQuestion & {
   __typename?: 'JsonQuestion';
+  bettingEnabled: Scalars['Boolean']['output'];
+  bettingMaxAbsolute?: Maybe<Scalars['Int']['output']>;
+  bettingMaxPercentage?: Maybe<Scalars['Float']['output']>;
+  bettingMinAbsolute?: Maybe<Scalars['Int']['output']>;
+  bettingMinPercentage?: Maybe<Scalars['Float']['output']>;
   id: Scalars['ID']['output'];
   points?: Maybe<Scalars['Int']['output']>;
   questionOrder: Scalars['Int']['output'];
@@ -818,7 +839,9 @@ export type JsonQuestion = QuizQuestion & {
 export type JsonResponse = QuizResponse & {
   __typename?: 'JsonResponse';
   answeredAt?: Maybe<Scalars['DateTime']['output']>;
+  betAmount?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
+  journalEntry?: Maybe<ScoreJournal>;
   jsonResponse: Scalars['JSON']['output'];
   pointsEarned?: Maybe<Scalars['Int']['output']>;
   question: QuizQuestion;
@@ -958,6 +981,9 @@ export type Mutation = {
   moveEvent: Event;
   openQuizSession: QuizSession;
   publishChallenge: Challenge;
+  recalculateContentAchievements: RecalculateResult;
+  recordBetResult: QuizResponse;
+  recordBetResults: Array<QuizResponse>;
   recordStreakActivity: StreakAchievement;
   regenerateJoinCode: Team;
   registerPushSubscription: PushSubscription;
@@ -1000,6 +1026,7 @@ export type Mutation = {
   updateFeedbackTags: UserFeedback;
   updateProject: Project;
   updateQuiz: Quiz;
+  updateQuizAchievement: QuizAchievement;
   updateQuizAnswer: QuizResponse;
   updateQuizQuestion: QuizQuestion;
   updateQuizSession: QuizSession;
@@ -1398,6 +1425,22 @@ export type MutationPublishChallengeArgs = {
 };
 
 
+export type MutationRecalculateContentAchievementsArgs = {
+  achievementId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
+};
+
+
+export type MutationRecordBetResultArgs = {
+  input: RecordBetResultInput;
+};
+
+
+export type MutationRecordBetResultsArgs = {
+  inputs: Array<RecordBetResultInput>;
+};
+
+
 export type MutationRecordStreakActivityArgs = {
   achievementId: Scalars['ID']['input'];
   currentStreak: Scalars['Int']['input'];
@@ -1640,6 +1683,12 @@ export type MutationUpdateQuizArgs = {
 };
 
 
+export type MutationUpdateQuizAchievementArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateQuizAchievementInput;
+};
+
+
 export type MutationUpdateQuizAnswerArgs = {
   input: UpdateQuizAnswerInput;
   responseId: Scalars['ID']['input'];
@@ -1695,6 +1744,11 @@ export enum NotificationType {
 
 export type NumberQuestion = QuizQuestion & {
   __typename?: 'NumberQuestion';
+  bettingEnabled: Scalars['Boolean']['output'];
+  bettingMaxAbsolute?: Maybe<Scalars['Int']['output']>;
+  bettingMaxPercentage?: Maybe<Scalars['Float']['output']>;
+  bettingMinAbsolute?: Maybe<Scalars['Int']['output']>;
+  bettingMinPercentage?: Maybe<Scalars['Float']['output']>;
   id: Scalars['ID']['output'];
   maxValue?: Maybe<Scalars['Float']['output']>;
   minValue?: Maybe<Scalars['Float']['output']>;
@@ -1709,7 +1763,9 @@ export type NumberQuestion = QuizQuestion & {
 export type NumberResponse = QuizResponse & {
   __typename?: 'NumberResponse';
   answeredAt?: Maybe<Scalars['DateTime']['output']>;
+  betAmount?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
+  journalEntry?: Maybe<ScoreJournal>;
   numberResponse: Scalars['Float']['output'];
   pointsEarned?: Maybe<Scalars['Int']['output']>;
   question: QuizQuestion;
@@ -1719,6 +1775,11 @@ export type NumberResponse = QuizResponse & {
 
 export type OrderingQuestion = QuizQuestion & {
   __typename?: 'OrderingQuestion';
+  bettingEnabled: Scalars['Boolean']['output'];
+  bettingMaxAbsolute?: Maybe<Scalars['Int']['output']>;
+  bettingMaxPercentage?: Maybe<Scalars['Float']['output']>;
+  bettingMinAbsolute?: Maybe<Scalars['Int']['output']>;
+  bettingMinPercentage?: Maybe<Scalars['Float']['output']>;
   id: Scalars['ID']['output'];
   orderingItems: Array<QuizOrderingItem>;
   points?: Maybe<Scalars['Int']['output']>;
@@ -1731,8 +1792,10 @@ export type OrderingQuestion = QuizQuestion & {
 export type OrderingResponse = QuizResponse & {
   __typename?: 'OrderingResponse';
   answeredAt?: Maybe<Scalars['DateTime']['output']>;
+  betAmount?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
   isCorrect?: Maybe<Scalars['Boolean']['output']>;
+  journalEntry?: Maybe<ScoreJournal>;
   pointsEarned?: Maybe<Scalars['Int']['output']>;
   question: QuizQuestion;
   submission: QuizSubmission;
@@ -1759,6 +1822,7 @@ export type PluginChallenge = Challenge & {
   image?: Maybe<Scalars['String']['output']>;
   imageObject?: Maybe<Image>;
   name: Scalars['String']['output'];
+  notificationText: Scalars['String']['output'];
   pluginChallengeId: Scalars['String']['output'];
   project: Project;
   publishedAt?: Maybe<Scalars['DateTime']['output']>;
@@ -1773,6 +1837,11 @@ export type PluginChallenge = Challenge & {
 export type PredefinedQuestion = QuizQuestion & {
   __typename?: 'PredefinedQuestion';
   allowMultipleSelection: Scalars['Boolean']['output'];
+  bettingEnabled: Scalars['Boolean']['output'];
+  bettingMaxAbsolute?: Maybe<Scalars['Int']['output']>;
+  bettingMaxPercentage?: Maybe<Scalars['Float']['output']>;
+  bettingMinAbsolute?: Maybe<Scalars['Int']['output']>;
+  bettingMinPercentage?: Maybe<Scalars['Float']['output']>;
   id: Scalars['ID']['output'];
   points?: Maybe<Scalars['Int']['output']>;
   predefinedAnswers: Array<QuizPredefinedAnswer>;
@@ -1785,8 +1854,10 @@ export type PredefinedQuestion = QuizQuestion & {
 export type PredefinedResponse = QuizResponse & {
   __typename?: 'PredefinedResponse';
   answeredAt?: Maybe<Scalars['DateTime']['output']>;
+  betAmount?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
   isCorrect?: Maybe<Scalars['Boolean']['output']>;
+  journalEntry?: Maybe<ScoreJournal>;
   pointsEarned?: Maybe<Scalars['Int']['output']>;
   question: QuizQuestion;
   selectedAnswerIds: Array<Scalars['ID']['output']>;
@@ -2243,7 +2314,7 @@ export type QuizAchievement = Achievement & {
   notificationText: Scalars['String']['output'];
   points: Scalars['Int']['output'];
   project: Project;
-  quiz: Quiz;
+  quiz?: Maybe<Quiz>;
   requireCompletion: Scalars['Boolean']['output'];
 };
 
@@ -2258,6 +2329,7 @@ export type QuizChallenge = Challenge & {
   image?: Maybe<Scalars['String']['output']>;
   imageObject?: Maybe<Image>;
   name: Scalars['String']['output'];
+  notificationText: Scalars['String']['output'];
   project: Project;
   publishedAt?: Maybe<Scalars['DateTime']['output']>;
   quiz: Quiz;
@@ -2290,6 +2362,7 @@ export type QuizFilter = {
 
 export type QuizOrderingItem = {
   __typename?: 'QuizOrderingItem';
+  correctOrder?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
   itemText: Scalars['String']['output'];
   question: QuizQuestion;
@@ -2305,6 +2378,11 @@ export type QuizPredefinedAnswer = {
 };
 
 export type QuizQuestion = {
+  bettingEnabled: Scalars['Boolean']['output'];
+  bettingMaxAbsolute?: Maybe<Scalars['Int']['output']>;
+  bettingMaxPercentage?: Maybe<Scalars['Float']['output']>;
+  bettingMinAbsolute?: Maybe<Scalars['Int']['output']>;
+  bettingMinPercentage?: Maybe<Scalars['Float']['output']>;
   id: Scalars['ID']['output'];
   points?: Maybe<Scalars['Int']['output']>;
   questionOrder: Scalars['Int']['output'];
@@ -2323,7 +2401,9 @@ export enum QuizQuestionType {
 
 export type QuizResponse = {
   answeredAt?: Maybe<Scalars['DateTime']['output']>;
+  betAmount?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
+  journalEntry?: Maybe<ScoreJournal>;
   pointsEarned?: Maybe<Scalars['Int']['output']>;
   question: QuizQuestion;
   submission: QuizSubmission;
@@ -2384,6 +2464,18 @@ export type QuizSubmissionEdge = {
   __typename?: 'QuizSubmissionEdge';
   cursor: Scalars['String']['output'];
   node: QuizSubmission;
+};
+
+export type RecalculateResult = {
+  __typename?: 'RecalculateResult';
+  awarded: Scalars['Int']['output'];
+  userIds: Array<Scalars['ID']['output']>;
+};
+
+export type RecordBetResultInput = {
+  pointsEarned: Scalars['Int']['input'];
+  responseId: Scalars['ID']['input'];
+  sendNotification?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export type RegisterPushSubscriptionInput = {
@@ -2465,6 +2557,7 @@ export type ScoreSource = ContentAchievement | Event | ExternalChallenge | Plugi
 
 export enum ScoreSourceType {
   Achievement = 'ACHIEVEMENT',
+  Bet = 'BET',
   Challenge = 'CHALLENGE',
   Event = 'EVENT',
   Manual = 'MANUAL'
@@ -2531,6 +2624,7 @@ export type SimpleChallenge = Challenge & {
   image?: Maybe<Scalars['String']['output']>;
   imageObject?: Maybe<Image>;
   name: Scalars['String']['output'];
+  notificationText: Scalars['String']['output'];
   project: Project;
   publishedAt?: Maybe<Scalars['DateTime']['output']>;
   requiresSuperTeamMembership: Scalars['Boolean']['output'];
@@ -2615,6 +2709,7 @@ export type SubmitFeedbackInput = {
 };
 
 export type SubmitQuizAnswerInput = {
+  betAmount?: InputMaybe<Scalars['Int']['input']>;
   jsonResponse?: InputMaybe<Scalars['JSON']['input']>;
   numberResponse?: InputMaybe<Scalars['Float']['input']>;
   questionId: Scalars['ID']['input'];
@@ -2702,6 +2797,7 @@ export type TeamEdge = {
 };
 
 export type TeamFilter = {
+  churchId?: InputMaybe<Scalars['ID']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   maxMembers?: InputMaybe<Scalars['Int']['input']>;
   minMembers?: InputMaybe<Scalars['Int']['input']>;
@@ -2747,6 +2843,7 @@ export type UpdateChallengeInput = {
   eventId?: InputMaybe<Scalars['ID']['input']>;
   image?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
+  notificationText?: InputMaybe<Scalars['String']['input']>;
   pluginChallengeId?: InputMaybe<Scalars['String']['input']>;
   publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
   requiresSuperTeamMembership?: InputMaybe<Scalars['Boolean']['input']>;
@@ -2796,7 +2893,24 @@ export type UpdateProjectInput = {
   startDate?: InputMaybe<Scalars['DateTime']['input']>;
 };
 
+export type UpdateQuizAchievementInput = {
+  awardableFrom?: InputMaybe<Scalars['DateTime']['input']>;
+  descriptionCompleted?: InputMaybe<Scalars['String']['input']>;
+  descriptionPending?: InputMaybe<Scalars['String']['input']>;
+  eventId?: InputMaybe<Scalars['ID']['input']>;
+  hidden?: InputMaybe<Scalars['Boolean']['input']>;
+  imageCompleted?: InputMaybe<Scalars['String']['input']>;
+  imagePending?: InputMaybe<Scalars['String']['input']>;
+  minScorePercentage?: InputMaybe<Scalars['Int']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  notificationText?: InputMaybe<Scalars['String']['input']>;
+  points?: InputMaybe<Scalars['Int']['input']>;
+  quizId?: InputMaybe<Scalars['ID']['input']>;
+  requireCompletion?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
 export type UpdateQuizAnswerInput = {
+  betAmount?: InputMaybe<Scalars['Int']['input']>;
   submittedOrder?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
@@ -2814,6 +2928,13 @@ export type UpdateQuizInput = {
 
 export type UpdateQuizQuestionInput = {
   allowMultipleSelection?: InputMaybe<Scalars['Boolean']['input']>;
+  bettingEnabled?: InputMaybe<Scalars['Boolean']['input']>;
+  bettingMaxAbsolute?: InputMaybe<Scalars['Int']['input']>;
+  bettingMaxPercentage?: InputMaybe<Scalars['Float']['input']>;
+  bettingMinAbsolute?: InputMaybe<Scalars['Int']['input']>;
+  bettingMinPercentage?: InputMaybe<Scalars['Float']['input']>;
+  clearBettingMaxAbsolute?: InputMaybe<Scalars['Boolean']['input']>;
+  clearBettingMinAbsolute?: InputMaybe<Scalars['Boolean']['input']>;
   maxValue?: InputMaybe<Scalars['Float']['input']>;
   minValue?: InputMaybe<Scalars['Float']['input']>;
   orderingItems?: InputMaybe<Array<CreateOrderingItemInput>>;
@@ -3004,6 +3125,7 @@ export type WebhookRecentLogsArgs = {
 export enum WebhookEventType {
   ExternalContentEvent = 'EXTERNAL_CONTENT_EVENT',
   PointsAwarded = 'POINTS_AWARDED',
+  QuizFinalized = 'QUIZ_FINALIZED',
   QuizSessionFinished = 'QUIZ_SESSION_FINISHED',
   TeamNameChanged = 'TEAM_NAME_CHANGED'
 }
@@ -3061,15 +3183,15 @@ export type LeaderboardEntryWithDescriptionFieldsFragment = { __typename?: 'Lead
 
 export type PredefinedAnswerFieldsFragment = { __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null };
 
-type QuizQuestionFields_FreeTextQuestion_Fragment = { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null };
+type QuizQuestionFields_FreeTextQuestion_Fragment = { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null };
 
-type QuizQuestionFields_JsonQuestion_Fragment = { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null };
+type QuizQuestionFields_JsonQuestion_Fragment = { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null };
 
-type QuizQuestionFields_NumberQuestion_Fragment = { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null };
+type QuizQuestionFields_NumberQuestion_Fragment = { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null };
 
-type QuizQuestionFields_OrderingQuestion_Fragment = { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string }> };
+type QuizQuestionFields_OrderingQuestion_Fragment = { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string, correctOrder?: number | null }> };
 
-type QuizQuestionFields_PredefinedQuestion_Fragment = { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> };
+type QuizQuestionFields_PredefinedQuestion_Fragment = { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> };
 
 export type QuizQuestionFieldsFragment =
   | QuizQuestionFields_FreeTextQuestion_Fragment
@@ -3079,15 +3201,15 @@ export type QuizQuestionFieldsFragment =
   | QuizQuestionFields_PredefinedQuestion_Fragment
 ;
 
-type QuizQuestionUserFields_FreeTextQuestion_Fragment = { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null };
+type QuizQuestionUserFields_FreeTextQuestion_Fragment = { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null };
 
-type QuizQuestionUserFields_JsonQuestion_Fragment = { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null };
+type QuizQuestionUserFields_JsonQuestion_Fragment = { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null };
 
-type QuizQuestionUserFields_NumberQuestion_Fragment = { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null };
+type QuizQuestionUserFields_NumberQuestion_Fragment = { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null };
 
-type QuizQuestionUserFields_OrderingQuestion_Fragment = { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string }> };
+type QuizQuestionUserFields_OrderingQuestion_Fragment = { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string, correctOrder?: number | null }> };
 
-type QuizQuestionUserFields_PredefinedQuestion_Fragment = { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> };
+type QuizQuestionUserFields_PredefinedQuestion_Fragment = { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> };
 
 export type QuizQuestionUserFieldsFragment =
   | QuizQuestionUserFields_FreeTextQuestion_Fragment
@@ -3134,6 +3256,14 @@ export type UpdateStreakAchievementMutationVariables = Exact<{
 
 
 export type UpdateStreakAchievementMutation = { __typename?: 'Mutation', updateStreakAchievement: { __typename?: 'StreakAchievement', id: string } };
+
+export type UpdateQuizAchievementMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateQuizAchievementInput;
+}>;
+
+
+export type UpdateQuizAchievementMutation = { __typename?: 'Mutation', updateQuizAchievement: { __typename?: 'QuizAchievement', id: string } };
 
 export type CreateContentAchievementMutationVariables = Exact<{
   input: CreateContentAchievementInput;
@@ -3381,11 +3511,11 @@ export type AddQuizQuestionMutationVariables = Exact<{
 
 
 export type AddQuizQuestionMutation = { __typename?: 'Mutation', addQuizQuestion:
-    | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
-    | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
-    | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
-    | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string }> }
-    | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
+    | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null }
+    | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null }
+    | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null }
+    | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string, correctOrder?: number | null }> }
+    | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
    };
 
 export type UpdateQuizQuestionMutationVariables = Exact<{
@@ -3395,11 +3525,11 @@ export type UpdateQuizQuestionMutationVariables = Exact<{
 
 
 export type UpdateQuizQuestionMutation = { __typename?: 'Mutation', updateQuizQuestion:
-    | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
-    | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
-    | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
-    | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string }> }
-    | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
+    | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null }
+    | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null }
+    | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null }
+    | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string, correctOrder?: number | null }> }
+    | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
    };
 
 export type DeleteQuizQuestionMutationVariables = Exact<{
@@ -3409,17 +3539,59 @@ export type DeleteQuizQuestionMutationVariables = Exact<{
 
 export type DeleteQuizQuestionMutation = { __typename?: 'Mutation', deleteQuizQuestion: boolean };
 
+export type CreateQuizSessionMutationVariables = Exact<{
+  input: CreateQuizSessionInput;
+}>;
+
+
+export type CreateQuizSessionMutation = { __typename?: 'Mutation', createQuizSession: { __typename?: 'QuizSession', id: string, name?: string | null, state: QuizSessionState, openAt?: any | null, lockAt?: any | null, finishAt?: any | null, createdAt: any, quiz: { __typename?: 'Quiz', id: string, name: string } } };
+
+export type OpenQuizSessionMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type OpenQuizSessionMutation = { __typename?: 'Mutation', openQuizSession: { __typename?: 'QuizSession', id: string, name?: string | null, state: QuizSessionState, openAt?: any | null, lockAt?: any | null, finishAt?: any | null, createdAt: any, accessCount: number, quiz: { __typename?: 'Quiz', id: string, name: string }, createdBy: { __typename?: 'User', id: string, name: string } } };
+
+export type GrantQuizSessionAccessMutationVariables = Exact<{
+  input: GrantQuizSessionAccessInput;
+}>;
+
+
+export type GrantQuizSessionAccessMutation = { __typename?: 'Mutation', grantQuizSessionAccess: number };
+
+export type LockQuizSessionMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type LockQuizSessionMutation = { __typename?: 'Mutation', lockQuizSession: { __typename?: 'QuizSession', id: string, name?: string | null, state: QuizSessionState, openAt?: any | null, lockAt?: any | null, finishAt?: any | null, createdAt: any, accessCount: number, quiz: { __typename?: 'Quiz', id: string, name: string }, createdBy: { __typename?: 'User', id: string, name: string } } };
+
+export type ReopenQuizSessionMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type ReopenQuizSessionMutation = { __typename?: 'Mutation', reopenQuizSession: { __typename?: 'QuizSession', id: string, name?: string | null, state: QuizSessionState, openAt?: any | null, lockAt?: any | null, finishAt?: any | null, createdAt: any, accessCount: number, quiz: { __typename?: 'Quiz', id: string, name: string }, createdBy: { __typename?: 'User', id: string, name: string } } };
+
+export type FinishQuizSessionMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type FinishQuizSessionMutation = { __typename?: 'Mutation', finishQuizSession: { __typename?: 'QuizSession', id: string, name?: string | null, state: QuizSessionState, openAt?: any | null, lockAt?: any | null, finishAt?: any | null, createdAt: any, accessCount: number, quiz: { __typename?: 'Quiz', id: string, name: string }, createdBy: { __typename?: 'User', id: string, name: string } } };
+
 export type StartQuizSessionMutationVariables = Exact<{
   sessionId: Scalars['ID']['input'];
 }>;
 
 
 export type StartQuizSessionMutation = { __typename?: 'Mutation', startQuizSession: { __typename?: 'QuizSubmission', id: string, startedAt: any, expiresAt?: any | null, isExpired: boolean, questionOrder: Array<string>, orderedQuestions: Array<
-      | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
-      | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
-      | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
-      | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string }> }
-      | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
+      | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null }
+      | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null }
+      | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null }
+      | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string, correctOrder?: number | null }> }
+      | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
     >, quiz: { __typename?: 'Quiz', id: string, name: string, timeoutSeconds?: number | null } } };
 
 export type SubmitQuizAnswerMutationVariables = Exact<{
@@ -3429,35 +3601,35 @@ export type SubmitQuizAnswerMutationVariables = Exact<{
 
 
 export type SubmitQuizAnswerMutation = { __typename?: 'Mutation', submitQuizAnswer:
-    | { __typename: 'FreeTextResponse', textResponse: string, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
+    | { __typename: 'FreeTextResponse', textResponse: string, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, question:
         | { __typename?: 'FreeTextQuestion', id: string }
         | { __typename?: 'JsonQuestion', id: string }
         | { __typename?: 'NumberQuestion', id: string }
         | { __typename?: 'OrderingQuestion', id: string }
         | { __typename?: 'PredefinedQuestion', id: string }
        }
-    | { __typename: 'JsonResponse', id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
+    | { __typename: 'JsonResponse', id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, question:
         | { __typename?: 'FreeTextQuestion', id: string }
         | { __typename?: 'JsonQuestion', id: string }
         | { __typename?: 'NumberQuestion', id: string }
         | { __typename?: 'OrderingQuestion', id: string }
         | { __typename?: 'PredefinedQuestion', id: string }
        }
-    | { __typename: 'NumberResponse', numberResponse: number, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
+    | { __typename: 'NumberResponse', numberResponse: number, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, question:
         | { __typename?: 'FreeTextQuestion', id: string }
         | { __typename?: 'JsonQuestion', id: string }
         | { __typename?: 'NumberQuestion', id: string }
         | { __typename?: 'OrderingQuestion', id: string }
         | { __typename?: 'PredefinedQuestion', id: string }
        }
-    | { __typename: 'OrderingResponse', isCorrect?: boolean | null, submittedOrder: Array<string>, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
+    | { __typename: 'OrderingResponse', isCorrect?: boolean | null, submittedOrder: Array<string>, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, question:
         | { __typename?: 'FreeTextQuestion', id: string }
         | { __typename?: 'JsonQuestion', id: string }
         | { __typename?: 'NumberQuestion', id: string }
         | { __typename?: 'OrderingQuestion', id: string }
         | { __typename?: 'PredefinedQuestion', id: string }
        }
-    | { __typename: 'PredefinedResponse', isCorrect?: boolean | null, selectedAnswerIds: Array<string>, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, selectedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, isCorrect?: boolean | null }>, question:
+    | { __typename: 'PredefinedResponse', isCorrect?: boolean | null, selectedAnswerIds: Array<string>, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, selectedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, isCorrect?: boolean | null }>, question:
         | { __typename?: 'FreeTextQuestion', id: string }
         | { __typename?: 'JsonQuestion', id: string }
         | { __typename?: 'NumberQuestion', id: string }
@@ -3473,11 +3645,11 @@ export type UpdateQuizAnswerMutationVariables = Exact<{
 
 
 export type UpdateQuizAnswerMutation = { __typename?: 'Mutation', updateQuizAnswer:
-    | { __typename: 'FreeTextResponse', id: string }
-    | { __typename: 'JsonResponse', id: string }
-    | { __typename: 'NumberResponse', id: string }
-    | { __typename: 'OrderingResponse', isCorrect?: boolean | null, submittedOrder: Array<string>, id: string }
-    | { __typename: 'PredefinedResponse', id: string }
+    | { __typename: 'FreeTextResponse', id: string, betAmount?: number | null }
+    | { __typename: 'JsonResponse', id: string, betAmount?: number | null }
+    | { __typename: 'NumberResponse', id: string, betAmount?: number | null }
+    | { __typename: 'OrderingResponse', isCorrect?: boolean | null, submittedOrder: Array<string>, id: string, betAmount?: number | null }
+    | { __typename: 'PredefinedResponse', id: string, betAmount?: number | null }
    };
 
 export type FinalizeQuizMutationVariables = Exact<{
@@ -3612,45 +3784,45 @@ export type ChallengePageQueryVariables = Exact<{
 }>;
 
 
-export type ChallengePageQuery = { __typename?: 'Query', challenge:
+export type ChallengePageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', leaderboard: { __typename?: 'LeaderboardConnection', me?: { __typename?: 'LeaderboardEntry', score: number } | null } }, challenge:
     | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userEnrolledAt?: any | null, userCompletedAt?: any | null }
     | { __typename: 'PluginChallenge', pluginChallengeId: string, id: string, name: string, description: any, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userEnrolledAt?: any | null, userCompletedAt?: any | null }
     | { __typename: 'QuizChallenge', id: string, name: string, description: any, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userEnrolledAt?: any | null, userCompletedAt?: any | null, quiz: { __typename?: 'Quiz', id: string, name: string, description: string, timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, endTime?: any | null, userCanStart: boolean, userActiveSubmission?: { __typename?: 'QuizSubmission', id: string } | null, userActiveSession?: { __typename?: 'QuizSession', id: string, state: QuizSessionState } | null, userSubmissions: Array<{ __typename?: 'QuizSubmission', id: string, startedAt: any, completedAt?: any | null, expiresAt?: any | null, isExpired: boolean, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, pointsAwarded?: number | null, orderedQuestions: Array<
-            | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
-            | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
-            | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
-            | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string }> }
-            | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
+            | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null }
+            | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null }
+            | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null }
+            | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string, correctOrder?: number | null }> }
+            | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
           >, responses: Array<
-            | { __typename: 'FreeTextResponse', textResponse: string, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
+            | { __typename: 'FreeTextResponse', textResponse: string, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, pointsEarned?: number | null, question:
                 | { __typename?: 'FreeTextQuestion', id: string }
                 | { __typename?: 'JsonQuestion', id: string }
                 | { __typename?: 'NumberQuestion', id: string }
                 | { __typename?: 'OrderingQuestion', id: string }
                 | { __typename?: 'PredefinedQuestion', id: string }
                }
-            | { __typename: 'JsonResponse', jsonResponse: any, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
+            | { __typename: 'JsonResponse', jsonResponse: any, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, pointsEarned?: number | null, question:
                 | { __typename?: 'FreeTextQuestion', id: string }
                 | { __typename?: 'JsonQuestion', id: string }
                 | { __typename?: 'NumberQuestion', id: string }
                 | { __typename?: 'OrderingQuestion', id: string }
                 | { __typename?: 'PredefinedQuestion', id: string }
                }
-            | { __typename: 'NumberResponse', numberResponse: number, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
+            | { __typename: 'NumberResponse', numberResponse: number, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, pointsEarned?: number | null, question:
                 | { __typename?: 'FreeTextQuestion', id: string }
                 | { __typename?: 'JsonQuestion', id: string }
                 | { __typename?: 'NumberQuestion', id: string }
                 | { __typename?: 'OrderingQuestion', id: string }
                 | { __typename?: 'PredefinedQuestion', id: string }
                }
-            | { __typename: 'OrderingResponse', isCorrect?: boolean | null, submittedOrder: Array<string>, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
+            | { __typename: 'OrderingResponse', isCorrect?: boolean | null, submittedOrder: Array<string>, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, pointsEarned?: number | null, question:
                 | { __typename?: 'FreeTextQuestion', id: string }
                 | { __typename?: 'JsonQuestion', id: string }
                 | { __typename?: 'NumberQuestion', id: string }
                 | { __typename?: 'OrderingQuestion', id: string }
                 | { __typename?: 'PredefinedQuestion', id: string }
                }
-            | { __typename: 'PredefinedResponse', isCorrect?: boolean | null, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, selectedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }>, question:
+            | { __typename: 'PredefinedResponse', isCorrect?: boolean | null, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, pointsEarned?: number | null, selectedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }>, question:
                 | { __typename?: 'FreeTextQuestion', id: string }
                 | { __typename?: 'JsonQuestion', id: string }
                 | { __typename?: 'NumberQuestion', id: string }
@@ -3665,10 +3837,10 @@ export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', myTeam?: { __typename?: 'Team', joinCode: string } | null, challenges: Array<
-      | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
-      | { __typename: 'PluginChallenge', id: string, name: string, description: any, buttonText?: string | null, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
-      | { __typename: 'QuizChallenge', id: string, name: string, description: any, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null, quiz: { __typename?: 'Quiz', userCanStart: boolean, userActiveSession?: { __typename?: 'QuizSession', id: string } | null }, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
-      | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
+      | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, buttonText: string, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userCompletedAt?: any | null, userEnrolledAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
+      | { __typename: 'PluginChallenge', id: string, name: string, description: any, buttonText?: string | null, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userCompletedAt?: any | null, userEnrolledAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
+      | { __typename: 'QuizChallenge', id: string, name: string, description: any, buttonText: string, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userCompletedAt?: any | null, userEnrolledAt?: any | null, quiz: { __typename?: 'Quiz', timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, endTime?: any | null, userCanStart: boolean, userActiveSubmission?: { __typename?: 'QuizSubmission', id: string, startedAt: any, completedAt?: any | null, expiresAt?: any | null, isExpired: boolean, autoSubmitted: boolean, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, pointsAwarded?: number | null } | null, userActiveSession?: { __typename?: 'QuizSession', id: string, state: QuizSessionState, openAt?: any | null, lockAt?: any | null, finishAt?: any | null, userHasAccess: boolean } | null, userSubmissions: Array<{ __typename?: 'QuizSubmission', id: string, startedAt: any, completedAt?: any | null, expiresAt?: any | null, isExpired: boolean, autoSubmitted: boolean, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, pointsAwarded?: number | null }> }, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
+      | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, buttonText: string, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userCompletedAt?: any | null, userEnrolledAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
     > } };
 
 export type ProfilePageQueryVariables = Exact<{
@@ -3715,10 +3887,27 @@ export type VapidPublicKeyQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type VapidPublicKeyQuery = { __typename?: 'Query', vapidPublicKey: string };
 
+export type QuizDetailsQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type QuizDetailsQuery = { __typename?: 'Query', quiz: { __typename?: 'Quiz', id: string, name: string, challenge:
+      | { __typename?: 'ExternalChallenge', id: string }
+      | { __typename?: 'PluginChallenge', id: string }
+      | { __typename?: 'QuizChallenge', id: string }
+      | { __typename?: 'SimpleChallenge', id: string }
+    , project: { __typename?: 'Project', id: string } } };
+
 export type CurrentProjectQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type CurrentProjectQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', branding: { __typename?: 'Branding', rounding: number, logoImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, bannerImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } };
+export type CurrentProjectQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, branding: { __typename?: 'Branding', rounding: number, logoImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, bannerImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } }, challenges: Array<
+      | { __typename?: 'ExternalChallenge', id: string, userCompletedAt?: any | null, endTime?: any | null }
+      | { __typename?: 'PluginChallenge', id: string, userCompletedAt?: any | null, endTime?: any | null }
+      | { __typename?: 'QuizChallenge', id: string, userCompletedAt?: any | null, endTime?: any | null }
+      | { __typename?: 'SimpleChallenge', id: string, userCompletedAt?: any | null, endTime?: any | null }
+    > } };
 
 export type AdminChurchPageQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -3780,10 +3969,15 @@ export type ChurchAdminsPageQueryVariables = Exact<{
 
 export type ChurchAdminsPageQuery = { __typename?: 'Query', usersWithRole: Array<{ __typename?: 'User', id: string, name: string, email: string }>, users: { __typename?: 'UserConnection', edges: Array<{ __typename?: 'UserEdge', node: { __typename?: 'User', id: string, name: string, email: string } }> } };
 
+export type AdminGameNightPageQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminGameNightPageQuery = { __typename?: 'Query', frontendConfig: any, myCurrentProject: { __typename?: 'Project', myChurchTeams: Array<{ __typename?: 'Team', members: Array<{ __typename?: 'TeamMember', id: string, isTeamLead: boolean }> }> } };
+
 export type AdminKickOffPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminKickOffPageQuery = { __typename?: 'Query', frontendConfig: any, myCurrentProject: { __typename?: 'Project', teams: Array<{ __typename?: 'Team', members: Array<{ __typename?: 'TeamMember', id: string, isTeamLead: boolean }> }> } };
+export type AdminKickOffPageQuery = { __typename?: 'Query', frontendConfig: any, myCurrentProject: { __typename?: 'Project', myChurchTeams: Array<{ __typename?: 'Team', members: Array<{ __typename?: 'TeamMember', id: string, isTeamLead: boolean }> }> } };
 
 export type ChurchAdminStatisticsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3804,7 +3998,7 @@ export type AdminProjectAchievementPageQueryVariables = Exact<{
 
 export type AdminProjectAchievementPageQuery = { __typename?: 'Query', achievement:
     | { __typename: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, items: Array<{ __typename?: 'ContentItem', id: string, sortOrder: number, externalContent: { __typename?: 'ExternalContent', id: string, planId: string, taskId: string, contentId?: string | null, contentType: ExternalContentType, publishedAt?: any | null, source: string, syncedAt: any, createdAt: any, updatedAt: any, title?: string | null, translations: Array<{ __typename?: 'ExternalContentTranslation', languageCode: string, title?: string | null }> } }>, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
-    | { __typename: 'QuizAchievement', minScorePercentage?: number | null, requireCompletion: boolean, id: string, name: string, descriptionPending: string, descriptionCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, quiz: { __typename?: 'Quiz', id: string, name: string }, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'QuizAchievement', minScorePercentage?: number | null, requireCompletion: boolean, id: string, name: string, descriptionPending: string, descriptionCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, quiz?: { __typename?: 'Quiz', id: string, name: string } | null, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
     | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
     | { __typename: 'StreakAchievement', neededStreak: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, streak: { __typename?: 'Streak', id: string, name: string, description: string }, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
    };
@@ -3822,16 +4016,28 @@ export type AdminProjectChallengePageQueryVariables = Exact<{
 
 
 export type AdminProjectChallengePageQuery = { __typename?: 'Query', challenge:
-    | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
-    | { __typename: 'PluginChallenge', pluginChallengeId: string, id: string, name: string, description: any, image?: string | null, buttonText?: string | null, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
-    | { __typename: 'QuizChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, quiz: { __typename?: 'Quiz', id: string, name: string, description: string, image?: string | null, timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, questions: Array<
-          | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
-          | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
-          | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
-          | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string }> }
-          | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
-        > }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
-    | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, image?: string | null, buttonText: string, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'PluginChallenge', pluginChallengeId: string, id: string, name: string, description: any, image?: string | null, buttonText?: string | null, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'QuizChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, image?: string | null, buttonText: string, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+   };
+
+export type AdminChallengeQuizPageQueryVariables = Exact<{
+  challengeId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminChallengeQuizPageQuery = { __typename?: 'Query', challenge:
+    | { __typename: 'ExternalChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename: 'PluginChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename: 'QuizChallenge', id: string, name: string, quiz: { __typename?: 'Quiz', id: string, name: string, description: string, image?: string | null, timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, questions: Array<
+          | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null }
+          | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null }
+          | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null }
+          | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string, correctOrder?: number | null }> }
+          | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
+        > }, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename: 'SimpleChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
    };
 
 export type AdminProjectChallengeNewPageQueryVariables = Exact<{
@@ -4069,6 +4275,11 @@ export const QuizQuestionFieldsFragmentDoc = gql`
   questionOrder
   timeoutSeconds
   points
+  bettingEnabled
+  bettingMinPercentage
+  bettingMaxPercentage
+  bettingMinAbsolute
+  bettingMaxAbsolute
   ... on PredefinedQuestion {
     allowMultipleSelection
     predefinedAnswers {
@@ -4084,6 +4295,7 @@ export const QuizQuestionFieldsFragmentDoc = gql`
     orderingItems {
       id
       itemText
+      correctOrder
     }
   }
 }
@@ -4095,6 +4307,11 @@ export const QuizQuestionUserFieldsFragmentDoc = gql`
   questionText
   questionOrder
   timeoutSeconds
+  bettingEnabled
+  bettingMinAbsolute
+  bettingMaxAbsolute
+  bettingMinPercentage
+  bettingMaxPercentage
   ... on PredefinedQuestion {
     allowMultipleSelection
     predefinedAnswers {
@@ -4110,6 +4327,7 @@ export const QuizQuestionUserFieldsFragmentDoc = gql`
     orderingItems {
       id
       itemText
+      correctOrder
     }
   }
 }
@@ -4270,6 +4488,17 @@ export const UpdateStreakAchievementDocument = gql`
 
 export function useUpdateStreakAchievementMutation() {
   return Urql.useMutation<UpdateStreakAchievementMutation, UpdateStreakAchievementMutationVariables>(UpdateStreakAchievementDocument);
+};
+export const UpdateQuizAchievementDocument = gql`
+    mutation UpdateQuizAchievement($id: ID!, $input: UpdateQuizAchievementInput!) {
+  updateQuizAchievement(id: $id, input: $input) {
+    id
+  }
+}
+    `;
+
+export function useUpdateQuizAchievementMutation() {
+  return Urql.useMutation<UpdateQuizAchievementMutation, UpdateQuizAchievementMutationVariables>(UpdateQuizAchievementDocument);
 };
 export const CreateContentAchievementDocument = gql`
     mutation CreateContentAchievement($input: CreateContentAchievementInput!) {
@@ -4627,6 +4856,140 @@ export const DeleteQuizQuestionDocument = gql`
 export function useDeleteQuizQuestionMutation() {
   return Urql.useMutation<DeleteQuizQuestionMutation, DeleteQuizQuestionMutationVariables>(DeleteQuizQuestionDocument);
 };
+export const CreateQuizSessionDocument = gql`
+    mutation CreateQuizSession($input: CreateQuizSessionInput!) {
+  createQuizSession(input: $input) {
+    id
+    name
+    state
+    openAt
+    lockAt
+    finishAt
+    createdAt
+    quiz {
+      id
+      name
+    }
+  }
+}
+    `;
+
+export function useCreateQuizSessionMutation() {
+  return Urql.useMutation<CreateQuizSessionMutation, CreateQuizSessionMutationVariables>(CreateQuizSessionDocument);
+};
+export const OpenQuizSessionDocument = gql`
+    mutation OpenQuizSession($id: ID!) {
+  openQuizSession(id: $id) {
+    id
+    name
+    state
+    openAt
+    lockAt
+    finishAt
+    createdAt
+    accessCount
+    quiz {
+      id
+      name
+    }
+    createdBy {
+      id
+      name
+    }
+  }
+}
+    `;
+
+export function useOpenQuizSessionMutation() {
+  return Urql.useMutation<OpenQuizSessionMutation, OpenQuizSessionMutationVariables>(OpenQuizSessionDocument);
+};
+export const GrantQuizSessionAccessDocument = gql`
+    mutation GrantQuizSessionAccess($input: GrantQuizSessionAccessInput!) {
+  grantQuizSessionAccess(input: $input)
+}
+    `;
+
+export function useGrantQuizSessionAccessMutation() {
+  return Urql.useMutation<GrantQuizSessionAccessMutation, GrantQuizSessionAccessMutationVariables>(GrantQuizSessionAccessDocument);
+};
+export const LockQuizSessionDocument = gql`
+    mutation LockQuizSession($id: ID!) {
+  lockQuizSession(id: $id) {
+    id
+    name
+    state
+    openAt
+    lockAt
+    finishAt
+    createdAt
+    accessCount
+    quiz {
+      id
+      name
+    }
+    createdBy {
+      id
+      name
+    }
+  }
+}
+    `;
+
+export function useLockQuizSessionMutation() {
+  return Urql.useMutation<LockQuizSessionMutation, LockQuizSessionMutationVariables>(LockQuizSessionDocument);
+};
+export const ReopenQuizSessionDocument = gql`
+    mutation ReopenQuizSession($id: ID!) {
+  reopenQuizSession(id: $id) {
+    id
+    name
+    state
+    openAt
+    lockAt
+    finishAt
+    createdAt
+    accessCount
+    quiz {
+      id
+      name
+    }
+    createdBy {
+      id
+      name
+    }
+  }
+}
+    `;
+
+export function useReopenQuizSessionMutation() {
+  return Urql.useMutation<ReopenQuizSessionMutation, ReopenQuizSessionMutationVariables>(ReopenQuizSessionDocument);
+};
+export const FinishQuizSessionDocument = gql`
+    mutation FinishQuizSession($id: ID!) {
+  finishQuizSession(id: $id) {
+    id
+    name
+    state
+    openAt
+    lockAt
+    finishAt
+    createdAt
+    accessCount
+    quiz {
+      id
+      name
+    }
+    createdBy {
+      id
+      name
+    }
+  }
+}
+    `;
+
+export function useFinishQuizSessionMutation() {
+  return Urql.useMutation<FinishQuizSessionMutation, FinishQuizSessionMutationVariables>(FinishQuizSessionDocument);
+};
 export const StartQuizSessionDocument = gql`
     mutation StartQuizSession($sessionId: ID!) {
   startQuizSession(sessionId: $sessionId) {
@@ -4657,6 +5020,7 @@ export const SubmitQuizAnswerDocument = gql`
     id
     answeredAt
     timeSpentSeconds
+    betAmount
     question {
       id
     }
@@ -4691,6 +5055,7 @@ export const UpdateQuizAnswerDocument = gql`
   updateQuizAnswer(responseId: $responseId, input: $input) {
     __typename
     id
+    betAmount
     ... on OrderingResponse {
       isCorrect
       submittedOrder
@@ -4922,6 +5287,13 @@ export function useGetFirebaseTokenQuery(options?: Omit<Urql.UseQueryArgs<never,
 };
 export const ChallengePageDocument = gql`
     query ChallengePage($challengeId: ID!) {
+  myCurrentProject {
+    leaderboard(entityType: PERSONS) {
+      me {
+        score
+      }
+    }
+  }
   challenge(id: $challengeId) {
     __typename
     id
@@ -4977,6 +5349,8 @@ export const ChallengePageDocument = gql`
             id
             answeredAt
             timeSpentSeconds
+            betAmount
+            pointsEarned
             question {
               id
             }
@@ -5028,10 +5402,15 @@ export const ChallengesPageDocument = gql`
         ...ImageFields
       }
       buttonText
+      notificationText
       publishedAt
-      endTime
       visibleAt
+      startedAt
+      endTime
+      requiresTeamMembership
+      requiresSuperTeamMembership
       userCompletedAt
+      userEnrolledAt
       ... on SimpleChallenge {
         allowSelfCompletion
       }
@@ -5040,9 +5419,44 @@ export const ChallengesPageDocument = gql`
       }
       ... on QuizChallenge {
         quiz {
+          timeoutSeconds
+          randomizeQuestions
+          revealCorrectAnswers
+          allowRetakes
+          completionPoints
+          endTime
           userCanStart
+          userActiveSubmission {
+            id
+            startedAt
+            completedAt
+            expiresAt
+            isExpired
+            autoSubmitted
+            score
+            maxScore
+            scorePercentage
+            pointsAwarded
+          }
           userActiveSession {
             id
+            state
+            openAt
+            lockAt
+            finishAt
+            userHasAccess
+          }
+          userSubmissions {
+            id
+            startedAt
+            completedAt
+            expiresAt
+            isExpired
+            autoSubmitted
+            score
+            maxScore
+            scorePercentage
+            pointsAwarded
           }
         }
       }
@@ -5282,11 +5696,35 @@ export const VapidPublicKeyDocument = gql`
 export function useVapidPublicKeyQuery(options?: Omit<Urql.UseQueryArgs<never, VapidPublicKeyQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<VapidPublicKeyQuery, VapidPublicKeyQueryVariables | undefined>({ query: VapidPublicKeyDocument, variables: undefined, ...options });
 };
+export const QuizDetailsDocument = gql`
+    query QuizDetails($id: ID!) {
+  quiz(id: $id) {
+    id
+    name
+    challenge {
+      id
+    }
+    project {
+      id
+    }
+  }
+}
+    `;
+
+export function useQuizDetailsQuery(options?: Omit<Urql.UseQueryArgs<never, QuizDetailsQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<QuizDetailsQuery, QuizDetailsQueryVariables | undefined>({ query: QuizDetailsDocument, variables: undefined, ...options });
+};
 export const CurrentProjectDocument = gql`
     query CurrentProject {
   myCurrentProject {
+    id
     branding {
       ...BrandingFields
+    }
+    challenges {
+      id
+      userCompletedAt
+      endTime
     }
   }
 }
@@ -5499,11 +5937,28 @@ export const ChurchAdminsPageDocument = gql`
 export function useChurchAdminsPageQuery(options?: Omit<Urql.UseQueryArgs<never, ChurchAdminsPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<ChurchAdminsPageQuery, ChurchAdminsPageQueryVariables | undefined>({ query: ChurchAdminsPageDocument, variables: undefined, ...options });
 };
+export const AdminGameNightPageDocument = gql`
+    query AdminGameNightPage {
+  frontendConfig
+  myCurrentProject {
+    myChurchTeams {
+      members {
+        id
+        isTeamLead
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminGameNightPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminGameNightPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminGameNightPageQuery, AdminGameNightPageQueryVariables | undefined>({ query: AdminGameNightPageDocument, variables: undefined, ...options });
+};
 export const AdminKickOffPageDocument = gql`
     query AdminKickOffPage {
   frontendConfig
   myCurrentProject {
-    teams {
+    myChurchTeams {
       members {
         id
         isTeamLead
@@ -5685,6 +6140,7 @@ export const AdminProjectChallengePageDocument = gql`
     description
     image
     buttonText
+    notificationText
     publishedAt
     visibleAt
     startedAt
@@ -5704,6 +6160,26 @@ export const AdminProjectChallengePageDocument = gql`
     ... on ExternalChallenge {
       url
     }
+    ... on PluginChallenge {
+      pluginChallengeId
+    }
+  }
+}
+    ${BrandingColorsFieldsFragmentDoc}`;
+
+export function useAdminProjectChallengePageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectChallengePageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectChallengePageQuery, AdminProjectChallengePageQueryVariables | undefined>({ query: AdminProjectChallengePageDocument, variables: undefined, ...options });
+};
+export const AdminChallengeQuizPageDocument = gql`
+    query AdminChallengeQuizPage($challengeId: ID!) {
+  challenge(id: $challengeId) {
+    __typename
+    id
+    name
+    project {
+      id
+      name
+    }
     ... on QuizChallenge {
       quiz {
         id
@@ -5720,16 +6196,12 @@ export const AdminProjectChallengePageDocument = gql`
         }
       }
     }
-    ... on PluginChallenge {
-      pluginChallengeId
-    }
   }
 }
-    ${BrandingColorsFieldsFragmentDoc}
-${QuizQuestionFieldsFragmentDoc}`;
+    ${QuizQuestionFieldsFragmentDoc}`;
 
-export function useAdminProjectChallengePageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectChallengePageQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<AdminProjectChallengePageQuery, AdminProjectChallengePageQueryVariables | undefined>({ query: AdminProjectChallengePageDocument, variables: undefined, ...options });
+export function useAdminChallengeQuizPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminChallengeQuizPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminChallengeQuizPageQuery, AdminChallengeQuizPageQueryVariables | undefined>({ query: AdminChallengeQuizPageDocument, variables: undefined, ...options });
 };
 export const AdminProjectChallengeNewPageDocument = gql`
     query AdminProjectChallengeNewPage($projectId: ID!) {
@@ -6138,7 +6610,7 @@ export const AdminUserPageDocument = gql`
       }
     }
   }
-  adminScoreJournal(filter: {userId: $id}, first: 20) {
+  adminScoreJournal(filter: {userId: $id}, first: 100) {
     totalCount
     edges {
       node {
@@ -6158,7 +6630,7 @@ export const AdminUserPageDocument = gql`
       }
     }
   }
-  feedback(filter: {userId: $id}, first: 10) {
+  feedback(filter: {userId: $id}, first: 100) {
     totalCount
     edges {
       node {

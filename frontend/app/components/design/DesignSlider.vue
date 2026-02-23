@@ -8,12 +8,14 @@ const props = defineProps<{
   min?: number
   max?: number
   step?: number
+  disabled?: boolean
 }>()
 
 const modelValue = defineModel<number>({ default: 0 })
 
 const service = useMachine(slider.machine, {
   id: useId(),
+  disabled: props.disabled,
   defaultValue: [modelValue.value],
   min: props.min,
   max: props.max,
@@ -63,7 +65,7 @@ const dotClasses = cva('w-1.5 h-1.5 rounded-full', {
 <template>
   <div
     v-bind="api.getRootProps()"
-    class="p-small bg-background-indent rounded-modal"
+    class="p-small bg-background-indent rounded-modal data-disabled:cursor-not-allowed"
   >
     <div
       v-bind="api.getControlProps()"

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { FormSubmitEvent } from '@nuxt/ui'
-import type { QuizFormData } from '../quiz/AdminQuizForm.vue'
 import z from 'zod'
 
 const props = defineProps<{
@@ -17,9 +16,10 @@ const props = defineProps<{
     startedAt?: string
     allowSelfCompletion?: boolean
     pluginChallengeId?: string
+    notificationText?: string
   }
-  quizData?: QuizFormData
   projectId?: string
+  challengeId?: string
   colors?: Colors
   submitLabel: string
   isEditMode?: boolean
@@ -43,7 +43,7 @@ export interface ChallengeFormData {
   startedAt?: string
   allowSelfCompletion?: boolean
   pluginChallengeId?: string
-  quiz?: QuizFormData
+  notificationText?: string
 }
 
 const schema = z
@@ -60,6 +60,7 @@ const schema = z
     startedAt: z.string().optional(),
     allowSelfCompletion: z.boolean().optional(),
     pluginChallengeId: z.string().optional(),
+    notificationText: z.string().optional(),
   })
   .refine(
     (data) =>
@@ -95,9 +96,9 @@ const state = reactive<Schema>({
   startedAt: props.initialData?.startedAt,
   allowSelfCompletion: props.initialData?.allowSelfCompletion ?? false,
   pluginChallengeId: props.initialData?.pluginChallengeId,
+  notificationText: props.initialData?.notificationText ?? '',
 })
 
-const quizFormData = ref<QuizFormData | undefined>(props.quizData)
 
 // Update state when initialData changes (for edit mode after data loads)
 watch(
@@ -116,16 +117,7 @@ watch(
       state.startedAt = data.startedAt
       state.allowSelfCompletion = data.allowSelfCompletion ?? false
       state.pluginChallengeId = data.pluginChallengeId
-    }
-  },
-  { once: true },
-)
-
-watch(
-  () => props.quizData,
-  (data) => {
-    if (data) {
-      quizFormData.value = data
+      state.notificationText = data.notificationText ?? ''
     }
   },
   { once: true },
@@ -138,15 +130,10 @@ const challengeTypeOptions = [
   { value: ChallengeType.Plugin, label: 'Plugin' },
 ]
 
-function handleQuizSave(data: QuizFormData) {
-  quizFormData.value = data
-}
-
 function handleSubmit(event: FormSubmitEvent<Schema>) {
   if (event.data) {
     emit('submit', {
       ...event.data,
-      quiz: state.type === ChallengeType.Quiz ? quizFormData.value : undefined,
     })
   }
 }
@@ -231,6 +218,18 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
           />
         </UFormField>
         <UFormField
+          name="notificationText"
+          label="Varslingstekst"
+          hint="(valgfritt)"
+          help="Tekst som vises i push-varsler når admin melder bruker på utfordringen. La feltet stå tomt for ingen varsling."
+        >
+          <UInput
+            v-model="state.notificationText"
+            size="xl"
+            class="w-full"
+          />
+        </UFormField>
+        <UFormField
           name="publishedAt"
           label="Publiseringstidspunkt"
           hint="(valgfritt - standard: nå)"
@@ -297,13 +296,33 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
         </UButton>
       </UForm>
 
-      <!-- Quiz Form (shown when Quiz type is selected) -->
+      <!-- Quiz section (shown when Quiz type is selected) -->
       <div v-if="state.type === ChallengeType.Quiz" class="border-t pt-6">
-        <AdminQuizForm
-          :quiz-data="quizFormData"
-          :project-id="projectId ?? ''"
-          @save="handleQuizSave"
-        />
+        <h3 class="text-lg font-semibold mb-4">Quiz</h3>
+        <template v-if="isEditMode && projectId && challengeId">
+          <div class="border border-default rounded-lg p-4 space-y-3">
+            <p class="text-text-muted">
+              Konfigurer quiz-innstillinger og spørsmål.
+            </p>
+            <UButton
+              :to="{
+                name: 'admin-projects-projectId-challenges-challengeId-quiz',
+                params: { projectId, challengeId },
+              }"
+            >
+              Rediger quiz
+            </UButton>
+          </div>
+        </template>
+        <div
+          v-else
+          class="border border-dashed border-default rounded-lg p-4 text-center"
+        >
+          <p class="text-text-muted">
+            Quiz-innstillinger blir tilgjengelig etter at utfordringen er
+            opprettet.
+          </p>
+        </div>
       </div>
     </div>
 

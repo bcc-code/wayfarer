@@ -8,13 +8,15 @@ const props = withDefaults(
     totalQuestions: number
     results: QuestionResult[]
     size?: 'medium' | 'large'
+    revealCorrectAnswers?: boolean
   }>(),
   {
     size: 'medium',
+    revealCorrectAnswers: true,
   },
 )
 
-type DotState = 'pending' | 'current' | 'correct' | 'wrong'
+type DotState = 'pending' | 'current' | 'correct' | 'wrong' | 'answered'
 
 const badgeClass = cva(
   'bg-background-raised relative gradient-border flex items-center rounded-full',
@@ -35,6 +37,7 @@ const dotClass = cva('w-2 h-2 rounded-full transition-colors', {
       current: 'bg-accent-contrast',
       correct: 'bg-accent-positive',
       wrong: 'bg-accent-negative',
+      answered: 'bg-accent-contrast',
     },
     size: {
       medium: 'w-2 h-2',
@@ -50,6 +53,10 @@ function getDotState(index: number): DotState {
 
   const result = props.results[index]
   if (result) {
+    // When not revealing correct answers, just show as answered
+    if (!props.revealCorrectAnswers) {
+      return 'answered'
+    }
     if (result.isCorrect === true) {
       return 'correct'
     }

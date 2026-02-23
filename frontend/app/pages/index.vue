@@ -143,14 +143,15 @@ watch(
 )
 
 const isWindowFocused = useWindowFocus()
-watch(isWindowFocused, (focused) => {
-  if (focused) {
+const visibilityState = useDocumentVisibility()
+watch([visibilityState, isWindowFocused], ([visibility, focused]) => {
+  if (visibility === 'visible' || focused) {
     refresh()
   }
 })
 
 // Listen for Firestore realtime updates
-useFirestoreRefresh(['ProfilePageDocument', 'CurrentProjectDocument'], () => {
+useFirestoreRefresh(['ProfilePageDocument'], () => {
   refresh({ requestPolicy: 'network-only' })
 })
 

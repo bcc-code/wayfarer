@@ -34,12 +34,28 @@
     "finishReview": "Avslutt gjennomgang",
     "yourNumber": "Ditt tall",
     "writeYourAnswer": "Skriv ditt svar...",
+    "close": "Lukk",
+    "betting": {
+      "remainingPoints": "Gjenstående poeng",
+      "yourBet": "Din innsats",
+      "maxBetMessage": "Du kan maks. satse {percentage}% av dine poeng",
+      "sessionLocked": "Svaret er låst",
+      "registeredBet": "Tippingen er registrert",
+      "bettingClosed": "Tippingen er over",
+      "yourBetIs": "Du satset {bet} poeng",
+      "results": "Resultat",
+      "yourPoints": "Dine poeng",
+      "winnings": "Gevinst",
+      "losses": "Poeng tapt"
+    },
     "result": {
       "receivedNoPoints": "Du samlet ingen poeng.",
       "receivedPoints": "Du samlet {points} poeng.",
       "betterLuckNextTime": "Bedre lykke neste gang!",
       "wellDone": "Bra jobbet!",
-      "perfect": "Perfekt!"
+      "perfect": "Perfekt!",
+      "thanksForAnswers": "Takk for svarene dine!",
+      "resultsRevealedLater": "Resultatene avsløres senere."
     }
   },
   "challenges": {
@@ -97,7 +113,8 @@
     "saveChanges": "Lagre endringer",
     "unitName": "Unitnavn",
     "noUnitLeader": "Ingen unitleder",
-    "selectUnitLeader": "Velg unitleder"
+    "selectUnitLeader": "Velg unitleder",
+    "description": "Kun topp 3 sine poeng er synlig for alle"
   },
   "place": "plassering",
   "points": "poeng",
@@ -148,8 +165,8 @@
   },
   "goToHiddenTreasures": "Gå til bibelstudie",
   "gameNights": {
-    "yourCode": "Din unit kode for Game Night",
-    "yourCodeHint": "Åpne siden på din PC og tast inn koden"
+    "yourCode": "Skriv inn din unit-kode:",
+    "yourCodeHint": "Gå til denne nettsiden på en PC:"
   },
   "admin": {
     "common": {
@@ -172,6 +189,7 @@
       "comingSoon": "Kommer snart",
       "kickOff": "Kick-off",
       "statistics": "Statistikk",
+      "gameNight": "Game Night {number}",
       "kickOffButton": "Start unit-onboarding nå",
       "kickOffOnboardingDescription": "Denne handlingen starter unit-onboarding for hele lokalmenigheten.",
       "kickOffOnboardingDescriptionWarning": "⚠ Ikke start hvis dere ikke er klare.",
@@ -268,6 +286,60 @@
       "excludeFromLeaderboard": "Ekskluder fra toppliste",
       "excludeFromLeaderboardTooltip": "Når aktivert vil denne uniten ikke vises på topplisten",
       "excludedFromLeaderboard": "Skjult fra topplister"
+    },
+    "gamenight": {
+      "beforeYouStart": "Før du starter",
+      "ensureFilmsReady": "Pass på at filmer er klare for avspilling",
+      "findFilmsHere": "Du finner filmene her",
+      "haveBigScreenReady": "Ha storskjermvisningen for unit-oppgaven klart",
+      "usedInStep5": "Denne skal brukes i steg 5",
+      "findBigScreenHere": "Du finner storskjermvisningen her",
+      "step1Title": "Vis Ladder to Heaven bakgrunnen på storskjermen",
+      "step1Description": "Denne kan vises på storskjermen når ungdommene kommer inn i salen",
+      "tip": "Tips",
+      "fullscreenTip": "Trykk på 'Fullskjerm' nederst til høyre på storskjermvisningen.",
+      "openBigScreenNewTab": "Åpne storskjermvisningen i ny fane",
+      "goToNextStep": "Gå videre til neste steg",
+      "step2Title": "Spill av film 1",
+      "step2Description": "Dette gjøres når ungdommene har satt seg, og kvelden er i gang",
+      "goToFilm": "Gå til film {number}",
+      "filmFinishedNextStep": "Filmen er ferdig, gå til neste steg",
+      "step3Title": "Start tippingen",
+      "step3Description": "Alle må gå inn på 'Utfordringer' siden i Interact appen",
+      "startBetting": "Start tipping",
+      "lockBetting": "Lås tipping",
+      "bettingLockedNotice": "Deltakerne får beskjed om at tipping er låst.",
+      "checkAllBetBeforeLock": "Sjekk at alle har tippet før du låser.",
+      "reopenBetting": "Gjenåpne tipping",
+      "reopenBettingHint": "(Hvis noen ikke rakk å tippe kan du gjenåpne tippingen)",
+      "allBetNextStep": "Alle har tippet, gå videre til neste steg",
+      "cannotReopenAfterContinue": "Hvis du går videre kan du ikke gjenåpne tippingen lenger.",
+      "step4Title": "Spill av film 2",
+      "step4Description": "Dette gjøres etter at tipping er gjennomført",
+      "step5TitleBigScreen": "Vis storskjermvisning for unit-oppgaven på storskjermen",
+      "step5Title": "Send ut login-kode til unit-oppgaven",
+      "step5Description": "Unitledere må gå inn på 'Utfordringer' siden i Interact appen",
+      "unitLeaderMustGoTo": "Unitleder må gå inn på",
+      "onAPC": "på en PC",
+      "ifUnitLeaderMissing": "Hvis unitleder mangler i en unit kan du finne unitens spill-kode på",
+      "unitAdminPage": "unit-admin siden",
+      "giveUnitLeadersAccess": "Gi unitledere tilgang til utfordringen",
+      "step6Title": "Gå til adminsiden for å starte unit-oppgaven",
+      "step6Description": "Unit-oppgaven er et separat system, så det må ha sin egen admin-side. Fortsett der, og så ledes du tilbake hit senere.",
+      "goToUnitTaskAdmin": "Gå til adminsiden for unit-oppgaven",
+      "completeStepsOnOtherPage": "Fullfør steg 8 til 12 på den andre siden",
+      "step12Title": "Spill av film 3",
+      "step13Title": "Gi deltakerne poeng for tippingen",
+      "step13Description": "Alle må gå inn på 'Utfordringer' siden i Interact appen og åpne tippingen igjen for å se resultatet.",
+      "releasePointsNow": "Frigi poeng nå",
+      "youAreDone": "Du er nå ferdig! 🎉",
+      "canClosePageSafely": "Game Night {number} kan trygt avsluttes, og du kan lukke denne siden.",
+      "errors": {
+        "couldNotStartBetting": "Kunne ikke starte tipping",
+        "couldNotLockBetting": "Kunne ikke låse tipping",
+        "couldNotReopenBetting": "Kunne ikke gjenåpne tipping",
+        "couldNotFinishBetting": "Kunne ikke avslutte tipping"
+      }
     },
     "statistics": {
       "totalUsersInTeams": "Personer i units",

@@ -312,16 +312,16 @@ func (h *MaintenanceHandler) isDefaultChurch(ctx context.Context, churchID strin
 
 // BackfillSSFEventsResponse contains the results of a backfill operation
 type BackfillSSFEventsResponse struct {
-	Year                  int      `json:"year"`
-	Month                 int      `json:"month"`
-	Page                  int      `json:"page"`
-	EventsFetched         int      `json:"events_fetched"`
-	EventsProcessed       int      `json:"events_processed"`
-	EventsSkippedNoUser   int      `json:"events_skipped_no_user"`
-	EventsSkippedDupe     int      `json:"events_skipped_duplicate"`
-	HasMore               bool     `json:"has_more"`
-	NextPage              int      `json:"next_page,omitempty"`
-	Errors                []string `json:"errors,omitempty"`
+	Year                int      `json:"year"`
+	Month               int      `json:"month"`
+	Page                int      `json:"page"`
+	EventsFetched       int      `json:"events_fetched"`
+	EventsProcessed     int      `json:"events_processed"`
+	EventsSkippedNoUser int      `json:"events_skipped_no_user"`
+	EventsSkippedDupe   int      `json:"events_skipped_duplicate"`
+	HasMore             bool     `json:"has_more"`
+	NextPage            int      `json:"next_page,omitempty"`
+	Errors              []string `json:"errors,omitempty"`
 }
 
 // BackfillSSFEvents backfills user content completion events from SSF for a given month/page.

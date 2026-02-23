@@ -8,7 +8,7 @@ gql(`
   query AdminKickOffPage {
     frontendConfig
     myCurrentProject {
-      teams {
+      myChurchTeams {
         members {
           id
           isTeamLead
@@ -22,7 +22,7 @@ const { data } = useAdminKickOffPageQuery()
 const { executeMutation, fetching } = useBulkEnrollUsersInChallengeMutation()
 
 const teamLeads = computed(() =>
-  data.value?.myCurrentProject.teams.flatMap((team) =>
+  data.value?.myCurrentProject.myChurchTeams.flatMap((team) =>
     team.members.filter((member) => member.isTeamLead),
   ),
 )
@@ -41,7 +41,7 @@ const challengeId = computed(() => {
   return id as string
 })
 
-const { isActive, start, stop, remaining } = useCountdown(5, {
+const { isActive, start, stop, remaining } = useCountdown(10, {
   immediate: false,
   onComplete: async () => {
     await executeMutation({

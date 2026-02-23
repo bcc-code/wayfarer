@@ -1,6 +1,6 @@
 extend type Query {
     adminDashboardStats: AdminDashboardStats! @requireRole(roles: ["admin", "superadmin"])
-    churchAdminStatistics: ChurchAdminStatistics! @requireRole(roles: ["church_admin"])
+    churchAdminStatistics: ChurchAdminStatistics! @requireRole(roles: ["church_admin", "admin", "superadmin"])
 }
 
 extend type Mutation {

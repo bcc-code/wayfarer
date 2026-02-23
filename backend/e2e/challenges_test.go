@@ -223,7 +223,7 @@ func TestChallenges(t *testing.T) {
 		}
 		require.NoError(t, createResp.UnmarshalData(&createResult))
 		challengeID := createResult.CreateChallenge.ID
-		assert.Nil(t, createResult.CreateChallenge.PublishedAt)
+		assert.NotNil(t, createResult.CreateChallenge.PublishedAt)
 
 		// Now publish it
 		publishTime := time.Now().Format(time.RFC3339)

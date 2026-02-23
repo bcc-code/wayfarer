@@ -1,0 +1,66 @@
+type: http_request
+model: http_request
+id: rq_RecordBetResult
+createdAt: 2026-02-10T12:00:00
+updatedAt: 2026-02-10T13:11:19.411561
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation RecordBetResult($input: RecordBetResultInput!) {
+      recordBetResult(input: $input) {
+        id
+        answeredAt
+        timeSpentSeconds
+        pointsEarned
+        betAmount
+        journalEntry {
+          id
+          sourceType
+          points
+          reason
+          createdAt
+        }
+        question {
+          id
+          questionText
+        }
+      }
+    }
+  variables: |
+    {
+      "input": {
+        "responseId": "QR01KH3SNA7QR18XAA08R74SCV2N",
+        "pointsEarned": 100,
+        "sendNotification": true
+      }
+    }
+bodyType: graphql
+description: |
+  Record the result of a bet (M2M/Admin only).
+
+  This mutation:
+  - Sets the pointsEarned on a quiz response that had a bet
+  - Creates a score journal entry with source_type="BET"
+  - Optionally sends a push notification to the user (if sendNotification=true and points != 0)
+  - Invalidates relevant caches (user, project, submission)
+
+  pointsEarned: The net points change from the bet.
+    - Positive value = user won the bet
+    - Negative value = user lost the bet
+    - Zero = no change (no notification sent)
+
+  sendNotification: If true, sends a localized push notification to the user.
+    No notification is sent if pointsEarned is 0.
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_RecordBetResult
+method: POST
+name: Record Bet Result
+sortPriority: 4060.0
+url: ${[ HOST ]}/graphql
+urlParameters: []
