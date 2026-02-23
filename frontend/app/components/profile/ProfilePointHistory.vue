@@ -125,7 +125,7 @@ function getScoreJournalName(
           <hr
             v-if="index < data.myCurrentProject.journal.edges.length - 1"
             class="mx-3 border-border-default"
-          />
+          >
         </template>
       </DesignPanel>
       <EmptyState v-else :title="$t('emptyStates.pointHistory')" />

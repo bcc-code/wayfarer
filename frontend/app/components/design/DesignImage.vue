@@ -136,7 +136,7 @@ const showImage = computed(() => props.image?.url && !hasError.value)
       loading="lazy"
       @load="onLoad"
       @error="onError"
-    />
+    >
 
     <!-- Fallback image -->
     <img
@@ -144,7 +144,7 @@ const showImage = computed(() => props.image?.url && !hasError.value)
       :src="fallback"
       :alt="alt"
       class="size-full object-cover"
-    />
+    >
 
     <!-- Loading skeleton when no blurhash available -->
     <div

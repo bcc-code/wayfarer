@@ -209,14 +209,14 @@ async function handleReorder() {
               :src="state.branding.logoImage.url"
               width="64"
               class="mb-4 rounded"
-            />
+            >
             <h1 class="text-3xl">
               {{ state.name }}
             </h1>
             <p v-if="state.description" class="text-muted max-w-2xl">
               {{ state.description }}
             </p>
-            <div v-if="canEdit" class="mt-4">
+            <div v-if="canEdit" class="mt-4 flex gap-2">
               <UButton
                 variant="soft"
                 icon="lucide:pencil"
@@ -226,6 +226,16 @@ async function handleReorder() {
                 }"
               >
                 Rediger prosjekt
+              </UButton>
+              <UButton
+                variant="soft"
+                icon="lucide:users"
+                :to="{
+                  name: 'admin-projects-projectId-superteams',
+                  params: { projectId: route.params.projectId },
+                }"
+              >
+                Superteams
               </UButton>
             </div>
           </div>
@@ -271,7 +281,7 @@ async function handleReorder() {
                   height="32"
                   width="32"
                   class="bg-muted size-8 rounded"
-                />
+                >
               </template>
               <template #type-cell="{ row }">
                 {{
@@ -339,14 +349,14 @@ async function handleReorder() {
                     height="32"
                     width="32"
                     class="size-8 shrink-0 rounded"
-                  />
+                  >
                   <img
                     v-else
                     src="/images/achievement-placeholder.png"
                     height="32"
                     width="32"
                     class="size-8 shrink-0 rounded"
-                  />
+                  >
                   <div class="min-w-0 flex-1">
                     <div class="font-medium">{{ achievement.name }}</div>
                     <div class="text-dimmed truncate text-sm">

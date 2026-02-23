@@ -119,7 +119,7 @@ function clear() {
         :src="modelValue"
         :alt="label"
         class="max-h-48 rounded-lg object-cover"
-      />
+      >
       <UButton
         icon="i-lucide-x"
         size="xs"

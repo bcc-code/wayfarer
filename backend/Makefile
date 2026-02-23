@@ -1,4 +1,4 @@
-.PHONY: help generate migrate seed test build clean test-e2e test-e2e-short test-e2e-coverage test-all update-db-url
+.PHONY: help generate migrate seed seed-tui test build clean test-e2e test-e2e-short test-e2e-coverage test-all update-db-url
 
 help: ## Display this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -67,6 +67,7 @@ build: ## Build all binaries
 	@go build -o bin/migrate ./cmd/migrate
 	@go build -o bin/server ./cmd/server
 	@go build -o bin/seed ./cmd/seed
+	@go build -o bin/seed-tui ./cmd/seed-tui
 	@go build -o bin/clear ./cmd/clear
 	@go build -o bin/debug ./cmd/debug
 
@@ -102,6 +103,12 @@ update-db-url: ## Update DATABASE_URL in .env with current Neon branch
 debug: ## Run debug TUI tool
 	@echo "Starting debug tool..."
 	@go run ./cmd/debug
+
+seed-tui: ## Run interactive team seeder TUI
+	@echo "Setting up Neon database branch..."
+	@export DATABASE_URL=$$(./scripts/neon-branch.sh) && \
+		echo "Starting seed TUI..." && \
+		go run ./cmd/seed-tui
 
 ## Token Generation Commands
 

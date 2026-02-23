@@ -1,0 +1,656 @@
+package ladder_to_heaven
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/bcc-media/wayfarer/internal/config"
+	"github.com/bcc-media/wayfarer/internal/database/sqlc"
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestSuperteamDistributionHandler_Preview_MissingProjectID(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	handler := &superteamDistributionHandler{
+		db:        nil,
+		cache:     nil,
+		jwtConfig: config.JWTConfig{Issuer: "wayfarer"},
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/plugins/ladder-to-heaven/preview-superteams", nil)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+	c.Set("user_id", testUserID)
+	c.Set("user_roles", []string{"admin"})
+
+	handler.preview(c)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Equal(t, "project_id is required", response["error"])
+}
+
+func TestSuperteamDistributionHandler_Preview_NotAuthenticated(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	handler := &superteamDistributionHandler{
+		db:        nil,
+		cache:     nil,
+		jwtConfig: config.JWTConfig{Issuer: "wayfarer"},
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/plugins/ladder-to-heaven/preview-superteams?project_id=PR123", nil)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+	// No user_id set = not authenticated
+
+	handler.preview(c)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestSuperteamDistributionHandler_Preview_InsufficientPermissions(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	handler := &superteamDistributionHandler{
+		db:        nil,
+		cache:     nil,
+		jwtConfig: config.JWTConfig{Issuer: "wayfarer"},
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/plugins/ladder-to-heaven/preview-superteams?project_id=PR123", nil)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+	c.Set("user_id", testUserID)
+	c.Set("user_roles", []string{"user"}) // Not admin
+
+	handler.preview(c)
+
+	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
+func TestSuperteamDistributionHandler_Preview_EmptyTeams(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockQuerier := &mockDistributionQuerier{
+		teams: []*sqlc.GetTeamsWithScoresForDistributionRow{},
+	}
+
+	handler := &superteamDistributionHandler{
+		db:          nil,
+		cache:       nil,
+		jwtConfig:   config.JWTConfig{Issuer: "wayfarer"},
+		testQuerier: mockQuerier,
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/plugins/ladder-to-heaven/preview-superteams?project_id=PR123", nil)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+	c.Set("user_id", testUserID)
+	c.Set("user_roles", []string{"admin"})
+
+	handler.preview(c)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response DistributionResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Empty(t, response.Superteams)
+	assert.Zero(t, response.Variance)
+}
+
+func TestSuperteamDistributionHandler_Preview_WithTeams(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockQuerier := &mockDistributionQuerier{
+		teams: []*sqlc.GetTeamsWithScoresForDistributionRow{
+			{TeamID: "TM001", TeamName: "Team 1", ChurchID: "CH001", TotalScore: 1000, MemberCount: 5},
+			{TeamID: "TM002", TeamName: "Team 2", ChurchID: "CH001", TotalScore: 800, MemberCount: 4},
+			{TeamID: "TM003", TeamName: "Team 3", ChurchID: "CH002", TotalScore: 1200, MemberCount: 6},
+			{TeamID: "TM004", TeamName: "Team 4", ChurchID: "CH002", TotalScore: 600, MemberCount: 3},
+			{TeamID: "TM005", TeamName: "Team 5", ChurchID: "CH003", TotalScore: 900, MemberCount: 4},
+			{TeamID: "TM006", TeamName: "Team 6", ChurchID: "CH004", TotalScore: 700, MemberCount: 3},
+		},
+	}
+
+	handler := &superteamDistributionHandler{
+		db:          nil,
+		cache:       nil,
+		jwtConfig:   config.JWTConfig{Issuer: "wayfarer"},
+		testQuerier: mockQuerier,
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/plugins/ladder-to-heaven/preview-superteams?project_id=PR123", nil)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+	c.Set("user_id", testUserID)
+	c.Set("user_roles", []string{"admin"})
+
+	handler.preview(c)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response DistributionResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	// Should have 4 superteams
+	assert.Len(t, response.Superteams, 4)
+
+	// Verify superteam names
+	names := make([]string, 4)
+	for i, st := range response.Superteams {
+		names[i] = st.Name
+	}
+	assert.Contains(t, names, "Blue")
+	assert.Contains(t, names, "Green")
+	assert.Contains(t, names, "Red")
+	assert.Contains(t, names, "Yellow")
+
+	// No IDs should be assigned in preview
+	for _, st := range response.Superteams {
+		assert.Empty(t, st.SuperTeamID, "Preview should not assign IDs")
+	}
+
+	// Calculate total teams distributed
+	totalTeams := 0
+	for _, st := range response.Superteams {
+		totalTeams += st.TeamCount
+	}
+	assert.Equal(t, 6, totalTeams, "All 6 teams should be distributed")
+
+	// Check that variance is computed
+	assert.GreaterOrEqual(t, response.Variance, 0.0)
+}
+
+func TestSuperteamDistributionHandler_CalculateVariance(t *testing.T) {
+	handler := &superteamDistributionHandler{}
+
+	tests := []struct {
+		name     string
+		buckets  []SuperteamResult
+		expected float64
+	}{
+		{
+			name:     "empty buckets",
+			buckets:  []SuperteamResult{},
+			expected: 0,
+		},
+		{
+			name: "perfectly balanced",
+			buckets: []SuperteamResult{
+				{TotalScore: 1000},
+				{TotalScore: 1000},
+				{TotalScore: 1000},
+				{TotalScore: 1000},
+			},
+			expected: 0,
+		},
+		{
+			name: "one off",
+			buckets: []SuperteamResult{
+				{TotalScore: 1100},
+				{TotalScore: 1000},
+				{TotalScore: 1000},
+				{TotalScore: 900},
+			},
+			// Mean = 1000, variance = ((100)^2 + 0 + 0 + (100)^2) / 4 = 5000
+			expected: 5000,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := handler.calculateVariance(tt.buckets)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestSuperteamDistributionHandler_CalculateDistribution_ChurchSplitting(t *testing.T) {
+	handler := &superteamDistributionHandler{}
+
+	// When one church has teams that would cause >10% deviation if kept together,
+	// the algorithm splits the church across superteams.
+	// Total: 4000, target: 1000, threshold: 100
+	// Adding 2 teams of 1000 each to one bucket would cause deviation of 1000 > 100
+	teams := []*sqlc.GetTeamsWithScoresForDistributionRow{
+		{TeamID: "TM001", TeamName: "Team 1", ChurchID: "CH001", TotalScore: 1000, MemberCount: 5},
+		{TeamID: "TM002", TeamName: "Team 2", ChurchID: "CH001", TotalScore: 1000, MemberCount: 5},
+		{TeamID: "TM003", TeamName: "Team 3", ChurchID: "CH001", TotalScore: 1000, MemberCount: 5},
+		{TeamID: "TM004", TeamName: "Team 4", ChurchID: "CH001", TotalScore: 1000, MemberCount: 5},
+	}
+
+	result := handler.calculateDistribution(teams, false)
+
+	// With 4 teams of equal score assigned to 4 superteams,
+	// keeping them together would exceed the 10% threshold, so they get split
+	teamsPerSuperteam := make(map[string]int)
+	for _, st := range result.Superteams {
+		teamsPerSuperteam[st.Name] = st.TeamCount
+	}
+
+	// Each superteam should have exactly 1 team (church was split)
+	for name, count := range teamsPerSuperteam {
+		assert.Equal(t, 1, count, "Superteam %s should have exactly 1 team", name)
+	}
+
+	// All 4 teams should be distributed
+	totalTeams := 0
+	for _, st := range result.Superteams {
+		totalTeams += st.TeamCount
+	}
+	assert.Equal(t, 4, totalTeams)
+
+	// Variance should be 0 (perfectly balanced)
+	assert.Equal(t, float64(0), result.Variance)
+}
+
+func TestSuperteamDistributionHandler_CalculateDistribution_ChurchPreference(t *testing.T) {
+	handler := &superteamDistributionHandler{}
+
+	// When churches can be kept together without exceeding the 10% threshold, they should be.
+	// Total: 4000, target: 1000, threshold: 100
+	// Church A has 2 teams totaling 600 (within threshold for one bucket)
+	// Church B has 2 teams totaling 600 (within threshold for one bucket)
+	// Church C has 2 teams totaling 1400 (within threshold for one bucket)
+	// Church D has 2 teams totaling 1400 (within threshold for one bucket)
+	teams := []*sqlc.GetTeamsWithScoresForDistributionRow{
+		{TeamID: "TM001", TeamName: "Team 1", ChurchID: "CH_A", TotalScore: 400, MemberCount: 3},
+		{TeamID: "TM002", TeamName: "Team 2", ChurchID: "CH_A", TotalScore: 200, MemberCount: 2},
+		{TeamID: "TM003", TeamName: "Team 3", ChurchID: "CH_B", TotalScore: 400, MemberCount: 3},
+		{TeamID: "TM004", TeamName: "Team 4", ChurchID: "CH_B", TotalScore: 200, MemberCount: 2},
+		{TeamID: "TM005", TeamName: "Team 5", ChurchID: "CH_C", TotalScore: 800, MemberCount: 5},
+		{TeamID: "TM006", TeamName: "Team 6", ChurchID: "CH_C", TotalScore: 600, MemberCount: 4},
+		{TeamID: "TM007", TeamName: "Team 7", ChurchID: "CH_D", TotalScore: 800, MemberCount: 5},
+		{TeamID: "TM008", TeamName: "Team 8", ChurchID: "CH_D", TotalScore: 600, MemberCount: 4},
+	}
+
+	result := handler.calculateDistribution(teams, false)
+
+	// Count how many superteams each church appears in
+	churchSuperteams := make(map[string]map[string]bool)
+	for _, st := range result.Superteams {
+		for _, team := range st.Teams {
+			if team.ChurchID != "" {
+				if churchSuperteams[team.ChurchID] == nil {
+					churchSuperteams[team.ChurchID] = make(map[string]bool)
+				}
+				churchSuperteams[team.ChurchID][st.Name] = true
+			}
+		}
+	}
+
+	// Each church should ideally be in only 1 superteam (kept together)
+	for churchID, superteams := range churchSuperteams {
+		assert.LessOrEqual(t, len(superteams), 2,
+			"Church %s should be in at most 2 superteams (prefer keeping together)", churchID)
+	}
+
+	// All 8 teams should be distributed
+	totalTeams := 0
+	for _, st := range result.Superteams {
+		totalTeams += st.TeamCount
+	}
+	assert.Equal(t, 8, totalTeams)
+}
+
+func TestSuperteamDistributionHandler_CalculateDistribution_BalancedAssignment(t *testing.T) {
+	handler := &superteamDistributionHandler{}
+
+	// Create 4 teams with equal total scores from different churches
+	teams := []*sqlc.GetTeamsWithScoresForDistributionRow{
+		{TeamID: "TM001", TeamName: "Team 1", ChurchID: "CH001", TotalScore: 1000, MemberCount: 5},
+		{TeamID: "TM002", TeamName: "Team 2", ChurchID: "CH002", TotalScore: 1000, MemberCount: 5},
+		{TeamID: "TM003", TeamName: "Team 3", ChurchID: "CH003", TotalScore: 1000, MemberCount: 5},
+		{TeamID: "TM004", TeamName: "Team 4", ChurchID: "CH004", TotalScore: 1000, MemberCount: 5},
+	}
+
+	result := handler.calculateDistribution(teams, true)
+
+	// Each superteam should have exactly one team
+	for _, st := range result.Superteams {
+		assert.Equal(t, 1, st.TeamCount, "Each superteam should have exactly one team")
+		assert.Equal(t, int64(1000), st.TotalScore, "Each superteam should have total score 1000")
+	}
+
+	// Variance should be 0 (perfectly balanced)
+	assert.Equal(t, float64(0), result.Variance)
+}
+
+func TestSuperteamDistributionHandler_CalculateDistribution_UnevenChurchSizes(t *testing.T) {
+	handler := &superteamDistributionHandler{}
+
+	// Simulate a scenario where one church has many more teams than others.
+	// The algorithm prefers keeping churches together but will split when
+	// deviation would exceed 10% of target score.
+	teams := []*sqlc.GetTeamsWithScoresForDistributionRow{
+		// Large church with 8 teams (simulating 154 teams scaled down)
+		{TeamID: "TM001", TeamName: "Team 1", ChurchID: "CH_LARGE", TotalScore: 1000, MemberCount: 8},
+		{TeamID: "TM002", TeamName: "Team 2", ChurchID: "CH_LARGE", TotalScore: 900, MemberCount: 7},
+		{TeamID: "TM003", TeamName: "Team 3", ChurchID: "CH_LARGE", TotalScore: 850, MemberCount: 6},
+		{TeamID: "TM004", TeamName: "Team 4", ChurchID: "CH_LARGE", TotalScore: 800, MemberCount: 8},
+		{TeamID: "TM005", TeamName: "Team 5", ChurchID: "CH_LARGE", TotalScore: 750, MemberCount: 7},
+		{TeamID: "TM006", TeamName: "Team 6", ChurchID: "CH_LARGE", TotalScore: 700, MemberCount: 6},
+		{TeamID: "TM007", TeamName: "Team 7", ChurchID: "CH_LARGE", TotalScore: 650, MemberCount: 5},
+		{TeamID: "TM008", TeamName: "Team 8", ChurchID: "CH_LARGE", TotalScore: 600, MemberCount: 5},
+		// Smaller churches with 2 teams each
+		{TeamID: "TM009", TeamName: "Team 9", ChurchID: "CH_SMALL1", TotalScore: 500, MemberCount: 4},
+		{TeamID: "TM010", TeamName: "Team 10", ChurchID: "CH_SMALL1", TotalScore: 450, MemberCount: 4},
+		{TeamID: "TM011", TeamName: "Team 11", ChurchID: "CH_SMALL2", TotalScore: 400, MemberCount: 3},
+		{TeamID: "TM012", TeamName: "Team 12", ChurchID: "CH_SMALL2", TotalScore: 350, MemberCount: 3},
+	}
+
+	result := handler.calculateDistribution(teams, false)
+
+	// All 12 teams should be distributed
+	totalTeams := 0
+	for _, st := range result.Superteams {
+		totalTeams += st.TeamCount
+	}
+	assert.Equal(t, 12, totalTeams)
+
+	// Calculate min and max scores to verify balance
+	var minScore, maxScore int64 = result.Superteams[0].TotalScore, result.Superteams[0].TotalScore
+	for _, st := range result.Superteams {
+		if st.TotalScore < minScore {
+			minScore = st.TotalScore
+		}
+		if st.TotalScore > maxScore {
+			maxScore = st.TotalScore
+		}
+	}
+
+	// Calculate total and average
+	var totalScore int64
+	for _, st := range result.Superteams {
+		totalScore += st.TotalScore
+	}
+	averageScore := totalScore / 4
+
+	// The difference should be within ~25% of average (allowing some flexibility for church preference)
+	scoreDifference := maxScore - minScore
+	assert.Less(t, float64(scoreDifference), float64(averageScore)*0.25,
+		"Score difference should be reasonable even with church preference")
+
+	// The large church should be split across multiple superteams
+	// (since keeping all 8 teams together would cause massive deviation)
+	largeChurchSuperteams := make(map[string]bool)
+	for _, st := range result.Superteams {
+		for _, team := range st.Teams {
+			if team.ChurchID == "CH_LARGE" {
+				largeChurchSuperteams[st.Name] = true
+			}
+		}
+	}
+	assert.Greater(t, len(largeChurchSuperteams), 1,
+		"Large church should be split across multiple superteams to maintain balance")
+}
+
+func TestSuperteamDistributionHandler_CalculateDistribution_GeneratesIDs(t *testing.T) {
+	handler := &superteamDistributionHandler{}
+
+	teams := []*sqlc.GetTeamsWithScoresForDistributionRow{
+		{TeamID: "TM001", TeamName: "Team 1", ChurchID: "CH001", TotalScore: 1000, MemberCount: 5},
+	}
+
+	result := handler.calculateDistribution(teams, true)
+
+	// All superteams should have IDs when generateIDs is true
+	for _, st := range result.Superteams {
+		assert.NotEmpty(t, st.SuperTeamID, "SuperTeamID should be generated")
+		assert.Len(t, st.SuperTeamID, 28, "SuperTeamID should be 28 characters (ST prefix + ULID)")
+		assert.Equal(t, "ST", st.SuperTeamID[:2], "SuperTeamID should have ST prefix")
+	}
+
+	// Test without ID generation
+	resultNoIDs := handler.calculateDistribution(teams, false)
+	for _, st := range resultNoIDs.Superteams {
+		assert.Empty(t, st.SuperTeamID, "SuperTeamID should be empty when generateIDs is false")
+	}
+}
+
+func TestHasDistributionRole(t *testing.T) {
+	tests := []struct {
+		name      string
+		userRoles []string
+		expected  bool
+	}{
+		{
+			name:      "no roles",
+			userRoles: []string{},
+			expected:  false,
+		},
+		{
+			name:      "user role only",
+			userRoles: []string{"user"},
+			expected:  false,
+		},
+		{
+			name:      "church_admin role - not allowed",
+			userRoles: []string{"church_admin"},
+			expected:  false,
+		},
+		{
+			name:      "admin role",
+			userRoles: []string{"admin"},
+			expected:  true,
+		},
+		{
+			name:      "superadmin role",
+			userRoles: []string{"superadmin"},
+			expected:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := hasDistributionRole(tt.userRoles)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// Mock implementation for testing
+type mockDistributionQuerier struct {
+	teams []*sqlc.GetTeamsWithScoresForDistributionRow
+}
+
+func (m *mockDistributionQuerier) GetTeamsWithScoresForDistribution(_ context.Context, _ string) ([]*sqlc.GetTeamsWithScoresForDistributionRow, error) {
+	return m.teams, nil
+}
+
+func (m *mockDistributionQuerier) ClearSuperTeamAssignmentsForProject(_ context.Context, _ string) error {
+	return nil
+}
+
+func (m *mockDistributionQuerier) DeleteSuperTeamsByProjectID(_ context.Context, _ string) error {
+	return nil
+}
+
+func (m *mockDistributionQuerier) CreateSuperTeam(_ context.Context, _ sqlc.CreateSuperTeamParams) (*sqlc.SuperTeam, error) {
+	return &sqlc.SuperTeam{}, nil
+}
+
+func (m *mockDistributionQuerier) AssignTeamToSuperTeam(_ context.Context, _ sqlc.AssignTeamToSuperTeamParams) error {
+	return nil
+}
+
+// Helper function to check if a slice contains a value
+func contains(slice []string, val string) bool {
+	for _, s := range slice {
+		if s == val {
+			return true
+		}
+	}
+	return false
+}
+
+// visualizeDistribution prints a visual representation of the superteam distribution
+func visualizeDistribution(t *testing.T, result DistributionResponse) {
+	t.Helper()
+
+	// Calculate totals
+	var totalScore int64
+	var totalTeams int
+	for _, st := range result.Superteams {
+		totalScore += st.TotalScore
+		totalTeams += st.TeamCount
+	}
+	targetScore := totalScore / 4
+
+	t.Logf("\n")
+	t.Logf("============================================================")
+	t.Logf("SUPERTEAM DISTRIBUTION VISUALIZATION")
+	t.Logf("============================================================")
+	t.Logf("Total Teams: %d | Total Score: %d | Target per ST: %d", totalTeams, totalScore, targetScore)
+	t.Logf("Deviation Threshold (5%%): %d", totalScore/80)
+	t.Logf("------------------------------------------------------------")
+
+	// Collect all unique churches and assign them short labels
+	churchLabels := make(map[string]string)
+	labelIndex := 0
+	labels := []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P"}
+	for _, st := range result.Superteams {
+		for _, team := range st.Teams {
+			if team.ChurchID != "" {
+				if _, exists := churchLabels[team.ChurchID]; !exists {
+					if labelIndex < len(labels) {
+						churchLabels[team.ChurchID] = labels[labelIndex]
+						labelIndex++
+					} else {
+						churchLabels[team.ChurchID] = "?"
+					}
+				}
+			}
+		}
+	}
+
+	// Print church legend
+	t.Logf("\nCHURCH LEGEND:")
+	for churchID, label := range churchLabels {
+		t.Logf("  [%s] = %s", label, churchID)
+	}
+	t.Logf("")
+
+	// Print each superteam
+	for _, st := range result.Superteams {
+		deviation := st.TotalScore - targetScore
+		deviationPct := float64(deviation) / float64(targetScore) * 100
+
+		t.Logf("%-8s | Teams: %3d | Score: %8d | Deviation: %+6d (%+.1f%%)",
+			st.Name, st.TeamCount, st.TotalScore, deviation, deviationPct)
+
+		// Group teams by church for visualization
+		churchTeams := make(map[string][]TeamInfo)
+		for _, team := range st.Teams {
+			label := churchLabels[team.ChurchID]
+			if label == "" {
+				label = "?"
+			}
+			churchTeams[label] = append(churchTeams[label], team)
+		}
+
+		// Build visual bar showing church distribution
+		var bar string
+		for label, teams := range churchTeams {
+			for range teams {
+				bar += "[" + label + "]"
+			}
+		}
+		t.Logf("         | %s", bar)
+		t.Logf("")
+	}
+
+	// Print church distribution summary
+	t.Logf("------------------------------------------------------------")
+	t.Logf("CHURCH DISTRIBUTION SUMMARY:")
+	churchInSuperteams := make(map[string][]string)
+	for _, st := range result.Superteams {
+		for _, team := range st.Teams {
+			if team.ChurchID != "" {
+				label := churchLabels[team.ChurchID]
+				found := false
+				for _, existing := range churchInSuperteams[label] {
+					if existing == st.Name {
+						found = true
+						break
+					}
+				}
+				if !found {
+					churchInSuperteams[label] = append(churchInSuperteams[label], st.Name)
+				}
+			}
+		}
+	}
+	for label, superteams := range churchInSuperteams {
+		status := "KEPT TOGETHER"
+		if len(superteams) > 1 {
+			status = "SPLIT"
+		}
+		t.Logf("  [%s] in %d superteam(s): %v - %s", label, len(superteams), superteams, status)
+	}
+	t.Logf("============================================================\n")
+}
+
+func TestSuperteamDistributionHandler_VisualizeDistribution(t *testing.T) {
+	handler := &superteamDistributionHandler{}
+
+	// Realistic scenario with mixed church sizes
+	teams := []*sqlc.GetTeamsWithScoresForDistributionRow{
+		// Large church (like Oslo) with many teams
+		{TeamID: "TM001", TeamName: "Oslo Team 1", ChurchID: "CH_OSLO", TotalScore: 50000, MemberCount: 8},
+		{TeamID: "TM002", TeamName: "Oslo Team 2", ChurchID: "CH_OSLO", TotalScore: 45000, MemberCount: 7},
+		{TeamID: "TM003", TeamName: "Oslo Team 3", ChurchID: "CH_OSLO", TotalScore: 42000, MemberCount: 6},
+		{TeamID: "TM004", TeamName: "Oslo Team 4", ChurchID: "CH_OSLO", TotalScore: 38000, MemberCount: 8},
+		{TeamID: "TM005", TeamName: "Oslo Team 5", ChurchID: "CH_OSLO", TotalScore: 35000, MemberCount: 7},
+		{TeamID: "TM006", TeamName: "Oslo Team 6", ChurchID: "CH_OSLO", TotalScore: 32000, MemberCount: 6},
+		{TeamID: "TM007", TeamName: "Oslo Team 7", ChurchID: "CH_OSLO", TotalScore: 28000, MemberCount: 5},
+		{TeamID: "TM008", TeamName: "Oslo Team 8", ChurchID: "CH_OSLO", TotalScore: 25000, MemberCount: 5},
+
+		// Medium church
+		{TeamID: "TM009", TeamName: "Bergen Team 1", ChurchID: "CH_BERGEN", TotalScore: 30000, MemberCount: 6},
+		{TeamID: "TM010", TeamName: "Bergen Team 2", ChurchID: "CH_BERGEN", TotalScore: 28000, MemberCount: 5},
+		{TeamID: "TM011", TeamName: "Bergen Team 3", ChurchID: "CH_BERGEN", TotalScore: 22000, MemberCount: 4},
+
+		// Medium church
+		{TeamID: "TM012", TeamName: "Trondheim Team 1", ChurchID: "CH_TRONDHEIM", TotalScore: 27000, MemberCount: 5},
+		{TeamID: "TM013", TeamName: "Trondheim Team 2", ChurchID: "CH_TRONDHEIM", TotalScore: 24000, MemberCount: 5},
+		{TeamID: "TM014", TeamName: "Trondheim Team 3", ChurchID: "CH_TRONDHEIM", TotalScore: 20000, MemberCount: 4},
+
+		// Small churches
+		{TeamID: "TM015", TeamName: "Stavanger Team 1", ChurchID: "CH_STAVANGER", TotalScore: 18000, MemberCount: 4},
+		{TeamID: "TM016", TeamName: "Stavanger Team 2", ChurchID: "CH_STAVANGER", TotalScore: 15000, MemberCount: 3},
+
+		{TeamID: "TM017", TeamName: "Kristiansand Team 1", ChurchID: "CH_KRISTIANSAND", TotalScore: 16000, MemberCount: 4},
+		{TeamID: "TM018", TeamName: "Kristiansand Team 2", ChurchID: "CH_KRISTIANSAND", TotalScore: 12000, MemberCount: 3},
+
+		{TeamID: "TM019", TeamName: "Tromso Team 1", ChurchID: "CH_TROMSO", TotalScore: 14000, MemberCount: 3},
+		{TeamID: "TM020", TeamName: "Tromso Team 2", ChurchID: "CH_TROMSO", TotalScore: 10000, MemberCount: 3},
+	}
+
+	result := handler.calculateDistribution(teams, false)
+
+	visualizeDistribution(t, result)
+
+	// Basic assertions
+	totalTeams := 0
+	for _, st := range result.Superteams {
+		totalTeams += st.TeamCount
+	}
+	assert.Equal(t, 20, totalTeams, "All teams should be distributed")
+}

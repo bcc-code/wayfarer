@@ -47,7 +47,7 @@ onMounted(runAnimation)
     <hr
       v-if="extraItems?.length"
       class="mx-default my-medium border-border-default"
-    />
+    >
     <DesignPanel
       v-for="(item, index) in extraItems"
       :key="index"
