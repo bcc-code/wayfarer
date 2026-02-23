@@ -44,15 +44,6 @@ const effectiveMax = computed(() => {
   return Math.min(percentageMax, absoluteMax, props.availablePoints)
 })
 
-// Calculate step size based on range
-const stepSize = computed(() => {
-  const range = effectiveMax.value - effectiveMin.value
-  if (range <= 100) return 10
-  if (range <= 500) return 25
-  if (range <= 1000) return 50
-  return 100
-})
-
 // Max bet message showing the percentage limit
 const maxBetMessage = computed(() => {
   if (props.maxPercentage) {
@@ -146,7 +137,7 @@ const resultAmount = computed(() => {
         v-model="betAmountModel"
         :min="effectiveMin"
         :max="effectiveMax"
-        :step="stepSize"
+        :step="1"
         :disabled="disabled"
       />
       <p v-if="maxBetMessage" class="text-caption text-text-hint text-center">
