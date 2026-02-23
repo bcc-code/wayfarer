@@ -50,16 +50,17 @@ func (q *Queries) GetAchievementsForTranslation(ctx context.Context) ([]*GetAchi
 }
 
 const GetChallengesForTranslation = `-- name: GetChallengesForTranslation :many
-SELECT id, name, description, button_text
+SELECT id, name, description, button_text, notification_text
 FROM challenges
 WHERE published_at IS NOT NULL
 `
 
 type GetChallengesForTranslationRow struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	ButtonText  string `json:"button_text"`
+	ID               string `json:"id"`
+	Name             string `json:"name"`
+	Description      string `json:"description"`
+	ButtonText       string `json:"button_text"`
+	NotificationText string `json:"notification_text"`
 }
 
 func (q *Queries) GetChallengesForTranslation(ctx context.Context) ([]*GetChallengesForTranslationRow, error) {
@@ -76,6 +77,7 @@ func (q *Queries) GetChallengesForTranslation(ctx context.Context) ([]*GetChalle
 			&i.Name,
 			&i.Description,
 			&i.ButtonText,
+			&i.NotificationText,
 		); err != nil {
 			return nil, err
 		}
