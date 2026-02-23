@@ -23,7 +23,7 @@ defineProps<{
     </div>
     <div>
       <h2 class="text-2xl font-bold mb-2">{{ title }}</h2>
-      <p v-if="description" class="text-muted">
+      <p v-if="description">
         {{ description }}
       </p>
       <div class="mt-6">
