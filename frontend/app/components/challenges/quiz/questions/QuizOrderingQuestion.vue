@@ -345,9 +345,11 @@ defineExpose({ actionState, handlers })
       <div ref="containerRef" class="flex flex-col justify-center">
         <VueDraggable
           v-model="items"
-          ghost-class="ordering-ghost"
+          ghost-class="invisible"
+          drag-class="scale-105"
           :animation="200"
           :disabled="!canDrag"
+          :delay="200"
           class="flex flex-col gap-small"
         >
           <div
@@ -377,7 +379,7 @@ defineExpose({ actionState, handlers })
             </span>
             <div
               v-if="canDrag"
-              class="text-text-hint shrink-0 flex items-center cursor-default"
+              class="text-text-muted shrink-0 flex items-center cursor-default"
             >
               <UIcon name="lucide:grip-vertical" class="size-4" />
             </div>

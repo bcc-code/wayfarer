@@ -108,7 +108,7 @@ const resultAmount = computed(() => {
   <div v-else class="flex flex-col gap-default pb-default">
     <div class="grid grid-cols-2 divide-x divide-border-default">
       <div class="text-center pr-default pl-medium">
-        <p class="text-text-hint text-caption">
+        <p class="text-text-muted text-caption">
           {{ t('quiz.betting.remainingPoints') }}
         </p>
         <p class="text-heading tabular-nums text-text-default">
@@ -116,10 +116,10 @@ const resultAmount = computed(() => {
         </p>
       </div>
       <div class="text-center pl-default pr-medium">
-        <p class="text-accent-contrast text-caption">
+        <p class="text-text-muted text-caption">
           {{ t('quiz.betting.yourBet') }}
         </p>
-        <p class="text-heading tabular-nums text-text-default">
+        <p class="text-heading tabular-nums text-accent-contrast">
           {{ betAmountModel }}
         </p>
       </div>

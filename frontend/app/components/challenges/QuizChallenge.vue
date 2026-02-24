@@ -541,7 +541,7 @@ const progressResults = computed(() => {
         v-show="!isBettingEnabled || sessionState !== QuizSessionState.Locked"
       >
         <div
-          class="flex flex-col items-center justify-center py-6 px-default gap-1 text-center"
+          class="flex flex-col items-center justify-center py-3 px-medium gap-1 text-center"
         >
           <p v-if="questions.length > 1" class="text-caption text-text-muted">
             {{
@@ -551,7 +551,9 @@ const progressResults = computed(() => {
               })
             }}
           </p>
-          <h1 class="text-heading text-text-default text-balance">
+          <h1
+            class="text-heading limitedHeight:text-label text-text-default text-balance"
+          >
             {{ currentQuestion.questionText }}
           </h1>
         </div>
@@ -686,7 +688,7 @@ const progressResults = computed(() => {
       <div
         v-if="actionState && !quizCompleted"
         :class="[
-          'w-full p-default flex flex-col gap-4',
+          'w-full p-default flex flex-col gap-4 shadow-large',
           {
             'bg-background-raised':
               isBettingEnabled && sessionState !== QuizSessionState.Finished,
