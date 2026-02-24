@@ -244,7 +244,7 @@
       "noUnitsFound": "Keine Units gefunden",
       "noPeopleFound": "Keine Personen gefunden",
       "years": "{years} Jahr",
-      "selectedCount": "{count}Unit ausgewählt | {count} Units ausgewählt",
+      "selectedCount": "{count} Unit ausgewählt | {count} Units ausgewählt",
       "deleteSelected": "Auswahl löschen",
       "bulkCreate": {
         "countLabel": "Anzahl Units",
