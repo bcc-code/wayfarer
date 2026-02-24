@@ -24,6 +24,7 @@ gql(`
 			birthdate
 			age
 			image
+			language
 			churchLockedUntil
 			church {
 				id
@@ -211,15 +212,20 @@ const isChurchLocked = computed(() => {
 // Permissions
 const { canAssignRoles } = usePermissions()
 
-const roleOptions = [
-  { label: 'Bruker', value: RoleType.User },
-  { label: 'Admin', value: RoleType.Admin },
-  { label: 'Superadmin', value: RoleType.Superadmin },
-  { label: 'Menighetsadmin', value: RoleType.ChurchAdmin },
-  { label: 'Prosjektadmin', value: RoleType.ProjectAdmin },
-  { label: 'Lagleder', value: RoleType.TeamLead },
-  { label: 'M2M', value: RoleType.M2M },
-]
+const roleLabels: Record<RoleType, string> = {
+  [RoleType.User]: 'Bruker',
+  [RoleType.Admin]: 'Admin',
+  [RoleType.Superadmin]: 'Superadmin',
+  [RoleType.ChurchAdmin]: 'Menighetsadmin',
+  [RoleType.ProjectAdmin]: 'Prosjektadmin',
+  [RoleType.TeamLead]: 'Lagleder',
+  [RoleType.M2M]: 'M2M',
+}
+
+const roleOptions = Object.entries(roleLabels).map(([value, label]) => ({
+  label,
+  value: value as RoleType,
+}))
 
 const scopeTypeOptions = [
   { label: 'Ingen (Global)', value: null },
@@ -548,6 +554,10 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
                   {{ formatDate(data.user.birthdate) }}
                 </dd>
               </div>
+              <div class="py-2 grid grid-cols-subgrid col-span-full">
+                <dt class="text-muted w-36 shrink-0">Språk</dt>
+                <dd class="font-medium">{{ data.user.language }}</dd>
+              </div>
             </dl>
           </div>
 
@@ -561,7 +571,14 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
             >
               <div class="py-2 grid grid-cols-subgrid col-span-full">
                 <dt class="text-muted w-36 shrink-0">Navn</dt>
-                <dd class="font-medium">{{ data.user.church.name }}</dd>
+                <dd>
+                  <NuxtLink
+                    :to="{ name: 'admin-churches-churchId', params: { churchId: data.user.church.id } }"
+                    class="font-medium hover:underline"
+                  >
+                    {{ data.user.church.name }}
+                  </NuxtLink>
+                </dd>
               </div>
               <div class="py-2 grid grid-cols-subgrid col-span-full">
                 <dt class="text-muted w-36 shrink-0">ID</dt>
@@ -660,7 +677,7 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
             >
               <div class="flex items-center gap-3">
                 <UBadge variant="soft" size="lg">
-                  {{ role.role }}
+                  {{ roleLabels[role.role] ?? role.role }}
                 </UBadge>
                 <div v-if="role.scope">
                   <span class="text-dimmed text-sm">Omfang: </span>
