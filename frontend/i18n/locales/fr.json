@@ -46,7 +46,9 @@
       "results": "Résultats",
       "yourPoints": "Tes points",
       "winnings": "Gain :",
-      "losses": "Points perdus"
+      "pointsLost": "Points perdus",
+      "pointsEarned": "Points gagnés",
+      "resultYourBet": "Mise"
     },
     "result": {
       "receivedNoPoints": "Tu n’as marqué aucun point.",
@@ -290,23 +292,25 @@
     "gamenight": {
       "beforeYouStart": "Avant de commencer",
       "ensureFilmsReady": "Vérifie que les films sont prêts à être visionnés.",
-      "findFilmsHere": "Tu trouveras les films ici",
+      "findFilmsHere": "Copier le lien vers les films",
       "haveBigScreenReady": "Prépare l'affichage grand écran pour la tâche de l'unité.",
-      "usedInStep5": "Cela concernera l'étape 5.",
-      "findBigScreenHere": "Tu trouveras l'affichage grand écran ici",
+      "usedInStep5": "À utiliser aux étapes 1 et 5.",
+      "findBigScreenHere": "Copier le lien vers l'affichage grand écran",
       "step1Title": "Afficher le fond d'écran Ladder to Heaven sur grand écran",
       "step1Description": "Il peut être affiché sur grand écran lorsque les jeunes entrent dans la salle.",
       "tip": "Conseils",
       "fullscreenTip": "Appuyer sur « Plein écran » en bas à droite de l'affichage grand écran.",
-      "openBigScreenNewTab": "Ouvrir l'affichage plein écran dans un nouvel onglet",
+      "openBigScreenNewTab": "Copier le lien vers l'affichage grand écran",
       "goToNextStep": "Passer à l'étape suivante",
       "step2Title": "Lecture du film 1",
       "step2Description": "Cela se fait lorsque les jeunes se sont installés et que la soirée a commencé.",
-      "goToFilm": "Film {number}",
+      "goToFilm": "Copier le lien vers le film {number}",
       "filmFinishedNextStep": "Le film est terminé, passez à l'étape suivante",
       "step3Title": "Effectuer les paris",
       "step3Description": "Lorsque vous lancerez les paris, tout le monde recevra un défi de pari dans Interact.",
       "startBetting": "Commencer à parier",
+      "bettingStartingIn": "Les paris commencent dans {seconds}secondes...",
+      "cancelBettingCountdown": "Annuler",
       "lockBetting": "Verrouillage des paris",
       "bettingLockedNotice": "Les participants sont informés que les paris sont verrouillés.",
       "reopenBettingHint": "Si quelqu'un n'a pas eu le temps de parier, tu peux réouvrir les paris.",
@@ -323,6 +327,7 @@
       "ifUnitLeaderMissing": "Si le code de l'unité est manquant, vous le trouverez à droite du nom de l'unité sur",
       "unitAdminPage": "la page d’administration de l’unité",
       "giveUnitLeadersAccess": "Envoyer le code aux responsables d'unités",
+      "unitLeaderAccessSent": "Code envoyé aux responsables d'unité",
       "step6Title": "Aller à la page d'administration pour démarrer la tâche de l’unité.",
       "step6Description": "La tâche d’unité est un système distinct, elle doit donc disposer de sa propre page d'administration. Continue sur cette page, et tu seras redirigé ici plus tard.",
       "goToUnitTaskAdmin": "Aller à la page d'administration pour démarrer la tâche de l’unité.",
@@ -337,7 +342,8 @@
         "couldNotStartBetting": "Impossible de démarrer les paris",
         "couldNotLockBetting": "Impossible de verrouiller les paris",
         "couldNotReopenBetting": "Impossible de réouvrir le pari",
-        "couldNotFinishBetting": "Impossible de terminer les paris"
+        "couldNotFinishBetting": "Impossible de terminer les paris",
+        "couldNotSendUnitLeaderAccess": "Impossible d'envoyer le code aux responsables d'unité"
       }
     },
     "statistics": {
