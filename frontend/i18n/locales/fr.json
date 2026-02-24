@@ -256,7 +256,7 @@
       },
       "confirmBulkDelete": {
         "title": "Supprimer plusieurs unités ?",
-        "message": "Es-tu sûr de vouloir supprimer{count} unités ? Tous les membres seront retirés de ces unités."
+        "message": "Es-tu sûr de vouloir supprimer {count} unités ? Tous les membres seront retirés de ces unités."
       },
       "success": {
         "created": "Unité créée",
@@ -332,7 +332,7 @@
       "step13Description": "Tout le monde doit se rendre sur la page « Défis » de l'application Interact et ouvrir le défi terminé pour voir le résultat.",
       "releasePointsNow": "Libérer les points maintenant",
       "youAreDone": "Tu as terminé ! 🎉",
-      "canClosePageSafely": "La Game Night{number} peut être close en toute sécurité, et tu peux fermer cette page.",
+      "canClosePageSafely": "La Game Night {number} peut être close en toute sécurité, et tu peux fermer cette page.",
       "errors": {
         "couldNotStartBetting": "Impossible de démarrer les paris",
         "couldNotLockBetting": "Impossible de verrouiller les paris",
