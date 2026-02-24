@@ -29,6 +29,14 @@ gql(`
 				id
 				name
 			}
+			teams {
+				id
+				name
+				parentProject {
+					id
+					name
+				}
+			}
 			roles {
 				id
 				role
@@ -594,6 +602,39 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
             </dl>
           </div>
         </div>
+
+        <!-- Teams Card -->
+        <UCard>
+          <template #header>
+            <h2 class="text-xl font-semibold">
+              Lag
+              <span
+                v-if="data.user.teams.length > 0"
+                class="text-dimmed text-sm font-normal"
+              >
+                ({{ data.user.teams.length }})
+              </span>
+            </h2>
+          </template>
+
+          <div v-if="data.user.teams.length > 0" class="space-y-2">
+            <NuxtLink
+              v-for="team in data.user.teams"
+              :key="team.id"
+              :to="{ name: 'admin-teams-teamId', params: { teamId: team.id } }"
+              class="border-default flex items-center justify-between rounded-md border p-3 hover:bg-elevated transition-colors"
+            >
+              <div>
+                <span class="font-medium">{{ team.name }}</span>
+                <div class="text-muted text-xs">
+                  {{ team.parentProject.name }}
+                </div>
+              </div>
+              <Icon name="lucide:chevron-right" class="size-4 text-dimmed" />
+            </NuxtLink>
+          </div>
+          <div v-else class="text-dimmed">Ikke med i noen lag</div>
+        </UCard>
 
         <!-- Roles Card -->
         <UCard>
