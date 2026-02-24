@@ -183,17 +183,22 @@ onMounted(async () => {
 })
 
 const activeSubmission = computed(() => {
-  // Use the started submission if we just started
-  if (startedSubmission.value) {
-    return startedSubmission.value
+  // Determine the target submission ID
+  const submissionId =
+    startedSubmission.value?.id ??
+    props.challenge.quiz.userActiveSubmission?.id
+
+  // Prefer props data when available (has full responses with pointsEarned from server)
+  if (submissionId) {
+    const fromProps = props.challenge.quiz.userSubmissions.find(
+      (submission) => submission.id === submissionId,
+    )
+    if (fromProps) return fromProps
   }
 
-  // If there's an active submission, use it
-  const activeSubmissionId = props.challenge.quiz.userActiveSubmission?.id
-  if (activeSubmissionId) {
-    return props.challenge.quiz.userSubmissions.find(
-      (submission) => submission.id === activeSubmissionId,
-    )
+  // Fallback to started submission (before page has refetched to include this submission)
+  if (startedSubmission.value) {
+    return startedSubmission.value
   }
 
   // If session is LOCKED or FINISHED but no active submission, use the completed submission

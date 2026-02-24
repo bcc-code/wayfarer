@@ -46,7 +46,9 @@
       "results": "Resultat",
       "yourPoints": "Dine poeng",
       "winnings": "Gevinst",
-      "losses": "Poeng tapt"
+      "pointsLost": "Poeng tapt",
+      "pointsEarned": "Poeng tjent",
+      "resultYourBet": "Satset"
     },
     "result": {
       "receivedNoPoints": "Du samlet ingen poeng.",
@@ -292,7 +294,7 @@
       "ensureFilmsReady": "Pass på at filmer er klare for avspilling",
       "findFilmsHere": "Kopier lenke til filmene",
       "haveBigScreenReady": "Ha storskjermvisningen for unit-oppgaven klart",
-      "usedInStep5": "Denne skal brukes i steg 5",
+      "usedInStep5": "Denne skal brukes i steg 1 og 5",
       "findBigScreenHere": "Kopier lenke til storskjermvisningen",
       "step1Title": "Vis Ladder to Heaven bakgrunnen på storskjermen",
       "step1Description": "Denne kan vises på storskjermen når ungdommene kommer inn i salen",

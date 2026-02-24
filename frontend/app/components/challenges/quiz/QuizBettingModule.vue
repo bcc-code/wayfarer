@@ -65,13 +65,7 @@ const isWin = computed(() => {
 
 const resultAmount = computed(() => {
   if (props.pointsEarned === null || props.pointsEarned === undefined) return 0
-  if (isWin.value) {
-    // For wins, show actual winnings (pointsEarned is net, so add back the stake)
-    return props.pointsEarned + (props.betAmount ?? 0)
-  } else {
-    // For losses, show the stake lost
-    return Math.abs(props.pointsEarned)
-  }
+  return props.pointsEarned + (props.betAmount ?? 0)
 })
 </script>
 
@@ -79,28 +73,31 @@ const resultAmount = computed(() => {
   <!-- Results mode: show win/loss -->
   <div
     v-if="mode === 'results'"
-    class="flex flex-col gap-default pb-default text-on-accent"
+    class="flex flex-col gap-default py-default text-on-accent"
   >
-    <p class="text-center text-caption opacity-50">
-      {{ t('quiz.betting.results') }}
-    </p>
     <div class="grid grid-cols-2 divide-x divide-on-accent/20">
-      <div class="text-center pr-default pl-medium">
-        <p class="text-caption">
-          {{ isWin ? t('quiz.betting.winnings') : t('quiz.betting.losses') }}
-        </p>
-        <p class="text-heading tabular-nums">
-          {{ isWin ? '+' : '-' }}{{ resultAmount }}
-        </p>
-      </div>
       <div class="text-center pl-default pr-medium">
         <p class="text-caption">
-          {{ t('quiz.betting.yourPoints') }}
+          {{ t('quiz.betting.resultYourBet') }}
         </p>
-        <p class="text-heading tabular-nums">
-          {{ availablePoints }}
-        </p>
+        <p class="text-title tabular-nums">-{{ betAmount }}</p>
       </div>
+      <div class="text-center pr-default pl-medium">
+        <p class="text-caption">
+          {{ t('quiz.betting.winnings') }}
+        </p>
+        <p class="text-title tabular-nums">+{{ resultAmount }}</p>
+      </div>
+    </div>
+    <div class="text-center">
+      <p class="text-caption">
+        {{
+          isWin ? t('quiz.betting.pointsEarned') : t('quiz.betting.pointsLost')
+        }}
+      </p>
+      <p class="text-hero tabular-nums leading-tight">
+        {{ isWin ? `+${pointsEarned}` : pointsEarned }}
+      </p>
     </div>
   </div>
 
@@ -140,7 +137,7 @@ const resultAmount = computed(() => {
         :step="1"
         :disabled="disabled"
       />
-      <p v-if="maxBetMessage" class="text-caption text-text-hint text-center">
+      <p v-if="maxBetMessage" class="text-caption text-text-muted text-center">
         {{ maxBetMessage }}
       </p>
     </div>
