@@ -46,7 +46,9 @@
       "results": "Ergebnis",
       "yourPoints": "Deine Punkte",
       "winnings": "Gewinn",
-      "losses": "Punkte verloren"
+      "pointsLost": "Punkte verloren",
+      "pointsEarned": "Punkte verdient",
+      "resultYourBet": "Gesetzt"
     },
     "result": {
       "receivedNoPoints": "Du hast keine Punkte gesammelt.",
@@ -290,23 +292,25 @@
     "gamenight": {
       "beforeYouStart": "Bevor du loslegst",
       "ensureFilmsReady": "Stell sicher, dass die Filme bereit zum Abspielen sind",
-      "findFilmsHere": "Du findest die Filme hier",
+      "findFilmsHere": "Link zu den Filmen kopieren",
       "haveBigScreenReady": "Großbildanzeige für die Unit-Aufgabe bereithalten",
-      "usedInStep5": "Das hier brauchst du in Schritt 5.",
-      "findBigScreenHere": "Die Großbildanzeige findest du hier",
+      "usedInStep5": "Das hier braucht man in Schritt 1 und 5",
+      "findBigScreenHere": "Link zur Ansicht auf dem Großbildschirm kopieren",
       "step1Title": "Zeige den Hintergrund „Ladder to Heaven“ auf der Großbildleinwand",
       "step1Description": "Diese kann auf der Großbildleinwand gezeigt werden, wenn die Jugendlichen in den Saal kommen",
       "tip": "Tipps",
       "fullscreenTip": "Klicke unten rechts bei der Großbildanzeige auf „Vollbild“",
-      "openBigScreenNewTab": "Öffne die Großbildanzeige in einem neuen Tab",
+      "openBigScreenNewTab": "Link zur Ansicht auf dem Großbildschirm kopieren",
       "goToNextStep": "Gehe weiter zum nächsten Schritt",
       "step2Title": "Film 1 abspielen",
       "step2Description": "Das wird gemacht, wenn die Jugendlichen sich gesetzt haben und der Abend begonnen hat",
-      "goToFilm": "Film {number}",
+      "goToFilm": "Link zum Film {number} kopieren",
       "filmFinishedNextStep": "Der Film ist zu Ende, gehe zum nächsten Schritt",
       "step3Title": "Tippspiel durchführen",
       "step3Description": "Wenn du das Tippspiel startest, bekommt jeder eine Tipp-Herausforderung in Interact",
       "startBetting": "Tippspiel starten",
+      "bettingStartingIn": "Das Tippspiel beginnt in {seconds} Sekunden...",
+      "cancelBettingCountdown": "Abbrechen",
       "lockBetting": "Tippspiel einfrieren",
       "bettingLockedNotice": "Die Teilnehmer werden darüber informiert, dass das Tippspiel eingefroren ist.",
       "reopenBettingHint": "Wenn jemand es nicht rechtzeitig geschafft hat zu tippen, kannst du das Tippspiel wieder öffnen.",
@@ -323,6 +327,7 @@
       "ifUnitLeaderMissing": "Wenn die Unit den Code nicht hat, findest du ihn rechts neben dem Namen der Unit auf der",
       "unitAdminPage": "Unit-Admin-Seite",
       "giveUnitLeadersAccess": "Verschicke den Code an die Unit-Leiter",
+      "unitLeaderAccessSent": "Code an die Unit-Leiter verschickt",
       "step6Title": "Gehe zur Admin-Seite, um die Unit-Aufgabe zu starten.",
       "step6Description": "Die Unit-Aufgabe ist ein separates System und benötigt daher eine eigene Admin-Seite. Dort geht‘s weite, und später wirst du wieder hierher zurückgeführt.",
       "goToUnitTaskAdmin": "Gehe zur Admin-Seite der Unit-Aufgabe.",
@@ -337,7 +342,8 @@
         "couldNotStartBetting": "Tippspiel konnte nicht gestartet werden",
         "couldNotLockBetting": "Tippspiel konnte nicht gesperrt werden",
         "couldNotReopenBetting": "Tippspiel konnte nicht wieder geöffnet werden",
-        "couldNotFinishBetting": "Tippspiel konnte nicht abgeschlossen werden"
+        "couldNotFinishBetting": "Tippspiel konnte nicht abgeschlossen werden",
+        "couldNotSendUnitLeaderAccess": "Code konnte nicht an die Unit-Leiter verschickt werden"
       }
     },
     "statistics": {
