@@ -60,12 +60,15 @@ const state = useLocalStorage(`state:gamenight-${gamenight.value}`, {
   externalAdminVisited: false,
 })
 
-onKeyDown('ArrowUp', () => {
-  state.value.step--
-})
-onKeyDown('ArrowDown', () => {
-  state.value.step++
-})
+function goToPreviousStep() {
+  state.value.step = Math.max(state.value.step - 1, 1)
+}
+function goToNextStep() {
+  state.value.step = Math.min(state.value.step + 1, 10)
+}
+
+onKeyDown('ArrowUp', goToPreviousStep)
+onKeyDown('ArrowDown', goToNextStep)
 
 const config = useRuntimeConfig()
 const { getAccessToken, me } = useAuth()
@@ -392,7 +395,7 @@ async function enrollUnitLeadersInChallenge() {
             variant="outline"
             trailing-icon="lucide:check"
             size="xl"
-            @click="state.step++"
+            @click="goToNextStep"
           >
             {{ $t('admin.gamenight.goToNextStep') }}
           </UButton>
@@ -415,7 +418,7 @@ async function enrollUnitLeadersInChallenge() {
             variant="outline"
             trailing-icon="lucide:check"
             size="xl"
-            @click="state.step++"
+            @click="goToNextStep"
           >
             {{ $t('admin.gamenight.filmFinishedNextStep') }}
           </UButton>
@@ -512,7 +515,7 @@ async function enrollUnitLeadersInChallenge() {
               trailing-icon="lucide:triangle-alert"
               size="xl"
               color="error"
-              @click="state.step++"
+              @click="goToNextStep"
             >
               {{ $t('admin.gamenight.allBetNextStep') }}
             </UButton>
@@ -537,7 +540,7 @@ async function enrollUnitLeadersInChallenge() {
             variant="outline"
             trailing-icon="lucide:check"
             size="xl"
-            @click="state.step++"
+            @click="goToNextStep"
           >
             {{ $t('admin.gamenight.filmFinishedNextStep') }}
           </UButton>
@@ -551,7 +554,7 @@ async function enrollUnitLeadersInChallenge() {
             size="xl"
             variant="outline"
             trailing-icon="lucide:check"
-            @click="state.step++"
+            @click="goToNextStep"
           >
             {{ $t('admin.gamenight.goToNextStep') }}
           </UButton>
@@ -627,7 +630,7 @@ async function enrollUnitLeadersInChallenge() {
             variant="outline"
             trailing-icon="lucide:check"
             size="xl"
-            @click="state.step++"
+            @click="goToNextStep"
           >
             {{ $t('admin.gamenight.goToNextStep') }}
           </UButton>
@@ -649,7 +652,7 @@ async function enrollUnitLeadersInChallenge() {
             variant="outline"
             trailing-icon="lucide:check"
             size="xl"
-            @click="state.step++"
+            @click="goToNextStep"
           >
             {{ $t('admin.gamenight.filmFinishedNextStep') }}
           </UButton>
