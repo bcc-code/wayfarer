@@ -372,7 +372,17 @@ defineExpose({ actionState, handlers })
                   isSessionFinished && !itemResults?.[index]?.isCorrect,
               }"
             >
-              {{ index + 1 }}
+              <span v-if="!isSessionFinished">{{ index + 1 }}</span>
+              <Icon
+                v-if="isSessionFinished && itemResults?.[index]?.isCorrect"
+                name="IconCheck"
+                class="size-4"
+              />
+              <Icon
+                v-if="isSessionFinished && !itemResults?.[index]?.isCorrect"
+                name="IconClose"
+                class="size-4"
+              />
             </div>
             <span class="text-label text-text-default flex-1 text-left">
               {{ item.itemText }}
