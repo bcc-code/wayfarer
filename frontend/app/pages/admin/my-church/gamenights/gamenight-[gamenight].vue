@@ -94,6 +94,16 @@ const { t } = useI18n()
 // Betting action loading state to prevent spam clicking
 const bettingActionLoading = ref(false)
 
+// Countdown before betting starts
+const {
+  remaining: bettingCountdown,
+  start: startBettingCountdown,
+  stop: cancelBettingCountdown,
+  isActive: isBettingCountdownActive,
+} = useCountdown(10, {
+  onComplete: () => startBetting(),
+})
+
 // Betting
 const { executeMutation: createQuizSession } = useCreateQuizSessionMutation()
 const { executeMutation: openQuizSession } = useOpenQuizSessionMutation()
@@ -241,6 +251,14 @@ async function enrollUsersInChallenge() {
   })
 }
 
+async function copyLink(url: string) {
+  await navigator.clipboard.writeText(url)
+  toast.add({
+    title: t('admin.common.linkCopied'),
+    color: 'success',
+  })
+}
+
 async function enrollUnitLeadersInChallenge() {
   if (!unitLeaderChallengeId.value || !unitLeaders.value?.length) return
 
@@ -302,15 +320,14 @@ async function enrollUnitLeadersInChallenge() {
             v-model="state.filmsReady"
             :label="$t('admin.gamenight.ensureFilmsReady')"
           />
-          <NuxtLink
-            :to="filmsUrl"
-            external
-            target="_blank"
-            class="pl-7 underline text-primary flex items-center gap-1"
+          <UButton
+            class="ml-7 mt-2"
+            variant="outline"
+            trailing-icon="lucide:copy"
+            @click="copyLink(filmsUrl)"
           >
             {{ $t('admin.gamenight.findFilmsHere') }}
-            <Icon name="lucide:external-link" />
-          </NuxtLink>
+          </UButton>
         </div>
         <div>
           <UCheckbox
@@ -318,16 +335,15 @@ async function enrollUnitLeadersInChallenge() {
             :label="$t('admin.gamenight.haveBigScreenReady')"
             :description="$t('admin.gamenight.usedInStep5')"
           />
-          <NuxtLink
-            :to="bigScreenUrl"
-            external
-            target="_blank"
-            :data-loading="!bigScreenUrl"
-            class="pl-7 underline text-primary data-[loading=true]:pointer-events-none data-[loading=true]:opacity-50 flex items-center gap-1"
+          <UButton
+            class="ml-7 mt-2"
+            variant="outline"
+            trailing-icon="lucide:copy"
+            :disabled="!bigScreenUrl"
+            @click="copyLink(bigScreenUrl!)"
           >
             {{ $t('admin.gamenight.findBigScreenHere') }}
-            <Icon name="lucide:external-link" />
-          </NuxtLink>
+          </UButton>
         </div>
       </section>
 
@@ -349,10 +365,8 @@ async function enrollUnitLeadersInChallenge() {
           />
           <UButton
             size="xl"
-            trailing-icon="lucide:external-link"
-            :to="bigScreenUrl"
-            target="_blank"
-            external
+            trailing-icon="lucide:copy"
+            @click="copyLink(bigScreenUrl!)"
           >
             {{ $t('admin.gamenight.openBigScreenNewTab') }}
           </UButton>
@@ -374,10 +388,8 @@ async function enrollUnitLeadersInChallenge() {
         >
           <UButton
             size="xl"
-            :to="`${filmsUrl}?film=1`"
-            external
-            target="_blank"
-            trailing-icon="lucide:external-link"
+            trailing-icon="lucide:copy"
+            @click="copyLink(filmsUrl + '?film=1')"
           >
             {{ $t('admin.gamenight.goToFilm', { number: 1 }) }}
           </UButton>
@@ -399,11 +411,44 @@ async function enrollUnitLeadersInChallenge() {
         >
           <div class="flex gap-2 items-center">
             <UButton
+              v-if="!state.quizSessionState"
+              size="xl"
+              :loading="bettingActionLoading"
+              :disabled="isBettingCountdownActive"
+              color="error"
+              trailing-icon="lucide:triangle-alert"
+              @click="() => startBettingCountdown()"
+            >
+              {{ $t('admin.gamenight.startBetting') }}
+            </UButton>
+            <div
+              v-if="isBettingCountdownActive"
+              class="flex gap-4 items-center tabular-nums"
+            >
+              <p>
+                {{
+                  $t('admin.gamenight.bettingStartingIn', {
+                    seconds: bettingCountdown,
+                  })
+                }}
+              </p>
+              <UButton
+                variant="soft"
+                color="neutral"
+                trailing-icon="lucide:x"
+                @click="cancelBettingCountdown"
+              >
+                {{ $t('admin.gamenight.cancelBettingCountdown') }}
+              </UButton>
+            </div>
+            <UButton
+              v-if="state.quizSessionState !== undefined"
               size="xl"
               :loading="bettingActionLoading && !state.quizSessionState"
-              :disabled="state.quizSessionState !== undefined"
-              :variant="state.quizSessionState !== undefined ? 'soft' : 'solid'"
-              @click="startBetting"
+              disabled
+              variant="soft"
+              color="error"
+              trailing-icon="lucide:triangle-alert"
             >
               {{ $t('admin.gamenight.startBetting') }}
             </UButton>
@@ -465,10 +510,8 @@ async function enrollUnitLeadersInChallenge() {
         >
           <UButton
             size="xl"
-            :to="`${filmsUrl}?film=2`"
-            external
-            target="_blank"
-            trailing-icon="lucide:external-link"
+            trailing-icon="lucide:copy"
+            @click="copyLink(filmsUrl + '?film=2')"
           >
             {{ $t('admin.gamenight.goToFilm', { number: 2 }) }}
           </UButton>
@@ -487,7 +530,12 @@ async function enrollUnitLeadersInChallenge() {
           :title="$t('admin.gamenight.step5TitleBigScreen')"
           :active="state.step === 5"
         >
-          <UButton size="xl" trailing-icon="lucide:check" @click="state.step++">
+          <UButton
+            size="xl"
+            variant="outline"
+            trailing-icon="lucide:check"
+            @click="state.step++"
+          >
             {{ $t('admin.gamenight.goToNextStep') }}
           </UButton>
         </AdminStep>
@@ -563,10 +611,8 @@ async function enrollUnitLeadersInChallenge() {
         >
           <UButton
             size="xl"
-            :to="`${filmsUrl}?film=3`"
-            external
-            target="_blank"
-            trailing-icon="lucide:external-link"
+            trailing-icon="lucide:copy"
+            @click="copyLink(filmsUrl + '?film=3')"
           >
             {{ $t('admin.gamenight.goToFilm', { number: 3 }) }}
           </UButton>
