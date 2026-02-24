@@ -325,6 +325,7 @@
       "ifUnitLeaderMissing": "Hvis uniten mangler kode kan du finne denne til høyre for unit-navnet på",
       "unitAdminPage": "unit-admin siden",
       "giveUnitLeadersAccess": "Send kode til unitledere",
+      "unitLeaderAccessSent": "Kode sendt til unitledere",
       "step6Title": "Gå til adminsiden for å starte unit-oppgaven",
       "step6Description": "Unit-oppgaven er et separat system, så det må ha sin egen admin-side. Fortsett der, og så ledes du tilbake hit senere.",
       "goToUnitTaskAdmin": "Gå til adminsiden for unit-oppgaven",
@@ -339,7 +340,8 @@
         "couldNotStartBetting": "Kunne ikke starte tipping",
         "couldNotLockBetting": "Kunne ikke låse tipping",
         "couldNotReopenBetting": "Kunne ikke gjenåpne tipping",
-        "couldNotFinishBetting": "Kunne ikke avslutte tipping"
+        "couldNotFinishBetting": "Kunne ikke avslutte tipping",
+        "couldNotSendUnitLeaderAccess": "Kunne ikke sende kode til unitledere"
       }
     },
     "statistics": {

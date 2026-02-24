@@ -326,6 +326,7 @@
       "ifUnitLeaderMissing": "If there is no unit leader in a unit, you can find the unit's game code on the",
       "unitAdminPage": "unit-admin page",
       "giveUnitLeadersAccess": "Give unit leaders access to the challenge",
+      "unitLeaderAccessSent": "Access sent to unit leaders",
       "step6Title": "Go to the admin page to start the unit assignment",
       "step6Description": "The unit task is a separate system, so it must have its own admin page. Continue there, and you will be redirected back here later.",
       "goToUnitTaskAdmin": "Go to the admin page for the unit assignment",
@@ -340,7 +341,8 @@
         "couldNotStartBetting": "Could not start betting",
         "couldNotLockBetting": "Could not lock betting",
         "couldNotReopenBetting": "Could not reopen betting",
-        "couldNotFinishBetting": "Could not complete betting"
+        "couldNotFinishBetting": "Could not complete betting",
+        "couldNotSendUnitLeaderAccess": "Could not send access to unit leaders"
       }
     },
     "statistics": {

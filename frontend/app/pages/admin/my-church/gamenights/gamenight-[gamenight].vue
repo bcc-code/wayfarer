@@ -259,17 +259,34 @@ async function copyLink(url: string) {
   })
 }
 
+const unitLeaderAccessLoading = ref(false)
+const unitLeaderAccessSent = ref(false)
+
 async function enrollUnitLeadersInChallenge() {
   if (!unitLeaderChallengeId.value || !unitLeaders.value?.length) return
+  if (unitLeaderAccessLoading.value) return
+  unitLeaderAccessLoading.value = true
 
-  await bulkEnrollUsersInChallenge({
-    challengeId: unitLeaderChallengeId.value,
-    target: {
-      userIds: unitLeaders.value.map((leader) => leader.id),
-    },
-  })
+  try {
+    await bulkEnrollUsersInChallenge({
+      challengeId: unitLeaderChallengeId.value,
+      target: {
+        userIds: unitLeaders.value.map((leader) => leader.id),
+      },
+    })
 
-  state.value.step++
+    unitLeaderAccessSent.value = true
+    state.value.step++
+  } catch (err) {
+    console.error(err)
+    toast.add({
+      color: 'error',
+      icon: 'lucide:alert-triangle',
+      title: t('admin.gamenight.errors.couldNotSendUnitLeaderAccess'),
+    })
+  } finally {
+    unitLeaderAccessLoading.value = false
+  }
 }
 </script>
 
@@ -545,8 +562,19 @@ async function enrollUnitLeadersInChallenge() {
           :description="$t('admin.gamenight.step5Description')"
           :active="state.step === 6"
         >
-          <UButton size="xl" @click="enrollUnitLeadersInChallenge">
-            {{ $t('admin.gamenight.giveUnitLeadersAccess') }}
+          <UButton
+            size="xl"
+            :loading="unitLeaderAccessLoading"
+            :disabled="unitLeaderAccessSent"
+            :trailing-icon="unitLeaderAccessSent ? 'lucide:check' : undefined"
+            :color="unitLeaderAccessSent ? 'success' : undefined"
+            @click="enrollUnitLeadersInChallenge"
+          >
+            {{
+              unitLeaderAccessSent
+                ? $t('admin.gamenight.unitLeaderAccessSent')
+                : $t('admin.gamenight.giveUnitLeadersAccess')
+            }}
           </UButton>
           <UAlert
             :title="$t('admin.gamenight.tip')"
