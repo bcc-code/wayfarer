@@ -707,7 +707,7 @@ func TestQuizBetting(t *testing.T) {
 			},
 		})
 		require.True(t, resp.HasErrors(), "zero bet should be rejected when betting is enabled")
-		assert.Contains(t, resp.ErrorMessage(), "bet is required when betting is enabled")
+		assert.Contains(t, resp.ErrorMessage(), "bet amount (0) is below minimum")
 	})
 
 	// ==================== BETTING FIELDS ON ALL QUESTION TYPES ====================

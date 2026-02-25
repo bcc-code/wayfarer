@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/firebase"
@@ -18,6 +19,7 @@ type QuizSchedulerHandler struct {
 	DB              *database.DB
 	FirebaseService *firebase.Service
 	WebhookService  *webhooks.Service
+	Cache           *cache.CacheWithRegistry
 }
 
 // QuizSchedulerResponse contains the results of processing scheduled transitions
@@ -179,6 +181,23 @@ func (h *QuizSchedulerHandler) processFinishTransitions(ctx context.Context) (in
 			continue
 		}
 
+		// Invalidate cache for affected users
+		if h.Cache != nil {
+			submissions, subErr := h.DB.Queries.GetSessionSubmissionsWithUserData(ctx, session.ID)
+			if subErr != nil {
+				slog.Warn("quiz_scheduler: failed to get submissions for cache invalidation",
+					"session_id", session.ID,
+					"error", subErr,
+				)
+			} else {
+				for _, sub := range submissions {
+					h.Cache.InvalidateUser(sub.UserID)
+					h.Cache.InvalidateUserQuizSubmissions(sub.UserID)
+					h.Cache.InvalidateQuizSubmission(sub.SubmissionID)
+				}
+			}
+		}
+
 		_, err = h.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
 			ID:    session.ID,
 			State: "FINISHED",
@@ -202,6 +221,11 @@ func (h *QuizSchedulerHandler) processFinishTransitions(ctx context.Context) (in
 			)
 			errors++
 			continue
+		}
+
+		// Invalidate project cache for leaderboard updates
+		if h.Cache != nil {
+			h.Cache.InvalidateProject(quiz.ProjectID)
 		}
 
 		// Notify Firestore

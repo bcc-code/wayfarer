@@ -152,12 +152,12 @@ func TestDecodeChallengeCursor(t *testing.T) {
 	testTime := time.Date(2024, 6, 15, 12, 30, 45, 0, time.UTC)
 
 	tests := []struct {
-		name           string
-		cursor         string
-		expectedTime   time.Time
-		expectedID     string
-		expectError    bool
-		errorContains  string
+		name          string
+		cursor        string
+		expectedTime  time.Time
+		expectedID    string
+		expectError   bool
+		errorContains string
 	}{
 		{
 			name:         "decode empty cursor",

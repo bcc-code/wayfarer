@@ -20,15 +20,15 @@ func TestBuildChallengeFilterParamsCursor(t *testing.T) {
 	cursorTime := time.Date(2024, 6, 15, 12, 0, 0, 0, time.UTC)
 
 	tests := []struct {
-		name        string
-		filter      *model.ChallengeFilter
-		first       *int
-		afterCursor *pagination.ChallengeCursor
-		last        *int
+		name         string
+		filter       *model.ChallengeFilter
+		first        *int
+		afterCursor  *pagination.ChallengeCursor
+		last         *int
 		beforeCursor *pagination.ChallengeCursor
-		expectError bool
-		errorMsg    string
-		check       func(*testing.T, sqlc.GetChallengesFilteredCursorParams)
+		expectError  bool
+		errorMsg     string
+		check        func(*testing.T, sqlc.GetChallengesFilteredCursorParams)
 	}{
 		{
 			name: "forward pagination with all filters",
@@ -39,11 +39,11 @@ func TestBuildChallengeFilterParamsCursor(t *testing.T) {
 				PublishedAfter:  &scalars.DateTime{Time: publishedAfter},
 				PublishedBefore: &scalars.DateTime{Time: publishedBefore},
 			},
-			first:       intPtr(10),
-			afterCursor: &pagination.ChallengeCursor{PublishedAt: cursorTime, ID: "CL005"},
-			last:        nil,
+			first:        intPtr(10),
+			afterCursor:  &pagination.ChallengeCursor{PublishedAt: cursorTime, ID: "CL005"},
+			last:         nil,
 			beforeCursor: nil,
-			expectError: false,
+			expectError:  false,
 			check: func(t *testing.T, params sqlc.GetChallengesFilteredCursorParams) {
 				assert.Equal(t, "PR123", params.Projectid)
 				assert.Equal(t, "EV001", params.Eventid)
@@ -65,11 +65,11 @@ func TestBuildChallengeFilterParamsCursor(t *testing.T) {
 			filter: &model.ChallengeFilter{
 				ProjectID: stringPtr("PR123"),
 			},
-			first:       nil,
-			afterCursor: nil,
-			last:        intPtr(5),
+			first:        nil,
+			afterCursor:  nil,
+			last:         intPtr(5),
 			beforeCursor: &pagination.ChallengeCursor{PublishedAt: cursorTime, ID: "CL100"},
-			expectError: false,
+			expectError:  false,
 			check: func(t *testing.T, params sqlc.GetChallengesFilteredCursorParams) {
 				assert.Equal(t, "PR123", params.Projectid)
 				assert.Equal(t, int32(6), params.Querylimit) // 5 + 1 for hasMore check
@@ -80,23 +80,23 @@ func TestBuildChallengeFilterParamsCursor(t *testing.T) {
 			},
 		},
 		{
-			name:        "both first and last specified - error",
-			filter:      &model.ChallengeFilter{},
-			first:       intPtr(10),
-			afterCursor: nil,
-			last:        intPtr(5),
+			name:         "both first and last specified - error",
+			filter:       &model.ChallengeFilter{},
+			first:        intPtr(10),
+			afterCursor:  nil,
+			last:         intPtr(5),
 			beforeCursor: nil,
-			expectError: true,
-			errorMsg:    "cannot specify both first and last",
+			expectError:  true,
+			errorMsg:     "cannot specify both first and last",
 		},
 		{
-			name:        "default pagination - no first or last",
-			filter:      &model.ChallengeFilter{},
-			first:       nil,
-			afterCursor: nil,
-			last:        nil,
+			name:         "default pagination - no first or last",
+			filter:       &model.ChallengeFilter{},
+			first:        nil,
+			afterCursor:  nil,
+			last:         nil,
 			beforeCursor: nil,
-			expectError: false,
+			expectError:  false,
 			check: func(t *testing.T, params sqlc.GetChallengesFilteredCursorParams) {
 				assert.Equal(t, int32(11), params.Querylimit) // default 10 + 1
 				assert.False(t, params.Isbackward)
@@ -107,11 +107,11 @@ func TestBuildChallengeFilterParamsCursor(t *testing.T) {
 			filter: &model.ChallengeFilter{
 				ProjectID: stringPtr("PR999"),
 			},
-			first:       intPtr(20),
-			afterCursor: nil,
-			last:        nil,
+			first:        intPtr(20),
+			afterCursor:  nil,
+			last:         nil,
 			beforeCursor: nil,
-			expectError: false,
+			expectError:  false,
 			check: func(t *testing.T, params sqlc.GetChallengesFilteredCursorParams) {
 				assert.Equal(t, "PR999", params.Projectid)
 				assert.Equal(t, int32(21), params.Querylimit) // 20 + 1
@@ -122,11 +122,11 @@ func TestBuildChallengeFilterParamsCursor(t *testing.T) {
 			filter: &model.ChallengeFilter{
 				EventID: stringPtr("EV123"),
 			},
-			first:       intPtr(10),
-			afterCursor: nil,
-			last:        nil,
+			first:        intPtr(10),
+			afterCursor:  nil,
+			last:         nil,
 			beforeCursor: nil,
-			expectError: false,
+			expectError:  false,
 			check: func(t *testing.T, params sqlc.GetChallengesFilteredCursorParams) {
 				assert.Equal(t, "EV123", params.Eventid)
 			},
@@ -136,11 +136,11 @@ func TestBuildChallengeFilterParamsCursor(t *testing.T) {
 			filter: &model.ChallengeFilter{
 				ProjectID: stringPtr("PR123"),
 			},
-			first:       intPtr(10),
-			afterCursor: nil,
-			last:        nil,
+			first:        intPtr(10),
+			afterCursor:  nil,
+			last:         nil,
 			beforeCursor: nil,
-			expectError: false,
+			expectError:  false,
 			check: func(t *testing.T, params sqlc.GetChallengesFilteredCursorParams) {
 				assert.Equal(t, "", params.Aftercursorid)
 				assert.Equal(t, "", params.Beforecursorid)
@@ -153,11 +153,11 @@ func TestBuildChallengeFilterParamsCursor(t *testing.T) {
 			filter: &model.ChallengeFilter{
 				ProjectID: stringPtr("PR123"),
 			},
-			first:       intPtr(15),
-			afterCursor: &pagination.ChallengeCursor{PublishedAt: cursorTime, ID: "CL010"},
-			last:        nil,
+			first:        intPtr(15),
+			afterCursor:  &pagination.ChallengeCursor{PublishedAt: cursorTime, ID: "CL010"},
+			last:         nil,
 			beforeCursor: &pagination.ChallengeCursor{PublishedAt: cursorTime.Add(time.Hour), ID: "CL050"},
-			expectError: false,
+			expectError:  false,
 			check: func(t *testing.T, params sqlc.GetChallengesFilteredCursorParams) {
 				assert.Equal(t, int32(16), params.Querylimit) // 15 + 1
 				assert.False(t, params.Isbackward)
@@ -170,24 +170,24 @@ func TestBuildChallengeFilterParamsCursor(t *testing.T) {
 			filter: &model.ChallengeFilter{
 				Ids: []string{"CL001", "CL002", "CL003"},
 			},
-			first:       intPtr(3),
-			afterCursor: nil,
-			last:        nil,
+			first:        intPtr(3),
+			afterCursor:  nil,
+			last:         nil,
 			beforeCursor: nil,
-			expectError: false,
+			expectError:  false,
 			check: func(t *testing.T, params sqlc.GetChallengesFilteredCursorParams) {
 				assert.Equal(t, []string{"CL001", "CL002", "CL003"}, params.Ids)
 				assert.Equal(t, int32(4), params.Querylimit) // 3 + 1
 			},
 		},
 		{
-			name:        "nil filter",
-			filter:      nil,
-			first:       intPtr(10),
-			afterCursor: nil,
-			last:        nil,
+			name:         "nil filter",
+			filter:       nil,
+			first:        intPtr(10),
+			afterCursor:  nil,
+			last:         nil,
 			beforeCursor: nil,
-			expectError: false,
+			expectError:  false,
 			check: func(t *testing.T, params sqlc.GetChallengesFilteredCursorParams) {
 				assert.Equal(t, int32(11), params.Querylimit)
 				assert.Equal(t, "", params.Projectid)
@@ -202,11 +202,11 @@ func TestBuildChallengeFilterParamsCursor(t *testing.T) {
 				ProjectID: stringPtr("PR123"),
 				EventID:   stringPtr("EV456"),
 			},
-			first:       intPtr(10),
-			afterCursor: nil,
-			last:        nil,
+			first:        intPtr(10),
+			afterCursor:  nil,
+			last:         nil,
 			beforeCursor: nil,
-			expectError: false,
+			expectError:  false,
 			check: func(t *testing.T, params sqlc.GetChallengesFilteredCursorParams) {
 				assert.Equal(t, "PR123", params.Projectid)
 				assert.Equal(t, "EV456", params.Eventid)
@@ -217,11 +217,11 @@ func TestBuildChallengeFilterParamsCursor(t *testing.T) {
 			filter: &model.ChallengeFilter{
 				PublishedAfter: &scalars.DateTime{Time: publishedAfter},
 			},
-			first:       intPtr(10),
-			afterCursor: nil,
-			last:        nil,
+			first:        intPtr(10),
+			afterCursor:  nil,
+			last:         nil,
 			beforeCursor: nil,
-			expectError: false,
+			expectError:  false,
 			check: func(t *testing.T, params sqlc.GetChallengesFilteredCursorParams) {
 				assert.True(t, params.Publishedafter.Valid)
 				assert.Equal(t, publishedAfter, params.Publishedafter.Time)
@@ -233,11 +233,11 @@ func TestBuildChallengeFilterParamsCursor(t *testing.T) {
 			filter: &model.ChallengeFilter{
 				PublishedBefore: &scalars.DateTime{Time: publishedBefore},
 			},
-			first:       intPtr(10),
-			afterCursor: nil,
-			last:        nil,
+			first:        intPtr(10),
+			afterCursor:  nil,
+			last:         nil,
 			beforeCursor: nil,
-			expectError: false,
+			expectError:  false,
 			check: func(t *testing.T, params sqlc.GetChallengesFilteredCursorParams) {
 				assert.False(t, params.Publishedafter.Valid)
 				assert.True(t, params.Publishedbefore.Valid)
