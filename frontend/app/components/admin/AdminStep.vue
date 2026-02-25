@@ -11,7 +11,7 @@ defineProps<{
   <section
     :id="`step-${step}`"
     :data-active="active"
-    class="grid grid-cols-[75px_1fr] gap-4 items-baseline py-12 data-[active=false]:opacity-50"
+    class="grid grid-cols-[75px_1fr] gap-4 items-baseline py-12 data-[active=false]:opacity-50 data-[active=false]:pointer-events-none"
   >
     <div>
       <p

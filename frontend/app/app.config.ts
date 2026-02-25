@@ -15,5 +15,10 @@ export default defineAppConfig({
         base: 'size-5!',
       },
     },
+    button: {
+      slots: {
+        base: 'cursor-pointer',
+      },
+    },
   },
 })

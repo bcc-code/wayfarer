@@ -332,13 +332,16 @@ async function enrollUnitLeadersInChallenge() {
       <section
         class="space-y-8 my-6 rounded-2xl p-8 pr-12 border border-muted w-max"
       >
-        <h2 class="text-2xl font-semibold">
-          {{ $t('admin.gamenight.beforeYouStart') }}
-        </h2>
+        <div>
+          <h2 class="text-2xl font-semibold mb-2">
+            {{ $t('admin.gamenight.importantResources') }}
+          </h2>
+          <p>{{ $t('admin.gamenight.importantResourcesDescription') }}</p>
+        </div>
         <div>
           <UCheckbox
             v-model="state.filmsReady"
-            :label="$t('admin.gamenight.ensureFilmsReady')"
+            :label="$t('admin.gamenight.linkToAllFilms')"
           />
           <UButton
             class="ml-7 mt-2"
@@ -352,8 +355,7 @@ async function enrollUnitLeadersInChallenge() {
         <div>
           <UCheckbox
             v-model="state.bigScreenReady"
-            :label="$t('admin.gamenight.haveBigScreenReady')"
-            :description="$t('admin.gamenight.usedInStep5')"
+            :label="$t('admin.gamenight.bigScreen')"
           />
           <UButton
             class="ml-7 mt-2"
@@ -370,49 +372,10 @@ async function enrollUnitLeadersInChallenge() {
       <div class="divide-y divide-muted mb-24">
         <AdminStep
           :step="1"
-          :title="$t('admin.gamenight.step1Title')"
-          :description="$t('admin.gamenight.step1Description')"
-          :active="state.step === 1"
-        >
-          <UAlert
-            :title="$t('admin.gamenight.tip')"
-            :description="$t('admin.gamenight.fullscreenTip')"
-            color="info"
-            icon="lucide:lightbulb"
-            variant="subtle"
-            :ui="{ description: 'text-default' }"
-            class="mb-6"
-          />
-          <UButton
-            size="xl"
-            trailing-icon="lucide:copy"
-            @click="copyLink(bigScreenUrl!)"
-          >
-            {{ $t('admin.gamenight.openBigScreenNewTab') }}
-          </UButton>
-          <UButton
-            class="flex mt-2"
-            variant="outline"
-            trailing-icon="lucide:check"
-            size="xl"
-            @click="goToNextStep"
-          >
-            {{ $t('admin.gamenight.goToNextStep') }}
-          </UButton>
-        </AdminStep>
-        <AdminStep
-          :step="2"
           :title="$t('admin.gamenight.step2Title')"
           :description="$t('admin.gamenight.step2Description')"
-          :active="state.step === 2"
+          :active="state.step === 1"
         >
-          <UButton
-            size="xl"
-            trailing-icon="lucide:copy"
-            @click="copyLink(filmsUrl + '?film=1')"
-          >
-            {{ $t('admin.gamenight.goToFilm', { number: 1 }) }}
-          </UButton>
           <UButton
             class="flex mt-2"
             variant="outline"
@@ -424,57 +387,62 @@ async function enrollUnitLeadersInChallenge() {
           </UButton>
         </AdminStep>
         <AdminStep
-          :step="3"
+          :step="2"
           :title="$t('admin.gamenight.step3Title')"
-          :description="$t('admin.gamenight.step3Description')"
-          :active="state.step === 3"
+          :active="state.step === 2"
         >
-          <div class="flex gap-2 items-center">
-            <UButton
-              v-if="!state.quizSessionState"
-              size="xl"
-              :loading="bettingActionLoading"
-              :disabled="isBettingCountdownActive"
-              color="error"
-              trailing-icon="lucide:triangle-alert"
-              @click="() => startBettingCountdown()"
-            >
-              {{ $t('admin.gamenight.startBetting') }}
-            </UButton>
-            <div
-              v-if="isBettingCountdownActive"
-              class="flex gap-4 items-center tabular-nums"
-            >
-              <p>
-                {{
-                  $t('admin.gamenight.bettingStartingIn', {
-                    seconds: bettingCountdown,
-                  })
-                }}
-              </p>
+          <div class="flex flex-col gap-4 items-start">
+            <p>1. {{ $t('admin.gamenight.step3Description') }}</p>
+            <div class="flex gap-2 items-center">
               <UButton
+                v-if="!state.quizSessionState"
+                size="xl"
+                :loading="bettingActionLoading"
+                :disabled="isBettingCountdownActive"
+                color="error"
+                trailing-icon="lucide:triangle-alert"
+                @click="() => startBettingCountdown()"
+              >
+                {{ $t('admin.gamenight.startBetting') }}
+              </UButton>
+              <div
+                v-if="isBettingCountdownActive"
+                class="flex gap-4 items-center tabular-nums"
+              >
+                <p>
+                  {{
+                    $t('admin.gamenight.bettingStartingIn', {
+                      seconds: bettingCountdown,
+                    })
+                  }}
+                </p>
+                <UButton
+                  variant="soft"
+                  color="neutral"
+                  trailing-icon="lucide:x"
+                  @click="cancelBettingCountdown"
+                >
+                  {{ $t('admin.gamenight.cancelBettingCountdown') }}
+                </UButton>
+              </div>
+              <UButton
+                v-if="state.quizSessionState !== undefined"
+                size="xl"
+                :loading="bettingActionLoading && !state.quizSessionState"
+                disabled
                 variant="soft"
                 color="neutral"
-                trailing-icon="lucide:x"
-                @click="cancelBettingCountdown"
+                trailing-icon="lucide:triangle-alert"
               >
-                {{ $t('admin.gamenight.cancelBettingCountdown') }}
+                {{ $t('admin.gamenight.startBetting') }}
               </UButton>
             </div>
-            <UButton
-              v-if="state.quizSessionState !== undefined"
-              size="xl"
-              :loading="bettingActionLoading && !state.quizSessionState"
-              disabled
-              variant="soft"
-              color="error"
-              trailing-icon="lucide:triangle-alert"
-            >
-              {{ $t('admin.gamenight.startBetting') }}
-            </UButton>
+            <p class="mt-4">
+              2. {{ $t('admin.gamenight.lockBettingDescription') }}
+            </p>
             <div
               v-if="state.quizSessionState === QuizSessionState.Open"
-              class="flex gap-4 items-center"
+              class="flex gap-4 items-center px-4 py-3 border border-muted rounded-2xl"
             >
               <UButton
                 size="xl"
@@ -490,16 +458,17 @@ async function enrollUnitLeadersInChallenge() {
             </div>
             <div
               v-if="state.quizSessionState === QuizSessionState.Locked"
-              class="flex gap-4 items-center"
+              class="flex gap-4 items-center p-4 border border-muted rounded-2xl"
             >
               <UButton
                 size="xl"
                 :loading="bettingActionLoading"
                 :disabled="
                   state.quizSessionState === QuizSessionState.Locked &&
-                  state.step !== 3
+                  state.step !== 2
                 "
-                variant="outline"
+                :variant="state.step === 2 ? 'outline' : 'soft'"
+                :color="state.step === 2 ? 'primary' : 'neutral'"
                 @click="reopenBetting"
               >
                 {{ $t('admin.gamenight.reopenBetting') }}
@@ -507,14 +476,19 @@ async function enrollUnitLeadersInChallenge() {
               <p>{{ $t('admin.gamenight.reopenBettingHint') }}</p>
             </div>
           </div>
+          <p class="mt-8">
+            3. {{ $t('admin.gamenight.makeSureEverybodyBet') }}
+          </p>
           <div
             v-if="state.quizSessionState === QuizSessionState.Locked"
-            class="flex gap-4 items-center mt-12"
+            class="flex gap-4 items-center mt-4"
           >
             <UButton
               trailing-icon="lucide:triangle-alert"
               size="xl"
-              color="error"
+              :variant="state.step === 2 ? 'solid' : 'soft'"
+              :color="state.step === 2 ? 'error' : 'neutral'"
+              :disabled="state.step !== 2"
               @click="goToNextStep"
             >
               {{ $t('admin.gamenight.allBetNextStep') }}
@@ -523,18 +497,11 @@ async function enrollUnitLeadersInChallenge() {
           </div>
         </AdminStep>
         <AdminStep
-          :step="4"
+          :step="3"
           :title="$t('admin.gamenight.step4Title')"
           :description="$t('admin.gamenight.step4Description')"
-          :active="state.step === 4"
+          :active="state.step === 3"
         >
-          <UButton
-            size="xl"
-            trailing-icon="lucide:copy"
-            @click="copyLink(filmsUrl + '?film=2')"
-          >
-            {{ $t('admin.gamenight.goToFilm', { number: 2 }) }}
-          </UButton>
           <UButton
             class="flex mt-2"
             variant="outline"
@@ -546,9 +513,9 @@ async function enrollUnitLeadersInChallenge() {
           </UButton>
         </AdminStep>
         <AdminStep
-          :step="5"
+          :step="4"
           :title="$t('admin.gamenight.step5TitleBigScreen')"
-          :active="state.step === 5"
+          :active="state.step === 4"
         >
           <UButton
             size="xl"
@@ -560,10 +527,10 @@ async function enrollUnitLeadersInChallenge() {
           </UButton>
         </AdminStep>
         <AdminStep
-          :step="6"
+          :step="5"
           :title="$t('admin.gamenight.step5Title')"
           :description="$t('admin.gamenight.step5Description')"
-          :active="state.step === 6"
+          :active="state.step === 5"
         >
           <UButton
             size="xl"
@@ -579,34 +546,12 @@ async function enrollUnitLeadersInChallenge() {
                 : $t('admin.gamenight.giveUnitLeadersAccess')
             }}
           </UButton>
-          <UAlert
-            :title="$t('admin.gamenight.tip')"
-            color="info"
-            variant="subtle"
-            icon="lucide:lightbulb"
-            :ui="{ description: 'text-default' }"
-            class="mt-6"
-          >
-            <template #description>
-              <p>
-                {{ $t('admin.gamenight.ifUnitLeaderMissing') }}
-                <NuxtLink
-                  :to="{ name: 'admin-my-church-units' }"
-                  target="_blank"
-                  class="underline text-info inline-flex items-center gap-0.5"
-                >
-                  {{ $t('admin.gamenight.unitAdminPage') }}
-                  <Icon name="lucide:external-link" />
-                </NuxtLink>
-              </p>
-            </template>
-          </UAlert>
         </AdminStep>
         <AdminStep
-          :step="7"
+          :step="6"
           :title="$t('admin.gamenight.step6Title')"
           :description="$t('admin.gamenight.step6Description')"
-          :active="state.step === 7"
+          :active="state.step === 6"
         >
           <UButton
             :loading="cryptexUrlStatus !== 'success'"
@@ -620,10 +565,15 @@ async function enrollUnitLeadersInChallenge() {
         </AdminStep>
         <div
           class="py-12 pl-22.75 data-[active=false]:pointer-events-none data-[active=false]:opacity-50"
-          :data-active="state.step === 7"
+          :data-active="state.step === 6"
         >
           <p class="text-2xl font-semibold mb-4">
-            {{ $t('admin.gamenight.completeStepsOnOtherPage') }}
+            {{
+              $t('admin.gamenight.completeStepsOnOtherPage', {
+                from: 7,
+                to: 10,
+              })
+            }}
           </p>
           <UButton
             v-if="state.externalAdminVisited"
@@ -636,17 +586,10 @@ async function enrollUnitLeadersInChallenge() {
           </UButton>
         </div>
         <AdminStep
-          :step="13"
+          :step="11"
           :title="$t('admin.gamenight.step12Title')"
-          :active="state.step === 8"
+          :active="state.step === 7"
         >
-          <UButton
-            size="xl"
-            trailing-icon="lucide:copy"
-            @click="copyLink(filmsUrl + '?film=3')"
-          >
-            {{ $t('admin.gamenight.goToFilm', { number: 3 }) }}
-          </UButton>
           <UButton
             class="flex mt-2"
             variant="outline"
@@ -658,9 +601,9 @@ async function enrollUnitLeadersInChallenge() {
           </UButton>
         </AdminStep>
         <AdminStep
-          :step="14"
+          :step="12"
           :title="$t('admin.gamenight.step13Title')"
-          :active="state.step === 9"
+          :active="state.step === 8"
         >
           <UAlert
             :title="$t('admin.gamenight.tip')"
@@ -681,7 +624,7 @@ async function enrollUnitLeadersInChallenge() {
         </AdminStep>
         <div
           class="py-24 text-center text-2xl font-semibold data-[active=false]:pointer-events-none data-[active=false]:opacity-50"
-          :data-active="state.step === 10"
+          :data-active="state.step === 9"
         >
           <p>{{ $t('admin.gamenight.youAreDone') }}</p>
           <p>
