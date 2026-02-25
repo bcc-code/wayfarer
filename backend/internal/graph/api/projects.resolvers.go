@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
@@ -474,6 +475,47 @@ func (r *projectResolver) Challenges(ctx context.Context, obj *model.Project) ([
 		}
 
 		result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
+	}
+
+	// Sort by enrollment time if user is authenticated
+	if userID != "" && len(result) > 0 {
+		// Build keys for enrollment timestamp lookup
+		keys := make([]loaders.UserChallengeKey, len(result))
+		for i, ch := range result {
+			keys[i] = loaders.UserChallengeKey{UserID: userID, ChallengeID: ch.GetID()}
+		}
+
+		// Load all enrollment timestamps in batch
+		thunk := r.Loaders.UserChallengeEnrollmentTimestampLoader.LoadMany(ctx, keys)
+		timestamps, _ := thunk()
+		enrollmentTimes := make(map[string]*time.Time)
+		for i, ts := range timestamps {
+			enrollmentTimes[result[i].GetID()] = ts
+		}
+
+		// Sort: enrolled first (by enrolled_at DESC), then non-enrolled (by published_at DESC)
+		sort.Slice(result, func(i, j int) bool {
+			tsI := enrollmentTimes[result[i].GetID()]
+			tsJ := enrollmentTimes[result[j].GetID()]
+
+			// Enrolled challenges come first
+			if (tsI != nil) != (tsJ != nil) {
+				return tsI != nil
+			}
+
+			// Both enrolled: sort by enrolled_at DESC
+			if tsI != nil && tsJ != nil {
+				return tsI.After(*tsJ)
+			}
+
+			// Both not enrolled: sort by published_at DESC
+			pubI := result[i].GetPublishedAt()
+			pubJ := result[j].GetPublishedAt()
+			if pubI != nil && pubJ != nil {
+				return pubI.Time.After(pubJ.Time)
+			}
+			return pubI != nil // Non-nil published_at comes first
+		})
 	}
 
 	return result, nil
