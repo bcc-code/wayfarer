@@ -269,24 +269,6 @@ function handleContinue() {
   })
 }
 
-const { t } = useI18n()
-const continueText = computed(() => {
-  if (props.currentIndex === props.totalQuestions - 1) {
-    return t('quiz.continue')
-  }
-  return t('quiz.nextQuestion')
-})
-
-// In readonly mode, use isLastQuestion prop to determine the next button text
-const nextButtonText = computed(() => {
-  if (props.readonly) {
-    return props.isLastQuestion
-      ? t('quiz.finishReview')
-      : t('quiz.nextQuestion')
-  }
-  return continueText.value
-})
-
 function handlePrevious() {
   emit('previous')
 }
@@ -347,9 +329,9 @@ defineExpose({ actionState, handlers })
           v-model="items"
           ghost-class="invisible"
           drag-class="scale-105"
+          handle=".handle"
           :animation="200"
           :disabled="!canDrag"
-          :delay="200"
           class="flex flex-col gap-small"
         >
           <div
@@ -389,7 +371,7 @@ defineExpose({ actionState, handlers })
             </span>
             <div
               v-if="canDrag"
-              class="text-text-muted shrink-0 flex items-center cursor-default"
+              class="handle text-text-muted shrink-0 flex items-center cursor-default p-medium -m-medium"
             >
               <UIcon name="lucide:grip-vertical" class="size-4" />
             </div>
