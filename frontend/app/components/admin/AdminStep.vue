@@ -16,7 +16,7 @@ defineProps<{
     <div>
       <p
         :data-active="active"
-        class="text-2xl rounded-full grid place-items-center bg-accented aspect-square size-12 data-[active=true]:bg-primary data-[active=true]:text-neutral-900"
+        class="text-2xl rounded-full grid place-items-center bg-accented aspect-square size-12 data-[active=true]:bg-primary data-[active=true]:text-neutral-100 dark:data-[active=true]:text-neutral-900"
       >
         {{ step }}
       </p>
