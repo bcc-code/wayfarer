@@ -185,8 +185,7 @@ onMounted(async () => {
 const activeSubmission = computed(() => {
   // Determine the target submission ID
   const submissionId =
-    startedSubmission.value?.id ??
-    props.challenge.quiz.userActiveSubmission?.id
+    startedSubmission.value?.id ?? props.challenge.quiz.userActiveSubmission?.id
 
   // Prefer props data when available (has full responses with pointsEarned from server)
   if (submissionId) {
@@ -301,6 +300,35 @@ const isSessionLockedOrFinished = computed(() => {
     sessionState.value === QuizSessionState.Locked ||
     sessionState.value === QuizSessionState.Finished
   )
+})
+
+// Compute correct count for ordering questions (for betting results)
+const bettingCorrectCount = computed(() => {
+  const response = currentResponse.value
+  const question = currentQuestion.value
+  if (!response || !question) return null
+  if (response.__typename !== 'OrderingResponse') return null
+  if (question.__typename !== 'OrderingQuestion') return null
+
+  const correctOrderIds = [...question.orderingItems]
+    .sort((a, b) => (a.correctOrder ?? 0) - (b.correctOrder ?? 0))
+    .map((item) => item.id)
+
+  let count = 0
+  for (
+    let i = 0;
+    i < response.submittedOrder.length && i < correctOrderIds.length;
+    i++
+  ) {
+    if (response.submittedOrder[i] === correctOrderIds[i]) count++
+  }
+  return count
+})
+
+const bettingTotalCount = computed(() => {
+  const question = currentQuestion.value
+  if (!question || question.__typename !== 'OrderingQuestion') return null
+  return question.orderingItems.length
 })
 
 // Find existing ordering response for the current question
@@ -788,6 +816,8 @@ const progressResults = computed(() => {
             :points-earned="currentResponse?.pointsEarned"
             :bet-amount="currentResponse?.betAmount"
             :available-points="userScore ?? 0"
+            :correct-count="bettingCorrectCount"
+            :total-count="bettingTotalCount"
           />
           <NuxtLink :to="{ name: 'challenges' }" class="flex">
             <DesignButton

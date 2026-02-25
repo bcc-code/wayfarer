@@ -49,7 +49,7 @@
       "pointsLost": "Points lost",
       "pointsEarned": "Points earned",
       "resultYourBet": "Your bet",
-      "correctCount": "You had {count} correct",
+      "correctCount": "You had one correct | You had {count} correct",
       "correctCountAll": "You had all correct",
       "correctCountNone": "You had none correct",
       "bettingResult": "Betting result"
