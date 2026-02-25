@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { formatNumber } from '~/utils/formatters'
+
 const props = withDefaults(
   defineProps<{
     availablePoints: number
@@ -10,6 +12,8 @@ const props = withDefaults(
     mode?: 'betting' | 'locked' | 'results'
     pointsEarned?: number | null
     betAmount?: number | null
+    correctCount?: number | null
+    totalCount?: number | null
   }>(),
   {
     minPercentage: null,
@@ -20,6 +24,8 @@ const props = withDefaults(
     mode: 'betting',
     pointsEarned: null,
     betAmount: null,
+    correctCount: null,
+    totalCount: null,
   },
 )
 
@@ -67,36 +73,78 @@ const resultAmount = computed(() => {
   if (props.pointsEarned === null || props.pointsEarned === undefined) return 0
   return props.pointsEarned + (props.betAmount ?? 0)
 })
+
+const multiplier = computed(() => {
+  if (!props.betAmount || props.betAmount === 0) return 0
+  return resultAmount.value / props.betAmount
+})
+
+const formattedMultiplier = computed(() => {
+  const m = multiplier.value
+  return `x ${Number.isInteger(m) ? m : m.toFixed(1)}`
+})
+
+const correctCountLabel = computed(() => {
+  if (props.correctCount === null || props.totalCount === null) return null
+  if (props.correctCount === 0) return t('quiz.betting.correctCountNone')
+  if (props.correctCount === props.totalCount)
+    return t('quiz.betting.correctCountAll')
+  return t('quiz.betting.correctCount', { count: props.correctCount })
+})
 </script>
 
 <template>
   <!-- Results mode: show win/loss -->
   <div
     v-if="mode === 'results'"
-    class="flex flex-col gap-default py-default text-on-accent"
+    class="flex flex-col pb-default pt-medium text-on-accent"
   >
-    <div class="grid grid-cols-2 divide-x divide-on-accent/20">
-      <div class="text-center pl-default pr-medium">
-        <p class="text-caption">
-          {{ t('quiz.betting.resultYourBet') }}
-        </p>
-        <p class="text-title tabular-nums">-{{ betAmount }}</p>
-      </div>
-      <div class="text-center pr-default pl-medium">
-        <p class="text-caption">
-          {{ t('quiz.betting.winnings') }}
-        </p>
-        <p class="text-title tabular-nums">+{{ resultAmount }}</p>
-      </div>
+    <!-- Info rows -->
+    <div
+      class="flex justify-between items-center pb-3 border-b border-on-accent/20"
+    >
+      <span class="text-body">{{ t('quiz.betting.resultYourBet') }}</span>
+      <span class="text-label tabular-nums">
+        {{ formatNumber(betAmount ?? 0) }}
+      </span>
     </div>
-    <div class="text-center">
+    <div
+      v-if="correctCountLabel !== null"
+      class="flex justify-between items-center py-3 border-b border-on-accent/20"
+    >
+      <span class="text-body">{{ correctCountLabel }}</span>
+      <span
+        v-if="correctCount !== null && correctCount > 0"
+        class="text-label tabular-nums"
+      >
+        {{ formattedMultiplier }}
+      </span>
+    </div>
+    <div
+      v-if="
+        correctCountLabel !== null && correctCount !== null && correctCount > 0
+      "
+      class="flex justify-between items-center py-3 border-b border-on-accent/20"
+    >
+      <span class="text-body">{{ t('quiz.betting.bettingResult') }}</span>
+      <span class="text-label tabular-nums">
+        {{ formatNumber(resultAmount) }}
+      </span>
+    </div>
+
+    <!-- Large result display -->
+    <div class="text-center pt-default">
       <p class="text-caption">
         {{
           isWin ? t('quiz.betting.pointsEarned') : t('quiz.betting.pointsLost')
         }}
       </p>
       <p class="text-hero tabular-nums leading-tight">
-        {{ isWin ? `+${pointsEarned}` : pointsEarned }}
+        {{
+          isWin
+            ? `+${formatNumber(pointsEarned ?? 0)}`
+            : formatNumber(pointsEarned ?? 0)
+        }}
       </p>
     </div>
   </div>

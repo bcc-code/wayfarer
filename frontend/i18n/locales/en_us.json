@@ -46,7 +46,13 @@
       "results": "Result",
       "yourPoints": "Dine poeng",
       "winnings": "Winnings",
-      "losses": "Points lost"
+      "pointsLost": "Points lost",
+      "pointsEarned": "Points earned",
+      "resultYourBet": "Your bet",
+      "correctCount": "You had {count} correct",
+      "correctCountAll": "You had all correct",
+      "correctCountNone": "You had none correct",
+      "bettingResult": "Betting result"
     },
     "result": {
       "receivedNoPoints": "You did not receive any points.",

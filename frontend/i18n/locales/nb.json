@@ -48,7 +48,11 @@
       "winnings": "Gevinst",
       "pointsLost": "Poeng tapt",
       "pointsEarned": "Poeng tjent",
-      "resultYourBet": "Satset"
+      "resultYourBet": "Din innsats",
+      "correctCount": "Du hadde {count} riktige",
+      "correctCountAll": "Du hadde alle riktige",
+      "correctCountNone": "Du hadde ingen riktige",
+      "bettingResult": "Tipping resultat"
     },
     "result": {
       "receivedNoPoints": "Du samlet ingen poeng.",
