@@ -187,11 +187,10 @@ func (h *quizFinalizedHandler) handle(c *gin.Context) {
 	usersAffected := make(map[string]bool)
 	submissionsAffected := make(map[string]bool)
 	userNetPoints := make(map[string]int) // userID -> net points for internal tracking
-	userWinnings := make(map[string]int)  // userID -> total winnings for notifications
 
 	for _, response := range responses {
 		userID := submissionUserMap[response.SubmissionID]
-		netPts, winnings, processed, err := h.processResponse(ctx, response, userID, req.ProjectID, eventID, req.Data.ChallengeID, challengeName, questionAnswers)
+		netPts, _, processed, err := h.processResponse(ctx, response, userID, req.ProjectID, eventID, req.Data.ChallengeID, challengeName, questionAnswers)
 		if err != nil {
 			slog.Error("ladder_to_heaven: session_finished: failed to process response",
 				"error", err, "response_id", response.ID)
@@ -204,7 +203,6 @@ func (h *quizFinalizedHandler) handle(c *gin.Context) {
 			usersAffected[userID] = true
 			submissionsAffected[response.SubmissionID] = true
 			userNetPoints[userID] += netPts
-			userWinnings[userID] += winnings
 		}
 	}
 
@@ -230,16 +228,10 @@ func (h *quizFinalizedHandler) handle(c *gin.Context) {
 		}
 
 		// Send bet result notifications
-		// For wins (netPoints > 0): show total winnings
-		// For losses (netPoints < 0): show net points (negative value shows loss amount)
+		// Shows net points: positive for net gain, negative for net loss
 		if h.pushService != nil && req.Data.ChallengeID != "" {
 			for userID, netPts := range userNetPoints {
-				var notificationPoints int
-				if netPts > 0 {
-					notificationPoints = userWinnings[userID]
-				} else {
-					notificationPoints = netPts
-				}
+				notificationPoints := netPts
 				go push.SendTranslatedBetResultNotification(
 					h.pushService,
 					h.loaders,
