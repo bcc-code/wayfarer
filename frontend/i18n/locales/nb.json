@@ -49,7 +49,7 @@
       "pointsLost": "Poeng tapt",
       "pointsEarned": "Poeng tjent",
       "resultYourBet": "Din innsats",
-      "correctCount": "Du hadde én riktig | Du hadde {count} riktige",
+      "correctCount": "Du hadde {count} riktige",
       "correctCountAll": "Du hadde alle riktige",
       "correctCountNone": "Du hadde ingen riktige",
       "bettingResult": "Tipping resultat"

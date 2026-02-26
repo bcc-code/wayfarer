@@ -89,11 +89,7 @@ const correctCountLabel = computed(() => {
   if (props.correctCount === 0) return t('quiz.betting.correctCountNone')
   if (props.correctCount === props.totalCount)
     return t('quiz.betting.correctCountAll')
-  return t(
-    'quiz.betting.correctCount',
-    { count: props.correctCount },
-    props.correctCount,
-  )
+  return t('quiz.betting.correctCount', { count: props.correctCount })
 })
 </script>
 
