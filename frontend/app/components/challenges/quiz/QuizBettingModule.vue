@@ -81,7 +81,7 @@ const multiplier = computed(() => {
 
 const formattedMultiplier = computed(() => {
   const m = multiplier.value
-  return `x ${Number.isInteger(m) ? m : m.toFixed(1)}`
+  return `x ${Number.isInteger(m) ? m : parseFloat(m.toFixed(2))}`
 })
 
 const correctCountLabel = computed(() => {
