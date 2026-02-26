@@ -49,9 +49,9 @@
       "pointsLost": "Puncte pierdute",
       "pointsEarned": "Puncte câștigate",
       "resultYourBet": "Rezultatul pariului tău",
-      "correctCount": "Ai pus o echipă pe locul corect | Ai pus {count}echipe pe locul corect",
-      "correctCountAll": "Ai pus toate echipele pe locul corect",
-      "correctCountNone": "Nu ai pus nicio echipă pe locul corect",
+      "correctCount": "Ai pus {count} echipe pe poziția corectă",
+      "correctCountAll": "Ai pus toate echipele pe poziția corectă",
+      "correctCountNone": "Nu ai pus nicio echipă pe poziția corectă",
       "bettingResult": "Rezultatul pariului tău"
     },
     "result": {
