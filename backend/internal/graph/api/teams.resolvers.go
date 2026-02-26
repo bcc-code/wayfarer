@@ -1456,23 +1456,14 @@ func (r *teamMemberResolver) Church(ctx context.Context, obj *model.TeamMember) 
 }
 
 // User is the resolver for the user field.
+// Note: Authorization is handled by the parent Team.Members resolver (CanManageTeam check).
+// No additional per-member check is needed here — if you can access the team's members,
+// you can view the User details of each member (including cross-church members).
 func (r *teamMemberResolver) User(ctx context.Context, obj *model.TeamMember) (*model.User, error) {
-	// Get current user ID from context
-	currentUserID, ok := middleware.GetUserID(ctx)
-	if !ok || currentUserID == "" {
-		return nil, fmt.Errorf("user not authenticated")
-	}
-
-	// Load user first to get churchId for authorization
 	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.UserID)
 	user, err := thunk()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load user: %w", err)
-	}
-
-	// Check authorization with user's church
-	if !r.RoleService.CanAccessUser(ctx, currentUserID, obj.UserID, user.ChurchID) {
-		return nil, fmt.Errorf("permission denied")
 	}
 
 	return user, nil
