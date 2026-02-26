@@ -269,24 +269,6 @@ function handleContinue() {
   })
 }
 
-const { t } = useI18n()
-const continueText = computed(() => {
-  if (props.currentIndex === props.totalQuestions - 1) {
-    return t('quiz.continue')
-  }
-  return t('quiz.nextQuestion')
-})
-
-// In readonly mode, use isLastQuestion prop to determine the next button text
-const nextButtonText = computed(() => {
-  if (props.readonly) {
-    return props.isLastQuestion
-      ? t('quiz.finishReview')
-      : t('quiz.nextQuestion')
-  }
-  return continueText.value
-})
-
 function handlePrevious() {
   emit('previous')
 }
@@ -345,7 +327,9 @@ defineExpose({ actionState, handlers })
       <div ref="containerRef" class="flex flex-col justify-center">
         <VueDraggable
           v-model="items"
-          ghost-class="ordering-ghost"
+          ghost-class="invisible"
+          drag-class="scale-105"
+          handle=".handle"
           :animation="200"
           :disabled="!canDrag"
           class="flex flex-col gap-small"
@@ -370,14 +354,24 @@ defineExpose({ actionState, handlers })
                   isSessionFinished && !itemResults?.[index]?.isCorrect,
               }"
             >
-              {{ index + 1 }}
+              <span v-if="!isSessionFinished">{{ index + 1 }}</span>
+              <Icon
+                v-if="isSessionFinished && itemResults?.[index]?.isCorrect"
+                name="IconCheck"
+                class="size-4"
+              />
+              <Icon
+                v-if="isSessionFinished && !itemResults?.[index]?.isCorrect"
+                name="IconClose"
+                class="size-4"
+              />
             </div>
             <span class="text-label text-text-default flex-1 text-left">
               {{ item.itemText }}
             </span>
             <div
               v-if="canDrag"
-              class="text-text-hint shrink-0 flex items-center cursor-default"
+              class="handle text-text-muted shrink-0 flex items-center cursor-default p-medium -m-medium"
             >
               <UIcon name="lucide:grip-vertical" class="size-4" />
             </div>

@@ -6,6 +6,7 @@ import (
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/graph/pagination"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -20,7 +21,7 @@ const (
 )
 
 // buildChallengeFilterParamsCursor converts GraphQL filter and cursor pagination params to database query parameters
-func buildChallengeFilterParamsCursor(filter *model.ChallengeFilter, first *int, after *string, last *int, before *string) (sqlc.GetChallengesFilteredCursorParams, error) {
+func buildChallengeFilterParamsCursor(filter *model.ChallengeFilter, first *int, afterCursor *pagination.ChallengeCursor, last *int, beforeCursor *pagination.ChallengeCursor) (sqlc.GetChallengesFilteredCursorParams, error) {
 	params := sqlc.GetChallengesFilteredCursorParams{}
 
 	// Apply filters if provided
@@ -79,13 +80,21 @@ func buildChallengeFilterParamsCursor(filter *model.ChallengeFilter, first *int,
 	params.Querylimit = int32(limit)
 	params.Isbackward = isBackward
 
-	// Set cursors
-	if after != nil && *after != "" {
-		params.Aftercursor = *after
+	// Set composite cursors (publishedAt + id)
+	if afterCursor != nil && afterCursor.ID != "" {
+		params.Aftercursorpublishedat = pgtype.Timestamptz{
+			Time:  afterCursor.PublishedAt,
+			Valid: true,
+		}
+		params.Aftercursorid = afterCursor.ID
 	}
 
-	if before != nil && *before != "" {
-		params.Beforecursor = *before
+	if beforeCursor != nil && beforeCursor.ID != "" {
+		params.Beforecursorpublishedat = pgtype.Timestamptz{
+			Time:  beforeCursor.PublishedAt,
+			Valid: true,
+		}
+		params.Beforecursorid = beforeCursor.ID
 	}
 
 	return params, nil

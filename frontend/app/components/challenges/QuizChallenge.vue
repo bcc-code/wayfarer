@@ -183,17 +183,21 @@ onMounted(async () => {
 })
 
 const activeSubmission = computed(() => {
-  // Use the started submission if we just started
-  if (startedSubmission.value) {
-    return startedSubmission.value
+  // Determine the target submission ID
+  const submissionId =
+    startedSubmission.value?.id ?? props.challenge.quiz.userActiveSubmission?.id
+
+  // Prefer props data when available (has full responses with pointsEarned from server)
+  if (submissionId) {
+    const fromProps = props.challenge.quiz.userSubmissions.find(
+      (submission) => submission.id === submissionId,
+    )
+    if (fromProps) return fromProps
   }
 
-  // If there's an active submission, use it
-  const activeSubmissionId = props.challenge.quiz.userActiveSubmission?.id
-  if (activeSubmissionId) {
-    return props.challenge.quiz.userSubmissions.find(
-      (submission) => submission.id === activeSubmissionId,
-    )
+  // Fallback to started submission (before page has refetched to include this submission)
+  if (startedSubmission.value) {
+    return startedSubmission.value
   }
 
   // If session is LOCKED or FINISHED but no active submission, use the completed submission
@@ -296,6 +300,35 @@ const isSessionLockedOrFinished = computed(() => {
     sessionState.value === QuizSessionState.Locked ||
     sessionState.value === QuizSessionState.Finished
   )
+})
+
+// Compute correct count for ordering questions (for betting results)
+const bettingCorrectCount = computed(() => {
+  const response = currentResponse.value
+  const question = currentQuestion.value
+  if (!response || !question) return null
+  if (response.__typename !== 'OrderingResponse') return null
+  if (question.__typename !== 'OrderingQuestion') return null
+
+  const correctOrderIds = [...question.orderingItems]
+    .sort((a, b) => (a.correctOrder ?? 0) - (b.correctOrder ?? 0))
+    .map((item) => item.id)
+
+  let count = 0
+  for (
+    let i = 0;
+    i < response.submittedOrder.length && i < correctOrderIds.length;
+    i++
+  ) {
+    if (response.submittedOrder[i] === correctOrderIds[i]) count++
+  }
+  return count
+})
+
+const bettingTotalCount = computed(() => {
+  const question = currentQuestion.value
+  if (!question || question.__typename !== 'OrderingQuestion') return null
+  return question.orderingItems.length
 })
 
 // Find existing ordering response for the current question
@@ -541,7 +574,7 @@ const progressResults = computed(() => {
         v-show="!isBettingEnabled || sessionState !== QuizSessionState.Locked"
       >
         <div
-          class="flex flex-col items-center justify-center py-6 px-default gap-1 text-center"
+          class="flex flex-col items-center justify-center py-3 px-medium gap-1 text-center"
         >
           <p v-if="questions.length > 1" class="text-caption text-text-muted">
             {{
@@ -551,7 +584,9 @@ const progressResults = computed(() => {
               })
             }}
           </p>
-          <h1 class="text-heading text-text-default text-balance">
+          <h1
+            class="text-heading limitedHeight:text-label text-text-default text-balance"
+          >
             {{ currentQuestion.questionText }}
           </h1>
         </div>
@@ -686,7 +721,7 @@ const progressResults = computed(() => {
       <div
         v-if="actionState && !quizCompleted"
         :class="[
-          'w-full p-default flex flex-col gap-4',
+          'w-full p-default flex flex-col gap-4 shadow-large',
           {
             'bg-background-raised':
               isBettingEnabled && sessionState !== QuizSessionState.Finished,
@@ -781,6 +816,8 @@ const progressResults = computed(() => {
             :points-earned="currentResponse?.pointsEarned"
             :bet-amount="currentResponse?.betAmount"
             :available-points="userScore ?? 0"
+            :correct-count="bettingCorrectCount"
+            :total-count="bettingTotalCount"
           />
           <NuxtLink :to="{ name: 'challenges' }" class="flex">
             <DesignButton

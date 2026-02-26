@@ -1,6 +1,10 @@
 package pagination
 
-import "github.com/bcc-media/wayfarer/internal/graph/api/model"
+import (
+	"time"
+
+	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+)
 
 // getChallengeID extracts the ID from any Challenge implementation
 func getChallengeID(c model.Challenge) string {
@@ -351,21 +355,30 @@ func buildAchievementPageInfo(params BuildAchievementConnectionParams, edges []m
 
 // BuildChallengeConnectionParams holds parameters for building a ChallengeConnection
 type BuildChallengeConnectionParams struct {
-	Challenges      []model.Challenge
-	RequestedFirst  *int
-	RequestedLast   *int
-	RequestedAfter  *string
-	RequestedBefore *string
-	TotalCount      int
-	HasMore         bool
+	Challenges       []model.Challenge
+	CursorTimestamps []time.Time // Timestamps for cursor encoding (COALESCE(published_at, created_at))
+	RequestedFirst   *int
+	RequestedLast    *int
+	RequestedAfter   *string
+	RequestedBefore  *string
+	TotalCount       int
+	HasMore          bool
 }
 
 // BuildChallengeConnection constructs a Relay-style connection from query results
 func BuildChallengeConnection(params BuildChallengeConnectionParams) *model.ChallengeConnection {
 	edges := make([]model.ChallengeEdge, len(params.Challenges))
 	for i, challenge := range params.Challenges {
+		// Use composite cursor with timestamp + id for proper pagination by published_at DESC
+		var cursor string
+		if i < len(params.CursorTimestamps) {
+			cursor = EncodeChallengeCursor(params.CursorTimestamps[i], getChallengeID(challenge))
+		} else {
+			// Fallback to simple ID cursor if timestamps not provided
+			cursor = EncodeCursor(getChallengeID(challenge))
+		}
 		edges[i] = model.ChallengeEdge{
-			Cursor: EncodeCursor(getChallengeID(challenge)),
+			Cursor: cursor,
 			Node:   challenge,
 		}
 	}

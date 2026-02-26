@@ -131,3 +131,4 @@ Each project can contain multiple events, which usually is some form of in-perso
 - NEVER SEED WITHOUT EXPLICIT PERMISSION
 - Do not run migration without explicit aproval!
 - To run codegen in the backend, run `make generate`
+- Before claiming any backend work is finished, run `make fmt` and `make test` in the backend folder. All tests must pass.

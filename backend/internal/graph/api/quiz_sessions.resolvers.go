@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"math/rand"
 	"time"
 
@@ -356,6 +357,22 @@ func (r *mutationResolver) FinishQuizSession(ctx context.Context, id string) (*m
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to auto-submit submissions: %w", err)
 	}
+
+	// Invalidate cache for affected users
+	submissions, subErr := r.DB.Queries.GetSessionSubmissionsWithUserData(ctx, id)
+	if subErr != nil {
+		slog.Warn("failed to get session submissions for cache invalidation",
+			"session_id", id,
+			"error", subErr,
+		)
+	} else {
+		for _, sub := range submissions {
+			r.Cache.InvalidateUser(sub.UserID)
+			r.Cache.InvalidateUserQuizSubmissions(sub.UserID)
+			r.Cache.InvalidateQuizSubmission(sub.SubmissionID)
+		}
+	}
+	r.Cache.InvalidateProject(quiz.ProjectID)
 
 	row, err := r.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
 		ID:    id,

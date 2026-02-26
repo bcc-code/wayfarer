@@ -36,6 +36,7 @@ WHERE event_id = ANY(@event_ids::text[])
 ORDER BY event_id, COALESCE(published_at, created_at) DESC;
 
 -- name: GetChallengesFilteredCursor :many
+-- Sorted by published_at DESC (newest first) by default, using COALESCE to handle NULL published_at
 SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 FROM challenges
 WHERE
@@ -45,11 +46,19 @@ WHERE
     AND (@challengetype::text = '' OR challenge_type = @challengetype::text)
     AND (@publishedafter::timestamptz IS NULL OR published_at >= @publishedafter::timestamptz)
     AND (@publishedbefore::timestamptz IS NULL OR published_at <= @publishedbefore::timestamptz)
-    AND (@aftercursor::text = '' OR id > @aftercursor::text)
-    AND (@beforecursor::text = '' OR id < @beforecursor::text)
+    AND (
+        @aftercursorpublishedat::timestamptz IS NULL
+        OR (COALESCE(published_at, created_at), id) < (@aftercursorpublishedat::timestamptz, @aftercursorid::text)
+    )
+    AND (
+        @beforecursorpublishedat::timestamptz IS NULL
+        OR (COALESCE(published_at, created_at), id) > (@beforecursorpublishedat::timestamptz, @beforecursorid::text)
+    )
 ORDER BY
-    CASE WHEN @isbackward::bool = true THEN id END DESC,
-    CASE WHEN @isbackward::bool = false OR @isbackward::bool IS NULL THEN id END ASC
+    CASE WHEN @isbackward::bool = true THEN COALESCE(published_at, created_at) END ASC,
+    CASE WHEN @isbackward::bool = true THEN id END ASC,
+    CASE WHEN @isbackward::bool = false OR @isbackward::bool IS NULL THEN COALESCE(published_at, created_at) END DESC,
+    CASE WHEN @isbackward::bool = false OR @isbackward::bool IS NULL THEN id END DESC
 LIMIT CASE WHEN @querylimit::int IS NULL THEN NULL ELSE @querylimit::int END;
 
 -- name: CountChallengesFiltered :one

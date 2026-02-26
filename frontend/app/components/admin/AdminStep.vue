@@ -11,12 +11,12 @@ defineProps<{
   <section
     :id="`step-${step}`"
     :data-active="active"
-    class="grid grid-cols-[75px_1fr] gap-4 items-baseline py-12 data-[active=false]:pointer-events-none data-[active=false]:opacity-50"
+    class="grid grid-cols-[75px_1fr] gap-4 items-baseline py-12 data-[active=false]:opacity-50 data-[active=false]:pointer-events-none"
   >
     <div>
       <p
         :data-active="active"
-        class="text-2xl rounded-full grid place-items-center bg-accented aspect-square size-12 data-[active=true]:bg-primary data-[active=true]:text-neutral-900"
+        class="text-2xl rounded-full grid place-items-center bg-accented aspect-square size-12 data-[active=true]:bg-primary data-[active=true]:text-neutral-100 dark:data-[active=true]:text-neutral-900"
       >
         {{ step }}
       </p>

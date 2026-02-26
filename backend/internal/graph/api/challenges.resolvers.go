@@ -1035,17 +1035,17 @@ func (r *queryResolver) Challenges(ctx context.Context, filter *model.ChallengeF
 		}
 	}
 
-	// Decode cursors if provided
-	var afterCursor, beforeCursor *string
+	// Decode composite cursors if provided
+	var afterCursor, beforeCursor *pagination.ChallengeCursor
 	if after != nil && *after != "" {
-		decoded, err := pagination.DecodeCursor(*after)
+		decoded, err := pagination.DecodeChallengeCursor(*after)
 		if err != nil {
 			return nil, fmt.Errorf("invalid after cursor: %w", err)
 		}
 		afterCursor = &decoded
 	}
 	if before != nil && *before != "" {
-		decoded, err := pagination.DecodeCursor(*before)
+		decoded, err := pagination.DecodeChallengeCursor(*before)
 		if err != nil {
 			return nil, fmt.Errorf("invalid before cursor: %w", err)
 		}
@@ -1108,21 +1108,29 @@ func (r *queryResolver) Challenges(ctx context.Context, filter *model.ChallengeF
 		}
 	}
 
-	// Convert to GraphQL model
+	// Convert to GraphQL model and compute cursor timestamps
 	modelChallenges := make([]model.Challenge, len(challengeRows))
+	cursorTimestamps := make([]time.Time, len(challengeRows))
 	for i, row := range challengeRows {
 		modelChallenges[i] = convertGetChallengesFilteredCursorRowToChallenge(row)
+		// Use COALESCE(published_at, created_at) for cursor timestamp, matching SQL ORDER BY
+		if row.PublishedAt.Valid {
+			cursorTimestamps[i] = row.PublishedAt.Time
+		} else {
+			cursorTimestamps[i] = row.CreatedAt.Time
+		}
 	}
 
 	// Build connection using pagination helper
 	connection := pagination.BuildChallengeConnection(pagination.BuildChallengeConnectionParams{
-		Challenges:      modelChallenges,
-		RequestedFirst:  first,
-		RequestedLast:   last,
-		RequestedAfter:  after,
-		RequestedBefore: before,
-		TotalCount:      int(totalCount),
-		HasMore:         hasMore,
+		Challenges:       modelChallenges,
+		CursorTimestamps: cursorTimestamps,
+		RequestedFirst:   first,
+		RequestedLast:    last,
+		RequestedAfter:   after,
+		RequestedBefore:  before,
+		TotalCount:       int(totalCount),
+		HasMore:          hasMore,
 	})
 
 	// Store in cache

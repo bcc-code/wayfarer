@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { formatNumber } from '~/utils/formatters'
+
 const props = withDefaults(
   defineProps<{
     availablePoints: number
@@ -10,6 +12,8 @@ const props = withDefaults(
     mode?: 'betting' | 'locked' | 'results'
     pointsEarned?: number | null
     betAmount?: number | null
+    correctCount?: number | null
+    totalCount?: number | null
   }>(),
   {
     minPercentage: null,
@@ -20,6 +24,8 @@ const props = withDefaults(
     mode: 'betting',
     pointsEarned: null,
     betAmount: null,
+    correctCount: null,
+    totalCount: null,
   },
 )
 
@@ -65,13 +71,29 @@ const isWin = computed(() => {
 
 const resultAmount = computed(() => {
   if (props.pointsEarned === null || props.pointsEarned === undefined) return 0
-  if (isWin.value) {
-    // For wins, show actual winnings (pointsEarned is net, so add back the stake)
-    return props.pointsEarned + (props.betAmount ?? 0)
-  } else {
-    // For losses, show the stake lost
-    return Math.abs(props.pointsEarned)
-  }
+  return props.pointsEarned + (props.betAmount ?? 0)
+})
+
+const multiplier = computed(() => {
+  if (!props.betAmount || props.betAmount === 0) return 0
+  return resultAmount.value / props.betAmount
+})
+
+const formattedMultiplier = computed(() => {
+  const m = multiplier.value
+  return `x ${Number.isInteger(m) ? m : m.toFixed(1)}`
+})
+
+const correctCountLabel = computed(() => {
+  if (props.correctCount === null || props.totalCount === null) return null
+  if (props.correctCount === 0) return t('quiz.betting.correctCountNone')
+  if (props.correctCount === props.totalCount)
+    return t('quiz.betting.correctCountAll')
+  return t(
+    'quiz.betting.correctCount',
+    { count: props.correctCount },
+    props.correctCount,
+  )
 })
 </script>
 
@@ -79,28 +101,55 @@ const resultAmount = computed(() => {
   <!-- Results mode: show win/loss -->
   <div
     v-if="mode === 'results'"
-    class="flex flex-col gap-default pb-default text-on-accent"
+    class="flex flex-col pb-default pt-medium text-on-accent"
   >
-    <p class="text-center text-caption opacity-50">
-      {{ t('quiz.betting.results') }}
-    </p>
-    <div class="grid grid-cols-2 divide-x divide-on-accent/20">
-      <div class="text-center pr-default pl-medium">
-        <p class="text-caption">
-          {{ isWin ? t('quiz.betting.winnings') : t('quiz.betting.losses') }}
-        </p>
-        <p class="text-heading tabular-nums">
-          {{ isWin ? '+' : '-' }}{{ resultAmount }}
-        </p>
-      </div>
-      <div class="text-center pl-default pr-medium">
-        <p class="text-caption">
-          {{ t('quiz.betting.yourPoints') }}
-        </p>
-        <p class="text-heading tabular-nums">
-          {{ availablePoints }}
-        </p>
-      </div>
+    <!-- Info rows -->
+    <div
+      class="flex justify-between items-center pb-3 border-b border-on-accent/20"
+    >
+      <span class="text-body">{{ t('quiz.betting.resultYourBet') }}</span>
+      <span class="text-label tabular-nums">
+        {{ formatNumber(betAmount ?? 0) }}
+      </span>
+    </div>
+    <div
+      v-if="correctCountLabel !== null"
+      class="flex justify-between items-center py-3 border-b border-on-accent/20"
+    >
+      <span class="text-body">{{ correctCountLabel }}</span>
+      <span
+        v-if="correctCount !== null && correctCount > 0"
+        class="text-label tabular-nums"
+      >
+        {{ formattedMultiplier }}
+      </span>
+    </div>
+    <div
+      v-if="
+        correctCountLabel !== null && correctCount !== null && correctCount > 0
+      "
+      class="flex justify-between items-center py-3 border-b border-on-accent/20"
+    >
+      <span class="text-body">{{ t('quiz.betting.bettingResult') }}</span>
+      <span class="text-label tabular-nums">
+        {{ formatNumber(resultAmount) }}
+      </span>
+    </div>
+
+    <!-- Large result display -->
+    <div class="text-center pt-default">
+      <p class="text-caption">
+        {{
+          isWin ? t('quiz.betting.pointsEarned') : t('quiz.betting.pointsLost')
+        }}
+      </p>
+      <p class="text-hero tabular-nums leading-tight">
+        {{
+          isWin
+            ? `+${formatNumber(pointsEarned ?? 0)}`
+            : formatNumber(pointsEarned ?? 0)
+        }}
+      </p>
     </div>
   </div>
 
@@ -108,7 +157,7 @@ const resultAmount = computed(() => {
   <div v-else class="flex flex-col gap-default pb-default">
     <div class="grid grid-cols-2 divide-x divide-border-default">
       <div class="text-center pr-default pl-medium">
-        <p class="text-text-hint text-caption">
+        <p class="text-text-muted text-caption">
           {{ t('quiz.betting.remainingPoints') }}
         </p>
         <p class="text-heading tabular-nums text-text-default">
@@ -116,10 +165,10 @@ const resultAmount = computed(() => {
         </p>
       </div>
       <div class="text-center pl-default pr-medium">
-        <p class="text-accent-contrast text-caption">
+        <p class="text-text-muted text-caption">
           {{ t('quiz.betting.yourBet') }}
         </p>
-        <p class="text-heading tabular-nums text-text-default">
+        <p class="text-heading tabular-nums text-accent-contrast">
           {{ betAmountModel }}
         </p>
       </div>
@@ -140,7 +189,7 @@ const resultAmount = computed(() => {
         :step="1"
         :disabled="disabled"
       />
-      <p v-if="maxBetMessage" class="text-caption text-text-hint text-center">
+      <p v-if="maxBetMessage" class="text-caption text-text-muted text-center">
         {{ maxBetMessage }}
       </p>
     </div>
