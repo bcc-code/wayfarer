@@ -97,7 +97,10 @@ const correctCountLabel = computed(() => {
   <!-- Results mode: show win/loss -->
   <div
     v-if="mode === 'results'"
-    class="flex flex-col pb-default pt-medium text-on-accent"
+    :class="[
+      'flex flex-col pb-default pt-medium',
+      isWin !== null ? 'text-on-accent' : 'text-text-default',
+    ]"
   >
     <!-- Info rows -->
     <div

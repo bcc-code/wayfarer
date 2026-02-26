@@ -286,7 +286,7 @@ const isBettingWin = computed(() => {
   if (!isBettingEnabled.value) return null
   const pointsEarned = currentResponse.value?.pointsEarned
   if (pointsEarned === null || pointsEarned === undefined) return null
-  return pointsEarned > 0
+  return pointsEarned >= 0
 })
 
 // Get session state for ordering questions betting mode
@@ -724,7 +724,9 @@ const progressResults = computed(() => {
           'w-full p-default flex flex-col gap-4 shadow-large',
           {
             'bg-background-raised':
-              isBettingEnabled && sessionState !== QuizSessionState.Finished,
+              isBettingEnabled &&
+              (sessionState !== QuizSessionState.Finished ||
+                isBettingWin === null),
             'bg-accent-positive':
               isBettingEnabled &&
               sessionState === QuizSessionState.Finished &&
