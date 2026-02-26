@@ -722,8 +722,10 @@ type FeedbackEdge struct {
 }
 
 type FeedbackFilter struct {
-	UserID *string  `json:"userId,omitempty"`
-	Tags   []string `json:"tags,omitempty"`
+	UserID   *string  `json:"userId,omitempty"`
+	Tags     []string `json:"tags,omitempty"`
+	Handled  *bool    `json:"handled,omitempty"`
+	Platform *string  `json:"platform,omitempty"`
 }
 
 type FileUpload struct {

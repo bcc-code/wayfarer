@@ -741,6 +741,8 @@ export type FeedbackEdge = {
 };
 
 export type FeedbackFilter = {
+  handled?: InputMaybe<Scalars['Boolean']['input']>;
+  platform?: InputMaybe<Scalars['String']['input']>;
   tags?: InputMaybe<Array<Scalars['String']['input']>>;
   userId?: InputMaybe<Scalars['ID']['input']>;
 };
@@ -1964,6 +1966,7 @@ export type Query = {
   externalContent: ExternalContent;
   externalContents: ExternalContentConnection;
   feedback: FeedbackConnection;
+  feedbackPlatforms: Array<Scalars['String']['output']>;
   feedbackTags: Array<Scalars['String']['output']>;
   fileUpload?: Maybe<FileUpload>;
   firebaseToken: FirebaseTokenResponse;
@@ -3953,6 +3956,11 @@ export type FeedbackTagsQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type FeedbackTagsQuery = { __typename?: 'Query', feedbackTags: Array<string> };
 
+export type FeedbackPlatformsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type FeedbackPlatformsQuery = { __typename?: 'Query', feedbackPlatforms: Array<string> };
+
 export type UpdateFeedbackTagsMutationVariables = Exact<{
   feedbackId: Scalars['ID']['input'];
   tags: Array<Scalars['String']['input']> | Scalars['String']['input'];
@@ -5864,6 +5872,15 @@ export const FeedbackTagsDocument = gql`
 
 export function useFeedbackTagsQuery(options?: Omit<Urql.UseQueryArgs<never, FeedbackTagsQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<FeedbackTagsQuery, FeedbackTagsQueryVariables | undefined>({ query: FeedbackTagsDocument, variables: undefined, ...options });
+};
+export const FeedbackPlatformsDocument = gql`
+    query FeedbackPlatforms {
+  feedbackPlatforms
+}
+    `;
+
+export function useFeedbackPlatformsQuery(options?: Omit<Urql.UseQueryArgs<never, FeedbackPlatformsQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<FeedbackPlatformsQuery, FeedbackPlatformsQueryVariables | undefined>({ query: FeedbackPlatformsDocument, variables: undefined, ...options });
 };
 export const UpdateFeedbackTagsDocument = gql`
     mutation UpdateFeedbackTags($feedbackId: ID!, $tags: [String!]!) {

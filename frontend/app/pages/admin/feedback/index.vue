@@ -65,6 +65,12 @@ gql(`
 `)
 
 gql(`
+  query FeedbackPlatforms {
+    feedbackPlatforms
+  }
+`)
+
+gql(`
   mutation UpdateFeedbackTags($feedbackId: ID!, $tags: [String!]!) {
     updateFeedbackTags(feedbackId: $feedbackId, tags: $tags) {
       id
@@ -77,11 +83,15 @@ const pagination = usePagination({
   defaultPageSize: 15,
 })
 
-// Tag filter
+// Filters
 const selectedTags = ref<string[]>([])
+const selectedPlatform = ref<string | undefined>()
+const handledFilter = ref<boolean | undefined>()
 
 const filter = computed(() => ({
   tags: selectedTags.value.length > 0 ? selectedTags.value : undefined,
+  handled: handledFilter.value,
+  platform: selectedPlatform.value,
 }))
 
 const queryVariables = computed(() => ({
@@ -99,13 +109,17 @@ const { data: tagsData, executeQuery: refetchTags } = useFeedbackTagsQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
+const { data: platformsData } = useFeedbackPlatformsQuery({
+  pause: computed(() => !isAuthReady.value),
+})
+
 // Refresh when Firestore notifies of updates
 useFirestoreRefresh(['AdminFeedbackPageDocument'], () => {
   executeQuery({ requestPolicy: 'network-only' })
 })
 
 // Reset pagination when filter changes
-watch(selectedTags, () => {
+watch([selectedTags, selectedPlatform, handledFilter], () => {
   pagination.reset()
 })
 
@@ -121,6 +135,15 @@ const feedbacks = computed(() =>
 )
 
 const allUniqueTags = computed(() => tagsData.value?.feedbackTags ?? [])
+const allPlatforms = computed(
+  () => platformsData.value?.feedbackPlatforms ?? [],
+)
+
+const handledOptions = [
+  { label: 'Alle', value: undefined },
+  { label: 'Ubehandlet', value: false },
+  { label: 'Behandlet', value: true },
+]
 
 type FeedbackNode = NonNullable<typeof feedbacks.value>[number]
 
@@ -276,13 +299,44 @@ async function handleUpdateTags(feedbackId: string, tags: string[]) {
             />
           </template>
         </USelectMenu>
+        <USelectMenu
+          v-model="selectedPlatform"
+          :items="allPlatforms"
+          placeholder="Plattform..."
+          icon="lucide:monitor-smartphone"
+          size="sm"
+          class="min-w-40"
+        />
+        <USelectMenu
+          :model-value="
+            handledOptions.find((o) => o.value === handledFilter)?.value
+          "
+          :items="handledOptions"
+          value-key="value"
+          label-key="label"
+          placeholder="Status..."
+          icon="lucide:check-circle"
+          size="sm"
+          class="min-w-40"
+          @update:model-value="handledFilter = $event"
+        />
         <UButton
-          v-if="selectedTags.length > 0"
+          v-if="
+            selectedTags.length > 0 ||
+            selectedPlatform !== undefined ||
+            handledFilter !== undefined
+          "
           variant="ghost"
           size="sm"
           color="neutral"
           label="Nullstill"
-          @click="selectedTags = []"
+          @click="
+            () => {
+              selectedTags = []
+              selectedPlatform = undefined
+              handledFilter = undefined
+            }
+          "
         />
         <RelayPagination v-model:pagination="pagination" class="ml-auto" />
       </div>
