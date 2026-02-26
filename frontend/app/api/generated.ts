@@ -1964,6 +1964,7 @@ export type Query = {
   externalContent: ExternalContent;
   externalContents: ExternalContentConnection;
   feedback: FeedbackConnection;
+  feedbackTags: Array<Scalars['String']['output']>;
   fileUpload?: Maybe<FileUpload>;
   firebaseToken: FirebaseTokenResponse;
   frontendConfig: Scalars['JSON']['output'];
@@ -3947,6 +3948,11 @@ export type AdminFeedbackPageQueryVariables = Exact<{
 
 export type AdminFeedbackPageQuery = { __typename?: 'Query', feedback: { __typename?: 'FeedbackConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'FeedbackEdge', cursor: string, node: { __typename?: 'UserFeedback', id: string, message: string, canContactMe: boolean, userAgent?: string | null, platform?: string | null, screenWidth?: number | null, screenHeight?: number | null, appVersion?: string | null, locale?: string | null, projectId?: string | null, timezone?: string | null, contextUrl?: string | null, tags: Array<string>, createdAt: any, handledAt?: any | null, user: { __typename?: 'User', id: string, name: string, email: string } } }> } };
 
+export type FeedbackTagsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type FeedbackTagsQuery = { __typename?: 'Query', feedbackTags: Array<string> };
+
 export type UpdateFeedbackTagsMutationVariables = Exact<{
   feedbackId: Scalars['ID']['input'];
   tags: Array<Scalars['String']['input']> | Scalars['String']['input'];
@@ -5849,6 +5855,15 @@ export const AdminFeedbackPageDocument = gql`
 
 export function useAdminFeedbackPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminFeedbackPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminFeedbackPageQuery, AdminFeedbackPageQueryVariables | undefined>({ query: AdminFeedbackPageDocument, variables: undefined, ...options });
+};
+export const FeedbackTagsDocument = gql`
+    query FeedbackTags {
+  feedbackTags
+}
+    `;
+
+export function useFeedbackTagsQuery(options?: Omit<Urql.UseQueryArgs<never, FeedbackTagsQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<FeedbackTagsQuery, FeedbackTagsQueryVariables | undefined>({ query: FeedbackTagsDocument, variables: undefined, ...options });
 };
 export const UpdateFeedbackTagsDocument = gql`
     mutation UpdateFeedbackTags($feedbackId: ID!, $tags: [String!]!) {

@@ -327,6 +327,15 @@ func (r *queryResolver) Feedback(ctx context.Context, filter *model.FeedbackFilt
 	}), nil
 }
 
+// FeedbackTags is the resolver for the feedbackTags field.
+func (r *queryResolver) FeedbackTags(ctx context.Context) ([]string, error) {
+	tags, err := r.DB.Queries.GetDistinctFeedbackTags(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get feedback tags: %w", err)
+	}
+	return tags, nil
+}
+
 // User is the resolver for the user field.
 func (r *userFeedbackResolver) User(ctx context.Context, obj *model.UserFeedback) (*model.User, error) {
 	// Get current user ID from context

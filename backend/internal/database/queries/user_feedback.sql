@@ -84,3 +84,6 @@ UPDATE user_feedback
 SET tags = @tags::text[]
 WHERE id = @id::text
 RETURNING *;
+
+-- name: GetDistinctFeedbackTags :many
+SELECT DISTINCT unnest(tags)::text AS tag FROM user_feedback ORDER BY tag;

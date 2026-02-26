@@ -747,6 +747,7 @@ type ComplexityRoot struct {
 		ExternalContent               func(childComplexity int, id string) int
 		ExternalContents              func(childComplexity int, filter model.ExternalContentFilter, sortBy *model.ExternalContentSortBy, first *int, after *string, last *int, before *string) int
 		Feedback                      func(childComplexity int, filter *model.FeedbackFilter, first *int, after *string, last *int, before *string) int
+		FeedbackTags                  func(childComplexity int) int
 		FileUpload                    func(childComplexity int, id string) int
 		FirebaseToken                 func(childComplexity int) int
 		FrontendConfig                func(childComplexity int) int
@@ -1536,6 +1537,7 @@ type QueryResolver interface {
 	PushNotificationsEnabled(ctx context.Context) (bool, error)
 	VapidPublicKey(ctx context.Context) (string, error)
 	Feedback(ctx context.Context, filter *model.FeedbackFilter, first *int, after *string, last *int, before *string) (*model.FeedbackConnection, error)
+	FeedbackTags(ctx context.Context) ([]string, error)
 	Webhook(ctx context.Context, id string) (*model.Webhook, error)
 	Webhooks(ctx context.Context, projectID string) ([]model.Webhook, error)
 	FileUpload(ctx context.Context, id string) (*model.FileUpload, error)
@@ -5435,6 +5437,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Feedback(childComplexity, args["filter"].(*model.FeedbackFilter), args["first"].(*int), args["after"].(*string), args["last"].(*int), args["before"].(*string)), true
+	case "Query.feedbackTags":
+		if e.complexity.Query.FeedbackTags == nil {
+			break
+		}
+
+		return e.complexity.Query.FeedbackTags(childComplexity), true
 	case "Query.fileUpload":
 		if e.complexity.Query.FileUpload == nil {
 			break
@@ -10371,6 +10379,7 @@ input FeedbackFilter {
 
 extend type Query {
     feedback(filter: FeedbackFilter, first: Int, after: String, last: Int, before: String): FeedbackConnection! @requireRole(roles: ["admin", "superadmin"])
+    feedbackTags: [String!]! @requireRole(roles: ["admin", "superadmin"])
 }
 
 extend type Mutation {
@@ -36679,6 +36688,53 @@ func (ec *executionContext) fieldContext_Query_feedback(ctx context.Context, fie
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_feedbackTags(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_feedbackTags,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().FeedbackTags(ctx)
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				if err != nil {
+					var zeroVal []string
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal []string
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_feedbackTags(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_webhook(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -61933,6 +61989,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_feedback(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "feedbackTags":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_feedbackTags(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}

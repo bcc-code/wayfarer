@@ -180,6 +180,30 @@ func (q *Queries) GetAllFeedback(ctx context.Context, arg GetAllFeedbackParams) 
 	return items, nil
 }
 
+const GetDistinctFeedbackTags = `-- name: GetDistinctFeedbackTags :many
+SELECT DISTINCT unnest(tags)::text AS tag FROM user_feedback ORDER BY tag
+`
+
+func (q *Queries) GetDistinctFeedbackTags(ctx context.Context) ([]string, error) {
+	rows, err := q.db.Query(ctx, GetDistinctFeedbackTags)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var tag string
+		if err := rows.Scan(&tag); err != nil {
+			return nil, err
+		}
+		items = append(items, tag)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetFeedbackByID = `-- name: GetFeedbackByID :one
 SELECT id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone, handled_at, context_url, tags FROM user_feedback WHERE id = $1::text
 `
