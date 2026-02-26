@@ -49,7 +49,7 @@
       "pointsLost": "Points perdus",
       "pointsEarned": "Points gagnés",
       "resultYourBet": "Ta mise",
-      "correctCount": "Tu avais une bonne réponse | Tu avais {count} bonnes réponses",
+      "correctCount": "Tu avais {count} bonnes réponses",
       "correctCountAll": "Tu avais toutes les bonnes réponses.",
       "correctCountNone": "Tu n'avais aucune bonne réponse",
       "bettingResult": "Résultat des paris"
