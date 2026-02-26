@@ -49,7 +49,7 @@
       "pointsLost": "Kaotatud punktid",
       "pointsEarned": "Teenitud punktid",
       "resultYourBet": "Sinu panus",
-      "correctCount": "Sul oli üks õige | Sul oli{count} õiget",
+      "correctCount": "Sul oli{count}õiget",
       "correctCountAll": "Sul olid kõik õiged",
       "correctCountNone": "Sul polnud ühtegi õiget",
       "bettingResult": "Ennustuse tulemus"
