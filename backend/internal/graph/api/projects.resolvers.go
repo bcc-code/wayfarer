@@ -727,6 +727,46 @@ func (r *projectResolver) Journal(ctx context.Context, obj *model.Project, filte
 	return r.getScoreJournal(ctx, obj.ID, userID, filter, first, after, last, before)
 }
 
+// MyPoints is the resolver for the myPoints field.
+func (r *projectResolver) MyPoints(ctx context.Context, obj *model.Project) (int, error) {
+	// M2M users get 0 without DB query
+	userRoles := middleware.GetUserRoles(ctx)
+	for _, role := range userRoles {
+		if role == "m2m" {
+			return 0, nil
+		}
+	}
+
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return 0, fmt.Errorf("user not authenticated")
+	}
+
+	// Check cache
+	cacheKey := cache.UserProjectPointsKey(userID, obj.ID)
+	if cached, ok := r.Cache.Get(cacheKey); ok {
+		if points, ok := cached.(int); ok {
+			return points, nil
+		}
+	}
+
+	// Query database using existing GetUserScore
+	score, err := r.DB.Queries.GetUserScore(ctx, sqlc.GetUserScoreParams{
+		UserID:    userID,
+		ProjectID: obj.ID,
+		EventID:   "", // Empty = all events in project
+	})
+	if err != nil {
+		return 0, fmt.Errorf("failed to get user score: %w", err)
+	}
+
+	// Cache result
+	points := int(score)
+	r.Cache.Set(cacheKey, points)
+
+	return points, nil
+}
+
 // Project is the resolver for the project field.
 func (r *queryResolver) Project(ctx context.Context, id string) (*model.Project, error) {
 	// Use translation-aware wrapper to fetch project

@@ -35,7 +35,7 @@ const isInitialLoading = computed(() => fetching.value && !data.value)
       <QuizChallenge
         v-if="data.challenge.__typename === 'QuizChallenge'"
         :challenge="data.challenge"
-        :user-score="data.myCurrentProject?.leaderboard.me?.score ?? 0"
+        :user-score="data.myCurrentProject?.myPoints ?? 0"
       />
       <PluginChallenge
         v-if="data.challenge.__typename === 'PluginChallenge'"

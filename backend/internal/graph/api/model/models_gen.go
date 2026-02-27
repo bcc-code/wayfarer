@@ -1150,6 +1150,7 @@ type Project struct {
 	Achievements     []Achievement           `json:"achievements"`
 	Streaks          []Streak                `json:"streaks"`
 	Journal          *ScoreJournalConnection `json:"journal"`
+	MyPoints         int                     `json:"myPoints"`
 	ArchivedAt       *bool                   `json:"archivedAt,omitempty"`
 	InfoMessageRaw   *string                 `json:"-"`
 	RulesRaw         *string                 `json:"-"`

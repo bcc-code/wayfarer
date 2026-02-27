@@ -698,6 +698,7 @@ type ComplexityRoot struct {
 		Journal          func(childComplexity int, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) int
 		Leaderboard      func(childComplexity int, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) int
 		MyChurchTeams    func(childComplexity int) int
+		MyPoints         func(childComplexity int) int
 		MyTeam           func(childComplexity int) int
 		Name             func(childComplexity int) int
 		Rules            func(childComplexity int) int
@@ -1487,6 +1488,7 @@ type ProjectResolver interface {
 	Achievements(ctx context.Context, obj *model.Project) ([]model.Achievement, error)
 	Streaks(ctx context.Context, obj *model.Project) ([]model.Streak, error)
 	Journal(ctx context.Context, obj *model.Project, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error)
+	MyPoints(ctx context.Context, obj *model.Project) (int, error)
 }
 type QueryResolver interface {
 	Me(ctx context.Context) (*model.User, error)
@@ -5165,6 +5167,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Project.MyChurchTeams(childComplexity), true
+	case "Project.myPoints":
+		if e.complexity.Project.MyPoints == nil {
+			break
+		}
+
+		return e.complexity.Project.MyPoints(childComplexity), true
 	case "Project.myTeam":
 		if e.complexity.Project.MyTeam == nil {
 			break
@@ -8224,6 +8232,7 @@ type Project {
         last: Int
         before: String
     ): ScoreJournalConnection! @goField(forceResolver: true)
+    myPoints: Int! @goField(forceResolver: true)
     archivedAt: Boolean
 }
 
@@ -15908,6 +15917,8 @@ func (ec *executionContext) fieldContext_ContentAchievement_project(_ context.Co
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -16767,6 +16778,8 @@ func (ec *executionContext) fieldContext_Event_parentProject(_ context.Context, 
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -17172,6 +17185,8 @@ func (ec *executionContext) fieldContext_ExternalChallenge_project(_ context.Con
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -20878,6 +20893,8 @@ func (ec *executionContext) fieldContext_Mutation_joinProject(ctx context.Contex
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -20979,6 +20996,8 @@ func (ec *executionContext) fieldContext_Mutation_createProject(ctx context.Cont
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -21080,6 +21099,8 @@ func (ec *executionContext) fieldContext_Mutation_updateProject(ctx context.Cont
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -31503,6 +31524,8 @@ func (ec *executionContext) fieldContext_PluginChallenge_project(_ context.Conte
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -33417,6 +33440,35 @@ func (ec *executionContext) fieldContext_Project_journal(ctx context.Context, fi
 	return fc, nil
 }
 
+func (ec *executionContext) _Project_myPoints(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Project_myPoints,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Project().MyPoints(ctx, obj)
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Project_myPoints(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Project",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Project_archivedAt(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -33640,6 +33692,8 @@ func (ec *executionContext) fieldContext_ProjectEdge_node(_ context.Context, fie
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -33994,6 +34048,8 @@ func (ec *executionContext) fieldContext_Query_project(ctx context.Context, fiel
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -34125,6 +34181,8 @@ func (ec *executionContext) fieldContext_Query_myProjects(_ context.Context, fie
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -34196,6 +34254,8 @@ func (ec *executionContext) fieldContext_Query_myCurrentProject(_ context.Contex
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -34267,6 +34327,8 @@ func (ec *executionContext) fieldContext_Query_currentProject(_ context.Context,
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -37346,6 +37408,8 @@ func (ec *executionContext) fieldContext_Quiz_project(_ context.Context, field g
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -38262,6 +38326,8 @@ func (ec *executionContext) fieldContext_QuizAchievement_project(_ context.Conte
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -38838,6 +38904,8 @@ func (ec *executionContext) fieldContext_QuizChallenge_project(_ context.Context
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -41175,6 +41243,8 @@ func (ec *executionContext) fieldContext_RoleScope_project(_ context.Context, fi
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -41326,6 +41396,8 @@ func (ec *executionContext) fieldContext_ScoreJournal_project(_ context.Context,
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -42346,6 +42418,8 @@ func (ec *executionContext) fieldContext_SimpleAchievement_project(_ context.Con
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -42793,6 +42867,8 @@ func (ec *executionContext) fieldContext_SimpleChallenge_project(_ context.Conte
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -43428,6 +43504,8 @@ func (ec *executionContext) fieldContext_Streak_project(_ context.Context, field
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -43780,6 +43858,8 @@ func (ec *executionContext) fieldContext_StreakAchievement_project(_ context.Con
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -44517,6 +44597,8 @@ func (ec *executionContext) fieldContext_SuperTeam_parentProject(_ context.Conte
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -45298,6 +45380,8 @@ func (ec *executionContext) fieldContext_Team_parentProject(_ context.Context, f
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -46220,6 +46304,8 @@ func (ec *executionContext) fieldContext_User_projects(_ context.Context, field 
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -47963,6 +48049,8 @@ func (ec *executionContext) fieldContext_Webhook_project(_ context.Context, fiel
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -60745,6 +60833,42 @@ func (ec *executionContext) _Project(ctx context.Context, sel ast.SelectionSet, 
 					}
 				}()
 				res = ec._Project_journal(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "myPoints":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Project_myPoints(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}

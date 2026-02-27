@@ -1,10 +1,6 @@
 query ChallengePage($challengeId: ID!) {
   myCurrentProject {
-    leaderboard(entityType: PERSONS) {
-      me {
-        score
-      }
-    }
+    myPoints
   }
   challenge(id: $challengeId) {
     __typename

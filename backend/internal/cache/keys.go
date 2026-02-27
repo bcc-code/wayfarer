@@ -97,6 +97,9 @@ const (
 
 	// Score journal
 	PrefixScoreJournal = "scorejournal:"
+
+	// User project points (myPoints field)
+	PrefixUserProjectPoints = "userprojectpoints:"
 )
 
 // Key builders for different entity types
@@ -400,6 +403,7 @@ func ExtractUserTag(key string) (string, bool) {
 		PrefixUserContentProgress, PrefixUserAchievements,
 		PrefixUserStreakActivity, PrefixUserChallengeEnrollments,
 		PrefixUserChallengeCompletions, PrefixUserConsents,
+		PrefixUserProjectPoints,
 	}
 	for _, prefix := range prefixes {
 		if strings.HasPrefix(key, prefix) {
@@ -1236,4 +1240,9 @@ func ExternalContentTranslationsKey(externalContentID string) string {
 // ScoreJournalKey builds a cache key for a score journal entry by ID
 func ScoreJournalKey(id string) string {
 	return PrefixScoreJournal + id
+}
+
+// UserProjectPointsKey builds a cache key for a user's points in a project (myPoints field)
+func UserProjectPointsKey(userID, projectID string) string {
+	return fmt.Sprintf("%s%s:%s", PrefixUserProjectPoints, userID, projectID)
 }

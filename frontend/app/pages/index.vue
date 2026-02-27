@@ -205,7 +205,7 @@ const hiddenTreasuresLink = computed(() => {
         key="current-project"
         :project-name="data.myCurrentProject.name"
         :banner="data.myCurrentProject.branding.bannerImage"
-        :score="data.myCurrentProject.leaderboard.me?.score"
+        :score="data.myCurrentProject.myPoints"
         :rank="data.myCurrentProject.leaderboard.me?.rank"
         :achievements="data.myCurrentProject.achievements"
       >
