@@ -94,6 +94,49 @@ func (q *Queries) AwardUserAchievementIdempotent(ctx context.Context, arg AwardU
 	return err
 }
 
+const AwardUserAchievementsBatch = `-- name: AwardUserAchievementsBatch :many
+INSERT INTO user_achievements (user_id, achievement_id, achieved_at)
+SELECT
+    unnest($1::text[]),
+    $2::text,
+    COALESCE($3::timestamptz, now())
+ON CONFLICT (user_id, achievement_id) DO NOTHING
+RETURNING user_id, achievement_id, achieved_at
+`
+
+type AwardUserAchievementsBatchParams struct {
+	UserIds       []string           `json:"user_ids"`
+	AchievementID string             `json:"achievement_id"`
+	AchievedAt    pgtype.Timestamptz `json:"achieved_at"`
+}
+
+type AwardUserAchievementsBatchRow struct {
+	UserID        string             `json:"user_id"`
+	AchievementID string             `json:"achievement_id"`
+	AchievedAt    pgtype.Timestamptz `json:"achieved_at"`
+}
+
+// Award achievement to multiple users in a single query, returns only newly inserted rows
+func (q *Queries) AwardUserAchievementsBatch(ctx context.Context, arg AwardUserAchievementsBatchParams) ([]*AwardUserAchievementsBatchRow, error) {
+	rows, err := q.db.Query(ctx, AwardUserAchievementsBatch, arg.UserIds, arg.AchievementID, arg.AchievedAt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*AwardUserAchievementsBatchRow{}
+	for rows.Next() {
+		var i AwardUserAchievementsBatchRow
+		if err := rows.Scan(&i.UserID, &i.AchievementID, &i.AchievedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const CheckContentItemInAchievement = `-- name: CheckContentItemInAchievement :one
 SELECT EXISTS(
     SELECT 1 FROM content_achievement_items

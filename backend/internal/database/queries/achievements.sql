@@ -352,6 +352,16 @@ FROM team_members tm
 WHERE tm.team_id = @team_id::text
 ON CONFLICT (user_id, achievement_id) DO NOTHING;
 
+-- name: AwardUserAchievementsBatch :many
+-- Award achievement to multiple users in a single query, returns only newly inserted rows
+INSERT INTO user_achievements (user_id, achievement_id, achieved_at)
+SELECT
+    unnest(@user_ids::text[]),
+    @achievement_id::text,
+    COALESCE(@achieved_at::timestamptz, now())
+ON CONFLICT (user_id, achievement_id) DO NOTHING
+RETURNING user_id, achievement_id, achieved_at;
+
 -- name: AwardSuperTeamAchievementBatch :exec
 -- Award achievement to all members of a superteam (through all teams in superteam) in a single query
 INSERT INTO user_achievements (user_id, achievement_id, achieved_at)

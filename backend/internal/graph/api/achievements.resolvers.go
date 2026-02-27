@@ -1218,8 +1218,118 @@ func (r *mutationResolver) RevokeAchievement(ctx context.Context, userID string,
 }
 
 // BulkAwardAchievements is the resolver for the bulkAwardAchievements field.
-func (r *mutationResolver) BulkAwardAchievements(ctx context.Context, userIds []string, achievementID string) ([]model.Achievement, error) {
-	panic(fmt.Errorf("not implemented: BulkAwardAchievements - bulkAwardAchievements"))
+func (r *mutationResolver) BulkAwardAchievements(ctx context.Context, userIds []string, teamID *string, achievementID string) ([]model.Achievement, error) {
+	// Validate that at least one of userIds or teamID is provided
+	hasUserIds := len(userIds) > 0
+	hasTeamId := teamID != nil && *teamID != ""
+	if !hasUserIds && !hasTeamId {
+		return nil, fmt.Errorf("at least one of userIds or teamId must be provided")
+	}
+
+	// Load achievement via caching loader
+	achievementThunk := r.Loaders.AchievementByIDLoader.Load(ctx, achievementID)
+	achievement, err := achievementThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load achievement: %w", err)
+	}
+
+	// Check if achievement is awardable based on awardable_from timestamp
+	if err := isAchievementAwardable(getAchievementAwardableFrom(achievement)); err != nil {
+		return nil, err
+	}
+
+	projectID := getAchievementProjectID(achievement)
+	eventID := getAchievementEventID(achievement)
+
+	// Collect all user IDs to award
+	allUserIDs := make([]string, 0)
+	userIDSet := make(map[string]bool)
+
+	// Add explicitly provided user IDs
+	for _, uid := range userIds {
+		if !userIDSet[uid] {
+			userIDSet[uid] = true
+			allUserIDs = append(allUserIDs, uid)
+		}
+	}
+
+	// If teamID is provided, get team members
+	if hasTeamId {
+		teamUsers, err := r.DB.Queries.GetUsersByTeamIDs(ctx, []string{*teamID})
+		if err != nil {
+			return nil, fmt.Errorf("failed to get team members: %w", err)
+		}
+		for _, user := range teamUsers {
+			if !userIDSet[user.ID] {
+				userIDSet[user.ID] = true
+				allUserIDs = append(allUserIDs, user.ID)
+			}
+		}
+	}
+
+	if len(allUserIDs) == 0 {
+		// No users to award, return empty result
+		return []model.Achievement{}, nil
+	}
+
+	// Award achievement to all users in a single batch query
+	// Returns only newly inserted rows (not already awarded users)
+	awardedRows, err := r.DB.Queries.AwardUserAchievementsBatch(ctx, sqlc.AwardUserAchievementsBatchParams{
+		UserIds:       allUserIDs,
+		AchievementID: achievementID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to award achievement: %w", err)
+	}
+
+	// Collect newly awarded user IDs
+	newlyAwardedUserIDs := make([]string, len(awardedRows))
+	for i, row := range awardedRows {
+		newlyAwardedUserIDs[i] = row.UserID
+	}
+
+	// Invalidate user caches and achievement timestamp caches for all attempted users
+	for _, uid := range allUserIDs {
+		r.Cache.InvalidateUser(uid)
+		r.Cache.Delete(cache.UserAchievementTimestampKey(uid, achievementID))
+	}
+
+	// Invalidate achievement cache
+	r.Cache.InvalidateAchievement(achievementID)
+
+	// Invalidate project leaderboards
+	r.Cache.InvalidateProject(projectID)
+
+	// Invalidate event leaderboards if achievement belongs to an event
+	if eventID != nil && *eventID != "" {
+		r.Cache.InvalidateEvent(*eventID)
+	}
+
+	// Invalidate team cache if teamID was provided
+	if hasTeamId {
+		r.Cache.InvalidateTeam(*teamID)
+	}
+
+	// Send push notifications in background only for newly awarded users
+	if r.PushService != nil && len(newlyAwardedUserIDs) > 0 {
+		pushInfo := getAchievementPushInfo(achievement)
+		for _, uid := range newlyAwardedUserIDs {
+			go push.SendTranslatedAchievementNotification(r.PushService, r.Loaders, uid, pushInfo)
+		}
+	}
+
+	// Notify Firestore listeners only for newly awarded users
+	for _, uid := range newlyAwardedUserIDs {
+		go r.FirebaseService.NotifyUserAchievements(context.Background(), uid)
+	}
+
+	// Load and return the achievement with translation
+	translated, err := r.LoadAchievementWithTranslation(ctx, achievementID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load achievement: %w", err)
+	}
+
+	return []model.Achievement{translated}, nil
 }
 
 // MarkContentItemCompleted is the resolver for the markContentItemCompleted field.
