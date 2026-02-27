@@ -1,8 +1,6 @@
 <script setup lang="ts">
+import { AGE_RANGE_ADULT, AGE_RANGE_YOUNG } from '~/utils/constants'
 import { getExtraItems } from '~/utils/leaderboard'
-
-const AGE_RANGE_YOUNG = { min: 13, max: 18 } as const
-const AGE_RANGE_ADULT = { min: 19, max: 37 } as const
 
 const { me } = useAuth()
 

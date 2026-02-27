@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { AGE_RANGE_ADULT, AGE_RANGE_YOUNG } from '~/utils/constants'
 import { getExtraItems } from '~/utils/leaderboard'
 
 const entityType = useLocalStorage<LeaderboardEntityType>(
@@ -13,7 +14,7 @@ const { data, error, fetching } = useStandingsLocalPageQuery({
     first: entityType.value === LeaderboardEntityType.Persons ? 20 : 500,
     filter: {
       churchId: me.value?.church.id,
-      ageRange: { min: 13, max: 37 },
+      ageRange: { min: AGE_RANGE_YOUNG.min, max: AGE_RANGE_ADULT.max },
     },
   })),
   pause: computed(() => !isAuthReady.value || !me.value?.church.id),

@@ -1,10 +1,13 @@
 <script setup lang="ts">
-// Age group filter for leaderboard rank
+import { AGE_RANGE_ADULT, AGE_RANGE_YOUNG } from '~/utils/constants'
+
 function getAgeRangeFilter(age: number | null | undefined) {
   if (age == null) return undefined
-  if (age >= 13 && age <= 19) return { min: 13, max: 19 } // U18
-  if (age >= 20 && age <= 37) return { min: 20, max: 37 } // O18
-  return undefined // Outside defined age groups
+  if (age >= AGE_RANGE_YOUNG.min && age <= AGE_RANGE_YOUNG.max)
+    return AGE_RANGE_YOUNG // U18
+  if (age >= AGE_RANGE_ADULT.min && age <= AGE_RANGE_ADULT.max)
+    return AGE_RANGE_ADULT // O18
+  return undefined
 }
 
 const { isAuthReady } = useAuthReady()
