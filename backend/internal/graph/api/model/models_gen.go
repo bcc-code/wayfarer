@@ -1962,6 +1962,7 @@ type User struct {
 	ConsentStatus     *ConsentStatus    `json:"consentStatus"`
 	Language          string            `json:"language"`
 	CreatedAt         scalars.DateTime  `json:"createdAt"`
+	Points            int               `json:"points"`
 }
 
 type UserConnection struct {

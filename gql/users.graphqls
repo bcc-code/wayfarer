@@ -24,6 +24,7 @@ type User {
     consentStatus: ConsentStatus!
     language: String!
     createdAt: DateTime!
+    points(projectId: ID!): Int! @goField(forceResolver: true)
 }
 
 # ==================== User Input Types ====================
