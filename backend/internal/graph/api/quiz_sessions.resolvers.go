@@ -346,16 +346,35 @@ func (r *mutationResolver) FinishQuizSession(ctx context.Context, id string) (*m
 		return nil, fmt.Errorf("unauthorized to finish this session")
 	}
 
+	// Already finalized - return current state (no-op for idempotency)
+	if session.State == "FINISHED" {
+		return convertQuizSessionToModel(session), nil
+	}
+
 	// Only allow finishing from LOCKED state
 	if session.State != "LOCKED" {
 		return nil, fmt.Errorf("can only finish session from LOCKED state")
 	}
 
-	// Auto-submit all active submissions before finishing
+	// Update state to FINISHED first to prevent duplicate processing on retry
+	row, err := r.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
+		ID:    id,
+		State: "FINISHED",
+	})
+	if err != nil {
+		otel.RecordError(span, err)
+		return nil, fmt.Errorf("failed to finish quiz session: %w", err)
+	}
+
+	// Auto-submit all active submissions
 	err = r.DB.Queries.AutoSubmitSessionSubmissions(ctx, id)
 	if err != nil {
 		otel.RecordError(span, err)
-		return nil, fmt.Errorf("failed to auto-submit submissions: %w", err)
+		// Log but don't fail - state is already FINISHED
+		slog.Error("failed to auto-submit submissions",
+			"session_id", id,
+			"error", err,
+		)
 	}
 
 	// Invalidate cache for affected users
@@ -373,15 +392,6 @@ func (r *mutationResolver) FinishQuizSession(ctx context.Context, id string) (*m
 		}
 	}
 	r.Cache.InvalidateProject(quiz.ProjectID)
-
-	row, err := r.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
-		ID:    id,
-		State: "FINISHED",
-	})
-	if err != nil {
-		otel.RecordError(span, err)
-		return nil, fmt.Errorf("failed to finish quiz session: %w", err)
-	}
 
 	// Notify clients via Firestore
 	if r.FirebaseService != nil {

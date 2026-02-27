@@ -170,15 +170,28 @@ func (h *QuizSchedulerHandler) processFinishTransitions(ctx context.Context) (in
 	errors := 0
 
 	for _, session := range sessions {
-		// Auto-submit active submissions before finishing
-		err := h.DB.Queries.AutoSubmitSessionSubmissions(ctx, session.ID)
+		// Update state to FINISHED first to prevent duplicate processing on retry
+		_, err := h.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
+			ID:    session.ID,
+			State: "FINISHED",
+		})
 		if err != nil {
-			slog.Error("quiz_scheduler: failed to auto-submit submissions",
+			slog.Error("quiz_scheduler: failed to finish session",
 				"session_id", session.ID,
 				"error", err,
 			)
 			errors++
 			continue
+		}
+
+		// Auto-submit active submissions
+		err = h.DB.Queries.AutoSubmitSessionSubmissions(ctx, session.ID)
+		if err != nil {
+			// Log but don't fail - state is already FINISHED
+			slog.Error("quiz_scheduler: failed to auto-submit submissions",
+				"session_id", session.ID,
+				"error", err,
+			)
 		}
 
 		// Invalidate cache for affected users
@@ -196,19 +209,6 @@ func (h *QuizSchedulerHandler) processFinishTransitions(ctx context.Context) (in
 					h.Cache.InvalidateQuizSubmission(sub.SubmissionID)
 				}
 			}
-		}
-
-		_, err = h.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
-			ID:    session.ID,
-			State: "FINISHED",
-		})
-		if err != nil {
-			slog.Error("quiz_scheduler: failed to finish session",
-				"session_id", session.ID,
-				"error", err,
-			)
-			errors++
-			continue
 		}
 
 		// Get quiz for project ID and webhook dispatch
