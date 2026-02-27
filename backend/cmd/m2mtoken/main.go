@@ -13,7 +13,7 @@ const (
 	defaultSecret = "your-secret-key-for-signing-wayfarer-jwts"
 	defaultYears  = 1
 	m2mUserID     = "M2M_SERVICE"
-	issuer        = "wayfarer"
+	defaultIssuer = "wayfarer"
 )
 
 type WayfarerClaims struct {
@@ -26,6 +26,11 @@ func main() {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
 		secret = defaultSecret
+	}
+
+	issuer := os.Getenv("JWT_ISSUER")
+	if issuer == "" {
+		issuer = defaultIssuer
 	}
 
 	validYears := defaultYears
