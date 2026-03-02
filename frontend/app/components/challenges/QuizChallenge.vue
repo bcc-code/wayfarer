@@ -157,6 +157,13 @@ const isQuizUnavailable = computed(() => {
   return true
 })
 
+// Check if session ended without user submitting (for betting quizzes)
+const isNotSubmitted = computed(() => {
+  const sessionState = props.challenge.quiz.userActiveSession?.state
+  if (sessionState !== QuizSessionState.Finished) return false
+  return props.challenge.quiz.userSubmissions.length === 0
+})
+
 onMounted(async () => {
   track(AnalyticsEvent.ChallengeOpened, {
     challenge_id: props.challenge.id,
@@ -699,6 +706,30 @@ const progressResults = computed(() => {
         :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
         @start-review="handleStartReview"
       />
+    </template>
+
+    <!-- Session ended without user submitting -->
+    <template v-else-if="isNotSubmitted">
+      <div class="text-center p-default flex flex-col gap-large grow">
+        <div class="grow flex flex-col items-center justify-center gap-default">
+          <div
+            class="rounded-full bg-background-indent p-6 flex items-center justify-center"
+          >
+            <UIcon name="lucide:clock" class="size-12 text-text-muted" />
+          </div>
+          <h1 class="text-heading text-text-default">
+            {{ $t('quiz.notSubmitted.title') }}
+          </h1>
+          <p class="text-body text-text-secondary">
+            {{ $t('quiz.notSubmitted.message') }}
+          </p>
+        </div>
+        <NuxtLink :to="{ name: 'challenges' }">
+          <DesignButton size="large" class="w-full">
+            {{ $t('quiz.done') }}
+          </DesignButton>
+        </NuxtLink>
+      </div>
     </template>
 
     <!-- Quiz unavailable: can't start and no submissions -->

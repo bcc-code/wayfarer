@@ -62,6 +62,10 @@
       "perfect": "Perfekt!",
       "thanksForAnswers": "Takk for svarene dine!",
       "resultsRevealedLater": "Resultatene avsløres senere."
+    },
+    "notSubmitted": {
+      "title": "Du har ikke levert",
+      "message": "Du deltok ikke i denne tippingen"
     }
   },
   "challenges": {

@@ -62,6 +62,10 @@
       "perfect": "Perfect!",
       "thanksForAnswers": "Thank you for your answers!",
       "resultsRevealedLater": "The results will be revealed later."
+    },
+    "notSubmitted": {
+      "title": "You didn't submit",
+      "message": "You did not participate in this betting"
     }
   },
   "challenges": {
