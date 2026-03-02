@@ -62,6 +62,10 @@
       "perfect": "Parfait !",
       "thanksForAnswers": "Merci pour tes réponses !",
       "resultsRevealedLater": "Les résultats seront dévoilés ultérieurement."
+    },
+    "notSubmitted": {
+      "title": "Tu n’as rien fourni",
+      "message": "Tu n’as pas participé à ces paris."
     }
   },
   "challenges": {
