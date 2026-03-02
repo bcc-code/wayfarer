@@ -771,47 +771,6 @@ func (r *mutationResolver) AssignTeamsToSuperTeam(ctx context.Context, superTeam
 	panic(fmt.Errorf("not implemented: AssignTeamsToSuperTeam - assignTeamsToSuperTeam"))
 }
 
-// AwardTeamAchievement is the resolver for the awardTeamAchievement field.
-func (r *mutationResolver) AwardTeamAchievement(ctx context.Context, teamID string, achievementID string) (model.Achievement, error) {
-	// Load achievement via caching loader to check awardable_from
-	achievementThunk := r.Loaders.AchievementByIDLoader.Load(ctx, achievementID)
-	achievement, err := achievementThunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load achievement: %w", err)
-	}
-
-	// Check if achievement is awardable based on awardable_from timestamp
-	if err := isAchievementAwardable(getAchievementAwardableFrom(achievement)); err != nil {
-		return nil, err
-	}
-
-	// Award achievement to all team members in a single query
-	if err := r.DB.Queries.AwardTeamAchievementBatch(ctx, sqlc.AwardTeamAchievementBatchParams{
-		TeamID:        teamID,
-		AchievementID: achievementID,
-	}); err != nil {
-		return nil, fmt.Errorf("failed to award achievement to team: %w", err)
-	}
-
-	// Get team members for cache invalidation
-	users, err := r.DB.Queries.GetUsersByTeamIDs(ctx, []string{teamID})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get team members for cache invalidation: %w", err)
-	}
-
-	// Invalidate user caches
-	for _, user := range users {
-		r.Cache.InvalidateUser(user.ID)
-	}
-
-	// Invalidate caches
-	r.Cache.InvalidateTeam(teamID)
-	r.Cache.InvalidateAchievement(achievementID)
-
-	// Load and return the achievement with translation
-	return r.LoadAchievementWithTranslation(ctx, achievementID)
-}
-
 // RevokeTeamAchievement is the resolver for the revokeTeamAchievement field.
 func (r *mutationResolver) RevokeTeamAchievement(ctx context.Context, teamID string, achievementID string) (bool, error) {
 	// Revoke achievement from all team members in a single query

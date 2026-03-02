@@ -454,7 +454,6 @@ type ComplexityRoot struct {
 		AssignUserToProject                         func(childComplexity int, userID string, projectID string) int
 		AwardAchievement                            func(childComplexity int, userID string, achievementID string) int
 		AwardSuperTeamAchievement                   func(childComplexity int, superTeamID string, achievementID string) int
-		AwardTeamAchievement                        func(childComplexity int, teamID string, achievementID string) int
 		BulkAwardAchievements                       func(childComplexity int, userIds []string, teamID *string, achievementID string) int
 		BulkCompleteChallenges                      func(childComplexity int, target model.EnrollmentTargetInput, challengeID string, completedAt *scalars.DateTime) int
 		BulkEnrollUsersInChallenge                  func(childComplexity int, target model.EnrollmentTargetInput, challengeID string) int
@@ -1329,7 +1328,6 @@ type MutationResolver interface {
 	UpdateSuperTeam(ctx context.Context, id string, input model.UpdateSuperTeamInput) (*model.SuperTeam, error)
 	DeleteSuperTeam(ctx context.Context, id string) (bool, error)
 	AssignTeamsToSuperTeam(ctx context.Context, superTeamID string, teamIds []string) (*model.SuperTeam, error)
-	AwardTeamAchievement(ctx context.Context, teamID string, achievementID string) (model.Achievement, error)
 	RevokeTeamAchievement(ctx context.Context, teamID string, achievementID string) (bool, error)
 	AwardSuperTeamAchievement(ctx context.Context, superTeamID string, achievementID string) (model.Achievement, error)
 	RevokeSuperTeamAchievement(ctx context.Context, superTeamID string, achievementID string) (bool, error)
@@ -3299,17 +3297,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.AwardSuperTeamAchievement(childComplexity, args["superTeamId"].(string), args["achievementId"].(string)), true
-	case "Mutation.awardTeamAchievement":
-		if e.complexity.Mutation.AwardTeamAchievement == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_awardTeamAchievement_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.AwardTeamAchievement(childComplexity, args["teamId"].(string), args["achievementId"].(string)), true
 	case "Mutation.bulkAwardAchievements":
 		if e.complexity.Mutation.BulkAwardAchievements == nil {
 			break
@@ -8539,7 +8526,6 @@ extend type Mutation {
     assignTeamsToSuperTeam(superTeamId: ID!, teamIds: [ID!]!): SuperTeam! @requireRole(roles: ["admin", "superadmin"])
 
     # Team achievements (M2M)
-    awardTeamAchievement(teamId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
     revokeTeamAchievement(teamId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
     # SuperTeam achievements (M2M)
@@ -10769,22 +10755,6 @@ func (ec *executionContext) field_Mutation_awardSuperTeamAchievement_args(ctx co
 		return nil, err
 	}
 	args["superTeamId"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "achievementId", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["achievementId"] = arg1
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_awardTeamAchievement_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "teamId", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["teamId"] = arg0
 	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "achievementId", ec.unmarshalNID2string)
 	if err != nil {
 		return nil, err
@@ -22499,65 +22469,6 @@ func (ec *executionContext) fieldContext_Mutation_assignTeamsToSuperTeam(ctx con
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_assignTeamsToSuperTeam_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_awardTeamAchievement(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_awardTeamAchievement,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().AwardTeamAchievement(ctx, fc.Args["teamId"].(string), fc.Args["achievementId"].(string))
-		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
-				if err != nil {
-					var zeroVal model.Achievement
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal model.Achievement
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
-		ec.marshalNAchievement2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAchievement,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_awardTeamAchievement(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_awardTeamAchievement_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -58566,13 +58477,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "assignTeamsToSuperTeam":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_assignTeamsToSuperTeam(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "awardTeamAchievement":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_awardTeamAchievement(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
