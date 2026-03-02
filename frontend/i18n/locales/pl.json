@@ -48,7 +48,11 @@
       "winnings": "Wygrana",
       "pointsLost": "Punkty stracone",
       "pointsEarned": "Punkty zdobyte",
-      "resultYourBet": "Postawione"
+      "resultYourBet": "Postawione punkty",
+      "correctCount": "Liczba dobrych odpowiedzi: {count}",
+      "correctCountAll": "Wszystkie odpowiedzi poprawne",
+      "correctCountNone": "Żadna odpowiedź nie była poprawna",
+      "bettingResult": "Wynik obstawiania"
     },
     "result": {
       "receivedNoPoints": "Nie zdobyłeś żadnych punktów.",
