@@ -1,8 +1,6 @@
 <script setup lang="ts">
+import { AGE_RANGE_ADULT, AGE_RANGE_YOUNG } from '~/utils/constants'
 import { getExtraItems } from '~/utils/leaderboard'
-
-const AGE_RANGE_YOUNG = { min: 13, max: 18 } as const
-const AGE_RANGE_ADULT = { min: 19, max: 37 } as const
 
 const { me } = useAuth()
 
@@ -61,7 +59,7 @@ const isInitialLoading = computed(() => fetching.value && !data.value)
   <div>
     <StandingsListSkeleton v-if="isInitialLoading" />
     <ErrorState v-else-if="error" :error />
-    <template v-else-if="leaderboard?.length">
+    <template v-else>
       <div
         class="p-medium gap-medium mb-list-section-gap flex flex-col items-center"
       >
@@ -94,8 +92,12 @@ const isInitialLoading = computed(() => fetching.value && !data.value)
           </div>
         </template>
       </DesignTabs>
-      <LeaderboardList :leaderboard="leaderboard" :extra-items="extraItems" />
+      <LeaderboardList
+        v-if="leaderboard.length"
+        :leaderboard="leaderboard"
+        :extra-items="extraItems"
+      />
+      <EmptyState v-else :title="$t('emptyStates.standings')" />
     </template>
-    <EmptyState v-else :title="$t('emptyStates.standings')" />
   </div>
 </template>

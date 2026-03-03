@@ -115,6 +115,7 @@ func SendTranslatedBetResultNotification(
 	pushService *Service,
 	loadersInstance *loaders.Loaders,
 	userID string,
+	challengeID string,
 	quizID string,
 	quizName string,
 	points int,
@@ -141,10 +142,11 @@ func SendTranslatedBetResultNotification(
 	title, message := i18n.FormatBetResultMessage(userLang, points)
 
 	pushService.SendBetResultNotification(bgCtx, userID, BetResultInfo{
-		QuizID:   quizID,
-		QuizName: quizName,
-		Points:   points,
-		Title:    title,
-		Message:  message,
+		ChallengeID: challengeID,
+		QuizID:      quizID,
+		QuizName:    quizName,
+		Points:      points,
+		Title:       title,
+		Message:     message,
 	})
 }

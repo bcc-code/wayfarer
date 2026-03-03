@@ -133,7 +133,6 @@ extend type Mutation {
     assignTeamsToSuperTeam(superTeamId: ID!, teamIds: [ID!]!): SuperTeam! @requireRole(roles: ["admin", "superadmin"])
 
     # Team achievements (M2M)
-    awardTeamAchievement(teamId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
     revokeTeamAchievement(teamId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
     # SuperTeam achievements (M2M)

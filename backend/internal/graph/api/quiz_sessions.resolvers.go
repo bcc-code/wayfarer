@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"math/rand"
 	"time"
 
@@ -47,7 +48,7 @@ func (r *mutationResolver) CreateQuizSession(ctx context.Context, input model.Cr
 	}
 
 	// Check if user can manage sessions (admin, superadmin, project_admin, or church_admin)
-	if !r.RoleService.CanManageProject(ctx, userID, quiz.ProjectID) {
+	if !r.RoleService.CanCreateTeamInProject(ctx, userID, quiz.ProjectID) {
 		return nil, fmt.Errorf("unauthorized to create quiz sessions")
 	}
 
@@ -293,13 +294,6 @@ func (r *mutationResolver) LockQuizSession(ctx context.Context, id string) (*mod
 		return nil, fmt.Errorf("can only lock session from OPEN state")
 	}
 
-	// Auto-submit all active submissions
-	err = r.DB.Queries.AutoSubmitSessionSubmissions(ctx, id)
-	if err != nil {
-		otel.RecordError(span, err)
-		return nil, fmt.Errorf("failed to auto-submit submissions: %w", err)
-	}
-
 	row, err := r.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
 		ID:    id,
 		State: "LOCKED",
@@ -352,11 +346,17 @@ func (r *mutationResolver) FinishQuizSession(ctx context.Context, id string) (*m
 		return nil, fmt.Errorf("unauthorized to finish this session")
 	}
 
+	// Already finalized - return current state (no-op for idempotency)
+	if session.State == "FINISHED" {
+		return convertQuizSessionToModel(session), nil
+	}
+
 	// Only allow finishing from LOCKED state
 	if session.State != "LOCKED" {
 		return nil, fmt.Errorf("can only finish session from LOCKED state")
 	}
 
+	// Update state to FINISHED first to prevent duplicate processing on retry
 	row, err := r.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
 		ID:    id,
 		State: "FINISHED",
@@ -365,6 +365,33 @@ func (r *mutationResolver) FinishQuizSession(ctx context.Context, id string) (*m
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to finish quiz session: %w", err)
 	}
+
+	// Auto-submit all active submissions
+	err = r.DB.Queries.AutoSubmitSessionSubmissions(ctx, id)
+	if err != nil {
+		otel.RecordError(span, err)
+		// Log but don't fail - state is already FINISHED
+		slog.Error("failed to auto-submit submissions",
+			"session_id", id,
+			"error", err,
+		)
+	}
+
+	// Invalidate cache for affected users
+	submissions, subErr := r.DB.Queries.GetSessionSubmissionsWithUserData(ctx, id)
+	if subErr != nil {
+		slog.Warn("failed to get session submissions for cache invalidation",
+			"session_id", id,
+			"error", subErr,
+		)
+	} else {
+		for _, sub := range submissions {
+			r.Cache.InvalidateUser(sub.UserID)
+			r.Cache.InvalidateUserQuizSubmissions(sub.UserID)
+			r.Cache.InvalidateQuizSubmission(sub.SubmissionID)
+		}
+	}
+	r.Cache.InvalidateProject(quiz.ProjectID)
 
 	// Notify clients via Firestore
 	if r.FirebaseService != nil {
@@ -450,8 +477,8 @@ func (r *mutationResolver) ReopenQuizSession(ctx context.Context, id string) (*m
 		return nil, fmt.Errorf("quiz not found")
 	}
 
-	// Only admin/superadmin can reopen
-	if !r.RoleService.CanManageProject(ctx, userID, quiz.ProjectID) {
+	// Check if user can manage this session
+	if session.CreatedBy != userID && !r.RoleService.CanManageProject(ctx, userID, quiz.ProjectID) {
 		return nil, fmt.Errorf("unauthorized to reopen this session")
 	}
 
@@ -507,8 +534,8 @@ func (r *mutationResolver) GrantQuizSessionAccess(ctx context.Context, input mod
 		return 0, fmt.Errorf("quiz not found")
 	}
 
-	// Check if user can grant access
-	if !r.RoleService.CanManageProject(ctx, userID, quiz.ProjectID) {
+	// Check if user can grant access (project manager OR session creator)
+	if session.CreatedBy != userID && !r.RoleService.CanManageProject(ctx, userID, quiz.ProjectID) {
 		return 0, fmt.Errorf("unauthorized to grant session access")
 	}
 

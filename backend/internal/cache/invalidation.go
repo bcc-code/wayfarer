@@ -120,7 +120,7 @@ func extractPrefixes(key string) []string {
 		PrefixUserProjects, PrefixUserEvents, PrefixTeamMembers, PrefixUserRoles,
 		PrefixUserChallengeEnrollments, PrefixUserChallengeCompletions,
 		PrefixUserContentProgress, PrefixUserAchievements, PrefixUserStreakActivity,
-		PrefixUserConsents,
+		PrefixUserConsents, PrefixUserProjectPoints,
 		PrefixUsersFilter, PrefixUsersCount,
 		PrefixProjectsFilter, PrefixProjectsCount,
 		PrefixEventsFilter, PrefixEventsCount,
@@ -245,6 +245,8 @@ func (c *CacheWithRegistry) invalidateUserLocal(userID string) {
 	c.DeletePrefix(PrefixUserContentProgress + userID)
 	c.DeletePrefix(PrefixUserAchievements + userID)
 	c.DeletePrefix(PrefixUserStreakActivity + userID)
+	// Invalidate user project points cache (myPoints field)
+	c.DeletePrefix(PrefixUserProjectPoints + userID)
 	// Invalidate user filter/count queries (gender/church changes affect results)
 	c.DeletePrefix(PrefixUsersFilter)
 	c.DeletePrefix(PrefixUsersCount)

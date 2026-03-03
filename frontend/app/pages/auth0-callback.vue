@@ -24,6 +24,12 @@ onMounted(async () => {
   processing.value = true
 
   try {
+    // Wait for Auth0 SDK to be ready before handling callback
+    // This prevents "Invalid state" errors when SDK hasn't loaded stored state yet
+    while (auth0.isLoading.value) {
+      await new Promise((resolve) => setTimeout(resolve, 10))
+    }
+
     // Check if we have Auth0 callback params (code and state)
     const hasCallbackParams = route.query.code && route.query.state
 
@@ -32,12 +38,7 @@ onMounted(async () => {
     if (hasCallbackParams) {
       // Handle the Auth0 callback and get the redirect target
       const result = await auth0.handleRedirectCallback()
-      targetUrl = result.appState?.targetUrl || '/'
-    }
-
-    // Wait for Auth0 to be ready
-    while (auth0.isLoading.value) {
-      await new Promise((resolve) => setTimeout(resolve, 10))
+      targetUrl = result.appState?.target || '/'
     }
 
     // Exchange Auth0 token for Wayfarer JWT if authenticated
@@ -69,16 +70,45 @@ onMounted(async () => {
       await navigateTo('/', { replace: true })
     }
   } catch (error) {
-    console.error('Callback error:', error)
+    // Don't log errors about missing query params - this is expected when
+    // navigating directly to /auth0-callback without OAuth flow
+    const message = error instanceof Error ? error.message : String(error)
+    if (!message.includes('query params')) {
+      console.error('Callback error:', error)
+    }
     await navigateTo('/', { replace: true })
   } finally {
     processing.value = false
   }
 })
+
+const showResetButton = ref(false)
+useCountdown(10, {
+  immediate: true,
+  onComplete: () => (showResetButton.value = true),
+})
+function resetAndRetry() {
+  processing.value = false
+  auth0.logout({
+    logoutParams: {
+      returnTo: window.location.origin,
+    },
+  })
+}
 </script>
 
 <template>
   <div class="h-dvh">
-    <LoadingState />
+    <LoadingState>
+      <DesignButton
+        v-if="showResetButton"
+        variant="secondary"
+        size="small"
+        class="grow-0"
+        @click="resetAndRetry"
+      >
+        {{ $t('error.retry') }}
+      </DesignButton>
+    </LoadingState>
   </div>
 </template>

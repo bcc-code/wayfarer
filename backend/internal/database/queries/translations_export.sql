@@ -14,7 +14,7 @@ SELECT id, name, description
 FROM streaks;
 
 -- name: GetChallengesForTranslation :many
-SELECT id, name, description, button_text
+SELECT id, name, description, button_text, notification_text
 FROM challenges
 WHERE published_at IS NOT NULL;
 

@@ -3,6 +3,7 @@ const props = defineProps<{
   leaderboard: Entry[]
   extraItems?: Entry[]
   badge?: (item: Entry, index: number) => string | undefined
+  shouldHideScore?: (item: Entry, index: number) => boolean
   hideMedals?: boolean
 }>()
 
@@ -40,6 +41,7 @@ onMounted(runAnimation)
       <LeaderboardItem
         :item
         :badge="badge ? badge(item, index) : undefined"
+        :hide-score="shouldHideScore ? shouldHideScore(item, index) : false"
         :hide-medal="hideMedals"
         :is-me="item.tags?.includes(LeaderboardEntryTag.Me)"
       />
@@ -56,6 +58,7 @@ onMounted(runAnimation)
       <LeaderboardItem
         :item
         :badge="badge ? badge(item, index) : undefined"
+        :hide-score="shouldHideScore ? shouldHideScore(item, index) : false"
         :hide-medal="hideMedals"
         :is-me="item.tags?.includes(LeaderboardEntryTag.Me)"
       />

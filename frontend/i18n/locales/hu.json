@@ -9,7 +9,7 @@
   },
   "emptyStates": {
     "standings": "Még nincs top lista",
-    "unit": "Még nincs top lista a unitod számára",
+    "unit": "Még nincs top lista a Unitod számára",
     "challenges": "Még nincs kihívás",
     "pointHistory": "Még nincs pont"
   },
@@ -24,23 +24,45 @@
     "lockAnswer": "Válasz zárolása",
     "saveAnswer": "Válasz mentése",
     "changeAnswer": "Válasz módosítása",
-    "questionNumber": "{current} ból {total}",
+    "questionNumber": "{current} {total} ból ",
     "continue": "Folytatás",
     "nextQuestion": "Következő kérdés",
     "previousQuestion": "Előző",
     "done": "Kész",
     "unavailable": "Ez a kvíz jelenleg nem elérhető.",
-    "reviewAnswers": "Lásd a választ",
+    "reviewAnswers": "Válasz megtekintése",
     "finishReview": "Átnézés befejezése",
     "yourNumber": "A számod",
     "writeYourAnswer": "Írd meg a válaszodat...",
+    "close": "Bezárás",
+    "betting": {
+      "remainingPoints": "Maradék pontok",
+      "yourBet": "A hozzájárulásod",
+      "maxBetMessage": "A pontjaid maximum {percentage}%-át teheted fel tétként.",
+      "sessionLocked": "A válasz zárolva van",
+      "registeredBet": "A fogadás regisztrálva lett.",
+      "bettingClosed": "A fogadásnak vége.",
+      "yourBetIs": "{bet}1 pontot tettél fel",
+      "results": "Eredmény",
+      "yourPoints": "A pontjaid",
+      "winnings": "Nyeressék",
+      "pointsLost": "Elvesztett pontok",
+      "pointsEarned": "Megszerzett pontok",
+      "resultYourBet": "Fogadott"
+    },
     "result": {
       "receivedNoPoints": "Nem szereztél pontot.",
       "receivedPoints": "{points} pontot gyűjtöttél.",
       "betterLuckNextTime": "Legközelebb több szerencsét!",
       "wellDone": "Szép munka!",
-      "perfect": "Tökéletes!"
+      "perfect": "Tökéletes!",
+      "thanksForAnswers": "Köszönjük a válaszaidat!",
+      "resultsRevealedLater": "Az eredményeket később hozzák nyilvánosságra."
     }
+  },
+  "challenges": {
+    "active": "Aktív",
+    "completed": "Befejezett"
   },
   "pages": {
     "standings": "Top listák",
@@ -74,7 +96,7 @@
   },
   "standings": {
     "global": "Globális",
-    "unit": "Az én unitom",
+    "unit": "Az én Unitom",
     "local": "Helyi",
     "you": "Te",
     "rules": "Szabályok",
@@ -92,8 +114,9 @@
     "unitLeader": "Unitvezető",
     "saveChanges": "Módosítások mentése",
     "unitName": "Unit neve",
-    "noUnitLeader": "Nincs unitvezető",
-    "selectUnitLeader": "Unitvezető választása"
+    "noUnitLeader": "Nincs Unitvezető",
+    "selectUnitLeader": "Unitvezető választása",
+    "description": "Csak a legjobb 3 pontjai láthatók mindenki számára."
   },
   "place": "helyezés",
   "points": "pont",
@@ -144,8 +167,8 @@
   },
   "goToHiddenTreasures": "Menj a Biblia tanulmányozására",
   "gameNights": {
-    "yourCode": "A Game Night unitkódod",
-    "yourCodeHint": "Nyisd meg az oldalt a számítógépén, és írd be a kódot."
+    "yourCode": "Írd be unitod kódját:",
+    "yourCodeHint": "Látogasd meg ezt a weboldalt PC-n:"
   },
   "admin": {
     "common": {
@@ -165,7 +188,21 @@
       "administrators": "Adminisztrátorok",
       "unitsAndPeople": "Unitok és személyek",
       "gameNights": "Játékesték",
-      "comingSoon": "Hamarosan jön"
+      "comingSoon": "Hamarosan jön",
+      "kickOff": "Kick-off",
+      "statistics": "Statisztika",
+      "gameNight": "Game Night {number}",
+      "kickOffButton": "Kezdje el most a Unitok bevezetését",
+      "kickOffOnboardingDescription": "Ez a lépés elindítja az egész helyi gyülekezet Unitok bevezetését",
+      "kickOffOnboardingDescriptionWarning": "⚠ Ne kezdj el, ha még nem állsz készen.",
+      "kickOffOnboardingExplanationTitle": "Mi történik, amikor elkezdesz?",
+      "kickOffOnboardingExplanation1": "A helyi közösség összes Unitvezetője kihívást kap az Interact (webalkalmazás) alkalmazásban.",
+      "kickOffOnboardingExplanation2": "Megváltoztathatják a Unit nevét – és ezzel 300 pontot kapnak.",
+      "kickOffConfirmation": "Megerősítem, hogy a kezdés már folyamatban van, és készen állunk a kezdésre.",
+      "kickOffOnboardingCountdown": "{seconds} másodperc múlva indul | {seconds} másodperc múlva indul",
+      "kickOffSuccessTitle": "A Unitok bevezetése folyamatban van!",
+      "kickOffSuccessDescription": "Minden Unitvezetőnek kiosztottak egy feladatot az alkalmazásban, és megváltoztathatják Unitjuk nevét.",
+      "noAccess": "Nem rendelkezel hozzáféréssel ehhez az oldalhoz, mert nem vagy adminisztrátor. Kérj meg egy másik adminisztrátort, hogy biztosítson neked hozzáférést."
     },
     "admins": {
       "searchPlaceholder": "Adminisztrátorok keresése...",
@@ -251,6 +288,81 @@
       "excludeFromLeaderboard": "Kizárás a toplistából",
       "excludeFromLeaderboardTooltip": "Aktiválás esetén ez a unit nem jelenik meg a felső listán.",
       "excludedFromLeaderboard": "Elrejtve a toplistákról"
+    },
+    "gamenight": {
+      "importantResources": "Fontos források",
+      "importantResourcesDescription": "Készítsd elő ezeket, vagy küldd el őket a nagyképernyős operátornak. Ezeket az est folyamán kell használni.",
+      "linkToAllFilms": "Link az összes filmhez",
+      "findFilmsHere": "Filmek linkjének másolása",
+      "bigScreen": "Nagy képernyős kijelző",
+      "usedInStep5": "Ezt az 1. és 5. lépésben kell használni.",
+      "findBigScreenHere": "Link a nagyképernyős kijelzőhöz",
+      "step1Title": "Tipp: Használhatod ",
+      "step1Description": "Ez a nagyképernyőn megjeleníthető, amikor a fiatalok belépnek a terembe.",
+      "tip": "Tipp:",
+      "fullscreenTip": "Nyomd meg a nagy képernyő jobb alsó sarkában található „Teljes képernyő” gombot.",
+      "openBigScreenNewTab": "Link a nagyképernyős kijelzőhöz",
+      "goToNextStep": "Folytass a következő lépéssel",
+      "step2Title": "1.Film lejátszása",
+      "step2Description": "Ez akkor történik, amikor a fiatalok már leültek és az este elkezdődött.",
+      "goToFilm": "{number}Film linkjének másolása ",
+      "filmFinishedNextStep": "A film elkészült, folytass a következő lépéssel.",
+      "step3Title": "Tedd fogadást!",
+      "step3Description": "Amikor indítod a fogadást, mindenki kap egy fogadási kihívást az Interactban. Ne tedd ezt, amíg valóban készen nem álltok a kezdésre.",
+      "startBetting": "Indítsd el a fogadást",
+      "bettingStartingIn": "A fogadás {seconds} másodperc múlva kezdődik...",
+      "cancelBettingCountdown": "Mégsem",
+      "lockBetting": "Fogadás lefagyasztása",
+      "lockBettingDescription": "Miután mindenki megtette a téteket, befagyaszthatja a fogadást.",
+      "bettingLockedNotice": "A résztvevőket tájékoztatjuk, hogy a fogadást lefagyasztattuk",
+      "reopenBettingHint": "(Ha valakinek nem volt ideje megtenni a fogadását, akkor újra megnyithatod a fogadást).",
+      "reopenBetting": "A fogadás újra megnyílik",
+      "makeSureEverybodyBet": "Győződj meg arról, hogy mindenki befejezte a fogadásait, mielőtt lezárnád a fogadást.",
+      "allBetNextStep": "A fogadás befejezése",
+      "cannotReopenAfterContinue": "FONTOS: Ha bezárod a fogadási ablakot, azt nem tudod újra megnyitni.",
+      "step4Title": "2.Film lejátszása",
+      "step4Description": "Ez a fogadás után történik.",
+      "step5TitleBigScreen": "Nagy képernyős nézet megjelenítése a Unit feladatához nagy képernyőn",
+      "step5Title": "Bejelentkezési kód küldése a Unit feladatához",
+      "step5Description": "A unitvezetők el kell menniük az Interact alkalmazás „Kihívások” oldalára. Ott láthatják a kódot és a weboldalt, ahol azt használni kell (pc26.bcc.media).",
+      "unitLeaderMustGoTo": "A unitvezetők be kell lépniük",
+      "onAPC": "egy számítógépen",
+      "ifUnitLeaderMissing": "Ha a Unit kódja hiányzik, azt a Unit neve jobb oldalán találod meg",
+      "unitAdminPage": "unit-admin oldal",
+      "giveUnitLeadersAccess": "Kód elküldése a unitvezetőknek",
+      "unitLeaderAccessSent": "A unitvezetőknek elküldött kód",
+      "step6Title": "Lépj az adminisztrációs oldalra a unit feladat elindításához.",
+      "step6Description": "A unit feladat egy különálló rendszer, ezért saját adminisztrációs oldalra van szüksége. Folytass ott, és később majd visszakerülsz ide.",
+      "goToUnitTaskAdmin": "Lépj az adminisztrációs oldalra a unit feladat elindításához.",
+      "completeStepsOnOtherPage": "Végezd el a {from} és {to} lépést a másik oldalon",
+      "step12Title": "3.Film lejátszása",
+      "step13Title": "Adj pontokat a résztvevőknek a fogadásokért",
+      "step13Description": "Mindenkinek el kell mennie az Interact alkalmazás „Kihívások” oldalára, és újra kell megnyitnia a fogadásokat, hogy lássák az eredményt.",
+      "releasePointsNow": "Most szabadítsd fel a pontokat",
+      "youAreDone": "Kész is vagy! 🎉",
+      "canClosePageSafely": "A Game Night {number} biztonságosan bezárható, és bezárhatod ezt az oldalt.",
+      "errors": {
+        "couldNotStartBetting": "Nem sikerült elindítani a fogadást",
+        "couldNotLockBetting": "Nem sikerült lezárni a fogadást",
+        "couldNotReopenBetting": "Nem sikerült újra megnyitni a fogadást",
+        "couldNotFinishBetting": "Nem sikerült a fogadást befejezni",
+        "couldNotSendUnitLeaderAccess": "Nem sikerült elküldeni a kódot a unitvezetőknek"
+      }
+    },
+    "statistics": {
+      "totalUsersInTeams": "Unitokban lévő személyek",
+      "averageScoresByAgeGroup": "Átlagos pontszám korcsoportonként",
+      "averageScoresByAgeGroupDescription": "Itt található az átlagos pontszámok áttekintése korcsoportonként. Csak egy Unitban lévő személyeket számolják.",
+      "ageGroup": "Korcsoport",
+      "users": "Felhasználók",
+      "averageScore": "Átlagos pontszám",
+      "yearsOld": "év",
+      "noData": "Nincs elérhető adat",
+      "pointsDistribution": "Pontok elosztása",
+      "pointsDistributionDescription": "Itt találsz egy áttekintést azokról a pontszámokról, amelyeket a helyi gyülekezetedben egy Unit tagjai értek el.",
+      "points": "Pont",
+      "peopleInAUnit": "Egy Unitban lévő személyek",
+      "lastUpdated": "Utolsó frissítés"
     }
   }
 }

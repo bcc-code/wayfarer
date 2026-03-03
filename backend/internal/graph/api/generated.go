@@ -454,8 +454,7 @@ type ComplexityRoot struct {
 		AssignUserToProject                         func(childComplexity int, userID string, projectID string) int
 		AwardAchievement                            func(childComplexity int, userID string, achievementID string) int
 		AwardSuperTeamAchievement                   func(childComplexity int, superTeamID string, achievementID string) int
-		AwardTeamAchievement                        func(childComplexity int, teamID string, achievementID string) int
-		BulkAwardAchievements                       func(childComplexity int, userIds []string, achievementID string) int
+		BulkAwardAchievements                       func(childComplexity int, userIds []string, teamID *string, achievementID string) int
 		BulkCompleteChallenges                      func(childComplexity int, target model.EnrollmentTargetInput, challengeID string, completedAt *scalars.DateTime) int
 		BulkEnrollUsersInChallenge                  func(childComplexity int, target model.EnrollmentTargetInput, challengeID string) int
 		BulkPublishChallenges                       func(childComplexity int, ids []string, publishedAt scalars.DateTime) int
@@ -698,6 +697,7 @@ type ComplexityRoot struct {
 		Journal          func(childComplexity int, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) int
 		Leaderboard      func(childComplexity int, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) int
 		MyChurchTeams    func(childComplexity int) int
+		MyPoints         func(childComplexity int) int
 		MyTeam           func(childComplexity int) int
 		Name             func(childComplexity int) int
 		Rules            func(childComplexity int) int
@@ -747,6 +747,8 @@ type ComplexityRoot struct {
 		ExternalContent               func(childComplexity int, id string) int
 		ExternalContents              func(childComplexity int, filter model.ExternalContentFilter, sortBy *model.ExternalContentSortBy, first *int, after *string, last *int, before *string) int
 		Feedback                      func(childComplexity int, filter *model.FeedbackFilter, first *int, after *string, last *int, before *string) int
+		FeedbackPlatforms             func(childComplexity int) int
+		FeedbackTags                  func(childComplexity int) int
 		FileUpload                    func(childComplexity int, id string) int
 		FirebaseToken                 func(childComplexity int) int
 		FrontendConfig                func(childComplexity int) int
@@ -863,9 +865,10 @@ type ComplexityRoot struct {
 	}
 
 	QuizOrderingItem struct {
-		ID       func(childComplexity int) int
-		ItemText func(childComplexity int) int
-		Question func(childComplexity int) int
+		CorrectOrder func(childComplexity int) int
+		ID           func(childComplexity int) int
+		ItemText     func(childComplexity int) int
+		Question     func(childComplexity int) int
 	}
 
 	QuizPredefinedAnswer struct {
@@ -1135,6 +1138,7 @@ type ComplexityRoot struct {
 		MembersID         func(childComplexity int) int
 		Name              func(childComplexity int) int
 		PersonUUID        func(childComplexity int) int
+		Points            func(childComplexity int, projectID string) int
 		Projects          func(childComplexity int) int
 		Roles             func(childComplexity int) int
 		SuperTeams        func(childComplexity int) int
@@ -1324,7 +1328,6 @@ type MutationResolver interface {
 	UpdateSuperTeam(ctx context.Context, id string, input model.UpdateSuperTeamInput) (*model.SuperTeam, error)
 	DeleteSuperTeam(ctx context.Context, id string) (bool, error)
 	AssignTeamsToSuperTeam(ctx context.Context, superTeamID string, teamIds []string) (*model.SuperTeam, error)
-	AwardTeamAchievement(ctx context.Context, teamID string, achievementID string) (model.Achievement, error)
 	RevokeTeamAchievement(ctx context.Context, teamID string, achievementID string) (bool, error)
 	AwardSuperTeamAchievement(ctx context.Context, superTeamID string, achievementID string) (model.Achievement, error)
 	RevokeSuperTeamAchievement(ctx context.Context, superTeamID string, achievementID string) (bool, error)
@@ -1340,7 +1343,7 @@ type MutationResolver interface {
 	ReorderAchievements(ctx context.Context, projectID string, achievementIds []string) ([]model.Achievement, error)
 	AwardAchievement(ctx context.Context, userID string, achievementID string) (model.Achievement, error)
 	RevokeAchievement(ctx context.Context, userID string, achievementID string) (bool, error)
-	BulkAwardAchievements(ctx context.Context, userIds []string, achievementID string) ([]model.Achievement, error)
+	BulkAwardAchievements(ctx context.Context, userIds []string, teamID *string, achievementID string) ([]model.Achievement, error)
 	MarkContentItemCompleted(ctx context.Context, userID string, externalContentID string) ([]model.ContentAchievement, error)
 	UnmarkContentItemCompleted(ctx context.Context, userID string, externalContentID string) ([]model.ContentAchievement, error)
 	RecordStreakActivity(ctx context.Context, userID string, achievementID string, currentStreak int) (*model.StreakAchievement, error)
@@ -1484,6 +1487,7 @@ type ProjectResolver interface {
 	Achievements(ctx context.Context, obj *model.Project) ([]model.Achievement, error)
 	Streaks(ctx context.Context, obj *model.Project) ([]model.Streak, error)
 	Journal(ctx context.Context, obj *model.Project, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error)
+	MyPoints(ctx context.Context, obj *model.Project) (int, error)
 }
 type QueryResolver interface {
 	Me(ctx context.Context) (*model.User, error)
@@ -1535,6 +1539,8 @@ type QueryResolver interface {
 	PushNotificationsEnabled(ctx context.Context) (bool, error)
 	VapidPublicKey(ctx context.Context) (string, error)
 	Feedback(ctx context.Context, filter *model.FeedbackFilter, first *int, after *string, last *int, before *string) (*model.FeedbackConnection, error)
+	FeedbackTags(ctx context.Context) ([]string, error)
+	FeedbackPlatforms(ctx context.Context) ([]string, error)
 	Webhook(ctx context.Context, id string) (*model.Webhook, error)
 	Webhooks(ctx context.Context, projectID string) ([]model.Webhook, error)
 	FileUpload(ctx context.Context, id string) (*model.FileUpload, error)
@@ -1577,6 +1583,8 @@ type QuizChallengeResolver interface {
 }
 type QuizOrderingItemResolver interface {
 	Question(ctx context.Context, obj *model.QuizOrderingItem) (model.QuizQuestion, error)
+
+	CorrectOrder(ctx context.Context, obj *model.QuizOrderingItem) (*int, error)
 }
 type QuizPredefinedAnswerResolver interface {
 	Question(ctx context.Context, obj *model.QuizPredefinedAnswer) (model.QuizQuestion, error)
@@ -1683,6 +1691,8 @@ type UserResolver interface {
 	Teams(ctx context.Context, obj *model.User) ([]model.Team, error)
 	SuperTeams(ctx context.Context, obj *model.User) ([]model.SuperTeam, error)
 	Roles(ctx context.Context, obj *model.User) ([]model.UserRole, error)
+
+	Points(ctx context.Context, obj *model.User, projectID string) (int, error)
 }
 type UserConsentResolver interface {
 	Consent(ctx context.Context, obj *model.UserConsent) (*model.Consent, error)
@@ -3287,17 +3297,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.AwardSuperTeamAchievement(childComplexity, args["superTeamId"].(string), args["achievementId"].(string)), true
-	case "Mutation.awardTeamAchievement":
-		if e.complexity.Mutation.AwardTeamAchievement == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_awardTeamAchievement_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.AwardTeamAchievement(childComplexity, args["teamId"].(string), args["achievementId"].(string)), true
 	case "Mutation.bulkAwardAchievements":
 		if e.complexity.Mutation.BulkAwardAchievements == nil {
 			break
@@ -3308,7 +3307,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.BulkAwardAchievements(childComplexity, args["userIds"].([]string), args["achievementId"].(string)), true
+		return e.complexity.Mutation.BulkAwardAchievements(childComplexity, args["userIds"].([]string), args["teamId"].(*string), args["achievementId"].(string)), true
 	case "Mutation.bulkCompleteChallenges":
 		if e.complexity.Mutation.BulkCompleteChallenges == nil {
 			break
@@ -5158,6 +5157,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Project.MyChurchTeams(childComplexity), true
+	case "Project.myPoints":
+		if e.complexity.Project.MyPoints == nil {
+			break
+		}
+
+		return e.complexity.Project.MyPoints(childComplexity), true
 	case "Project.myTeam":
 		if e.complexity.Project.MyTeam == nil {
 			break
@@ -5432,6 +5437,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Feedback(childComplexity, args["filter"].(*model.FeedbackFilter), args["first"].(*int), args["after"].(*string), args["last"].(*int), args["before"].(*string)), true
+	case "Query.feedbackPlatforms":
+		if e.complexity.Query.FeedbackPlatforms == nil {
+			break
+		}
+
+		return e.complexity.Query.FeedbackPlatforms(childComplexity), true
+	case "Query.feedbackTags":
+		if e.complexity.Query.FeedbackTags == nil {
+			break
+		}
+
+		return e.complexity.Query.FeedbackTags(childComplexity), true
 	case "Query.fileUpload":
 		if e.complexity.Query.FileUpload == nil {
 			break
@@ -6151,6 +6168,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.QuizEdge.Node(childComplexity), true
 
+	case "QuizOrderingItem.correctOrder":
+		if e.complexity.QuizOrderingItem.CorrectOrder == nil {
+			break
+		}
+
+		return e.complexity.QuizOrderingItem.CorrectOrder(childComplexity), true
 	case "QuizOrderingItem.id":
 		if e.complexity.QuizOrderingItem.ID == nil {
 			break
@@ -7334,6 +7357,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.User.PersonUUID(childComplexity), true
+	case "User.points":
+		if e.complexity.User.Points == nil {
+			break
+		}
+
+		args, err := ec.field_User_points_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.User.Points(childComplexity, args["projectId"].(string)), true
 	case "User.projects":
 		if e.complexity.User.Projects == nil {
 			break
@@ -8199,6 +8233,7 @@ type Project {
         last: Int
         before: String
     ): ScoreJournalConnection! @goField(forceResolver: true)
+    myPoints: Int! @goField(forceResolver: true)
     archivedAt: Boolean
 }
 
@@ -8491,7 +8526,6 @@ extend type Mutation {
     assignTeamsToSuperTeam(superTeamId: ID!, teamIds: [ID!]!): SuperTeam! @requireRole(roles: ["admin", "superadmin"])
 
     # Team achievements (M2M)
-    awardTeamAchievement(teamId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
     revokeTeamAchievement(teamId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
     # SuperTeam achievements (M2M)
@@ -8794,7 +8828,7 @@ extend type Mutation {
     # Award/revoke (M2M)
     awardAchievement(userId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
     revokeAchievement(userId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
-    bulkAwardAchievements(userIds: [ID!]!, achievementId: ID!): [Achievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    bulkAwardAchievements(userIds: [ID!], teamId: ID, achievementId: ID!): [Achievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
     # Content progress (M2M) - marks content completed across ALL published achievements containing this content
     markContentItemCompleted(userId: ID!, externalContentId: ID!): [ContentAchievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
@@ -9154,6 +9188,7 @@ type User {
     consentStatus: ConsentStatus!
     language: String!
     createdAt: DateTime!
+    points(projectId: ID!): Int! @goField(forceResolver: true)
 }
 
 # ==================== User Input Types ====================
@@ -9649,7 +9684,8 @@ type QuizOrderingItem {
     id: ID!
     question: QuizQuestion! @goField(forceResolver: true)
     itemText: String!
-    # correctOrder intentionally NOT exposed to prevent cheating
+    # correctOrder is conditionally exposed - only returns value when session is FINISHED to prevent cheating
+    correctOrder: Int @goField(forceResolver: true)
 }
 
 type QuizPredefinedAnswer {
@@ -9838,6 +9874,9 @@ input UpdateQuizQuestionInput {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    # Set to true to clear betting absolute values (set them to null)
+    clearBettingMinAbsolute: Boolean
+    clearBettingMaxAbsolute: Boolean
 
     allowMultipleSelection: Boolean
     predefinedAnswers: [CreatePredefinedAnswerInput!]
@@ -9864,6 +9903,7 @@ input SubmitQuizAnswerInput {
 
 input UpdateQuizAnswerInput {
     submittedOrder: [ID!]  # For ordering questions
+    betAmount: Int
 }
 
 input RecordBetResultInput {
@@ -9971,15 +10011,15 @@ extend type Query {
 
 extend type Mutation {
     # Session CRUD
-    createQuizSession(input: CreateQuizSessionInput!): QuizSession!
-    updateQuizSession(id: ID!, input: UpdateQuizSessionInput!): QuizSession!
-    deleteQuizSession(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    createQuizSession(input: CreateQuizSessionInput!): QuizSession! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    updateQuizSession(id: ID!, input: UpdateQuizSessionInput!): QuizSession! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    deleteQuizSession(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin", "church_admin"])
 
     # Session state transitions
-    openQuizSession(id: ID!): QuizSession!
-    lockQuizSession(id: ID!): QuizSession!
-    finishQuizSession(id: ID!): QuizSession!
-    reopenQuizSession(id: ID!): QuizSession! @requireRole(roles: ["admin", "superadmin"])
+    openQuizSession(id: ID!): QuizSession! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    lockQuizSession(id: ID!): QuizSession! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    finishQuizSession(id: ID!): QuizSession! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    reopenQuizSession(id: ID!): QuizSession! @requireRole(roles: ["admin", "superadmin", "church_admin"])
 
     # Session access management
     grantQuizSessionAccess(input: GrantQuizSessionAccessInput!): Int!
@@ -10353,10 +10393,14 @@ type FeedbackEdge {
 input FeedbackFilter {
     userId: ID
     tags: [String!]
+    handled: Boolean
+    platform: String
 }
 
 extend type Query {
     feedback(filter: FeedbackFilter, first: Int, after: String, last: Int, before: String): FeedbackConnection! @requireRole(roles: ["admin", "superadmin"])
+    feedbackTags: [String!]! @requireRole(roles: ["admin", "superadmin"])
+    feedbackPlatforms: [String!]! @requireRole(roles: ["admin", "superadmin"])
 }
 
 extend type Mutation {
@@ -10719,35 +10763,24 @@ func (ec *executionContext) field_Mutation_awardSuperTeamAchievement_args(ctx co
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_awardTeamAchievement_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "teamId", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["teamId"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "achievementId", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["achievementId"] = arg1
-	return args, nil
-}
-
 func (ec *executionContext) field_Mutation_bulkAwardAchievements_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userIds", ec.unmarshalNID2ᚕstringᚄ)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userIds", ec.unmarshalOID2ᚕstringᚄ)
 	if err != nil {
 		return nil, err
 	}
 	args["userIds"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "achievementId", ec.unmarshalNID2string)
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "teamId", ec.unmarshalOID2ᚖstring)
 	if err != nil {
 		return nil, err
 	}
-	args["achievementId"] = arg1
+	args["teamId"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "achievementId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["achievementId"] = arg2
 	return args, nil
 }
 
@@ -13159,6 +13192,17 @@ func (ec *executionContext) field_SuperTeam_members_args(ctx context.Context, ra
 		return nil, err
 	}
 	args["before"] = arg3
+	return args, nil
+}
+
+func (ec *executionContext) field_User_points_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "projectId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["projectId"] = arg0
 	return args, nil
 }
 
@@ -15874,6 +15918,8 @@ func (ec *executionContext) fieldContext_ContentAchievement_project(_ context.Co
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -16733,6 +16779,8 @@ func (ec *executionContext) fieldContext_Event_parentProject(_ context.Context, 
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -17138,6 +17186,8 @@ func (ec *executionContext) fieldContext_ExternalChallenge_project(_ context.Con
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -20844,6 +20894,8 @@ func (ec *executionContext) fieldContext_Mutation_joinProject(ctx context.Contex
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -20945,6 +20997,8 @@ func (ec *executionContext) fieldContext_Mutation_createProject(ctx context.Cont
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -21046,6 +21100,8 @@ func (ec *executionContext) fieldContext_Mutation_updateProject(ctx context.Cont
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -22419,65 +22475,6 @@ func (ec *executionContext) fieldContext_Mutation_assignTeamsToSuperTeam(ctx con
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_awardTeamAchievement(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_awardTeamAchievement,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().AwardTeamAchievement(ctx, fc.Args["teamId"].(string), fc.Args["achievementId"].(string))
-		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
-				if err != nil {
-					var zeroVal model.Achievement
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal model.Achievement
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
-		ec.marshalNAchievement2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAchievement,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_awardTeamAchievement(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_awardTeamAchievement_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Mutation_revokeTeamAchievement(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -23621,7 +23618,7 @@ func (ec *executionContext) _Mutation_bulkAwardAchievements(ctx context.Context,
 		ec.fieldContext_Mutation_bulkAwardAchievements,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().BulkAwardAchievements(ctx, fc.Args["userIds"].([]string), fc.Args["achievementId"].(string))
+			return ec.resolvers.Mutation().BulkAwardAchievements(ctx, fc.Args["userIds"].([]string), fc.Args["teamId"].(*string), fc.Args["achievementId"].(string))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -25409,6 +25406,8 @@ func (ec *executionContext) fieldContext_Mutation_updateAvatar(ctx context.Conte
 				return ec.fieldContext_User_language(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "points":
+				return ec.fieldContext_User_points(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -25512,6 +25511,8 @@ func (ec *executionContext) fieldContext_Mutation_assignUserToProject(ctx contex
 				return ec.fieldContext_User_language(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "points":
+				return ec.fieldContext_User_points(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -25615,6 +25616,8 @@ func (ec *executionContext) fieldContext_Mutation_removeUserFromProject(ctx cont
 				return ec.fieldContext_User_language(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "points":
+				return ec.fieldContext_User_points(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -25718,6 +25721,8 @@ func (ec *executionContext) fieldContext_Mutation_assignUserToEvent(ctx context.
 				return ec.fieldContext_User_language(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "points":
+				return ec.fieldContext_User_points(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -25894,6 +25899,8 @@ func (ec *executionContext) fieldContext_Mutation_lockUserChurch(ctx context.Con
 				return ec.fieldContext_User_language(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "points":
+				return ec.fieldContext_User_points(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -25997,6 +26004,8 @@ func (ec *executionContext) fieldContext_Mutation_unlockUserChurch(ctx context.C
 				return ec.fieldContext_User_language(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "points":
+				return ec.fieldContext_User_points(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -27756,7 +27765,25 @@ func (ec *executionContext) _Mutation_createQuizSession(ctx context.Context, fie
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().CreateQuizSession(ctx, fc.Args["input"].(model.CreateQuizSessionInput))
 		},
-		nil,
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "church_admin"})
+				if err != nil {
+					var zeroVal *model.QuizSession
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.QuizSession
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
 		ec.marshalNQuizSession2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSession,
 		true,
 		true,
@@ -27823,7 +27850,25 @@ func (ec *executionContext) _Mutation_updateQuizSession(ctx context.Context, fie
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().UpdateQuizSession(ctx, fc.Args["id"].(string), fc.Args["input"].(model.UpdateQuizSessionInput))
 		},
-		nil,
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "church_admin"})
+				if err != nil {
+					var zeroVal *model.QuizSession
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.QuizSession
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
 		ec.marshalNQuizSession2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSession,
 		true,
 		true,
@@ -27894,7 +27939,7 @@ func (ec *executionContext) _Mutation_deleteQuizSession(ctx context.Context, fie
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "church_admin"})
 				if err != nil {
 					var zeroVal bool
 					return zeroVal, err
@@ -27949,7 +27994,25 @@ func (ec *executionContext) _Mutation_openQuizSession(ctx context.Context, field
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().OpenQuizSession(ctx, fc.Args["id"].(string))
 		},
-		nil,
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "church_admin"})
+				if err != nil {
+					var zeroVal *model.QuizSession
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.QuizSession
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
 		ec.marshalNQuizSession2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSession,
 		true,
 		true,
@@ -28016,7 +28079,25 @@ func (ec *executionContext) _Mutation_lockQuizSession(ctx context.Context, field
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().LockQuizSession(ctx, fc.Args["id"].(string))
 		},
-		nil,
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "church_admin"})
+				if err != nil {
+					var zeroVal *model.QuizSession
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.QuizSession
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
 		ec.marshalNQuizSession2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSession,
 		true,
 		true,
@@ -28083,7 +28164,25 @@ func (ec *executionContext) _Mutation_finishQuizSession(ctx context.Context, fie
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().FinishQuizSession(ctx, fc.Args["id"].(string))
 		},
-		nil,
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "church_admin"})
+				if err != nil {
+					var zeroVal *model.QuizSession
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.QuizSession
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
 		ec.marshalNQuizSession2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSession,
 		true,
 		true,
@@ -28154,7 +28253,7 @@ func (ec *executionContext) _Mutation_reopenQuizSession(ctx context.Context, fie
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "church_admin"})
 				if err != nil {
 					var zeroVal *model.QuizSession
 					return zeroVal, err
@@ -30689,6 +30788,8 @@ func (ec *executionContext) fieldContext_OrderingQuestion_orderingItems(_ contex
 				return ec.fieldContext_QuizOrderingItem_question(ctx, field)
 			case "itemText":
 				return ec.fieldContext_QuizOrderingItem_itemText(ctx, field)
+			case "correctOrder":
+				return ec.fieldContext_QuizOrderingItem_correctOrder(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type QuizOrderingItem", field.Name)
 		},
@@ -31377,6 +31478,8 @@ func (ec *executionContext) fieldContext_PluginChallenge_project(_ context.Conte
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -33291,6 +33394,35 @@ func (ec *executionContext) fieldContext_Project_journal(ctx context.Context, fi
 	return fc, nil
 }
 
+func (ec *executionContext) _Project_myPoints(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Project_myPoints,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Project().MyPoints(ctx, obj)
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Project_myPoints(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Project",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Project_archivedAt(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -33514,6 +33646,8 @@ func (ec *executionContext) fieldContext_ProjectEdge_node(_ context.Context, fie
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -33734,6 +33868,8 @@ func (ec *executionContext) fieldContext_Query_me(_ context.Context, field graph
 				return ec.fieldContext_User_language(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "points":
+				return ec.fieldContext_User_points(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -33868,6 +34004,8 @@ func (ec *executionContext) fieldContext_Query_project(ctx context.Context, fiel
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -33999,6 +34137,8 @@ func (ec *executionContext) fieldContext_Query_myProjects(_ context.Context, fie
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -34070,6 +34210,8 @@ func (ec *executionContext) fieldContext_Query_myCurrentProject(_ context.Contex
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -34141,6 +34283,8 @@ func (ec *executionContext) fieldContext_Query_currentProject(_ context.Context,
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -35043,6 +35187,8 @@ func (ec *executionContext) fieldContext_Query_user(ctx context.Context, field g
 				return ec.fieldContext_User_language(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "points":
+				return ec.fieldContext_User_points(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -35228,6 +35374,8 @@ func (ec *executionContext) fieldContext_Query_usersWithRole(ctx context.Context
 				return ec.fieldContext_User_language(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "points":
+				return ec.fieldContext_User_points(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -36573,6 +36721,100 @@ func (ec *executionContext) fieldContext_Query_feedback(ctx context.Context, fie
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_feedbackTags(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_feedbackTags,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().FeedbackTags(ctx)
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				if err != nil {
+					var zeroVal []string
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal []string
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_feedbackTags(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_feedbackPlatforms(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_feedbackPlatforms,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().FeedbackPlatforms(ctx)
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				if err != nil {
+					var zeroVal []string
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal []string
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_feedbackPlatforms(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_webhook(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -37126,6 +37368,8 @@ func (ec *executionContext) fieldContext_Quiz_project(_ context.Context, field g
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -38042,6 +38286,8 @@ func (ec *executionContext) fieldContext_QuizAchievement_project(_ context.Conte
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -38618,6 +38864,8 @@ func (ec *executionContext) fieldContext_QuizChallenge_project(_ context.Context
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -39325,6 +39573,35 @@ func (ec *executionContext) fieldContext_QuizOrderingItem_itemText(_ context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _QuizOrderingItem_correctOrder(ctx context.Context, field graphql.CollectedField, obj *model.QuizOrderingItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizOrderingItem_correctOrder,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.QuizOrderingItem().CorrectOrder(ctx, obj)
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizOrderingItem_correctOrder(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizOrderingItem",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _QuizPredefinedAnswer_id(ctx context.Context, field graphql.CollectedField, obj *model.QuizPredefinedAnswer) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -39781,6 +40058,8 @@ func (ec *executionContext) fieldContext_QuizSession_createdBy(_ context.Context
 				return ec.fieldContext_User_language(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "points":
+				return ec.fieldContext_User_points(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -40159,6 +40438,8 @@ func (ec *executionContext) fieldContext_QuizSubmission_user(_ context.Context, 
 				return ec.fieldContext_User_language(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "points":
+				return ec.fieldContext_User_points(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -40926,6 +41207,8 @@ func (ec *executionContext) fieldContext_RoleScope_project(_ context.Context, fi
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -41077,6 +41360,8 @@ func (ec *executionContext) fieldContext_ScoreJournal_project(_ context.Context,
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -41152,6 +41437,8 @@ func (ec *executionContext) fieldContext_ScoreJournal_user(_ context.Context, fi
 				return ec.fieldContext_User_language(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "points":
+				return ec.fieldContext_User_points(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -41417,6 +41704,8 @@ func (ec *executionContext) fieldContext_ScoreJournal_awardedBy(_ context.Contex
 				return ec.fieldContext_User_language(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "points":
+				return ec.fieldContext_User_points(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -42097,6 +42386,8 @@ func (ec *executionContext) fieldContext_SimpleAchievement_project(_ context.Con
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -42544,6 +42835,8 @@ func (ec *executionContext) fieldContext_SimpleChallenge_project(_ context.Conte
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -43179,6 +43472,8 @@ func (ec *executionContext) fieldContext_Streak_project(_ context.Context, field
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -43531,6 +43826,8 @@ func (ec *executionContext) fieldContext_StreakAchievement_project(_ context.Con
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -44268,6 +44565,8 @@ func (ec *executionContext) fieldContext_SuperTeam_parentProject(_ context.Conte
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -44569,6 +44868,8 @@ func (ec *executionContext) fieldContext_SyncUserResult_user(_ context.Context, 
 				return ec.fieldContext_User_language(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "points":
+				return ec.fieldContext_User_points(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -45049,6 +45350,8 @@ func (ec *executionContext) fieldContext_Team_parentProject(_ context.Context, f
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -45505,6 +45808,8 @@ func (ec *executionContext) fieldContext_TeamMember_user(_ context.Context, fiel
 				return ec.fieldContext_User_language(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "points":
+				return ec.fieldContext_User_points(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -45971,6 +46276,8 @@ func (ec *executionContext) fieldContext_User_projects(_ context.Context, field 
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -46251,6 +46558,47 @@ func (ec *executionContext) fieldContext_User_createdAt(_ context.Context, field
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type DateTime does not have child fields")
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_points(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_User_points,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.User().Points(ctx, obj, fc.Args["projectId"].(string))
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_User_points(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_User_points_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -46820,6 +47168,8 @@ func (ec *executionContext) fieldContext_UserEdge_node(_ context.Context, field 
 				return ec.fieldContext_User_language(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "points":
+				return ec.fieldContext_User_points(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -46951,6 +47301,8 @@ func (ec *executionContext) fieldContext_UserFeedback_user(_ context.Context, fi
 				return ec.fieldContext_User_language(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "points":
+				return ec.fieldContext_User_points(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -47459,6 +47811,8 @@ func (ec *executionContext) fieldContext_UserRole_user(_ context.Context, field 
 				return ec.fieldContext_User_language(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "points":
+				return ec.fieldContext_User_points(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -47714,6 +48068,8 @@ func (ec *executionContext) fieldContext_Webhook_project(_ context.Context, fiel
 				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -52079,7 +52435,7 @@ func (ec *executionContext) unmarshalInputFeedbackFilter(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"userId", "tags"}
+	fieldsInOrder := [...]string{"userId", "tags", "handled", "platform"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -52100,6 +52456,20 @@ func (ec *executionContext) unmarshalInputFeedbackFilter(ctx context.Context, ob
 				return it, err
 			}
 			it.Tags = data
+		case "handled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("handled"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Handled = data
+		case "platform":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("platform"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Platform = data
 		}
 	}
 
@@ -53582,7 +53952,7 @@ func (ec *executionContext) unmarshalInputUpdateQuizAnswerInput(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"submittedOrder"}
+	fieldsInOrder := [...]string{"submittedOrder", "betAmount"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -53596,6 +53966,13 @@ func (ec *executionContext) unmarshalInputUpdateQuizAnswerInput(ctx context.Cont
 				return it, err
 			}
 			it.SubmittedOrder = data
+		case "betAmount":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("betAmount"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BetAmount = data
 		}
 	}
 
@@ -53692,7 +54069,7 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"questionText", "questionOrder", "timeoutSeconds", "points", "bettingEnabled", "bettingMinPercentage", "bettingMaxPercentage", "bettingMinAbsolute", "bettingMaxAbsolute", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
+	fieldsInOrder := [...]string{"questionText", "questionOrder", "timeoutSeconds", "points", "bettingEnabled", "bettingMinPercentage", "bettingMaxPercentage", "bettingMinAbsolute", "bettingMaxAbsolute", "clearBettingMinAbsolute", "clearBettingMaxAbsolute", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -53762,6 +54139,20 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 				return it, err
 			}
 			it.BettingMaxAbsolute = data
+		case "clearBettingMinAbsolute":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearBettingMinAbsolute"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClearBettingMinAbsolute = data
+		case "clearBettingMaxAbsolute":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearBettingMaxAbsolute"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClearBettingMaxAbsolute = data
 		case "allowMultipleSelection":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowMultipleSelection"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -58090,13 +58481,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "awardTeamAchievement":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_awardTeamAchievement(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "revokeTeamAchievement":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_revokeTeamAchievement(ctx, field)
@@ -60487,6 +60871,42 @@ func (ec *executionContext) _Project(ctx context.Context, sel ast.SelectionSet, 
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "myPoints":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Project_myPoints(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "archivedAt":
 			out.Values[i] = ec._Project_archivedAt(ctx, field, obj)
 		default:
@@ -61777,6 +62197,50 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_feedback(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "feedbackTags":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_feedbackTags(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "feedbackPlatforms":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_feedbackPlatforms(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -63122,6 +63586,39 @@ func (ec *executionContext) _QuizOrderingItem(ctx context.Context, sel ast.Selec
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "correctOrder":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._QuizOrderingItem_correctOrder(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -66874,6 +67371,42 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "points":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_points(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

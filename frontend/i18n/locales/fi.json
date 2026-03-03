@@ -34,12 +34,27 @@
     "finishReview": "Lopeta läpikäynti",
     "yourNumber": "Sinun numerosi",
     "writeYourAnswer": "Kirjoita vastauksesi...",
+    "close": "Sulje tietokilpailu",
+    "betting": {
+      "remainingPoints": "Jäljellä olevat pisteet",
+      "yourBet": "Sinun panoksesi",
+      "maxBetMessage": "Voit panostaa enintään {percentage}% pisteitäsi.",
+      "sessionLocked": "Vastaus on lukittu",
+      "potentialWinnings": "{amount} pisteitä potentiaalisissa voitoissa",
+      "bettingClosed": "Vedonlyönti on päättynyt. Voit sulkea tietokilpailun.",
+      "results": "Tulos",
+      "yourPoints": "Pisteesi",
+      "winnings": "Voitot",
+      "losses": "Menetetyt pisteet"
+    },
     "result": {
       "receivedNoPoints": "Et saanut yhtään pistettä.",
       "receivedPoints": "Sait {points} pistettä.",
       "betterLuckNextTime": "Parempaa onnea ensi kerralla!",
       "wellDone": "Hyvin tehty!",
-      "perfect": "Täydellistä!"
+      "perfect": "Täydellistä!",
+      "thanksForAnswers": "Kiitos vastauksistasi!",
+      "resultsRevealedLater": "Tulokset julkistetaan myöhemmin."
     }
   },
   "challenges": {
@@ -97,7 +112,8 @@
     "saveChanges": "Tallenna muutokset",
     "unitName": "Yksikön nimi",
     "noUnitLeader": "Ei yksikön johtajaa",
-    "selectUnitLeader": "Valitse yksikön johtaja"
+    "selectUnitLeader": "Valitse yksikön johtaja",
+    "description": "Vain kolmen parhaan pisteet ovat kaikkien nähtävissä"
   },
   "place": "sijoitus",
   "points": "pisteet",

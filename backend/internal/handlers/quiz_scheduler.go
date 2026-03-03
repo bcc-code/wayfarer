@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/firebase"
@@ -18,6 +19,7 @@ type QuizSchedulerHandler struct {
 	DB              *database.DB
 	FirebaseService *firebase.Service
 	WebhookService  *webhooks.Service
+	Cache           *cache.CacheWithRegistry
 }
 
 // QuizSchedulerResponse contains the results of processing scheduled transitions
@@ -121,18 +123,7 @@ func (h *QuizSchedulerHandler) processLockTransitions(ctx context.Context) (int,
 	errors := 0
 
 	for _, session := range sessions {
-		// Auto-submit active submissions first
-		err := h.DB.Queries.AutoSubmitSessionSubmissions(ctx, session.ID)
-		if err != nil {
-			slog.Error("quiz_scheduler: failed to auto-submit submissions",
-				"session_id", session.ID,
-				"error", err,
-			)
-			errors++
-			continue
-		}
-
-		_, err = h.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
+		_, err := h.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
 			ID:    session.ID,
 			State: "LOCKED",
 		})
@@ -179,6 +170,7 @@ func (h *QuizSchedulerHandler) processFinishTransitions(ctx context.Context) (in
 	errors := 0
 
 	for _, session := range sessions {
+		// Update state to FINISHED first to prevent duplicate processing on retry
 		_, err := h.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
 			ID:    session.ID,
 			State: "FINISHED",
@@ -192,6 +184,33 @@ func (h *QuizSchedulerHandler) processFinishTransitions(ctx context.Context) (in
 			continue
 		}
 
+		// Auto-submit active submissions
+		err = h.DB.Queries.AutoSubmitSessionSubmissions(ctx, session.ID)
+		if err != nil {
+			// Log but don't fail - state is already FINISHED
+			slog.Error("quiz_scheduler: failed to auto-submit submissions",
+				"session_id", session.ID,
+				"error", err,
+			)
+		}
+
+		// Invalidate cache for affected users
+		if h.Cache != nil {
+			submissions, subErr := h.DB.Queries.GetSessionSubmissionsWithUserData(ctx, session.ID)
+			if subErr != nil {
+				slog.Warn("quiz_scheduler: failed to get submissions for cache invalidation",
+					"session_id", session.ID,
+					"error", subErr,
+				)
+			} else {
+				for _, sub := range submissions {
+					h.Cache.InvalidateUser(sub.UserID)
+					h.Cache.InvalidateUserQuizSubmissions(sub.UserID)
+					h.Cache.InvalidateQuizSubmission(sub.SubmissionID)
+				}
+			}
+		}
+
 		// Get quiz for project ID and webhook dispatch
 		quiz, err := h.DB.Queries.GetQuizByID(ctx, session.QuizID)
 		if err != nil {
@@ -202,6 +221,11 @@ func (h *QuizSchedulerHandler) processFinishTransitions(ctx context.Context) (in
 			)
 			errors++
 			continue
+		}
+
+		// Invalidate project cache for leaderboard updates
+		if h.Cache != nil {
+			h.Cache.InvalidateProject(quiz.ProjectID)
 		}
 
 		// Notify Firestore

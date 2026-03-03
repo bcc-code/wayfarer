@@ -34,6 +34,26 @@
     "finishReview": "Avslutt gjennomgang",
     "yourNumber": "Ditt tall",
     "writeYourAnswer": "Skriv ditt svar...",
+    "close": "Lukk",
+    "betting": {
+      "remainingPoints": "Gjenstående poeng",
+      "yourBet": "Din innsats",
+      "maxBetMessage": "Du kan maks. satse {percentage}% av dine poeng",
+      "sessionLocked": "Svaret er låst",
+      "registeredBet": "Tippingen er registrert",
+      "bettingClosed": "Tippingen er over",
+      "yourBetIs": "Du satset {bet} poeng",
+      "results": "Resultat",
+      "yourPoints": "Dine poeng",
+      "winnings": "Gevinst",
+      "pointsLost": "Poeng tapt",
+      "pointsEarned": "Poeng tjent",
+      "resultYourBet": "Din innsats",
+      "correctCount": "Du hadde {count} riktige",
+      "correctCountAll": "Du hadde alle riktige",
+      "correctCountNone": "Du hadde ingen riktige",
+      "bettingResult": "Tipping resultat"
+    },
     "result": {
       "receivedNoPoints": "Du samlet ingen poeng.",
       "receivedPoints": "Du samlet {points} poeng.",
@@ -42,6 +62,10 @@
       "perfect": "Perfekt!",
       "thanksForAnswers": "Takk for svarene dine!",
       "resultsRevealedLater": "Resultatene avsløres senere."
+    },
+    "notSubmitted": {
+      "title": "Du har ikke levert",
+      "message": "Du deltok ikke i denne tippingen"
     }
   },
   "challenges": {
@@ -99,7 +123,8 @@
     "saveChanges": "Lagre endringer",
     "unitName": "Unitnavn",
     "noUnitLeader": "Ingen unitleder",
-    "selectUnitLeader": "Velg unitleder"
+    "selectUnitLeader": "Velg unitleder",
+    "description": "Kun topp 3 sine poeng er synlig for alle"
   },
   "place": "plassering",
   "points": "poeng",
@@ -150,8 +175,8 @@
   },
   "goToHiddenTreasures": "Gå til bibelstudie",
   "gameNights": {
-    "yourCode": "Din unit kode for Game Night",
-    "yourCodeHint": "Åpne siden på din PC og tast inn koden"
+    "yourCode": "Skriv inn din kode:",
+    "yourCodeHint": "Gå til denne nettsiden på en PC:"
   },
   "admin": {
     "common": {
@@ -174,6 +199,7 @@
       "comingSoon": "Kommer snart",
       "kickOff": "Kick-off",
       "statistics": "Statistikk",
+      "gameNight": "Game Night {number}",
       "kickOffButton": "Start unit-onboarding nå",
       "kickOffOnboardingDescription": "Denne handlingen starter unit-onboarding for hele lokalmenigheten.",
       "kickOffOnboardingDescriptionWarning": "⚠ Ikke start hvis dere ikke er klare.",
@@ -270,6 +296,66 @@
       "excludeFromLeaderboard": "Ekskluder fra toppliste",
       "excludeFromLeaderboardTooltip": "Når aktivert vil denne uniten ikke vises på topplisten",
       "excludedFromLeaderboard": "Skjult fra topplister"
+    },
+    "gamenight": {
+      "importantResources": "Viktige ressurser",
+      "importantResourcesDescription": "Ha disse klare, eller send dem til storskjermoperatøren. De skal brukes gjennom kvelden.",
+      "linkToAllFilms": "Link til alle filmer",
+      "findFilmsHere": "Kopier lenke til filmene",
+      "bigScreen": "Storskjermvisning",
+      "usedInStep5": "Denne skal brukes i steg 1 og 5",
+      "findBigScreenHere": "Kopier lenke til storskjermvisningen",
+      "step1Title": "Tips: Du kan bruke ",
+      "step1Description": "Denne kan vises på storskjermen når ungdommene kommer inn i salen",
+      "tip": "Tips",
+      "fullscreenTip": "Trykk på 'Fullskjerm' nederst til høyre på storskjermvisningen.",
+      "openBigScreenNewTab": "Kopier lenke til storskjermvisningen",
+      "goToNextStep": "Gå videre til neste steg",
+      "step2Title": "Spill av film 1",
+      "step2Description": "Dette gjøres når ungdommene har satt seg, og kvelden er i gang",
+      "goToFilm": "Kopier lenke til film {number}",
+      "filmFinishedNextStep": "Filmen er ferdig, gå til neste steg",
+      "step3Title": "Gjennomfør tippingen",
+      "step3Description": "Når du starter tippingen vil alle få en tippe-utfordring i Interact. Ikke gjør dette før dere FAKTISK skal tippe.",
+      "startBetting": "Start tipping",
+      "bettingStartingIn": "Tipping starter om {seconds} sekunder...",
+      "cancelBettingCountdown": "Avbryt",
+      "lockBetting": "Frys tipping",
+      "lockBettingDescription": "Når alle har tippet kan du fryse tippingen.",
+      "bettingLockedNotice": "Da vil deltakerne få beskjed om at tipping er fryst.",
+      "reopenBettingHint": "Hvis noen ikke rakk å tippe kan du gjenåpne tippingen.",
+      "reopenBetting": "Gjenåpne tipping",
+      "makeSureEverybodyBet": "Pass på at alle er ferdig med å tippe før du avslutter",
+      "allBetNextStep": "Avslutt tippingen",
+      "cannotReopenAfterContinue": "VIKTIG: Hvis du avslutter tippingen kan du ikke gjenåpne den lenger.",
+      "step4Title": "Spill av film 2",
+      "step4Description": "Dette gjøres etter at tipping er gjennomført",
+      "step5TitleBigScreen": "Vis storskjermvisning for unit-oppgaven på storskjermen",
+      "step5Title": "Send ut kode til unit-oppgaven",
+      "step5Description": "Unitledere må gå inn på 'Utfordringer' siden i Interact. Der ser de koden, og nettsiden hvor denne skal brukes (pc26.bcc.media)",
+      "unitLeaderMustGoTo": "Unitleder må gå inn på",
+      "onAPC": "på en PC",
+      "ifUnitLeaderMissing": "Hvis uniten mangler kode kan du finne denne til høyre for unit-navnet på",
+      "unitAdminPage": "unit-admin siden",
+      "giveUnitLeadersAccess": "Send kode til unitledere",
+      "unitLeaderAccessSent": "Kode sendt til unitledere",
+      "step6Title": "Gå til adminsiden for å starte unit-oppgaven",
+      "step6Description": "Unit-oppgaven er et separat system, så det må ha sin egen admin-side. Fortsett der, og så ledes du tilbake hit senere.",
+      "goToUnitTaskAdmin": "Gå til adminsiden for unit-oppgaven",
+      "completeStepsOnOtherPage": "Fullfør steg {from} til {to} på den andre siden",
+      "step12Title": "Spill av film 3",
+      "step13Title": "Gi deltakerne poeng for tippingen",
+      "step13Description": "Alle må gå inn på 'Utfordringer' siden i Interact og åpne den ferdige utfordringen for å se resultatet.",
+      "releasePointsNow": "Frigi poeng nå",
+      "youAreDone": "Du er nå ferdig! 🎉",
+      "canClosePageSafely": "Game Night {number} kan trygt avsluttes, og du kan lukke denne siden.",
+      "errors": {
+        "couldNotStartBetting": "Kunne ikke starte tipping",
+        "couldNotLockBetting": "Kunne ikke låse tipping",
+        "couldNotReopenBetting": "Kunne ikke gjenåpne tipping",
+        "couldNotFinishBetting": "Kunne ikke avslutte tipping",
+        "couldNotSendUnitLeaderAccess": "Kunne ikke sende kode til unitledere"
+      }
     },
     "statistics": {
       "totalUsersInTeams": "Personer i units",

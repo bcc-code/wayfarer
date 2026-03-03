@@ -229,7 +229,9 @@ async function handleToggleLeaderboardExclusion(excluded: boolean) {
   }
 
   toast.add({
-    title: excluded ? 'Laget er nå skjult fra topplisten' : 'Laget vises nå på topplisten',
+    title: excluded
+      ? 'Laget er nå skjult fra topplisten'
+      : 'Laget vises nå på topplisten',
     color: 'success',
   })
 
@@ -384,7 +386,15 @@ async function handleToggleLeaderboardExclusion(excluded: boolean) {
             >
               <div>
                 <div class="flex items-center gap-2">
-                  <span class="font-medium">{{ member.name }}</span>
+                  <NuxtLink
+                    :to="{
+                      name: 'admin-users-userId',
+                      params: { userId: member.user.id },
+                    }"
+                    class="font-medium hover:underline"
+                  >
+                    {{ member.name }}
+                  </NuxtLink>
                   <UBadge
                     v-if="member.isTeamLead"
                     variant="soft"
@@ -395,7 +405,7 @@ async function handleToggleLeaderboardExclusion(excluded: boolean) {
                   </UBadge>
                 </div>
                 <div class="text-muted text-xs">
-                  {{ member.church.name }}
+                  {{ member.user.id }}
                 </div>
               </div>
               <div v-if="canEdit" class="flex items-center gap-2">

@@ -12,13 +12,15 @@ import type {
   FreeTextResponseData,
   QuizQuestionExposed,
 } from './quiz/types'
-import type {
-  FinalizeQuizMutation,
-  StartQuizSessionMutation,
+import {
+  QuizSessionState,
+  type FinalizeQuizMutation,
+  type StartQuizSessionMutation,
 } from '~/api/generated'
 
 const props = defineProps<{
   challenge: QuizChallengeData
+  userScore?: number
 }>()
 
 const emit = defineEmits<{
@@ -33,17 +35,20 @@ const { executeMutation: finalizeQuiz } = useFinalizeQuizMutation()
 const currentQuestionIndex = ref(0)
 const questionResults = ref<QuestionResult[]>([])
 const quizCompleted = ref(false)
+const currentBetAmount = ref(0)
 const finalResult = ref<FinalizeQuizMutation['finalizeQuiz'] | null>(null)
 const startedSubmission = ref<
   StartQuizSessionMutation['startQuizSession'] | null
 >(null)
 const isReviewMode = ref(false)
 
-// Start with loading true if we need to start a quiz (no active submission and have session)
+// Start with loading true if we need to start a quiz (no active submission and have OPEN session)
 const needsToStartQuiz = computed(() => {
+  const session = props.challenge.quiz.userActiveSession
   return (
     !props.challenge.quiz.userActiveSubmission?.id &&
-    props.challenge.quiz.userActiveSession?.id != null
+    session?.id != null &&
+    session.state === QuizSessionState.Open
   )
 })
 const isLoading = ref(needsToStartQuiz.value)
@@ -152,6 +157,13 @@ const isQuizUnavailable = computed(() => {
   return true
 })
 
+// Check if session ended without user submitting (for betting quizzes)
+const isNotSubmitted = computed(() => {
+  const sessionState = props.challenge.quiz.userActiveSession?.state
+  if (sessionState !== QuizSessionState.Finished) return false
+  return props.challenge.quiz.userSubmissions.length === 0
+})
+
 onMounted(async () => {
   track(AnalyticsEvent.ChallengeOpened, {
     challenge_id: props.challenge.id,
@@ -178,14 +190,33 @@ onMounted(async () => {
 })
 
 const activeSubmission = computed(() => {
-  // Use the started submission if we just started, otherwise find from existing submissions
+  // Determine the target submission ID
+  const submissionId =
+    startedSubmission.value?.id ?? props.challenge.quiz.userActiveSubmission?.id
+
+  // Prefer props data when available (has full responses with pointsEarned from server)
+  if (submissionId) {
+    const fromProps = props.challenge.quiz.userSubmissions.find(
+      (submission) => submission.id === submissionId,
+    )
+    if (fromProps) return fromProps
+  }
+
+  // Fallback to started submission (before page has refetched to include this submission)
   if (startedSubmission.value) {
     return startedSubmission.value
   }
-  return props.challenge.quiz.userSubmissions.find(
-    (submission) =>
-      submission.id === props.challenge.quiz.userActiveSubmission?.id,
-  )
+
+  // If session is LOCKED or FINISHED but no active submission, use the completed submission
+  const sessionState = props.challenge.quiz.userActiveSession?.state
+  if (
+    sessionState === QuizSessionState.Locked ||
+    sessionState === QuizSessionState.Finished
+  ) {
+    return props.challenge.quiz.userSubmissions.find((s) => s.completedAt)
+  }
+
+  return undefined
 })
 
 const questions = computed(() => {
@@ -233,7 +264,11 @@ function initializeFromExistingResponses() {
 watch(
   activeSubmission,
   (submission) => {
-    if (submission && 'responses' in submission && submission.responses.length > 0) {
+    if (
+      submission &&
+      'responses' in submission &&
+      submission.responses.length > 0
+    ) {
       initializeFromExistingResponses()
     }
   },
@@ -248,9 +283,59 @@ const isLastQuestion = computed(() => {
   return currentQuestionIndex.value === questions.value.length - 1
 })
 
+// Check if current question has betting enabled
+const isBettingEnabled = computed(() => {
+  return currentQuestion.value?.bettingEnabled ?? false
+})
+
+// Determine if the user won or lost the bet (for background color styling)
+const isBettingWin = computed(() => {
+  if (!isBettingEnabled.value) return null
+  const pointsEarned = currentResponse.value?.pointsEarned
+  if (pointsEarned === null || pointsEarned === undefined) return null
+  return pointsEarned >= 0
+})
+
 // Get session state for ordering questions betting mode
 const sessionState = computed(() => {
   return props.challenge.quiz.userActiveSession?.state
+})
+
+// Check if session is in a state where we should show the question view (LOCKED or FINISHED)
+const isSessionLockedOrFinished = computed(() => {
+  return (
+    sessionState.value === QuizSessionState.Locked ||
+    sessionState.value === QuizSessionState.Finished
+  )
+})
+
+// Compute correct count for ordering questions (for betting results)
+const bettingCorrectCount = computed(() => {
+  const response = currentResponse.value
+  const question = currentQuestion.value
+  if (!response || !question) return null
+  if (response.__typename !== 'OrderingResponse') return null
+  if (question.__typename !== 'OrderingQuestion') return null
+
+  const correctOrderIds = [...question.orderingItems]
+    .sort((a, b) => (a.correctOrder ?? 0) - (b.correctOrder ?? 0))
+    .map((item) => item.id)
+
+  let count = 0
+  for (
+    let i = 0;
+    i < response.submittedOrder.length && i < correctOrderIds.length;
+    i++
+  ) {
+    if (response.submittedOrder[i] === correctOrderIds[i]) count++
+  }
+  return count
+})
+
+const bettingTotalCount = computed(() => {
+  const question = currentQuestion.value
+  if (!question || question.__typename !== 'OrderingQuestion') return null
+  return question.orderingItems.length
 })
 
 // Find existing ordering response for the current question
@@ -268,6 +353,15 @@ const currentResponse = computed(() => {
 
   return undefined
 })
+
+// Populate bet amount from existing response, or reset to 0
+watch(
+  [currentQuestionIndex, currentResponse],
+  () => {
+    currentBetAmount.value = currentResponse.value?.betAmount ?? 0
+  },
+  { immediate: true },
+)
 
 async function handleAnswerSubmitted(result: QuestionResult) {
   // Update existing result or add new one (avoid duplicates when resuming)
@@ -445,7 +539,11 @@ const progressResults = computed(() => {
       />
     </template>
 
-    <template v-else-if="completedSubmission && !canStartQuiz">
+    <template
+      v-else-if="
+        completedSubmission && !canStartQuiz && !isSessionLockedOrFinished
+      "
+    >
       <QuizReviewMode
         v-if="isReviewMode"
         ref="reviewModeRef"
@@ -469,102 +567,122 @@ const progressResults = computed(() => {
 
     <template v-else-if="currentQuestion">
       <div
-        class="flex flex-col items-center justify-center py-6 px-default gap-1 text-center"
+        v-show="isBettingEnabled && sessionState === QuizSessionState.Locked"
+        class="grow flex flex-col py-6 px-default items-center justify-center"
       >
-        <p v-if="questions.length > 1" class="text-caption text-text-muted">
-          {{
-            $t('quiz.questionNumber', {
-              current: currentQuestionIndex + 1,
-              total: questions.length,
-            })
-          }}
+        <p class="text-heading text-balance text-center">
+          {{ $t('quiz.betting.bettingClosed') }}
         </p>
-        <h1 class="text-heading text-text-default text-balance">
-          {{ currentQuestion.questionText }}
-        </h1>
+        <p class="text-title text-text-muted">
+          {{ $t('quiz.betting.yourBetIs', { bet: currentBetAmount }) }}
+        </p>
       </div>
-
-      <QuizPredefinedQuestion
-        v-if="currentQuestion.__typename === 'PredefinedQuestion'"
-        ref="currentQuestionRef"
-        :key="`predefined:${currentQuestion.id}`"
-        :question="currentQuestion"
-        :total-questions="questions.length"
-        :current-index="currentQuestionIndex"
-        :submission-id="activeSubmission?.id ?? ''"
-        :existing-response="
-          currentResponse?.__typename === 'PredefinedResponse'
-            ? currentResponse
-            : undefined
-        "
-        :is-last-question="isLastQuestion"
-        :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
-        @answer-submitted="handleAnswerSubmitted"
-      />
-      <QuizOrderingQuestion
-        v-else-if="currentQuestion.__typename === 'OrderingQuestion'"
-        ref="currentQuestionRef"
-        :key="`ordering:${currentQuestion.id}`"
-        :question="currentQuestion"
-        :total-questions="questions.length"
-        :current-index="currentQuestionIndex"
-        :submission-id="activeSubmission?.id ?? ''"
-        :session-state="sessionState"
-        :existing-response="
-          currentResponse?.__typename === 'OrderingResponse'
-            ? currentResponse
-            : undefined
-        "
-        :is-last-question="isLastQuestion"
-        :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
-        @answer-submitted="handleAnswerSubmitted"
-      />
-      <QuizNumberQuestion
-        v-else-if="currentQuestion.__typename === 'NumberQuestion'"
-        ref="currentQuestionRef"
-        :key="`number:${currentQuestion.id}`"
-        :question="currentQuestion"
-        :total-questions="questions.length"
-        :current-index="currentQuestionIndex"
-        :submission-id="activeSubmission?.id ?? ''"
-        :existing-response="
-          currentResponse?.__typename === 'NumberResponse'
-            ? currentResponse
-            : undefined
-        "
-        :is-last-question="isLastQuestion"
-        :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
-        @answer-submitted="handleAnswerSubmitted"
-      />
-      <QuizJsonQuestion
-        v-else-if="currentQuestion.__typename === 'JsonQuestion'"
-        ref="currentQuestionRef"
-        :key="`json:${currentQuestion.id}`"
-        :question="currentQuestion"
-        :total-questions="questions.length"
-        :current-index="currentQuestionIndex"
-        :submission-id="activeSubmission?.id ?? ''"
-        :is-last-question="isLastQuestion"
-        :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
-        @answer-submitted="handleAnswerSubmitted"
-      />
-      <QuizFreeTextQuestion
-        v-else-if="currentQuestion.__typename === 'FreeTextQuestion'"
-        ref="currentQuestionRef"
-        :key="`free-text:${currentQuestion.id}`"
-        :question="currentQuestion"
-        :total-questions="questions.length"
-        :current-index="currentQuestionIndex"
-        :submission-id="activeSubmission?.id ?? ''"
-        :existing-response="
-          currentResponse?.__typename === 'FreeTextResponse'
-            ? currentResponse
-            : undefined
-        "
-        :is-last-question="isLastQuestion"
-        :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
-        @answer-submitted="handleAnswerSubmitted"
-      />
+      <div
+        v-show="!isBettingEnabled || sessionState !== QuizSessionState.Locked"
+      >
+        <div
+          class="flex flex-col items-center justify-center py-3 px-medium gap-1 text-center"
+        >
+          <p v-if="questions.length > 1" class="text-caption text-text-muted">
+            {{
+              $t('quiz.questionNumber', {
+                current: currentQuestionIndex + 1,
+                total: questions.length,
+              })
+            }}
+          </p>
+          <h1
+            class="text-heading limitedHeight:text-label text-text-default text-balance"
+          >
+            {{ currentQuestion.questionText }}
+          </h1>
+        </div>
+        <QuizPredefinedQuestion
+          v-if="currentQuestion.__typename === 'PredefinedQuestion'"
+          ref="currentQuestionRef"
+          :key="`predefined:${currentQuestion.id}`"
+          :question="currentQuestion"
+          :total-questions="questions.length"
+          :current-index="currentQuestionIndex"
+          :submission-id="activeSubmission?.id ?? ''"
+          :existing-response="
+            currentResponse?.__typename === 'PredefinedResponse'
+              ? currentResponse
+              : undefined
+          "
+          :is-last-question="isLastQuestion"
+          :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
+          :bet-amount="isBettingEnabled ? currentBetAmount : undefined"
+          @answer-submitted="handleAnswerSubmitted"
+        />
+        <QuizOrderingQuestion
+          v-else-if="currentQuestion.__typename === 'OrderingQuestion'"
+          ref="currentQuestionRef"
+          :key="`ordering:${currentQuestion.id}`"
+          :question="currentQuestion"
+          :total-questions="questions.length"
+          :current-index="currentQuestionIndex"
+          :submission-id="activeSubmission?.id ?? ''"
+          :session-state="sessionState"
+          :existing-response="
+            currentResponse?.__typename === 'OrderingResponse'
+              ? currentResponse
+              : undefined
+          "
+          :is-last-question="isLastQuestion"
+          :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
+          :bet-amount="isBettingEnabled ? currentBetAmount : undefined"
+          @answer-submitted="handleAnswerSubmitted"
+        />
+        <QuizNumberQuestion
+          v-else-if="currentQuestion.__typename === 'NumberQuestion'"
+          ref="currentQuestionRef"
+          :key="`number:${currentQuestion.id}`"
+          :question="currentQuestion"
+          :total-questions="questions.length"
+          :current-index="currentQuestionIndex"
+          :submission-id="activeSubmission?.id ?? ''"
+          :existing-response="
+            currentResponse?.__typename === 'NumberResponse'
+              ? currentResponse
+              : undefined
+          "
+          :is-last-question="isLastQuestion"
+          :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
+          :bet-amount="isBettingEnabled ? currentBetAmount : undefined"
+          @answer-submitted="handleAnswerSubmitted"
+        />
+        <QuizJsonQuestion
+          v-else-if="currentQuestion.__typename === 'JsonQuestion'"
+          ref="currentQuestionRef"
+          :key="`json:${currentQuestion.id}`"
+          :question="currentQuestion"
+          :total-questions="questions.length"
+          :current-index="currentQuestionIndex"
+          :submission-id="activeSubmission?.id ?? ''"
+          :is-last-question="isLastQuestion"
+          :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
+          @answer-submitted="handleAnswerSubmitted"
+        />
+        <QuizFreeTextQuestion
+          v-else-if="currentQuestion.__typename === 'FreeTextQuestion'"
+          ref="currentQuestionRef"
+          :key="`free-text:${currentQuestion.id}`"
+          :question="currentQuestion"
+          :total-questions="questions.length"
+          :current-index="currentQuestionIndex"
+          :submission-id="activeSubmission?.id ?? ''"
+          :existing-response="
+            currentResponse?.__typename === 'FreeTextResponse'
+              ? currentResponse
+              : undefined
+          "
+          :is-last-question="isLastQuestion"
+          :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
+          :bet-amount="isBettingEnabled ? currentBetAmount : undefined"
+          @answer-submitted="handleAnswerSubmitted"
+        />
+      </div>
     </template>
 
     <!-- Fallback: show completed submission result even if retakes are allowed -->
@@ -590,6 +708,30 @@ const progressResults = computed(() => {
       />
     </template>
 
+    <!-- Session ended without user submitting -->
+    <template v-else-if="isNotSubmitted">
+      <div class="text-center p-default flex flex-col gap-large grow">
+        <div class="grow flex flex-col items-center justify-center gap-default">
+          <div
+            class="rounded-full bg-background-indent p-6 flex items-center justify-center"
+          >
+            <UIcon name="lucide:clock" class="size-12 text-text-muted" />
+          </div>
+          <h1 class="text-heading text-text-default">
+            {{ $t('quiz.notSubmitted.title') }}
+          </h1>
+          <p class="text-body text-text-secondary">
+            {{ $t('quiz.notSubmitted.message') }}
+          </p>
+        </div>
+        <NuxtLink :to="{ name: 'challenges' }">
+          <DesignButton size="large" class="w-full">
+            {{ $t('quiz.done') }}
+          </DesignButton>
+        </NuxtLink>
+      </div>
+    </template>
+
     <!-- Quiz unavailable: can't start and no submissions -->
     <template v-else-if="isQuizUnavailable">
       <div class="flex items-center justify-center grow p-default">
@@ -609,7 +751,23 @@ const progressResults = computed(() => {
     <template #footer>
       <div
         v-if="actionState && !quizCompleted"
-        class="w-full p-default flex flex-col"
+        :class="[
+          'w-full p-default flex flex-col gap-4 shadow-large',
+          {
+            'bg-background-raised':
+              isBettingEnabled &&
+              (sessionState !== QuizSessionState.Finished ||
+                isBettingWin === null),
+            'bg-accent-positive':
+              isBettingEnabled &&
+              sessionState === QuizSessionState.Finished &&
+              isBettingWin === true,
+            'bg-accent-negative':
+              isBettingEnabled &&
+              sessionState === QuizSessionState.Finished &&
+              isBettingWin === false,
+          },
+        ]"
       >
         <!-- Normal mode -->
         <template v-if="actionState.mode === 'normal'">
@@ -633,6 +791,17 @@ const progressResults = computed(() => {
 
         <!-- Session betting mode -->
         <template v-else-if="actionState.mode === 'session-betting'">
+          <QuizBettingModule
+            v-if="isBettingEnabled && !actionState.isAnswerLocked"
+            v-model="currentBetAmount"
+            :available-points="userScore ?? 0"
+            :min-percentage="currentQuestion?.bettingMinPercentage"
+            :max-percentage="currentQuestion?.bettingMaxPercentage"
+            :min-absolute="currentQuestion?.bettingMinAbsolute"
+            :max-absolute="currentQuestion?.bettingMaxAbsolute"
+            :disabled="actionState.isBetSaved && !actionState.isEditing"
+            mode="betting"
+          />
           <DesignButton
             v-if="!actionState.isBetSaved || actionState.isEditing"
             size="large"
@@ -654,9 +823,50 @@ const progressResults = computed(() => {
 
         <!-- Session locked -->
         <template v-else-if="actionState.mode === 'session-locked'">
-          <div class="text-center text-text-hint text-body py-small">
-            {{ $t('quiz.betting.sessionLocked') }}
-          </div>
+          <QuizBettingModule
+            v-if="isBettingEnabled && !actionState.isAnswerLocked"
+            v-model="currentBetAmount"
+            :available-points="userScore ?? 0"
+            :min-percentage="currentQuestion?.bettingMinPercentage"
+            :max-percentage="currentQuestion?.bettingMaxPercentage"
+            :min-absolute="currentQuestion?.bettingMinAbsolute"
+            :max-absolute="currentQuestion?.bettingMaxAbsolute"
+            :disabled="actionState.isBetSaved && !actionState.isEditing"
+            mode="locked"
+          />
+          <NuxtLink :to="{ name: 'challenges' }" class="flex">
+            <DesignButton size="large" variant="secondary">
+              {{ $t('quiz.close') }}
+            </DesignButton>
+          </NuxtLink>
+        </template>
+
+        <!-- Session results -->
+        <template v-else-if="actionState.mode === 'session-results'">
+          <QuizBettingModule
+            v-if="isBettingEnabled"
+            mode="results"
+            :points-earned="currentResponse?.pointsEarned"
+            :bet-amount="currentResponse?.betAmount"
+            :available-points="userScore ?? 0"
+            :correct-count="bettingCorrectCount"
+            :total-count="bettingTotalCount"
+          />
+          <NuxtLink :to="{ name: 'challenges' }" class="flex">
+            <DesignButton
+              size="large"
+              variant="primary"
+              :class="[
+                'bg-black',
+                {
+                  'text-accent-positive!': isBettingEnabled && isBettingWin,
+                  'text-accent-negative!': isBettingEnabled && !isBettingWin,
+                },
+              ]"
+            >
+              {{ $t('quiz.done') }}
+            </DesignButton>
+          </NuxtLink>
         </template>
 
         <!-- Review mode -->

@@ -36,30 +36,34 @@ const isCompleted = computed(() => {
       :alt="challenge.name"
       class="aspect-[1.25] w-full"
     />
-    <div class="bg-background-raised p-default gap-default space-y-default">
-      <div class="space-y-small">
-        <h3 class="text-heading">{{ challenge.name }}</h3>
-        <div class="text-label" v-html="challenge.description" />
-      </div>
-      <div v-if="challenge.buttonText" class="mt-auto grid">
-        <NuxtLink
-          :to="
-            externalUrl || {
-              name: 'challenges-challengeId',
-              params: { challengeId: challenge.id },
-            }
-          "
-          class="contents"
-          @click="onChallengeClick"
-        >
-          <DesignButton
-            size="large"
-            :variant="isCompleted ? 'secondary' : 'primary'"
-          >
-            {{ challenge.buttonText }}
-          </DesignButton>
-        </NuxtLink>
-      </div>
+    <div class="bg-background-raised">
+      <slot name="content">
+        <div class="p-default space-y-default">
+          <div class="space-y-small">
+            <h3 class="text-heading">{{ challenge.name }}</h3>
+            <div class="text-label" v-html="challenge.description" />
+          </div>
+          <div v-if="challenge.buttonText" class="mt-auto grid">
+            <NuxtLink
+              :to="
+                externalUrl || {
+                  name: 'challenges-challengeId',
+                  params: { challengeId: challenge.id },
+                }
+              "
+              class="contents"
+              @click="onChallengeClick"
+            >
+              <DesignButton
+                size="large"
+                :variant="isCompleted ? 'secondary' : 'primary'"
+              >
+                {{ challenge.buttonText }}
+              </DesignButton>
+            </NuxtLink>
+          </div>
+        </div>
+      </slot>
     </div>
   </div>
 </template>

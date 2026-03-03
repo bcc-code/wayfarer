@@ -470,6 +470,7 @@ func main() {
 		DB:              db,
 		Cache:           cacheInstance,
 		Loaders:         dataLoaders,
+		PushService:     pushService,
 		SettingsService: settingsService,
 		JWTConfig:       cfg.JWT,
 		Firebase:        firebaseService,
@@ -510,6 +511,7 @@ func main() {
 		DB:              db,
 		FirebaseService: firebaseService,
 		WebhookService:  webhookService,
+		Cache:           cacheInstance,
 	}
 	router.POST("/api/scheduler/quiz-session-transitions", middleware.APIKeyAuth(cfg.APIKey), quizSchedulerHandler.ProcessScheduledTransitions)
 	slog.Info("Quiz scheduler endpoint registered",

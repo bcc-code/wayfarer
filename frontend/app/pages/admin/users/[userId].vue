@@ -12,7 +12,15 @@ definePageMeta({
 })
 
 gql(`
-	query AdminUserPage($id: ID!) {
+	query AdminUserPageCurrentProject {
+		currentProject {
+			id
+		}
+	}
+`)
+
+gql(`
+	query AdminUserPage($id: ID!, $projectId: ID!) {
 		user(id: $id) {
 			id
       personUuid
@@ -24,10 +32,20 @@ gql(`
 			birthdate
 			age
 			image
+			language
 			churchLockedUntil
+			points(projectId: $projectId)
 			church {
 				id
 				name
+			}
+			teams {
+				id
+				name
+				parentProject {
+					id
+					name
+				}
 			}
 			roles {
 				id
@@ -169,16 +187,28 @@ gql(`
 const route = useRoute('admin-users-userId')
 
 const { isAuthReady } = useAuthReady()
+
+// First query to get current project ID
+const { data: currentProjectData } = useAdminUserPageCurrentProjectQuery({
+  pause: computed(() => !isAuthReady.value),
+})
+
+const currentProjectId = computed(
+  () => currentProjectData.value?.currentProject.id,
+)
+
+// Main query that depends on having the project ID
 const {
   data,
   fetching,
   error,
   executeQuery: refetch,
 } = useAdminUserPageQuery({
-  variables: {
+  variables: computed(() => ({
     id: route.params.userId,
-  },
-  pause: computed(() => !isAuthReady.value),
+    projectId: currentProjectId.value ?? '',
+  })),
+  pause: computed(() => !isAuthReady.value || !currentProjectId.value),
 })
 
 const { executeMutation: assignRole } = useAssignRoleMutation()
@@ -203,15 +233,20 @@ const isChurchLocked = computed(() => {
 // Permissions
 const { canAssignRoles } = usePermissions()
 
-const roleOptions = [
-  { label: 'Bruker', value: RoleType.User },
-  { label: 'Admin', value: RoleType.Admin },
-  { label: 'Superadmin', value: RoleType.Superadmin },
-  { label: 'Menighetsadmin', value: RoleType.ChurchAdmin },
-  { label: 'Prosjektadmin', value: RoleType.ProjectAdmin },
-  { label: 'Lagleder', value: RoleType.TeamLead },
-  { label: 'M2M', value: RoleType.M2M },
-]
+const roleLabels: Record<RoleType, string> = {
+  [RoleType.User]: 'Bruker',
+  [RoleType.Admin]: 'Admin',
+  [RoleType.Superadmin]: 'Superadmin',
+  [RoleType.ChurchAdmin]: 'Menighetsadmin',
+  [RoleType.ProjectAdmin]: 'Prosjektadmin',
+  [RoleType.TeamLead]: 'Lagleder',
+  [RoleType.M2M]: 'M2M',
+}
+
+const roleOptions = Object.entries(roleLabels).map(([value, label]) => ({
+  label,
+  value: value as RoleType,
+}))
 
 const scopeTypeOptions = [
   { label: 'Ingen (Global)', value: null },
@@ -431,10 +466,6 @@ const scoreTotalCount = computed(
   () => data.value?.adminScoreJournal.totalCount ?? 0,
 )
 
-const scoreTotal = computed(() =>
-  scoreEntries.value.reduce((acc, entry) => acc + entry.points, 0),
-)
-
 function formatSourceType(type: string) {
   return type.charAt(0) + type.slice(1).toLowerCase()
 }
@@ -540,6 +571,10 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
                   {{ formatDate(data.user.birthdate) }}
                 </dd>
               </div>
+              <div class="py-2 grid grid-cols-subgrid col-span-full">
+                <dt class="text-muted w-36 shrink-0">Språk</dt>
+                <dd class="font-medium">{{ data.user.language }}</dd>
+              </div>
             </dl>
           </div>
 
@@ -553,7 +588,14 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
             >
               <div class="py-2 grid grid-cols-subgrid col-span-full">
                 <dt class="text-muted w-36 shrink-0">Navn</dt>
-                <dd class="font-medium">{{ data.user.church.name }}</dd>
+                <dd>
+                  <NuxtLink
+                    :to="{ name: 'admin-churches-churchId', params: { churchId: data.user.church.id } }"
+                    class="font-medium hover:underline"
+                  >
+                    {{ data.user.church.name }}
+                  </NuxtLink>
+                </dd>
               </div>
               <div class="py-2 grid grid-cols-subgrid col-span-full">
                 <dt class="text-muted w-36 shrink-0">ID</dt>
@@ -595,6 +637,39 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
           </div>
         </div>
 
+        <!-- Teams Card -->
+        <UCard>
+          <template #header>
+            <h2 class="text-xl font-semibold">
+              Lag
+              <span
+                v-if="data.user.teams.length > 0"
+                class="text-dimmed text-sm font-normal"
+              >
+                ({{ data.user.teams.length }})
+              </span>
+            </h2>
+          </template>
+
+          <div v-if="data.user.teams.length > 0" class="space-y-2">
+            <NuxtLink
+              v-for="team in data.user.teams"
+              :key="team.id"
+              :to="{ name: 'admin-teams-teamId', params: { teamId: team.id } }"
+              class="border-default flex items-center justify-between rounded-md border p-3 hover:bg-elevated transition-colors"
+            >
+              <div>
+                <span class="font-medium">{{ team.name }}</span>
+                <div class="text-muted text-xs">
+                  {{ team.parentProject.name }}
+                </div>
+              </div>
+              <Icon name="lucide:chevron-right" class="size-4 text-dimmed" />
+            </NuxtLink>
+          </div>
+          <div v-else class="text-dimmed">Ikke med i noen lag</div>
+        </UCard>
+
         <!-- Roles Card -->
         <UCard>
           <template #header>
@@ -619,7 +694,7 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
             >
               <div class="flex items-center gap-3">
                 <UBadge variant="soft" size="lg">
-                  {{ role.role }}
+                  {{ roleLabels[role.role] ?? role.role }}
                 </UBadge>
                 <div v-if="role.scope">
                   <span class="text-dimmed text-sm">Omfang: </span>
@@ -840,14 +915,15 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
             <div class="flex items-center justify-between">
               <h2 class="text-xl font-semibold">
                 Poenglogg
-                <template v-if="scoreTotalCount > 0">
-                  <UBadge color="neutral" variant="soft">
-                    {{ scoreTotal }} poeng
-                  </UBadge>
-                  <span class="text-dimmed text-sm font-normal">
-                    ({{ scoreTotalCount }} oppføringer)
-                  </span>
-                </template>
+                <UBadge color="neutral" variant="soft">
+                  {{ data.user.points }} poeng
+                </UBadge>
+                <span
+                  v-if="scoreTotalCount > 0"
+                  class="text-dimmed text-sm font-normal"
+                >
+                  ({{ scoreTotalCount }} oppføringer)
+                </span>
               </h2>
               <UButton variant="ghost" size="sm" :to="{ name: 'admin-scores' }">
                 Vis alle

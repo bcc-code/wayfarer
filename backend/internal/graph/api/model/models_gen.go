@@ -722,8 +722,10 @@ type FeedbackEdge struct {
 }
 
 type FeedbackFilter struct {
-	UserID *string  `json:"userId,omitempty"`
-	Tags   []string `json:"tags,omitempty"`
+	UserID   *string  `json:"userId,omitempty"`
+	Tags     []string `json:"tags,omitempty"`
+	Handled  *bool    `json:"handled,omitempty"`
+	Platform *string  `json:"platform,omitempty"`
 }
 
 type FileUpload struct {
@@ -1148,6 +1150,7 @@ type Project struct {
 	Achievements     []Achievement           `json:"achievements"`
 	Streaks          []Streak                `json:"streaks"`
 	Journal          *ScoreJournalConnection `json:"journal"`
+	MyPoints         int                     `json:"myPoints"`
 	ArchivedAt       *bool                   `json:"archivedAt,omitempty"`
 	InfoMessageRaw   *string                 `json:"-"`
 	RulesRaw         *string                 `json:"-"`
@@ -1324,11 +1327,12 @@ type QuizFilter struct {
 }
 
 type QuizOrderingItem struct {
-	ID           string       `json:"id"`
-	Question     QuizQuestion `json:"question"`
-	ItemText     string       `json:"itemText"`
-	CorrectOrder int          `json:"-"`
-	QuestionID   string       `json:"-"`
+	ID                string       `json:"id"`
+	Question          QuizQuestion `json:"question"`
+	ItemText          string       `json:"itemText"`
+	CorrectOrder      *int         `json:"correctOrder,omitempty"`
+	CorrectOrderValue int          `json:"-"`
+	QuestionID        string       `json:"-"`
 }
 
 type QuizPredefinedAnswer struct {
@@ -1852,6 +1856,7 @@ type UpdateQuizAchievementInput struct {
 
 type UpdateQuizAnswerInput struct {
 	SubmittedOrder []string `json:"submittedOrder,omitempty"`
+	BetAmount      *int     `json:"betAmount,omitempty"`
 }
 
 type UpdateQuizInput struct {
@@ -1867,21 +1872,23 @@ type UpdateQuizInput struct {
 }
 
 type UpdateQuizQuestionInput struct {
-	QuestionText           *string                       `json:"questionText,omitempty"`
-	QuestionOrder          *int                          `json:"questionOrder,omitempty"`
-	TimeoutSeconds         *int                          `json:"timeoutSeconds,omitempty"`
-	Points                 *int                          `json:"points,omitempty"`
-	BettingEnabled         *bool                         `json:"bettingEnabled,omitempty"`
-	BettingMinPercentage   *float64                      `json:"bettingMinPercentage,omitempty"`
-	BettingMaxPercentage   *float64                      `json:"bettingMaxPercentage,omitempty"`
-	BettingMinAbsolute     *int                          `json:"bettingMinAbsolute,omitempty"`
-	BettingMaxAbsolute     *int                          `json:"bettingMaxAbsolute,omitempty"`
-	AllowMultipleSelection *bool                         `json:"allowMultipleSelection,omitempty"`
-	PredefinedAnswers      []CreatePredefinedAnswerInput `json:"predefinedAnswers,omitempty"`
-	MinValue               *float64                      `json:"minValue,omitempty"`
-	MaxValue               *float64                      `json:"maxValue,omitempty"`
-	StepValue              *float64                      `json:"stepValue,omitempty"`
-	OrderingItems          []CreateOrderingItemInput     `json:"orderingItems,omitempty"`
+	QuestionText            *string                       `json:"questionText,omitempty"`
+	QuestionOrder           *int                          `json:"questionOrder,omitempty"`
+	TimeoutSeconds          *int                          `json:"timeoutSeconds,omitempty"`
+	Points                  *int                          `json:"points,omitempty"`
+	BettingEnabled          *bool                         `json:"bettingEnabled,omitempty"`
+	BettingMinPercentage    *float64                      `json:"bettingMinPercentage,omitempty"`
+	BettingMaxPercentage    *float64                      `json:"bettingMaxPercentage,omitempty"`
+	BettingMinAbsolute      *int                          `json:"bettingMinAbsolute,omitempty"`
+	BettingMaxAbsolute      *int                          `json:"bettingMaxAbsolute,omitempty"`
+	ClearBettingMinAbsolute *bool                         `json:"clearBettingMinAbsolute,omitempty"`
+	ClearBettingMaxAbsolute *bool                         `json:"clearBettingMaxAbsolute,omitempty"`
+	AllowMultipleSelection  *bool                         `json:"allowMultipleSelection,omitempty"`
+	PredefinedAnswers       []CreatePredefinedAnswerInput `json:"predefinedAnswers,omitempty"`
+	MinValue                *float64                      `json:"minValue,omitempty"`
+	MaxValue                *float64                      `json:"maxValue,omitempty"`
+	StepValue               *float64                      `json:"stepValue,omitempty"`
+	OrderingItems           []CreateOrderingItemInput     `json:"orderingItems,omitempty"`
 }
 
 type UpdateQuizSessionInput struct {
@@ -1955,6 +1962,7 @@ type User struct {
 	ConsentStatus     *ConsentStatus    `json:"consentStatus"`
 	Language          string            `json:"language"`
 	CreatedAt         scalars.DateTime  `json:"createdAt"`
+	Points            int               `json:"points"`
 }
 
 type UserConnection struct {

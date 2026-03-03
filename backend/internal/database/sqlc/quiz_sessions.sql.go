@@ -837,7 +837,7 @@ FROM quiz_sessions qs
 JOIN quiz_session_access qsa ON qsa.session_id = qs.id
 WHERE qs.quiz_id = $1::text
     AND qsa.user_id = $2::text
-    AND qs.state = 'OPEN'
+    AND qs.state IN ('OPEN', 'LOCKED', 'FINISHED')
 ORDER BY qs.created_at DESC
 LIMIT 1
 `

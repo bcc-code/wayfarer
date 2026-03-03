@@ -173,8 +173,7 @@ function handleDrop(event: SortableEvent) {
       @click="toggle"
     >
       <div class="flex items-center gap-2">
-        <div>{{ unit.name }}</div>
-        <!-- <input
+        <input
           v-if="isEditing"
           ref="nameInputRef"
           v-model="editName"
@@ -191,7 +190,7 @@ function handleDrop(event: SortableEvent) {
           @click.stop="startEditing"
         >
           {{ unit.name }}
-        </button> -->
+        </button>
         <UBadge
           v-if="unit.members.length && !hasLeader"
           color="warning"

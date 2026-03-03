@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_FinishQuizSession
 createdAt: 2026-02-11T12:00:00
-updatedAt: 2026-02-11T14:33:33.286225
+updatedAt: 2026-02-26T20:18:44.835642
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_Quizzes
 authentication: {}
@@ -31,7 +31,7 @@ body:
     }
   variables: |
     {
-      "id": "QN01KH3GQEN42Q4RHVR43S4EW5VH"
+      "id": "QN01KJDKZ85G04P30JKK4YHEH83R"
     }
 bodyType: graphql
 description: Finish a quiz session (transitions state to FINISHED)

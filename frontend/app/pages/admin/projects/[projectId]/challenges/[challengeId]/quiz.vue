@@ -176,9 +176,26 @@ async function saveQuiz(quizFormData: QuizFormData) {
       }
     }
 
+    // Helper to check if a value is "set" (not null, undefined, or NaN)
+    const hasValue = (v: number | null | undefined): boolean =>
+      v !== null && v !== undefined && !Number.isNaN(v)
+
     // Update existing and add new questions
     for (const question of newQuestions) {
       if (question.id) {
+        // Find original question to check if values should be cleared
+        const originalQuestion = existingQuestions.find(
+          (q) => q.id === question.id,
+        )
+        // Determine if betting absolute values should be cleared
+        // (had a value before, but now doesn't)
+        const clearBettingMinAbsolute =
+          hasValue(originalQuestion?.bettingMinAbsolute) &&
+          !hasValue(question.bettingMinAbsolute)
+        const clearBettingMaxAbsolute =
+          hasValue(originalQuestion?.bettingMaxAbsolute) &&
+          !hasValue(question.bettingMaxAbsolute)
+
         // Update existing
         await updateQuizQuestion({
           id: question.id,
@@ -205,6 +222,8 @@ async function saveQuiz(quizFormData: QuizFormData) {
             bettingMaxPercentage: question.bettingMaxPercentage,
             bettingMinAbsolute: question.bettingMinAbsolute,
             bettingMaxAbsolute: question.bettingMaxAbsolute,
+            clearBettingMinAbsolute: clearBettingMinAbsolute || undefined,
+            clearBettingMaxAbsolute: clearBettingMaxAbsolute || undefined,
           },
         })
       } else {

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { QuizSessionState } from '~/api/generated'
+
 const { isAuthReady } = useAuthReady()
 
 const {
@@ -87,31 +89,57 @@ const tabChallenges = computed(() =>
     <div v-else class="space-y-list-section-gap p-list-outside mt-3 grow">
       <template v-for="challenge in tabChallenges" :key="challenge.id">
         <!-- This is very specific for the Ladder to Heaven project, and should be more generic later on -->
-        <div
+        <ChallengeCard
           v-if="challenge.__typename === 'PluginChallenge'"
-          class="bg-accent text-on-accent rounded-card p-7 flex flex-col gap-default items-center"
+          :challenge
         >
-          <div
-            class="text-center flex flex-col items-center gap-small py-medium"
-          >
-            <h3 class="text-heading">pc26.bcc.media</h3>
-            <p class="text-label">
-              {{ $t('gameNights.yourCodeHint') }}
-            </p>
-          </div>
-          <p class="text-caption">
-            {{ $t('gameNights.yourCode') }}
-          </p>
-          <div v-if="joinCode" class="grid grid-cols-6 gap-list-section-inset">
-            <div
-              v-for="(char, index) in joinCode"
-              :key="index"
-              class="text-heading p-medium aspect-[1/1.3] flex items-center justify-center border-3 border-on-accent rounded-list-inset text-center"
-            >
-              {{ char }}
+          <template #content>
+            <div class="px-6 pb-6 pt-4 space-y-4">
+              <div class="py-4 space-y-small">
+                <p class="flex gap-small items-center text-label">
+                  <span
+                    class="rounded-full flex items-center justify-center size-6 bg-accent text-on-accent text-center"
+                  >
+                    1
+                  </span>
+                  <span class="text-text-default">
+                    {{ $t('gameNights.yourCodeHint') }}
+                  </span>
+                </p>
+                <p
+                  class="text-title rounded-full bg-background-indent px-default py-1"
+                >
+                  <span class="text-text-hint">https://</span>
+                  <span class="text-text-default">pc26.bcc.media</span>
+                </p>
+              </div>
+              <div class="space-y-3">
+                <p class="flex gap-small items-center text-label">
+                  <span
+                    class="rounded-full flex items-center justify-center size-6 bg-accent text-on-accent text-center"
+                  >
+                    2
+                  </span>
+                  <span class="text-text-default">
+                    {{ $t('gameNights.yourCode') }}
+                  </span>
+                </p>
+                <div
+                  v-if="joinCode"
+                  class="grid grid-cols-6 gap-list-section-inset"
+                >
+                  <div
+                    v-for="(char, index) in joinCode"
+                    :key="index"
+                    class="text-heading h-16.75 px-medium flex items-center justify-center border-3 rounded-list-inset text-center"
+                  >
+                    {{ char }}
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </template>
+        </ChallengeCard>
         <ChallengeCard v-else :challenge />
       </template>
       <EmptyState

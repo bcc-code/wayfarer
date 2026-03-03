@@ -18,9 +18,16 @@ type BetResultMessages struct {
 	Lost  string `json:"lost"`
 }
 
+// BetReasonMessages contains translations for bet score adjustment reasons
+type BetReasonMessages struct {
+	Stake    string `json:"stake"`
+	Winnings string `json:"winnings"`
+}
+
 // LanguageTranslations holds all translations for a single language
 type LanguageTranslations struct {
 	BetResult BetResultMessages `json:"bet_result"`
+	BetReason BetReasonMessages `json:"bet_reason"`
 }
 
 // translations maps language code to translations
@@ -110,6 +117,28 @@ func FormatBetResultMessage(lang string, points int) (title string, message stri
 	}
 
 	return title, message
+}
+
+// GetBetReasonMessages returns the bet reason messages for a given language
+func GetBetReasonMessages(lang string) BetReasonMessages {
+	lang = normalizeLanguage(lang)
+
+	if trans, ok := translations[lang]; ok {
+		return trans.BetReason
+	}
+	return translations[DefaultLanguage].BetReason
+}
+
+// FormatBetStakeReason formats the stake reason with the challenge name
+func FormatBetStakeReason(lang, challengeName string) string {
+	msgs := GetBetReasonMessages(lang)
+	return replacePlaceholder(msgs.Stake, "{challenge}", challengeName)
+}
+
+// FormatBetWinningsReason formats the winnings reason with the challenge name
+func FormatBetWinningsReason(lang, challengeName string) string {
+	msgs := GetBetReasonMessages(lang)
+	return replacePlaceholder(msgs.Winnings, "{challenge}", challengeName)
 }
 
 // normalizeLanguage converts language codes to the format used in translations

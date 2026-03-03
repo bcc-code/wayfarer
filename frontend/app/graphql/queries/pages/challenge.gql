@@ -1,4 +1,7 @@
 query ChallengePage($challengeId: ID!) {
+  myCurrentProject {
+    myPoints
+  }
   challenge(id: $challengeId) {
     __typename
     id
@@ -54,6 +57,8 @@ query ChallengePage($challengeId: ID!) {
             id
             answeredAt
             timeSpentSeconds
+            betAmount
+            pointsEarned
             question {
               id
             }

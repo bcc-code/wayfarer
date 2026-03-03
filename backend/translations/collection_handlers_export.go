@@ -85,9 +85,10 @@ func (s *Service) getDataForChallenges(ctx context.Context) ([]common.Translatio
 	toSend := []common.TranslationData{}
 	for _, row := range rows {
 		value := ChallengeTranslation{
-			Name:        row.Name,
-			Description: null.StringFrom(row.Description),
-			ButtonText:  row.ButtonText,
+			Name:             row.Name,
+			Description:      null.StringFrom(row.Description),
+			ButtonText:       row.ButtonText,
+			NotificationText: null.StringFrom(row.NotificationText),
 		}
 		toSend = append(toSend, common.TranslationData{
 			Language: "no",
