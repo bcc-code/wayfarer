@@ -17,6 +17,10 @@ import (
 // Fixed superteam names for distribution
 var superteamNames = []string{"Blue", "Green", "Red", "Yellow"}
 
+// Priority churches that must each be in a different superteam.
+// Order maps to superteam order: [0]=Blue, [1]=Green, [2]=Red, [3]=Yellow.
+var priorityChurchIDs = []string{"CH_PLACEHOLDER_1", "CH_PLACEHOLDER_2", "CH_PLACEHOLDER_3", "CH_PLACEHOLDER_4"}
+
 // distributionQuerier defines the database operations needed by the distribution handler.
 type distributionQuerier interface {
 	GetTeamsWithScoresForDistribution(ctx context.Context, projectID string) ([]*sqlc.GetTeamsWithScoresForDistributionRow, error)
@@ -253,8 +257,38 @@ func (h *superteamDistributionHandler) calculateDistribution(teams []*sqlc.GetTe
 	// Track which bucket each church is primarily assigned to
 	churchToBucket := make(map[string]int)
 
+	// Pre-seed priority churches: assign the highest-scoring team from each
+	// priority church to its designated bucket (index matches superteam order).
+	assignedTeams := make(map[string]bool)
+	for i, churchID := range priorityChurchIDs {
+		for _, team := range sortedTeams {
+			if team.ChurchID == churchID && !assignedTeams[team.TeamID] {
+				buckets[i].Teams = append(buckets[i].Teams, TeamInfo{
+					TeamID:      team.TeamID,
+					TeamName:    team.TeamName,
+					ChurchID:    team.ChurchID,
+					ChurchName:  team.ChurchName,
+					TotalScore:  team.TotalScore,
+					MemberCount: team.MemberCount,
+				})
+				buckets[i].TotalScore += team.TotalScore
+				buckets[i].MemberCount += team.MemberCount
+				if !containsString(buckets[i].Churches, team.ChurchID) {
+					buckets[i].Churches = append(buckets[i].Churches, team.ChurchID)
+				}
+				churchToBucket[churchID] = i
+				assignedTeams[team.TeamID] = true
+				break
+			}
+		}
+	}
+
 	// Greedy assignment with church preference
 	for _, team := range sortedTeams {
+		// Skip teams already assigned during priority pre-seeding
+		if assignedTeams[team.TeamID] {
+			continue
+		}
 		targetIdx := -1
 
 		// Check if this church already has teams in a bucket
@@ -338,6 +372,13 @@ func (h *superteamDistributionHandler) calculateDistribution(teams []*sqlc.GetTe
 // by swapping teams with similar scores. Returns the number of swaps made.
 func (h *superteamDistributionHandler) refineSplitChurches(buckets []SuperteamResult, deviationThreshold float64) int {
 	swapsMade := 0
+
+	// Build priority bucket map: churchID → required bucket index
+	priorityBucket := make(map[string]int)
+	for i, churchID := range priorityChurchIDs {
+		priorityBucket[churchID] = i
+	}
+
 	// Build a map of church -> list of (bucketIdx, teamIdx) for all teams
 	type teamLocation struct {
 		bucketIdx int
@@ -419,6 +460,19 @@ func (h *superteamDistributionHandler) refineSplitChurches(buckets []SuperteamRe
 					// Don't swap with teams from the same church we're trying to consolidate
 					if candidate.ChurchID == churchID {
 						continue
+					}
+
+					// Don't swap a priority church's last team out of its assigned bucket
+					if reqBucket, isPriority := priorityBucket[candidate.ChurchID]; isPriority && reqBucket == targetBucket {
+						count := 0
+						for _, t := range buckets[targetBucket].Teams {
+							if t.ChurchID == candidate.ChurchID {
+								count++
+							}
+						}
+						if count <= 1 {
+							continue
+						}
 					}
 
 					// Calculate score difference

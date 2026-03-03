@@ -38,9 +38,11 @@ seed-large: ## Seed database with large dataset for performance testing
 
 test: ## Run unit tests
 	@echo "Running unit tests..."
-	@go test -v -race -coverprofile=coverage.out ./...
+	@go test -v -race ./...
 
-test-coverage: test ## Run tests and show coverage report
+test-coverage: ## Run tests with coverage report
+	@echo "Running tests with coverage..."
+	@go test -v -race -coverprofile=coverage.out $$(go list ./... | grep -v /cmd/)
 	@go tool cover -html=coverage.out
 
 ## E2E Testing Commands (requires Docker)

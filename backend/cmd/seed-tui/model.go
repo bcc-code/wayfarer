@@ -101,11 +101,11 @@ type SeedProgress struct {
 
 // SeedResult holds the final result
 type SeedResult struct {
-	UsersCreated       int
-	TeamsCreated       int
-	MembersAssigned    int
-	TeamLeadsAssigned  int
-	PointsGenerated    int
+	UsersCreated      int
+	TeamsCreated      int
+	MembersAssigned   int
+	TeamLeadsAssigned int
+	PointsGenerated   int
 }
 
 // Messages

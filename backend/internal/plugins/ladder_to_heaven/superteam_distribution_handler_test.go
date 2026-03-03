@@ -654,3 +654,115 @@ func TestSuperteamDistributionHandler_VisualizeDistribution(t *testing.T) {
 	}
 	assert.Equal(t, 20, totalTeams, "All teams should be distributed")
 }
+
+func TestCalculateDistribution_PriorityChurches(t *testing.T) {
+	// Temporarily override priorityChurchIDs for this test
+	origPriority := priorityChurchIDs
+	priorityChurchIDs = []string{"CH_P1", "CH_P2", "CH_P3", "CH_P4"}
+	defer func() { priorityChurchIDs = origPriority }()
+
+	handler := &superteamDistributionHandler{}
+
+	// 4 priority churches + 4 other churches, 2 teams each = 16 teams
+	teams := []*sqlc.GetTeamsWithScoresForDistributionRow{
+		// Priority churches
+		{TeamID: "TM001", TeamName: "P1 Team 1", ChurchID: "CH_P1", TotalScore: 1000, MemberCount: 5},
+		{TeamID: "TM002", TeamName: "P1 Team 2", ChurchID: "CH_P1", TotalScore: 800, MemberCount: 4},
+		{TeamID: "TM003", TeamName: "P2 Team 1", ChurchID: "CH_P2", TotalScore: 950, MemberCount: 5},
+		{TeamID: "TM004", TeamName: "P2 Team 2", ChurchID: "CH_P2", TotalScore: 750, MemberCount: 4},
+		{TeamID: "TM005", TeamName: "P3 Team 1", ChurchID: "CH_P3", TotalScore: 900, MemberCount: 5},
+		{TeamID: "TM006", TeamName: "P3 Team 2", ChurchID: "CH_P3", TotalScore: 700, MemberCount: 4},
+		{TeamID: "TM007", TeamName: "P4 Team 1", ChurchID: "CH_P4", TotalScore: 850, MemberCount: 5},
+		{TeamID: "TM008", TeamName: "P4 Team 2", ChurchID: "CH_P4", TotalScore: 650, MemberCount: 4},
+		// Other churches
+		{TeamID: "TM009", TeamName: "O1 Team 1", ChurchID: "CH_O1", TotalScore: 500, MemberCount: 3},
+		{TeamID: "TM010", TeamName: "O1 Team 2", ChurchID: "CH_O1", TotalScore: 400, MemberCount: 3},
+		{TeamID: "TM011", TeamName: "O2 Team 1", ChurchID: "CH_O2", TotalScore: 450, MemberCount: 3},
+		{TeamID: "TM012", TeamName: "O2 Team 2", ChurchID: "CH_O2", TotalScore: 350, MemberCount: 3},
+		{TeamID: "TM013", TeamName: "O3 Team 1", ChurchID: "CH_O3", TotalScore: 300, MemberCount: 2},
+		{TeamID: "TM014", TeamName: "O3 Team 2", ChurchID: "CH_O3", TotalScore: 250, MemberCount: 2},
+		{TeamID: "TM015", TeamName: "O4 Team 1", ChurchID: "CH_O4", TotalScore: 200, MemberCount: 2},
+		{TeamID: "TM016", TeamName: "O4 Team 2", ChurchID: "CH_O4", TotalScore: 150, MemberCount: 2},
+	}
+
+	result := handler.calculateDistribution(teams, false)
+
+	// Each priority church must have at least one team in its assigned bucket
+	// priorityChurchIDs[i] maps to bucket i (Blue=0, Green=1, Red=2, Yellow=3)
+	for i, churchID := range priorityChurchIDs {
+		found := false
+		for _, team := range result.Superteams[i].Teams {
+			if team.ChurchID == churchID {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found, "Priority church %s should have a team in superteam %s (bucket %d)",
+			churchID, superteamNames[i], i)
+	}
+
+	// All 16 teams should be distributed
+	totalTeams := 0
+	for _, st := range result.Superteams {
+		totalTeams += st.TeamCount
+	}
+	assert.Equal(t, 16, totalTeams, "All 16 teams should be distributed")
+
+	visualizeDistribution(t, result)
+}
+
+func TestCalculateDistribution_PriorityChurches_WithRefinement(t *testing.T) {
+	// Test that refinement doesn't undo priority assignments.
+	// Create a scenario where a priority church has only 1 team in its bucket,
+	// and refinement might want to swap it out to consolidate another church.
+	origPriority := priorityChurchIDs
+	priorityChurchIDs = []string{"CH_P1", "CH_P2", "CH_P3", "CH_P4"}
+	defer func() { priorityChurchIDs = origPriority }()
+
+	handler := &superteamDistributionHandler{}
+
+	// Priority churches each have exactly 1 team (so refinement can't swap it away
+	// without violating the constraint).
+	// Other churches are designed to create pressure to consolidate into priority buckets.
+	teams := []*sqlc.GetTeamsWithScoresForDistributionRow{
+		// Priority churches: 1 team each
+		{TeamID: "TM001", TeamName: "P1 Team", ChurchID: "CH_P1", TotalScore: 1000, MemberCount: 5},
+		{TeamID: "TM002", TeamName: "P2 Team", ChurchID: "CH_P2", TotalScore: 1000, MemberCount: 5},
+		{TeamID: "TM003", TeamName: "P3 Team", ChurchID: "CH_P3", TotalScore: 1000, MemberCount: 5},
+		{TeamID: "TM004", TeamName: "P4 Team", ChurchID: "CH_P4", TotalScore: 1000, MemberCount: 5},
+		// Split church with teams that greedy assigns across buckets
+		{TeamID: "TM005", TeamName: "Split Team 1", ChurchID: "CH_SPLIT", TotalScore: 900, MemberCount: 4},
+		{TeamID: "TM006", TeamName: "Split Team 2", ChurchID: "CH_SPLIT", TotalScore: 850, MemberCount: 4},
+		{TeamID: "TM007", TeamName: "Split Team 3", ChurchID: "CH_SPLIT", TotalScore: 800, MemberCount: 4},
+		{TeamID: "TM008", TeamName: "Split Team 4", ChurchID: "CH_SPLIT", TotalScore: 750, MemberCount: 4},
+		// Filler teams
+		{TeamID: "TM009", TeamName: "Fill Team 1", ChurchID: "CH_FILL1", TotalScore: 200, MemberCount: 2},
+		{TeamID: "TM010", TeamName: "Fill Team 2", ChurchID: "CH_FILL2", TotalScore: 200, MemberCount: 2},
+		{TeamID: "TM011", TeamName: "Fill Team 3", ChurchID: "CH_FILL3", TotalScore: 200, MemberCount: 2},
+		{TeamID: "TM012", TeamName: "Fill Team 4", ChurchID: "CH_FILL4", TotalScore: 200, MemberCount: 2},
+	}
+
+	result := handler.calculateDistribution(teams, false)
+
+	// Each priority church must still have a team in its assigned bucket after refinement
+	for i, churchID := range priorityChurchIDs {
+		found := false
+		for _, team := range result.Superteams[i].Teams {
+			if team.ChurchID == churchID {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found, "After refinement, priority church %s must still have a team in superteam %s (bucket %d)",
+			churchID, superteamNames[i], i)
+	}
+
+	// All 12 teams should be distributed
+	totalTeams := 0
+	for _, st := range result.Superteams {
+		totalTeams += st.TeamCount
+	}
+	assert.Equal(t, 12, totalTeams, "All 12 teams should be distributed")
+
+	visualizeDistribution(t, result)
+}

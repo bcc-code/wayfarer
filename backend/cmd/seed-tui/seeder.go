@@ -501,14 +501,14 @@ func (s *TeamSeeder) generatePointsForUsers(userIDs []string, onProgress func(cu
 				entryID,
 				s.projectID,
 				userID,
-				nil,              // event_id
-				nil,              // challenge_id
+				nil, // event_id
+				nil, // challenge_id
 				int32(entryPoints),
-				"MANUAL",         // source_type
-				nil,              // source_id
-				reason,           // reason
-				nil,              // awarded_by
-				createdAt,        // created_at
+				"MANUAL",  // source_type
+				nil,       // source_id
+				reason,    // reason
+				nil,       // awarded_by
+				createdAt, // created_at
 			})
 
 			totalPoints += entryPoints
@@ -742,8 +742,8 @@ func (s *TeamSeeder) assignTeamLeadsSync(teamUserMap map[string]string) (int, er
 			roleID,
 			userID,
 			"TEAM_LEAD",
-			nil,    // church_id
-			nil,    // project_id
+			nil, // church_id
+			nil, // project_id
 			teamID,
 			userID, // assigned_by (self-assignment for seeding)
 			now,    // assigned_at
