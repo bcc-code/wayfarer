@@ -62,6 +62,10 @@
       "perfect": "Perfect!",
       "thanksForAnswers": "Mulțumim pentru răspunsurile tale!",
       "resultsRevealedLater": "Rezultatele vor fi dezvăluite mai târziu."
+    },
+    "notSubmitted": {
+      "title": "Nu ai livrat",
+      "message": "Nu ai participat la aceste pariuri"
     }
   },
   "challenges": {
