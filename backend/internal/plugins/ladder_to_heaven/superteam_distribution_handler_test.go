@@ -156,7 +156,7 @@ func TestSuperteamDistributionHandler_Preview_WithTeams(t *testing.T) {
 	for i, st := range response.Superteams {
 		names[i] = st.Name
 	}
-	assert.Contains(t, names, "Blue")
+	assert.Contains(t, names, "Purple")
 	assert.Contains(t, names, "Green")
 	assert.Contains(t, names, "Red")
 	assert.Contains(t, names, "Yellow")
@@ -677,7 +677,7 @@ func TestCalculateDistribution_PriorityChurches(t *testing.T) {
 	result := handler.calculateDistribution(teams, false)
 
 	// Each priority church must have at least one team in its assigned bucket
-	// priorityChurchIDs[i] maps to bucket i (Blue=0, Green=1, Red=2, Yellow=3)
+	// priorityChurchIDs[i] maps to bucket i (Purple=0, Green=1, Red=2, Yellow=3)
 	for i, churchID := range priorityChurchIDs {
 		found := false
 		for _, team := range result.Superteams[i].Teams {

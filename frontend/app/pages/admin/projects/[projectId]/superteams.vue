@@ -37,7 +37,7 @@ interface DistributionResponse {
 
 // Color mapping for superteams
 const superteamColors: Record<string, string> = {
-  Blue: '#3b82f6',
+  Purple: '#a855f7',
   Green: '#22c55e',
   Red: '#ef4444',
   Yellow: '#eab308',
@@ -279,11 +279,10 @@ function getTeamsByChurch(st: SuperteamResult): Map<string, TeamInfo[]> {
     </div>
     <UContainer class="py-12">
       <header class="mb-12">
-        <h1 class="text-3xl font-semibold">Superteam Distribution</h1>
+        <h1 class="text-3xl font-semibold">LADD Superteams</h1>
         <p class="text-muted mt-2 max-w-2xl">
-          Distribute teams with scores into 4 balanced superteams (Blue, Green,
-          Red, Yellow). Teams from the same church are kept together when
-          possible.
+          Distribute teams with scores into 4 balanced superteams (Purple, Green,
+          Red, Yellow). Teams from the same church are kept together.
         </p>
       </header>
 

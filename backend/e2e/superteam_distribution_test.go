@@ -131,12 +131,12 @@ func TestSuperTeamDistribution(t *testing.T) {
 		// Should have 4 superteams in preview
 		assert.Len(t, result.Superteams, 4)
 
-		// Superteam names should be Blue, Green, Red, Yellow
+		// Superteam names should be Purple, Green, Red, Yellow
 		names := make([]string, 4)
 		for i, st := range result.Superteams {
 			names[i] = st.Name
 		}
-		assert.Contains(t, names, "Blue")
+		assert.Contains(t, names, "Purple")
 		assert.Contains(t, names, "Green")
 		assert.Contains(t, names, "Red")
 		assert.Contains(t, names, "Yellow")
@@ -274,7 +274,7 @@ func TestSuperTeamDistribution(t *testing.T) {
 		for i, edge := range result.Superteams.Edges {
 			names[i] = edge.Node.Name
 		}
-		assert.Contains(t, names, "Blue")
+		assert.Contains(t, names, "Purple")
 		assert.Contains(t, names, "Green")
 		assert.Contains(t, names, "Red")
 		assert.Contains(t, names, "Yellow")

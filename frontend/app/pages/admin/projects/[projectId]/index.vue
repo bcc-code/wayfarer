@@ -237,7 +237,7 @@ async function handleReorder() {
                   params: { projectId: route.params.projectId },
                 }"
               >
-                Superteams
+                LADD Superteams
               </UButton>
             </div>
           </div>

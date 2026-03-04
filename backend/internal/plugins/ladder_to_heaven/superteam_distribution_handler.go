@@ -15,10 +15,10 @@ import (
 )
 
 // Fixed superteam names for distribution
-var superteamNames = []string{"Blue", "Green", "Red", "Yellow"}
+var superteamNames = []string{"Purple", "Green", "Red", "Yellow"}
 
 // Priority churches that must each be in a different superteam.
-// Order maps to superteam order: [0]=Blue, [1]=Green, [2]=Red, [3]=Yellow.
+// Order maps to superteam order: [0]=Purple, [1]=Green, [2]=Red, [3]=Yellow.
 var priorityChurchIDs = []string{"CH_PLACEHOLDER_1", "CH_PLACEHOLDER_2", "CH_PLACEHOLDER_3", "CH_PLACEHOLDER_4"}
 
 // distributionQuerier defines the database operations needed by the distribution handler.
