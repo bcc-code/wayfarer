@@ -221,23 +221,50 @@ func (h *superteamDistributionHandler) handle(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
-// calculateDistribution implements a church-preferring greedy bin-packing algorithm.
-// Teams are assigned to superteams with a preference for keeping churches together,
-// but churches will be split if keeping them together would cause deviation > 10% of the target score.
+// churchGroup holds all teams from a single church for batch assignment
+type churchGroup struct {
+	ChurchID   string
+	ChurchName string
+	Teams      []TeamInfo
+	TotalScore int64
+	TeamCount  int
+}
+
+// calculateDistribution implements a church-cohesive greedy bin-packing algorithm.
+// Churches are assigned as whole units to superteams, considering both score and
+// team count balance. This ensures teams from the same church are always together.
 func (h *superteamDistributionHandler) calculateDistribution(teams []*sqlc.GetTeamsWithScoresForDistributionRow, generateIDs bool) DistributionResponse {
-	// Calculate total points and deviation threshold
+	// Group teams by church
+	churchGroups := make(map[string]*churchGroup)
 	var totalPoints int64
 	for _, team := range teams {
 		totalPoints += team.TotalScore
+		if churchGroups[team.ChurchID] == nil {
+			churchGroups[team.ChurchID] = &churchGroup{
+				ChurchID:   team.ChurchID,
+				ChurchName: team.ChurchName,
+				Teams:      []TeamInfo{},
+			}
+		}
+		churchGroups[team.ChurchID].Teams = append(churchGroups[team.ChurchID].Teams, TeamInfo{
+			TeamID:      team.TeamID,
+			TeamName:    team.TeamName,
+			ChurchID:    team.ChurchID,
+			ChurchName:  team.ChurchName,
+			TotalScore:  team.TotalScore,
+			MemberCount: team.MemberCount,
+		})
+		churchGroups[team.ChurchID].TotalScore += team.TotalScore
+		churchGroups[team.ChurchID].TeamCount++
 	}
-	targetScore := totalPoints / 4
-	deviationThreshold := float64(totalPoints) * 0.05 / 4 // (total/4) * 0.05
 
-	// Sort teams by score (descending) for greedy assignment
-	sortedTeams := make([]*sqlc.GetTeamsWithScoresForDistributionRow, len(teams))
-	copy(sortedTeams, teams)
-	sort.Slice(sortedTeams, func(i, j int) bool {
-		return sortedTeams[i].TotalScore > sortedTeams[j].TotalScore
+	// Convert to slice and sort churches by total score (descending)
+	churches := make([]*churchGroup, 0, len(churchGroups))
+	for _, cg := range churchGroups {
+		churches = append(churches, cg)
+	}
+	sort.Slice(churches, func(i, j int) bool {
+		return churches[i].TotalScore > churches[j].TotalScore
 	})
 
 	// Initialize 4 superteam buckets
@@ -254,99 +281,50 @@ func (h *superteamDistributionHandler) calculateDistribution(teams []*sqlc.GetTe
 		}
 	}
 
-	// Track which bucket each church is primarily assigned to
-	churchToBucket := make(map[string]int)
+	// Track which churches have been assigned
+	assignedChurches := make(map[string]bool)
 
-	// Pre-seed priority churches: assign the highest-scoring team from each
-	// priority church to its designated bucket (index matches superteam order).
-	assignedTeams := make(map[string]bool)
+	// Pre-seed priority churches to their designated buckets
 	for i, churchID := range priorityChurchIDs {
-		for _, team := range sortedTeams {
-			if team.ChurchID == churchID && !assignedTeams[team.TeamID] {
-				buckets[i].Teams = append(buckets[i].Teams, TeamInfo{
-					TeamID:      team.TeamID,
-					TeamName:    team.TeamName,
-					ChurchID:    team.ChurchID,
-					ChurchName:  team.ChurchName,
-					TotalScore:  team.TotalScore,
-					MemberCount: team.MemberCount,
-				})
-				buckets[i].TotalScore += team.TotalScore
-				buckets[i].MemberCount += team.MemberCount
-				if !containsString(buckets[i].Churches, team.ChurchID) {
-					buckets[i].Churches = append(buckets[i].Churches, team.ChurchID)
-				}
-				churchToBucket[churchID] = i
-				assignedTeams[team.TeamID] = true
-				break
-			}
+		if cg, exists := churchGroups[churchID]; exists {
+			h.assignChurchToBucket(cg, &buckets[i])
+			assignedChurches[churchID] = true
 		}
 	}
 
-	// Greedy assignment with church preference
-	for _, team := range sortedTeams {
-		// Skip teams already assigned during priority pre-seeding
-		if assignedTeams[team.TeamID] {
+	// Pre-calculate averages for normalization
+	avgTeamCount := float64(len(teams)) / 4.0
+	avgScore := float64(totalPoints) / 4.0
+
+	// Assign remaining churches, considering both score and team count balance
+	for _, cg := range churches {
+		if assignedChurches[cg.ChurchID] {
 			continue
 		}
-		targetIdx := -1
 
-		// Check if this church already has teams in a bucket
-		if team.ChurchID != "" {
-			if bucketIdx, exists := churchToBucket[team.ChurchID]; exists {
-				// Check if adding to the church's bucket would exceed deviation threshold
-				newScore := buckets[bucketIdx].TotalScore + team.TotalScore
-				deviation := float64(newScore) - float64(targetScore)
-				if deviation < 0 {
-					deviation = -deviation
-				}
-				if deviation <= deviationThreshold {
-					targetIdx = bucketIdx
-				}
+		// Find bucket with best combined balance after adding this church
+		targetIdx := 0
+		bestImbalance := float64(1 << 62)
+		for i := 0; i < 4; i++ {
+			// Calculate what the bucket would look like after adding this church
+			newScore := buckets[i].TotalScore + cg.TotalScore
+			newTeamCount := len(buckets[i].Teams) + cg.TeamCount
+
+			// Normalize relative to averages
+			scoreImbalance := float64(newScore) / avgScore
+			teamCountImbalance := float64(newTeamCount) / avgTeamCount
+
+			// Combined imbalance metric - lower is better
+			combinedImbalance := scoreImbalance + teamCountImbalance
+
+			if combinedImbalance < bestImbalance {
+				bestImbalance = combinedImbalance
+				targetIdx = i
 			}
 		}
 
-		// If no church preference or deviation too high, use bucket with lowest score
-		if targetIdx == -1 {
-			targetIdx = 0
-			for i := 1; i < 4; i++ {
-				if buckets[i].TotalScore < buckets[targetIdx].TotalScore {
-					targetIdx = i
-				}
-			}
-		}
-
-		buckets[targetIdx].Teams = append(buckets[targetIdx].Teams, TeamInfo{
-			TeamID:      team.TeamID,
-			TeamName:    team.TeamName,
-			ChurchID:    team.ChurchID,
-			ChurchName:  team.ChurchName,
-			TotalScore:  team.TotalScore,
-			MemberCount: team.MemberCount,
-		})
-		buckets[targetIdx].TotalScore += team.TotalScore
-		buckets[targetIdx].MemberCount += team.MemberCount
-
-		// Track unique churches and update church-to-bucket mapping
-		if team.ChurchID != "" {
-			if !containsString(buckets[targetIdx].Churches, team.ChurchID) {
-				buckets[targetIdx].Churches = append(buckets[targetIdx].Churches, team.ChurchID)
-			}
-			// First team from a church determines the preferred bucket
-			if _, exists := churchToBucket[team.ChurchID]; !exists {
-				churchToBucket[team.ChurchID] = targetIdx
-			}
-		}
-	}
-
-	// Refinement phase: try to reunite split churches by swapping teams
-	// Run multiple iterations as new swap opportunities may appear after each pass
-	// Stop early if no swaps were made in an iteration
-	for range 10 {
-		swapsMade := h.refineSplitChurches(buckets, deviationThreshold)
-		if swapsMade == 0 {
-			break
-		}
+		h.assignChurchToBucket(cg, &buckets[targetIdx])
+		assignedChurches[cg.ChurchID] = true
 	}
 
 	// Calculate team counts
@@ -354,7 +332,7 @@ func (h *superteamDistributionHandler) calculateDistribution(teams []*sqlc.GetTe
 		buckets[i].TeamCount = len(buckets[i].Teams)
 	}
 
-	// Recalculate churches list after swaps
+	// Recalculate churches list for consistency
 	for i := range buckets {
 		buckets[i].Churches = h.getUniqueChurches(buckets[i].Teams)
 	}
@@ -362,184 +340,36 @@ func (h *superteamDistributionHandler) calculateDistribution(teams []*sqlc.GetTe
 	// Calculate variance for balance metric
 	variance := h.calculateVariance(buckets)
 
+	// Log the distribution result for visibility
+	bucketScores := make([]int64, len(buckets))
+	bucketTeamCounts := make([]int, len(buckets))
+	for i := range buckets {
+		bucketScores[i] = buckets[i].TotalScore
+		bucketTeamCounts[i] = buckets[i].TeamCount
+	}
+	slog.Info("superteam_distribution: distribution calculated",
+		"total_points", totalPoints,
+		"bucket_scores", bucketScores,
+		"bucket_team_counts", bucketTeamCounts,
+		"variance", variance,
+	)
+
 	return DistributionResponse{
 		Superteams: buckets,
 		Variance:   variance,
 	}
 }
 
-// refineSplitChurches attempts to reunite churches that were split across superteams
-// by swapping teams with similar scores. Returns the number of swaps made.
-func (h *superteamDistributionHandler) refineSplitChurches(buckets []SuperteamResult, deviationThreshold float64) int {
-	swapsMade := 0
-
-	// Build priority bucket map: churchID → required bucket index
-	priorityBucket := make(map[string]int)
-	for i, churchID := range priorityChurchIDs {
-		priorityBucket[churchID] = i
+// assignChurchToBucket adds all teams from a church to a bucket
+func (h *superteamDistributionHandler) assignChurchToBucket(cg *churchGroup, bucket *SuperteamResult) {
+	bucket.Teams = append(bucket.Teams, cg.Teams...)
+	bucket.TotalScore += cg.TotalScore
+	for _, team := range cg.Teams {
+		bucket.MemberCount += team.MemberCount
 	}
-
-	// Build a map of church -> list of (bucketIdx, teamIdx) for all teams
-	type teamLocation struct {
-		bucketIdx int
-		teamIdx   int
-		team      *TeamInfo
+	if !containsString(bucket.Churches, cg.ChurchID) {
+		bucket.Churches = append(bucket.Churches, cg.ChurchID)
 	}
-	churchLocations := make(map[string][]teamLocation)
-
-	for bi := range buckets {
-		for ti := range buckets[bi].Teams {
-			team := &buckets[bi].Teams[ti]
-			if team.ChurchID != "" {
-				churchLocations[team.ChurchID] = append(churchLocations[team.ChurchID], teamLocation{
-					bucketIdx: bi,
-					teamIdx:   ti,
-					team:      team,
-				})
-			}
-		}
-	}
-
-	// Sort church IDs for deterministic processing order
-	// Process smaller churches first (more likely to be reunitable)
-	churchIDs := make([]string, 0, len(churchLocations))
-	for churchID := range churchLocations {
-		churchIDs = append(churchIDs, churchID)
-	}
-	sort.Slice(churchIDs, func(i, j int) bool {
-		// Sort by number of teams (ascending), then by church ID for stability
-		if len(churchLocations[churchIDs[i]]) != len(churchLocations[churchIDs[j]]) {
-			return len(churchLocations[churchIDs[i]]) < len(churchLocations[churchIDs[j]])
-		}
-		return churchIDs[i] < churchIDs[j]
-	})
-
-	// Find split churches (teams in more than one bucket)
-	for _, churchID := range churchIDs {
-		locations := churchLocations[churchID]
-		if len(locations) <= 1 {
-			continue
-		}
-
-		// Find which buckets this church is in
-		bucketSet := make(map[int][]int) // bucketIdx -> teamIndices
-		for _, loc := range locations {
-			bucketSet[loc.bucketIdx] = append(bucketSet[loc.bucketIdx], loc.teamIdx)
-		}
-
-		if len(bucketSet) <= 1 {
-			continue // All teams already in same bucket
-		}
-
-		// Try to consolidate: find the bucket with most teams from this church
-		var targetBucket int
-		maxTeams := 0
-		for bi, indices := range bucketSet {
-			if len(indices) > maxTeams {
-				maxTeams = len(indices)
-				targetBucket = bi
-			}
-		}
-
-		// Try to move teams from other buckets to target bucket via swaps
-		for sourceBucket, teamIndices := range bucketSet {
-			if sourceBucket == targetBucket {
-				continue
-			}
-
-			for _, sourceTeamIdx := range teamIndices {
-				sourceTeam := &buckets[sourceBucket].Teams[sourceTeamIdx]
-
-				// Find a team in targetBucket (from a different church) to swap with
-				bestSwapIdx := -1
-				bestScoreDiff := int64(1<<62 - 1)
-
-				for ti := range buckets[targetBucket].Teams {
-					candidate := &buckets[targetBucket].Teams[ti]
-
-					// Don't swap with teams from the same church we're trying to consolidate
-					if candidate.ChurchID == churchID {
-						continue
-					}
-
-					// Don't swap a priority church's last team out of its assigned bucket
-					if reqBucket, isPriority := priorityBucket[candidate.ChurchID]; isPriority && reqBucket == targetBucket {
-						count := 0
-						for _, t := range buckets[targetBucket].Teams {
-							if t.ChurchID == candidate.ChurchID {
-								count++
-							}
-						}
-						if count <= 1 {
-							continue
-						}
-					}
-
-					// Calculate score difference
-					scoreDiff := sourceTeam.TotalScore - candidate.TotalScore
-					if scoreDiff < 0 {
-						scoreDiff = -scoreDiff
-					}
-
-					// Check if this swap would keep both buckets within threshold
-					newSourceScore := buckets[sourceBucket].TotalScore - sourceTeam.TotalScore + candidate.TotalScore
-					newTargetScore := buckets[targetBucket].TotalScore - candidate.TotalScore + sourceTeam.TotalScore
-
-					// Calculate total for threshold check
-					var totalScore int64
-					for _, b := range buckets {
-						totalScore += b.TotalScore
-					}
-					targetScore := totalScore / 4
-
-					sourceDeviation := float64(newSourceScore) - float64(targetScore)
-					if sourceDeviation < 0 {
-						sourceDeviation = -sourceDeviation
-					}
-					targetDeviation := float64(newTargetScore) - float64(targetScore)
-					if targetDeviation < 0 {
-						targetDeviation = -targetDeviation
-					}
-
-					// Only consider swap if it keeps both buckets within threshold
-					if sourceDeviation <= deviationThreshold && targetDeviation <= deviationThreshold {
-						if scoreDiff < bestScoreDiff {
-							bestScoreDiff = scoreDiff
-							bestSwapIdx = ti
-						}
-					}
-				}
-
-				// Perform the swap if we found a valid candidate
-				if bestSwapIdx >= 0 {
-					h.swapTeams(buckets, sourceBucket, sourceTeamIdx, targetBucket, bestSwapIdx)
-					swapsMade++
-					// After swap, indices may have shifted - break and let next iteration handle remaining
-					break
-				}
-			}
-		}
-	}
-
-	return swapsMade
-}
-
-// swapTeams swaps two teams between buckets
-func (h *superteamDistributionHandler) swapTeams(buckets []SuperteamResult, bucket1, idx1, bucket2, idx2 int) {
-	team1 := buckets[bucket1].Teams[idx1]
-	team2 := buckets[bucket2].Teams[idx2]
-
-	// Update scores
-	buckets[bucket1].TotalScore = buckets[bucket1].TotalScore - team1.TotalScore + team2.TotalScore
-	buckets[bucket2].TotalScore = buckets[bucket2].TotalScore - team2.TotalScore + team1.TotalScore
-
-	// Update member counts
-	buckets[bucket1].MemberCount = buckets[bucket1].MemberCount - team1.MemberCount + team2.MemberCount
-	buckets[bucket2].MemberCount = buckets[bucket2].MemberCount - team2.MemberCount + team1.MemberCount
-
-	// Swap the teams
-	buckets[bucket1].Teams[idx1] = team2
-	buckets[bucket2].Teams[idx2] = team1
 }
 
 // getUniqueChurches returns a list of unique church IDs from a list of teams

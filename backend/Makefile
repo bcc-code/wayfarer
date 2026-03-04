@@ -90,6 +90,10 @@ tidy: ## Tidy Go modules
 	@echo "Tidying modules..."
 	@go mod tidy
 
+dev-env-only:
+	@echo "Starting development server..." && \
+	go run ./cmd/server
+
 dev: ## Run development server with Neon branch
 	@echo "Setting up Neon database branch..."
 	@export DATABASE_URL=$$(./scripts/neon-branch.sh) && \

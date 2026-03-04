@@ -221,13 +221,11 @@ func TestSuperteamDistributionHandler_CalculateVariance(t *testing.T) {
 	}
 }
 
-func TestSuperteamDistributionHandler_CalculateDistribution_ChurchSplitting(t *testing.T) {
+func TestSuperteamDistributionHandler_CalculateDistribution_ChurchCohesion(t *testing.T) {
 	handler := &superteamDistributionHandler{}
 
-	// When one church has teams that would cause >10% deviation if kept together,
-	// the algorithm splits the church across superteams.
-	// Total: 4000, target: 1000, threshold: 100
-	// Adding 2 teams of 1000 each to one bucket would cause deviation of 1000 > 100
+	// With church cohesion as a hard constraint, all teams from the same church
+	// should always be kept together, regardless of score balance impact.
 	teams := []*sqlc.GetTeamsWithScoresForDistributionRow{
 		{TeamID: "TM001", TeamName: "Team 1", ChurchID: "CH001", TotalScore: 1000, MemberCount: 5},
 		{TeamID: "TM002", TeamName: "Team 2", ChurchID: "CH001", TotalScore: 1000, MemberCount: 5},
@@ -237,16 +235,26 @@ func TestSuperteamDistributionHandler_CalculateDistribution_ChurchSplitting(t *t
 
 	result := handler.calculateDistribution(teams, false)
 
-	// With 4 teams of equal score assigned to 4 superteams,
-	// keeping them together would exceed the 10% threshold, so they get split
-	teamsPerSuperteam := make(map[string]int)
-	for _, st := range result.Superteams {
-		teamsPerSuperteam[st.Name] = st.TeamCount
+	// All 4 teams from the same church should be in the same superteam
+	var superteamWithChurch001 *SuperteamResult
+	for i := range result.Superteams {
+		for _, team := range result.Superteams[i].Teams {
+			if team.ChurchID == "CH001" {
+				superteamWithChurch001 = &result.Superteams[i]
+				break
+			}
+		}
+		if superteamWithChurch001 != nil {
+			break
+		}
 	}
 
-	// Each superteam should have exactly 1 team (church was split)
-	for name, count := range teamsPerSuperteam {
-		assert.Equal(t, 1, count, "Superteam %s should have exactly 1 team", name)
+	require.NotNil(t, superteamWithChurch001, "Should find superteam with CH001 teams")
+	assert.Equal(t, 4, superteamWithChurch001.TeamCount, "All 4 teams from CH001 should be in same superteam")
+
+	// Verify all teams in that superteam are from CH001
+	for _, team := range superteamWithChurch001.Teams {
+		assert.Equal(t, "CH001", team.ChurchID)
 	}
 
 	// All 4 teams should be distributed
@@ -256,8 +264,8 @@ func TestSuperteamDistributionHandler_CalculateDistribution_ChurchSplitting(t *t
 	}
 	assert.Equal(t, 4, totalTeams)
 
-	// Variance should be 0 (perfectly balanced)
-	assert.Equal(t, float64(0), result.Variance)
+	// Total score should be 4000
+	assert.Equal(t, int64(4000), superteamWithChurch001.TotalScore)
 }
 
 func TestSuperteamDistributionHandler_CalculateDistribution_ChurchPreference(t *testing.T) {
@@ -335,11 +343,10 @@ func TestSuperteamDistributionHandler_CalculateDistribution_BalancedAssignment(t
 func TestSuperteamDistributionHandler_CalculateDistribution_UnevenChurchSizes(t *testing.T) {
 	handler := &superteamDistributionHandler{}
 
-	// Simulate a scenario where one church has many more teams than others.
-	// The algorithm prefers keeping churches together but will split when
-	// deviation would exceed 10% of target score.
+	// Test that even with very uneven church sizes, all teams from the same
+	// church are kept together (church cohesion is a hard constraint).
 	teams := []*sqlc.GetTeamsWithScoresForDistributionRow{
-		// Large church with 8 teams (simulating 154 teams scaled down)
+		// Large church with 8 teams
 		{TeamID: "TM001", TeamName: "Team 1", ChurchID: "CH_LARGE", TotalScore: 1000, MemberCount: 8},
 		{TeamID: "TM002", TeamName: "Team 2", ChurchID: "CH_LARGE", TotalScore: 900, MemberCount: 7},
 		{TeamID: "TM003", TeamName: "Team 3", ChurchID: "CH_LARGE", TotalScore: 850, MemberCount: 6},
@@ -364,31 +371,7 @@ func TestSuperteamDistributionHandler_CalculateDistribution_UnevenChurchSizes(t 
 	}
 	assert.Equal(t, 12, totalTeams)
 
-	// Calculate min and max scores to verify balance
-	var minScore, maxScore int64 = result.Superteams[0].TotalScore, result.Superteams[0].TotalScore
-	for _, st := range result.Superteams {
-		if st.TotalScore < minScore {
-			minScore = st.TotalScore
-		}
-		if st.TotalScore > maxScore {
-			maxScore = st.TotalScore
-		}
-	}
-
-	// Calculate total and average
-	var totalScore int64
-	for _, st := range result.Superteams {
-		totalScore += st.TotalScore
-	}
-	averageScore := totalScore / 4
-
-	// The difference should be within ~25% of average (allowing some flexibility for church preference)
-	scoreDifference := maxScore - minScore
-	assert.Less(t, float64(scoreDifference), float64(averageScore)*0.25,
-		"Score difference should be reasonable even with church preference")
-
-	// The large church should be split across multiple superteams
-	// (since keeping all 8 teams together would cause massive deviation)
+	// The large church should be kept together in one superteam (church cohesion)
 	largeChurchSuperteams := make(map[string]bool)
 	for _, st := range result.Superteams {
 		for _, team := range st.Teams {
@@ -397,8 +380,24 @@ func TestSuperteamDistributionHandler_CalculateDistribution_UnevenChurchSizes(t 
 			}
 		}
 	}
-	assert.Greater(t, len(largeChurchSuperteams), 1,
-		"Large church should be split across multiple superteams to maintain balance")
+	assert.Equal(t, 1, len(largeChurchSuperteams),
+		"Large church should be kept together in one superteam")
+
+	// Small churches should also each be in one superteam
+	small1Superteams := make(map[string]bool)
+	small2Superteams := make(map[string]bool)
+	for _, st := range result.Superteams {
+		for _, team := range st.Teams {
+			if team.ChurchID == "CH_SMALL1" {
+				small1Superteams[st.Name] = true
+			}
+			if team.ChurchID == "CH_SMALL2" {
+				small2Superteams[st.Name] = true
+			}
+		}
+	}
+	assert.Equal(t, 1, len(small1Superteams), "CH_SMALL1 should be kept together")
+	assert.Equal(t, 1, len(small2Superteams), "CH_SMALL2 should be kept together")
 }
 
 func TestSuperteamDistributionHandler_CalculateDistribution_GeneratesIDs(t *testing.T) {
@@ -488,16 +487,6 @@ func (m *mockDistributionQuerier) CreateSuperTeam(_ context.Context, _ sqlc.Crea
 
 func (m *mockDistributionQuerier) AssignTeamToSuperTeam(_ context.Context, _ sqlc.AssignTeamToSuperTeamParams) error {
 	return nil
-}
-
-// Helper function to check if a slice contains a value
-func contains(slice []string, val string) bool {
-	for _, s := range slice {
-		if s == val {
-			return true
-		}
-	}
-	return false
 }
 
 // visualizeDistribution prints a visual representation of the superteam distribution
@@ -763,6 +752,63 @@ func TestCalculateDistribution_PriorityChurches_WithRefinement(t *testing.T) {
 		totalTeams += st.TeamCount
 	}
 	assert.Equal(t, 12, totalTeams, "All 12 teams should be distributed")
+
+	visualizeDistribution(t, result)
+}
+
+func TestSuperteamDistributionHandler_ChurchesNeverSplit(t *testing.T) {
+	handler := &superteamDistributionHandler{}
+
+	// Create a scenario with multiple churches of varying sizes
+	// This test verifies that NO church is ever split across superteams
+	teams := []*sqlc.GetTeamsWithScoresForDistributionRow{
+		// Church A: 5 teams
+		{TeamID: "TM01", TeamName: "A1", ChurchID: "CH_A", TotalScore: 5000, MemberCount: 5},
+		{TeamID: "TM02", TeamName: "A2", ChurchID: "CH_A", TotalScore: 4000, MemberCount: 4},
+		{TeamID: "TM03", TeamName: "A3", ChurchID: "CH_A", TotalScore: 3000, MemberCount: 3},
+		{TeamID: "TM04", TeamName: "A4", ChurchID: "CH_A", TotalScore: 2000, MemberCount: 2},
+		{TeamID: "TM05", TeamName: "A5", ChurchID: "CH_A", TotalScore: 1000, MemberCount: 1},
+		// Church B: 3 teams
+		{TeamID: "TM06", TeamName: "B1", ChurchID: "CH_B", TotalScore: 4500, MemberCount: 5},
+		{TeamID: "TM07", TeamName: "B2", ChurchID: "CH_B", TotalScore: 3500, MemberCount: 4},
+		{TeamID: "TM08", TeamName: "B3", ChurchID: "CH_B", TotalScore: 2500, MemberCount: 3},
+		// Church C: 3 teams
+		{TeamID: "TM09", TeamName: "C1", ChurchID: "CH_C", TotalScore: 4000, MemberCount: 4},
+		{TeamID: "TM10", TeamName: "C2", ChurchID: "CH_C", TotalScore: 3000, MemberCount: 3},
+		{TeamID: "TM11", TeamName: "C3", ChurchID: "CH_C", TotalScore: 2000, MemberCount: 2},
+		// Church D: 2 teams
+		{TeamID: "TM12", TeamName: "D1", ChurchID: "CH_D", TotalScore: 3500, MemberCount: 4},
+		{TeamID: "TM13", TeamName: "D2", ChurchID: "CH_D", TotalScore: 2500, MemberCount: 3},
+		// Church E: 1 team
+		{TeamID: "TM14", TeamName: "E1", ChurchID: "CH_E", TotalScore: 6000, MemberCount: 6},
+	}
+
+	result := handler.calculateDistribution(teams, false)
+
+	// Collect which superteam each church appears in
+	churchToSuperteams := make(map[string]map[string]bool)
+	for _, st := range result.Superteams {
+		for _, team := range st.Teams {
+			if churchToSuperteams[team.ChurchID] == nil {
+				churchToSuperteams[team.ChurchID] = make(map[string]bool)
+			}
+			churchToSuperteams[team.ChurchID][st.Name] = true
+		}
+	}
+
+	// Verify that NO church appears in more than one superteam
+	for churchID, superteams := range churchToSuperteams {
+		assert.Equal(t, 1, len(superteams),
+			"Church %s should be in exactly 1 superteam, but is in %d: %v",
+			churchID, len(superteams), superteams)
+	}
+
+	// All 14 teams should be distributed
+	totalTeams := 0
+	for _, st := range result.Superteams {
+		totalTeams += st.TeamCount
+	}
+	assert.Equal(t, 14, totalTeams)
 
 	visualizeDistribution(t, result)
 }
