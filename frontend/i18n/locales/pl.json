@@ -62,6 +62,10 @@
       "perfect": "Idealnie!",
       "thanksForAnswers": "Dziękujemy za odpowiedzi!",
       "resultsRevealedLater": "Wyniki zostaną ogłoszone później."
+    },
+    "notSubmitted": {
+      "title": "Nie odpowiedziałeś",
+      "message": "Nie brałeś udziału w tym obstawianiu"
     }
   },
   "challenges": {
