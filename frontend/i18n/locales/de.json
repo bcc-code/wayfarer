@@ -62,6 +62,10 @@
       "perfect": "Perfekt.",
       "thanksForAnswers": "Danke für deine Antworten!",
       "resultsRevealedLater": "Die Ergebnisse werden später bekannt gegeben."
+    },
+    "notSubmitted": {
+      "title": "Du hast nicht geliefert",
+      "message": "Du hast an dieser Tipprunde nicht teilgenommen"
     }
   },
   "challenges": {
