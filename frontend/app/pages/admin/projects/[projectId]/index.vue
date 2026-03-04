@@ -9,6 +9,7 @@ definePageMeta({
 const route = useRoute('admin-projects-projectId')
 
 const { canEditProject } = usePermissions()
+const { isSuperAdmin } = useAuth()
 const canEdit = computed(() => canEditProject(route.params.projectId))
 
 gql(`
@@ -228,6 +229,7 @@ async function handleReorder() {
                 Rediger prosjekt
               </UButton>
               <UButton
+                v-if="isSuperAdmin"
                 variant="soft"
                 icon="lucide:users"
                 :to="{
