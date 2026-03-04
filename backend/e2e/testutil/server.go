@@ -14,6 +14,8 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/directives"
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/plugins"
+	ladder_to_heaven "github.com/bcc-media/wayfarer/internal/plugins/ladder_to_heaven"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/gin-gonic/gin"
 )
@@ -78,6 +80,16 @@ func NewTestRouter(cfg TestServerConfig) *gin.Engine {
 		middleware.JWTAuth(jwtConfig),
 		graphqlHandlerWithLanguage(gqlHandler, cfg.LanguageService),
 	)
+
+	// Register plugins
+	pluginDeps := plugins.Dependencies{
+		DB:              cfg.DB,
+		Cache:           cfg.Cache,
+		Loaders:         cfg.Loaders,
+		SettingsService: cfg.SettingsService,
+		JWTConfig:       jwtConfig,
+	}
+	plugins.RegisterPlugin(router, pluginDeps, nil, ladder_to_heaven.NewPlugin(ladder_to_heaven.Config{}))
 
 	return router
 }

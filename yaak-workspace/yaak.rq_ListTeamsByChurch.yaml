@@ -1,0 +1,41 @@
+type: http_request
+model: http_request
+id: rq_ListTeamsByChurch
+createdAt: 2026-02-12T12:00:00
+updatedAt: 2026-02-12T15:33:00.309045
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Teams
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    query ListTeamsByChurch($filter: TeamFilter, $first: Int, $after: String) {
+      teams(filter: $filter, first: $first, after: $after) {
+        edges {
+          cursor
+          node {
+            id
+            name
+          }
+        }
+      }
+    }
+  variables: |
+    {
+      "filter": {
+        "churchId": "CH01KC9E88BHBYR30BY7N60DJT8C"
+      },
+      "first": 100
+    }
+bodyType: graphql
+description: List teams filtered by church ID of the team lead
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_ListTeamsByChurch
+method: POST
+name: List Teams By Church
+sortPriority: 1001.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

@@ -91,5 +91,15 @@ func (p *LadderToHeavenPlugin) Register(router gin.IRouter, deps plugins.Depende
 
 	router.GET("/plugins/ladder-to-heaven/cryptex-admin-url", middleware.JWTAuth(deps.JWTConfig), cryptexHandler.handle)
 
+	// Superteam distribution endpoints (requires JWT authentication)
+	distHandler := &superteamDistributionHandler{
+		db:        deps.DB,
+		cache:     deps.Cache,
+		jwtConfig: deps.JWTConfig,
+	}
+
+	router.GET("/plugins/ladder-to-heaven/preview-superteams", middleware.JWTAuth(deps.JWTConfig), distHandler.preview)
+	router.POST("/plugins/ladder-to-heaven/distribute-superteams", middleware.JWTAuth(deps.JWTConfig), distHandler.handle)
+
 	return nil
 }

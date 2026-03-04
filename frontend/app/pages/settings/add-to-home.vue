@@ -41,7 +41,7 @@ const images = computed(() => {
             :src="src"
             :alt="`Step ${index + 1}`"
             class="w-full rounded-lg"
-          />
+          >
         </li>
       </ol>
     </div>

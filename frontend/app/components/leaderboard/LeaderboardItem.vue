@@ -46,7 +46,7 @@ const getColorClasses = (
         v-if="!hideMedal && item.rank && item.rank <= 3"
         :src="`/images/medals/${item.rank}.png`"
         class="col-span-full row-span-full object-cover"
-      />
+      >
       <span class="col-span-full row-span-full">{{ item.rank || '–' }}</span>
     </div>
     <div class="grow truncate">

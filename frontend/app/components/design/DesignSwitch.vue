@@ -47,7 +47,7 @@ const trackClasses = cva(
     :class="trackClasses({ checked: modelValue, disabled })"
     :data-checked="modelValue"
   >
-    <input v-model="modelValue" :disabled type="checkbox" class="hidden" />
+    <input v-model="modelValue" :disabled type="checkbox" class="hidden" >
     <div :class="thumbClasses({ checked: modelValue, disabled })">
       <Icon
         v-if="loading"

@@ -91,7 +91,7 @@ const badges = [
                 :alt="badge.alt"
                 :class="['rounded-full object-cover', badge.class]"
                 :style="{ zIndex: badge.z, height: badge.size }"
-              />
+              >
             </div>
             <!-- Title and description -->
             <div

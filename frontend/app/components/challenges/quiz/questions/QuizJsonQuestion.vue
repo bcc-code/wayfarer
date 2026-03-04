@@ -7,5 +7,5 @@ defineProps<{
 </script>
 
 <template>
-  <div></div>
+  <div/>
 </template>

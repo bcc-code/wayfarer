@@ -11,6 +11,29 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const AssignTeamToSuperTeam = `-- name: AssignTeamToSuperTeam :exec
+UPDATE teams SET super_team_id = $1 WHERE id = $2
+`
+
+type AssignTeamToSuperTeamParams struct {
+	SuperTeamID *string `json:"super_team_id"`
+	TeamID      string  `json:"team_id"`
+}
+
+func (q *Queries) AssignTeamToSuperTeam(ctx context.Context, arg AssignTeamToSuperTeamParams) error {
+	_, err := q.db.Exec(ctx, AssignTeamToSuperTeam, arg.SuperTeamID, arg.TeamID)
+	return err
+}
+
+const ClearSuperTeamAssignmentsForProject = `-- name: ClearSuperTeamAssignmentsForProject :exec
+UPDATE teams SET super_team_id = NULL WHERE project_id = $1
+`
+
+func (q *Queries) ClearSuperTeamAssignmentsForProject(ctx context.Context, projectID string) error {
+	_, err := q.db.Exec(ctx, ClearSuperTeamAssignmentsForProject, projectID)
+	return err
+}
+
 const CountSuperTeamsFiltered = `-- name: CountSuperTeamsFiltered :one
 SELECT COUNT(DISTINCT st.id)
 FROM super_teams st
@@ -57,6 +80,47 @@ func (q *Queries) CountSuperTeamsFiltered(ctx context.Context, arg CountSuperTea
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const CreateSuperTeam = `-- name: CreateSuperTeam :one
+INSERT INTO super_teams (id, project_id, name, description)
+VALUES ($1, $2, $3, $4)
+RETURNING id, project_id, name, description, created_at, updated_at
+`
+
+type CreateSuperTeamParams struct {
+	ID          string  `json:"id"`
+	ProjectID   string  `json:"project_id"`
+	Name        string  `json:"name"`
+	Description *string `json:"description"`
+}
+
+func (q *Queries) CreateSuperTeam(ctx context.Context, arg CreateSuperTeamParams) (*SuperTeam, error) {
+	row := q.db.QueryRow(ctx, CreateSuperTeam,
+		arg.ID,
+		arg.ProjectID,
+		arg.Name,
+		arg.Description,
+	)
+	var i SuperTeam
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.Name,
+		&i.Description,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const DeleteSuperTeamsByProjectID = `-- name: DeleteSuperTeamsByProjectID :exec
+DELETE FROM super_teams WHERE project_id = $1
+`
+
+func (q *Queries) DeleteSuperTeamsByProjectID(ctx context.Context, projectID string) error {
+	_, err := q.db.Exec(ctx, DeleteSuperTeamsByProjectID, projectID)
+	return err
 }
 
 const GetSuperTeamsByIDs = `-- name: GetSuperTeamsByIDs :many
@@ -210,6 +274,63 @@ func (q *Queries) GetSuperTeamsFilteredCursor(ctx context.Context, arg GetSuperT
 			&i.Description,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetTeamsWithScoresForDistribution = `-- name: GetTeamsWithScoresForDistribution :many
+SELECT
+    t.id AS team_id,
+    t.name AS team_name,
+    COALESCE(lead_user.church_id, '') AS church_id,
+    COALESCE(c.name, '') AS church_name,
+    COALESCE(SUM(sj.points), 0)::bigint AS total_score,
+    COUNT(DISTINCT tm.user_id)::int AS member_count
+FROM teams t
+LEFT JOIN user_roles ur ON ur.team_id = t.id AND ur.role = 'TEAM_LEAD'
+LEFT JOIN users lead_user ON ur.user_id = lead_user.id
+LEFT JOIN churches c ON lead_user.church_id = c.id
+INNER JOIN team_members tm ON t.id = tm.team_id
+LEFT JOIN score_journal sj ON sj.user_id = tm.user_id AND sj.project_id = t.project_id
+WHERE t.project_id = $1
+  AND t.leaderboard_excluded = false
+GROUP BY t.id, t.name, lead_user.church_id, c.name
+HAVING COALESCE(SUM(sj.points), 0) > 0
+`
+
+type GetTeamsWithScoresForDistributionRow struct {
+	TeamID      string `json:"team_id"`
+	TeamName    string `json:"team_name"`
+	ChurchID    string `json:"church_id"`
+	ChurchName  string `json:"church_name"`
+	TotalScore  int64  `json:"total_score"`
+	MemberCount int32  `json:"member_count"`
+}
+
+// Returns teams with total score > 0 and team lead's church
+func (q *Queries) GetTeamsWithScoresForDistribution(ctx context.Context, projectID string) ([]*GetTeamsWithScoresForDistributionRow, error) {
+	rows, err := q.db.Query(ctx, GetTeamsWithScoresForDistribution, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetTeamsWithScoresForDistributionRow{}
+	for rows.Next() {
+		var i GetTeamsWithScoresForDistributionRow
+		if err := rows.Scan(
+			&i.TeamID,
+			&i.TeamName,
+			&i.ChurchID,
+			&i.ChurchName,
+			&i.TotalScore,
+			&i.MemberCount,
 		); err != nil {
 			return nil, err
 		}

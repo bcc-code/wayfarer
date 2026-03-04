@@ -99,7 +99,7 @@ const { isActive, start, stop, remaining } = useCountdown(10, {
         </h2>
         <p key="description">
           {{ $t('admin.churchHome.kickOffOnboardingDescription') }}
-          <br />
+          <br >
           {{ $t('admin.churchHome.kickOffOnboardingDescriptionWarning') }}
         </p>
 
