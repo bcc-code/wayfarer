@@ -62,6 +62,10 @@
       "perfect": "Ideaalne!",
       "thanksForAnswers": "Täname vastuste eest!",
       "resultsRevealedLater": "Tulemused avaldatakse hiljem."
+    },
+    "notSubmitted": {
+      "title": "Sa pole saatnud",
+      "message": "Sa ei osalenud selles ennustamises"
     }
   },
   "challenges": {
