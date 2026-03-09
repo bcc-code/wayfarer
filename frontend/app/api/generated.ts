@@ -118,6 +118,48 @@ export type BrandingInput = {
   rounding: Scalars['Int']['input'];
 };
 
+export type BulkJob = {
+  __typename?: 'BulkJob';
+  completedAt?: Maybe<Scalars['DateTime']['output']>;
+  createdAt: Scalars['DateTime']['output'];
+  errorMessage?: Maybe<Scalars['String']['output']>;
+  failureCount: Scalars['Int']['output'];
+  id: Scalars['ID']['output'];
+  operationType: Scalars['String']['output'];
+  processedCount: Scalars['Int']['output'];
+  startedAt?: Maybe<Scalars['DateTime']['output']>;
+  status: BulkJobStatus;
+  successCount: Scalars['Int']['output'];
+  totalCount: Scalars['Int']['output'];
+};
+
+export type BulkJobConnection = {
+  __typename?: 'BulkJobConnection';
+  edges: Array<BulkJobEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type BulkJobEdge = {
+  __typename?: 'BulkJobEdge';
+  cursor: Scalars['String']['output'];
+  node: BulkJob;
+};
+
+export type BulkJobFilter = {
+  createdBy?: InputMaybe<Scalars['ID']['input']>;
+  operationType?: InputMaybe<Scalars['String']['input']>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
+  status?: InputMaybe<BulkJobStatus>;
+};
+
+export enum BulkJobStatus {
+  Completed = 'COMPLETED',
+  Failed = 'FAILED',
+  Pending = 'PENDING',
+  Processing = 'PROCESSING'
+}
+
 export type Challenge = {
   buttonText?: Maybe<Scalars['String']['output']>;
   description: Scalars['HTML']['output'];
@@ -947,10 +989,15 @@ export type Mutation = {
   awardAchievement: Achievement;
   awardSuperTeamAchievement: Achievement;
   bulkAwardAchievements: Array<Achievement>;
+  bulkAwardAchievementsAsync: BulkJob;
   bulkCompleteChallenges: Array<Challenge>;
+  bulkCompleteChallengesAsync: BulkJob;
   bulkEnrollUsersInChallenge: Array<Challenge>;
+  bulkEnrollUsersInChallengeAsync: BulkJob;
   bulkPublishChallenges: Array<Challenge>;
+  bulkPublishChallengesAsync: BulkJob;
   bulkUnenrollUsersFromChallenge: Scalars['Boolean']['output'];
+  bulkUnenrollUsersFromChallengeAsync: BulkJob;
   clearAllCache: Scalars['Boolean']['output'];
   completeChallenge: Challenge;
   createChallenge: Challenge;
@@ -1144,7 +1191,21 @@ export type MutationBulkAwardAchievementsArgs = {
 };
 
 
+export type MutationBulkAwardAchievementsAsyncArgs = {
+  achievementId: Scalars['ID']['input'];
+  teamId?: InputMaybe<Scalars['ID']['input']>;
+  userIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
+
 export type MutationBulkCompleteChallengesArgs = {
+  challengeId: Scalars['ID']['input'];
+  completedAt?: InputMaybe<Scalars['DateTime']['input']>;
+  target: EnrollmentTargetInput;
+};
+
+
+export type MutationBulkCompleteChallengesAsyncArgs = {
   challengeId: Scalars['ID']['input'];
   completedAt?: InputMaybe<Scalars['DateTime']['input']>;
   target: EnrollmentTargetInput;
@@ -1157,13 +1218,31 @@ export type MutationBulkEnrollUsersInChallengeArgs = {
 };
 
 
+export type MutationBulkEnrollUsersInChallengeAsyncArgs = {
+  challengeId: Scalars['ID']['input'];
+  target: EnrollmentTargetInput;
+};
+
+
 export type MutationBulkPublishChallengesArgs = {
   ids: Array<Scalars['ID']['input']>;
   publishedAt: Scalars['DateTime']['input'];
 };
 
 
+export type MutationBulkPublishChallengesAsyncArgs = {
+  ids: Array<Scalars['ID']['input']>;
+  publishedAt: Scalars['DateTime']['input'];
+};
+
+
 export type MutationBulkUnenrollUsersFromChallengeArgs = {
+  challengeId: Scalars['ID']['input'];
+  target: EnrollmentTargetInput;
+};
+
+
+export type MutationBulkUnenrollUsersFromChallengeAsyncArgs = {
   challengeId: Scalars['ID']['input'];
   target: EnrollmentTargetInput;
 };
@@ -1968,6 +2047,8 @@ export type Query = {
   achievements: AchievementConnection;
   adminDashboardStats: AdminDashboardStats;
   adminScoreJournal: ScoreJournalConnection;
+  bulkJob?: Maybe<BulkJob>;
+  bulkJobs: BulkJobConnection;
   challenge: Challenge;
   challenges: ChallengeConnection;
   church: Church;
@@ -1989,6 +2070,7 @@ export type Query = {
   frontendConfig: Scalars['JSON']['output'];
   instanceID: Scalars['String']['output'];
   me: User;
+  myBulkJobs: Array<BulkJob>;
   myCurrentEvent: Event;
   myCurrentProject: Project;
   myEvents: Array<Event>;
@@ -2041,6 +2123,20 @@ export type QueryAdminScoreJournalArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   filter?: InputMaybe<ScoreJournalFilter>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QueryBulkJobArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryBulkJobsArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<BulkJobFilter>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
 };
@@ -2119,6 +2215,11 @@ export type QueryFeedbackArgs = {
 
 export type QueryFileUploadArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryMyBulkJobsArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
