@@ -307,4 +307,7 @@ extend type Mutation {
 
     # Force recalculate content achievements - awards achievements to users who completed all items but weren't awarded
     recalculateContentAchievements(projectId: ID!, achievementId: ID!): RecalculateResult! @requireRole(roles: ["admin", "superadmin"])
+
+    # Async bulk operations - returns BulkJob for tracking progress
+    bulkAwardAchievementsAsync(userIds: [ID!], teamId: ID, achievementId: ID!): BulkJob! @requireRole(roles: ["m2m", "admin", "superadmin"])
 }

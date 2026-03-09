@@ -15,6 +15,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/pubsub"
 	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -983,6 +984,170 @@ func (r *mutationResolver) BulkCompleteChallenges(ctx context.Context, target mo
 	}
 
 	return result, nil
+}
+
+// BulkEnrollUsersInChallengeAsync is the resolver for the bulkEnrollUsersInChallengeAsync field.
+func (r *mutationResolver) BulkEnrollUsersInChallengeAsync(ctx context.Context, target model.EnrollmentTargetInput, challengeID string) (*model.BulkJob, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	if r.BulkService == nil {
+		return nil, fmt.Errorf("bulk service not initialized")
+	}
+
+	// Resolve target to user IDs
+	userIDs, err := r.BulkService.ResolveEnrollmentTarget(ctx, target)
+	if err != nil {
+		return nil, err
+	}
+
+	// Load challenge to get project ID
+	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, challengeID)
+	challenge, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("challenge not found: %w", err)
+	}
+	projectID := getChallengeProjectID(challenge)
+
+	// Create job and publish to Pub/Sub
+	return r.BulkService.CreateBulkJobAndPublish(
+		ctx,
+		userID,
+		&projectID,
+		len(userIDs),
+		pubsub.BulkEnrollChallengeParams{
+			ChallengeID: challengeID,
+			UserIDs:     userIDs,
+		},
+	)
+}
+
+// BulkUnenrollUsersFromChallengeAsync is the resolver for the bulkUnenrollUsersFromChallengeAsync field.
+func (r *mutationResolver) BulkUnenrollUsersFromChallengeAsync(ctx context.Context, target model.EnrollmentTargetInput, challengeID string) (*model.BulkJob, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	if r.BulkService == nil {
+		return nil, fmt.Errorf("bulk service not initialized")
+	}
+
+	// Resolve target to user IDs
+	userIDs, err := r.BulkService.ResolveEnrollmentTarget(ctx, target)
+	if err != nil {
+		return nil, err
+	}
+
+	// Load challenge to get project ID
+	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, challengeID)
+	challenge, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("challenge not found: %w", err)
+	}
+	projectID := getChallengeProjectID(challenge)
+
+	// Create job and publish to Pub/Sub
+	return r.BulkService.CreateBulkJobAndPublish(
+		ctx,
+		userID,
+		&projectID,
+		len(userIDs),
+		pubsub.BulkUnenrollChallengeParams{
+			ChallengeID: challengeID,
+			UserIDs:     userIDs,
+		},
+	)
+}
+
+// BulkCompleteChallengesAsync is the resolver for the bulkCompleteChallengesAsync field.
+func (r *mutationResolver) BulkCompleteChallengesAsync(ctx context.Context, target model.EnrollmentTargetInput, challengeID string, completedAt *scalars.DateTime) (*model.BulkJob, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	if r.BulkService == nil {
+		return nil, fmt.Errorf("bulk service not initialized")
+	}
+
+	// Resolve target to user IDs
+	userIDs, err := r.BulkService.ResolveEnrollmentTarget(ctx, target)
+	if err != nil {
+		return nil, err
+	}
+
+	// Load challenge to get project ID
+	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, challengeID)
+	challenge, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("challenge not found: %w", err)
+	}
+	projectID := getChallengeProjectID(challenge)
+
+	// Create job and publish to Pub/Sub
+	params := pubsub.BulkCompleteChallengeParams{
+		ChallengeID: challengeID,
+		UserIDs:     userIDs,
+	}
+	if completedAt != nil {
+		params.CompletedAt = completedAt.Time.Format(time.RFC3339)
+	}
+
+	return r.BulkService.CreateBulkJobAndPublish(
+		ctx,
+		userID,
+		&projectID,
+		len(userIDs),
+		params,
+	)
+}
+
+// BulkPublishChallengesAsync is the resolver for the bulkPublishChallengesAsync field.
+func (r *mutationResolver) BulkPublishChallengesAsync(ctx context.Context, ids []string, publishedAt scalars.DateTime) (*model.BulkJob, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	if r.BulkService == nil {
+		return nil, fmt.Errorf("bulk service not initialized")
+	}
+
+	if len(ids) == 0 {
+		return nil, fmt.Errorf("no challenge IDs provided")
+	}
+
+	// Load all challenges and verify authorization
+	var projectID string
+	for i, id := range ids {
+		thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, id)
+		challenge, err := thunk()
+		if err != nil {
+			return nil, fmt.Errorf("challenge %s not found: %w", id, err)
+		}
+		challengeProjectID := getChallengeProjectID(challenge)
+		if i == 0 {
+			projectID = challengeProjectID
+		}
+		if !r.RoleService.CanManageProject(ctx, userID, challengeProjectID) {
+			return nil, fmt.Errorf("unauthorized to publish challenge %s", id)
+		}
+	}
+
+	// Create job and publish to Pub/Sub
+	return r.BulkService.CreateBulkJobAndPublish(
+		ctx,
+		userID,
+		&projectID,
+		len(ids),
+		pubsub.BulkPublishChallengeParams{
+			ChallengeIDs: ids,
+			PublishedAt:  publishedAt.Time.Format(time.RFC3339),
+		},
+	)
 }
 
 // ImageObject is the resolver for the imageObject field.

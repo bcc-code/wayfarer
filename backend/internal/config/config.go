@@ -28,6 +28,7 @@ type Config struct {
 	Plugin   PluginConfig
 	Firebase FirebaseConfig
 	Resend   ResendConfig
+	PubSub   PubSubConfig
 }
 
 // ServerConfig holds HTTP server configuration
@@ -155,6 +156,13 @@ type ResendConfig struct {
 	SSFTicketEmail string // Email address for SSF ticket forwarding
 }
 
+// PubSubConfig holds GCP Pub/Sub configuration for async bulk operations
+type PubSubConfig struct {
+	Enabled   bool   // Enable/disable Pub/Sub integration
+	ProjectID string // GCP project ID
+	TopicID   string // Pub/Sub topic ID for bulk operations
+}
+
 // Load reads all environment variables and returns a Config struct
 // This should be called once at application startup
 func Load() (*Config, error) {
@@ -256,6 +264,11 @@ func Load() (*Config, error) {
 			APIKey:         getEnv("RESEND_API_KEY", ""),
 			AdminBaseURL:   getEnv("ADMIN_BASE_URL", ""),
 			SSFTicketEmail: getEnv("SSF_TICKET_EMAIL", ""),
+		},
+		PubSub: PubSubConfig{
+			Enabled:   getEnvAsBool("PUBSUB_ENABLED", false),
+			ProjectID: getEnv("PUBSUB_PROJECT_ID", ""),
+			TopicID:   getEnv("PUBSUB_TOPIC_ID", "wayfarer-bulk-operations"),
 		},
 	}
 

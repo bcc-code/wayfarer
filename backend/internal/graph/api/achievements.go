@@ -1,13 +1,87 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
+	"github.com/bcc-media/wayfarer/internal/loaders"
 )
+
+// BulkAwardTarget holds the resolved target for a bulk award achievement operation
+type BulkAwardTarget struct {
+	Achievement model.Achievement
+	ProjectID   string
+	EventID     *string
+	UserIDs     []string
+}
+
+// resolveBulkAwardTarget resolves the target users and achievement for a bulk award operation.
+// It validates input, loads the achievement, checks if it's awardable, and resolves user IDs
+// from either direct IDs or team membership.
+func resolveBulkAwardTarget(
+	ctx context.Context,
+	queries *sqlc.Queries,
+	loadersInstance *loaders.Loaders,
+	userIds []string,
+	teamID *string,
+	achievementID string,
+) (*BulkAwardTarget, error) {
+	// Validate input
+	hasUserIds := len(userIds) > 0
+	hasTeamId := teamID != nil && *teamID != ""
+	if !hasUserIds && !hasTeamId {
+		return nil, fmt.Errorf("at least one of userIds or teamId must be provided")
+	}
+
+	// Load achievement
+	thunk := loadersInstance.AchievementByIDLoader.Load(ctx, achievementID)
+	achievement, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load achievement: %w", err)
+	}
+
+	// Check if achievement is awardable based on awardable_from timestamp
+	if err := isAchievementAwardable(getAchievementAwardableFrom(achievement)); err != nil {
+		return nil, err
+	}
+
+	// Resolve target user IDs
+	userIDSet := make(map[string]bool)
+	allUserIDs := make([]string, 0)
+
+	// Add explicitly provided user IDs
+	for _, uid := range userIds {
+		if !userIDSet[uid] {
+			userIDSet[uid] = true
+			allUserIDs = append(allUserIDs, uid)
+		}
+	}
+
+	// If teamID is provided, get team members
+	if hasTeamId {
+		teamUserIDs, err := queries.GetUserIDsInTeams(ctx, []string{*teamID})
+		if err != nil {
+			return nil, fmt.Errorf("failed to get team members: %w", err)
+		}
+		for _, uid := range teamUserIDs {
+			if !userIDSet[uid] {
+				userIDSet[uid] = true
+				allUserIDs = append(allUserIDs, uid)
+			}
+		}
+	}
+
+	return &BulkAwardTarget{
+		Achievement: achievement,
+		ProjectID:   getAchievementProjectID(achievement),
+		EventID:     getAchievementEventID(achievement),
+		UserIDs:     allUserIDs,
+	}, nil
+}
 
 // buildAchievementFilterParamsCursor converts GraphQL filter and cursor pagination params to database query parameters
 func buildAchievementFilterParamsCursor(filter *model.AchievementFilter, first *int, after *string, last *int, before *string) (sqlc.GetAchievementsFilteredCursorParams, error) {

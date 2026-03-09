@@ -769,3 +769,71 @@ func buildFeedbackPageInfo(params BuildFeedbackConnectionParams, edges []model.F
 
 	return pageInfo
 }
+
+// BuildBulkJobConnectionParams holds parameters for building a BulkJobConnection
+type BuildBulkJobConnectionParams struct {
+	BulkJobs        []*model.BulkJob
+	RequestedFirst  *int
+	RequestedLast   *int
+	RequestedAfter  *string
+	RequestedBefore *string
+	TotalCount      int
+	HasMore         bool
+}
+
+// BuildBulkJobConnection constructs a Relay-style connection from query results
+func BuildBulkJobConnection(params BuildBulkJobConnectionParams) *model.BulkJobConnection {
+	edges := make([]model.BulkJobEdge, len(params.BulkJobs))
+	for i, job := range params.BulkJobs {
+		edges[i] = model.BulkJobEdge{
+			Cursor: EncodeCursor(job.ID),
+			Node:   job,
+		}
+	}
+
+	pageInfo := buildBulkJobPageInfo(params, edges)
+
+	return &model.BulkJobConnection{
+		Edges:      edges,
+		PageInfo:   pageInfo,
+		TotalCount: params.TotalCount,
+	}
+}
+
+// buildBulkJobPageInfo constructs the PageInfo for bulk jobs
+func buildBulkJobPageInfo(params BuildBulkJobConnectionParams, edges []model.BulkJobEdge) *model.PageInfo {
+	pageInfo := &model.PageInfo{
+		HasNextPage:     false,
+		HasPreviousPage: false,
+		StartCursor:     nil,
+		EndCursor:       nil,
+	}
+
+	if len(edges) == 0 {
+		return pageInfo
+	}
+
+	// Set start and end cursors
+	startCursor := edges[0].Cursor
+	endCursor := edges[len(edges)-1].Cursor
+	pageInfo.StartCursor = &startCursor
+	pageInfo.EndCursor = &endCursor
+
+	// Determine hasNextPage
+	if params.RequestedFirst != nil {
+		pageInfo.HasNextPage = params.HasMore
+	}
+
+	// Determine hasPreviousPage
+	if params.RequestedLast != nil {
+		pageInfo.HasPreviousPage = params.HasMore
+		// If we're paginating backward with a 'before' cursor, there must be a next page
+		if params.RequestedBefore != nil && *params.RequestedBefore != "" {
+			pageInfo.HasNextPage = true
+		}
+	} else if params.RequestedAfter != nil && *params.RequestedAfter != "" {
+		pageInfo.HasPreviousPage = true
+	}
+
+	return pageInfo
+}

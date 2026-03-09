@@ -35,7 +35,9 @@ import (
 	"github.com/bcc-media/wayfarer/internal/otel"
 	"github.com/bcc-media/wayfarer/internal/plugins"
 	"github.com/bcc-media/wayfarer/internal/plugins/ladder_to_heaven"
+	"github.com/bcc-media/wayfarer/internal/pubsub"
 	"github.com/bcc-media/wayfarer/internal/services"
+	"github.com/bcc-media/wayfarer/internal/services/bulk"
 	"github.com/bcc-media/wayfarer/internal/services/email"
 	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/services/webhooks"
@@ -297,6 +299,28 @@ func main() {
 		slog.Warn("Email service not configured - RESEND_API_KEY not set")
 	}
 
+	// Initialize Pub/Sub publisher for async bulk operations
+	var pubsubPublisher *pubsub.Publisher
+	if cfg.PubSub.Enabled {
+		var err error
+		pubsubPublisher, err = pubsub.NewPublisher(ctx, pubsub.PublisherConfig{
+			Enabled:   cfg.PubSub.Enabled,
+			ProjectID: cfg.PubSub.ProjectID,
+			TopicID:   cfg.PubSub.TopicID,
+		}, lgr)
+		if err != nil {
+			slog.Error("Failed to initialize Pub/Sub publisher", "error", err)
+			os.Exit(1)
+		}
+		defer pubsubPublisher.Close()
+		slog.Info("Pub/Sub publisher initialized",
+			"project_id", cfg.PubSub.ProjectID,
+			"topic_id", cfg.PubSub.TopicID,
+		)
+	} else {
+		slog.Warn("Pub/Sub publisher not initialized - PUBSUB_ENABLED is false")
+	}
+
 	// Content achievement service (shared between auth and webhook handlers)
 	contentAchievementService := &services.ContentAchievementService{
 		DB:             db,
@@ -322,6 +346,18 @@ func main() {
 		ContentAchievementService: contentAchievementService,
 	}
 
+	// Initialize bulk operations service
+	bulkService := bulk.NewService(
+		db,
+		cacheInstance,
+		dataLoaders,
+		pushService,
+		firebaseService,
+		pubsubPublisher,
+		lgr,
+	)
+	slog.Info("Bulk operations service initialized")
+
 	// Initialize GraphQL resolver
 	apiResolver := &api.Resolver{
 		DB:                 db,
@@ -335,6 +371,7 @@ func main() {
 		FirebaseService:    firebaseService,
 		EmailService:       emailService,
 		UserSyncService:    userSyncService,
+		BulkService:        bulkService,
 		InstanceID:         cacheSync.InstanceID(),
 	}
 
@@ -517,6 +554,17 @@ func main() {
 	slog.Info("Quiz scheduler endpoint registered",
 		"endpoint", "POST /api/scheduler/quiz-session-transitions",
 	)
+
+	// Pub/Sub push endpoint for bulk operations
+	if cfg.PubSub.Enabled {
+		bulkProcessor := bulk.NewProcessor(bulkService)
+		pubsubProcessor := pubsub.NewProcessor(db, bulkProcessor, lgr)
+		pubsubHandler := pubsub.NewHandler(pubsubProcessor, lgr)
+		router.POST("/pubsub/bulk-operations", pubsubHandler.HandlePush)
+		slog.Info("Pub/Sub bulk operations endpoint registered",
+			"endpoint", "POST /pubsub/bulk-operations",
+		)
+	}
 
 	// File upload handler
 	uploadHandler := &handlers.UploadHandler{

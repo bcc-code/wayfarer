@@ -16,6 +16,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/pubsub"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/ulid"
@@ -1219,63 +1220,23 @@ func (r *mutationResolver) RevokeAchievement(ctx context.Context, userID string,
 
 // BulkAwardAchievements is the resolver for the bulkAwardAchievements field.
 func (r *mutationResolver) BulkAwardAchievements(ctx context.Context, userIds []string, teamID *string, achievementID string) ([]model.Achievement, error) {
-	// Validate that at least one of userIds or teamID is provided
-	hasUserIds := len(userIds) > 0
-	hasTeamId := teamID != nil && *teamID != ""
-	if !hasUserIds && !hasTeamId {
-		return nil, fmt.Errorf("at least one of userIds or teamId must be provided")
-	}
-
-	// Load achievement via caching loader
-	achievementThunk := r.Loaders.AchievementByIDLoader.Load(ctx, achievementID)
-	achievement, err := achievementThunk()
+	// Resolve target users and achievement (also checks if achievement is awardable)
+	target, err := resolveBulkAwardTarget(ctx, r.DB.Queries, r.Loaders, userIds, teamID, achievementID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load achievement: %w", err)
-	}
-
-	// Check if achievement is awardable based on awardable_from timestamp
-	if err := isAchievementAwardable(getAchievementAwardableFrom(achievement)); err != nil {
 		return nil, err
 	}
 
-	projectID := getAchievementProjectID(achievement)
-	eventID := getAchievementEventID(achievement)
-
-	// Collect all user IDs to award
-	allUserIDs := make([]string, 0)
-	userIDSet := make(map[string]bool)
-
-	// Add explicitly provided user IDs
-	for _, uid := range userIds {
-		if !userIDSet[uid] {
-			userIDSet[uid] = true
-			allUserIDs = append(allUserIDs, uid)
-		}
-	}
-
-	// If teamID is provided, get team members
-	if hasTeamId {
-		teamUsers, err := r.DB.Queries.GetUsersByTeamIDs(ctx, []string{*teamID})
-		if err != nil {
-			return nil, fmt.Errorf("failed to get team members: %w", err)
-		}
-		for _, user := range teamUsers {
-			if !userIDSet[user.ID] {
-				userIDSet[user.ID] = true
-				allUserIDs = append(allUserIDs, user.ID)
-			}
-		}
-	}
-
-	if len(allUserIDs) == 0 {
+	if len(target.UserIDs) == 0 {
 		// No users to award, return empty result
 		return []model.Achievement{}, nil
 	}
 
+	hasTeamId := teamID != nil && *teamID != ""
+
 	// Award achievement to all users in a single batch query
 	// Returns only newly inserted rows (not already awarded users)
 	awardedRows, err := r.DB.Queries.AwardUserAchievementsBatch(ctx, sqlc.AwardUserAchievementsBatchParams{
-		UserIds:       allUserIDs,
+		UserIds:       target.UserIDs,
 		AchievementID: achievementID,
 	})
 	if err != nil {
@@ -1289,7 +1250,7 @@ func (r *mutationResolver) BulkAwardAchievements(ctx context.Context, userIds []
 	}
 
 	// Invalidate user caches and achievement timestamp caches for all attempted users
-	for _, uid := range allUserIDs {
+	for _, uid := range target.UserIDs {
 		r.Cache.InvalidateUser(uid)
 		r.Cache.Delete(cache.UserAchievementTimestampKey(uid, achievementID))
 	}
@@ -1298,11 +1259,11 @@ func (r *mutationResolver) BulkAwardAchievements(ctx context.Context, userIds []
 	r.Cache.InvalidateAchievement(achievementID)
 
 	// Invalidate project leaderboards
-	r.Cache.InvalidateProject(projectID)
+	r.Cache.InvalidateProject(target.ProjectID)
 
 	// Invalidate event leaderboards if achievement belongs to an event
-	if eventID != nil && *eventID != "" {
-		r.Cache.InvalidateEvent(*eventID)
+	if target.EventID != nil && *target.EventID != "" {
+		r.Cache.InvalidateEvent(*target.EventID)
 	}
 
 	// Invalidate team cache if teamID was provided
@@ -1312,7 +1273,7 @@ func (r *mutationResolver) BulkAwardAchievements(ctx context.Context, userIds []
 
 	// Send push notifications in background only for newly awarded users
 	if r.PushService != nil && len(newlyAwardedUserIDs) > 0 {
-		pushInfo := getAchievementPushInfo(achievement)
+		pushInfo := getAchievementPushInfo(target.Achievement)
 		for _, uid := range newlyAwardedUserIDs {
 			go push.SendTranslatedAchievementNotification(r.PushService, r.Loaders, uid, pushInfo)
 		}
@@ -1560,6 +1521,41 @@ func (r *mutationResolver) RecalculateContentAchievements(ctx context.Context, p
 		Awarded: len(awardedUserIDs),
 		UserIds: awardedUserIDs,
 	}, nil
+}
+
+// BulkAwardAchievementsAsync is the resolver for the bulkAwardAchievementsAsync field.
+func (r *mutationResolver) BulkAwardAchievementsAsync(ctx context.Context, userIds []string, teamID *string, achievementID string) (*model.BulkJob, error) {
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	if r.BulkService == nil {
+		return nil, fmt.Errorf("bulk service not initialized")
+	}
+
+	// Resolve target users and achievement
+	target, err := resolveBulkAwardTarget(ctx, r.DB.Queries, r.Loaders, userIds, teamID, achievementID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create job and publish to Pub/Sub
+	params := pubsub.BulkAwardAchievementParams{
+		AchievementID: achievementID,
+		UserIDs:       target.UserIDs,
+	}
+	if teamID != nil {
+		params.TeamID = *teamID
+	}
+
+	return r.BulkService.CreateBulkJobAndPublish(
+		ctx,
+		currentUserID,
+		&target.ProjectID,
+		len(target.UserIDs),
+		params,
+	)
 }
 
 // Achievement is the resolver for the achievement field.

@@ -149,6 +149,38 @@ type BrandingInput struct {
 	Rounding int          `json:"rounding"`
 }
 
+type BulkJob struct {
+	ID             string            `json:"id"`
+	OperationType  string            `json:"operationType"`
+	Status         BulkJobStatus     `json:"status"`
+	TotalCount     int               `json:"totalCount"`
+	ProcessedCount int               `json:"processedCount"`
+	SuccessCount   int               `json:"successCount"`
+	FailureCount   int               `json:"failureCount"`
+	ErrorMessage   *string           `json:"errorMessage,omitempty"`
+	CreatedAt      scalars.DateTime  `json:"createdAt"`
+	StartedAt      *scalars.DateTime `json:"startedAt,omitempty"`
+	CompletedAt    *scalars.DateTime `json:"completedAt,omitempty"`
+}
+
+type BulkJobConnection struct {
+	Edges      []BulkJobEdge `json:"edges"`
+	PageInfo   *PageInfo     `json:"pageInfo"`
+	TotalCount int           `json:"totalCount"`
+}
+
+type BulkJobEdge struct {
+	Cursor string   `json:"cursor"`
+	Node   *BulkJob `json:"node"`
+}
+
+type BulkJobFilter struct {
+	Status        *BulkJobStatus `json:"status,omitempty"`
+	OperationType *string        `json:"operationType,omitempty"`
+	ProjectID     *string        `json:"projectId,omitempty"`
+	CreatedBy     *string        `json:"createdBy,omitempty"`
+}
+
 type ChallengeConnection struct {
 	Edges      []ChallengeEdge `json:"edges"`
 	PageInfo   *PageInfo       `json:"pageInfo"`
@@ -2066,6 +2098,65 @@ type WebhookLog struct {
 	ErrorMessage       *string          `json:"errorMessage,omitempty"`
 	CreatedAt          scalars.DateTime `json:"createdAt"`
 	WebhookID          string           `json:"-"`
+}
+
+type BulkJobStatus string
+
+const (
+	BulkJobStatusPending    BulkJobStatus = "PENDING"
+	BulkJobStatusProcessing BulkJobStatus = "PROCESSING"
+	BulkJobStatusCompleted  BulkJobStatus = "COMPLETED"
+	BulkJobStatusFailed     BulkJobStatus = "FAILED"
+)
+
+var AllBulkJobStatus = []BulkJobStatus{
+	BulkJobStatusPending,
+	BulkJobStatusProcessing,
+	BulkJobStatusCompleted,
+	BulkJobStatusFailed,
+}
+
+func (e BulkJobStatus) IsValid() bool {
+	switch e {
+	case BulkJobStatusPending, BulkJobStatusProcessing, BulkJobStatusCompleted, BulkJobStatusFailed:
+		return true
+	}
+	return false
+}
+
+func (e BulkJobStatus) String() string {
+	return string(e)
+}
+
+func (e *BulkJobStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = BulkJobStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid BulkJobStatus", str)
+	}
+	return nil
+}
+
+func (e BulkJobStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *BulkJobStatus) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e BulkJobStatus) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }
 
 type ChallengeType string

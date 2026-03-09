@@ -44,6 +44,7 @@ const (
 	PrefixWebhookLog          = "WL" // Webhook Logs
 	PrefixQuizSession         = "QN" // Quiz Sessions (QS taken by submissions)
 	PrefixQuizSessionAccess   = "QX" // Quiz Session Access
+	PrefixBulkJob             = "BJ" // Bulk Jobs
 )
 
 // Total ID length: 2 (prefix) + 26 (ULID) = 28 characters
@@ -426,4 +427,14 @@ func IsQuizSessionID(id string) bool {
 // IsQuizSessionAccessID validates a quiz session access ID
 func IsQuizSessionAccessID(id string) bool {
 	return IsValidID(id, PrefixQuizSessionAccess)
+}
+
+// NewBulkJobID generates a new ID for a bulk job (BJ prefix)
+func NewBulkJobID() string {
+	return newID(PrefixBulkJob)
+}
+
+// IsBulkJobID validates a bulk job ID
+func IsBulkJobID(id string) bool {
+	return IsValidID(id, PrefixBulkJob)
 }

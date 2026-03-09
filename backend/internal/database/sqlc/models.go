@@ -40,6 +40,25 @@ type AchievementTranslation struct {
 	NotificationText     *string            `json:"notification_text"`
 }
 
+type BulkJob struct {
+	ID             string             `json:"id"`
+	OperationType  string             `json:"operation_type"`
+	Status         string             `json:"status"`
+	CreatedBy      string             `json:"created_by"`
+	ProjectID      *string            `json:"project_id"`
+	InputParams    []byte             `json:"input_params"`
+	TotalCount     int32              `json:"total_count"`
+	ProcessedCount int32              `json:"processed_count"`
+	SuccessCount   int32              `json:"success_count"`
+	FailureCount   int32              `json:"failure_count"`
+	ErrorMessage   *string            `json:"error_message"`
+	ErrorDetails   []byte             `json:"error_details"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	StartedAt      pgtype.Timestamptz `json:"started_at"`
+	CompletedAt    pgtype.Timestamptz `json:"completed_at"`
+	MessageID      *string            `json:"message_id"`
+}
+
 type Challenge struct {
 	ID                          string             `json:"id"`
 	ProjectID                   string             `json:"project_id"`
