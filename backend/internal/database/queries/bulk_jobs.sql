@@ -141,3 +141,9 @@ WHERE (sqlc.narg('status')::text IS NULL OR status = sqlc.narg('status')::text)
   AND (sqlc.narg('operationtype')::text IS NULL OR operation_type = sqlc.narg('operationtype')::text)
   AND (sqlc.narg('projectid')::text IS NULL OR project_id = sqlc.narg('projectid')::text)
   AND (sqlc.narg('createdby')::text IS NULL OR created_by = sqlc.narg('createdby')::text);
+
+-- name: AppendBulkJobLogs :exec
+-- Append new log entries to existing logs (or initialize if null)
+UPDATE bulk_jobs
+SET logs = COALESCE(logs, '[]'::jsonb) || @newlogs::jsonb
+WHERE id = @id::text;

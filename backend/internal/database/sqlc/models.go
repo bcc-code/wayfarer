@@ -57,6 +57,7 @@ type BulkJob struct {
 	StartedAt      pgtype.Timestamptz `json:"started_at"`
 	CompletedAt    pgtype.Timestamptz `json:"completed_at"`
 	MessageID      *string            `json:"message_id"`
+	Logs           []byte             `json:"logs"`
 }
 
 type Challenge struct {

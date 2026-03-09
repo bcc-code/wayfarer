@@ -11,6 +11,23 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const AppendBulkJobLogs = `-- name: AppendBulkJobLogs :exec
+UPDATE bulk_jobs
+SET logs = COALESCE(logs, '[]'::jsonb) || $1::jsonb
+WHERE id = $2::text
+`
+
+type AppendBulkJobLogsParams struct {
+	Newlogs []byte `json:"newlogs"`
+	ID      string `json:"id"`
+}
+
+// Append new log entries to existing logs (or initialize if null)
+func (q *Queries) AppendBulkJobLogs(ctx context.Context, arg AppendBulkJobLogsParams) error {
+	_, err := q.db.Exec(ctx, AppendBulkJobLogs, arg.Newlogs, arg.ID)
+	return err
+}
+
 const CleanupOldBulkJobs = `-- name: CleanupOldBulkJobs :exec
 DELETE FROM bulk_jobs
 WHERE status IN ('COMPLETED', 'FAILED')
@@ -70,7 +87,7 @@ INSERT INTO bulk_jobs (
     $6::jsonb,
     $7::int,
     $8::text
-) RETURNING id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id
+) RETURNING id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id, logs
 `
 
 type CreateBulkJobParams struct {
@@ -114,12 +131,13 @@ func (q *Queries) CreateBulkJob(ctx context.Context, arg CreateBulkJobParams) (*
 		&i.StartedAt,
 		&i.CompletedAt,
 		&i.MessageID,
+		&i.Logs,
 	)
 	return &i, err
 }
 
 const GetBulkJobByID = `-- name: GetBulkJobByID :one
-SELECT id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id FROM bulk_jobs
+SELECT id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id, logs FROM bulk_jobs
 WHERE id = $1::text
 `
 
@@ -143,12 +161,13 @@ func (q *Queries) GetBulkJobByID(ctx context.Context, id string) (*BulkJob, erro
 		&i.StartedAt,
 		&i.CompletedAt,
 		&i.MessageID,
+		&i.Logs,
 	)
 	return &i, err
 }
 
 const GetBulkJobsByCreator = `-- name: GetBulkJobsByCreator :many
-SELECT id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id FROM bulk_jobs
+SELECT id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id, logs FROM bulk_jobs
 WHERE created_by = $1::text
 ORDER BY created_at DESC
 LIMIT $2::int
@@ -185,6 +204,7 @@ func (q *Queries) GetBulkJobsByCreator(ctx context.Context, arg GetBulkJobsByCre
 			&i.StartedAt,
 			&i.CompletedAt,
 			&i.MessageID,
+			&i.Logs,
 		); err != nil {
 			return nil, err
 		}
@@ -197,7 +217,7 @@ func (q *Queries) GetBulkJobsByCreator(ctx context.Context, arg GetBulkJobsByCre
 }
 
 const GetBulkJobsByProject = `-- name: GetBulkJobsByProject :many
-SELECT id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id FROM bulk_jobs
+SELECT id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id, logs FROM bulk_jobs
 WHERE project_id = $1::text
 ORDER BY created_at DESC
 LIMIT $2::int
@@ -234,6 +254,7 @@ func (q *Queries) GetBulkJobsByProject(ctx context.Context, arg GetBulkJobsByPro
 			&i.StartedAt,
 			&i.CompletedAt,
 			&i.MessageID,
+			&i.Logs,
 		); err != nil {
 			return nil, err
 		}
@@ -246,7 +267,7 @@ func (q *Queries) GetBulkJobsByProject(ctx context.Context, arg GetBulkJobsByPro
 }
 
 const GetPendingBulkJobs = `-- name: GetPendingBulkJobs :many
-SELECT id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id FROM bulk_jobs
+SELECT id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id, logs FROM bulk_jobs
 WHERE status = 'PENDING'
 ORDER BY created_at ASC
 LIMIT $1::int
@@ -278,6 +299,7 @@ func (q *Queries) GetPendingBulkJobs(ctx context.Context, limitcount int32) ([]*
 			&i.StartedAt,
 			&i.CompletedAt,
 			&i.MessageID,
+			&i.Logs,
 		); err != nil {
 			return nil, err
 		}
@@ -290,7 +312,7 @@ func (q *Queries) GetPendingBulkJobs(ctx context.Context, limitcount int32) ([]*
 }
 
 const GetRecentBulkJobsByStatus = `-- name: GetRecentBulkJobsByStatus :many
-SELECT id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id FROM bulk_jobs
+SELECT id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id, logs FROM bulk_jobs
 WHERE status = $1::text
   AND created_at > $2::timestamptz
 ORDER BY created_at DESC
@@ -329,6 +351,7 @@ func (q *Queries) GetRecentBulkJobsByStatus(ctx context.Context, arg GetRecentBu
 			&i.StartedAt,
 			&i.CompletedAt,
 			&i.MessageID,
+			&i.Logs,
 		); err != nil {
 			return nil, err
 		}
@@ -341,8 +364,8 @@ func (q *Queries) GetRecentBulkJobsByStatus(ctx context.Context, arg GetRecentBu
 }
 
 const ListBulkJobsBackward = `-- name: ListBulkJobsBackward :many
-SELECT id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id FROM (
-    SELECT id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id FROM bulk_jobs
+SELECT id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id, logs FROM (
+    SELECT id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id, logs FROM bulk_jobs
     WHERE ($1::text IS NULL OR status = $1::text)
       AND ($2::text IS NULL OR operation_type = $2::text)
       AND ($3::text IS NULL OR project_id = $3::text)
@@ -397,6 +420,7 @@ func (q *Queries) ListBulkJobsBackward(ctx context.Context, arg ListBulkJobsBack
 			&i.StartedAt,
 			&i.CompletedAt,
 			&i.MessageID,
+			&i.Logs,
 		); err != nil {
 			return nil, err
 		}
@@ -409,7 +433,7 @@ func (q *Queries) ListBulkJobsBackward(ctx context.Context, arg ListBulkJobsBack
 }
 
 const ListBulkJobsForward = `-- name: ListBulkJobsForward :many
-SELECT id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id FROM bulk_jobs
+SELECT id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id, logs FROM bulk_jobs
 WHERE ($1::text IS NULL OR status = $1::text)
   AND ($2::text IS NULL OR operation_type = $2::text)
   AND ($3::text IS NULL OR project_id = $3::text)
@@ -462,6 +486,7 @@ func (q *Queries) ListBulkJobsForward(ctx context.Context, arg ListBulkJobsForwa
 			&i.StartedAt,
 			&i.CompletedAt,
 			&i.MessageID,
+			&i.Logs,
 		); err != nil {
 			return nil, err
 		}
@@ -482,7 +507,7 @@ SET
     success_count = $2::int,
     failure_count = $3::int
 WHERE id = $4::text
-RETURNING id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id
+RETURNING id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id, logs
 `
 
 type MarkBulkJobCompletedParams struct {
@@ -517,6 +542,7 @@ func (q *Queries) MarkBulkJobCompleted(ctx context.Context, arg MarkBulkJobCompl
 		&i.StartedAt,
 		&i.CompletedAt,
 		&i.MessageID,
+		&i.Logs,
 	)
 	return &i, err
 }
@@ -529,7 +555,7 @@ SET
     error_message = $1::text,
     error_details = $2::jsonb
 WHERE id = $3::text
-RETURNING id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id
+RETURNING id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id, logs
 `
 
 type MarkBulkJobFailedParams struct {
@@ -558,6 +584,7 @@ func (q *Queries) MarkBulkJobFailed(ctx context.Context, arg MarkBulkJobFailedPa
 		&i.StartedAt,
 		&i.CompletedAt,
 		&i.MessageID,
+		&i.Logs,
 	)
 	return &i, err
 }
@@ -568,7 +595,7 @@ SET
     status = 'PROCESSING',
     started_at = now()
 WHERE id = $1::text
-RETURNING id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id
+RETURNING id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id, logs
 `
 
 func (q *Queries) MarkBulkJobProcessing(ctx context.Context, id string) (*BulkJob, error) {
@@ -591,6 +618,7 @@ func (q *Queries) MarkBulkJobProcessing(ctx context.Context, id string) (*BulkJo
 		&i.StartedAt,
 		&i.CompletedAt,
 		&i.MessageID,
+		&i.Logs,
 	)
 	return &i, err
 }
@@ -618,7 +646,7 @@ SET
     success_count = $2::int,
     failure_count = $3::int
 WHERE id = $4::text
-RETURNING id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id
+RETURNING id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id, logs
 `
 
 type UpdateBulkJobProgressParams struct {
@@ -653,6 +681,7 @@ func (q *Queries) UpdateBulkJobProgress(ctx context.Context, arg UpdateBulkJobPr
 		&i.StartedAt,
 		&i.CompletedAt,
 		&i.MessageID,
+		&i.Logs,
 	)
 	return &i, err
 }
@@ -666,7 +695,7 @@ SET
     error_message = $2::text,
     error_details = $3::jsonb
 WHERE id = $4::text
-RETURNING id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id
+RETURNING id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id, logs
 `
 
 type UpdateBulkJobStatusParams struct {
@@ -701,6 +730,7 @@ func (q *Queries) UpdateBulkJobStatus(ctx context.Context, arg UpdateBulkJobStat
 		&i.StartedAt,
 		&i.CompletedAt,
 		&i.MessageID,
+		&i.Logs,
 	)
 	return &i, err
 }
