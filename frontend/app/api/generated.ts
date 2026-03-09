@@ -4106,6 +4106,17 @@ export type AdminHomePageQueryVariables = Exact<{
 
 export type AdminHomePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string }, adminDashboardStats: { __typename?: 'AdminDashboardStats', totalUsers: number, totalPointsAwarded: number, newUsersLast7Days: number }, feedback: { __typename?: 'FeedbackConnection', edges: Array<{ __typename?: 'FeedbackEdge', node: { __typename?: 'UserFeedback', id: string, message: string, createdAt: any, user: { __typename?: 'User', id: string, name: string } } }> }, projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string }, dark: { __typename?: 'ColorSet', accent: string } } } } }> } };
 
+export type AdminBulkJobsPageQueryVariables = Exact<{
+  filter?: InputMaybe<BulkJobFilter>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  after?: InputMaybe<Scalars['String']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type AdminBulkJobsPageQuery = { __typename?: 'Query', bulkJobs: { __typename?: 'BulkJobConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'BulkJobEdge', cursor: string, node: { __typename?: 'BulkJob', id: string, operationType: string, status: BulkJobStatus, totalCount: number, processedCount: number, successCount: number, failureCount: number, errorMessage?: string | null, createdAt: any, startedAt?: any | null, completedAt?: any | null } }> } };
+
 export type MaintenanceContentProgressPreviewQueryVariables = Exact<{
   first?: InputMaybe<Scalars['Int']['input']>;
 }>;
@@ -6090,6 +6101,45 @@ export const AdminHomePageDocument = gql`
 
 export function useAdminHomePageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminHomePageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminHomePageQuery, AdminHomePageQueryVariables | undefined>({ query: AdminHomePageDocument, variables: undefined, ...options });
+};
+export const AdminBulkJobsPageDocument = gql`
+    query AdminBulkJobsPage($filter: BulkJobFilter, $first: Int, $after: String, $last: Int, $before: String) {
+  bulkJobs(
+    filter: $filter
+    first: $first
+    after: $after
+    last: $last
+    before: $before
+  ) {
+    totalCount
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    edges {
+      cursor
+      node {
+        id
+        operationType
+        status
+        totalCount
+        processedCount
+        successCount
+        failureCount
+        errorMessage
+        createdAt
+        startedAt
+        completedAt
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminBulkJobsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminBulkJobsPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminBulkJobsPageQuery, AdminBulkJobsPageQueryVariables | undefined>({ query: AdminBulkJobsPageDocument, variables: undefined, ...options });
 };
 export const MaintenanceContentProgressPreviewDocument = gql`
     query MaintenanceContentProgressPreview($first: Int) {

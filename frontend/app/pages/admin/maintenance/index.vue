@@ -12,6 +12,13 @@ const tools = [
     icon: 'lucide:file-check',
     to: '/admin/maintenance/fix-content-progress',
   },
+  {
+    title: 'Massejobber',
+    description:
+      'Se oversikt over asynkrone massejobber og deres status.',
+    icon: 'lucide:layers',
+    to: '/admin/maintenance/bulk-jobs',
+  },
 ]
 </script>
 
