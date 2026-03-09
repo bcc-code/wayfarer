@@ -747,6 +747,12 @@ type FirebaseTokenResponse struct {
 	ExpiresIn int    `json:"expiresIn"`
 }
 
+type FixMissingContentProgressResult struct {
+	UsersFixed             int `json:"usersFixed"`
+	ProgressRecordsCreated int `json:"progressRecordsCreated"`
+	AchievementsAwarded    int `json:"achievementsAwarded"`
+}
+
 type FreeTextQuestion struct {
 	ID                   string   `json:"id"`
 	Quiz                 *Quiz    `json:"quiz"`
@@ -903,6 +909,17 @@ type LeaderboardFilter struct {
 	AgeRange       *AgeRangeInput  `json:"ageRange,omitempty"`
 	TeamID         *string         `json:"teamId,omitempty"`
 	SuperTeamID    *string         `json:"superTeamId,omitempty"`
+}
+
+type MissingContentProgressPreview struct {
+	AffectedUsers []MissingContentProgressUser `json:"affectedUsers"`
+	TotalUsers    int                          `json:"totalUsers"`
+	TotalEvents   int                          `json:"totalEvents"`
+}
+
+type MissingContentProgressUser struct {
+	User       *User `json:"user"`
+	EventCount int   `json:"eventCount"`
 }
 
 type Mutation struct {

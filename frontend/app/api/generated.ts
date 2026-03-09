@@ -768,6 +768,13 @@ export type FirebaseTokenResponse = {
   token: Scalars['String']['output'];
 };
 
+export type FixMissingContentProgressResult = {
+  __typename?: 'FixMissingContentProgressResult';
+  achievementsAwarded: Scalars['Int']['output'];
+  progressRecordsCreated: Scalars['Int']['output'];
+  usersFixed: Scalars['Int']['output'];
+};
+
 export enum ForwardDestination {
   BccMediaSupport = 'BCC_MEDIA_SUPPORT',
   SsfTicket = 'SSF_TICKET'
@@ -910,6 +917,19 @@ export type MarkdownText = {
   markdown: Scalars['String']['output'];
 };
 
+export type MissingContentProgressPreview = {
+  __typename?: 'MissingContentProgressPreview';
+  affectedUsers: Array<MissingContentProgressUser>;
+  totalEvents: Scalars['Int']['output'];
+  totalUsers: Scalars['Int']['output'];
+};
+
+export type MissingContentProgressUser = {
+  __typename?: 'MissingContentProgressUser';
+  eventCount: Scalars['Int']['output'];
+  user: User;
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   _empty?: Maybe<Scalars['Boolean']['output']>;
@@ -926,7 +946,6 @@ export type Mutation = {
   assignUserToProject: User;
   awardAchievement: Achievement;
   awardSuperTeamAchievement: Achievement;
-  awardTeamAchievement: Achievement;
   bulkAwardAchievements: Array<Achievement>;
   bulkCompleteChallenges: Array<Challenge>;
   bulkEnrollUsersInChallenge: Array<Challenge>;
@@ -969,6 +988,7 @@ export type Mutation = {
   enrollUserInChallenge: Challenge;
   finalizeQuiz: QuizSubmission;
   finishQuizSession: QuizSession;
+  fixMissingContentProgress: FixMissingContentProgressResult;
   forwardFeedbackToDesk: Scalars['Boolean']['output'];
   grantQuizSessionAccess: Scalars['Int']['output'];
   joinEvent: Event;
@@ -1117,15 +1137,10 @@ export type MutationAwardSuperTeamAchievementArgs = {
 };
 
 
-export type MutationAwardTeamAchievementArgs = {
-  achievementId: Scalars['ID']['input'];
-  teamId: Scalars['ID']['input'];
-};
-
-
 export type MutationBulkAwardAchievementsArgs = {
   achievementId: Scalars['ID']['input'];
-  userIds: Array<Scalars['ID']['input']>;
+  teamId?: InputMaybe<Scalars['ID']['input']>;
+  userIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
 
@@ -1980,6 +1995,7 @@ export type Query = {
   myProjects: Array<Project>;
   myPushNotificationPreferences: Array<PushNotificationPreference>;
   pendingConsents: Array<Consent>;
+  previewMissingContentProgress: MissingContentProgressPreview;
   project: Project;
   projects: ProjectConnection;
   pushNotificationsEnabled: Scalars['Boolean']['output'];
@@ -2108,6 +2124,12 @@ export type QueryFileUploadArgs = {
 
 export type QueryMyEventsArgs = {
   project?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
+export type QueryPreviewMissingContentProgressArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -3982,6 +4004,18 @@ export type AdminHomePageQueryVariables = Exact<{
 
 
 export type AdminHomePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string }, adminDashboardStats: { __typename?: 'AdminDashboardStats', totalUsers: number, totalPointsAwarded: number, newUsersLast7Days: number }, feedback: { __typename?: 'FeedbackConnection', edges: Array<{ __typename?: 'FeedbackEdge', node: { __typename?: 'UserFeedback', id: string, message: string, createdAt: any, user: { __typename?: 'User', id: string, name: string } } }> }, projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string }, dark: { __typename?: 'ColorSet', accent: string } } } } }> } };
+
+export type MaintenanceContentProgressPreviewQueryVariables = Exact<{
+  first?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type MaintenanceContentProgressPreviewQuery = { __typename?: 'Query', previewMissingContentProgress: { __typename?: 'MissingContentProgressPreview', totalUsers: number, totalEvents: number, affectedUsers: Array<{ __typename?: 'MissingContentProgressUser', eventCount: number, user: { __typename?: 'User', id: string, name: string } }> } };
+
+export type FixMissingContentProgressMutationVariables = Exact<{ [key: string]: never; }>;
+
+
+export type FixMissingContentProgressMutation = { __typename?: 'Mutation', fixMissingContentProgress: { __typename?: 'FixMissingContentProgressResult', usersFixed: number, progressRecordsCreated: number, achievementsAwarded: number } };
 
 export type ChurchAdminsPageQueryVariables = Exact<{
   churchId: Scalars['ID']['input'];
@@ -5955,6 +5989,38 @@ export const AdminHomePageDocument = gql`
 
 export function useAdminHomePageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminHomePageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminHomePageQuery, AdminHomePageQueryVariables | undefined>({ query: AdminHomePageDocument, variables: undefined, ...options });
+};
+export const MaintenanceContentProgressPreviewDocument = gql`
+    query MaintenanceContentProgressPreview($first: Int) {
+  previewMissingContentProgress(first: $first) {
+    totalUsers
+    totalEvents
+    affectedUsers {
+      user {
+        id
+        name
+      }
+      eventCount
+    }
+  }
+}
+    `;
+
+export function useMaintenanceContentProgressPreviewQuery(options?: Omit<Urql.UseQueryArgs<never, MaintenanceContentProgressPreviewQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<MaintenanceContentProgressPreviewQuery, MaintenanceContentProgressPreviewQueryVariables | undefined>({ query: MaintenanceContentProgressPreviewDocument, variables: undefined, ...options });
+};
+export const FixMissingContentProgressDocument = gql`
+    mutation FixMissingContentProgress {
+  fixMissingContentProgress {
+    usersFixed
+    progressRecordsCreated
+    achievementsAwarded
+  }
+}
+    `;
+
+export function useFixMissingContentProgressMutation() {
+  return Urql.useMutation<FixMissingContentProgressMutation, FixMissingContentProgressMutationVariables>(FixMissingContentProgressDocument);
 };
 export const ChurchAdminsPageDocument = gql`
     query ChurchAdminsPage($churchId: ID!) {

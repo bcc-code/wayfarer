@@ -22,6 +22,11 @@ func (r *mutationResolver) ClearAllCache(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
+// FixMissingContentProgress is the resolver for the fixMissingContentProgress field.
+func (r *mutationResolver) FixMissingContentProgress(ctx context.Context) (*model.FixMissingContentProgressResult, error) {
+	return r.Resolver.fixMissingContentProgress(ctx)
+}
+
 // AdminDashboardStats is the resolver for the adminDashboardStats field.
 func (r *queryResolver) AdminDashboardStats(ctx context.Context) (*model.AdminDashboardStats, error) {
 	cacheKey := "admin:dashboard:stats"
@@ -195,4 +200,9 @@ func (r *queryResolver) ChurchAdminStatistics(ctx context.Context) (*model.Churc
 	r.Cache.Set(cacheKey, stats)
 
 	return stats, nil
+}
+
+// PreviewMissingContentProgress is the resolver for the previewMissingContentProgress field.
+func (r *queryResolver) PreviewMissingContentProgress(ctx context.Context, first *int, after *string) (*model.MissingContentProgressPreview, error) {
+	return r.Resolver.previewMissingContentProgress(ctx, first, after)
 }

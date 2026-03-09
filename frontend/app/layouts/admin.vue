@@ -54,6 +54,7 @@ const {
   canAccessConsents,
   canAccessScores,
   canAccessFeedback,
+  canAccessMaintenance,
 } = usePermissions()
 
 const route = useRoute()
@@ -158,6 +159,15 @@ const links = computed<NavigationMenuItem[]>(() => {
       icon: 'lucide:message-square',
       active: route.fullPath.includes('/feedback'),
       to: '/admin/feedback',
+    })
+  }
+
+  if (canAccessMaintenance.value) {
+    items.push({
+      label: 'Vedlikehold',
+      icon: 'lucide:wrench',
+      active: route.fullPath.includes('/maintenance'),
+      to: '/admin/maintenance',
     })
   }
 
