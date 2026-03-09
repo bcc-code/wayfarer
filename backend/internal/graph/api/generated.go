@@ -377,6 +377,12 @@ type ComplexityRoot struct {
 		Token     func(childComplexity int) int
 	}
 
+	FixMissingContentProgressResult struct {
+		AchievementsAwarded    func(childComplexity int) int
+		ProgressRecordsCreated func(childComplexity int) int
+		UsersFixed             func(childComplexity int) int
+	}
+
 	FreeTextQuestion struct {
 		BettingEnabled       func(childComplexity int) int
 		BettingMaxAbsolute   func(childComplexity int) int
@@ -465,6 +471,17 @@ type ComplexityRoot struct {
 		Markdown func(childComplexity int) int
 	}
 
+	MissingContentProgressPreview struct {
+		AffectedUsers func(childComplexity int) int
+		TotalEvents   func(childComplexity int) int
+		TotalUsers    func(childComplexity int) int
+	}
+
+	MissingContentProgressUser struct {
+		EventCount func(childComplexity int) int
+		User       func(childComplexity int) int
+	}
+
 	Mutation struct {
 		AcceptConsent                               func(childComplexity int, consentID string) int
 		AddQuizQuestion                             func(childComplexity int, quizID string, input model.CreateQuizQuestionInput) int
@@ -527,6 +544,7 @@ type ComplexityRoot struct {
 		EnrollUserInChallenge                       func(childComplexity int, userID string, challengeID string) int
 		FinalizeQuiz                                func(childComplexity int, submissionID string) int
 		FinishQuizSession                           func(childComplexity int, id string) int
+		FixMissingContentProgress                   func(childComplexity int) int
 		ForwardFeedbackToDesk                       func(childComplexity int, feedbackID string, destination model.ForwardDestination) int
 		GrantQuizSessionAccess                      func(childComplexity int, input model.GrantQuizSessionAccessInput) int
 		JoinEvent                                   func(childComplexity int, eventID string) int
@@ -793,6 +811,7 @@ type ComplexityRoot struct {
 		MyProjects                    func(childComplexity int) int
 		MyPushNotificationPreferences func(childComplexity int) int
 		PendingConsents               func(childComplexity int) int
+		PreviewMissingContentProgress func(childComplexity int, first *int, after *string) int
 		Project                       func(childComplexity int, id string) int
 		Projects                      func(childComplexity int, filter *model.ProjectFilter, first *int, after *string, last *int, before *string) int
 		PushNotificationsEnabled      func(childComplexity int) int
@@ -1454,6 +1473,7 @@ type MutationResolver interface {
 	ResetQuizSessionSubmission(ctx context.Context, sessionID string) (bool, error)
 	CreateContentAchievementFromExternalContent(ctx context.Context, input model.CreateContentAchievementFromExternalContentInput) (*model.ContentAchievement, error)
 	ClearAllCache(ctx context.Context) (bool, error)
+	FixMissingContentProgress(ctx context.Context) (*model.FixMissingContentProgressResult, error)
 	RegisterPushSubscription(ctx context.Context, input model.RegisterPushSubscriptionInput) (*model.PushSubscription, error)
 	UnregisterPushSubscription(ctx context.Context, endpoint string) (bool, error)
 	SetNotificationPreference(ctx context.Context, input model.SetNotificationPreferenceInput) (*model.PushNotificationPreference, error)
@@ -1573,6 +1593,7 @@ type QueryResolver interface {
 	ExternalContents(ctx context.Context, filter model.ExternalContentFilter, sortBy *model.ExternalContentSortBy, first *int, after *string, last *int, before *string) (*model.ExternalContentConnection, error)
 	AdminDashboardStats(ctx context.Context) (*model.AdminDashboardStats, error)
 	ChurchAdminStatistics(ctx context.Context) (*model.ChurchAdminStatistics, error)
+	PreviewMissingContentProgress(ctx context.Context, first *int, after *string) (*model.MissingContentProgressPreview, error)
 	MyPushNotificationPreferences(ctx context.Context) ([]model.PushNotificationPreference, error)
 	PushNotificationsEnabled(ctx context.Context) (bool, error)
 	VapidPublicKey(ctx context.Context) (string, error)
@@ -2919,6 +2940,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.FirebaseTokenResponse.Token(childComplexity), true
 
+	case "FixMissingContentProgressResult.achievementsAwarded":
+		if e.complexity.FixMissingContentProgressResult.AchievementsAwarded == nil {
+			break
+		}
+
+		return e.complexity.FixMissingContentProgressResult.AchievementsAwarded(childComplexity), true
+	case "FixMissingContentProgressResult.progressRecordsCreated":
+		if e.complexity.FixMissingContentProgressResult.ProgressRecordsCreated == nil {
+			break
+		}
+
+		return e.complexity.FixMissingContentProgressResult.ProgressRecordsCreated(childComplexity), true
+	case "FixMissingContentProgressResult.usersFixed":
+		if e.complexity.FixMissingContentProgressResult.UsersFixed == nil {
+			break
+		}
+
+		return e.complexity.FixMissingContentProgressResult.UsersFixed(childComplexity), true
+
 	case "FreeTextQuestion.bettingEnabled":
 		if e.complexity.FreeTextQuestion.BettingEnabled == nil {
 			break
@@ -3293,6 +3333,38 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.MarkdownText.Markdown(childComplexity), true
+
+	case "MissingContentProgressPreview.affectedUsers":
+		if e.complexity.MissingContentProgressPreview.AffectedUsers == nil {
+			break
+		}
+
+		return e.complexity.MissingContentProgressPreview.AffectedUsers(childComplexity), true
+	case "MissingContentProgressPreview.totalEvents":
+		if e.complexity.MissingContentProgressPreview.TotalEvents == nil {
+			break
+		}
+
+		return e.complexity.MissingContentProgressPreview.TotalEvents(childComplexity), true
+	case "MissingContentProgressPreview.totalUsers":
+		if e.complexity.MissingContentProgressPreview.TotalUsers == nil {
+			break
+		}
+
+		return e.complexity.MissingContentProgressPreview.TotalUsers(childComplexity), true
+
+	case "MissingContentProgressUser.eventCount":
+		if e.complexity.MissingContentProgressUser.EventCount == nil {
+			break
+		}
+
+		return e.complexity.MissingContentProgressUser.EventCount(childComplexity), true
+	case "MissingContentProgressUser.user":
+		if e.complexity.MissingContentProgressUser.User == nil {
+			break
+		}
+
+		return e.complexity.MissingContentProgressUser.User(childComplexity), true
 
 	case "Mutation.acceptConsent":
 		if e.complexity.Mutation.AcceptConsent == nil {
@@ -3955,6 +4027,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.FinishQuizSession(childComplexity, args["id"].(string)), true
+	case "Mutation.fixMissingContentProgress":
+		if e.complexity.Mutation.FixMissingContentProgress == nil {
+			break
+		}
+
+		return e.complexity.Mutation.FixMissingContentProgress(childComplexity), true
 	case "Mutation.forwardFeedbackToDesk":
 		if e.complexity.Mutation.ForwardFeedbackToDesk == nil {
 			break
@@ -5753,6 +5831,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.PendingConsents(childComplexity), true
+	case "Query.previewMissingContentProgress":
+		if e.complexity.Query.PreviewMissingContentProgress == nil {
+			break
+		}
+
+		args, err := ec.field_Query_previewMissingContentProgress_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.PreviewMissingContentProgress(childComplexity, args["first"].(*int), args["after"].(*string)), true
 	case "Query.project":
 		if e.complexity.Query.Project == nil {
 			break
@@ -10451,10 +10540,12 @@ extend type Mutation {
 	{Name: "../../../../gql/admin.graphqls", Input: `extend type Query {
     adminDashboardStats: AdminDashboardStats! @requireRole(roles: ["admin", "superadmin"])
     churchAdminStatistics: ChurchAdminStatistics! @requireRole(roles: ["church_admin", "admin", "superadmin"])
+    previewMissingContentProgress(first: Int, after: String): MissingContentProgressPreview! @requireRole(roles: ["superadmin"])
 }
 
 extend type Mutation {
     clearAllCache: Boolean! @requireRole(roles: ["admin", "superadmin"])
+    fixMissingContentProgress: FixMissingContentProgressResult! @requireRole(roles: ["superadmin"])
 }
 
 type AdminDashboardStats {
@@ -10487,6 +10578,25 @@ type ChurchAdminStatistics {
     totalUsersInTeams: Int!
     userScores: [UserScore!]!
     lastUpdatedAt: DateTime!
+}
+
+# Maintenance tool types
+
+type MissingContentProgressUser {
+    user: User!
+    eventCount: Int!
+}
+
+type MissingContentProgressPreview {
+    affectedUsers: [MissingContentProgressUser!]!
+    totalUsers: Int!
+    totalEvents: Int!
+}
+
+type FixMissingContentProgressResult {
+    usersFixed: Int!
+    progressRecordsCreated: Int!
+    achievementsAwarded: Int!
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/push_notifications.graphqls", Input: `# ==================== Push Notification Types ====================
@@ -13139,6 +13249,22 @@ func (ec *executionContext) field_Query_myEvents_args(ctx context.Context, rawAr
 		return nil, err
 	}
 	args["project"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_previewMissingContentProgress_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg1
 	return args, nil
 }
 
@@ -19703,6 +19829,93 @@ func (ec *executionContext) fieldContext_FirebaseTokenResponse_expiresIn(_ conte
 	return fc, nil
 }
 
+func (ec *executionContext) _FixMissingContentProgressResult_usersFixed(ctx context.Context, field graphql.CollectedField, obj *model.FixMissingContentProgressResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FixMissingContentProgressResult_usersFixed,
+		func(ctx context.Context) (any, error) {
+			return obj.UsersFixed, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FixMissingContentProgressResult_usersFixed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FixMissingContentProgressResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FixMissingContentProgressResult_progressRecordsCreated(ctx context.Context, field graphql.CollectedField, obj *model.FixMissingContentProgressResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FixMissingContentProgressResult_progressRecordsCreated,
+		func(ctx context.Context) (any, error) {
+			return obj.ProgressRecordsCreated, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FixMissingContentProgressResult_progressRecordsCreated(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FixMissingContentProgressResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FixMissingContentProgressResult_achievementsAwarded(ctx context.Context, field graphql.CollectedField, obj *model.FixMissingContentProgressResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FixMissingContentProgressResult_achievementsAwarded,
+		func(ctx context.Context) (any, error) {
+			return obj.AchievementsAwarded, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FixMissingContentProgressResult_achievementsAwarded(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FixMissingContentProgressResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _FreeTextQuestion_id(ctx context.Context, field graphql.CollectedField, obj *model.FreeTextQuestion) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -21733,6 +21946,203 @@ func (ec *executionContext) fieldContext_MarkdownText_html(_ context.Context, fi
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MissingContentProgressPreview_affectedUsers(ctx context.Context, field graphql.CollectedField, obj *model.MissingContentProgressPreview) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MissingContentProgressPreview_affectedUsers,
+		func(ctx context.Context) (any, error) {
+			return obj.AffectedUsers, nil
+		},
+		nil,
+		ec.marshalNMissingContentProgressUser2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMissingContentProgressUserᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MissingContentProgressPreview_affectedUsers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MissingContentProgressPreview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "user":
+				return ec.fieldContext_MissingContentProgressUser_user(ctx, field)
+			case "eventCount":
+				return ec.fieldContext_MissingContentProgressUser_eventCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MissingContentProgressUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MissingContentProgressPreview_totalUsers(ctx context.Context, field graphql.CollectedField, obj *model.MissingContentProgressPreview) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MissingContentProgressPreview_totalUsers,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalUsers, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MissingContentProgressPreview_totalUsers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MissingContentProgressPreview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MissingContentProgressPreview_totalEvents(ctx context.Context, field graphql.CollectedField, obj *model.MissingContentProgressPreview) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MissingContentProgressPreview_totalEvents,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalEvents, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MissingContentProgressPreview_totalEvents(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MissingContentProgressPreview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MissingContentProgressUser_user(ctx context.Context, field graphql.CollectedField, obj *model.MissingContentProgressUser) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MissingContentProgressUser_user,
+		func(ctx context.Context) (any, error) {
+			return obj.User, nil
+		},
+		nil,
+		ec.marshalNUser2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUser,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MissingContentProgressUser_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MissingContentProgressUser",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "membersId":
+				return ec.fieldContext_User_membersId(ctx, field)
+			case "personUuid":
+				return ec.fieldContext_User_personUuid(ctx, field)
+			case "gender":
+				return ec.fieldContext_User_gender(ctx, field)
+			case "churchId":
+				return ec.fieldContext_User_churchId(ctx, field)
+			case "church":
+				return ec.fieldContext_User_church(ctx, field)
+			case "churchLockedUntil":
+				return ec.fieldContext_User_churchLockedUntil(ctx, field)
+			case "birthdate":
+				return ec.fieldContext_User_birthdate(ctx, field)
+			case "age":
+				return ec.fieldContext_User_age(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "image":
+				return ec.fieldContext_User_image(ctx, field)
+			case "imageObject":
+				return ec.fieldContext_User_imageObject(ctx, field)
+			case "projects":
+				return ec.fieldContext_User_projects(ctx, field)
+			case "events":
+				return ec.fieldContext_User_events(ctx, field)
+			case "teams":
+				return ec.fieldContext_User_teams(ctx, field)
+			case "superTeams":
+				return ec.fieldContext_User_superTeams(ctx, field)
+			case "roles":
+				return ec.fieldContext_User_roles(ctx, field)
+			case "consentStatus":
+				return ec.fieldContext_User_consentStatus(ctx, field)
+			case "language":
+				return ec.fieldContext_User_language(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_User_createdAt(ctx, field)
+			case "points":
+				return ec.fieldContext_User_points(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MissingContentProgressUser_eventCount(ctx context.Context, field graphql.CollectedField, obj *model.MissingContentProgressUser) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MissingContentProgressUser_eventCount,
+		func(ctx context.Context) (any, error) {
+			return obj.EventCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MissingContentProgressUser_eventCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MissingContentProgressUser",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -30084,6 +30494,61 @@ func (ec *executionContext) fieldContext_Mutation_clearAllCache(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_fixMissingContentProgress(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_fixMissingContentProgress,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Mutation().FixMissingContentProgress(ctx)
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"superadmin"})
+				if err != nil {
+					var zeroVal *model.FixMissingContentProgressResult
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.FixMissingContentProgressResult
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNFixMissingContentProgressResult2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐFixMissingContentProgressResult,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_fixMissingContentProgress(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "usersFixed":
+				return ec.fieldContext_FixMissingContentProgressResult_usersFixed(ctx, field)
+			case "progressRecordsCreated":
+				return ec.fieldContext_FixMissingContentProgressResult_progressRecordsCreated(ctx, field)
+			case "achievementsAwarded":
+				return ec.fieldContext_FixMissingContentProgressResult_achievementsAwarded(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FixMissingContentProgressResult", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_registerPushSubscription(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -37906,6 +38371,73 @@ func (ec *executionContext) fieldContext_Query_churchAdminStatistics(_ context.C
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ChurchAdminStatistics", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_previewMissingContentProgress(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_previewMissingContentProgress,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().PreviewMissingContentProgress(ctx, fc.Args["first"].(*int), fc.Args["after"].(*string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"superadmin"})
+				if err != nil {
+					var zeroVal *model.MissingContentProgressPreview
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.MissingContentProgressPreview
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNMissingContentProgressPreview2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMissingContentProgressPreview,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_previewMissingContentProgress(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "affectedUsers":
+				return ec.fieldContext_MissingContentProgressPreview_affectedUsers(ctx, field)
+			case "totalUsers":
+				return ec.fieldContext_MissingContentProgressPreview_totalUsers(ctx, field)
+			case "totalEvents":
+				return ec.fieldContext_MissingContentProgressPreview_totalEvents(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MissingContentProgressPreview", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_previewMissingContentProgress_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -59242,6 +59774,55 @@ func (ec *executionContext) _FirebaseTokenResponse(ctx context.Context, sel ast.
 	return out
 }
 
+var fixMissingContentProgressResultImplementors = []string{"FixMissingContentProgressResult"}
+
+func (ec *executionContext) _FixMissingContentProgressResult(ctx context.Context, sel ast.SelectionSet, obj *model.FixMissingContentProgressResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, fixMissingContentProgressResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FixMissingContentProgressResult")
+		case "usersFixed":
+			out.Values[i] = ec._FixMissingContentProgressResult_usersFixed(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "progressRecordsCreated":
+			out.Values[i] = ec._FixMissingContentProgressResult_progressRecordsCreated(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "achievementsAwarded":
+			out.Values[i] = ec._FixMissingContentProgressResult_achievementsAwarded(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var freeTextQuestionImplementors = []string{"FreeTextQuestion", "QuizQuestion"}
 
 func (ec *executionContext) _FreeTextQuestion(ctx context.Context, sel ast.SelectionSet, obj *model.FreeTextQuestion) graphql.Marshaler {
@@ -60050,6 +60631,99 @@ func (ec *executionContext) _MarkdownText(ctx context.Context, sel ast.Selection
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var missingContentProgressPreviewImplementors = []string{"MissingContentProgressPreview"}
+
+func (ec *executionContext) _MissingContentProgressPreview(ctx context.Context, sel ast.SelectionSet, obj *model.MissingContentProgressPreview) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, missingContentProgressPreviewImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MissingContentProgressPreview")
+		case "affectedUsers":
+			out.Values[i] = ec._MissingContentProgressPreview_affectedUsers(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalUsers":
+			out.Values[i] = ec._MissingContentProgressPreview_totalUsers(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalEvents":
+			out.Values[i] = ec._MissingContentProgressPreview_totalEvents(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var missingContentProgressUserImplementors = []string{"MissingContentProgressUser"}
+
+func (ec *executionContext) _MissingContentProgressUser(ctx context.Context, sel ast.SelectionSet, obj *model.MissingContentProgressUser) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, missingContentProgressUserImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MissingContentProgressUser")
+		case "user":
+			out.Values[i] = ec._MissingContentProgressUser_user(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "eventCount":
+			out.Values[i] = ec._MissingContentProgressUser_eventCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -60897,6 +61571,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "clearAllCache":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_clearAllCache(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "fixMissingContentProgress":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_fixMissingContentProgress(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -63913,6 +64594,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_churchAdminStatistics(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "previewMissingContentProgress":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_previewMissingContentProgress(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -71782,6 +72485,20 @@ func (ec *executionContext) marshalNFirebaseTokenResponse2ᚖgithubᚗcomᚋbcc�
 	return ec._FirebaseTokenResponse(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNFixMissingContentProgressResult2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐFixMissingContentProgressResult(ctx context.Context, sel ast.SelectionSet, v model.FixMissingContentProgressResult) graphql.Marshaler {
+	return ec._FixMissingContentProgressResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNFixMissingContentProgressResult2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐFixMissingContentProgressResult(ctx context.Context, sel ast.SelectionSet, v *model.FixMissingContentProgressResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._FixMissingContentProgressResult(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v any) (float64, error) {
 	res, err := graphql.UnmarshalFloatContext(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -72136,6 +72853,68 @@ func (ec *executionContext) marshalNMarkdownText2ᚖgithubᚗcomᚋbccᚑmedia�
 		return graphql.Null
 	}
 	return ec._MarkdownText(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNMissingContentProgressPreview2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMissingContentProgressPreview(ctx context.Context, sel ast.SelectionSet, v model.MissingContentProgressPreview) graphql.Marshaler {
+	return ec._MissingContentProgressPreview(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNMissingContentProgressPreview2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMissingContentProgressPreview(ctx context.Context, sel ast.SelectionSet, v *model.MissingContentProgressPreview) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._MissingContentProgressPreview(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNMissingContentProgressUser2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMissingContentProgressUser(ctx context.Context, sel ast.SelectionSet, v model.MissingContentProgressUser) graphql.Marshaler {
+	return ec._MissingContentProgressUser(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNMissingContentProgressUser2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMissingContentProgressUserᚄ(ctx context.Context, sel ast.SelectionSet, v []model.MissingContentProgressUser) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNMissingContentProgressUser2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMissingContentProgressUser(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNNotificationType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐNotificationType(ctx context.Context, v any) (model.NotificationType, error) {
