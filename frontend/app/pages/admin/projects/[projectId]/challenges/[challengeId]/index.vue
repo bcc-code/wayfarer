@@ -210,18 +210,36 @@ async function handleDelete() {
     <UContainer class="py-12">
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error />
-      <AdminChallengeForm
-        v-else-if="initialData"
-        :initial-data="initialData"
-        :project-id="route.params.projectId"
-        :challenge-id="route.params.challengeId"
-        :colors="data?.challenge.project.branding.colors"
-        :translation-status="data?.challenge.translationStatus ?? []"
-        submit-label="Lagre endringer"
-        is-edit-mode
-        :on-delete="handleDelete"
-        @submit="handleSubmit"
-      />
+      <div v-else-if="initialData" class="space-y-6">
+        <div
+          v-if="data?.challenge.__typename === 'QuizChallenge'"
+          class="flex gap-2"
+        >
+          <UButton
+            variant="soft"
+            :to="{
+              name: 'admin-projects-projectId-challenges-challengeId-sessions',
+              params: {
+                projectId: route.params.projectId,
+                challengeId: route.params.challengeId,
+              },
+            }"
+          >
+            Sesjoner
+          </UButton>
+        </div>
+        <AdminChallengeForm
+          :initial-data="initialData"
+          :project-id="route.params.projectId"
+          :challenge-id="route.params.challengeId"
+          :colors="data?.challenge.project.branding.colors"
+          :translation-status="data?.challenge.translationStatus ?? []"
+          submit-label="Lagre endringer"
+          is-edit-mode
+          :on-delete="handleDelete"
+          @submit="handleSubmit"
+        />
+      </div>
     </UContainer>
   </div>
 </template>

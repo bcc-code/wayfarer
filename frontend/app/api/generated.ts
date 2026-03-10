@@ -3709,6 +3709,21 @@ export type DeleteQuizQuestionMutationVariables = Exact<{
 
 export type DeleteQuizQuestionMutation = { __typename?: 'Mutation', deleteQuizQuestion: boolean };
 
+export type UpdateQuizSessionMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateQuizSessionInput;
+}>;
+
+
+export type UpdateQuizSessionMutation = { __typename?: 'Mutation', updateQuizSession: { __typename?: 'QuizSession', id: string, name?: string | null, state: QuizSessionState, openAt?: any | null, lockAt?: any | null, finishAt?: any | null, createdAt: any, accessCount: number, createdBy: { __typename?: 'User', id: string, name: string } } };
+
+export type DeleteQuizSessionMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteQuizSessionMutation = { __typename?: 'Mutation', deleteQuizSession: boolean };
+
 export type CreateQuizSessionMutationVariables = Exact<{
   input: CreateQuizSessionInput;
 }>;
@@ -4057,6 +4072,14 @@ export type VapidPublicKeyQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type VapidPublicKeyQuery = { __typename?: 'Query', vapidPublicKey: string };
 
+export type AdminQuizSessionsQueryVariables = Exact<{
+  quizId: Scalars['ID']['input'];
+  state?: InputMaybe<QuizSessionState>;
+}>;
+
+
+export type AdminQuizSessionsQuery = { __typename?: 'Query', quizSessions: Array<{ __typename?: 'QuizSession', id: string, name?: string | null, state: QuizSessionState, openAt?: any | null, lockAt?: any | null, finishAt?: any | null, createdAt: any, accessCount: number, createdBy: { __typename?: 'User', id: string, name: string } }> };
+
 export type QuizDetailsQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -4240,6 +4263,18 @@ export type AdminChallengeQuizPageQuery = { __typename?: 'Query', challenge:
           | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string, correctOrder?: number | null }>, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
           | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }>, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
         >, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename: 'SimpleChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
+   };
+
+export type AdminChallengeSessionsPageQueryVariables = Exact<{
+  challengeId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminChallengeSessionsPageQuery = { __typename?: 'Query', challenge:
+    | { __typename: 'ExternalChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename: 'PluginChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename: 'QuizChallenge', id: string, name: string, quiz: { __typename?: 'Quiz', id: string }, project: { __typename?: 'Project', id: string, name: string } }
     | { __typename: 'SimpleChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
    };
 
@@ -5078,6 +5113,37 @@ export const DeleteQuizQuestionDocument = gql`
 export function useDeleteQuizQuestionMutation() {
   return Urql.useMutation<DeleteQuizQuestionMutation, DeleteQuizQuestionMutationVariables>(DeleteQuizQuestionDocument);
 };
+export const UpdateQuizSessionDocument = gql`
+    mutation UpdateQuizSession($id: ID!, $input: UpdateQuizSessionInput!) {
+  updateQuizSession(id: $id, input: $input) {
+    id
+    name
+    state
+    openAt
+    lockAt
+    finishAt
+    createdAt
+    accessCount
+    createdBy {
+      id
+      name
+    }
+  }
+}
+    `;
+
+export function useUpdateQuizSessionMutation() {
+  return Urql.useMutation<UpdateQuizSessionMutation, UpdateQuizSessionMutationVariables>(UpdateQuizSessionDocument);
+};
+export const DeleteQuizSessionDocument = gql`
+    mutation DeleteQuizSession($id: ID!) {
+  deleteQuizSession(id: $id)
+}
+    `;
+
+export function useDeleteQuizSessionMutation() {
+  return Urql.useMutation<DeleteQuizSessionMutation, DeleteQuizSessionMutationVariables>(DeleteQuizSessionDocument);
+};
 export const CreateQuizSessionDocument = gql`
     mutation CreateQuizSession($input: CreateQuizSessionInput!) {
   createQuizSession(input: $input) {
@@ -5914,6 +5980,28 @@ export const VapidPublicKeyDocument = gql`
 export function useVapidPublicKeyQuery(options?: Omit<Urql.UseQueryArgs<never, VapidPublicKeyQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<VapidPublicKeyQuery, VapidPublicKeyQueryVariables | undefined>({ query: VapidPublicKeyDocument, variables: undefined, ...options });
 };
+export const AdminQuizSessionsDocument = gql`
+    query AdminQuizSessions($quizId: ID!, $state: QuizSessionState) {
+  quizSessions(quizId: $quizId, state: $state) {
+    id
+    name
+    state
+    openAt
+    lockAt
+    finishAt
+    createdAt
+    accessCount
+    createdBy {
+      id
+      name
+    }
+  }
+}
+    `;
+
+export function useAdminQuizSessionsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminQuizSessionsQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminQuizSessionsQuery, AdminQuizSessionsQueryVariables | undefined>({ query: AdminQuizSessionsDocument, variables: undefined, ...options });
+};
 export const QuizDetailsDocument = gql`
     query QuizDetails($id: ID!) {
   quiz(id: $id) {
@@ -6524,6 +6612,28 @@ ${TranslationStatusFragmentDoc}`;
 
 export function useAdminChallengeQuizPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminChallengeQuizPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminChallengeQuizPageQuery, AdminChallengeQuizPageQueryVariables | undefined>({ query: AdminChallengeQuizPageDocument, variables: undefined, ...options });
+};
+export const AdminChallengeSessionsPageDocument = gql`
+    query AdminChallengeSessionsPage($challengeId: ID!) {
+  challenge(id: $challengeId) {
+    __typename
+    id
+    name
+    project {
+      id
+      name
+    }
+    ... on QuizChallenge {
+      quiz {
+        id
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminChallengeSessionsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminChallengeSessionsPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminChallengeSessionsPageQuery, AdminChallengeSessionsPageQueryVariables | undefined>({ query: AdminChallengeSessionsPageDocument, variables: undefined, ...options });
 };
 export const AdminProjectChallengeNewPageDocument = gql`
     query AdminProjectChallengeNewPage($projectId: ID!) {
