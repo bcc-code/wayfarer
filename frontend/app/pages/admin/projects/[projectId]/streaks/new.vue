@@ -115,17 +115,17 @@ async function createStreak(event: FormSubmitEvent<Schema>) {
         class="flex max-w-md flex-col gap-6"
         @submit.prevent="createStreak"
       >
-        <UFormField name="name" label="Navn">
+        <AdminTranslatableFormField name="name" label="Navn">
           <UInput v-model="state.name" size="xl" required class="w-full" />
-        </UFormField>
-        <UFormField name="description" label="Beskrivelse">
+        </AdminTranslatableFormField>
+        <AdminTranslatableFormField name="description" label="Beskrivelse">
           <UTextarea
             v-model="state.description"
             class="w-full"
             autoresize
             required
           />
-        </UFormField>
+        </AdminTranslatableFormField>
         <div class="flex flex-col gap-4">
           <label class="text-sm font-medium">Relevante dager</label>
           <div

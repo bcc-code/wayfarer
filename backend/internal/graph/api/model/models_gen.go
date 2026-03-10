@@ -68,6 +68,7 @@ type QuizQuestion interface {
 	GetBettingMaxPercentage() *float64
 	GetBettingMinAbsolute() *int
 	GetBettingMaxAbsolute() *int
+	GetTranslationStatus() []TranslationFieldStatus
 }
 
 type QuizResponse interface {
@@ -812,18 +813,19 @@ type FixMissingContentProgressResult struct {
 }
 
 type FreeTextQuestion struct {
-	ID                   string   `json:"id"`
-	Quiz                 *Quiz    `json:"quiz"`
-	QuestionText         string   `json:"questionText"`
-	QuestionOrder        int      `json:"questionOrder"`
-	TimeoutSeconds       *int     `json:"timeoutSeconds,omitempty"`
-	Points               *int     `json:"points,omitempty"`
-	BettingEnabled       bool     `json:"bettingEnabled"`
-	BettingMinPercentage *float64 `json:"bettingMinPercentage,omitempty"`
-	BettingMaxPercentage *float64 `json:"bettingMaxPercentage,omitempty"`
-	BettingMinAbsolute   *int     `json:"bettingMinAbsolute,omitempty"`
-	BettingMaxAbsolute   *int     `json:"bettingMaxAbsolute,omitempty"`
-	QuizID               string   `json:"-"`
+	ID                   string                   `json:"id"`
+	Quiz                 *Quiz                    `json:"quiz"`
+	QuestionText         string                   `json:"questionText"`
+	QuestionOrder        int                      `json:"questionOrder"`
+	TimeoutSeconds       *int                     `json:"timeoutSeconds,omitempty"`
+	Points               *int                     `json:"points,omitempty"`
+	BettingEnabled       bool                     `json:"bettingEnabled"`
+	BettingMinPercentage *float64                 `json:"bettingMinPercentage,omitempty"`
+	BettingMaxPercentage *float64                 `json:"bettingMaxPercentage,omitempty"`
+	BettingMinAbsolute   *int                     `json:"bettingMinAbsolute,omitempty"`
+	BettingMaxAbsolute   *int                     `json:"bettingMaxAbsolute,omitempty"`
+	TranslationStatus    []TranslationFieldStatus `json:"translationStatus"`
+	QuizID               string                   `json:"-"`
 }
 
 func (FreeTextQuestion) IsQuizQuestion()                        {}
@@ -838,6 +840,16 @@ func (this FreeTextQuestion) GetBettingMinPercentage() *float64 { return this.Be
 func (this FreeTextQuestion) GetBettingMaxPercentage() *float64 { return this.BettingMaxPercentage }
 func (this FreeTextQuestion) GetBettingMinAbsolute() *int       { return this.BettingMinAbsolute }
 func (this FreeTextQuestion) GetBettingMaxAbsolute() *int       { return this.BettingMaxAbsolute }
+func (this FreeTextQuestion) GetTranslationStatus() []TranslationFieldStatus {
+	if this.TranslationStatus == nil {
+		return nil
+	}
+	interfaceSlice := make([]TranslationFieldStatus, 0, len(this.TranslationStatus))
+	for _, concrete := range this.TranslationStatus {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
 
 type FreeTextResponse struct {
 	ID               string            `json:"id"`
@@ -881,18 +893,19 @@ type Image struct {
 }
 
 type JSONQuestion struct {
-	ID                   string   `json:"id"`
-	Quiz                 *Quiz    `json:"quiz"`
-	QuestionText         string   `json:"questionText"`
-	QuestionOrder        int      `json:"questionOrder"`
-	TimeoutSeconds       *int     `json:"timeoutSeconds,omitempty"`
-	Points               *int     `json:"points,omitempty"`
-	BettingEnabled       bool     `json:"bettingEnabled"`
-	BettingMinPercentage *float64 `json:"bettingMinPercentage,omitempty"`
-	BettingMaxPercentage *float64 `json:"bettingMaxPercentage,omitempty"`
-	BettingMinAbsolute   *int     `json:"bettingMinAbsolute,omitempty"`
-	BettingMaxAbsolute   *int     `json:"bettingMaxAbsolute,omitempty"`
-	QuizID               string   `json:"-"`
+	ID                   string                   `json:"id"`
+	Quiz                 *Quiz                    `json:"quiz"`
+	QuestionText         string                   `json:"questionText"`
+	QuestionOrder        int                      `json:"questionOrder"`
+	TimeoutSeconds       *int                     `json:"timeoutSeconds,omitempty"`
+	Points               *int                     `json:"points,omitempty"`
+	BettingEnabled       bool                     `json:"bettingEnabled"`
+	BettingMinPercentage *float64                 `json:"bettingMinPercentage,omitempty"`
+	BettingMaxPercentage *float64                 `json:"bettingMaxPercentage,omitempty"`
+	BettingMinAbsolute   *int                     `json:"bettingMinAbsolute,omitempty"`
+	BettingMaxAbsolute   *int                     `json:"bettingMaxAbsolute,omitempty"`
+	TranslationStatus    []TranslationFieldStatus `json:"translationStatus"`
+	QuizID               string                   `json:"-"`
 }
 
 func (JSONQuestion) IsQuizQuestion()                        {}
@@ -907,6 +920,16 @@ func (this JSONQuestion) GetBettingMinPercentage() *float64 { return this.Bettin
 func (this JSONQuestion) GetBettingMaxPercentage() *float64 { return this.BettingMaxPercentage }
 func (this JSONQuestion) GetBettingMinAbsolute() *int       { return this.BettingMinAbsolute }
 func (this JSONQuestion) GetBettingMaxAbsolute() *int       { return this.BettingMaxAbsolute }
+func (this JSONQuestion) GetTranslationStatus() []TranslationFieldStatus {
+	if this.TranslationStatus == nil {
+		return nil
+	}
+	interfaceSlice := make([]TranslationFieldStatus, 0, len(this.TranslationStatus))
+	for _, concrete := range this.TranslationStatus {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
 
 type JSONResponse struct {
 	ID               string            `json:"id"`
@@ -984,21 +1007,22 @@ type Mutation struct {
 }
 
 type NumberQuestion struct {
-	ID                   string   `json:"id"`
-	Quiz                 *Quiz    `json:"quiz"`
-	QuestionText         string   `json:"questionText"`
-	QuestionOrder        int      `json:"questionOrder"`
-	TimeoutSeconds       *int     `json:"timeoutSeconds,omitempty"`
-	Points               *int     `json:"points,omitempty"`
-	BettingEnabled       bool     `json:"bettingEnabled"`
-	BettingMinPercentage *float64 `json:"bettingMinPercentage,omitempty"`
-	BettingMaxPercentage *float64 `json:"bettingMaxPercentage,omitempty"`
-	BettingMinAbsolute   *int     `json:"bettingMinAbsolute,omitempty"`
-	BettingMaxAbsolute   *int     `json:"bettingMaxAbsolute,omitempty"`
-	MinValue             *float64 `json:"minValue,omitempty"`
-	MaxValue             *float64 `json:"maxValue,omitempty"`
-	StepValue            *float64 `json:"stepValue,omitempty"`
-	QuizID               string   `json:"-"`
+	ID                   string                   `json:"id"`
+	Quiz                 *Quiz                    `json:"quiz"`
+	QuestionText         string                   `json:"questionText"`
+	QuestionOrder        int                      `json:"questionOrder"`
+	TimeoutSeconds       *int                     `json:"timeoutSeconds,omitempty"`
+	Points               *int                     `json:"points,omitempty"`
+	BettingEnabled       bool                     `json:"bettingEnabled"`
+	BettingMinPercentage *float64                 `json:"bettingMinPercentage,omitempty"`
+	BettingMaxPercentage *float64                 `json:"bettingMaxPercentage,omitempty"`
+	BettingMinAbsolute   *int                     `json:"bettingMinAbsolute,omitempty"`
+	BettingMaxAbsolute   *int                     `json:"bettingMaxAbsolute,omitempty"`
+	TranslationStatus    []TranslationFieldStatus `json:"translationStatus"`
+	MinValue             *float64                 `json:"minValue,omitempty"`
+	MaxValue             *float64                 `json:"maxValue,omitempty"`
+	StepValue            *float64                 `json:"stepValue,omitempty"`
+	QuizID               string                   `json:"-"`
 }
 
 func (NumberQuestion) IsQuizQuestion()                        {}
@@ -1013,6 +1037,16 @@ func (this NumberQuestion) GetBettingMinPercentage() *float64 { return this.Bett
 func (this NumberQuestion) GetBettingMaxPercentage() *float64 { return this.BettingMaxPercentage }
 func (this NumberQuestion) GetBettingMinAbsolute() *int       { return this.BettingMinAbsolute }
 func (this NumberQuestion) GetBettingMaxAbsolute() *int       { return this.BettingMaxAbsolute }
+func (this NumberQuestion) GetTranslationStatus() []TranslationFieldStatus {
+	if this.TranslationStatus == nil {
+		return nil
+	}
+	interfaceSlice := make([]TranslationFieldStatus, 0, len(this.TranslationStatus))
+	for _, concrete := range this.TranslationStatus {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
 
 type NumberResponse struct {
 	ID               string            `json:"id"`
@@ -1040,19 +1074,20 @@ func (this NumberResponse) GetBetAmount() *int               { return this.BetAm
 func (this NumberResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
 
 type OrderingQuestion struct {
-	ID                   string             `json:"id"`
-	Quiz                 *Quiz              `json:"quiz"`
-	QuestionText         string             `json:"questionText"`
-	QuestionOrder        int                `json:"questionOrder"`
-	TimeoutSeconds       *int               `json:"timeoutSeconds,omitempty"`
-	Points               *int               `json:"points,omitempty"`
-	BettingEnabled       bool               `json:"bettingEnabled"`
-	BettingMinPercentage *float64           `json:"bettingMinPercentage,omitempty"`
-	BettingMaxPercentage *float64           `json:"bettingMaxPercentage,omitempty"`
-	BettingMinAbsolute   *int               `json:"bettingMinAbsolute,omitempty"`
-	BettingMaxAbsolute   *int               `json:"bettingMaxAbsolute,omitempty"`
-	OrderingItems        []QuizOrderingItem `json:"orderingItems"`
-	QuizID               string             `json:"-"`
+	ID                   string                   `json:"id"`
+	Quiz                 *Quiz                    `json:"quiz"`
+	QuestionText         string                   `json:"questionText"`
+	QuestionOrder        int                      `json:"questionOrder"`
+	TimeoutSeconds       *int                     `json:"timeoutSeconds,omitempty"`
+	Points               *int                     `json:"points,omitempty"`
+	BettingEnabled       bool                     `json:"bettingEnabled"`
+	BettingMinPercentage *float64                 `json:"bettingMinPercentage,omitempty"`
+	BettingMaxPercentage *float64                 `json:"bettingMaxPercentage,omitempty"`
+	BettingMinAbsolute   *int                     `json:"bettingMinAbsolute,omitempty"`
+	BettingMaxAbsolute   *int                     `json:"bettingMaxAbsolute,omitempty"`
+	TranslationStatus    []TranslationFieldStatus `json:"translationStatus"`
+	OrderingItems        []QuizOrderingItem       `json:"orderingItems"`
+	QuizID               string                   `json:"-"`
 }
 
 func (OrderingQuestion) IsQuizQuestion()                        {}
@@ -1067,6 +1102,16 @@ func (this OrderingQuestion) GetBettingMinPercentage() *float64 { return this.Be
 func (this OrderingQuestion) GetBettingMaxPercentage() *float64 { return this.BettingMaxPercentage }
 func (this OrderingQuestion) GetBettingMinAbsolute() *int       { return this.BettingMinAbsolute }
 func (this OrderingQuestion) GetBettingMaxAbsolute() *int       { return this.BettingMaxAbsolute }
+func (this OrderingQuestion) GetTranslationStatus() []TranslationFieldStatus {
+	if this.TranslationStatus == nil {
+		return nil
+	}
+	interfaceSlice := make([]TranslationFieldStatus, 0, len(this.TranslationStatus))
+	for _, concrete := range this.TranslationStatus {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
 
 type OrderingResponse struct {
 	ID               string            `json:"id"`
@@ -1160,20 +1205,21 @@ func (this PluginChallenge) GetTranslationStatus() []TranslationFieldStatus {
 func (PluginChallenge) IsScoreSource() {}
 
 type PredefinedQuestion struct {
-	ID                     string                 `json:"id"`
-	Quiz                   *Quiz                  `json:"quiz"`
-	QuestionText           string                 `json:"questionText"`
-	QuestionOrder          int                    `json:"questionOrder"`
-	TimeoutSeconds         *int                   `json:"timeoutSeconds,omitempty"`
-	Points                 *int                   `json:"points,omitempty"`
-	BettingEnabled         bool                   `json:"bettingEnabled"`
-	BettingMinPercentage   *float64               `json:"bettingMinPercentage,omitempty"`
-	BettingMaxPercentage   *float64               `json:"bettingMaxPercentage,omitempty"`
-	BettingMinAbsolute     *int                   `json:"bettingMinAbsolute,omitempty"`
-	BettingMaxAbsolute     *int                   `json:"bettingMaxAbsolute,omitempty"`
-	AllowMultipleSelection bool                   `json:"allowMultipleSelection"`
-	PredefinedAnswers      []QuizPredefinedAnswer `json:"predefinedAnswers"`
-	QuizID                 string                 `json:"-"`
+	ID                     string                   `json:"id"`
+	Quiz                   *Quiz                    `json:"quiz"`
+	QuestionText           string                   `json:"questionText"`
+	QuestionOrder          int                      `json:"questionOrder"`
+	TimeoutSeconds         *int                     `json:"timeoutSeconds,omitempty"`
+	Points                 *int                     `json:"points,omitempty"`
+	BettingEnabled         bool                     `json:"bettingEnabled"`
+	BettingMinPercentage   *float64                 `json:"bettingMinPercentage,omitempty"`
+	BettingMaxPercentage   *float64                 `json:"bettingMaxPercentage,omitempty"`
+	BettingMinAbsolute     *int                     `json:"bettingMinAbsolute,omitempty"`
+	BettingMaxAbsolute     *int                     `json:"bettingMaxAbsolute,omitempty"`
+	TranslationStatus      []TranslationFieldStatus `json:"translationStatus"`
+	AllowMultipleSelection bool                     `json:"allowMultipleSelection"`
+	PredefinedAnswers      []QuizPredefinedAnswer   `json:"predefinedAnswers"`
+	QuizID                 string                   `json:"-"`
 }
 
 func (PredefinedQuestion) IsQuizQuestion()                        {}
@@ -1188,6 +1234,16 @@ func (this PredefinedQuestion) GetBettingMinPercentage() *float64 { return this.
 func (this PredefinedQuestion) GetBettingMaxPercentage() *float64 { return this.BettingMaxPercentage }
 func (this PredefinedQuestion) GetBettingMinAbsolute() *int       { return this.BettingMinAbsolute }
 func (this PredefinedQuestion) GetBettingMaxAbsolute() *int       { return this.BettingMaxAbsolute }
+func (this PredefinedQuestion) GetTranslationStatus() []TranslationFieldStatus {
+	if this.TranslationStatus == nil {
+		return nil
+	}
+	interfaceSlice := make([]TranslationFieldStatus, 0, len(this.TranslationStatus))
+	for _, concrete := range this.TranslationStatus {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
 
 type PredefinedResponse struct {
 	ID                string                 `json:"id"`
@@ -1446,13 +1502,14 @@ type QuizOrderingItem struct {
 }
 
 type QuizPredefinedAnswer struct {
-	ID             string       `json:"id"`
-	Question       QuizQuestion `json:"question"`
-	AnswerText     string       `json:"answerText"`
-	AnswerOrder    int          `json:"answerOrder"`
-	IsCorrect      *bool        `json:"isCorrect,omitempty"`
-	IsCorrectValue bool         `json:"-"`
-	QuestionID     string       `json:"-"`
+	ID                string                   `json:"id"`
+	Question          QuizQuestion             `json:"question"`
+	AnswerText        string                   `json:"answerText"`
+	AnswerOrder       int                      `json:"answerOrder"`
+	IsCorrect         *bool                    `json:"isCorrect,omitempty"`
+	TranslationStatus []TranslationFieldStatus `json:"translationStatus"`
+	IsCorrectValue    bool                     `json:"-"`
+	QuestionID        string                   `json:"-"`
 }
 
 type QuizSession struct {

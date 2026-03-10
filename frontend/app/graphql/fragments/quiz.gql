@@ -3,6 +3,9 @@ fragment PredefinedAnswerFields on QuizPredefinedAnswer {
   answerText
   answerOrder
   isCorrect
+  translationStatus {
+    ...TranslationStatus
+  }
 }
 
 fragment QuizQuestionFields on QuizQuestion {
@@ -17,6 +20,9 @@ fragment QuizQuestionFields on QuizQuestion {
   bettingMaxPercentage
   bettingMinAbsolute
   bettingMaxAbsolute
+  translationStatus {
+    ...TranslationStatus
+  }
   ... on PredefinedQuestion {
     allowMultipleSelection
     predefinedAnswers {

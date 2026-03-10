@@ -107,24 +107,27 @@ async function handleSubmit(event: FormSubmitEvent<Schema>) {
               />
             </UFormField>
 
-            <UFormField name="title" label="Tittel" required>
+            <AdminTranslatableFormField name="title" label="Tittel">
               <UInput
                 v-model="state.title"
                 class="w-full"
                 placeholder="Personvernerklæring"
               />
-            </UFormField>
+            </AdminTranslatableFormField>
 
-            <UFormField name="shortText" label="Kort tekst">
+            <AdminTranslatableFormField name="shortText" label="Kort tekst">
               <UTextarea
                 v-model="state.shortText"
                 class="w-full"
                 autoresize
                 placeholder="En kort beskrivelse som vises til brukere før de leser hele samtykket"
               />
-            </UFormField>
+            </AdminTranslatableFormField>
 
-            <UFormField name="body" label="Innhold (Markdown)" required>
+            <AdminTranslatableFormField
+              name="body"
+              label="Innhold (Markdown)"
+            >
               <UTextarea
                 v-model="state.body"
                 class="w-full font-mono"
@@ -132,7 +135,7 @@ async function handleSubmit(event: FormSubmitEvent<Schema>) {
                 autoresize
                 placeholder="# Personvernerklæring&#10;&#10;Din markdown-innhold her..."
               />
-            </UFormField>
+            </AdminTranslatableFormField>
 
             <UFormField name="url" label="Ekstern URL">
               <UInput

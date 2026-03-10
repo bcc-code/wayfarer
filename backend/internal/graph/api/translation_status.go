@@ -186,6 +186,52 @@ func (r *Resolver) consentTranslationStatus(ctx context.Context, consentID strin
 	return result, nil
 }
 
+// quizQuestionTranslationStatus fetches translation status for a quiz question by ID.
+func (r *Resolver) quizQuestionTranslationStatus(ctx context.Context, questionID string) ([]model.TranslationFieldStatus, error) {
+	rows, err := r.DB.Queries.GetQuizQuestionTranslationStatus(ctx, questionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get quiz question translation status: %w", err)
+	}
+
+	result := make([]model.TranslationFieldStatus, 0, len(rows))
+	for _, row := range rows {
+		var fields []string
+		if boolTrue(row.HasQuestionText) {
+			fields = append(fields, "questionText")
+		}
+		if len(fields) > 0 {
+			result = append(result, model.TranslationFieldStatus{
+				LanguageCode: row.LanguageCode,
+				Fields:       fields,
+			})
+		}
+	}
+	return result, nil
+}
+
+// quizAnswerTranslationStatus fetches translation status for a quiz predefined answer by ID.
+func (r *Resolver) quizAnswerTranslationStatus(ctx context.Context, answerID string) ([]model.TranslationFieldStatus, error) {
+	rows, err := r.DB.Queries.GetQuizAnswerTranslationStatus(ctx, answerID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get quiz answer translation status: %w", err)
+	}
+
+	result := make([]model.TranslationFieldStatus, 0, len(rows))
+	for _, row := range rows {
+		var fields []string
+		if boolTrue(row.HasAnswerText) {
+			fields = append(fields, "answerText")
+		}
+		if len(fields) > 0 {
+			result = append(result, model.TranslationFieldStatus{
+				LanguageCode: row.LanguageCode,
+				Fields:       fields,
+			})
+		}
+	}
+	return result, nil
+}
+
 // quizTranslationStatus fetches translation status for a quiz by ID.
 func (r *Resolver) quizTranslationStatus(ctx context.Context, quizID string) ([]model.TranslationFieldStatus, error) {
 	rows, err := r.DB.Queries.GetQuizTranslationStatus(ctx, quizID)

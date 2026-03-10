@@ -94,17 +94,17 @@ async function createEvent(event: FormSubmitEvent<Schema>) {
         class="flex max-w-md flex-col gap-6"
         @submit.prevent="createEvent"
       >
-        <UFormField name="name" label="Navn">
+        <AdminTranslatableFormField name="name" label="Navn">
           <UInput v-model="state.name" size="xl" required class="w-full" />
-        </UFormField>
-        <UFormField name="description" label="Beskrivelse">
+        </AdminTranslatableFormField>
+        <AdminTranslatableFormField name="description" label="Beskrivelse">
           <UTextarea
             v-model="state.description"
             class="w-full"
             autoresize
             required
           />
-        </UFormField>
+        </AdminTranslatableFormField>
         <DateRangeField
           v-model:start="state.startDate"
           v-model:end="state.endDate"

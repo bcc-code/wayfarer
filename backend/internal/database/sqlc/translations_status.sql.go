@@ -213,6 +213,70 @@ func (q *Queries) GetProjectTranslationStatus(ctx context.Context, projectID str
 	return items, nil
 }
 
+const GetQuizAnswerTranslationStatus = `-- name: GetQuizAnswerTranslationStatus :many
+SELECT language_code,
+  (answer_text IS NOT NULL AND answer_text != '') AS has_answer_text
+FROM quiz_answer_translations
+WHERE answer_id = $1::text
+`
+
+type GetQuizAnswerTranslationStatusRow struct {
+	LanguageCode  string `json:"language_code"`
+	HasAnswerText *bool  `json:"has_answer_text"`
+}
+
+func (q *Queries) GetQuizAnswerTranslationStatus(ctx context.Context, answerID string) ([]*GetQuizAnswerTranslationStatusRow, error) {
+	rows, err := q.db.Query(ctx, GetQuizAnswerTranslationStatus, answerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetQuizAnswerTranslationStatusRow{}
+	for rows.Next() {
+		var i GetQuizAnswerTranslationStatusRow
+		if err := rows.Scan(&i.LanguageCode, &i.HasAnswerText); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetQuizQuestionTranslationStatus = `-- name: GetQuizQuestionTranslationStatus :many
+SELECT language_code,
+  (question_text IS NOT NULL AND question_text != '') AS has_question_text
+FROM quiz_question_translations
+WHERE question_id = $1::text
+`
+
+type GetQuizQuestionTranslationStatusRow struct {
+	LanguageCode    string `json:"language_code"`
+	HasQuestionText *bool  `json:"has_question_text"`
+}
+
+func (q *Queries) GetQuizQuestionTranslationStatus(ctx context.Context, questionID string) ([]*GetQuizQuestionTranslationStatusRow, error) {
+	rows, err := q.db.Query(ctx, GetQuizQuestionTranslationStatus, questionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetQuizQuestionTranslationStatusRow{}
+	for rows.Next() {
+		var i GetQuizQuestionTranslationStatusRow
+		if err := rows.Scan(&i.LanguageCode, &i.HasQuestionText); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetQuizTranslationStatus = `-- name: GetQuizTranslationStatus :many
 SELECT language_code,
   (name IS NOT NULL AND name != '') AS has_name,

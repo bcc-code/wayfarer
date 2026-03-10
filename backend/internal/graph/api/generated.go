@@ -399,6 +399,7 @@ type ComplexityRoot struct {
 		QuestionText         func(childComplexity int) int
 		Quiz                 func(childComplexity int) int
 		TimeoutSeconds       func(childComplexity int) int
+		TranslationStatus    func(childComplexity int) int
 	}
 
 	FreeTextResponse struct {
@@ -432,6 +433,7 @@ type ComplexityRoot struct {
 		QuestionText         func(childComplexity int) int
 		Quiz                 func(childComplexity int) int
 		TimeoutSeconds       func(childComplexity int) int
+		TranslationStatus    func(childComplexity int) int
 	}
 
 	JsonResponse struct {
@@ -635,6 +637,7 @@ type ComplexityRoot struct {
 		Quiz                 func(childComplexity int) int
 		StepValue            func(childComplexity int) int
 		TimeoutSeconds       func(childComplexity int) int
+		TranslationStatus    func(childComplexity int) int
 	}
 
 	NumberResponse struct {
@@ -662,6 +665,7 @@ type ComplexityRoot struct {
 		QuestionText         func(childComplexity int) int
 		Quiz                 func(childComplexity int) int
 		TimeoutSeconds       func(childComplexity int) int
+		TranslationStatus    func(childComplexity int) int
 	}
 
 	OrderingResponse struct {
@@ -720,6 +724,7 @@ type ComplexityRoot struct {
 		QuestionText           func(childComplexity int) int
 		Quiz                   func(childComplexity int) int
 		TimeoutSeconds         func(childComplexity int) int
+		TranslationStatus      func(childComplexity int) int
 	}
 
 	PredefinedResponse struct {
@@ -934,11 +939,12 @@ type ComplexityRoot struct {
 	}
 
 	QuizPredefinedAnswer struct {
-		AnswerOrder func(childComplexity int) int
-		AnswerText  func(childComplexity int) int
-		ID          func(childComplexity int) int
-		IsCorrect   func(childComplexity int) int
-		Question    func(childComplexity int) int
+		AnswerOrder       func(childComplexity int) int
+		AnswerText        func(childComplexity int) int
+		ID                func(childComplexity int) int
+		IsCorrect         func(childComplexity int) int
+		Question          func(childComplexity int) int
+		TranslationStatus func(childComplexity int) int
 	}
 
 	QuizSession struct {
@@ -1357,6 +1363,8 @@ type ExternalContentResolver interface {
 }
 type FreeTextQuestionResolver interface {
 	Quiz(ctx context.Context, obj *model.FreeTextQuestion) (*model.Quiz, error)
+
+	TranslationStatus(ctx context.Context, obj *model.FreeTextQuestion) ([]model.TranslationFieldStatus, error)
 }
 type FreeTextResponseResolver interface {
 	Submission(ctx context.Context, obj *model.FreeTextResponse) (*model.QuizSubmission, error)
@@ -1366,6 +1374,8 @@ type FreeTextResponseResolver interface {
 }
 type JsonQuestionResolver interface {
 	Quiz(ctx context.Context, obj *model.JSONQuestion) (*model.Quiz, error)
+
+	TranslationStatus(ctx context.Context, obj *model.JSONQuestion) ([]model.TranslationFieldStatus, error)
 }
 type JsonResponseResolver interface {
 	Submission(ctx context.Context, obj *model.JSONResponse) (*model.QuizSubmission, error)
@@ -1514,6 +1524,8 @@ type MutationResolver interface {
 }
 type NumberQuestionResolver interface {
 	Quiz(ctx context.Context, obj *model.NumberQuestion) (*model.Quiz, error)
+
+	TranslationStatus(ctx context.Context, obj *model.NumberQuestion) ([]model.TranslationFieldStatus, error)
 }
 type NumberResponseResolver interface {
 	Submission(ctx context.Context, obj *model.NumberResponse) (*model.QuizSubmission, error)
@@ -1524,6 +1536,7 @@ type NumberResponseResolver interface {
 type OrderingQuestionResolver interface {
 	Quiz(ctx context.Context, obj *model.OrderingQuestion) (*model.Quiz, error)
 
+	TranslationStatus(ctx context.Context, obj *model.OrderingQuestion) ([]model.TranslationFieldStatus, error)
 	OrderingItems(ctx context.Context, obj *model.OrderingQuestion) ([]model.QuizOrderingItem, error)
 }
 type OrderingResponseResolver interface {
@@ -1545,6 +1558,8 @@ type PluginChallengeResolver interface {
 }
 type PredefinedQuestionResolver interface {
 	Quiz(ctx context.Context, obj *model.PredefinedQuestion) (*model.Quiz, error)
+
+	TranslationStatus(ctx context.Context, obj *model.PredefinedQuestion) ([]model.TranslationFieldStatus, error)
 
 	PredefinedAnswers(ctx context.Context, obj *model.PredefinedQuestion) ([]model.QuizPredefinedAnswer, error)
 }
@@ -1683,6 +1698,7 @@ type QuizPredefinedAnswerResolver interface {
 	Question(ctx context.Context, obj *model.QuizPredefinedAnswer) (model.QuizQuestion, error)
 
 	IsCorrect(ctx context.Context, obj *model.QuizPredefinedAnswer) (*bool, error)
+	TranslationStatus(ctx context.Context, obj *model.QuizPredefinedAnswer) ([]model.TranslationFieldStatus, error)
 }
 type QuizSessionResolver interface {
 	Quiz(ctx context.Context, obj *model.QuizSession) (*model.Quiz, error)
@@ -3085,6 +3101,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.FreeTextQuestion.TimeoutSeconds(childComplexity), true
+	case "FreeTextQuestion.translationStatus":
+		if e.complexity.FreeTextQuestion.TranslationStatus == nil {
+			break
+		}
+
+		return e.complexity.FreeTextQuestion.TranslationStatus(childComplexity), true
 
 	case "FreeTextResponse.answeredAt":
 		if e.complexity.FreeTextResponse.AnsweredAt == nil {
@@ -3232,6 +3254,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.JsonQuestion.TimeoutSeconds(childComplexity), true
+	case "JsonQuestion.translationStatus":
+		if e.complexity.JsonQuestion.TranslationStatus == nil {
+			break
+		}
+
+		return e.complexity.JsonQuestion.TranslationStatus(childComplexity), true
 
 	case "JsonResponse.answeredAt":
 		if e.complexity.JsonResponse.AnsweredAt == nil {
@@ -4937,6 +4965,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.NumberQuestion.TimeoutSeconds(childComplexity), true
+	case "NumberQuestion.translationStatus":
+		if e.complexity.NumberQuestion.TranslationStatus == nil {
+			break
+		}
+
+		return e.complexity.NumberQuestion.TranslationStatus(childComplexity), true
 
 	case "NumberResponse.answeredAt":
 		if e.complexity.NumberResponse.AnsweredAt == nil {
@@ -5065,6 +5099,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.OrderingQuestion.TimeoutSeconds(childComplexity), true
+	case "OrderingQuestion.translationStatus":
+		if e.complexity.OrderingQuestion.TranslationStatus == nil {
+			break
+		}
+
+		return e.complexity.OrderingQuestion.TranslationStatus(childComplexity), true
 
 	case "OrderingResponse.answeredAt":
 		if e.complexity.OrderingResponse.AnsweredAt == nil {
@@ -5345,6 +5385,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PredefinedQuestion.TimeoutSeconds(childComplexity), true
+	case "PredefinedQuestion.translationStatus":
+		if e.complexity.PredefinedQuestion.TranslationStatus == nil {
+			break
+		}
+
+		return e.complexity.PredefinedQuestion.TranslationStatus(childComplexity), true
 
 	case "PredefinedResponse.answeredAt":
 		if e.complexity.PredefinedResponse.AnsweredAt == nil {
@@ -6641,6 +6687,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.QuizPredefinedAnswer.Question(childComplexity), true
+	case "QuizPredefinedAnswer.translationStatus":
+		if e.complexity.QuizPredefinedAnswer.TranslationStatus == nil {
+			break
+		}
+
+		return e.complexity.QuizPredefinedAnswer.TranslationStatus(childComplexity), true
 
 	case "QuizSession.accessCount":
 		if e.complexity.QuizSession.AccessCount == nil {
@@ -10082,6 +10134,7 @@ interface QuizQuestion {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 type PredefinedQuestion implements QuizQuestion {
@@ -10096,6 +10149,7 @@ type PredefinedQuestion implements QuizQuestion {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     allowMultipleSelection: Boolean!
     predefinedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
 }
@@ -10112,6 +10166,7 @@ type FreeTextQuestion implements QuizQuestion {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 type NumberQuestion implements QuizQuestion {
@@ -10126,6 +10181,7 @@ type NumberQuestion implements QuizQuestion {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     minValue: Float
     maxValue: Float
     stepValue: Float
@@ -10143,6 +10199,7 @@ type JsonQuestion implements QuizQuestion {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 type OrderingQuestion implements QuizQuestion {
@@ -10157,6 +10214,7 @@ type OrderingQuestion implements QuizQuestion {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     orderingItems: [QuizOrderingItem!]! @goField(forceResolver: true)
 }
 
@@ -10174,6 +10232,7 @@ type QuizPredefinedAnswer {
     answerText: String!
     answerOrder: Int!
     isCorrect: Boolean @goField(forceResolver: true)
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 type QuizSubmission {
@@ -20605,6 +20664,41 @@ func (ec *executionContext) fieldContext_FreeTextQuestion_bettingMaxAbsolute(_ c
 	return fc, nil
 }
 
+func (ec *executionContext) _FreeTextQuestion_translationStatus(ctx context.Context, field graphql.CollectedField, obj *model.FreeTextQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FreeTextQuestion_translationStatus,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.FreeTextQuestion().TranslationStatus(ctx, obj)
+		},
+		nil,
+		ec.marshalNTranslationFieldStatus2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTranslationFieldStatusᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FreeTextQuestion_translationStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FreeTextQuestion",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "languageCode":
+				return ec.fieldContext_TranslationFieldStatus_languageCode(ctx, field)
+			case "fields":
+				return ec.fieldContext_TranslationFieldStatus_fields(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TranslationFieldStatus", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _FreeTextResponse_id(ctx context.Context, field graphql.CollectedField, obj *model.FreeTextResponse) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -21398,6 +21492,41 @@ func (ec *executionContext) fieldContext_JsonQuestion_bettingMaxAbsolute(_ conte
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JsonQuestion_translationStatus(ctx context.Context, field graphql.CollectedField, obj *model.JSONQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_JsonQuestion_translationStatus,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.JsonQuestion().TranslationStatus(ctx, obj)
+		},
+		nil,
+		ec.marshalNTranslationFieldStatus2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTranslationFieldStatusᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_JsonQuestion_translationStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JsonQuestion",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "languageCode":
+				return ec.fieldContext_TranslationFieldStatus_languageCode(ctx, field)
+			case "fields":
+				return ec.fieldContext_TranslationFieldStatus_fields(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TranslationFieldStatus", field.Name)
 		},
 	}
 	return fc, nil
@@ -32272,6 +32401,41 @@ func (ec *executionContext) fieldContext_NumberQuestion_bettingMaxAbsolute(_ con
 	return fc, nil
 }
 
+func (ec *executionContext) _NumberQuestion_translationStatus(ctx context.Context, field graphql.CollectedField, obj *model.NumberQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberQuestion_translationStatus,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.NumberQuestion().TranslationStatus(ctx, obj)
+		},
+		nil,
+		ec.marshalNTranslationFieldStatus2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTranslationFieldStatusᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberQuestion_translationStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberQuestion",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "languageCode":
+				return ec.fieldContext_TranslationFieldStatus_languageCode(ctx, field)
+			case "fields":
+				return ec.fieldContext_TranslationFieldStatus_fields(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TranslationFieldStatus", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _NumberQuestion_minValue(ctx context.Context, field graphql.CollectedField, obj *model.NumberQuestion) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -33036,6 +33200,41 @@ func (ec *executionContext) fieldContext_OrderingQuestion_bettingMaxAbsolute(_ c
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrderingQuestion_translationStatus(ctx context.Context, field graphql.CollectedField, obj *model.OrderingQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingQuestion_translationStatus,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.OrderingQuestion().TranslationStatus(ctx, obj)
+		},
+		nil,
+		ec.marshalNTranslationFieldStatus2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTranslationFieldStatusᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingQuestion_translationStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingQuestion",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "languageCode":
+				return ec.fieldContext_TranslationFieldStatus_languageCode(ctx, field)
+			case "fields":
+				return ec.fieldContext_TranslationFieldStatus_fields(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TranslationFieldStatus", field.Name)
 		},
 	}
 	return fc, nil
@@ -34540,6 +34739,41 @@ func (ec *executionContext) fieldContext_PredefinedQuestion_bettingMaxAbsolute(_
 	return fc, nil
 }
 
+func (ec *executionContext) _PredefinedQuestion_translationStatus(ctx context.Context, field graphql.CollectedField, obj *model.PredefinedQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PredefinedQuestion_translationStatus,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.PredefinedQuestion().TranslationStatus(ctx, obj)
+		},
+		nil,
+		ec.marshalNTranslationFieldStatus2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTranslationFieldStatusᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PredefinedQuestion_translationStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PredefinedQuestion",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "languageCode":
+				return ec.fieldContext_TranslationFieldStatus_languageCode(ctx, field)
+			case "fields":
+				return ec.fieldContext_TranslationFieldStatus_fields(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TranslationFieldStatus", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _PredefinedQuestion_allowMultipleSelection(ctx context.Context, field graphql.CollectedField, obj *model.PredefinedQuestion) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -34603,6 +34837,8 @@ func (ec *executionContext) fieldContext_PredefinedQuestion_predefinedAnswers(_ 
 				return ec.fieldContext_QuizPredefinedAnswer_answerOrder(ctx, field)
 			case "isCorrect":
 				return ec.fieldContext_QuizPredefinedAnswer_isCorrect(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_QuizPredefinedAnswer_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type QuizPredefinedAnswer", field.Name)
 		},
@@ -34963,6 +35199,8 @@ func (ec *executionContext) fieldContext_PredefinedResponse_selectedAnswers(_ co
 				return ec.fieldContext_QuizPredefinedAnswer_answerOrder(ctx, field)
 			case "isCorrect":
 				return ec.fieldContext_QuizPredefinedAnswer_isCorrect(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_QuizPredefinedAnswer_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type QuizPredefinedAnswer", field.Name)
 		},
@@ -42518,6 +42756,41 @@ func (ec *executionContext) fieldContext_QuizPredefinedAnswer_isCorrect(_ contex
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizPredefinedAnswer_translationStatus(ctx context.Context, field graphql.CollectedField, obj *model.QuizPredefinedAnswer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizPredefinedAnswer_translationStatus,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.QuizPredefinedAnswer().TranslationStatus(ctx, obj)
+		},
+		nil,
+		ec.marshalNTranslationFieldStatus2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTranslationFieldStatusᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizPredefinedAnswer_translationStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizPredefinedAnswer",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "languageCode":
+				return ec.fieldContext_TranslationFieldStatus_languageCode(ctx, field)
+			case "fields":
+				return ec.fieldContext_TranslationFieldStatus_fields(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TranslationFieldStatus", field.Name)
 		},
 	}
 	return fc, nil
@@ -60982,6 +61255,42 @@ func (ec *executionContext) _FreeTextQuestion(ctx context.Context, sel ast.Selec
 			out.Values[i] = ec._FreeTextQuestion_bettingMinAbsolute(ctx, field, obj)
 		case "bettingMaxAbsolute":
 			out.Values[i] = ec._FreeTextQuestion_bettingMaxAbsolute(ctx, field, obj)
+		case "translationStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._FreeTextQuestion_translationStatus(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -61286,6 +61595,42 @@ func (ec *executionContext) _JsonQuestion(ctx context.Context, sel ast.Selection
 			out.Values[i] = ec._JsonQuestion_bettingMinAbsolute(ctx, field, obj)
 		case "bettingMaxAbsolute":
 			out.Values[i] = ec._JsonQuestion_bettingMaxAbsolute(ctx, field, obj)
+		case "translationStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._JsonQuestion_translationStatus(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -62862,6 +63207,42 @@ func (ec *executionContext) _NumberQuestion(ctx context.Context, sel ast.Selecti
 			out.Values[i] = ec._NumberQuestion_bettingMinAbsolute(ctx, field, obj)
 		case "bettingMaxAbsolute":
 			out.Values[i] = ec._NumberQuestion_bettingMaxAbsolute(ctx, field, obj)
+		case "translationStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NumberQuestion_translationStatus(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "minValue":
 			out.Values[i] = ec._NumberQuestion_minValue(ctx, field, obj)
 		case "maxValue":
@@ -63127,6 +63508,42 @@ func (ec *executionContext) _OrderingQuestion(ctx context.Context, sel ast.Selec
 			out.Values[i] = ec._OrderingQuestion_bettingMinAbsolute(ctx, field, obj)
 		case "bettingMaxAbsolute":
 			out.Values[i] = ec._OrderingQuestion_bettingMaxAbsolute(ctx, field, obj)
+		case "translationStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._OrderingQuestion_translationStatus(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "orderingItems":
 			field := field
 
@@ -63788,6 +64205,42 @@ func (ec *executionContext) _PredefinedQuestion(ctx context.Context, sel ast.Sel
 			out.Values[i] = ec._PredefinedQuestion_bettingMinAbsolute(ctx, field, obj)
 		case "bettingMaxAbsolute":
 			out.Values[i] = ec._PredefinedQuestion_bettingMaxAbsolute(ctx, field, obj)
+		case "translationStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._PredefinedQuestion_translationStatus(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "allowMultipleSelection":
 			out.Values[i] = ec._PredefinedQuestion_allowMultipleSelection(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -67551,6 +68004,42 @@ func (ec *executionContext) _QuizPredefinedAnswer(ctx context.Context, sel ast.S
 					}
 				}()
 				res = ec._QuizPredefinedAnswer_isCorrect(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "translationStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._QuizPredefinedAnswer_translationStatus(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 

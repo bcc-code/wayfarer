@@ -109,6 +109,7 @@ const quizData = computed<QuizFormData | undefined>(() => {
               answerText: a.answerText,
               isCorrect: a.isCorrect ?? false,
               answerOrder: a.answerOrder,
+              translationStatus: a.translationStatus,
             }))
           : undefined,
       orderingItems:
@@ -136,6 +137,7 @@ const quizData = computed<QuizFormData | undefined>(() => {
       bettingMaxPercentage: q.bettingMaxPercentage ?? undefined,
       bettingMinAbsolute: q.bettingMinAbsolute ?? undefined,
       bettingMaxAbsolute: q.bettingMaxAbsolute ?? undefined,
+      translationStatus: q.translationStatus,
     })),
   }
 })

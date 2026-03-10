@@ -29,6 +29,7 @@ export interface QuizQuestionFormData {
     answerText: string
     isCorrect: boolean
     answerOrder: number
+    translationStatus?: TranslationStatusFragment[]
   }[]
   minValue?: number
   maxValue?: number
@@ -43,6 +44,7 @@ export interface QuizQuestionFormData {
   bettingMaxPercentage?: number
   bettingMinAbsolute?: number
   bettingMaxAbsolute?: number
+  translationStatus?: TranslationStatusFragment[]
 }
 
 const props = defineProps<{

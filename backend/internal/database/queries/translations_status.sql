@@ -52,3 +52,15 @@ SELECT language_code,
   (description IS NOT NULL AND description != '') AS has_description
 FROM quiz_translations
 WHERE quiz_id = @quiz_id::text;
+
+-- name: GetQuizQuestionTranslationStatus :many
+SELECT language_code,
+  (question_text IS NOT NULL AND question_text != '') AS has_question_text
+FROM quiz_question_translations
+WHERE question_id = @question_id::text;
+
+-- name: GetQuizAnswerTranslationStatus :many
+SELECT language_code,
+  (answer_text IS NOT NULL AND answer_text != '') AS has_answer_text
+FROM quiz_answer_translations
+WHERE answer_id = @answer_id::text;
