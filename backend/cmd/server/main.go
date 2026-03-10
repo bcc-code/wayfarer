@@ -521,6 +521,7 @@ func main() {
 			TeamRenameChallengeID: cfg.Plugin.LadderToHeavenTeamRenameChallengeID,
 			CryptexSecretKey:      cfg.Plugin.LadderToHeavenCryptexSecretKey,
 			CryptexBaseURL:        cfg.Plugin.LadderToHeavenCryptexBaseURL,
+			ExcaliburBaseURL:      cfg.Plugin.LadderToHeavenExcaliburBaseURL,
 		}),
 	)
 

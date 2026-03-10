@@ -141,6 +141,7 @@ type PluginConfig struct {
 	LadderToHeavenTeamRenameChallengeID string // Challenge ID to complete when team renames (empty = disabled)
 	LadderToHeavenCryptexSecretKey      string // Secret key for Cryptex JWT token signing (empty = endpoint disabled)
 	LadderToHeavenCryptexBaseURL        string // Base URL for Cryptex admin login (e.g., https://cryptex.example.com)
+	LadderToHeavenExcaliburBaseURL      string // Base URL for Excalibur user login (e.g., https://dev.excalibur.bcc.media)
 }
 
 // FirebaseConfig holds Firebase Admin SDK configuration
@@ -255,6 +256,7 @@ func Load() (*Config, error) {
 			LadderToHeavenTeamRenameChallengeID: getEnv("PLUGIN_LADDER_TO_HEAVEN_TEAM_RENAME_CHALLENGE_ID", ""),
 			LadderToHeavenCryptexSecretKey:      getEnv("PLUGIN_LADDER_TO_HEAVEN_CRYPTEX_SECRET_KEY", ""),
 			LadderToHeavenCryptexBaseURL:        getEnv("PLUGIN_LADDER_TO_HEAVEN_CRYPTEX_BASE_URL", ""),
+			LadderToHeavenExcaliburBaseURL:      getEnv("PLUGIN_LADDER_TO_HEAVEN_EXCALIBUR_BASE_URL", ""),
 		},
 		Firebase: FirebaseConfig{
 			ServiceAccountJSON: getEnv("FIREBASE_SERVICE_ACCOUNT", ""),
