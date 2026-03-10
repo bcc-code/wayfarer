@@ -46,6 +46,11 @@ func (r *externalChallengeResolver) UserEnrolledAt(ctx context.Context, obj *mod
 	return r.getUserChallengeEnrolledAt(ctx, obj.ID)
 }
 
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *externalChallengeResolver) TranslationStatus(ctx context.Context, obj *model.ExternalChallenge) ([]model.TranslationFieldStatus, error) {
+	return r.challengeTranslationStatus(ctx, obj.ID)
+}
+
 // CreateChallenge is the resolver for the createChallenge field.
 func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string, eventID *string, input model.CreateChallengeInput) (model.Challenge, error) {
 	// Get authenticated user ID from context
@@ -1175,6 +1180,11 @@ func (r *pluginChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model
 	return r.getUserChallengeEnrolledAt(ctx, obj.ID)
 }
 
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *pluginChallengeResolver) TranslationStatus(ctx context.Context, obj *model.PluginChallenge) ([]model.TranslationFieldStatus, error) {
+	return r.challengeTranslationStatus(ctx, obj.ID)
+}
+
 // Challenge is the resolver for the challenge field.
 func (r *queryResolver) Challenge(ctx context.Context, id string) (model.Challenge, error) {
 	// Load challenge with visibility check
@@ -1329,6 +1339,11 @@ func (r *quizChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.Q
 	return r.getUserChallengeEnrolledAt(ctx, obj.ID)
 }
 
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *quizChallengeResolver) TranslationStatus(ctx context.Context, obj *model.QuizChallenge) ([]model.TranslationFieldStatus, error) {
+	return r.challengeTranslationStatus(ctx, obj.ID)
+}
+
 // Quiz is the resolver for the quiz field.
 // Visibility is controlled by the challenge's publishedAt and session access.
 func (r *quizChallengeResolver) Quiz(ctx context.Context, obj *model.QuizChallenge) (*model.Quiz, error) {
@@ -1363,6 +1378,11 @@ func (r *simpleChallengeResolver) UserCompletedAt(ctx context.Context, obj *mode
 // UserEnrolledAt is the resolver for the userEnrolledAt field.
 func (r *simpleChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.SimpleChallenge) (*scalars.DateTime, error) {
 	return r.getUserChallengeEnrolledAt(ctx, obj.ID)
+}
+
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *simpleChallengeResolver) TranslationStatus(ctx context.Context, obj *model.SimpleChallenge) ([]model.TranslationFieldStatus, error) {
+	return r.challengeTranslationStatus(ctx, obj.ID)
 }
 
 // ExternalChallenge returns ExternalChallengeResolver implementation.

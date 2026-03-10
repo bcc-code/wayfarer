@@ -64,6 +64,9 @@ gql(`
         minScorePercentage
         requireCompletion
       }
+      translationStatus {
+        ...TranslationStatus
+      }
       project {
         id
         name
@@ -314,6 +317,7 @@ async function handleDelete() {
         <AdminAchievementForm
           :project-id="route.params.projectId"
           :initial-data="initialData"
+          :translation-status="data?.achievement.translationStatus ?? []"
           :achievement-type="achievementType"
           :is-edit-mode="true"
           :colors="data?.achievement.project.branding.colors"

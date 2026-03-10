@@ -30,6 +30,9 @@ gql(`
       }
       infoMessageStart
       infoMessageEnd
+      translationStatus {
+        ...TranslationStatus
+      }
     }
   }
 `)
@@ -238,17 +241,12 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
         <UFormField name="branding.banner" label="Banner" hint="(valgfritt)">
           <AdminFileUpload v-model="state.branding.banner" />
         </UFormField>
-        <UFormField name="name" label="Navn">
+        <AdminTranslatableFormField label="Navn" :translation-status="data?.project.translationStatus" name="name">
           <UInput v-model="state.name" size="xl" required class="w-full" />
-        </UFormField>
-        <UFormField
-          name="description"
-          label="Beskrivelse"
-          hint="(valgfritt)"
-          help="Dette er kun for at admins skal ha bedre kontekst"
-        >
+        </AdminTranslatableFormField>
+        <AdminTranslatableFormField label="Beskrivelse" :translation-status="data?.project.translationStatus" name="description" hint="(valgfritt)" help="Dette er kun for at admins skal ha bedre kontekst">
           <UTextarea v-model="state.description" class="w-full" autoresize />
-        </UFormField>
+        </AdminTranslatableFormField>
         <UFormField label="Prosjektvarighet">
           <DateRangeField
             v-model:start="state.startDate"
@@ -261,22 +259,12 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
             :project-name="data?.project.name"
           />
         </UFormField>
-        <UFormField
-          name="rules"
-          label="Prosjektregler"
-          hint="(valgfritt)"
-          help="Forklar hvordan brukere samler poeng"
-        >
+        <AdminTranslatableFormField label="Prosjektregler" :translation-status="data?.project.translationStatus" name="rules" hint="(valgfritt)" help="Forklar hvordan brukere samler poeng">
           <MarkdownEditor v-model="state.rules" />
-        </UFormField>
-        <UFormField
-          name="infoMessage"
-          label="Info-melding"
-          hint="(valgfritt)"
-          help="Vises som banner på forsiden. Brukere kan lukke den."
-        >
+        </AdminTranslatableFormField>
+        <AdminTranslatableFormField label="Info-melding" :translation-status="data?.project.translationStatus" name="infoMessage" hint="(valgfritt)" help="Vises som banner på forsiden. Brukere kan lukke den.">
           <MarkdownEditor v-model="state.infoMessage" />
-        </UFormField>
+        </AdminTranslatableFormField>
         <UFormField
           name="infoMessageStart"
           label="Info-melding synlig fra"

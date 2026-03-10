@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { FormSubmitEvent } from '@nuxt/ui'
+import type { TranslationStatusFragment } from '~/api/generated'
 import z from 'zod'
 
 export interface QuizFormData {
@@ -46,6 +47,7 @@ export interface QuizQuestionFormData {
 
 const props = defineProps<{
   quizData?: QuizFormData
+  translationStatus?: TranslationStatusFragment[]
   projectId: string
   challengeId?: string
 }>()
@@ -189,18 +191,18 @@ const questionTypeOptions = [
     >
       <h3 class="text-lg font-semibold">Quiz-innstillinger</h3>
 
-      <UFormField name="name" label="Quiz-navn">
+      <AdminTranslatableFormField label="Quiz-navn" :translation-status="translationStatus" name="name">
         <UInput v-model="state.name" size="xl" required class="w-full" />
-      </UFormField>
+      </AdminTranslatableFormField>
 
-      <UFormField name="description" label="Beskrivelse">
+      <AdminTranslatableFormField label="Beskrivelse" :translation-status="translationStatus" name="description">
         <UTextarea
           v-model="state.description"
           class="w-full"
           autoresize
           required
         />
-      </UFormField>
+      </AdminTranslatableFormField>
 
       <UFormField name="image" label="Bilde" hint="(valgfritt)">
         <AdminFileUpload v-model="state.image" />

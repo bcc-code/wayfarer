@@ -767,6 +767,11 @@ func (r *projectResolver) MyPoints(ctx context.Context, obj *model.Project) (int
 	return points, nil
 }
 
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *projectResolver) TranslationStatus(ctx context.Context, obj *model.Project) ([]model.TranslationFieldStatus, error) {
+	return r.projectTranslationStatus(ctx, obj.ID)
+}
+
 // Project is the resolver for the project field.
 func (r *queryResolver) Project(ctx context.Context, id string) (*model.Project, error) {
 	// Use translation-aware wrapper to fetch project

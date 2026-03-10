@@ -20,6 +20,9 @@ gql(`
       publishedAt
       managementType
       managedBy
+      translationStatus {
+        ...TranslationStatus
+      }
     }
   }
 `)
@@ -183,25 +186,25 @@ async function publishConsent() {
             <h2 class="text-xl font-semibold">Rediger samtykke</h2>
           </template>
           <div class="space-y-4">
-            <UFormField label="Tittel">
+            <AdminTranslatableFormField label="Tittel" :translation-status="data?.consent.translationStatus" name="title">
               <UInput v-model="editState.title" class="w-full" />
-            </UFormField>
-            <UFormField label="Kort tekst">
+            </AdminTranslatableFormField>
+            <AdminTranslatableFormField label="Kort tekst" :translation-status="data?.consent.translationStatus" name="shortText">
               <UTextarea
                 v-model="editState.shortText"
                 class="w-full"
                 autoresize
                 placeholder="En kort beskrivelse som vises før brukere leser hele samtykket"
               />
-            </UFormField>
-            <UFormField label="Innhold (Markdown)">
+            </AdminTranslatableFormField>
+            <AdminTranslatableFormField label="Innhold (Markdown)" :translation-status="data?.consent.translationStatus" name="body">
               <UTextarea
                 v-model="editState.body"
                 class="w-full font-mono"
                 :rows="10"
                 autoresize
               />
-            </UFormField>
+            </AdminTranslatableFormField>
             <UFormField label="URL (valgfritt)">
               <UInput
                 v-model="editState.url"

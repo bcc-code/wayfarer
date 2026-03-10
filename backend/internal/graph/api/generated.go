@@ -217,17 +217,18 @@ type ComplexityRoot struct {
 	}
 
 	Consent struct {
-		Body           func(childComplexity int) int
-		ID             func(childComplexity int) int
-		Key            func(childComplexity int) int
-		ManagedBy      func(childComplexity int) int
-		ManagementType func(childComplexity int) int
-		PublishedAt    func(childComplexity int) int
-		ShortText      func(childComplexity int) int
-		Title          func(childComplexity int) int
-		URL            func(childComplexity int) int
-		UserHistory    func(childComplexity int) int
-		Version        func(childComplexity int) int
+		Body              func(childComplexity int) int
+		ID                func(childComplexity int) int
+		Key               func(childComplexity int) int
+		ManagedBy         func(childComplexity int) int
+		ManagementType    func(childComplexity int) int
+		PublishedAt       func(childComplexity int) int
+		ShortText         func(childComplexity int) int
+		Title             func(childComplexity int) int
+		TranslationStatus func(childComplexity int) int
+		URL               func(childComplexity int) int
+		UserHistory       func(childComplexity int) int
+		Version           func(childComplexity int) int
 	}
 
 	ConsentStatus struct {
@@ -258,6 +259,7 @@ type ComplexityRoot struct {
 		Points               func(childComplexity int) int
 		Project              func(childComplexity int) int
 		TotalItems           func(childComplexity int) int
+		TranslationStatus    func(childComplexity int) int
 		UserCompletedItems   func(childComplexity int) int
 	}
 
@@ -273,14 +275,15 @@ type ComplexityRoot struct {
 	}
 
 	Event struct {
-		Challenges    func(childComplexity int) int
-		Description   func(childComplexity int) int
-		EndDate       func(childComplexity int) int
-		ID            func(childComplexity int) int
-		Leaderboard   func(childComplexity int, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) int
-		Name          func(childComplexity int) int
-		ParentProject func(childComplexity int) int
-		StartDate     func(childComplexity int) int
+		Challenges        func(childComplexity int) int
+		Description       func(childComplexity int) int
+		EndDate           func(childComplexity int) int
+		ID                func(childComplexity int) int
+		Leaderboard       func(childComplexity int, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) int
+		Name              func(childComplexity int) int
+		ParentProject     func(childComplexity int) int
+		StartDate         func(childComplexity int) int
+		TranslationStatus func(childComplexity int) int
 	}
 
 	EventConnection struct {
@@ -309,6 +312,7 @@ type ComplexityRoot struct {
 		RequiresSuperTeamMembership func(childComplexity int) int
 		RequiresTeamMembership      func(childComplexity int) int
 		StartedAt                   func(childComplexity int) int
+		TranslationStatus           func(childComplexity int) int
 		URL                         func(childComplexity int) int
 		UserCompletedAt             func(childComplexity int) int
 		UserEnrolledAt              func(childComplexity int) int
@@ -696,6 +700,7 @@ type ComplexityRoot struct {
 		RequiresSuperTeamMembership func(childComplexity int) int
 		RequiresTeamMembership      func(childComplexity int) int
 		StartedAt                   func(childComplexity int) int
+		TranslationStatus           func(childComplexity int) int
 		UserCompletedAt             func(childComplexity int) int
 		UserEnrolledAt              func(childComplexity int) int
 		VisibleAt                   func(childComplexity int) int
@@ -732,27 +737,28 @@ type ComplexityRoot struct {
 	}
 
 	Project struct {
-		Achievements     func(childComplexity int) int
-		ArchivedAt       func(childComplexity int) int
-		Branding         func(childComplexity int) int
-		Challenges       func(childComplexity int) int
-		Description      func(childComplexity int) int
-		EndDate          func(childComplexity int) int
-		Events           func(childComplexity int) int
-		ID               func(childComplexity int) int
-		InfoMessage      func(childComplexity int) int
-		InfoMessageEnd   func(childComplexity int) int
-		InfoMessageStart func(childComplexity int) int
-		Journal          func(childComplexity int, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) int
-		Leaderboard      func(childComplexity int, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) int
-		MyChurchTeams    func(childComplexity int) int
-		MyPoints         func(childComplexity int) int
-		MyTeam           func(childComplexity int) int
-		Name             func(childComplexity int) int
-		Rules            func(childComplexity int) int
-		StartDate        func(childComplexity int) int
-		Streaks          func(childComplexity int) int
-		Teams            func(childComplexity int) int
+		Achievements      func(childComplexity int) int
+		ArchivedAt        func(childComplexity int) int
+		Branding          func(childComplexity int) int
+		Challenges        func(childComplexity int) int
+		Description       func(childComplexity int) int
+		EndDate           func(childComplexity int) int
+		Events            func(childComplexity int) int
+		ID                func(childComplexity int) int
+		InfoMessage       func(childComplexity int) int
+		InfoMessageEnd    func(childComplexity int) int
+		InfoMessageStart  func(childComplexity int) int
+		Journal           func(childComplexity int, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) int
+		Leaderboard       func(childComplexity int, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) int
+		MyChurchTeams     func(childComplexity int) int
+		MyPoints          func(childComplexity int) int
+		MyTeam            func(childComplexity int) int
+		Name              func(childComplexity int) int
+		Rules             func(childComplexity int) int
+		StartDate         func(childComplexity int) int
+		Streaks           func(childComplexity int) int
+		Teams             func(childComplexity int) int
+		TranslationStatus func(childComplexity int) int
 	}
 
 	ProjectConnection struct {
@@ -855,6 +861,7 @@ type ComplexityRoot struct {
 		RevealCorrectAnswers func(childComplexity int) int
 		Sessions             func(childComplexity int, state *model.QuizSessionState) int
 		TimeoutSeconds       func(childComplexity int) int
+		TranslationStatus    func(childComplexity int) int
 		UserActiveSession    func(childComplexity int) int
 		UserActiveSubmission func(childComplexity int) int
 		UserCanStart         func(childComplexity int) int
@@ -883,6 +890,7 @@ type ComplexityRoot struct {
 		Project              func(childComplexity int) int
 		Quiz                 func(childComplexity int) int
 		RequireCompletion    func(childComplexity int) int
+		TranslationStatus    func(childComplexity int) int
 	}
 
 	QuizChallenge struct {
@@ -901,6 +909,7 @@ type ComplexityRoot struct {
 		RequiresSuperTeamMembership func(childComplexity int) int
 		RequiresTeamMembership      func(childComplexity int) int
 		StartedAt                   func(childComplexity int) int
+		TranslationStatus           func(childComplexity int) int
 		UserCompletedAt             func(childComplexity int) int
 		UserEnrolledAt              func(childComplexity int) int
 		VisibleAt                   func(childComplexity int) int
@@ -1040,6 +1049,7 @@ type ComplexityRoot struct {
 		NotificationText     func(childComplexity int) int
 		Points               func(childComplexity int) int
 		Project              func(childComplexity int) int
+		TranslationStatus    func(childComplexity int) int
 	}
 
 	SimpleChallenge struct {
@@ -1058,19 +1068,21 @@ type ComplexityRoot struct {
 		RequiresSuperTeamMembership func(childComplexity int) int
 		RequiresTeamMembership      func(childComplexity int) int
 		StartedAt                   func(childComplexity int) int
+		TranslationStatus           func(childComplexity int) int
 		UserCompletedAt             func(childComplexity int) int
 		UserEnrolledAt              func(childComplexity int) int
 		VisibleAt                   func(childComplexity int) int
 	}
 
 	Streak struct {
-		Description  func(childComplexity int) int
-		ID           func(childComplexity int) int
-		ListenedDays func(childComplexity int, last int) int
-		Name         func(childComplexity int) int
-		Project      func(childComplexity int) int
-		RelevantDays func(childComplexity int) int
-		Status       func(childComplexity int) int
+		Description       func(childComplexity int) int
+		ID                func(childComplexity int) int
+		ListenedDays      func(childComplexity int, last int) int
+		Name              func(childComplexity int) int
+		Project           func(childComplexity int) int
+		RelevantDays      func(childComplexity int) int
+		Status            func(childComplexity int) int
+		TranslationStatus func(childComplexity int) int
 	}
 
 	StreakAchievement struct {
@@ -1093,6 +1105,7 @@ type ComplexityRoot struct {
 		Points               func(childComplexity int) int
 		Project              func(childComplexity int) int
 		Streak               func(childComplexity int) int
+		TranslationStatus    func(childComplexity int) int
 	}
 
 	StreakConnection struct {
@@ -1171,6 +1184,11 @@ type ComplexityRoot struct {
 		JoinedAt   func(childComplexity int) int
 		Name       func(childComplexity int) int
 		User       func(childComplexity int) int
+	}
+
+	TranslationFieldStatus struct {
+		Fields       func(childComplexity int) int
+		LanguageCode func(childComplexity int) int
 	}
 
 	User struct {
@@ -1295,6 +1313,7 @@ type ConsentResolver interface {
 	Body(ctx context.Context, obj *model.Consent) (*model.MarkdownText, error)
 
 	UserHistory(ctx context.Context, obj *model.Consent) ([]model.UserConsentHistoryEntry, error)
+	TranslationStatus(ctx context.Context, obj *model.Consent) ([]model.TranslationFieldStatus, error)
 }
 type ContentAchievementResolver interface {
 	ImagePendingObject(ctx context.Context, obj *model.ContentAchievement) (*model.Image, error)
@@ -1311,6 +1330,7 @@ type ContentAchievementResolver interface {
 	NextItem(ctx context.Context, obj *model.ContentAchievement) (*model.ContentItem, error)
 
 	CompletedItemCount(ctx context.Context, obj *model.ContentAchievement) (int, error)
+	TranslationStatus(ctx context.Context, obj *model.ContentAchievement) ([]model.TranslationFieldStatus, error)
 }
 type ContentItemResolver interface {
 	ExternalContent(ctx context.Context, obj *model.ContentItem) (*model.ExternalContent, error)
@@ -1320,6 +1340,7 @@ type EventResolver interface {
 	Leaderboard(ctx context.Context, obj *model.Event, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) (*model.LeaderboardConnection, error)
 
 	ParentProject(ctx context.Context, obj *model.Event) (*model.Project, error)
+	TranslationStatus(ctx context.Context, obj *model.Event) ([]model.TranslationFieldStatus, error)
 }
 type ExternalChallengeResolver interface {
 	ImageObject(ctx context.Context, obj *model.ExternalChallenge) (*model.Image, error)
@@ -1328,6 +1349,7 @@ type ExternalChallengeResolver interface {
 
 	UserCompletedAt(ctx context.Context, obj *model.ExternalChallenge) (*scalars.DateTime, error)
 	UserEnrolledAt(ctx context.Context, obj *model.ExternalChallenge) (*scalars.DateTime, error)
+	TranslationStatus(ctx context.Context, obj *model.ExternalChallenge) ([]model.TranslationFieldStatus, error)
 }
 type ExternalContentResolver interface {
 	Translations(ctx context.Context, obj *model.ExternalContent) ([]model.ExternalContentTranslation, error)
@@ -1519,6 +1541,7 @@ type PluginChallengeResolver interface {
 
 	UserCompletedAt(ctx context.Context, obj *model.PluginChallenge) (*scalars.DateTime, error)
 	UserEnrolledAt(ctx context.Context, obj *model.PluginChallenge) (*scalars.DateTime, error)
+	TranslationStatus(ctx context.Context, obj *model.PluginChallenge) ([]model.TranslationFieldStatus, error)
 }
 type PredefinedQuestionResolver interface {
 	Quiz(ctx context.Context, obj *model.PredefinedQuestion) (*model.Quiz, error)
@@ -1548,6 +1571,8 @@ type ProjectResolver interface {
 	Streaks(ctx context.Context, obj *model.Project) ([]model.Streak, error)
 	Journal(ctx context.Context, obj *model.Project, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error)
 	MyPoints(ctx context.Context, obj *model.Project) (int, error)
+
+	TranslationStatus(ctx context.Context, obj *model.Project) ([]model.TranslationFieldStatus, error)
 }
 type QueryResolver interface {
 	Me(ctx context.Context) (*model.User, error)
@@ -1623,6 +1648,7 @@ type QuizResolver interface {
 	Sessions(ctx context.Context, obj *model.Quiz, state *model.QuizSessionState) ([]model.QuizSession, error)
 	UserSessions(ctx context.Context, obj *model.Quiz) ([]model.QuizSession, error)
 	UserActiveSession(ctx context.Context, obj *model.Quiz) (*model.QuizSession, error)
+	TranslationStatus(ctx context.Context, obj *model.Quiz) ([]model.TranslationFieldStatus, error)
 }
 type QuizAchievementResolver interface {
 	ImagePendingObject(ctx context.Context, obj *model.QuizAchievement) (*model.Image, error)
@@ -1635,6 +1661,8 @@ type QuizAchievementResolver interface {
 	CelebratedAt(ctx context.Context, obj *model.QuizAchievement) (*scalars.DateTime, error)
 
 	Quiz(ctx context.Context, obj *model.QuizAchievement) (*model.Quiz, error)
+
+	TranslationStatus(ctx context.Context, obj *model.QuizAchievement) ([]model.TranslationFieldStatus, error)
 }
 type QuizChallengeResolver interface {
 	ImageObject(ctx context.Context, obj *model.QuizChallenge) (*model.Image, error)
@@ -1643,6 +1671,7 @@ type QuizChallengeResolver interface {
 
 	UserCompletedAt(ctx context.Context, obj *model.QuizChallenge) (*scalars.DateTime, error)
 	UserEnrolledAt(ctx context.Context, obj *model.QuizChallenge) (*scalars.DateTime, error)
+	TranslationStatus(ctx context.Context, obj *model.QuizChallenge) ([]model.TranslationFieldStatus, error)
 	Quiz(ctx context.Context, obj *model.QuizChallenge) (*model.Quiz, error)
 }
 type QuizOrderingItemResolver interface {
@@ -1700,6 +1729,8 @@ type SimpleAchievementResolver interface {
 	Challenge(ctx context.Context, obj *model.SimpleAchievement) (model.Challenge, error)
 	AchievedAt(ctx context.Context, obj *model.SimpleAchievement) (*scalars.DateTime, error)
 	CelebratedAt(ctx context.Context, obj *model.SimpleAchievement) (*scalars.DateTime, error)
+
+	TranslationStatus(ctx context.Context, obj *model.SimpleAchievement) ([]model.TranslationFieldStatus, error)
 }
 type SimpleChallengeResolver interface {
 	ImageObject(ctx context.Context, obj *model.SimpleChallenge) (*model.Image, error)
@@ -1708,12 +1739,14 @@ type SimpleChallengeResolver interface {
 
 	UserCompletedAt(ctx context.Context, obj *model.SimpleChallenge) (*scalars.DateTime, error)
 	UserEnrolledAt(ctx context.Context, obj *model.SimpleChallenge) (*scalars.DateTime, error)
+	TranslationStatus(ctx context.Context, obj *model.SimpleChallenge) ([]model.TranslationFieldStatus, error)
 }
 type StreakResolver interface {
 	Status(ctx context.Context, obj *model.Streak) (int, error)
 	RelevantDays(ctx context.Context, obj *model.Streak) ([]model.DateRange, error)
 	ListenedDays(ctx context.Context, obj *model.Streak, last int) ([]model.StreakDay, error)
 	Project(ctx context.Context, obj *model.Streak) (*model.Project, error)
+	TranslationStatus(ctx context.Context, obj *model.Streak) ([]model.TranslationFieldStatus, error)
 }
 type StreakAchievementResolver interface {
 	ImagePendingObject(ctx context.Context, obj *model.StreakAchievement) (*model.Image, error)
@@ -1725,6 +1758,7 @@ type StreakAchievementResolver interface {
 	AchievedAt(ctx context.Context, obj *model.StreakAchievement) (*scalars.DateTime, error)
 	CelebratedAt(ctx context.Context, obj *model.StreakAchievement) (*scalars.DateTime, error)
 
+	TranslationStatus(ctx context.Context, obj *model.StreakAchievement) ([]model.TranslationFieldStatus, error)
 	Streak(ctx context.Context, obj *model.StreakAchievement) (*model.Streak, error)
 }
 type SuperTeamResolver interface {
@@ -2308,6 +2342,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Consent.Title(childComplexity), true
+	case "Consent.translationStatus":
+		if e.complexity.Consent.TranslationStatus == nil {
+			break
+		}
+
+		return e.complexity.Consent.TranslationStatus(childComplexity), true
 	case "Consent.url":
 		if e.complexity.Consent.URL == nil {
 			break
@@ -2472,6 +2512,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ContentAchievement.TotalItems(childComplexity), true
+	case "ContentAchievement.translationStatus":
+		if e.complexity.ContentAchievement.TranslationStatus == nil {
+			break
+		}
+
+		return e.complexity.ContentAchievement.TranslationStatus(childComplexity), true
 	case "ContentAchievement.userCompletedItems":
 		if e.complexity.ContentAchievement.UserCompletedItems == nil {
 			break
@@ -2564,6 +2610,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Event.StartDate(childComplexity), true
+	case "Event.translationStatus":
+		if e.complexity.Event.TranslationStatus == nil {
+			break
+		}
+
+		return e.complexity.Event.TranslationStatus(childComplexity), true
 
 	case "EventConnection.edges":
 		if e.complexity.EventConnection.Edges == nil {
@@ -2681,6 +2733,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ExternalChallenge.StartedAt(childComplexity), true
+	case "ExternalChallenge.translationStatus":
+		if e.complexity.ExternalChallenge.TranslationStatus == nil {
+			break
+		}
+
+		return e.complexity.ExternalChallenge.TranslationStatus(childComplexity), true
 	case "ExternalChallenge.url":
 		if e.complexity.ExternalChallenge.URL == nil {
 			break
@@ -5184,6 +5242,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PluginChallenge.StartedAt(childComplexity), true
+	case "PluginChallenge.translationStatus":
+		if e.complexity.PluginChallenge.TranslationStatus == nil {
+			break
+		}
+
+		return e.complexity.PluginChallenge.TranslationStatus(childComplexity), true
 	case "PluginChallenge.userCompletedAt":
 		if e.complexity.PluginChallenge.UserCompletedAt == nil {
 			break
@@ -5485,6 +5549,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Project.Teams(childComplexity), true
+	case "Project.translationStatus":
+		if e.complexity.Project.TranslationStatus == nil {
+			break
+		}
+
+		return e.complexity.Project.TranslationStatus(childComplexity), true
 
 	case "ProjectConnection.edges":
 		if e.complexity.ProjectConnection.Edges == nil {
@@ -6205,6 +6275,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Quiz.TimeoutSeconds(childComplexity), true
+	case "Quiz.translationStatus":
+		if e.complexity.Quiz.TranslationStatus == nil {
+			break
+		}
+
+		return e.complexity.Quiz.TranslationStatus(childComplexity), true
 	case "Quiz.userActiveSession":
 		if e.complexity.Quiz.UserActiveSession == nil {
 			break
@@ -6356,6 +6432,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.QuizAchievement.RequireCompletion(childComplexity), true
+	case "QuizAchievement.translationStatus":
+		if e.complexity.QuizAchievement.TranslationStatus == nil {
+			break
+		}
+
+		return e.complexity.QuizAchievement.TranslationStatus(childComplexity), true
 
 	case "QuizChallenge.buttonText":
 		if e.complexity.QuizChallenge.ButtonText == nil {
@@ -6447,6 +6529,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.QuizChallenge.StartedAt(childComplexity), true
+	case "QuizChallenge.translationStatus":
+		if e.complexity.QuizChallenge.TranslationStatus == nil {
+			break
+		}
+
+		return e.complexity.QuizChallenge.TranslationStatus(childComplexity), true
 	case "QuizChallenge.userCompletedAt":
 		if e.complexity.QuizChallenge.UserCompletedAt == nil {
 			break
@@ -7026,6 +7114,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SimpleAchievement.Project(childComplexity), true
+	case "SimpleAchievement.translationStatus":
+		if e.complexity.SimpleAchievement.TranslationStatus == nil {
+			break
+		}
+
+		return e.complexity.SimpleAchievement.TranslationStatus(childComplexity), true
 
 	case "SimpleChallenge.allowSelfCompletion":
 		if e.complexity.SimpleChallenge.AllowSelfCompletion == nil {
@@ -7117,6 +7211,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SimpleChallenge.StartedAt(childComplexity), true
+	case "SimpleChallenge.translationStatus":
+		if e.complexity.SimpleChallenge.TranslationStatus == nil {
+			break
+		}
+
+		return e.complexity.SimpleChallenge.TranslationStatus(childComplexity), true
 	case "SimpleChallenge.userCompletedAt":
 		if e.complexity.SimpleChallenge.UserCompletedAt == nil {
 			break
@@ -7183,6 +7283,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Streak.Status(childComplexity), true
+	case "Streak.translationStatus":
+		if e.complexity.Streak.TranslationStatus == nil {
+			break
+		}
+
+		return e.complexity.Streak.TranslationStatus(childComplexity), true
 
 	case "StreakAchievement.achievedAt":
 		if e.complexity.StreakAchievement.AchievedAt == nil {
@@ -7298,6 +7404,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.StreakAchievement.Streak(childComplexity), true
+	case "StreakAchievement.translationStatus":
+		if e.complexity.StreakAchievement.TranslationStatus == nil {
+			break
+		}
+
+		return e.complexity.StreakAchievement.TranslationStatus(childComplexity), true
 
 	case "StreakConnection.edges":
 		if e.complexity.StreakConnection.Edges == nil {
@@ -7584,6 +7696,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.TeamMember.User(childComplexity), true
+
+	case "TranslationFieldStatus.fields":
+		if e.complexity.TranslationFieldStatus.Fields == nil {
+			break
+		}
+
+		return e.complexity.TranslationFieldStatus.Fields(childComplexity), true
+	case "TranslationFieldStatus.languageCode":
+		if e.complexity.TranslationFieldStatus.LanguageCode == nil {
+			break
+		}
+
+		return e.complexity.TranslationFieldStatus.LanguageCode(childComplexity), true
 
 	case "User.age":
 		if e.complexity.User.Age == nil {
@@ -8566,6 +8691,7 @@ type Project {
     ): ScoreJournalConnection! @goField(forceResolver: true)
     myPoints: Int! @goField(forceResolver: true)
     archivedAt: Boolean
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 # ==================== Project Input Types ====================
@@ -8659,6 +8785,7 @@ type Event {
     startDate: DateTime!
     endDate: DateTime!
     parentProject: Project! @goField(forceResolver: true)
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 # ==================== Event Input Types ====================
@@ -8886,6 +9013,7 @@ interface Achievement {
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 # ==================== Achievement Implementations ====================
@@ -8908,6 +9036,7 @@ type SimpleAchievement implements Achievement {
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 type ContentAchievement implements Achievement {
@@ -8934,6 +9063,7 @@ type ContentAchievement implements Achievement {
     nextItem: ContentItem @goField(forceResolver: true)
     totalItems: Int!
     completedItemCount: Int! @goField(forceResolver: true)
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 type StreakAchievement implements Achievement {
@@ -8955,6 +9085,7 @@ type StreakAchievement implements Achievement {
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     streak: Streak! @goField(forceResolver: true)
 }
 
@@ -8979,6 +9110,7 @@ type QuizAchievement implements Achievement {
     quiz: Quiz @goField(forceResolver: true)
     minScorePercentage: Int
     requireCompletion: Boolean!
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 # ==================== Achievement Input Types ====================
@@ -9207,6 +9339,7 @@ interface Challenge {
     requiresSuperTeamMembership: Boolean!
     userCompletedAt: DateTime @goField(forceResolver: true)
     userEnrolledAt: DateTime @goField(forceResolver: true)
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 # ==================== Challenge Implementations ====================
@@ -9229,6 +9362,7 @@ type SimpleChallenge implements Challenge {
     requiresSuperTeamMembership: Boolean!
     userCompletedAt: DateTime @goField(forceResolver: true)
     userEnrolledAt: DateTime @goField(forceResolver: true)
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     # SimpleChallenge-specific fields
     allowSelfCompletion: Boolean!
 }
@@ -9251,6 +9385,7 @@ type QuizChallenge implements Challenge {
     requiresSuperTeamMembership: Boolean!
     userCompletedAt: DateTime @goField(forceResolver: true)
     userEnrolledAt: DateTime @goField(forceResolver: true)
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     # QuizChallenge-specific fields - no url, linked to quiz
     quiz: Quiz! @goField(forceResolver: true)
 }
@@ -9273,6 +9408,7 @@ type ExternalChallenge implements Challenge {
     requiresSuperTeamMembership: Boolean!
     userCompletedAt: DateTime @goField(forceResolver: true)
     userEnrolledAt: DateTime @goField(forceResolver: true)
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     # ExternalChallenge-specific fields - url is required
     url: String!
 }
@@ -9295,6 +9431,7 @@ type PluginChallenge implements Challenge {
     requiresSuperTeamMembership: Boolean!
     userCompletedAt: DateTime @goField(forceResolver: true)
     userEnrolledAt: DateTime @goField(forceResolver: true)
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     # PluginChallenge-specific fields - pluginChallengeId is required, plugin_data is internal-only
     pluginChallengeId: String!
 }
@@ -9437,6 +9574,7 @@ type Streak {
     relevantDays: [DateRange!]! @goField(forceResolver: true)
     listenedDays(last: Int!): [StreakDay!]! @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 type StreakDay {
@@ -9807,6 +9945,7 @@ type Consent {
     managementType: ConsentManagementType!
     managedBy: String
     userHistory: [UserConsentHistoryEntry!]! @goField(forceResolver: true)
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 type UserConsent {
@@ -9926,6 +10065,7 @@ type Quiz {
     sessions(state: QuizSessionState): [QuizSession!]! @goField(forceResolver: true)
     userSessions: [QuizSession!]! @goField(forceResolver: true)
     userActiveSession: QuizSession @goField(forceResolver: true)
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 # ==================== Quiz Question Interface ====================
@@ -10917,6 +11057,13 @@ extend type Query {
     bulkJob(id: ID!): BulkJob
     myBulkJobs(limit: Int): [BulkJob!]!
     bulkJobs(filter: BulkJobFilter, first: Int, after: String, last: Int, before: String): BulkJobConnection! @requireRole(roles: ["admin", "superadmin"])
+}
+`, BuiltIn: false},
+	{Name: "../../../../gql/translations.graphqls", Input: `# Translation status for admin edit pages
+
+type TranslationFieldStatus {
+  languageCode: String!
+  fields: [String!]!
 }
 `, BuiltIn: false},
 }
@@ -16531,6 +16678,41 @@ func (ec *executionContext) fieldContext_Consent_userHistory(_ context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _Consent_translationStatus(ctx context.Context, field graphql.CollectedField, obj *model.Consent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Consent_translationStatus,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Consent().TranslationStatus(ctx, obj)
+		},
+		nil,
+		ec.marshalNTranslationFieldStatus2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTranslationFieldStatusᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Consent_translationStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Consent",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "languageCode":
+				return ec.fieldContext_TranslationFieldStatus_languageCode(ctx, field)
+			case "fields":
+				return ec.fieldContext_TranslationFieldStatus_fields(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TranslationFieldStatus", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ConsentStatus_pendingConsents(ctx context.Context, field graphql.CollectedField, obj *model.ConsentStatus) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -16577,6 +16759,8 @@ func (ec *executionContext) fieldContext_ConsentStatus_pendingConsents(_ context
 				return ec.fieldContext_Consent_managedBy(ctx, field)
 			case "userHistory":
 				return ec.fieldContext_Consent_userHistory(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Consent_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Consent", field.Name)
 		},
@@ -17009,6 +17193,8 @@ func (ec *executionContext) fieldContext_ContentAchievement_project(_ context.Co
 				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -17056,6 +17242,8 @@ func (ec *executionContext) fieldContext_ContentAchievement_event(_ context.Cont
 				return ec.fieldContext_Event_endDate(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Event_parentProject(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Event_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -17401,6 +17589,41 @@ func (ec *executionContext) fieldContext_ContentAchievement_completedItemCount(_
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ContentAchievement_translationStatus(ctx context.Context, field graphql.CollectedField, obj *model.ContentAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ContentAchievement_translationStatus,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.ContentAchievement().TranslationStatus(ctx, obj)
+		},
+		nil,
+		ec.marshalNTranslationFieldStatus2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTranslationFieldStatusᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ContentAchievement_translationStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ContentAchievement",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "languageCode":
+				return ec.fieldContext_TranslationFieldStatus_languageCode(ctx, field)
+			case "fields":
+				return ec.fieldContext_TranslationFieldStatus_fields(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TranslationFieldStatus", field.Name)
 		},
 	}
 	return fc, nil
@@ -17870,8 +18093,45 @@ func (ec *executionContext) fieldContext_Event_parentProject(_ context.Context, 
 				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Event_translationStatus(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Event_translationStatus,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Event().TranslationStatus(ctx, obj)
+		},
+		nil,
+		ec.marshalNTranslationFieldStatus2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTranslationFieldStatusᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Event_translationStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Event",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "languageCode":
+				return ec.fieldContext_TranslationFieldStatus_languageCode(ctx, field)
+			case "fields":
+				return ec.fieldContext_TranslationFieldStatus_fields(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TranslationFieldStatus", field.Name)
 		},
 	}
 	return fc, nil
@@ -18049,6 +18309,8 @@ func (ec *executionContext) fieldContext_EventEdge_node(_ context.Context, field
 				return ec.fieldContext_Event_endDate(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Event_parentProject(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Event_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -18277,6 +18539,8 @@ func (ec *executionContext) fieldContext_ExternalChallenge_project(_ context.Con
 				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -18324,6 +18588,8 @@ func (ec *executionContext) fieldContext_ExternalChallenge_event(_ context.Conte
 				return ec.fieldContext_Event_endDate(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Event_parentProject(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Event_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -18616,6 +18882,41 @@ func (ec *executionContext) fieldContext_ExternalChallenge_userEnrolledAt(_ cont
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExternalChallenge_translationStatus(ctx context.Context, field graphql.CollectedField, obj *model.ExternalChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExternalChallenge_translationStatus,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.ExternalChallenge().TranslationStatus(ctx, obj)
+		},
+		nil,
+		ec.marshalNTranslationFieldStatus2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTranslationFieldStatusᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExternalChallenge_translationStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExternalChallenge",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "languageCode":
+				return ec.fieldContext_TranslationFieldStatus_languageCode(ctx, field)
+			case "fields":
+				return ec.fieldContext_TranslationFieldStatus_fields(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TranslationFieldStatus", field.Name)
 		},
 	}
 	return fc, nil
@@ -20034,6 +20335,8 @@ func (ec *executionContext) fieldContext_FreeTextQuestion_quiz(_ context.Context
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
 			case "userActiveSession":
 				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Quiz_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -20830,6 +21133,8 @@ func (ec *executionContext) fieldContext_JsonQuestion_quiz(_ context.Context, fi
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
 			case "userActiveSession":
 				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Quiz_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -22269,6 +22574,8 @@ func (ec *executionContext) fieldContext_Mutation_joinProject(ctx context.Contex
 				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -22372,6 +22679,8 @@ func (ec *executionContext) fieldContext_Mutation_createProject(ctx context.Cont
 				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -22475,6 +22784,8 @@ func (ec *executionContext) fieldContext_Mutation_updateProject(ctx context.Cont
 				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -22652,6 +22963,8 @@ func (ec *executionContext) fieldContext_Mutation_joinEvent(ctx context.Context,
 				return ec.fieldContext_Event_endDate(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Event_parentProject(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Event_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -22729,6 +23042,8 @@ func (ec *executionContext) fieldContext_Mutation_createEvent(ctx context.Contex
 				return ec.fieldContext_Event_endDate(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Event_parentProject(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Event_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -22806,6 +23121,8 @@ func (ec *executionContext) fieldContext_Mutation_updateEvent(ctx context.Contex
 				return ec.fieldContext_Event_endDate(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Event_parentProject(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Event_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -22942,6 +23259,8 @@ func (ec *executionContext) fieldContext_Mutation_moveEvent(ctx context.Context,
 				return ec.fieldContext_Event_endDate(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Event_parentProject(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Event_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -24100,6 +24419,8 @@ func (ec *executionContext) fieldContext_Mutation_createSimpleAchievement(ctx co
 				return ec.fieldContext_SimpleAchievement_hidden(ctx, field)
 			case "awardableFrom":
 				return ec.fieldContext_SimpleAchievement_awardableFrom(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_SimpleAchievement_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type SimpleAchievement", field.Name)
 		},
@@ -24205,6 +24526,8 @@ func (ec *executionContext) fieldContext_Mutation_createContentAchievement(ctx c
 				return ec.fieldContext_ContentAchievement_totalItems(ctx, field)
 			case "completedItemCount":
 				return ec.fieldContext_ContentAchievement_completedItemCount(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_ContentAchievement_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ContentAchievement", field.Name)
 		},
@@ -24302,6 +24625,8 @@ func (ec *executionContext) fieldContext_Mutation_createStreakAchievement(ctx co
 				return ec.fieldContext_StreakAchievement_hidden(ctx, field)
 			case "awardableFrom":
 				return ec.fieldContext_StreakAchievement_awardableFrom(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_StreakAchievement_translationStatus(ctx, field)
 			case "streak":
 				return ec.fieldContext_StreakAchievement_streak(ctx, field)
 			}
@@ -24468,6 +24793,8 @@ func (ec *executionContext) fieldContext_Mutation_updateContentAchievement(ctx c
 				return ec.fieldContext_ContentAchievement_totalItems(ctx, field)
 			case "completedItemCount":
 				return ec.fieldContext_ContentAchievement_completedItemCount(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_ContentAchievement_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ContentAchievement", field.Name)
 		},
@@ -24565,6 +24892,8 @@ func (ec *executionContext) fieldContext_Mutation_updateStreakAchievement(ctx co
 				return ec.fieldContext_StreakAchievement_hidden(ctx, field)
 			case "awardableFrom":
 				return ec.fieldContext_StreakAchievement_awardableFrom(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_StreakAchievement_translationStatus(ctx, field)
 			case "streak":
 				return ec.fieldContext_StreakAchievement_streak(ctx, field)
 			}
@@ -24668,6 +24997,8 @@ func (ec *executionContext) fieldContext_Mutation_updateQuizAchievement(ctx cont
 				return ec.fieldContext_QuizAchievement_minScorePercentage(ctx, field)
 			case "requireCompletion":
 				return ec.fieldContext_QuizAchievement_requireCompletion(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_QuizAchievement_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type QuizAchievement", field.Name)
 		},
@@ -25127,6 +25458,8 @@ func (ec *executionContext) fieldContext_Mutation_markContentItemCompleted(ctx c
 				return ec.fieldContext_ContentAchievement_totalItems(ctx, field)
 			case "completedItemCount":
 				return ec.fieldContext_ContentAchievement_completedItemCount(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_ContentAchievement_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ContentAchievement", field.Name)
 		},
@@ -25232,6 +25565,8 @@ func (ec *executionContext) fieldContext_Mutation_unmarkContentItemCompleted(ctx
 				return ec.fieldContext_ContentAchievement_totalItems(ctx, field)
 			case "completedItemCount":
 				return ec.fieldContext_ContentAchievement_completedItemCount(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_ContentAchievement_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ContentAchievement", field.Name)
 		},
@@ -25329,6 +25664,8 @@ func (ec *executionContext) fieldContext_Mutation_recordStreakActivity(ctx conte
 				return ec.fieldContext_StreakAchievement_hidden(ctx, field)
 			case "awardableFrom":
 				return ec.fieldContext_StreakAchievement_awardableFrom(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_StreakAchievement_translationStatus(ctx, field)
 			case "streak":
 				return ec.fieldContext_StreakAchievement_streak(ctx, field)
 			}
@@ -26069,6 +26406,8 @@ func (ec *executionContext) fieldContext_Mutation_selfCompleteChallenge(ctx cont
 				return ec.fieldContext_SimpleChallenge_userCompletedAt(ctx, field)
 			case "userEnrolledAt":
 				return ec.fieldContext_SimpleChallenge_userEnrolledAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_SimpleChallenge_translationStatus(ctx, field)
 			case "allowSelfCompletion":
 				return ec.fieldContext_SimpleChallenge_allowSelfCompletion(ctx, field)
 			}
@@ -26973,6 +27312,8 @@ func (ec *executionContext) fieldContext_Mutation_createStreak(ctx context.Conte
 				return ec.fieldContext_Streak_listenedDays(ctx, field)
 			case "project":
 				return ec.fieldContext_Streak_project(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Streak_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Streak", field.Name)
 		},
@@ -27048,6 +27389,8 @@ func (ec *executionContext) fieldContext_Mutation_updateStreak(ctx context.Conte
 				return ec.fieldContext_Streak_listenedDays(ctx, field)
 			case "project":
 				return ec.fieldContext_Streak_project(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Streak_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Streak", field.Name)
 		},
@@ -28399,6 +28742,8 @@ func (ec *executionContext) fieldContext_Mutation_createConsent(ctx context.Cont
 				return ec.fieldContext_Consent_managedBy(ctx, field)
 			case "userHistory":
 				return ec.fieldContext_Consent_userHistory(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Consent_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Consent", field.Name)
 		},
@@ -28482,6 +28827,8 @@ func (ec *executionContext) fieldContext_Mutation_updateConsent(ctx context.Cont
 				return ec.fieldContext_Consent_managedBy(ctx, field)
 			case "userHistory":
 				return ec.fieldContext_Consent_userHistory(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Consent_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Consent", field.Name)
 		},
@@ -28658,6 +29005,8 @@ func (ec *executionContext) fieldContext_Mutation_createQuiz(ctx context.Context
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
 			case "userActiveSession":
 				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Quiz_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -28759,6 +29108,8 @@ func (ec *executionContext) fieldContext_Mutation_updateQuiz(ctx context.Context
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
 			case "userActiveSession":
 				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Quiz_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -29155,6 +29506,8 @@ func (ec *executionContext) fieldContext_Mutation_createQuizAchievement(ctx cont
 				return ec.fieldContext_QuizAchievement_minScorePercentage(ctx, field)
 			case "requireCompletion":
 				return ec.fieldContext_QuizAchievement_requireCompletion(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_QuizAchievement_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type QuizAchievement", field.Name)
 		},
@@ -30537,6 +30890,8 @@ func (ec *executionContext) fieldContext_Mutation_createContentAchievementFromEx
 				return ec.fieldContext_ContentAchievement_totalItems(ctx, field)
 			case "completedItemCount":
 				return ec.fieldContext_ContentAchievement_completedItemCount(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_ContentAchievement_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ContentAchievement", field.Name)
 		},
@@ -31647,6 +32002,8 @@ func (ec *executionContext) fieldContext_NumberQuestion_quiz(_ context.Context, 
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
 			case "userActiveSession":
 				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Quiz_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -32414,6 +32771,8 @@ func (ec *executionContext) fieldContext_OrderingQuestion_quiz(_ context.Context
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
 			case "userActiveSession":
 				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Quiz_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -33406,6 +33765,8 @@ func (ec *executionContext) fieldContext_PluginChallenge_project(_ context.Conte
 				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -33453,6 +33814,8 @@ func (ec *executionContext) fieldContext_PluginChallenge_event(_ context.Context
 				return ec.fieldContext_Event_endDate(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Event_parentProject(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Event_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -33750,6 +34113,41 @@ func (ec *executionContext) fieldContext_PluginChallenge_userEnrolledAt(_ contex
 	return fc, nil
 }
 
+func (ec *executionContext) _PluginChallenge_translationStatus(ctx context.Context, field graphql.CollectedField, obj *model.PluginChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PluginChallenge_translationStatus,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.PluginChallenge().TranslationStatus(ctx, obj)
+		},
+		nil,
+		ec.marshalNTranslationFieldStatus2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTranslationFieldStatusᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PluginChallenge_translationStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PluginChallenge",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "languageCode":
+				return ec.fieldContext_TranslationFieldStatus_languageCode(ctx, field)
+			case "fields":
+				return ec.fieldContext_TranslationFieldStatus_fields(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TranslationFieldStatus", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _PluginChallenge_pluginChallengeId(ctx context.Context, field graphql.CollectedField, obj *model.PluginChallenge) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -33872,6 +34270,8 @@ func (ec *executionContext) fieldContext_PredefinedQuestion_quiz(_ context.Conte
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
 			case "userActiveSession":
 				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Quiz_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -34934,6 +35334,8 @@ func (ec *executionContext) fieldContext_Project_events(_ context.Context, field
 				return ec.fieldContext_Event_endDate(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Event_parentProject(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Event_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -35262,6 +35664,8 @@ func (ec *executionContext) fieldContext_Project_streaks(_ context.Context, fiel
 				return ec.fieldContext_Streak_listenedDays(ctx, field)
 			case "project":
 				return ec.fieldContext_Streak_project(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Streak_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Streak", field.Name)
 		},
@@ -35371,6 +35775,41 @@ func (ec *executionContext) fieldContext_Project_archivedAt(_ context.Context, f
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Project_translationStatus(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Project_translationStatus,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Project().TranslationStatus(ctx, obj)
+		},
+		nil,
+		ec.marshalNTranslationFieldStatus2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTranslationFieldStatusᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Project_translationStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Project",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "languageCode":
+				return ec.fieldContext_TranslationFieldStatus_languageCode(ctx, field)
+			case "fields":
+				return ec.fieldContext_TranslationFieldStatus_fields(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TranslationFieldStatus", field.Name)
 		},
 	}
 	return fc, nil
@@ -35574,6 +36013,8 @@ func (ec *executionContext) fieldContext_ProjectEdge_node(_ context.Context, fie
 				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -35932,6 +36373,8 @@ func (ec *executionContext) fieldContext_Query_project(ctx context.Context, fiel
 				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -36065,6 +36508,8 @@ func (ec *executionContext) fieldContext_Query_myProjects(_ context.Context, fie
 				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -36138,6 +36583,8 @@ func (ec *executionContext) fieldContext_Query_myCurrentProject(_ context.Contex
 				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -36211,6 +36658,8 @@ func (ec *executionContext) fieldContext_Query_currentProject(_ context.Context,
 				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -36259,6 +36708,8 @@ func (ec *executionContext) fieldContext_Query_event(ctx context.Context, field 
 				return ec.fieldContext_Event_endDate(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Event_parentProject(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Event_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -36367,6 +36818,8 @@ func (ec *executionContext) fieldContext_Query_myEvents(ctx context.Context, fie
 				return ec.fieldContext_Event_endDate(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Event_parentProject(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Event_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -36425,6 +36878,8 @@ func (ec *executionContext) fieldContext_Query_myCurrentEvent(_ context.Context,
 				return ec.fieldContext_Event_endDate(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Event_parentProject(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Event_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -36472,6 +36927,8 @@ func (ec *executionContext) fieldContext_Query_currentEvent(_ context.Context, f
 				return ec.fieldContext_Event_endDate(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Event_parentProject(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Event_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -36977,6 +37434,8 @@ func (ec *executionContext) fieldContext_Query_streak(ctx context.Context, field
 				return ec.fieldContext_Streak_listenedDays(ctx, field)
 			case "project":
 				return ec.fieldContext_Streak_project(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Streak_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Streak", field.Name)
 		},
@@ -37580,6 +38039,8 @@ func (ec *executionContext) fieldContext_Query_consents(_ context.Context, field
 				return ec.fieldContext_Consent_managedBy(ctx, field)
 			case "userHistory":
 				return ec.fieldContext_Consent_userHistory(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Consent_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Consent", field.Name)
 		},
@@ -37634,6 +38095,8 @@ func (ec *executionContext) fieldContext_Query_consent(ctx context.Context, fiel
 				return ec.fieldContext_Consent_managedBy(ctx, field)
 			case "userHistory":
 				return ec.fieldContext_Consent_userHistory(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Consent_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Consent", field.Name)
 		},
@@ -37698,6 +38161,8 @@ func (ec *executionContext) fieldContext_Query_pendingConsents(_ context.Context
 				return ec.fieldContext_Consent_managedBy(ctx, field)
 			case "userHistory":
 				return ec.fieldContext_Consent_userHistory(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Consent_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Consent", field.Name)
 		},
@@ -37788,6 +38253,8 @@ func (ec *executionContext) fieldContext_Query_quiz(ctx context.Context, field g
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
 			case "userActiveSession":
 				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Quiz_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -39560,6 +40027,8 @@ func (ec *executionContext) fieldContext_Quiz_project(_ context.Context, field g
 				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -40131,6 +40600,41 @@ func (ec *executionContext) fieldContext_Quiz_userActiveSession(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Quiz_translationStatus(ctx context.Context, field graphql.CollectedField, obj *model.Quiz) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Quiz_translationStatus,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Quiz().TranslationStatus(ctx, obj)
+		},
+		nil,
+		ec.marshalNTranslationFieldStatus2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTranslationFieldStatusᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Quiz_translationStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Quiz",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "languageCode":
+				return ec.fieldContext_TranslationFieldStatus_languageCode(ctx, field)
+			case "fields":
+				return ec.fieldContext_TranslationFieldStatus_fields(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TranslationFieldStatus", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _QuizAchievement_id(ctx context.Context, field graphql.CollectedField, obj *model.QuizAchievement) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -40478,6 +40982,8 @@ func (ec *executionContext) fieldContext_QuizAchievement_project(_ context.Conte
 				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -40525,6 +41031,8 @@ func (ec *executionContext) fieldContext_QuizAchievement_event(_ context.Context
 				return ec.fieldContext_Event_endDate(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Event_parentProject(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Event_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -40770,6 +41278,8 @@ func (ec *executionContext) fieldContext_QuizAchievement_quiz(_ context.Context,
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
 			case "userActiveSession":
 				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Quiz_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -40830,6 +41340,41 @@ func (ec *executionContext) fieldContext_QuizAchievement_requireCompletion(_ con
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizAchievement_translationStatus(ctx context.Context, field graphql.CollectedField, obj *model.QuizAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizAchievement_translationStatus,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.QuizAchievement().TranslationStatus(ctx, obj)
+		},
+		nil,
+		ec.marshalNTranslationFieldStatus2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTranslationFieldStatusᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizAchievement_translationStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizAchievement",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "languageCode":
+				return ec.fieldContext_TranslationFieldStatus_languageCode(ctx, field)
+			case "fields":
+				return ec.fieldContext_TranslationFieldStatus_fields(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TranslationFieldStatus", field.Name)
 		},
 	}
 	return fc, nil
@@ -41056,6 +41601,8 @@ func (ec *executionContext) fieldContext_QuizChallenge_project(_ context.Context
 				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -41103,6 +41650,8 @@ func (ec *executionContext) fieldContext_QuizChallenge_event(_ context.Context, 
 				return ec.fieldContext_Event_endDate(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Event_parentProject(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Event_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -41400,6 +41949,41 @@ func (ec *executionContext) fieldContext_QuizChallenge_userEnrolledAt(_ context.
 	return fc, nil
 }
 
+func (ec *executionContext) _QuizChallenge_translationStatus(ctx context.Context, field graphql.CollectedField, obj *model.QuizChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizChallenge_translationStatus,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.QuizChallenge().TranslationStatus(ctx, obj)
+		},
+		nil,
+		ec.marshalNTranslationFieldStatus2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTranslationFieldStatusᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizChallenge_translationStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizChallenge",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "languageCode":
+				return ec.fieldContext_TranslationFieldStatus_languageCode(ctx, field)
+			case "fields":
+				return ec.fieldContext_TranslationFieldStatus_fields(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TranslationFieldStatus", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _QuizChallenge_quiz(ctx context.Context, field graphql.CollectedField, obj *model.QuizChallenge) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -41464,6 +42048,8 @@ func (ec *executionContext) fieldContext_QuizChallenge_quiz(_ context.Context, f
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
 			case "userActiveSession":
 				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Quiz_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -41667,6 +42253,8 @@ func (ec *executionContext) fieldContext_QuizEdge_node(_ context.Context, field 
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
 			case "userActiveSession":
 				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Quiz_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -42028,6 +42616,8 @@ func (ec *executionContext) fieldContext_QuizSession_quiz(_ context.Context, fie
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
 			case "userActiveSession":
 				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Quiz_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -42498,6 +43088,8 @@ func (ec *executionContext) fieldContext_QuizSubmission_quiz(_ context.Context, 
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
 			case "userActiveSession":
 				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Quiz_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -43399,6 +43991,8 @@ func (ec *executionContext) fieldContext_RoleScope_project(_ context.Context, fi
 				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -43552,6 +44146,8 @@ func (ec *executionContext) fieldContext_ScoreJournal_project(_ context.Context,
 				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -43674,6 +44270,8 @@ func (ec *executionContext) fieldContext_ScoreJournal_event(_ context.Context, f
 				return ec.fieldContext_Event_endDate(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Event_parentProject(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Event_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -44578,6 +45176,8 @@ func (ec *executionContext) fieldContext_SimpleAchievement_project(_ context.Con
 				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -44625,6 +45225,8 @@ func (ec *executionContext) fieldContext_SimpleAchievement_event(_ context.Conte
 				return ec.fieldContext_Event_endDate(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Event_parentProject(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Event_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -44801,6 +45403,41 @@ func (ec *executionContext) fieldContext_SimpleAchievement_awardableFrom(_ conte
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SimpleAchievement_translationStatus(ctx context.Context, field graphql.CollectedField, obj *model.SimpleAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SimpleAchievement_translationStatus,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.SimpleAchievement().TranslationStatus(ctx, obj)
+		},
+		nil,
+		ec.marshalNTranslationFieldStatus2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTranslationFieldStatusᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SimpleAchievement_translationStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SimpleAchievement",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "languageCode":
+				return ec.fieldContext_TranslationFieldStatus_languageCode(ctx, field)
+			case "fields":
+				return ec.fieldContext_TranslationFieldStatus_fields(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TranslationFieldStatus", field.Name)
 		},
 	}
 	return fc, nil
@@ -45027,6 +45664,8 @@ func (ec *executionContext) fieldContext_SimpleChallenge_project(_ context.Conte
 				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -45074,6 +45713,8 @@ func (ec *executionContext) fieldContext_SimpleChallenge_event(_ context.Context
 				return ec.fieldContext_Event_endDate(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Event_parentProject(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Event_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -45366,6 +46007,41 @@ func (ec *executionContext) fieldContext_SimpleChallenge_userEnrolledAt(_ contex
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SimpleChallenge_translationStatus(ctx context.Context, field graphql.CollectedField, obj *model.SimpleChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SimpleChallenge_translationStatus,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.SimpleChallenge().TranslationStatus(ctx, obj)
+		},
+		nil,
+		ec.marshalNTranslationFieldStatus2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTranslationFieldStatusᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SimpleChallenge_translationStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SimpleChallenge",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "languageCode":
+				return ec.fieldContext_TranslationFieldStatus_languageCode(ctx, field)
+			case "fields":
+				return ec.fieldContext_TranslationFieldStatus_fields(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TranslationFieldStatus", field.Name)
 		},
 	}
 	return fc, nil
@@ -45664,8 +46340,45 @@ func (ec *executionContext) fieldContext_Streak_project(_ context.Context, field
 				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Streak_translationStatus(ctx context.Context, field graphql.CollectedField, obj *model.Streak) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Streak_translationStatus,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Streak().TranslationStatus(ctx, obj)
+		},
+		nil,
+		ec.marshalNTranslationFieldStatus2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTranslationFieldStatusᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Streak_translationStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Streak",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "languageCode":
+				return ec.fieldContext_TranslationFieldStatus_languageCode(ctx, field)
+			case "fields":
+				return ec.fieldContext_TranslationFieldStatus_fields(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TranslationFieldStatus", field.Name)
 		},
 	}
 	return fc, nil
@@ -46018,6 +46731,8 @@ func (ec *executionContext) fieldContext_StreakAchievement_project(_ context.Con
 				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -46065,6 +46780,8 @@ func (ec *executionContext) fieldContext_StreakAchievement_event(_ context.Conte
 				return ec.fieldContext_Event_endDate(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Event_parentProject(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Event_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -46275,6 +46992,41 @@ func (ec *executionContext) fieldContext_StreakAchievement_awardableFrom(_ conte
 	return fc, nil
 }
 
+func (ec *executionContext) _StreakAchievement_translationStatus(ctx context.Context, field graphql.CollectedField, obj *model.StreakAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StreakAchievement_translationStatus,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.StreakAchievement().TranslationStatus(ctx, obj)
+		},
+		nil,
+		ec.marshalNTranslationFieldStatus2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTranslationFieldStatusᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StreakAchievement_translationStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StreakAchievement",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "languageCode":
+				return ec.fieldContext_TranslationFieldStatus_languageCode(ctx, field)
+			case "fields":
+				return ec.fieldContext_TranslationFieldStatus_fields(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TranslationFieldStatus", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _StreakAchievement_streak(ctx context.Context, field graphql.CollectedField, obj *model.StreakAchievement) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -46313,6 +47065,8 @@ func (ec *executionContext) fieldContext_StreakAchievement_streak(_ context.Cont
 				return ec.fieldContext_Streak_listenedDays(ctx, field)
 			case "project":
 				return ec.fieldContext_Streak_project(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Streak_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Streak", field.Name)
 		},
@@ -46548,6 +47302,8 @@ func (ec *executionContext) fieldContext_StreakEdge_node(_ context.Context, fiel
 				return ec.fieldContext_Streak_listenedDays(ctx, field)
 			case "project":
 				return ec.fieldContext_Streak_project(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Streak_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Streak", field.Name)
 		},
@@ -46757,6 +47513,8 @@ func (ec *executionContext) fieldContext_SuperTeam_parentProject(_ context.Conte
 				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -47542,6 +48300,8 @@ func (ec *executionContext) fieldContext_Team_parentProject(_ context.Context, f
 				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -48000,6 +48760,64 @@ func (ec *executionContext) fieldContext_TeamMember_user(_ context.Context, fiel
 				return ec.fieldContext_User_points(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TranslationFieldStatus_languageCode(ctx context.Context, field graphql.CollectedField, obj *model.TranslationFieldStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TranslationFieldStatus_languageCode,
+		func(ctx context.Context) (any, error) {
+			return obj.LanguageCode, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TranslationFieldStatus_languageCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TranslationFieldStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TranslationFieldStatus_fields(ctx context.Context, field graphql.CollectedField, obj *model.TranslationFieldStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TranslationFieldStatus_fields,
+		func(ctx context.Context) (any, error) {
+			return obj.Fields, nil
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TranslationFieldStatus_fields(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TranslationFieldStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -48468,6 +49286,8 @@ func (ec *executionContext) fieldContext_User_projects(_ context.Context, field 
 				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -48515,6 +49335,8 @@ func (ec *executionContext) fieldContext_User_events(_ context.Context, field gr
 				return ec.fieldContext_Event_endDate(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Event_parentProject(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Event_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -48969,6 +49791,8 @@ func (ec *executionContext) fieldContext_UserConsent_consent(_ context.Context, 
 				return ec.fieldContext_Consent_managedBy(ctx, field)
 			case "userHistory":
 				return ec.fieldContext_Consent_userHistory(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Consent_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Consent", field.Name)
 		},
@@ -49109,6 +49933,8 @@ func (ec *executionContext) fieldContext_UserConsentHistoryEntry_consent(_ conte
 				return ec.fieldContext_Consent_managedBy(ctx, field)
 			case "userHistory":
 				return ec.fieldContext_Consent_userHistory(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Consent_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Consent", field.Name)
 		},
@@ -50260,6 +51086,8 @@ func (ec *executionContext) fieldContext_Webhook_project(_ context.Context, fiel
 				return ec.fieldContext_Project_myPoints(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -58207,6 +59035,42 @@ func (ec *executionContext) _Consent(ctx context.Context, sel ast.SelectionSet, 
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "translationStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Consent_translationStatus(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -58723,6 +59587,42 @@ func (ec *executionContext) _ContentAchievement(ctx context.Context, sel ast.Sel
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "translationStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ContentAchievement_translationStatus(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -58988,6 +59888,42 @@ func (ec *executionContext) _Event(ctx context.Context, sel ast.SelectionSet, ob
 					}
 				}()
 				res = ec._Event_parentProject(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "translationStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Event_translationStatus(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -59331,6 +60267,42 @@ func (ec *executionContext) _ExternalChallenge(ctx context.Context, sel ast.Sele
 					}
 				}()
 				res = ec._ExternalChallenge_userEnrolledAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "translationStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ExternalChallenge_translationStatus(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 
@@ -62673,6 +63645,42 @@ func (ec *executionContext) _PluginChallenge(ctx context.Context, sel ast.Select
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "translationStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._PluginChallenge_translationStatus(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "pluginChallengeId":
 			out.Values[i] = ec._PluginChallenge_pluginChallengeId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -63509,6 +64517,42 @@ func (ec *executionContext) _Project(ctx context.Context, sel ast.SelectionSet, 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "archivedAt":
 			out.Values[i] = ec._Project_archivedAt(ctx, field, obj)
+		case "translationStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Project_translationStatus(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -65454,6 +66498,42 @@ func (ec *executionContext) _Quiz(ctx context.Context, sel ast.SelectionSet, obj
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "translationStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Quiz_translationStatus(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -65815,6 +66895,42 @@ func (ec *executionContext) _QuizAchievement(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "translationStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._QuizAchievement_translationStatus(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -66039,6 +67155,42 @@ func (ec *executionContext) _QuizChallenge(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._QuizChallenge_userEnrolledAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "translationStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._QuizChallenge_translationStatus(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 
@@ -67974,6 +69126,42 @@ func (ec *executionContext) _SimpleAchievement(ctx context.Context, sel ast.Sele
 			}
 		case "awardableFrom":
 			out.Values[i] = ec._SimpleAchievement_awardableFrom(ctx, field, obj)
+		case "translationStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SimpleAchievement_translationStatus(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -68221,6 +69409,42 @@ func (ec *executionContext) _SimpleChallenge(ctx context.Context, sel ast.Select
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "translationStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SimpleChallenge_translationStatus(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "allowSelfCompletion":
 			out.Values[i] = ec._SimpleChallenge_allowSelfCompletion(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -68393,6 +69617,42 @@ func (ec *executionContext) _Streak(ctx context.Context, sel ast.SelectionSet, o
 					}
 				}()
 				res = ec._Streak_project(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "translationStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Streak_translationStatus(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -68745,6 +70005,42 @@ func (ec *executionContext) _StreakAchievement(ctx context.Context, sel ast.Sele
 			}
 		case "awardableFrom":
 			out.Values[i] = ec._StreakAchievement_awardableFrom(ctx, field, obj)
+		case "translationStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._StreakAchievement_translationStatus(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "streak":
 			field := field
 
@@ -69684,6 +70980,50 @@ func (ec *executionContext) _TeamMember(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var translationFieldStatusImplementors = []string{"TranslationFieldStatus"}
+
+func (ec *executionContext) _TranslationFieldStatus(ctx context.Context, sel ast.SelectionSet, obj *model.TranslationFieldStatus) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, translationFieldStatusImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TranslationFieldStatus")
+		case "languageCode":
+			out.Values[i] = ec._TranslationFieldStatus_languageCode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "fields":
+			out.Values[i] = ec._TranslationFieldStatus_fields(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -74545,6 +75885,54 @@ func (ec *executionContext) unmarshalNTeamScoreDistributionMode2githubᚗcomᚋb
 
 func (ec *executionContext) marshalNTeamScoreDistributionMode2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeamScoreDistributionMode(ctx context.Context, sel ast.SelectionSet, v model.TeamScoreDistributionMode) graphql.Marshaler {
 	return v
+}
+
+func (ec *executionContext) marshalNTranslationFieldStatus2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTranslationFieldStatus(ctx context.Context, sel ast.SelectionSet, v model.TranslationFieldStatus) graphql.Marshaler {
+	return ec._TranslationFieldStatus(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTranslationFieldStatus2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTranslationFieldStatusᚄ(ctx context.Context, sel ast.SelectionSet, v []model.TranslationFieldStatus) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNTranslationFieldStatus2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTranslationFieldStatus(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNUpdateAchievementInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUpdateAchievementInput(ctx context.Context, v any) (model.UpdateAchievementInput, error) {

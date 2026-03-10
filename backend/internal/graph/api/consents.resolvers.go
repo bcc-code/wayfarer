@@ -78,6 +78,11 @@ func (r *consentResolver) UserHistory(ctx context.Context, obj *model.Consent) (
 	return historyEntries, nil
 }
 
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *consentResolver) TranslationStatus(ctx context.Context, obj *model.Consent) ([]model.TranslationFieldStatus, error) {
+	return r.consentTranslationStatus(ctx, obj.ID)
+}
+
 // AcceptConsent is the resolver for the acceptConsent field.
 func (r *mutationResolver) AcceptConsent(ctx context.Context, consentID string) (*model.UserConsent, error) {
 	// Get current user from context

@@ -2638,6 +2638,11 @@ func (r *quizResolver) UserActiveSession(ctx context.Context, obj *model.Quiz) (
 	return convertQuizSessionToModel(row), nil
 }
 
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *quizResolver) TranslationStatus(ctx context.Context, obj *model.Quiz) ([]model.TranslationFieldStatus, error) {
+	return r.quizTranslationStatus(ctx, obj.ID)
+}
+
 // Question is the resolver for the question field.
 func (r *quizOrderingItemResolver) Question(ctx context.Context, obj *model.QuizOrderingItem) (model.QuizQuestion, error) {
 	row, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)

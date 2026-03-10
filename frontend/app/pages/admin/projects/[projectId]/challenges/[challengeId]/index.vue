@@ -38,6 +38,9 @@ gql(`
       ... on PluginChallenge {
         pluginChallengeId
       }
+      translationStatus {
+        ...TranslationStatus
+      }
     }
   }
 `)
@@ -213,6 +216,7 @@ async function handleDelete() {
         :project-id="route.params.projectId"
         :challenge-id="route.params.challengeId"
         :colors="data?.challenge.project.branding.colors"
+        :translation-status="data?.challenge.translationStatus ?? []"
         submit-label="Lagre endringer"
         is-edit-mode
         :on-delete="handleDelete"

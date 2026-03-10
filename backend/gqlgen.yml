@@ -23,6 +23,7 @@ schema:
   - ../gql/file_uploads.graphqls
   - ../gql/settings.graphqls
   - ../gql/bulk_jobs.graphqls
+  - ../gql/translations.graphqls
 
 # Generated code locations
 exec:
