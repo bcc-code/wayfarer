@@ -10,6 +10,7 @@ type Streak {
     relevantDays: [DateRange!]! @goField(forceResolver: true)
     listenedDays(last: Int!): [StreakDay!]! @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 type StreakDay {

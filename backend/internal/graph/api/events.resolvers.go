@@ -126,6 +126,11 @@ func (r *eventResolver) ParentProject(ctx context.Context, obj *model.Event) (*m
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
 }
 
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *eventResolver) TranslationStatus(ctx context.Context, obj *model.Event) ([]model.TranslationFieldStatus, error) {
+	return r.eventTranslationStatus(ctx, obj.ID)
+}
+
 // JoinEvent is the resolver for the joinEvent field.
 func (r *mutationResolver) JoinEvent(ctx context.Context, eventID string) (*model.Event, error) {
 	// Get authenticated user ID from context

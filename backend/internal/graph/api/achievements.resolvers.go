@@ -179,6 +179,11 @@ func (r *contentAchievementResolver) CompletedItemCount(ctx context.Context, obj
 	return len(progress), nil
 }
 
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *contentAchievementResolver) TranslationStatus(ctx context.Context, obj *model.ContentAchievement) ([]model.TranslationFieldStatus, error) {
+	return r.achievementTranslationStatus(ctx, obj.ID)
+}
+
 // CreateSimpleAchievement is the resolver for the createSimpleAchievement field.
 func (r *mutationResolver) CreateSimpleAchievement(ctx context.Context, input model.CreateSimpleAchievementInput) (*model.SimpleAchievement, error) {
 	// Get authenticated user ID from context
@@ -1721,6 +1726,11 @@ func (r *quizAchievementResolver) Quiz(ctx context.Context, obj *model.QuizAchie
 	return thunk()
 }
 
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *quizAchievementResolver) TranslationStatus(ctx context.Context, obj *model.QuizAchievement) ([]model.TranslationFieldStatus, error) {
+	return r.achievementTranslationStatus(ctx, obj.ID)
+}
+
 // ImagePendingObject is the resolver for the imagePendingObject field.
 func (r *simpleAchievementResolver) ImagePendingObject(ctx context.Context, obj *model.SimpleAchievement) (*model.Image, error) {
 	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImagePending)
@@ -1756,6 +1766,11 @@ func (r *simpleAchievementResolver) CelebratedAt(ctx context.Context, obj *model
 	return resolveCelebratedAt(ctx, r.Resolver, obj.ID)
 }
 
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *simpleAchievementResolver) TranslationStatus(ctx context.Context, obj *model.SimpleAchievement) ([]model.TranslationFieldStatus, error) {
+	return r.achievementTranslationStatus(ctx, obj.ID)
+}
+
 // ImagePendingObject is the resolver for the imagePendingObject field.
 func (r *streakAchievementResolver) ImagePendingObject(ctx context.Context, obj *model.StreakAchievement) (*model.Image, error) {
 	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImagePending)
@@ -1789,6 +1804,11 @@ func (r *streakAchievementResolver) AchievedAt(ctx context.Context, obj *model.S
 // CelebratedAt is the resolver for the celebratedAt field.
 func (r *streakAchievementResolver) CelebratedAt(ctx context.Context, obj *model.StreakAchievement) (*scalars.DateTime, error) {
 	return resolveCelebratedAt(ctx, r.Resolver, obj.ID)
+}
+
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *streakAchievementResolver) TranslationStatus(ctx context.Context, obj *model.StreakAchievement) ([]model.TranslationFieldStatus, error) {
+	return r.achievementTranslationStatus(ctx, obj.ID)
 }
 
 // Streak is the resolver for the streak field.

@@ -30,6 +30,7 @@ type Achievement interface {
 	GetPoints() int
 	GetHidden() bool
 	GetAwardableFrom() *scalars.DateTime
+	GetTranslationStatus() []TranslationFieldStatus
 }
 
 type Challenge interface {
@@ -51,6 +52,7 @@ type Challenge interface {
 	GetRequiresSuperTeamMembership() bool
 	GetUserCompletedAt() *scalars.DateTime
 	GetUserEnrolledAt() *scalars.DateTime
+	GetTranslationStatus() []TranslationFieldStatus
 }
 
 type QuizQuestion interface {
@@ -282,18 +284,19 @@ type ColorsInput struct {
 }
 
 type Consent struct {
-	ID             string                    `json:"id"`
-	Key            string                    `json:"key"`
-	Version        int                       `json:"version"`
-	Title          string                    `json:"title"`
-	ShortText      string                    `json:"shortText"`
-	Body           *MarkdownText             `json:"body"`
-	URL            *string                   `json:"url,omitempty"`
-	PublishedAt    *scalars.DateTime         `json:"publishedAt,omitempty"`
-	ManagementType ConsentManagementType     `json:"managementType"`
-	ManagedBy      *string                   `json:"managedBy,omitempty"`
-	UserHistory    []UserConsentHistoryEntry `json:"userHistory"`
-	BodyMarkdown   string                    `json:"-"`
+	ID                string                    `json:"id"`
+	Key               string                    `json:"key"`
+	Version           int                       `json:"version"`
+	Title             string                    `json:"title"`
+	ShortText         string                    `json:"shortText"`
+	Body              *MarkdownText             `json:"body"`
+	URL               *string                   `json:"url,omitempty"`
+	PublishedAt       *scalars.DateTime         `json:"publishedAt,omitempty"`
+	ManagementType    ConsentManagementType     `json:"managementType"`
+	ManagedBy         *string                   `json:"managedBy,omitempty"`
+	UserHistory       []UserConsentHistoryEntry `json:"userHistory"`
+	TranslationStatus []TranslationFieldStatus  `json:"translationStatus"`
+	BodyMarkdown      string                    `json:"-"`
 }
 
 type ConsentStatus struct {
@@ -303,31 +306,32 @@ type ConsentStatus struct {
 }
 
 type ContentAchievement struct {
-	ID                   string            `json:"id"`
-	Name                 string            `json:"name"`
-	DescriptionPending   string            `json:"descriptionPending"`
-	DescriptionCompleted string            `json:"descriptionCompleted"`
-	NotificationText     string            `json:"notificationText"`
-	ImagePending         string            `json:"imagePending"`
-	ImagePendingObject   *Image            `json:"imagePendingObject"`
-	ImageCompleted       string            `json:"imageCompleted"`
-	ImageCompletedObject *Image            `json:"imageCompletedObject"`
-	Project              *Project          `json:"project"`
-	Event                *Event            `json:"event,omitempty"`
-	Challenge            Challenge         `json:"challenge,omitempty"`
-	AchievedAt           *scalars.DateTime `json:"achievedAt,omitempty"`
-	CelebratedAt         *scalars.DateTime `json:"celebratedAt,omitempty"`
-	Points               int               `json:"points"`
-	Hidden               bool              `json:"hidden"`
-	AwardableFrom        *scalars.DateTime `json:"awardableFrom,omitempty"`
-	Items                []ContentItem     `json:"items"`
-	UserCompletedItems   []ContentItem     `json:"userCompletedItems"`
-	NextItem             *ContentItem      `json:"nextItem,omitempty"`
-	TotalItems           int               `json:"totalItems"`
-	CompletedItemCount   int               `json:"completedItemCount"`
-	ChallengeID          *string           `json:"-"`
-	EventID              *string           `json:"-"`
-	ProjectID            string            `json:"-"`
+	ID                   string                   `json:"id"`
+	Name                 string                   `json:"name"`
+	DescriptionPending   string                   `json:"descriptionPending"`
+	DescriptionCompleted string                   `json:"descriptionCompleted"`
+	NotificationText     string                   `json:"notificationText"`
+	ImagePending         string                   `json:"imagePending"`
+	ImagePendingObject   *Image                   `json:"imagePendingObject"`
+	ImageCompleted       string                   `json:"imageCompleted"`
+	ImageCompletedObject *Image                   `json:"imageCompletedObject"`
+	Project              *Project                 `json:"project"`
+	Event                *Event                   `json:"event,omitempty"`
+	Challenge            Challenge                `json:"challenge,omitempty"`
+	AchievedAt           *scalars.DateTime        `json:"achievedAt,omitempty"`
+	CelebratedAt         *scalars.DateTime        `json:"celebratedAt,omitempty"`
+	Points               int                      `json:"points"`
+	Hidden               bool                     `json:"hidden"`
+	AwardableFrom        *scalars.DateTime        `json:"awardableFrom,omitempty"`
+	Items                []ContentItem            `json:"items"`
+	UserCompletedItems   []ContentItem            `json:"userCompletedItems"`
+	NextItem             *ContentItem             `json:"nextItem,omitempty"`
+	TotalItems           int                      `json:"totalItems"`
+	CompletedItemCount   int                      `json:"completedItemCount"`
+	TranslationStatus    []TranslationFieldStatus `json:"translationStatus"`
+	ChallengeID          *string                  `json:"-"`
+	EventID              *string                  `json:"-"`
+	ProjectID            string                   `json:"-"`
 }
 
 func (ContentAchievement) IsAchievement()                           {}
@@ -348,6 +352,16 @@ func (this ContentAchievement) GetCelebratedAt() *scalars.DateTime  { return thi
 func (this ContentAchievement) GetPoints() int                      { return this.Points }
 func (this ContentAchievement) GetHidden() bool                     { return this.Hidden }
 func (this ContentAchievement) GetAwardableFrom() *scalars.DateTime { return this.AwardableFrom }
+func (this ContentAchievement) GetTranslationStatus() []TranslationFieldStatus {
+	if this.TranslationStatus == nil {
+		return nil
+	}
+	interfaceSlice := make([]TranslationFieldStatus, 0, len(this.TranslationStatus))
+	for _, concrete := range this.TranslationStatus {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
 
 func (ContentAchievement) IsScoreSource() {}
 
@@ -620,15 +634,16 @@ type EnrollmentTargetInput struct {
 }
 
 type Event struct {
-	ID            string                 `json:"id"`
-	Name          string                 `json:"name"`
-	Description   string                 `json:"description"`
-	Challenges    []Challenge            `json:"challenges"`
-	Leaderboard   *LeaderboardConnection `json:"leaderboard"`
-	StartDate     scalars.DateTime       `json:"startDate"`
-	EndDate       scalars.DateTime       `json:"endDate"`
-	ParentProject *Project               `json:"parentProject"`
-	ProjectID     string                 `json:"-"`
+	ID                string                   `json:"id"`
+	Name              string                   `json:"name"`
+	Description       string                   `json:"description"`
+	Challenges        []Challenge              `json:"challenges"`
+	Leaderboard       *LeaderboardConnection   `json:"leaderboard"`
+	StartDate         scalars.DateTime         `json:"startDate"`
+	EndDate           scalars.DateTime         `json:"endDate"`
+	ParentProject     *Project                 `json:"parentProject"`
+	TranslationStatus []TranslationFieldStatus `json:"translationStatus"`
+	ProjectID         string                   `json:"-"`
 }
 
 func (Event) IsScoreSource() {}
@@ -654,26 +669,27 @@ type EventFilter struct {
 }
 
 type ExternalChallenge struct {
-	ID                          string            `json:"id"`
-	Name                        string            `json:"name"`
-	Description                 scalars.HTML      `json:"description"`
-	Image                       *string           `json:"image,omitempty"`
-	ImageObject                 *Image            `json:"imageObject,omitempty"`
-	Project                     *Project          `json:"project"`
-	Event                       *Event            `json:"event,omitempty"`
-	ButtonText                  string            `json:"buttonText"`
-	NotificationText            string            `json:"notificationText"`
-	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
-	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
-	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
-	EndTime                     *scalars.DateTime `json:"endTime,omitempty"`
-	RequiresTeamMembership      bool              `json:"requiresTeamMembership"`
-	RequiresSuperTeamMembership bool              `json:"requiresSuperTeamMembership"`
-	UserCompletedAt             *scalars.DateTime `json:"userCompletedAt,omitempty"`
-	UserEnrolledAt              *scalars.DateTime `json:"userEnrolledAt,omitempty"`
-	URL                         string            `json:"url"`
-	EventID                     *string           `json:"-"`
-	ProjectID                   string            `json:"-"`
+	ID                          string                   `json:"id"`
+	Name                        string                   `json:"name"`
+	Description                 scalars.HTML             `json:"description"`
+	Image                       *string                  `json:"image,omitempty"`
+	ImageObject                 *Image                   `json:"imageObject,omitempty"`
+	Project                     *Project                 `json:"project"`
+	Event                       *Event                   `json:"event,omitempty"`
+	ButtonText                  string                   `json:"buttonText"`
+	NotificationText            string                   `json:"notificationText"`
+	PublishedAt                 *scalars.DateTime        `json:"publishedAt,omitempty"`
+	VisibleAt                   *scalars.DateTime        `json:"visibleAt,omitempty"`
+	StartedAt                   *scalars.DateTime        `json:"startedAt,omitempty"`
+	EndTime                     *scalars.DateTime        `json:"endTime,omitempty"`
+	RequiresTeamMembership      bool                     `json:"requiresTeamMembership"`
+	RequiresSuperTeamMembership bool                     `json:"requiresSuperTeamMembership"`
+	UserCompletedAt             *scalars.DateTime        `json:"userCompletedAt,omitempty"`
+	UserEnrolledAt              *scalars.DateTime        `json:"userEnrolledAt,omitempty"`
+	TranslationStatus           []TranslationFieldStatus `json:"translationStatus"`
+	URL                         string                   `json:"url"`
+	EventID                     *string                  `json:"-"`
+	ProjectID                   string                   `json:"-"`
 }
 
 func (ExternalChallenge) IsChallenge()                           {}
@@ -696,6 +712,16 @@ func (this ExternalChallenge) GetRequiresSuperTeamMembership() bool {
 }
 func (this ExternalChallenge) GetUserCompletedAt() *scalars.DateTime { return this.UserCompletedAt }
 func (this ExternalChallenge) GetUserEnrolledAt() *scalars.DateTime  { return this.UserEnrolledAt }
+func (this ExternalChallenge) GetTranslationStatus() []TranslationFieldStatus {
+	if this.TranslationStatus == nil {
+		return nil
+	}
+	interfaceSlice := make([]TranslationFieldStatus, 0, len(this.TranslationStatus))
+	for _, concrete := range this.TranslationStatus {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
 
 func (ExternalChallenge) IsScoreSource() {}
 
@@ -1077,26 +1103,27 @@ type PageInfo struct {
 }
 
 type PluginChallenge struct {
-	ID                          string            `json:"id"`
-	Name                        string            `json:"name"`
-	Description                 scalars.HTML      `json:"description"`
-	Image                       *string           `json:"image,omitempty"`
-	ImageObject                 *Image            `json:"imageObject,omitempty"`
-	Project                     *Project          `json:"project"`
-	Event                       *Event            `json:"event,omitempty"`
-	ButtonText                  *string           `json:"buttonText,omitempty"`
-	NotificationText            string            `json:"notificationText"`
-	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
-	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
-	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
-	EndTime                     *scalars.DateTime `json:"endTime,omitempty"`
-	RequiresTeamMembership      bool              `json:"requiresTeamMembership"`
-	RequiresSuperTeamMembership bool              `json:"requiresSuperTeamMembership"`
-	UserCompletedAt             *scalars.DateTime `json:"userCompletedAt,omitempty"`
-	UserEnrolledAt              *scalars.DateTime `json:"userEnrolledAt,omitempty"`
-	PluginChallengeID           string            `json:"pluginChallengeId"`
-	EventID                     *string           `json:"-"`
-	ProjectID                   string            `json:"-"`
+	ID                          string                   `json:"id"`
+	Name                        string                   `json:"name"`
+	Description                 scalars.HTML             `json:"description"`
+	Image                       *string                  `json:"image,omitempty"`
+	ImageObject                 *Image                   `json:"imageObject,omitempty"`
+	Project                     *Project                 `json:"project"`
+	Event                       *Event                   `json:"event,omitempty"`
+	ButtonText                  *string                  `json:"buttonText,omitempty"`
+	NotificationText            string                   `json:"notificationText"`
+	PublishedAt                 *scalars.DateTime        `json:"publishedAt,omitempty"`
+	VisibleAt                   *scalars.DateTime        `json:"visibleAt,omitempty"`
+	StartedAt                   *scalars.DateTime        `json:"startedAt,omitempty"`
+	EndTime                     *scalars.DateTime        `json:"endTime,omitempty"`
+	RequiresTeamMembership      bool                     `json:"requiresTeamMembership"`
+	RequiresSuperTeamMembership bool                     `json:"requiresSuperTeamMembership"`
+	UserCompletedAt             *scalars.DateTime        `json:"userCompletedAt,omitempty"`
+	UserEnrolledAt              *scalars.DateTime        `json:"userEnrolledAt,omitempty"`
+	TranslationStatus           []TranslationFieldStatus `json:"translationStatus"`
+	PluginChallengeID           string                   `json:"pluginChallengeId"`
+	EventID                     *string                  `json:"-"`
+	ProjectID                   string                   `json:"-"`
 }
 
 func (PluginChallenge) IsChallenge()                           {}
@@ -1119,6 +1146,16 @@ func (this PluginChallenge) GetRequiresSuperTeamMembership() bool {
 }
 func (this PluginChallenge) GetUserCompletedAt() *scalars.DateTime { return this.UserCompletedAt }
 func (this PluginChallenge) GetUserEnrolledAt() *scalars.DateTime  { return this.UserEnrolledAt }
+func (this PluginChallenge) GetTranslationStatus() []TranslationFieldStatus {
+	if this.TranslationStatus == nil {
+		return nil
+	}
+	interfaceSlice := make([]TranslationFieldStatus, 0, len(this.TranslationStatus))
+	for _, concrete := range this.TranslationStatus {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
 
 func (PluginChallenge) IsScoreSource() {}
 
@@ -1180,29 +1217,30 @@ func (this PredefinedResponse) GetBetAmount() *int               { return this.B
 func (this PredefinedResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
 
 type Project struct {
-	ID               string                  `json:"id"`
-	Name             string                  `json:"name"`
-	Description      string                  `json:"description"`
-	Rules            *MarkdownText           `json:"rules,omitempty"`
-	InfoMessage      *MarkdownText           `json:"infoMessage,omitempty"`
-	InfoMessageStart *scalars.DateTime       `json:"infoMessageStart,omitempty"`
-	InfoMessageEnd   *scalars.DateTime       `json:"infoMessageEnd,omitempty"`
-	Challenges       []Challenge             `json:"challenges"`
-	Leaderboard      *LeaderboardConnection  `json:"leaderboard"`
-	Events           []Event                 `json:"events"`
-	StartDate        scalars.DateTime        `json:"startDate"`
-	EndDate          scalars.DateTime        `json:"endDate"`
-	Branding         *Branding               `json:"branding"`
-	Teams            []Team                  `json:"teams"`
-	MyChurchTeams    []Team                  `json:"myChurchTeams"`
-	MyTeam           *Team                   `json:"myTeam,omitempty"`
-	Achievements     []Achievement           `json:"achievements"`
-	Streaks          []Streak                `json:"streaks"`
-	Journal          *ScoreJournalConnection `json:"journal"`
-	MyPoints         int                     `json:"myPoints"`
-	ArchivedAt       *bool                   `json:"archivedAt,omitempty"`
-	InfoMessageRaw   *string                 `json:"-"`
-	RulesRaw         *string                 `json:"-"`
+	ID                string                   `json:"id"`
+	Name              string                   `json:"name"`
+	Description       string                   `json:"description"`
+	Rules             *MarkdownText            `json:"rules,omitempty"`
+	InfoMessage       *MarkdownText            `json:"infoMessage,omitempty"`
+	InfoMessageStart  *scalars.DateTime        `json:"infoMessageStart,omitempty"`
+	InfoMessageEnd    *scalars.DateTime        `json:"infoMessageEnd,omitempty"`
+	Challenges        []Challenge              `json:"challenges"`
+	Leaderboard       *LeaderboardConnection   `json:"leaderboard"`
+	Events            []Event                  `json:"events"`
+	StartDate         scalars.DateTime         `json:"startDate"`
+	EndDate           scalars.DateTime         `json:"endDate"`
+	Branding          *Branding                `json:"branding"`
+	Teams             []Team                   `json:"teams"`
+	MyChurchTeams     []Team                   `json:"myChurchTeams"`
+	MyTeam            *Team                    `json:"myTeam,omitempty"`
+	Achievements      []Achievement            `json:"achievements"`
+	Streaks           []Streak                 `json:"streaks"`
+	Journal           *ScoreJournalConnection  `json:"journal"`
+	MyPoints          int                      `json:"myPoints"`
+	ArchivedAt        *bool                    `json:"archivedAt,omitempty"`
+	TranslationStatus []TranslationFieldStatus `json:"translationStatus"`
+	InfoMessageRaw    *string                  `json:"-"`
+	RulesRaw          *string                  `json:"-"`
 }
 
 type ProjectConnection struct {
@@ -1240,55 +1278,57 @@ type Query struct {
 }
 
 type Quiz struct {
-	ID                   string            `json:"id"`
-	Name                 string            `json:"name"`
-	Description          string            `json:"description"`
-	Image                *string           `json:"image,omitempty"`
-	ImageObject          *Image            `json:"imageObject,omitempty"`
-	Project              *Project          `json:"project"`
-	Challenge            Challenge         `json:"challenge"`
-	TimeoutSeconds       *int              `json:"timeoutSeconds,omitempty"`
-	RandomizeQuestions   bool              `json:"randomizeQuestions"`
-	RevealCorrectAnswers bool              `json:"revealCorrectAnswers"`
-	AllowRetakes         bool              `json:"allowRetakes"`
-	CompletionPoints     int               `json:"completionPoints"`
-	Questions            []QuizQuestion    `json:"questions"`
-	EndTime              *scalars.DateTime `json:"endTime,omitempty"`
-	UserSubmissions      []QuizSubmission  `json:"userSubmissions"`
-	UserCanStart         bool              `json:"userCanStart"`
-	UserActiveSubmission *QuizSubmission   `json:"userActiveSubmission,omitempty"`
-	Sessions             []QuizSession     `json:"sessions"`
-	UserSessions         []QuizSession     `json:"userSessions"`
-	UserActiveSession    *QuizSession      `json:"userActiveSession,omitempty"`
-	ChallengeID          string            `json:"-"`
-	ProjectID            string            `json:"-"`
+	ID                   string                   `json:"id"`
+	Name                 string                   `json:"name"`
+	Description          string                   `json:"description"`
+	Image                *string                  `json:"image,omitempty"`
+	ImageObject          *Image                   `json:"imageObject,omitempty"`
+	Project              *Project                 `json:"project"`
+	Challenge            Challenge                `json:"challenge"`
+	TimeoutSeconds       *int                     `json:"timeoutSeconds,omitempty"`
+	RandomizeQuestions   bool                     `json:"randomizeQuestions"`
+	RevealCorrectAnswers bool                     `json:"revealCorrectAnswers"`
+	AllowRetakes         bool                     `json:"allowRetakes"`
+	CompletionPoints     int                      `json:"completionPoints"`
+	Questions            []QuizQuestion           `json:"questions"`
+	EndTime              *scalars.DateTime        `json:"endTime,omitempty"`
+	UserSubmissions      []QuizSubmission         `json:"userSubmissions"`
+	UserCanStart         bool                     `json:"userCanStart"`
+	UserActiveSubmission *QuizSubmission          `json:"userActiveSubmission,omitempty"`
+	Sessions             []QuizSession            `json:"sessions"`
+	UserSessions         []QuizSession            `json:"userSessions"`
+	UserActiveSession    *QuizSession             `json:"userActiveSession,omitempty"`
+	TranslationStatus    []TranslationFieldStatus `json:"translationStatus"`
+	ChallengeID          string                   `json:"-"`
+	ProjectID            string                   `json:"-"`
 }
 
 type QuizAchievement struct {
-	ID                   string            `json:"id"`
-	Name                 string            `json:"name"`
-	DescriptionPending   string            `json:"descriptionPending"`
-	DescriptionCompleted string            `json:"descriptionCompleted"`
-	NotificationText     string            `json:"notificationText"`
-	ImagePending         string            `json:"imagePending"`
-	ImagePendingObject   *Image            `json:"imagePendingObject"`
-	ImageCompleted       string            `json:"imageCompleted"`
-	ImageCompletedObject *Image            `json:"imageCompletedObject"`
-	Project              *Project          `json:"project"`
-	Event                *Event            `json:"event,omitempty"`
-	Challenge            Challenge         `json:"challenge,omitempty"`
-	AchievedAt           *scalars.DateTime `json:"achievedAt,omitempty"`
-	CelebratedAt         *scalars.DateTime `json:"celebratedAt,omitempty"`
-	Points               int               `json:"points"`
-	Hidden               bool              `json:"hidden"`
-	AwardableFrom        *scalars.DateTime `json:"awardableFrom,omitempty"`
-	Quiz                 *Quiz             `json:"quiz,omitempty"`
-	MinScorePercentage   *int              `json:"minScorePercentage,omitempty"`
-	RequireCompletion    bool              `json:"requireCompletion"`
-	ChallengeID          *string           `json:"-"`
-	EventID              *string           `json:"-"`
-	ProjectID            string            `json:"-"`
-	QuizID               string            `json:"-"`
+	ID                   string                   `json:"id"`
+	Name                 string                   `json:"name"`
+	DescriptionPending   string                   `json:"descriptionPending"`
+	DescriptionCompleted string                   `json:"descriptionCompleted"`
+	NotificationText     string                   `json:"notificationText"`
+	ImagePending         string                   `json:"imagePending"`
+	ImagePendingObject   *Image                   `json:"imagePendingObject"`
+	ImageCompleted       string                   `json:"imageCompleted"`
+	ImageCompletedObject *Image                   `json:"imageCompletedObject"`
+	Project              *Project                 `json:"project"`
+	Event                *Event                   `json:"event,omitempty"`
+	Challenge            Challenge                `json:"challenge,omitempty"`
+	AchievedAt           *scalars.DateTime        `json:"achievedAt,omitempty"`
+	CelebratedAt         *scalars.DateTime        `json:"celebratedAt,omitempty"`
+	Points               int                      `json:"points"`
+	Hidden               bool                     `json:"hidden"`
+	AwardableFrom        *scalars.DateTime        `json:"awardableFrom,omitempty"`
+	Quiz                 *Quiz                    `json:"quiz,omitempty"`
+	MinScorePercentage   *int                     `json:"minScorePercentage,omitempty"`
+	RequireCompletion    bool                     `json:"requireCompletion"`
+	TranslationStatus    []TranslationFieldStatus `json:"translationStatus"`
+	ChallengeID          *string                  `json:"-"`
+	EventID              *string                  `json:"-"`
+	ProjectID            string                   `json:"-"`
+	QuizID               string                   `json:"-"`
 }
 
 func (QuizAchievement) IsAchievement()                           {}
@@ -1309,30 +1349,41 @@ func (this QuizAchievement) GetCelebratedAt() *scalars.DateTime  { return this.C
 func (this QuizAchievement) GetPoints() int                      { return this.Points }
 func (this QuizAchievement) GetHidden() bool                     { return this.Hidden }
 func (this QuizAchievement) GetAwardableFrom() *scalars.DateTime { return this.AwardableFrom }
+func (this QuizAchievement) GetTranslationStatus() []TranslationFieldStatus {
+	if this.TranslationStatus == nil {
+		return nil
+	}
+	interfaceSlice := make([]TranslationFieldStatus, 0, len(this.TranslationStatus))
+	for _, concrete := range this.TranslationStatus {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
 
 func (QuizAchievement) IsScoreSource() {}
 
 type QuizChallenge struct {
-	ID                          string            `json:"id"`
-	Name                        string            `json:"name"`
-	Description                 scalars.HTML      `json:"description"`
-	Image                       *string           `json:"image,omitempty"`
-	ImageObject                 *Image            `json:"imageObject,omitempty"`
-	Project                     *Project          `json:"project"`
-	Event                       *Event            `json:"event,omitempty"`
-	ButtonText                  string            `json:"buttonText"`
-	NotificationText            string            `json:"notificationText"`
-	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
-	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
-	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
-	EndTime                     *scalars.DateTime `json:"endTime,omitempty"`
-	RequiresTeamMembership      bool              `json:"requiresTeamMembership"`
-	RequiresSuperTeamMembership bool              `json:"requiresSuperTeamMembership"`
-	UserCompletedAt             *scalars.DateTime `json:"userCompletedAt,omitempty"`
-	UserEnrolledAt              *scalars.DateTime `json:"userEnrolledAt,omitempty"`
-	Quiz                        *Quiz             `json:"quiz"`
-	EventID                     *string           `json:"-"`
-	ProjectID                   string            `json:"-"`
+	ID                          string                   `json:"id"`
+	Name                        string                   `json:"name"`
+	Description                 scalars.HTML             `json:"description"`
+	Image                       *string                  `json:"image,omitempty"`
+	ImageObject                 *Image                   `json:"imageObject,omitempty"`
+	Project                     *Project                 `json:"project"`
+	Event                       *Event                   `json:"event,omitempty"`
+	ButtonText                  string                   `json:"buttonText"`
+	NotificationText            string                   `json:"notificationText"`
+	PublishedAt                 *scalars.DateTime        `json:"publishedAt,omitempty"`
+	VisibleAt                   *scalars.DateTime        `json:"visibleAt,omitempty"`
+	StartedAt                   *scalars.DateTime        `json:"startedAt,omitempty"`
+	EndTime                     *scalars.DateTime        `json:"endTime,omitempty"`
+	RequiresTeamMembership      bool                     `json:"requiresTeamMembership"`
+	RequiresSuperTeamMembership bool                     `json:"requiresSuperTeamMembership"`
+	UserCompletedAt             *scalars.DateTime        `json:"userCompletedAt,omitempty"`
+	UserEnrolledAt              *scalars.DateTime        `json:"userEnrolledAt,omitempty"`
+	TranslationStatus           []TranslationFieldStatus `json:"translationStatus"`
+	Quiz                        *Quiz                    `json:"quiz"`
+	EventID                     *string                  `json:"-"`
+	ProjectID                   string                   `json:"-"`
 }
 
 func (QuizChallenge) IsChallenge()                           {}
@@ -1355,6 +1406,16 @@ func (this QuizChallenge) GetRequiresSuperTeamMembership() bool {
 }
 func (this QuizChallenge) GetUserCompletedAt() *scalars.DateTime { return this.UserCompletedAt }
 func (this QuizChallenge) GetUserEnrolledAt() *scalars.DateTime  { return this.UserEnrolledAt }
+func (this QuizChallenge) GetTranslationStatus() []TranslationFieldStatus {
+	if this.TranslationStatus == nil {
+		return nil
+	}
+	interfaceSlice := make([]TranslationFieldStatus, 0, len(this.TranslationStatus))
+	for _, concrete := range this.TranslationStatus {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
 
 func (QuizChallenge) IsScoreSource() {}
 
@@ -1542,26 +1603,27 @@ type SetNotificationPreferenceInput struct {
 }
 
 type SimpleAchievement struct {
-	ID                   string            `json:"id"`
-	Name                 string            `json:"name"`
-	DescriptionPending   string            `json:"descriptionPending"`
-	DescriptionCompleted string            `json:"descriptionCompleted"`
-	NotificationText     string            `json:"notificationText"`
-	ImagePending         string            `json:"imagePending"`
-	ImagePendingObject   *Image            `json:"imagePendingObject"`
-	ImageCompleted       string            `json:"imageCompleted"`
-	ImageCompletedObject *Image            `json:"imageCompletedObject"`
-	Project              *Project          `json:"project"`
-	Event                *Event            `json:"event,omitempty"`
-	Challenge            Challenge         `json:"challenge,omitempty"`
-	AchievedAt           *scalars.DateTime `json:"achievedAt,omitempty"`
-	CelebratedAt         *scalars.DateTime `json:"celebratedAt,omitempty"`
-	Points               int               `json:"points"`
-	Hidden               bool              `json:"hidden"`
-	AwardableFrom        *scalars.DateTime `json:"awardableFrom,omitempty"`
-	ChallengeID          *string           `json:"-"`
-	EventID              *string           `json:"-"`
-	ProjectID            string            `json:"-"`
+	ID                   string                   `json:"id"`
+	Name                 string                   `json:"name"`
+	DescriptionPending   string                   `json:"descriptionPending"`
+	DescriptionCompleted string                   `json:"descriptionCompleted"`
+	NotificationText     string                   `json:"notificationText"`
+	ImagePending         string                   `json:"imagePending"`
+	ImagePendingObject   *Image                   `json:"imagePendingObject"`
+	ImageCompleted       string                   `json:"imageCompleted"`
+	ImageCompletedObject *Image                   `json:"imageCompletedObject"`
+	Project              *Project                 `json:"project"`
+	Event                *Event                   `json:"event,omitempty"`
+	Challenge            Challenge                `json:"challenge,omitempty"`
+	AchievedAt           *scalars.DateTime        `json:"achievedAt,omitempty"`
+	CelebratedAt         *scalars.DateTime        `json:"celebratedAt,omitempty"`
+	Points               int                      `json:"points"`
+	Hidden               bool                     `json:"hidden"`
+	AwardableFrom        *scalars.DateTime        `json:"awardableFrom,omitempty"`
+	TranslationStatus    []TranslationFieldStatus `json:"translationStatus"`
+	ChallengeID          *string                  `json:"-"`
+	EventID              *string                  `json:"-"`
+	ProjectID            string                   `json:"-"`
 }
 
 func (SimpleAchievement) IsAchievement()                           {}
@@ -1582,30 +1644,41 @@ func (this SimpleAchievement) GetCelebratedAt() *scalars.DateTime  { return this
 func (this SimpleAchievement) GetPoints() int                      { return this.Points }
 func (this SimpleAchievement) GetHidden() bool                     { return this.Hidden }
 func (this SimpleAchievement) GetAwardableFrom() *scalars.DateTime { return this.AwardableFrom }
+func (this SimpleAchievement) GetTranslationStatus() []TranslationFieldStatus {
+	if this.TranslationStatus == nil {
+		return nil
+	}
+	interfaceSlice := make([]TranslationFieldStatus, 0, len(this.TranslationStatus))
+	for _, concrete := range this.TranslationStatus {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
 
 func (SimpleAchievement) IsScoreSource() {}
 
 type SimpleChallenge struct {
-	ID                          string            `json:"id"`
-	Name                        string            `json:"name"`
-	Description                 scalars.HTML      `json:"description"`
-	Image                       *string           `json:"image,omitempty"`
-	ImageObject                 *Image            `json:"imageObject,omitempty"`
-	Project                     *Project          `json:"project"`
-	Event                       *Event            `json:"event,omitempty"`
-	ButtonText                  string            `json:"buttonText"`
-	NotificationText            string            `json:"notificationText"`
-	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
-	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
-	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
-	EndTime                     *scalars.DateTime `json:"endTime,omitempty"`
-	RequiresTeamMembership      bool              `json:"requiresTeamMembership"`
-	RequiresSuperTeamMembership bool              `json:"requiresSuperTeamMembership"`
-	UserCompletedAt             *scalars.DateTime `json:"userCompletedAt,omitempty"`
-	UserEnrolledAt              *scalars.DateTime `json:"userEnrolledAt,omitempty"`
-	AllowSelfCompletion         bool              `json:"allowSelfCompletion"`
-	EventID                     *string           `json:"-"`
-	ProjectID                   string            `json:"-"`
+	ID                          string                   `json:"id"`
+	Name                        string                   `json:"name"`
+	Description                 scalars.HTML             `json:"description"`
+	Image                       *string                  `json:"image,omitempty"`
+	ImageObject                 *Image                   `json:"imageObject,omitempty"`
+	Project                     *Project                 `json:"project"`
+	Event                       *Event                   `json:"event,omitempty"`
+	ButtonText                  string                   `json:"buttonText"`
+	NotificationText            string                   `json:"notificationText"`
+	PublishedAt                 *scalars.DateTime        `json:"publishedAt,omitempty"`
+	VisibleAt                   *scalars.DateTime        `json:"visibleAt,omitempty"`
+	StartedAt                   *scalars.DateTime        `json:"startedAt,omitempty"`
+	EndTime                     *scalars.DateTime        `json:"endTime,omitempty"`
+	RequiresTeamMembership      bool                     `json:"requiresTeamMembership"`
+	RequiresSuperTeamMembership bool                     `json:"requiresSuperTeamMembership"`
+	UserCompletedAt             *scalars.DateTime        `json:"userCompletedAt,omitempty"`
+	UserEnrolledAt              *scalars.DateTime        `json:"userEnrolledAt,omitempty"`
+	TranslationStatus           []TranslationFieldStatus `json:"translationStatus"`
+	AllowSelfCompletion         bool                     `json:"allowSelfCompletion"`
+	EventID                     *string                  `json:"-"`
+	ProjectID                   string                   `json:"-"`
 }
 
 func (SimpleChallenge) IsChallenge()                           {}
@@ -1628,44 +1701,56 @@ func (this SimpleChallenge) GetRequiresSuperTeamMembership() bool {
 }
 func (this SimpleChallenge) GetUserCompletedAt() *scalars.DateTime { return this.UserCompletedAt }
 func (this SimpleChallenge) GetUserEnrolledAt() *scalars.DateTime  { return this.UserEnrolledAt }
+func (this SimpleChallenge) GetTranslationStatus() []TranslationFieldStatus {
+	if this.TranslationStatus == nil {
+		return nil
+	}
+	interfaceSlice := make([]TranslationFieldStatus, 0, len(this.TranslationStatus))
+	for _, concrete := range this.TranslationStatus {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
 
 func (SimpleChallenge) IsScoreSource() {}
 
 type Streak struct {
-	ID           string      `json:"id"`
-	Name         string      `json:"name"`
-	Description  string      `json:"description"`
-	Status       int         `json:"status"`
-	RelevantDays []DateRange `json:"relevantDays"`
-	ListenedDays []StreakDay `json:"listenedDays"`
-	Project      *Project    `json:"project"`
-	ProjectID    string      `json:"-"`
+	ID                string                   `json:"id"`
+	Name              string                   `json:"name"`
+	Description       string                   `json:"description"`
+	Status            int                      `json:"status"`
+	RelevantDays      []DateRange              `json:"relevantDays"`
+	ListenedDays      []StreakDay              `json:"listenedDays"`
+	Project           *Project                 `json:"project"`
+	TranslationStatus []TranslationFieldStatus `json:"translationStatus"`
+	ProjectID         string                   `json:"-"`
 }
 
 type StreakAchievement struct {
-	ID                   string            `json:"id"`
-	Name                 string            `json:"name"`
-	DescriptionPending   string            `json:"descriptionPending"`
-	DescriptionCompleted string            `json:"descriptionCompleted"`
-	NotificationText     string            `json:"notificationText"`
-	ImagePending         string            `json:"imagePending"`
-	ImagePendingObject   *Image            `json:"imagePendingObject"`
-	ImageCompleted       string            `json:"imageCompleted"`
-	ImageCompletedObject *Image            `json:"imageCompletedObject"`
-	Project              *Project          `json:"project"`
-	Event                *Event            `json:"event,omitempty"`
-	Challenge            Challenge         `json:"challenge,omitempty"`
-	AchievedAt           *scalars.DateTime `json:"achievedAt,omitempty"`
-	CelebratedAt         *scalars.DateTime `json:"celebratedAt,omitempty"`
-	NeededStreak         int               `json:"neededStreak"`
-	Points               int               `json:"points"`
-	Hidden               bool              `json:"hidden"`
-	AwardableFrom        *scalars.DateTime `json:"awardableFrom,omitempty"`
-	Streak               *Streak           `json:"streak"`
-	ChallengeID          *string           `json:"-"`
-	EventID              *string           `json:"-"`
-	ProjectID            string            `json:"-"`
-	StreakID             string            `json:"-"`
+	ID                   string                   `json:"id"`
+	Name                 string                   `json:"name"`
+	DescriptionPending   string                   `json:"descriptionPending"`
+	DescriptionCompleted string                   `json:"descriptionCompleted"`
+	NotificationText     string                   `json:"notificationText"`
+	ImagePending         string                   `json:"imagePending"`
+	ImagePendingObject   *Image                   `json:"imagePendingObject"`
+	ImageCompleted       string                   `json:"imageCompleted"`
+	ImageCompletedObject *Image                   `json:"imageCompletedObject"`
+	Project              *Project                 `json:"project"`
+	Event                *Event                   `json:"event,omitempty"`
+	Challenge            Challenge                `json:"challenge,omitempty"`
+	AchievedAt           *scalars.DateTime        `json:"achievedAt,omitempty"`
+	CelebratedAt         *scalars.DateTime        `json:"celebratedAt,omitempty"`
+	NeededStreak         int                      `json:"neededStreak"`
+	Points               int                      `json:"points"`
+	Hidden               bool                     `json:"hidden"`
+	AwardableFrom        *scalars.DateTime        `json:"awardableFrom,omitempty"`
+	TranslationStatus    []TranslationFieldStatus `json:"translationStatus"`
+	Streak               *Streak                  `json:"streak"`
+	ChallengeID          *string                  `json:"-"`
+	EventID              *string                  `json:"-"`
+	ProjectID            string                   `json:"-"`
+	StreakID             string                   `json:"-"`
 }
 
 func (StreakAchievement) IsAchievement()                           {}
@@ -1686,6 +1771,16 @@ func (this StreakAchievement) GetCelebratedAt() *scalars.DateTime  { return this
 func (this StreakAchievement) GetPoints() int                      { return this.Points }
 func (this StreakAchievement) GetHidden() bool                     { return this.Hidden }
 func (this StreakAchievement) GetAwardableFrom() *scalars.DateTime { return this.AwardableFrom }
+func (this StreakAchievement) GetTranslationStatus() []TranslationFieldStatus {
+	if this.TranslationStatus == nil {
+		return nil
+	}
+	interfaceSlice := make([]TranslationFieldStatus, 0, len(this.TranslationStatus))
+	for _, concrete := range this.TranslationStatus {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
 
 func (StreakAchievement) IsScoreSource() {}
 
@@ -1813,6 +1908,11 @@ type TeamMember struct {
 	User       *User   `json:"user"`
 	ChurchID   string  `json:"-"`
 	UserID     string  `json:"-"`
+}
+
+type TranslationFieldStatus struct {
+	LanguageCode string   `json:"languageCode"`
+	Fields       []string `json:"fields"`
 }
 
 type UpdateAchievementInput struct {

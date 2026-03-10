@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { FormSubmitEvent } from '@nuxt/ui'
+import type { TranslationStatusFragment } from '~/api/generated'
 import z from 'zod'
 
 const props = defineProps<{
@@ -20,6 +21,7 @@ const props = defineProps<{
   }
   projectId?: string
   challengeId?: string
+  translationStatus?: TranslationStatusFragment[]
   colors?: Colors
   submitLabel: string
   isEditMode?: boolean
@@ -158,17 +160,12 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
             class="w-full"
           />
         </UFormField>
-        <UFormField name="name" label="Navn">
+        <AdminTranslatableFormField label="Navn" :translation-status="translationStatus" name="name">
           <UInput v-model="state.name" size="xl" required class="w-full" />
-        </UFormField>
-        <UFormField
-          name="description"
-          label="Beskrivelse"
-          hint="(valgfritt)"
-          help="Støtter HTML-formatering"
-        >
+        </AdminTranslatableFormField>
+        <AdminTranslatableFormField label="Beskrivelse" :translation-status="translationStatus" name="description" hint="(valgfritt)" help="Støtter HTML-formatering">
           <UTextarea v-model="state.description" class="w-full" autoresize />
-        </UFormField>
+        </AdminTranslatableFormField>
         <UFormField name="image" label="Bilde" hint="(valgfritt)">
           <AdminFileUpload v-model="state.image" />
         </UFormField>
@@ -203,12 +200,11 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
             class="w-full"
           />
         </UFormField>
-        <UFormField
-          name="buttonText"
+        <AdminTranslatableFormField
           label="Knappetekst"
-          :hint="
-            state.type === ChallengeType.Plugin ? '(valgfritt)' : undefined
-          "
+          :translation-status="translationStatus"
+          name="buttonText"
+          :hint="state.type === ChallengeType.Plugin ? '(valgfritt)' : undefined"
         >
           <UInput
             v-model="state.buttonText"
@@ -216,10 +212,11 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
             :required="state.type !== ChallengeType.Plugin"
             class="w-full"
           />
-        </UFormField>
-        <UFormField
-          name="notificationText"
+        </AdminTranslatableFormField>
+        <AdminTranslatableFormField
           label="Varslingstekst"
+          :translation-status="translationStatus"
+          name="notificationText"
           hint="(valgfritt)"
           help="Tekst som vises i push-varsler når admin melder bruker på utfordringen. La feltet stå tomt for ingen varsling."
         >
@@ -228,7 +225,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
             size="xl"
             class="w-full"
           />
-        </UFormField>
+        </AdminTranslatableFormField>
         <UFormField
           name="publishedAt"
           label="Publiseringstidspunkt"
