@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_jeNj4qwcQN
 createdAt: 2025-12-08T08:28:18.920390
-updatedAt: 2026-01-26T14:52:23.278831
+updatedAt: 2026-03-10T08:31:11.570496
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_U4FqjQ2Ma5
 authentication: {}
@@ -13,7 +13,7 @@ body:
       me {
         id
       }
-      challenge(id: "CL01KFJJTXVJS2T0HSC2PFKGB445") {
+      challenge(id: "CL01KH3FKP1NWP0A4R8FH0A1DTVV") {
         __typename
         id
         name

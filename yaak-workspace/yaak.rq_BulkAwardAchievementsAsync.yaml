@@ -1,0 +1,47 @@
+type: http_request
+model: http_request
+id: rq_BulkAwardAchievementsAsync
+createdAt: 2026-03-10T12:00:00
+updatedAt: 2026-03-10T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Achievements
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation BulkAwardAchievementsAsync($userIds: [ID!], $achievementId: ID!) {
+      bulkAwardAchievementsAsync(userIds: $userIds, achievementId: $achievementId) {
+        id
+        operationType
+        status
+        totalCount
+        processedCount
+        successCount
+        failureCount
+        errorMessage
+        createdAt
+        startedAt
+        completedAt
+      }
+    }
+  variables: |
+    {
+      "userIds": [
+        "US01ARZ3NDEKTSV4RRFFQ69G5FAV",
+        "US02BRZ3NDEKTSV4RRFFQ69G5FAV",
+        "US03CRZ3NDEKTSV4RRFFQ69G5FAV"
+      ],
+      "achievementId": "AC01ARZ3NDEKTSV4RRFFQ69G5FAV"
+    }
+bodyType: graphql
+description: Async bulk award achievements to users by user IDs
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_BulkAwardAchievementsAsync
+method: POST
+name: Bulk Award Achievements Async (by User IDs)
+sortPriority: 3700.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

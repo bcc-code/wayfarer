@@ -1,0 +1,42 @@
+type: http_request
+model: http_request
+id: rq_MyBulkJobs
+createdAt: 2026-03-10T12:00:00
+updatedAt: 2026-03-10T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_BulkJobs
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    query MyBulkJobs($limit: Int) {
+      myBulkJobs(limit: $limit) {
+        id
+        operationType
+        status
+        totalCount
+        processedCount
+        successCount
+        failureCount
+        errorMessage
+        createdAt
+        startedAt
+        completedAt
+      }
+    }
+  variables: |
+    {
+      "limit": 10
+    }
+bodyType: graphql
+description: Get the current user's bulk jobs
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_MyBulkJobs
+method: POST
+name: My Bulk Jobs
+sortPriority: 2000.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

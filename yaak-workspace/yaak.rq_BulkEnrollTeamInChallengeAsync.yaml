@@ -1,0 +1,45 @@
+type: http_request
+model: http_request
+id: rq_BulkEnrollTeamInChallengeAsync
+createdAt: 2026-03-10T12:00:00
+updatedAt: 2026-03-10T08:31:35.241108
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_ChallengeEnroll
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation BulkEnrollTeamInChallengeAsync($target: EnrollmentTargetInput!, $challengeId: ID!) {
+      bulkEnrollUsersInChallengeAsync(target: $target, challengeId: $challengeId) {
+        id
+        operationType
+        status
+        totalCount
+        processedCount
+        successCount
+        failureCount
+        errorMessage
+        createdAt
+        startedAt
+        completedAt
+      }
+    }
+  variables: |
+    {
+      "target": {
+        "teamIds": ["TM01K9VZ875WTDWD77875XXABQBX"]
+      },
+      "challengeId": "CL01KH3FKP1NWP0A4R8FH0A1DTVV"
+    }
+bodyType: graphql
+description: Async bulk enrollment in a challenge by team ID
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_BulkEnrollTeamInChallengeAsync
+method: POST
+name: Bulk Enroll Team In Challenge Async (by Team ID)
+sortPriority: 6100.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

@@ -1,0 +1,13 @@
+type: folder
+model: folder
+id: fl_BulkJobs
+createdAt: 2026-03-10T12:00:00
+updatedAt: 2026-03-10T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: null
+authentication: {}
+authenticationType: null
+description: Bulk job queries for tracking async operations
+headers: []
+name: Bulk Jobs
+sortPriority: 3500.0
