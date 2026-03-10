@@ -424,22 +424,6 @@ const activeRef = computed(() =>
 const actionState = computed(() => activeRef.value?.actionState)
 const handlers = computed(() => activeRef.value?.handlers)
 
-// Auto-advance when revealCorrectAnswers is false (skip showing the locked state)
-// Don't auto-advance on the last question - let the user click "Finish"
-watch(
-  () => actionState.value?.isAnswerLocked,
-  (isLocked) => {
-    if (
-      isLocked &&
-      actionState.value?.mode === 'normal' &&
-      !props.challenge.quiz.revealCorrectAnswers &&
-      !isLastQuestion.value
-    ) {
-      handlers.value?.continue()
-    }
-  },
-)
-
 // Determine button text for continue action
 const { t } = useI18n()
 const continueButtonText = computed(() => {
@@ -778,11 +762,7 @@ const progressResults = computed(() => {
             :loading="actionState.isSubmitting"
             @click="handlers?.submit"
           >
-            {{
-              challenge.quiz.revealCorrectAnswers
-                ? $t('quiz.lockAnswer')
-                : continueButtonText
-            }}
+            {{ $t('quiz.lockAnswer') }}
           </DesignButton>
           <DesignButton v-else size="large" @click="handlers?.continue">
             {{ continueButtonText }}
