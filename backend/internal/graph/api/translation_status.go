@@ -63,9 +63,6 @@ func (r *Resolver) projectTranslationStatus(ctx context.Context, projectID strin
 		if boolTrue(row.HasRules) {
 			fields = append(fields, "rules")
 		}
-		if boolTrue(row.HasInfoMessage) {
-			fields = append(fields, "infoMessage")
-		}
 		if len(fields) > 0 {
 			result = append(result, model.TranslationFieldStatus{
 				LanguageCode: row.LanguageCode,

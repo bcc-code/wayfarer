@@ -11,8 +11,7 @@ WHERE challenge_id = @challenge_id::text;
 SELECT language_code,
   (name IS NOT NULL AND name != '') AS has_name,
   (description IS NOT NULL AND description != '') AS has_description,
-  (rules IS NOT NULL AND rules != '') AS has_rules,
-  (info_message IS NOT NULL AND info_message != '') AS has_info_message
+  (rules IS NOT NULL AND rules != '') AS has_rules
 FROM project_translations
 WHERE project_id = @project_id::text;
 

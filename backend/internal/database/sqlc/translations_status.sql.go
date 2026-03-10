@@ -176,8 +176,7 @@ const GetProjectTranslationStatus = `-- name: GetProjectTranslationStatus :many
 SELECT language_code,
   (name IS NOT NULL AND name != '') AS has_name,
   (description IS NOT NULL AND description != '') AS has_description,
-  (rules IS NOT NULL AND rules != '') AS has_rules,
-  (info_message IS NOT NULL AND info_message != '') AS has_info_message
+  (rules IS NOT NULL AND rules != '') AS has_rules
 FROM project_translations
 WHERE project_id = $1::text
 `
@@ -187,7 +186,6 @@ type GetProjectTranslationStatusRow struct {
 	HasName        *bool  `json:"has_name"`
 	HasDescription *bool  `json:"has_description"`
 	HasRules       *bool  `json:"has_rules"`
-	HasInfoMessage *bool  `json:"has_info_message"`
 }
 
 func (q *Queries) GetProjectTranslationStatus(ctx context.Context, projectID string) ([]*GetProjectTranslationStatusRow, error) {
@@ -204,7 +202,6 @@ func (q *Queries) GetProjectTranslationStatus(ctx context.Context, projectID str
 			&i.HasName,
 			&i.HasDescription,
 			&i.HasRules,
-			&i.HasInfoMessage,
 		); err != nil {
 			return nil, err
 		}
