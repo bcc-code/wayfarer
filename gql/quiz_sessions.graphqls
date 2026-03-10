@@ -20,6 +20,7 @@ extend type Mutation {
 
     # Session access management
     grantQuizSessionAccess(input: GrantQuizSessionAccessInput!): Int!
+    grantQuizSessionAccessAsync(input: GrantQuizSessionAccessInput!): BulkJob! @requireRole(roles: ["admin", "superadmin", "church_admin"])
     revokeQuizSessionAccess(sessionId: ID!, userIds: [ID!]!): Boolean!
     revokeAllQuizSessionAccess(sessionId: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
 

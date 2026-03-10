@@ -744,3 +744,160 @@ func getChallengePushInfo(challenge model.Challenge) push.ChallengeInfo {
 	}
 	return push.ChallengeInfo{}
 }
+
+// GrantQuizSessionAccess grants quiz session access to users.
+// This is the shared implementation used by both sync and async mutations.
+func (s *Service) GrantQuizSessionAccess(ctx context.Context, params pubsub.BulkGrantQuizSessionAccessParams) (int, int, error) {
+	// 1. Collect user IDs from various sources with source type tracking
+	userIdsToGrant := make(map[string]string) // map[userID]sourceType
+
+	// Direct user IDs
+	for _, uid := range params.UserIDs {
+		userIdsToGrant[uid] = "DIRECT"
+	}
+
+	// Team members
+	if len(params.TeamIDs) > 0 {
+		for _, teamID := range params.TeamIDs {
+			thunk := s.Loaders.UserIDsByTeamLoader.Load(ctx, teamID)
+			teamUserIDs, err := thunk()
+			if err != nil {
+				return 0, 0, fmt.Errorf("failed to get team members: %w", err)
+			}
+			for _, uid := range teamUserIDs {
+				if _, exists := userIdsToGrant[uid]; !exists {
+					userIdsToGrant[uid] = "TEAM"
+				}
+			}
+		}
+	}
+
+	// Super team members
+	if len(params.SuperTeamIDs) > 0 {
+		for _, superTeamID := range params.SuperTeamIDs {
+			thunk := s.Loaders.UserIDsBySuperTeamLoader.Load(ctx, superTeamID)
+			superTeamUserIDs, err := thunk()
+			if err != nil {
+				return 0, 0, fmt.Errorf("failed to get super team members: %w", err)
+			}
+			for _, uid := range superTeamUserIDs {
+				if _, exists := userIdsToGrant[uid]; !exists {
+					userIdsToGrant[uid] = "SUPER_TEAM"
+				}
+			}
+		}
+	}
+
+	// Church members
+	if len(params.ChurchIDs) > 0 {
+		for _, churchID := range params.ChurchIDs {
+			key := loaders.ChurchProjectKey{ChurchID: churchID, ProjectID: params.ProjectID}
+			thunk := s.Loaders.UserIDsByChurchInProjectLoader.Load(ctx, key)
+			churchUserIDs, err := thunk()
+			if err != nil {
+				return 0, 0, fmt.Errorf("failed to get church members: %w", err)
+			}
+			for _, uid := range churchUserIDs {
+				if _, exists := userIdsToGrant[uid]; !exists {
+					userIdsToGrant[uid] = "CHURCH"
+				}
+			}
+		}
+	}
+
+	// All project users
+	if params.AllProjectUsers {
+		thunk := s.Loaders.UserIDsInProjectLoader.Load(ctx, params.ProjectID)
+		projectUserIDs, err := thunk()
+		if err != nil {
+			return 0, 0, fmt.Errorf("failed to get project users: %w", err)
+		}
+		for _, uid := range projectUserIDs {
+			if _, exists := userIdsToGrant[uid]; !exists {
+				userIdsToGrant[uid] = "ALL"
+			}
+		}
+	}
+
+	if len(userIdsToGrant) == 0 {
+		return 0, 0, nil
+	}
+
+	// 2. Batch insert (500 per batch)
+	successCount := 0
+	failureCount := 0
+	const batchSize = 500
+
+	ids := make([]string, 0, batchSize)
+	sessionIds := make([]string, 0, batchSize)
+	userIds := make([]string, 0, batchSize)
+	grantedBys := make([]string, 0, batchSize)
+	sourceTypes := make([]string, 0, batchSize)
+	sourceIds := make([]string, 0, batchSize)
+
+	for uid, sourceType := range userIdsToGrant {
+		ids = append(ids, ulid.NewQuizSessionAccessID())
+		sessionIds = append(sessionIds, params.SessionID)
+		userIds = append(userIds, uid)
+		grantedBys = append(grantedBys, params.GrantedBy)
+		sourceTypes = append(sourceTypes, sourceType)
+		sourceIds = append(sourceIds, "")
+
+		if len(ids) >= batchSize {
+			granted, err := s.DB.Queries.BulkCreateQuizSessionAccess(ctx, sqlc.BulkCreateQuizSessionAccessParams{
+				Ids:         ids,
+				Sessionids:  sessionIds,
+				Userids:     userIds,
+				Grantedbys:  grantedBys,
+				Sourcetypes: sourceTypes,
+				Sourceids:   sourceIds,
+			})
+			if err != nil {
+				s.Logger.Error("Failed to grant access batch",
+					"session_id", params.SessionID,
+					"batch_size", len(ids),
+					"error", err,
+				)
+				failureCount += len(ids)
+			} else {
+				successCount += int(granted)
+			}
+			// Reset slices
+			ids = ids[:0]
+			sessionIds = sessionIds[:0]
+			userIds = userIds[:0]
+			grantedBys = grantedBys[:0]
+			sourceTypes = sourceTypes[:0]
+			sourceIds = sourceIds[:0]
+		}
+	}
+
+	// Insert remaining
+	if len(ids) > 0 {
+		granted, err := s.DB.Queries.BulkCreateQuizSessionAccess(ctx, sqlc.BulkCreateQuizSessionAccessParams{
+			Ids:         ids,
+			Sessionids:  sessionIds,
+			Userids:     userIds,
+			Grantedbys:  grantedBys,
+			Sourcetypes: sourceTypes,
+			Sourceids:   sourceIds,
+		})
+		if err != nil {
+			s.Logger.Error("Failed to grant access batch",
+				"session_id", params.SessionID,
+				"batch_size", len(ids),
+				"error", err,
+			)
+			failureCount += len(ids)
+		} else {
+			successCount += int(granted)
+		}
+	}
+
+	// 3. Firebase notification
+	if s.FirebaseService != nil && successCount > 0 {
+		go s.FirebaseService.NotifyProjectQuizSessions(context.Background(), params.ProjectID)
+	}
+
+	return successCount, failureCount, nil
+}

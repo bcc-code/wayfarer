@@ -53,6 +53,11 @@ type Loaders struct {
 	QuizAnswersByQuestionLoader              *dataloader.Loader[string, []*model.QuizPredefinedAnswer]
 	QuizSubmissionsByUserLoader              *dataloader.Loader[string, []*model.QuizSubmission]
 	QuizResponsesBySubmissionLoader          *dataloader.Loader[string, []model.QuizResponse]
+	QuizSessionByIDLoader                    *dataloader.Loader[string, *sqlc.QuizSession]
+	UserIDsByTeamLoader                      *dataloader.Loader[string, []string]
+	UserIDsBySuperTeamLoader                 *dataloader.Loader[string, []string]
+	UserIDsByChurchInProjectLoader           *dataloader.Loader[ChurchProjectKey, []string]
+	UserIDsInProjectLoader                   *dataloader.Loader[string, []string]
 	ExternalContentByIDLoader                *dataloader.Loader[string, *model.ExternalContent]
 	ExternalContentTranslationsLoader        *dataloader.Loader[string, []model.ExternalContentTranslation]
 	ImageMetadataByURLLoader                 *dataloader.Loader[string, *model.Image]
@@ -116,6 +121,11 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		QuizAnswersByQuestionLoader:              newBatchedLoader(quizAnswersByQuestionBatchFunc(db, cache)),
 		QuizSubmissionsByUserLoader:              newBatchedLoader(quizSubmissionsByUserBatchFunc(db, cache)),
 		QuizResponsesBySubmissionLoader:          newBatchedLoader(quizResponsesBySubmissionBatchFunc(db, cache)),
+		QuizSessionByIDLoader:                    newBatchedLoader(quizSessionByIDBatchFunc(db, cache)),
+		UserIDsByTeamLoader:                      newBatchedLoader(userIDsByTeamBatchFunc(db, cache)),
+		UserIDsBySuperTeamLoader:                 newBatchedLoader(userIDsBySuperTeamBatchFunc(db, cache)),
+		UserIDsByChurchInProjectLoader:           newBatchedLoader(userIDsByChurchInProjectBatchFunc(db, cache)),
+		UserIDsInProjectLoader:                   newBatchedLoader(userIDsInProjectBatchFunc(db, cache)),
 		ExternalContentByIDLoader:                newBatchedLoader(externalContentByIDBatchFunc(db, cache)),
 		ExternalContentTranslationsLoader:        newBatchedLoader(externalContentTranslationsBatchFunc(db, cache)),
 		ImageMetadataByURLLoader:                 newBatchedLoader(imageMetadataByURLBatchFunc(db, cache)),

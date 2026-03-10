@@ -17,6 +17,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/plugins"
 	ladder_to_heaven "github.com/bcc-media/wayfarer/internal/plugins/ladder_to_heaven"
 	"github.com/bcc-media/wayfarer/internal/services"
+	"github.com/bcc-media/wayfarer/internal/services/bulk"
 	"github.com/gin-gonic/gin"
 )
 
@@ -28,6 +29,7 @@ type TestServerConfig struct {
 	LeaderboardService *services.LeaderboardService
 	SettingsService    *services.SettingsService
 	LanguageService    *services.LanguageService
+	BulkService        *bulk.Service
 	Loaders            *loaders.Loaders
 }
 
@@ -55,6 +57,7 @@ func NewTestRouter(cfg TestServerConfig) *gin.Engine {
 		RoleService:        cfg.RoleService,
 		LeaderboardService: cfg.LeaderboardService,
 		Settings:           cfg.SettingsService,
+		BulkService:        cfg.BulkService,
 		InstanceID:         "test-instance",
 	}
 
@@ -157,6 +160,17 @@ func SetupTestServer(ctx context.Context, dbMgr *TestDBManager) (*gin.Engine, fu
 		return nil, nil, err
 	}
 
+	// Create bulk service (without pub/sub for testing - sync processing only)
+	bulkService := bulk.NewService(
+		dbMgr.DB,
+		testCache,
+		dataLoaders,
+		nil, // PushService
+		nil, // FirebaseService
+		nil, // Publisher
+		logger,
+	)
+
 	// Create router
 	router := NewTestRouter(TestServerConfig{
 		DB:                 dbMgr.DB,
@@ -165,6 +179,7 @@ func SetupTestServer(ctx context.Context, dbMgr *TestDBManager) (*gin.Engine, fu
 		LeaderboardService: leaderboardService,
 		SettingsService:    settingsService,
 		LanguageService:    languageService,
+		BulkService:        bulkService,
 		Loaders:            dataLoaders,
 	})
 
@@ -203,6 +218,17 @@ func SetupTestServerWithCache(ctx context.Context, dbMgr *TestDBManager) (*gin.E
 		return nil, nil, nil, err
 	}
 
+	// Create bulk service (without pub/sub for testing - sync processing only)
+	bulkService := bulk.NewService(
+		dbMgr.DB,
+		testCache,
+		dataLoaders,
+		nil, // PushService
+		nil, // FirebaseService
+		nil, // Publisher
+		logger,
+	)
+
 	// Create router
 	router := NewTestRouter(TestServerConfig{
 		DB:                 dbMgr.DB,
@@ -211,6 +237,7 @@ func SetupTestServerWithCache(ctx context.Context, dbMgr *TestDBManager) (*gin.E
 		LeaderboardService: leaderboardService,
 		SettingsService:    settingsService,
 		LanguageService:    languageService,
+		BulkService:        bulkService,
 		Loaders:            dataLoaders,
 	})
 

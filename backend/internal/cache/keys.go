@@ -22,13 +22,18 @@ const (
 	PrefixAchievement    = "achievement:"
 	PrefixStreak         = "streak:"
 	PrefixQuiz           = "quiz:"
+	PrefixQuizSession    = "quizsession:"
 	PrefixQuizSubmission = "quizsubmission:"
 
 	// Relationship/Junction tables
-	PrefixUserProjects = "userprojects:"
-	PrefixUserEvents   = "userevents:"
-	PrefixTeamMembers  = "teammembers:"
-	PrefixUserRoles    = "userroles:"
+	PrefixUserProjects       = "userprojects:"
+	PrefixUserEvents         = "userevents:"
+	PrefixTeamMembers        = "teammembers:"
+	PrefixUserRoles          = "userroles:"
+	PrefixUserIDsByTeam      = "useridsbyteam:"
+	PrefixUserIDsBySuperTeam = "useridsbysuperteam:"
+	PrefixUserIDsByChurch    = "useridsbychurch:"
+	PrefixUserIDsInProject   = "useridsinproject:"
 
 	// Progress tracking
 	PrefixUserAchievements         = "userachievements:"
@@ -276,6 +281,11 @@ func QuizzesByEventKey(eventID string) string {
 	return fmt.Sprintf("%s:event:%s", PrefixQuiz, eventID)
 }
 
+// QuizSessionKey builds a cache key for a quiz session by ID
+func QuizSessionKey(sessionID string) string {
+	return PrefixQuizSession + sessionID
+}
+
 // QuizSubmissionKey builds a cache key for a quiz submission by ID
 func QuizSubmissionKey(submissionID string) string {
 	return PrefixQuizSubmission + submissionID
@@ -334,6 +344,26 @@ func TeamMembersByTeamKey(teamID string) string {
 // UsersByTeamKey builds a cache key for users in a team
 func UsersByTeamKey(teamID string) string {
 	return fmt.Sprintf("%s:team:%s", PrefixUser, teamID)
+}
+
+// UserIDsByTeamKey builds a cache key for user IDs in a team
+func UserIDsByTeamKey(teamID string) string {
+	return PrefixUserIDsByTeam + teamID
+}
+
+// UserIDsBySuperTeamKey builds a cache key for user IDs in a super team
+func UserIDsBySuperTeamKey(superTeamID string) string {
+	return PrefixUserIDsBySuperTeam + superTeamID
+}
+
+// UserIDsByChurchInProjectKey builds a cache key for user IDs by church in a project
+func UserIDsByChurchInProjectKey(churchID, projectID string) string {
+	return fmt.Sprintf("%s%s:%s", PrefixUserIDsByChurch, churchID, projectID)
+}
+
+// UserIDsInProjectKey builds a cache key for user IDs in a project
+func UserIDsInProjectKey(projectID string) string {
+	return PrefixUserIDsInProject + projectID
 }
 
 // UserRolesKey builds a cache key for user roles

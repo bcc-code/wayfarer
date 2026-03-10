@@ -866,6 +866,45 @@ func (q *Queries) GetUserActiveSessionForQuiz(ctx context.Context, arg GetUserAc
 	return &i, err
 }
 
+const GetUserIDsByChurchAndProject = `-- name: GetUserIDsByChurchAndProject :many
+SELECT u.church_id, up.user_id
+FROM user_projects up
+JOIN users u ON u.id = up.user_id
+WHERE u.church_id = ANY($1::text[])
+    AND up.project_id = $2::text
+`
+
+type GetUserIDsByChurchAndProjectParams struct {
+	Churchids []string `json:"churchids"`
+	Projectid string   `json:"projectid"`
+}
+
+type GetUserIDsByChurchAndProjectRow struct {
+	ChurchID string `json:"church_id"`
+	UserID   string `json:"user_id"`
+}
+
+// Returns church_id and user_id for dataloader grouping
+func (q *Queries) GetUserIDsByChurchAndProject(ctx context.Context, arg GetUserIDsByChurchAndProjectParams) ([]*GetUserIDsByChurchAndProjectRow, error) {
+	rows, err := q.db.Query(ctx, GetUserIDsByChurchAndProject, arg.Churchids, arg.Projectid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUserIDsByChurchAndProjectRow{}
+	for rows.Next() {
+		var i GetUserIDsByChurchAndProjectRow
+		if err := rows.Scan(&i.ChurchID, &i.UserID); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetUserIDsByChurchIDs = `-- name: GetUserIDsByChurchIDs :many
 
 SELECT DISTINCT id AS user_id

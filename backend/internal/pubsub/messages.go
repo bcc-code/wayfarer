@@ -14,6 +14,9 @@ const (
 
 	// Achievement operations
 	OperationBulkAwardAchievement OperationType = "BULK_AWARD_ACHIEVEMENT"
+
+	// Quiz session operations
+	OperationBulkGrantQuizSessionAccess OperationType = "BULK_GRANT_QUIZ_SESSION_ACCESS"
 )
 
 // BulkOperationMessage is the message published to Pub/Sub for async processing
@@ -81,6 +84,22 @@ type BulkAwardAchievementParams struct {
 
 func (p BulkAwardAchievementParams) OperationType() OperationType {
 	return OperationBulkAwardAchievement
+}
+
+// BulkGrantQuizSessionAccessParams contains parameters for bulk quiz session access granting
+type BulkGrantQuizSessionAccessParams struct {
+	SessionID       string   `json:"session_id"`
+	UserIDs         []string `json:"user_ids,omitempty"`
+	TeamIDs         []string `json:"team_ids,omitempty"`
+	SuperTeamIDs    []string `json:"super_team_ids,omitempty"`
+	ChurchIDs       []string `json:"church_ids,omitempty"`
+	AllProjectUsers bool     `json:"all_project_users,omitempty"`
+	ProjectID       string   `json:"project_id"`
+	GrantedBy       string   `json:"granted_by"`
+}
+
+func (p BulkGrantQuizSessionAccessParams) OperationType() OperationType {
+	return OperationBulkGrantQuizSessionAccess
 }
 
 // JobStatus represents the status of a bulk job

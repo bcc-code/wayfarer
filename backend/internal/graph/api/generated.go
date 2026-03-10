@@ -547,6 +547,7 @@ type ComplexityRoot struct {
 		FixMissingContentProgress                   func(childComplexity int) int
 		ForwardFeedbackToDesk                       func(childComplexity int, feedbackID string, destination model.ForwardDestination) int
 		GrantQuizSessionAccess                      func(childComplexity int, input model.GrantQuizSessionAccessInput) int
+		GrantQuizSessionAccessAsync                 func(childComplexity int, input model.GrantQuizSessionAccessInput) int
 		JoinEvent                                   func(childComplexity int, eventID string) int
 		JoinProject                                 func(childComplexity int, projectID string) int
 		JoinTeam                                    func(childComplexity int, code string) int
@@ -1467,6 +1468,7 @@ type MutationResolver interface {
 	FinishQuizSession(ctx context.Context, id string) (*model.QuizSession, error)
 	ReopenQuizSession(ctx context.Context, id string) (*model.QuizSession, error)
 	GrantQuizSessionAccess(ctx context.Context, input model.GrantQuizSessionAccessInput) (int, error)
+	GrantQuizSessionAccessAsync(ctx context.Context, input model.GrantQuizSessionAccessInput) (*model.BulkJob, error)
 	RevokeQuizSessionAccess(ctx context.Context, sessionID string, userIds []string) (bool, error)
 	RevokeAllQuizSessionAccess(ctx context.Context, sessionID string) (bool, error)
 	StartQuizSession(ctx context.Context, sessionID string) (*model.QuizSubmission, error)
@@ -4055,6 +4057,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.GrantQuizSessionAccess(childComplexity, args["input"].(model.GrantQuizSessionAccessInput)), true
+	case "Mutation.grantQuizSessionAccessAsync":
+		if e.complexity.Mutation.GrantQuizSessionAccessAsync == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_grantQuizSessionAccessAsync_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.GrantQuizSessionAccessAsync(childComplexity, args["input"].(model.GrantQuizSessionAccessInput)), true
 	case "Mutation.joinEvent":
 		if e.complexity.Mutation.JoinEvent == nil {
 			break
@@ -10350,6 +10363,7 @@ extend type Mutation {
 
     # Session access management
     grantQuizSessionAccess(input: GrantQuizSessionAccessInput!): Int!
+    grantQuizSessionAccessAsync(input: GrantQuizSessionAccessInput!): BulkJob! @requireRole(roles: ["admin", "superadmin", "church_admin"])
     revokeQuizSessionAccess(sessionId: ID!, userIds: [ID!]!): Boolean!
     revokeAllQuizSessionAccess(sessionId: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
 
@@ -11841,6 +11855,17 @@ func (ec *executionContext) field_Mutation_forwardFeedbackToDesk_args(ctx contex
 		return nil, err
 	}
 	args["destination"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_grantQuizSessionAccessAsync_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNGrantQuizSessionAccessInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐGrantQuizSessionAccessInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -30120,6 +30145,89 @@ func (ec *executionContext) fieldContext_Mutation_grantQuizSessionAccess(ctx con
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_grantQuizSessionAccess_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_grantQuizSessionAccessAsync(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_grantQuizSessionAccessAsync,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().GrantQuizSessionAccessAsync(ctx, fc.Args["input"].(model.GrantQuizSessionAccessInput))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "church_admin"})
+				if err != nil {
+					var zeroVal *model.BulkJob
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.BulkJob
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNBulkJob2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐBulkJob,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_grantQuizSessionAccessAsync(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_BulkJob_id(ctx, field)
+			case "operationType":
+				return ec.fieldContext_BulkJob_operationType(ctx, field)
+			case "status":
+				return ec.fieldContext_BulkJob_status(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_BulkJob_totalCount(ctx, field)
+			case "processedCount":
+				return ec.fieldContext_BulkJob_processedCount(ctx, field)
+			case "successCount":
+				return ec.fieldContext_BulkJob_successCount(ctx, field)
+			case "failureCount":
+				return ec.fieldContext_BulkJob_failureCount(ctx, field)
+			case "errorMessage":
+				return ec.fieldContext_BulkJob_errorMessage(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_BulkJob_createdAt(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_BulkJob_startedAt(ctx, field)
+			case "completedAt":
+				return ec.fieldContext_BulkJob_completedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type BulkJob", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_grantQuizSessionAccessAsync_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -61529,6 +61637,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "grantQuizSessionAccess":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_grantQuizSessionAccess(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "grantQuizSessionAccessAsync":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_grantQuizSessionAccessAsync(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++

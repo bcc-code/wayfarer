@@ -511,169 +511,54 @@ func (r *mutationResolver) GrantQuizSessionAccess(ctx context.Context, input mod
 	)
 	defer span.End()
 
-	userID, ok := middleware.GetUserID(ctx)
-	if !ok || userID == "" {
-		return 0, fmt.Errorf("user not authenticated")
-	}
-
-	// Get session
-	session, err := r.DB.Queries.GetQuizSession(ctx, input.SessionID)
+	// Load session, quiz, and verify authorization
+	grantCtx, err := loadQuizSessionForGrantAccess(ctx, span, r.Loaders, r.RoleService, input.SessionID)
 	if err != nil {
 		otel.RecordError(span, err)
-		return 0, fmt.Errorf("failed to load session: %w", err)
+		return 0, err
 	}
 
-	// Load quiz to check authorization
-	thunk := r.Loaders.QuizByIDLoader.Load(ctx, session.QuizID)
-	quiz, err := thunk()
+	// Build params and call shared service method
+	params := buildGrantQuizSessionAccessParams(input, grantCtx.ProjectID, grantCtx.UserID)
+
+	successCount, _, err := r.BulkService.GrantQuizSessionAccess(ctx, params)
 	if err != nil {
 		otel.RecordError(span, err)
-		return 0, fmt.Errorf("failed to load quiz: %w", err)
-	}
-	if quiz == nil {
-		return 0, fmt.Errorf("quiz not found")
+		return 0, err
 	}
 
-	// Check if user can grant access (project manager OR session creator)
-	if session.CreatedBy != userID && !r.RoleService.CanManageProject(ctx, userID, quiz.ProjectID) {
-		return 0, fmt.Errorf("unauthorized to grant session access")
+	return successCount, nil
+}
+
+// GrantQuizSessionAccessAsync is the resolver for the grantQuizSessionAccessAsync field.
+func (r *mutationResolver) GrantQuizSessionAccessAsync(ctx context.Context, input model.GrantQuizSessionAccessInput) (*model.BulkJob, error) {
+	ctx, span := otel.StartSpan(ctx, "quiz_session.grant_access_async",
+		attribute.String("session.id", input.SessionID),
+	)
+	defer span.End()
+
+	if r.BulkService == nil {
+		return nil, fmt.Errorf("bulk service not initialized")
 	}
 
-	// Collect user IDs from various sources
-	userIdsToGrant := make(map[string]string) // map[userID]sourceType
-
-	// Direct user IDs
-	for _, uid := range input.UserIds {
-		userIdsToGrant[uid] = "DIRECT"
+	// Load session, quiz, and verify authorization
+	grantCtx, err := loadQuizSessionForGrantAccess(ctx, span, r.Loaders, r.RoleService, input.SessionID)
+	if err != nil {
+		otel.RecordError(span, err)
+		return nil, err
 	}
 
-	// Team members
-	if len(input.TeamIds) > 0 {
-		teamUserIDs, err := r.DB.Queries.GetUserIDsInTeams(ctx, input.TeamIds)
-		if err != nil {
-			otel.RecordError(span, err)
-			return 0, fmt.Errorf("failed to get team members: %w", err)
-		}
-		for _, uid := range teamUserIDs {
-			if _, exists := userIdsToGrant[uid]; !exists {
-				userIdsToGrant[uid] = "TEAM"
-			}
-		}
+	// Estimate total count for the job
+	totalCount, err := estimateGrantAccessTotalCount(ctx, r.Loaders, input, grantCtx.ProjectID)
+	if err != nil {
+		otel.RecordError(span, err)
+		return nil, err
 	}
 
-	// Super team members
-	if len(input.SuperTeamIds) > 0 {
-		superTeamUserIDs, err := r.DB.Queries.GetUserIDsInSuperTeams(ctx, input.SuperTeamIds)
-		if err != nil {
-			otel.RecordError(span, err)
-			return 0, fmt.Errorf("failed to get super team members: %w", err)
-		}
-		for _, uid := range superTeamUserIDs {
-			if _, exists := userIdsToGrant[uid]; !exists {
-				userIdsToGrant[uid] = "SUPER_TEAM"
-			}
-		}
-	}
+	// Build params
+	params := buildGrantQuizSessionAccessParams(input, grantCtx.ProjectID, grantCtx.UserID)
 
-	// Church members
-	if len(input.ChurchIds) > 0 {
-		churchUserIDs, err := r.DB.Queries.GetUserIDsByChurchIDsInProject(ctx, sqlc.GetUserIDsByChurchIDsInProjectParams{
-			Churchids: input.ChurchIds,
-			Projectid: quiz.ProjectID,
-		})
-		if err != nil {
-			otel.RecordError(span, err)
-			return 0, fmt.Errorf("failed to get church members: %w", err)
-		}
-		for _, uid := range churchUserIDs {
-			if _, exists := userIdsToGrant[uid]; !exists {
-				userIdsToGrant[uid] = "CHURCH"
-			}
-		}
-	}
-
-	// All project users
-	if input.AllProjectUsers != nil && *input.AllProjectUsers {
-		projectUserIDs, err := r.DB.Queries.GetUserIDsInProject(ctx, quiz.ProjectID)
-		if err != nil {
-			otel.RecordError(span, err)
-			return 0, fmt.Errorf("failed to get project users: %w", err)
-		}
-		for _, uid := range projectUserIDs {
-			if _, exists := userIdsToGrant[uid]; !exists {
-				userIdsToGrant[uid] = "ALL"
-			}
-		}
-	}
-
-	// Create access records using batch insert (max 500 per batch)
-	if len(userIdsToGrant) == 0 {
-		return 0, nil
-	}
-
-	const batchSize = 500
-	ids := make([]string, 0, min(len(userIdsToGrant), batchSize))
-	sessionIds := make([]string, 0, min(len(userIdsToGrant), batchSize))
-	userIds := make([]string, 0, min(len(userIdsToGrant), batchSize))
-	grantedBys := make([]string, 0, min(len(userIdsToGrant), batchSize))
-	sourceTypes := make([]string, 0, min(len(userIdsToGrant), batchSize))
-	sourceIds := make([]string, 0, min(len(userIdsToGrant), batchSize))
-
-	var totalGranted int64
-	for uid, sourceType := range userIdsToGrant {
-		ids = append(ids, ulid.NewQuizSessionAccessID())
-		sessionIds = append(sessionIds, input.SessionID)
-		userIds = append(userIds, uid)
-		grantedBys = append(grantedBys, userID)
-		sourceTypes = append(sourceTypes, sourceType)
-		sourceIds = append(sourceIds, "")
-
-		if len(ids) >= batchSize {
-			granted, err := r.DB.Queries.BulkCreateQuizSessionAccess(ctx, sqlc.BulkCreateQuizSessionAccessParams{
-				Ids:         ids,
-				Sessionids:  sessionIds,
-				Userids:     userIds,
-				Grantedbys:  grantedBys,
-				Sourcetypes: sourceTypes,
-				Sourceids:   sourceIds,
-			})
-			if err != nil {
-				otel.RecordError(span, err)
-				return 0, fmt.Errorf("failed to create quiz session access: %w", err)
-			}
-			totalGranted += granted
-			ids = ids[:0]
-			sessionIds = sessionIds[:0]
-			userIds = userIds[:0]
-			grantedBys = grantedBys[:0]
-			sourceTypes = sourceTypes[:0]
-			sourceIds = sourceIds[:0]
-		}
-	}
-
-	// Insert remaining records
-	if len(ids) > 0 {
-		granted, err := r.DB.Queries.BulkCreateQuizSessionAccess(ctx, sqlc.BulkCreateQuizSessionAccessParams{
-			Ids:         ids,
-			Sessionids:  sessionIds,
-			Userids:     userIds,
-			Grantedbys:  grantedBys,
-			Sourcetypes: sourceTypes,
-			Sourceids:   sourceIds,
-		})
-		if err != nil {
-			otel.RecordError(span, err)
-			return 0, fmt.Errorf("failed to create quiz session access: %w", err)
-		}
-		totalGranted += granted
-	}
-
-	// Notify clients via Firestore
-	if r.FirebaseService != nil && totalGranted > 0 {
-		go r.FirebaseService.NotifyProjectQuizSessions(context.Background(), quiz.ProjectID)
-	}
-
-	return int(totalGranted), nil
+	return r.BulkService.CreateBulkJobAndPublish(ctx, grantCtx.UserID, &grantCtx.ProjectID, totalCount, params)
 }
 
 // RevokeQuizSessionAccess is the resolver for the revokeQuizSessionAccess field.
