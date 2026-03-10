@@ -555,16 +555,15 @@ func main() {
 		"endpoint", "POST /api/scheduler/quiz-session-transitions",
 	)
 
-	// Pub/Sub push endpoint for bulk operations
-	if cfg.PubSub.Enabled {
-		bulkProcessor := bulk.NewProcessor(bulkService)
-		pubsubProcessor := pubsub.NewProcessor(db, bulkProcessor, lgr)
-		pubsubHandler := pubsub.NewHandler(pubsubProcessor, lgr)
-		router.POST("/pubsub/bulk-operations", pubsubHandler.HandlePush)
-		slog.Info("Pub/Sub bulk operations endpoint registered",
-			"endpoint", "POST /pubsub/bulk-operations",
-		)
-	}
+	// Pub/Sub push handler for bulk operations (always registered - for receiving messages)
+	// This is separate from the publisher initialization which requires PUBSUB_ENABLED=true
+	bulkProcessor := bulk.NewProcessor(bulkService)
+	pubsubProcessor := pubsub.NewProcessor(db, bulkProcessor, lgr)
+	pubsubHandler := pubsub.NewHandler(pubsubProcessor, lgr)
+	router.POST("/pubsub/bulk-operations", pubsubHandler.HandlePush)
+	slog.Info("Pub/Sub bulk operations endpoint registered",
+		"endpoint", "POST /pubsub/bulk-operations",
+	)
 
 	// File upload handler
 	uploadHandler := &handlers.UploadHandler{
