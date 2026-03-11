@@ -45,13 +45,13 @@ const quizId = computed(() => {
 
 // State filter
 const stateFilterOptions = [
-  { value: '', label: 'Alle' },
+  { value: 'all', label: 'Alle' },
   { value: QuizSessionState.Draft, label: 'Utkast' },
   { value: QuizSessionState.Open, label: 'Åpen' },
   { value: QuizSessionState.Locked, label: 'Låst' },
   { value: QuizSessionState.Finished, label: 'Fullført' },
 ]
-const stateFilter = ref('')
+const stateFilter = ref('all')
 
 const {
   data: sessionsData,
@@ -60,7 +60,7 @@ const {
 } = useAdminQuizSessionsQuery({
   variables: computed(() => ({
     quizId: quizId.value ?? '',
-    state: stateFilter.value
+    state: stateFilter.value !== 'all'
       ? (stateFilter.value as QuizSessionState)
       : undefined,
   })),
