@@ -129,6 +129,7 @@ const classes = cva(
       v-if="confirmed && selected && !correct && !wrong"
       class="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 text-label text-on-accent bg-accent-contrast rounded-full px-3 py-1 flex gap-1 items-center"
     >
+      <IconLock class="size-6" />
       {{ $t('quiz.yourAnswer') }}
     </span>
   </button>
