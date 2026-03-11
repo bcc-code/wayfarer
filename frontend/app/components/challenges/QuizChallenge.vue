@@ -17,6 +17,7 @@ import {
   type FinalizeQuizMutation,
   type StartQuizSessionMutation,
 } from '~/api/generated'
+import { resolveQuizViewState } from '~/composables/useQuizViewState'
 
 const props = defineProps<{
   challenge: QuizChallengeData
@@ -309,6 +310,29 @@ const isSessionLockedOrFinished = computed(() => {
   )
 })
 
+// Special case for PC26 Game Night betting
+const isSingleOrderingQuestion = computed(() => {
+  return (
+    questions.value.length === 1 &&
+    questions.value[0]?.__typename === 'OrderingQuestion'
+  )
+})
+
+const viewState = computed(() =>
+  resolveQuizViewState({
+    isLoading: isLoading.value,
+    quizCompleted: quizCompleted.value,
+    hasFinalResult: finalResult.value !== null,
+    hasCompletedSubmission: completedSubmission.value !== undefined,
+    canStartQuiz: canStartQuiz.value,
+    sessionState: sessionState.value,
+    isSingleOrderingQuestion: isSingleOrderingQuestion.value,
+    hasCurrentQuestion: currentQuestion.value !== undefined,
+    isNotSubmitted: isNotSubmitted.value,
+    isQuizUnavailable: isQuizUnavailable.value,
+  }),
+)
+
 // Compute correct count for ordering questions (for betting results)
 const bettingCorrectCount = computed(() => {
   const response = currentResponse.value
@@ -506,13 +530,13 @@ const progressResults = computed(() => {
       />
     </template>
 
-    <template v-if="isLoading">
+    <template v-if="viewState === 'loading'">
       <div class="flex items-center justify-center grow">
         <LoadingState />
       </div>
     </template>
 
-    <template v-else-if="quizCompleted && finalResult">
+    <template v-else-if="viewState === 'just-completed' && finalResult">
       <QuizResult
         :score="finalResult.score ?? 0"
         :max-score="finalResult.maxScore ?? 0"
@@ -523,11 +547,7 @@ const progressResults = computed(() => {
       />
     </template>
 
-    <template
-      v-else-if="
-        completedSubmission && !canStartQuiz && !isSessionLockedOrFinished
-      "
-    >
+    <template v-else-if="viewState === 'results' && completedSubmission">
       <QuizReviewMode
         v-if="isReviewMode"
         ref="reviewModeRef"
@@ -549,7 +569,7 @@ const progressResults = computed(() => {
       />
     </template>
 
-    <template v-else-if="currentQuestion">
+    <template v-else-if="viewState === 'active-question' && currentQuestion">
       <div
         v-show="isBettingEnabled && sessionState === QuizSessionState.Locked"
         class="grow flex flex-col py-6 px-default items-center justify-center"
@@ -589,6 +609,7 @@ const progressResults = computed(() => {
           :total-questions="questions.length"
           :current-index="currentQuestionIndex"
           :submission-id="activeSubmission?.id ?? ''"
+          :session-state="sessionState"
           :existing-response="
             currentResponse?.__typename === 'PredefinedResponse'
               ? currentResponse
@@ -670,7 +691,9 @@ const progressResults = computed(() => {
     </template>
 
     <!-- Fallback: show completed submission result even if retakes are allowed -->
-    <template v-else-if="completedSubmission">
+    <template
+      v-else-if="viewState === 'results-fallback' && completedSubmission"
+    >
       <QuizReviewMode
         v-if="isReviewMode"
         ref="reviewModeRef"
@@ -693,7 +716,7 @@ const progressResults = computed(() => {
     </template>
 
     <!-- Session ended without user submitting -->
-    <template v-else-if="isNotSubmitted">
+    <template v-else-if="viewState === 'not-submitted'">
       <div class="text-center p-default flex flex-col gap-large grow">
         <div class="grow flex flex-col items-center justify-center gap-default">
           <div
@@ -717,7 +740,7 @@ const progressResults = computed(() => {
     </template>
 
     <!-- Quiz unavailable: can't start and no submissions -->
-    <template v-else-if="isQuizUnavailable">
+    <template v-else-if="viewState === 'unavailable'">
       <div class="flex items-center justify-center grow p-default">
         <p class="text-body text-text-secondary text-center">
           {{ $t('quiz.unavailable') }}
