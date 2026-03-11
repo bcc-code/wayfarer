@@ -17,7 +17,10 @@ import {
   type FinalizeQuizMutation,
   type StartQuizSessionMutation,
 } from '~/api/generated'
-import { resolveQuizViewState } from '~/composables/useQuizViewState'
+import {
+  resolveQuizViewState,
+  resolveFooterState,
+} from '~/composables/useQuizViewState'
 
 const props = defineProps<{
   challenge: QuizChallengeData
@@ -448,6 +451,16 @@ const activeRef = computed(() =>
 const actionState = computed(() => activeRef.value?.actionState)
 const handlers = computed(() => activeRef.value?.handlers)
 
+const footerState = computed(() => {
+  const state = actionState.value
+  if (!state) return null
+  return resolveFooterState({
+    actionState: state,
+    isBettingEnabled: isBettingEnabled.value,
+    isSingleQuestion: questions.value.length === 1,
+  })
+})
+
 // Determine button text for continue action
 const { t } = useI18n()
 const continueButtonText = computed(() => {
@@ -757,7 +770,7 @@ const progressResults = computed(() => {
 
     <template #footer>
       <div
-        v-if="actionState && !quizCompleted"
+        v-if="footerState && !quizCompleted"
         :class="[
           'w-full p-default flex flex-col gap-4 shadow-large',
           {
@@ -776,123 +789,170 @@ const progressResults = computed(() => {
           },
         ]"
       >
-        <!-- Normal mode -->
-        <template v-if="actionState.mode === 'normal'">
-          <DesignButton
-            v-if="!actionState.isAnswerLocked"
-            size="large"
-            :disabled="!actionState.canSubmit || actionState.isSubmitting"
-            :loading="actionState.isSubmitting"
-            @click="handlers?.submit"
-          >
-            {{ $t('quiz.lockAnswer') }}
-          </DesignButton>
-          <DesignButton v-else size="large" @click="handlers?.continue">
-            {{ continueButtonText }}
-          </DesignButton>
-        </template>
+        <!-- Betting module -->
+        <QuizBettingModule
+          v-if="
+            footerState.bettingModule.visible &&
+            footerState.bettingModule.mode === 'betting'
+          "
+          v-model="currentBetAmount"
+          :available-points="userScore ?? 0"
+          :min-percentage="currentQuestion?.bettingMinPercentage"
+          :max-percentage="currentQuestion?.bettingMaxPercentage"
+          :min-absolute="currentQuestion?.bettingMinAbsolute"
+          :max-absolute="currentQuestion?.bettingMaxAbsolute"
+          :disabled="footerState.bettingModule.disabled"
+          mode="betting"
+        />
+        <QuizBettingModule
+          v-else-if="
+            footerState.bettingModule.visible &&
+            footerState.bettingModule.mode === 'locked'
+          "
+          v-model="currentBetAmount"
+          :available-points="userScore ?? 0"
+          :min-percentage="currentQuestion?.bettingMinPercentage"
+          :max-percentage="currentQuestion?.bettingMaxPercentage"
+          :min-absolute="currentQuestion?.bettingMinAbsolute"
+          :max-absolute="currentQuestion?.bettingMaxAbsolute"
+          :disabled="footerState.bettingModule.disabled"
+          mode="locked"
+        />
+        <QuizBettingModule
+          v-else-if="
+            footerState.bettingModule.visible &&
+            footerState.bettingModule.mode === 'results'
+          "
+          mode="results"
+          :points-earned="currentResponse?.pointsEarned"
+          :bet-amount="currentResponse?.betAmount"
+          :available-points="userScore ?? 0"
+          :correct-count="bettingCorrectCount"
+          :total-count="bettingTotalCount"
+        />
 
-        <!-- Session betting mode -->
-        <template v-else-if="actionState.mode === 'session-betting'">
-          <QuizBettingModule
-            v-if="isBettingEnabled && !actionState.isAnswerLocked"
-            v-model="currentBetAmount"
-            :available-points="userScore ?? 0"
-            :min-percentage="currentQuestion?.bettingMinPercentage"
-            :max-percentage="currentQuestion?.bettingMaxPercentage"
-            :min-absolute="currentQuestion?.bettingMinAbsolute"
-            :max-absolute="currentQuestion?.bettingMaxAbsolute"
-            :disabled="actionState.isBetSaved && !actionState.isEditing"
-            mode="betting"
-          />
+        <!-- Action buttons -->
+        <DesignButton
+          v-if="footerState.button.type === 'lock-answer'"
+          size="large"
+          :disabled="footerState.button.disabled"
+          :loading="actionState?.isSubmitting"
+          @click="handlers?.submit"
+        >
+          {{ $t('quiz.lockAnswer') }}
+        </DesignButton>
+
+        <DesignButton
+          v-else-if="footerState.button.type === 'continue'"
+          size="large"
+          @click="handlers?.continue"
+        >
+          {{ continueButtonText }}
+        </DesignButton>
+
+        <DesignButton
+          v-else-if="footerState.button.type === 'save-answer'"
+          size="large"
+          :disabled="footerState.button.disabled"
+          :loading="actionState?.isSubmitting"
+          @click="handlers?.submit"
+        >
+          {{ $t('quiz.saveAnswer') }}
+        </DesignButton>
+
+        <DesignButton
+          v-else-if="footerState.button.type === 'finalize'"
+          size="large"
+          @click="handlers?.continue"
+        >
+          {{ $t('quiz.done') }}
+        </DesignButton>
+
+        <div
+          v-else-if="footerState.button.type === 'change-answer'"
+          class="flex gap-small"
+        >
           <DesignButton
-            v-if="!actionState.isBetSaved || actionState.isEditing"
-            size="large"
-            :disabled="actionState.isSubmitting"
-            :loading="actionState.isSubmitting"
-            @click="handlers?.submit"
-          >
-            {{ $t('quiz.saveAnswer') }}
-          </DesignButton>
-          <DesignButton
-            v-else
             size="large"
             variant="secondary"
+            :class="
+              footerState.button.secondaryAction === 'none'
+                ? 'w-full'
+                : 'flex-1'
+            "
             @click="handlers?.changeBet"
           >
             {{ $t('quiz.changeAnswer') }}
           </DesignButton>
-        </template>
+          <DesignButton
+            v-if="footerState.button.secondaryAction === 'next'"
+            size="large"
+            class="flex-1"
+            @click="handlers?.continue"
+          >
+            {{ $t('quiz.nextQuestion') }}
+          </DesignButton>
+          <DesignButton
+            v-else-if="footerState.button.secondaryAction === 'finalize'"
+            size="large"
+            class="flex-1"
+            @click="handlers?.continue"
+          >
+            {{ $t('quiz.done') }}
+          </DesignButton>
+        </div>
 
-        <!-- Session locked -->
-        <template v-else-if="actionState.mode === 'session-locked'">
-          <QuizBettingModule
-            v-if="isBettingEnabled && !actionState.isAnswerLocked"
-            v-model="currentBetAmount"
-            :available-points="userScore ?? 0"
-            :min-percentage="currentQuestion?.bettingMinPercentage"
-            :max-percentage="currentQuestion?.bettingMaxPercentage"
-            :min-absolute="currentQuestion?.bettingMinAbsolute"
-            :max-absolute="currentQuestion?.bettingMaxAbsolute"
-            :disabled="actionState.isBetSaved && !actionState.isEditing"
-            mode="locked"
-          />
-          <NuxtLink :to="{ name: 'challenges' }" class="flex">
-            <DesignButton size="large" variant="secondary">
-              {{ $t('quiz.close') }}
-            </DesignButton>
-          </NuxtLink>
-        </template>
+        <NuxtLink
+          v-else-if="footerState.button.type === 'close'"
+          :to="{ name: 'challenges' }"
+          class="flex"
+        >
+          <DesignButton size="large" variant="secondary">
+            {{ $t('quiz.close') }}
+          </DesignButton>
+        </NuxtLink>
 
-        <!-- Session results -->
-        <template v-else-if="actionState.mode === 'session-results'">
-          <QuizBettingModule
-            v-if="isBettingEnabled"
-            mode="results"
-            :points-earned="currentResponse?.pointsEarned"
-            :bet-amount="currentResponse?.betAmount"
-            :available-points="userScore ?? 0"
-            :correct-count="bettingCorrectCount"
-            :total-count="bettingTotalCount"
-          />
-          <NuxtLink :to="{ name: 'challenges' }" class="flex">
-            <DesignButton
-              size="large"
-              variant="primary"
-              :class="[
-                'bg-black',
-                {
-                  'text-accent-positive!': isBettingEnabled && isBettingWin,
-                  'text-accent-negative!': isBettingEnabled && !isBettingWin,
-                },
-              ]"
-            >
-              {{ $t('quiz.done') }}
-            </DesignButton>
-          </NuxtLink>
-        </template>
+        <NuxtLink
+          v-else-if="footerState.button.type === 'done'"
+          :to="{ name: 'challenges' }"
+          class="flex"
+        >
+          <DesignButton
+            size="large"
+            variant="primary"
+            :class="[
+              isBettingEnabled && 'bg-black',
+              {
+                'text-accent-positive!': isBettingEnabled && isBettingWin,
+                'text-accent-negative!': isBettingEnabled && !isBettingWin,
+              },
+            ]"
+          >
+            {{ $t('quiz.done') }}
+          </DesignButton>
+        </NuxtLink>
 
-        <!-- Review mode -->
-        <template v-else-if="actionState.mode === 'review'">
-          <div class="flex gap-small">
-            <DesignButton
-              v-if="actionState.showPreviousButton"
-              size="large"
-              variant="secondary"
-              class="flex-1"
-              @click="handlers?.previous"
-            >
-              {{ $t('quiz.previousQuestion') }}
-            </DesignButton>
-            <DesignButton
-              size="large"
-              :class="actionState.showPreviousButton ? 'flex-1' : 'w-full'"
-              @click="handlers?.next"
-            >
-              {{ nextButtonText }}
-            </DesignButton>
-          </div>
-        </template>
+        <div
+          v-else-if="footerState.button.type === 'review-nav'"
+          class="flex gap-small"
+        >
+          <DesignButton
+            v-if="actionState?.showPreviousButton"
+            size="large"
+            variant="secondary"
+            class="flex-1"
+            @click="handlers?.previous"
+          >
+            {{ $t('quiz.previousQuestion') }}
+          </DesignButton>
+          <DesignButton
+            size="large"
+            :class="actionState?.showPreviousButton ? 'flex-1' : 'w-full'"
+            @click="handlers?.next"
+          >
+            {{ nextButtonText }}
+          </DesignButton>
+        </div>
       </div>
     </template>
   </PageLayout>

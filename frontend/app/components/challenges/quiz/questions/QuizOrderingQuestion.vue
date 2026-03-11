@@ -298,6 +298,7 @@ const actionState = computed<QuizActionState>(() => ({
   isSubmitting: isSubmitting.value,
   isAnswerLocked: isAnswerConfirmed.value,
   isBetSaved: isBetSaved.value,
+  canChangeBet: true,
   isEditing: isEditing.value,
   showPreviousButton: props.showPreviousButton ?? false,
   isLastQuestion: props.isLastQuestion ?? false,

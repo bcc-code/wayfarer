@@ -148,10 +148,15 @@ function shouldShowWrong(alternative: {
   )
 }
 
+const isSessionBettingMode = computed(
+  () => props.sessionState === QuizSessionState.Open,
+)
+
 const actionMode = computed(() => {
   if (props.readonly) return 'review' as const
   if (isSessionFinished.value) return 'session-results' as const
   if (isSessionLocked.value) return 'session-locked' as const
+  if (isSessionBettingMode.value) return 'session-betting' as const
   return 'normal' as const
 })
 
@@ -161,7 +166,8 @@ const actionState = computed<QuizActionState>(() => ({
   canSubmit: selectedAnswer.value !== undefined,
   isSubmitting: isSubmitting.value,
   isAnswerLocked: isAnswerConfirmed.value,
-  isBetSaved: false,
+  isBetSaved: isAnswerConfirmed.value,
+  canChangeBet: false,
   isEditing: false,
   showPreviousButton: props.showPreviousButton ?? false,
   isLastQuestion: props.isLastQuestion ?? false,
