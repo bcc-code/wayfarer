@@ -74,6 +74,7 @@ const columns = [
   { accessorKey: 'name', header: 'Navn' },
   { accessorKey: 'state', header: 'Status' },
   { accessorKey: 'accessCount', header: 'Tilganger' },
+  { accessorKey: 'submissionCount', header: 'Besvarelser' },
   { accessorKey: 'createdAt', header: 'Opprettet' },
   { id: 'actions' },
 ]

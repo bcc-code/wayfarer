@@ -884,6 +884,15 @@ func (r *quizSessionResolver) AccessCount(ctx context.Context, obj *model.QuizSe
 	return int(count), nil
 }
 
+// SubmissionCount is the resolver for the submissionCount field.
+func (r *quizSessionResolver) SubmissionCount(ctx context.Context, obj *model.QuizSession) (int, error) {
+	count, err := r.DB.Queries.GetQuizSubmissionCountBySessionID(ctx, obj.ID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get submission count: %w", err)
+	}
+	return int(count), nil
+}
+
 // UserHasAccess is the resolver for the userHasAccess field.
 func (r *quizSessionResolver) UserHasAccess(ctx context.Context, obj *model.QuizSession) (bool, error) {
 	userID, ok := middleware.GetUserID(ctx)

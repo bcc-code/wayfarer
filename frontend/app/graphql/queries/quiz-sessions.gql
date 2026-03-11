@@ -8,6 +8,7 @@ query AdminQuizSessions($quizId: ID!, $state: QuizSessionState) {
     finishAt
     createdAt
     accessCount
+    submissionCount
     createdBy {
       id
       name

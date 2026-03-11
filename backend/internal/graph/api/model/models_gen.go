@@ -1513,20 +1513,21 @@ type QuizPredefinedAnswer struct {
 }
 
 type QuizSession struct {
-	ID             string            `json:"id"`
-	Quiz           *Quiz             `json:"quiz"`
-	Name           *string           `json:"name,omitempty"`
-	State          QuizSessionState  `json:"state"`
-	OpenAt         *scalars.DateTime `json:"openAt,omitempty"`
-	LockAt         *scalars.DateTime `json:"lockAt,omitempty"`
-	FinishAt       *scalars.DateTime `json:"finishAt,omitempty"`
-	CreatedBy      *User             `json:"createdBy"`
-	CreatedAt      scalars.DateTime  `json:"createdAt"`
-	AccessCount    int               `json:"accessCount"`
-	UserHasAccess  bool              `json:"userHasAccess"`
-	UserSubmission *QuizSubmission   `json:"userSubmission,omitempty"`
-	CreatedByID    string            `json:"-"`
-	QuizID         string            `json:"-"`
+	ID              string            `json:"id"`
+	Quiz            *Quiz             `json:"quiz"`
+	Name            *string           `json:"name,omitempty"`
+	State           QuizSessionState  `json:"state"`
+	OpenAt          *scalars.DateTime `json:"openAt,omitempty"`
+	LockAt          *scalars.DateTime `json:"lockAt,omitempty"`
+	FinishAt        *scalars.DateTime `json:"finishAt,omitempty"`
+	CreatedBy       *User             `json:"createdBy"`
+	CreatedAt       scalars.DateTime  `json:"createdAt"`
+	AccessCount     int               `json:"accessCount"`
+	SubmissionCount int               `json:"submissionCount"`
+	UserHasAccess   bool              `json:"userHasAccess"`
+	UserSubmission  *QuizSubmission   `json:"userSubmission,omitempty"`
+	CreatedByID     string            `json:"-"`
+	QuizID          string            `json:"-"`
 }
 
 type QuizSubmission struct {

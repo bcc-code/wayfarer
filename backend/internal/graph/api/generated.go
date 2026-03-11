@@ -948,18 +948,19 @@ type ComplexityRoot struct {
 	}
 
 	QuizSession struct {
-		AccessCount    func(childComplexity int) int
-		CreatedAt      func(childComplexity int) int
-		CreatedBy      func(childComplexity int) int
-		FinishAt       func(childComplexity int) int
-		ID             func(childComplexity int) int
-		LockAt         func(childComplexity int) int
-		Name           func(childComplexity int) int
-		OpenAt         func(childComplexity int) int
-		Quiz           func(childComplexity int) int
-		State          func(childComplexity int) int
-		UserHasAccess  func(childComplexity int) int
-		UserSubmission func(childComplexity int) int
+		AccessCount     func(childComplexity int) int
+		CreatedAt       func(childComplexity int) int
+		CreatedBy       func(childComplexity int) int
+		FinishAt        func(childComplexity int) int
+		ID              func(childComplexity int) int
+		LockAt          func(childComplexity int) int
+		Name            func(childComplexity int) int
+		OpenAt          func(childComplexity int) int
+		Quiz            func(childComplexity int) int
+		State           func(childComplexity int) int
+		SubmissionCount func(childComplexity int) int
+		UserHasAccess   func(childComplexity int) int
+		UserSubmission  func(childComplexity int) int
 	}
 
 	QuizSubmission struct {
@@ -1706,6 +1707,7 @@ type QuizSessionResolver interface {
 	CreatedBy(ctx context.Context, obj *model.QuizSession) (*model.User, error)
 
 	AccessCount(ctx context.Context, obj *model.QuizSession) (int, error)
+	SubmissionCount(ctx context.Context, obj *model.QuizSession) (int, error)
 	UserHasAccess(ctx context.Context, obj *model.QuizSession) (bool, error)
 	UserSubmission(ctx context.Context, obj *model.QuizSession) (*model.QuizSubmission, error)
 }
@@ -6754,6 +6756,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.QuizSession.State(childComplexity), true
+	case "QuizSession.submissionCount":
+		if e.complexity.QuizSession.SubmissionCount == nil {
+			break
+		}
+
+		return e.complexity.QuizSession.SubmissionCount(childComplexity), true
 	case "QuizSession.userHasAccess":
 		if e.complexity.QuizSession.UserHasAccess == nil {
 			break
@@ -10603,6 +10611,7 @@ type QuizSession {
 
     # Access info (admin only)
     accessCount: Int! @goField(forceResolver: true)
+    submissionCount: Int! @goField(forceResolver: true)
 
     # User-specific fields
     userHasAccess: Boolean! @goField(forceResolver: true)
@@ -30086,6 +30095,8 @@ func (ec *executionContext) fieldContext_Mutation_createQuizSession(ctx context.
 				return ec.fieldContext_QuizSession_createdAt(ctx, field)
 			case "accessCount":
 				return ec.fieldContext_QuizSession_accessCount(ctx, field)
+			case "submissionCount":
+				return ec.fieldContext_QuizSession_submissionCount(ctx, field)
 			case "userHasAccess":
 				return ec.fieldContext_QuizSession_userHasAccess(ctx, field)
 			case "userSubmission":
@@ -30171,6 +30182,8 @@ func (ec *executionContext) fieldContext_Mutation_updateQuizSession(ctx context.
 				return ec.fieldContext_QuizSession_createdAt(ctx, field)
 			case "accessCount":
 				return ec.fieldContext_QuizSession_accessCount(ctx, field)
+			case "submissionCount":
+				return ec.fieldContext_QuizSession_submissionCount(ctx, field)
 			case "userHasAccess":
 				return ec.fieldContext_QuizSession_userHasAccess(ctx, field)
 			case "userSubmission":
@@ -30315,6 +30328,8 @@ func (ec *executionContext) fieldContext_Mutation_openQuizSession(ctx context.Co
 				return ec.fieldContext_QuizSession_createdAt(ctx, field)
 			case "accessCount":
 				return ec.fieldContext_QuizSession_accessCount(ctx, field)
+			case "submissionCount":
+				return ec.fieldContext_QuizSession_submissionCount(ctx, field)
 			case "userHasAccess":
 				return ec.fieldContext_QuizSession_userHasAccess(ctx, field)
 			case "userSubmission":
@@ -30400,6 +30415,8 @@ func (ec *executionContext) fieldContext_Mutation_lockQuizSession(ctx context.Co
 				return ec.fieldContext_QuizSession_createdAt(ctx, field)
 			case "accessCount":
 				return ec.fieldContext_QuizSession_accessCount(ctx, field)
+			case "submissionCount":
+				return ec.fieldContext_QuizSession_submissionCount(ctx, field)
 			case "userHasAccess":
 				return ec.fieldContext_QuizSession_userHasAccess(ctx, field)
 			case "userSubmission":
@@ -30485,6 +30502,8 @@ func (ec *executionContext) fieldContext_Mutation_finishQuizSession(ctx context.
 				return ec.fieldContext_QuizSession_createdAt(ctx, field)
 			case "accessCount":
 				return ec.fieldContext_QuizSession_accessCount(ctx, field)
+			case "submissionCount":
+				return ec.fieldContext_QuizSession_submissionCount(ctx, field)
 			case "userHasAccess":
 				return ec.fieldContext_QuizSession_userHasAccess(ctx, field)
 			case "userSubmission":
@@ -30570,6 +30589,8 @@ func (ec *executionContext) fieldContext_Mutation_reopenQuizSession(ctx context.
 				return ec.fieldContext_QuizSession_createdAt(ctx, field)
 			case "accessCount":
 				return ec.fieldContext_QuizSession_accessCount(ctx, field)
+			case "submissionCount":
+				return ec.fieldContext_QuizSession_submissionCount(ctx, field)
 			case "userHasAccess":
 				return ec.fieldContext_QuizSession_userHasAccess(ctx, field)
 			case "userSubmission":
@@ -38801,6 +38822,8 @@ func (ec *executionContext) fieldContext_Query_quizSession(ctx context.Context, 
 				return ec.fieldContext_QuizSession_createdAt(ctx, field)
 			case "accessCount":
 				return ec.fieldContext_QuizSession_accessCount(ctx, field)
+			case "submissionCount":
+				return ec.fieldContext_QuizSession_submissionCount(ctx, field)
 			case "userHasAccess":
 				return ec.fieldContext_QuizSession_userHasAccess(ctx, field)
 			case "userSubmission":
@@ -38886,6 +38909,8 @@ func (ec *executionContext) fieldContext_Query_quizSessions(ctx context.Context,
 				return ec.fieldContext_QuizSession_createdAt(ctx, field)
 			case "accessCount":
 				return ec.fieldContext_QuizSession_accessCount(ctx, field)
+			case "submissionCount":
+				return ec.fieldContext_QuizSession_submissionCount(ctx, field)
 			case "userHasAccess":
 				return ec.fieldContext_QuizSession_userHasAccess(ctx, field)
 			case "userSubmission":
@@ -40706,6 +40731,8 @@ func (ec *executionContext) fieldContext_Quiz_sessions(ctx context.Context, fiel
 				return ec.fieldContext_QuizSession_createdAt(ctx, field)
 			case "accessCount":
 				return ec.fieldContext_QuizSession_accessCount(ctx, field)
+			case "submissionCount":
+				return ec.fieldContext_QuizSession_submissionCount(ctx, field)
 			case "userHasAccess":
 				return ec.fieldContext_QuizSession_userHasAccess(ctx, field)
 			case "userSubmission":
@@ -40772,6 +40799,8 @@ func (ec *executionContext) fieldContext_Quiz_userSessions(_ context.Context, fi
 				return ec.fieldContext_QuizSession_createdAt(ctx, field)
 			case "accessCount":
 				return ec.fieldContext_QuizSession_accessCount(ctx, field)
+			case "submissionCount":
+				return ec.fieldContext_QuizSession_submissionCount(ctx, field)
 			case "userHasAccess":
 				return ec.fieldContext_QuizSession_userHasAccess(ctx, field)
 			case "userSubmission":
@@ -40827,6 +40856,8 @@ func (ec *executionContext) fieldContext_Quiz_userActiveSession(_ context.Contex
 				return ec.fieldContext_QuizSession_createdAt(ctx, field)
 			case "accessCount":
 				return ec.fieldContext_QuizSession_accessCount(ctx, field)
+			case "submissionCount":
+				return ec.fieldContext_QuizSession_submissionCount(ctx, field)
 			case "userHasAccess":
 				return ec.fieldContext_QuizSession_userHasAccess(ctx, field)
 			case "userSubmission":
@@ -43176,6 +43207,35 @@ func (ec *executionContext) fieldContext_QuizSession_accessCount(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _QuizSession_submissionCount(ctx context.Context, field graphql.CollectedField, obj *model.QuizSession) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizSession_submissionCount,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.QuizSession().SubmissionCount(ctx, obj)
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizSession_submissionCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizSession",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _QuizSession_userHasAccess(ctx context.Context, field graphql.CollectedField, obj *model.QuizSession) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -43414,6 +43474,8 @@ func (ec *executionContext) fieldContext_QuizSubmission_session(_ context.Contex
 				return ec.fieldContext_QuizSession_createdAt(ctx, field)
 			case "accessCount":
 				return ec.fieldContext_QuizSession_accessCount(ctx, field)
+			case "submissionCount":
+				return ec.fieldContext_QuizSession_submissionCount(ctx, field)
 			case "userHasAccess":
 				return ec.fieldContext_QuizSession_userHasAccess(ctx, field)
 			case "userSubmission":
@@ -68202,6 +68264,42 @@ func (ec *executionContext) _QuizSession(ctx context.Context, sel ast.SelectionS
 					}
 				}()
 				res = ec._QuizSession_accessCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "submissionCount":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._QuizSession_submissionCount(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}

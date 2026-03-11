@@ -61,6 +61,7 @@ type QuizSession {
 
     # Access info (admin only)
     accessCount: Int! @goField(forceResolver: true)
+    submissionCount: Int! @goField(forceResolver: true)
 
     # User-specific fields
     userHasAccess: Boolean! @goField(forceResolver: true)

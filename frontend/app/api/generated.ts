@@ -2574,6 +2574,7 @@ export type QuizSession = {
   openAt?: Maybe<Scalars['DateTime']['output']>;
   quiz: Quiz;
   state: QuizSessionState;
+  submissionCount: Scalars['Int']['output'];
   userHasAccess: Scalars['Boolean']['output'];
   userSubmission?: Maybe<QuizSubmission>;
 };
@@ -4085,7 +4086,7 @@ export type AdminQuizSessionsQueryVariables = Exact<{
 }>;
 
 
-export type AdminQuizSessionsQuery = { __typename?: 'Query', quizSessions: Array<{ __typename?: 'QuizSession', id: string, name?: string | null, state: QuizSessionState, openAt?: any | null, lockAt?: any | null, finishAt?: any | null, createdAt: any, accessCount: number, createdBy: { __typename?: 'User', id: string, name: string } }> };
+export type AdminQuizSessionsQuery = { __typename?: 'Query', quizSessions: Array<{ __typename?: 'QuizSession', id: string, name?: string | null, state: QuizSessionState, openAt?: any | null, lockAt?: any | null, finishAt?: any | null, createdAt: any, accessCount: number, submissionCount: number, createdBy: { __typename?: 'User', id: string, name: string } }> };
 
 export type QuizDetailsQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -6012,6 +6013,7 @@ export const AdminQuizSessionsDocument = gql`
     finishAt
     createdAt
     accessCount
+    submissionCount
     createdBy {
       id
       name
