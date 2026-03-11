@@ -91,6 +91,15 @@ mutation GrantQuizSessionAccess($input: GrantQuizSessionAccessInput!) {
   grantQuizSessionAccess(input: $input)
 }
 
+mutation GrantQuizSessionAccessAsync($input: GrantQuizSessionAccessInput!) {
+  grantQuizSessionAccessAsync(input: $input) {
+    id
+    operationType
+    status
+    totalCount
+  }
+}
+
 mutation LockQuizSession($id: ID!) {
   lockQuizSession(id: $id) {
     id

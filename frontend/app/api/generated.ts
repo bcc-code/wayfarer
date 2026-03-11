@@ -3745,6 +3745,13 @@ export type GrantQuizSessionAccessMutationVariables = Exact<{
 
 export type GrantQuizSessionAccessMutation = { __typename?: 'Mutation', grantQuizSessionAccess: number };
 
+export type GrantQuizSessionAccessAsyncMutationVariables = Exact<{
+  input: GrantQuizSessionAccessInput;
+}>;
+
+
+export type GrantQuizSessionAccessAsyncMutation = { __typename?: 'Mutation', grantQuizSessionAccessAsync: { __typename?: 'BulkJob', id: string, operationType: string, status: BulkJobStatus, totalCount: number } };
+
 export type LockQuizSessionMutationVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -5199,6 +5206,20 @@ export const GrantQuizSessionAccessDocument = gql`
 
 export function useGrantQuizSessionAccessMutation() {
   return Urql.useMutation<GrantQuizSessionAccessMutation, GrantQuizSessionAccessMutationVariables>(GrantQuizSessionAccessDocument);
+};
+export const GrantQuizSessionAccessAsyncDocument = gql`
+    mutation GrantQuizSessionAccessAsync($input: GrantQuizSessionAccessInput!) {
+  grantQuizSessionAccessAsync(input: $input) {
+    id
+    operationType
+    status
+    totalCount
+  }
+}
+    `;
+
+export function useGrantQuizSessionAccessAsyncMutation() {
+  return Urql.useMutation<GrantQuizSessionAccessAsyncMutation, GrantQuizSessionAccessAsyncMutationVariables>(GrantQuizSessionAccessAsyncDocument);
 };
 export const LockQuizSessionDocument = gql`
     mutation LockQuizSession($id: ID!) {

@@ -113,7 +113,7 @@ const { executeMutation: openSession } = useOpenQuizSessionMutation()
 const { executeMutation: lockSession } = useLockQuizSessionMutation()
 const { executeMutation: reopenSession } = useReopenQuizSessionMutation()
 const { executeMutation: finishSession } = useFinishQuizSessionMutation()
-const { executeMutation: grantAccess } = useGrantQuizSessionAccessMutation()
+const { executeMutation: grantAccess } = useGrantQuizSessionAccessAsyncMutation()
 
 // Create/Edit modal
 const editModalOpen = ref(false)
@@ -229,9 +229,10 @@ async function handleGrantAllProjectUsers() {
     })
     return
   }
+  const job = result.data?.grantQuizSessionAccessAsync
   toast.add({
     title: 'Suksess',
-    description: `${result.data?.grantQuizSessionAccess ?? 0} tilganger gitt`,
+    description: `Jobb opprettet — ${job?.totalCount ?? 0} tilganger behandles`,
     color: 'success',
   })
   accessModalOpen.value = false
@@ -267,9 +268,10 @@ async function handleGrantAccess() {
     })
     return
   }
+  const job = result.data?.grantQuizSessionAccessAsync
   toast.add({
     title: 'Suksess',
-    description: `${result.data?.grantQuizSessionAccess ?? 0} tilganger gitt`,
+    description: `Jobb opprettet — ${job?.totalCount ?? 0} tilganger behandles`,
     color: 'success',
   })
   accessModalOpen.value = false
