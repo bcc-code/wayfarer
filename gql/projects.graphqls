@@ -35,7 +35,9 @@ type Project {
         last: Int
         before: String
     ): ScoreJournalConnection! @goField(forceResolver: true)
+    myPoints: Int! @goField(forceResolver: true)
     archivedAt: Boolean
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 # ==================== Project Input Types ====================

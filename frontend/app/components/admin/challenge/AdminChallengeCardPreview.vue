@@ -16,7 +16,7 @@ defineProps<{
         v-if="challenge.image"
         class="bg-accent aspect-[1.25] w-full overflow-hidden"
       >
-        <img :src="challenge.image" class="size-full object-cover" />
+        <img :src="challenge.image" class="size-full object-cover" >
       </div>
       <div
         v-else

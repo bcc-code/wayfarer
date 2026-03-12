@@ -59,9 +59,9 @@ query ProfilePage($ageFilter: LeaderboardFilter) {
         }
       }
     }
+    myPoints
     leaderboard(entityType: PERSONS, filter: $ageFilter) {
       me {
-        score
         rank
       }
     }

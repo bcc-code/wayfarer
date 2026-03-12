@@ -29,6 +29,27 @@ mutation DeleteQuizQuestion($id: ID!) {
   deleteQuizQuestion(id: $id)
 }
 
+mutation UpdateQuizSession($id: ID!, $input: UpdateQuizSessionInput!) {
+  updateQuizSession(id: $id, input: $input) {
+    id
+    name
+    state
+    openAt
+    lockAt
+    finishAt
+    createdAt
+    accessCount
+    createdBy {
+      id
+      name
+    }
+  }
+}
+
+mutation DeleteQuizSession($id: ID!) {
+  deleteQuizSession(id: $id)
+}
+
 mutation CreateQuizSession($input: CreateQuizSessionInput!) {
   createQuizSession(input: $input) {
     id
@@ -68,6 +89,15 @@ mutation OpenQuizSession($id: ID!) {
 
 mutation GrantQuizSessionAccess($input: GrantQuizSessionAccessInput!) {
   grantQuizSessionAccess(input: $input)
+}
+
+mutation GrantQuizSessionAccessAsync($input: GrantQuizSessionAccessInput!) {
+  grantQuizSessionAccessAsync(input: $input) {
+    id
+    operationType
+    status
+    totalCount
+  }
 }
 
 mutation LockQuizSession($id: ID!) {

@@ -1,0 +1,46 @@
+type: http_request
+model: http_request
+id: rq_BulkPublishChallengesAsync
+createdAt: 2026-03-10T12:00:00
+updatedAt: 2026-03-10T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_ChallengeEnroll
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation BulkPublishChallengesAsync($ids: [ID!]!, $publishedAt: DateTime!) {
+      bulkPublishChallengesAsync(ids: $ids, publishedAt: $publishedAt) {
+        id
+        operationType
+        status
+        totalCount
+        processedCount
+        successCount
+        failureCount
+        errorMessage
+        createdAt
+        startedAt
+        completedAt
+      }
+    }
+  variables: |
+    {
+      "ids": [
+        "CL01ARZ3NDEKTSV4RRFFQ69G5FAV",
+        "CL02BRZ3NDEKTSV4RRFFQ69G5FAV"
+      ],
+      "publishedAt": "2026-03-10T12:00:00Z"
+    }
+bodyType: graphql
+description: Async bulk publish of challenges
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_BulkPublishChallengesAsync
+method: POST
+name: Bulk Publish Challenges Async
+sortPriority: 6400.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

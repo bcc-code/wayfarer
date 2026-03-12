@@ -7,6 +7,7 @@ export default defineAppConfig({
     formField: {
       slots: {
         labelWrapper: 'justify-start gap-2',
+        label: 'grow',
       },
     },
     checkbox: {

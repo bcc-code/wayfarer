@@ -16,15 +16,24 @@ SELECT COUNT(*) FROM user_feedback
 WHERE
     ($1::text = '' OR user_id = $1::text)
     AND (cardinality($2::text[]) = 0 OR tags && $2::text[])
+    AND ($3::text = '' OR ($3::text = 'true' AND handled_at IS NOT NULL) OR ($3::text = 'false' AND handled_at IS NULL))
+    AND ($4::text = '' OR platform = $4::text)
 `
 
 type CountAllFeedbackParams struct {
-	Filteruserid string   `json:"filteruserid"`
-	Filtertags   []string `json:"filtertags"`
+	Filteruserid   string   `json:"filteruserid"`
+	Filtertags     []string `json:"filtertags"`
+	Filterhandled  string   `json:"filterhandled"`
+	Filterplatform string   `json:"filterplatform"`
 }
 
 func (q *Queries) CountAllFeedback(ctx context.Context, arg CountAllFeedbackParams) (int64, error) {
-	row := q.db.QueryRow(ctx, CountAllFeedback, arg.Filteruserid, arg.Filtertags)
+	row := q.db.QueryRow(ctx, CountAllFeedback,
+		arg.Filteruserid,
+		arg.Filtertags,
+		arg.Filterhandled,
+		arg.Filterplatform,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -180,6 +189,54 @@ func (q *Queries) GetAllFeedback(ctx context.Context, arg GetAllFeedbackParams) 
 	return items, nil
 }
 
+const GetDistinctFeedbackPlatforms = `-- name: GetDistinctFeedbackPlatforms :many
+SELECT DISTINCT platform FROM user_feedback WHERE platform IS NOT NULL ORDER BY platform
+`
+
+func (q *Queries) GetDistinctFeedbackPlatforms(ctx context.Context) ([]*string, error) {
+	rows, err := q.db.Query(ctx, GetDistinctFeedbackPlatforms)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*string{}
+	for rows.Next() {
+		var platform *string
+		if err := rows.Scan(&platform); err != nil {
+			return nil, err
+		}
+		items = append(items, platform)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetDistinctFeedbackTags = `-- name: GetDistinctFeedbackTags :many
+SELECT DISTINCT unnest(tags)::text AS tag FROM user_feedback ORDER BY tag
+`
+
+func (q *Queries) GetDistinctFeedbackTags(ctx context.Context) ([]string, error) {
+	rows, err := q.db.Query(ctx, GetDistinctFeedbackTags)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var tag string
+		if err := rows.Scan(&tag); err != nil {
+			return nil, err
+		}
+		items = append(items, tag)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetFeedbackByID = `-- name: GetFeedbackByID :one
 SELECT id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone, handled_at, context_url, tags FROM user_feedback WHERE id = $1::text
 `
@@ -215,19 +272,23 @@ WHERE
     AND ($2::text = '' OR id > $2::text)
     AND ($3::text = '' OR user_id = $3::text)
     AND (cardinality($4::text[]) = 0 OR tags && $4::text[])
+    AND ($5::text = '' OR ($5::text = 'true' AND handled_at IS NOT NULL) OR ($5::text = 'false' AND handled_at IS NULL))
+    AND ($6::text = '' OR platform = $6::text)
 ORDER BY
-    CASE WHEN $5::bool = true THEN id END ASC,
-    CASE WHEN $5::bool = false OR $5::bool IS NULL THEN id END DESC
-LIMIT $6::int
+    CASE WHEN $7::bool = true THEN id END ASC,
+    CASE WHEN $7::bool = false OR $7::bool IS NULL THEN id END DESC
+LIMIT $8::int
 `
 
 type GetFeedbackCursorParams struct {
-	Aftercursor  string   `json:"aftercursor"`
-	Beforecursor string   `json:"beforecursor"`
-	Filteruserid string   `json:"filteruserid"`
-	Filtertags   []string `json:"filtertags"`
-	Isbackward   bool     `json:"isbackward"`
-	Querylimit   int32    `json:"querylimit"`
+	Aftercursor    string   `json:"aftercursor"`
+	Beforecursor   string   `json:"beforecursor"`
+	Filteruserid   string   `json:"filteruserid"`
+	Filtertags     []string `json:"filtertags"`
+	Filterhandled  string   `json:"filterhandled"`
+	Filterplatform string   `json:"filterplatform"`
+	Isbackward     bool     `json:"isbackward"`
+	Querylimit     int32    `json:"querylimit"`
 }
 
 func (q *Queries) GetFeedbackCursor(ctx context.Context, arg GetFeedbackCursorParams) ([]*UserFeedback, error) {
@@ -236,6 +297,8 @@ func (q *Queries) GetFeedbackCursor(ctx context.Context, arg GetFeedbackCursorPa
 		arg.Beforecursor,
 		arg.Filteruserid,
 		arg.Filtertags,
+		arg.Filterhandled,
+		arg.Filterplatform,
 		arg.Isbackward,
 		arg.Querylimit,
 	)

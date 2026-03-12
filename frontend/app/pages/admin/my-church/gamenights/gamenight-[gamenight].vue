@@ -111,7 +111,7 @@ const {
 const { executeMutation: createQuizSession } = useCreateQuizSessionMutation()
 const { executeMutation: openQuizSession } = useOpenQuizSessionMutation()
 const { executeMutation: grantQuizSessionAccess } =
-  useGrantQuizSessionAccessMutation()
+  useGrantQuizSessionAccessAsyncMutation()
 const { executeMutation: lockQuizSession } = useLockQuizSessionMutation()
 const { executeMutation: reopenQuizSession } = useReopenQuizSessionMutation()
 const { executeMutation: finishQuizSession } = useFinishQuizSessionMutation()

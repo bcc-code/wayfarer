@@ -1,0 +1,4 @@
+fragment TranslationStatus on TranslationFieldStatus {
+  languageCode
+  fields
+}

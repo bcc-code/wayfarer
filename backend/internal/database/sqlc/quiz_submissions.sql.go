@@ -313,6 +313,19 @@ func (q *Queries) GetQuizSubmissionByIDForUpdate(ctx context.Context, id string)
 	return &i, err
 }
 
+const GetQuizSubmissionCountBySessionID = `-- name: GetQuizSubmissionCountBySessionID :one
+SELECT COUNT(*)::int
+FROM quiz_submissions
+WHERE session_id = $1::text
+`
+
+func (q *Queries) GetQuizSubmissionCountBySessionID(ctx context.Context, sessionid string) (int32, error) {
+	row := q.db.QueryRow(ctx, GetQuizSubmissionCountBySessionID, sessionid)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const GetQuizSubmissionsByIDs = `-- name: GetQuizSubmissionsByIDs :many
 SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions

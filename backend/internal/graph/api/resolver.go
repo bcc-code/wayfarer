@@ -14,6 +14,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/services"
+	"github.com/bcc-media/wayfarer/internal/services/bulk"
 	"github.com/bcc-media/wayfarer/internal/services/email"
 	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/services/webhooks"
@@ -35,6 +36,7 @@ type Resolver struct {
 	FirebaseService    *firebase.Service
 	EmailService       *email.Service
 	UserSyncService    *services.UserSyncService
+	BulkService        *bulk.Service
 	InstanceID         string
 }
 

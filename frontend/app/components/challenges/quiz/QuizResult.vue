@@ -130,7 +130,7 @@ onMounted(() => {
 
         <h1 class="text-heading text-text-default tabular-nums">
           {{ resultText }}
-          <br />
+          <br >
           {{ pointsText }}
         </h1>
       </div>

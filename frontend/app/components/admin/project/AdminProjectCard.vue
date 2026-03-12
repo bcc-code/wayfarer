@@ -59,7 +59,7 @@ const accentColor = computed(() => {
         height="32"
         width="32"
         class="rounded"
-      />
+      >
       <UBadge
         v-if="isWithinRange(new Date(), project.startDate, project.endDate)"
         variant="outline"

@@ -166,14 +166,18 @@ function handleSave() {
       />
     </UFormField>
 
-    <UFormField name="questionText" label="Spørsmålstekst">
+    <AdminTranslatableFormField
+      name="questionText"
+      label="Spørsmålstekst"
+      :translation-status="question.translationStatus"
+    >
       <UTextarea
         v-model="localQuestion.questionText"
         class="w-full"
         autoresize
         required
       />
-    </UFormField>
+    </AdminTranslatableFormField>
 
     <div class="grid grid-cols-2 gap-4">
       <UFormField name="points" label="Poeng">
@@ -292,12 +296,19 @@ function handleSave() {
           class="flex items-center gap-3"
         >
           <UCheckbox v-model="answer.isCorrect" />
-          <UInput
-            v-model="answer.answerText"
-            placeholder="Svartekst"
-            size="xl"
-            class="flex-1"
-          />
+          <div class="flex flex-1 flex-col gap-1">
+            <UInput
+              v-model="answer.answerText"
+              placeholder="Svartekst"
+              size="xl"
+              class="w-full"
+            />
+            <AdminTranslationIndicator
+              v-if="props.question.predefinedAnswers?.[index]?.translationStatus?.length"
+              :translation-status="props.question.predefinedAnswers![index]!.translationStatus!"
+              field-name="answerText"
+            />
+          </div>
           <UButton
             size="xs"
             variant="ghost"

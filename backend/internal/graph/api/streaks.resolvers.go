@@ -320,6 +320,11 @@ func (r *streakResolver) Project(ctx context.Context, obj *model.Streak) (*model
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
 }
 
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *streakResolver) TranslationStatus(ctx context.Context, obj *model.Streak) ([]model.TranslationFieldStatus, error) {
+	return r.streakTranslationStatus(ctx, obj.ID)
+}
+
 // Streak returns StreakResolver implementation.
 func (r *Resolver) Streak() StreakResolver { return &streakResolver{r} }
 

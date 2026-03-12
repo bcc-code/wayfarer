@@ -378,7 +378,6 @@ CREATE TABLE project_translations (
     name VARCHAR(255),
     description TEXT,
     rules TEXT,
-    info_message TEXT,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     PRIMARY KEY (project_id, language_code)

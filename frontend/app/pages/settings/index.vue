@@ -51,7 +51,7 @@ async function toggleNotifications(enabled: boolean) {
             </DesignButton>
           </div>
         </ColorModeSelector> -->
-        <hr class="border-border-default mx-3" />
+        <hr class="border-border-default mx-3" >
         <label class="flex items-center justify-between gap-2.5 px-3 py-2">
           <p class="text-label">{{ $t('settings.notifications') }}</p>
           <DesignSwitch
@@ -93,7 +93,7 @@ async function toggleNotifications(enabled: boolean) {
           <p class="text-label">{{ $t('settings.addToHomeScreen') }}</p>
           <IconChevronRight class="size-6" />
         </NuxtLink>
-        <hr class="border-border-default mx-3" />
+        <hr class="border-border-default mx-3" >
         <NuxtLink
           to="https://bcc.media/personvern"
           class="flex items-center justify-between gap-2.5 px-3 py-2 h-12"
@@ -101,7 +101,7 @@ async function toggleNotifications(enabled: boolean) {
           <p class="text-label">{{ $t('settings.privacyPolicy') }}</p>
           <IconChevronRight class="size-6" />
         </NuxtLink>
-        <hr class="border-border-default mx-3" />
+        <hr class="border-border-default mx-3" >
         <NuxtLink
           :to="{ name: 'settings-consent' }"
           class="flex items-center justify-between gap-2.5 px-3 py-2 h-12"

@@ -1,0 +1,57 @@
+type: http_request
+model: http_request
+id: rq_ListBulkJobs
+createdAt: 2026-03-10T12:00:00
+updatedAt: 2026-03-10T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_BulkJobs
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    query ListBulkJobs($filter: BulkJobFilter, $first: Int, $after: String) {
+      bulkJobs(filter: $filter, first: $first, after: $after) {
+        edges {
+          cursor
+          node {
+            id
+            operationType
+            status
+            totalCount
+            processedCount
+            successCount
+            failureCount
+            errorMessage
+            createdAt
+            startedAt
+            completedAt
+          }
+        }
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+          startCursor
+          endCursor
+        }
+        totalCount
+      }
+    }
+  variables: |
+    {
+      "filter": {
+        "status": "PENDING"
+      },
+      "first": 20
+    }
+bodyType: graphql
+description: List all bulk jobs with filters (Admin only)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_ListBulkJobs
+method: POST
+name: List Bulk Jobs (Admin)
+sortPriority: 3000.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

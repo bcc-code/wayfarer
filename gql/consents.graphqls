@@ -12,6 +12,7 @@ type Consent {
     managementType: ConsentManagementType!
     managedBy: String
     userHistory: [UserConsentHistoryEntry!]! @goField(forceResolver: true)
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 type UserConsent {

@@ -169,6 +169,14 @@ JOIN users u ON u.id = up.user_id
 WHERE u.church_id = ANY(@churchids::text[])
     AND up.project_id = @projectid::text;
 
+-- name: GetUserIDsByChurchAndProject :many
+-- Returns church_id and user_id for dataloader grouping
+SELECT u.church_id, up.user_id
+FROM user_projects up
+JOIN users u ON u.id = up.user_id
+WHERE u.church_id = ANY(@churchids::text[])
+    AND up.project_id = @projectid::text;
+
 -- ==================== Session Submissions ====================
 
 -- name: GetActiveSubmissionsBySessionID :many

@@ -22,6 +22,9 @@ type Config struct {
 	// CryptexBaseURL is the base URL for Cryptex admin login.
 	// Example: https://cryptex.example.com
 	CryptexBaseURL string
+	// ExcaliburBaseURL is the base URL for Excalibur user login.
+	// Example: https://dev.excalibur.bcc.media
+	ExcaliburBaseURL string
 }
 
 // LadderToHeavenPlugin implements the plugins.Plugin interface.
@@ -90,6 +93,27 @@ func (p *LadderToHeavenPlugin) Register(router gin.IRouter, deps plugins.Depende
 	}
 
 	router.GET("/plugins/ladder-to-heaven/cryptex-admin-url", middleware.JWTAuth(deps.JWTConfig), cryptexHandler.handle)
+
+	// Excalibur user URL endpoint (requires JWT authentication)
+	excaliburHandler := &excaliburUserURLHandler{
+		db:              deps.DB,
+		settingsService: deps.SettingsService,
+		secretKey:       p.config.CryptexSecretKey,
+		baseURL:         p.config.ExcaliburBaseURL,
+		jwtConfig:       deps.JWTConfig,
+	}
+
+	router.GET("/plugins/ladder-to-heaven/excalibur-user-url", middleware.JWTAuth(deps.JWTConfig), excaliburHandler.handle)
+
+	// Superteam distribution endpoints (requires JWT authentication)
+	distHandler := &superteamDistributionHandler{
+		db:        deps.DB,
+		cache:     deps.Cache,
+		jwtConfig: deps.JWTConfig,
+	}
+
+	router.GET("/plugins/ladder-to-heaven/preview-superteams", middleware.JWTAuth(deps.JWTConfig), distHandler.preview)
+	router.POST("/plugins/ladder-to-heaven/distribute-superteams", middleware.JWTAuth(deps.JWTConfig), distHandler.handle)
 
 	return nil
 }

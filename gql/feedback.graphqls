@@ -58,10 +58,14 @@ type FeedbackEdge {
 input FeedbackFilter {
     userId: ID
     tags: [String!]
+    handled: Boolean
+    platform: String
 }
 
 extend type Query {
     feedback(filter: FeedbackFilter, first: Int, after: String, last: Int, before: String): FeedbackConnection! @requireRole(roles: ["admin", "superadmin"])
+    feedbackTags: [String!]! @requireRole(roles: ["admin", "superadmin"])
+    feedbackPlatforms: [String!]! @requireRole(roles: ["admin", "superadmin"])
 }
 
 extend type Mutation {

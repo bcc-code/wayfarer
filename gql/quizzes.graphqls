@@ -38,6 +38,7 @@ type Quiz {
     sessions(state: QuizSessionState): [QuizSession!]! @goField(forceResolver: true)
     userSessions: [QuizSession!]! @goField(forceResolver: true)
     userActiveSession: QuizSession @goField(forceResolver: true)
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 # ==================== Quiz Question Interface ====================
@@ -54,6 +55,7 @@ interface QuizQuestion {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 type PredefinedQuestion implements QuizQuestion {
@@ -68,6 +70,7 @@ type PredefinedQuestion implements QuizQuestion {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     allowMultipleSelection: Boolean!
     predefinedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
 }
@@ -84,6 +87,7 @@ type FreeTextQuestion implements QuizQuestion {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 type NumberQuestion implements QuizQuestion {
@@ -98,6 +102,7 @@ type NumberQuestion implements QuizQuestion {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     minValue: Float
     maxValue: Float
     stepValue: Float
@@ -115,6 +120,7 @@ type JsonQuestion implements QuizQuestion {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 type OrderingQuestion implements QuizQuestion {
@@ -129,6 +135,7 @@ type OrderingQuestion implements QuizQuestion {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     orderingItems: [QuizOrderingItem!]! @goField(forceResolver: true)
 }
 
@@ -146,6 +153,7 @@ type QuizPredefinedAnswer {
     answerText: String!
     answerOrder: Int!
     isCorrect: Boolean @goField(forceResolver: true)
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 type QuizSubmission {

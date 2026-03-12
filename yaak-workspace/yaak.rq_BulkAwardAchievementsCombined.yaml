@@ -1,0 +1,58 @@
+type: http_request
+model: http_request
+id: rq_BulkAwardAchievementsCombined
+createdAt: 2026-02-27T12:00:00
+updatedAt: 2026-02-27T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Achievements
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation BulkAwardAchievementsCombined($teamId: ID!, $userIds: [ID!]!, $achievementId: ID!) {
+      bulkAwardAchievements(teamId: $teamId, userIds: $userIds, achievementId: $achievementId) {
+        id
+        name
+        points
+        achievedAt
+        ... on SimpleAchievement {
+          project {
+            id
+            name
+          }
+        }
+        ... on ContentAchievement {
+          totalItems
+          completedItemCount
+          project {
+            id
+            name
+          }
+        }
+        ... on StreakAchievement {
+          neededStreak
+          project {
+            id
+            name
+          }
+        }
+      }
+    }
+  variables: |
+    {
+      "teamId": "TM01EXAMPLE00000000000000000",
+      "userIds": ["US01EXAMPLE00000000000000000", "US01EXAMPLE00000000000000001"],
+      "achievementId": "AC01EXAMPLE00000000000000000"
+    }
+bodyType: graphql
+description: Award an achievement to all team members plus additional specific users (M2M/admin only)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_BulkAwardAchievementsCombined
+method: POST
+name: Bulk Award Achievements (Combined)
+sortPriority: 3720.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

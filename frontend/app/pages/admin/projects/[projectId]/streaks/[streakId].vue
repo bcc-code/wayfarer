@@ -18,6 +18,9 @@ gql(`
         start
         end
       }
+      translationStatus {
+        ...TranslationStatus
+      }
       project {
         id
         name
@@ -188,17 +191,17 @@ async function deleteStreak() {
           class="flex max-w-md flex-col gap-6"
           @submit.prevent="updateStreak"
         >
-          <UFormField name="name" label="Navn">
+          <AdminTranslatableFormField label="Navn" :translation-status="data?.streak.translationStatus" name="name">
             <UInput v-model="state.name" size="xl" required class="w-full" />
-          </UFormField>
-          <UFormField name="description" label="Beskrivelse">
+          </AdminTranslatableFormField>
+          <AdminTranslatableFormField label="Beskrivelse" :translation-status="data?.streak.translationStatus" name="description">
             <UTextarea
               v-model="state.description"
               class="w-full"
               autoresize
               required
             />
-          </UFormField>
+          </AdminTranslatableFormField>
           <div class="flex flex-col gap-4">
             <label class="text-sm font-medium">Relevante dager</label>
             <div

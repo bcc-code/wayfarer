@@ -307,4 +307,86 @@ func TestProjects(t *testing.T) {
 		assert.NotEmpty(t, result.CreateProject.ID)
 		assert.Equal(t, "Superadmin Project", result.CreateProject.Name)
 	})
+
+	t.Run("user can query myPoints on currentProject", func(t *testing.T) {
+		resp := client.WithAuth(userToken).MustExecute(t, `
+			query {
+				currentProject {
+					id
+					name
+					myPoints
+				}
+			}
+		`, nil)
+
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		var result struct {
+			CurrentProject struct {
+				ID       string `json:"id"`
+				Name     string `json:"name"`
+				MyPoints int    `json:"myPoints"`
+			} `json:"currentProject"`
+		}
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		// Points should be a non-negative integer
+		assert.GreaterOrEqual(t, result.CurrentProject.MyPoints, 0)
+	})
+
+	t.Run("user can query myPoints on project by ID", func(t *testing.T) {
+		projectID := data.ProjectIDs[0]
+
+		resp := client.WithAuth(userToken).MustExecute(t, `
+			query GetProject($id: ID!) {
+				project(id: $id) {
+					id
+					myPoints
+				}
+			}
+		`, map[string]any{"id": projectID})
+
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		var result struct {
+			Project struct {
+				ID       string `json:"id"`
+				MyPoints int    `json:"myPoints"`
+			} `json:"project"`
+		}
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		assert.Equal(t, projectID, result.Project.ID)
+		// Points should be a non-negative integer
+		assert.GreaterOrEqual(t, result.Project.MyPoints, 0)
+	})
+
+	t.Run("m2m user gets 0 for myPoints", func(t *testing.T) {
+		m2mToken, err := testutil.GenerateM2MToken()
+		require.NoError(t, err)
+
+		projectID := data.ProjectIDs[0]
+
+		resp := client.WithAuth(m2mToken).MustExecute(t, `
+			query GetProject($id: ID!) {
+				project(id: $id) {
+					id
+					myPoints
+				}
+			}
+		`, map[string]any{"id": projectID})
+
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		var result struct {
+			Project struct {
+				ID       string `json:"id"`
+				MyPoints int    `json:"myPoints"`
+			} `json:"project"`
+		}
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		// M2M users should always get 0 points
+		assert.Equal(t, 0, result.Project.MyPoints)
+	})
 }

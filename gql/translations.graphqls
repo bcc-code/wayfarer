@@ -1,0 +1,6 @@
+# Translation status for admin edit pages
+
+type TranslationFieldStatus {
+  languageCode: String!
+  fields: [String!]!
+}

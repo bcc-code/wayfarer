@@ -59,6 +59,18 @@ gql(`
 `)
 
 gql(`
+  query FeedbackTags {
+    feedbackTags
+  }
+`)
+
+gql(`
+  query FeedbackPlatforms {
+    feedbackPlatforms
+  }
+`)
+
+gql(`
   mutation UpdateFeedbackTags($feedbackId: ID!, $tags: [String!]!) {
     updateFeedbackTags(feedbackId: $feedbackId, tags: $tags) {
       id
@@ -71,11 +83,15 @@ const pagination = usePagination({
   defaultPageSize: 15,
 })
 
-// Tag filter
+// Filters
 const selectedTags = ref<string[]>([])
+const selectedPlatform = ref<string | undefined>()
+const handledFilter = ref<boolean | undefined>()
 
 const filter = computed(() => ({
   tags: selectedTags.value.length > 0 ? selectedTags.value : undefined,
+  handled: handledFilter.value,
+  platform: selectedPlatform.value,
 }))
 
 const queryVariables = computed(() => ({
@@ -89,13 +105,21 @@ const { data, fetching, error, executeQuery } = useAdminFeedbackPageQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
+const { data: tagsData, executeQuery: refetchTags } = useFeedbackTagsQuery({
+  pause: computed(() => !isAuthReady.value),
+})
+
+const { data: platformsData } = useFeedbackPlatformsQuery({
+  pause: computed(() => !isAuthReady.value),
+})
+
 // Refresh when Firestore notifies of updates
 useFirestoreRefresh(['AdminFeedbackPageDocument'], () => {
   executeQuery({ requestPolicy: 'network-only' })
 })
 
 // Reset pagination when filter changes
-watch(selectedTags, () => {
+watch([selectedTags, selectedPlatform, handledFilter], () => {
   pagination.reset()
 })
 
@@ -110,12 +134,16 @@ const feedbacks = computed(() =>
   data.value?.feedback.edges.map((edge) => edge.node),
 )
 
-// Collect all unique tags from current feedbacks for filter suggestions
-const allUniqueTags = computed(() => {
-  const tags = new Set<string>()
-  feedbacks.value?.forEach((f) => f.tags.forEach((t) => tags.add(t)))
-  return Array.from(tags).sort()
-})
+const allUniqueTags = computed(() => tagsData.value?.feedbackTags ?? [])
+const allPlatforms = computed(
+  () => platformsData.value?.feedbackPlatforms ?? [],
+)
+
+const handledOptions = [
+  { label: 'Alle', value: undefined },
+  { label: 'Ubehandlet', value: false },
+  { label: 'Behandlet', value: true },
+]
 
 type FeedbackNode = NonNullable<typeof feedbacks.value>[number]
 
@@ -236,6 +264,8 @@ async function handleUpdateTags(feedbackId: string, tags: string[]) {
       description: result.error.message,
       color: 'error',
     })
+  } else {
+    refetchTags({ requestPolicy: 'network-only' })
   }
 }
 </script>
@@ -248,30 +278,67 @@ async function handleUpdateTags(feedbackId: string, tags: string[]) {
     <ErrorState v-if="error" :error />
     <div v-else class="space-y-4">
       <div class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2">
-          <span class="text-dimmed text-sm">Filtrer:</span>
-          <UButton
-            v-for="tag in allUniqueTags"
-            :key="tag"
-            :variant="selectedTags.includes(tag) ? 'solid' : 'outline'"
-            size="sm"
-            :label="tag"
-            @click="
-              selectedTags.includes(tag)
-                ? (selectedTags = selectedTags.filter((t) => t !== tag))
-                : (selectedTags = [...selectedTags, tag])
-            "
-          />
-          <UButton
-            v-if="selectedTags.length > 0"
-            variant="ghost"
-            size="sm"
-            color="neutral"
-            label="Nullstill"
-            @click="selectedTags = []"
-          />
-        </div>
-        <RelayPagination v-model:pagination="pagination" />
+        <USelectMenu
+          v-model="selectedTags"
+          :items="allUniqueTags"
+          multiple
+          placeholder="Filtrer etter tags..."
+          icon="lucide:tag"
+          size="sm"
+          class="min-w-56 max-w-80"
+          :ui="{ base: 'flex-wrap' }"
+        >
+          <template #default="{ modelValue: _tags }">
+            <UBadge
+              v-for="tag in _tags"
+              :key="tag"
+              :label="tag"
+              size="sm"
+              variant="subtle"
+              color="neutral"
+            />
+          </template>
+        </USelectMenu>
+        <USelectMenu
+          v-model="selectedPlatform"
+          :items="allPlatforms"
+          placeholder="Plattform..."
+          icon="lucide:monitor-smartphone"
+          size="sm"
+          class="min-w-40"
+        />
+        <USelectMenu
+          :model-value="
+            handledOptions.find((o) => o.value === handledFilter)?.value
+          "
+          :items="handledOptions"
+          value-key="value"
+          label-key="label"
+          placeholder="Status..."
+          icon="lucide:check-circle"
+          size="sm"
+          class="min-w-40"
+          @update:model-value="handledFilter = $event"
+        />
+        <UButton
+          v-if="
+            selectedTags.length > 0 ||
+            selectedPlatform !== undefined ||
+            handledFilter !== undefined
+          "
+          variant="ghost"
+          size="sm"
+          color="neutral"
+          label="Nullstill"
+          @click="
+            () => {
+              selectedTags = []
+              selectedPlatform = undefined
+              handledFilter = undefined
+            }
+          "
+        />
+        <RelayPagination v-model:pagination="pagination" class="ml-auto" />
       </div>
       <UTable :data="feedbacks" :loading="fetching" :columns>
         <template #user-cell="{ row }">
@@ -330,10 +397,12 @@ async function handleUpdateTags(feedbackId: string, tags: string[]) {
           <div class="flex justify-end items-center gap-1">
             <UDropdownMenu
               v-if="canForwardFeedback && !row.original.handledAt"
-              :items="Object.values(ForwardDestination).map((dest) => ({
-                label: forwardDestinationLabels[dest],
-                onSelect: () => handleForward(row.original.id, dest),
-              }))"
+              :items="
+                Object.values(ForwardDestination).map((dest) => ({
+                  label: forwardDestinationLabels[dest],
+                  onSelect: () => handleForward(row.original.id, dest),
+                }))
+              "
             >
               <UButton
                 variant="soft"

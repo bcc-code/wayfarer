@@ -24,7 +24,7 @@ watch(locale, (newLocale, oldLocale) => {
     <template #content>
       <DesignPanel class="gap-list-section-inset flex flex-col">
         <template v-for="(l, index) in locales" :key="l.code">
-          <hr v-if="index > 0" class="border-border-default mx-3" />
+          <hr v-if="index > 0" class="border-border-default mx-3" >
           <button
             class="flex items-center justify-between gap-2.5 px-3 py-2 h-12"
             @click="selectedLocale = l.code"

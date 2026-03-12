@@ -81,7 +81,7 @@ const multiplier = computed(() => {
 
 const formattedMultiplier = computed(() => {
   const m = multiplier.value
-  return `x ${Number.isInteger(m) ? m : m.toFixed(1)}`
+  return `x ${Number.isInteger(m) ? m : parseFloat(m.toFixed(2))}`
 })
 
 const correctCountLabel = computed(() => {
@@ -89,11 +89,7 @@ const correctCountLabel = computed(() => {
   if (props.correctCount === 0) return t('quiz.betting.correctCountNone')
   if (props.correctCount === props.totalCount)
     return t('quiz.betting.correctCountAll')
-  return t(
-    'quiz.betting.correctCount',
-    { count: props.correctCount },
-    props.correctCount,
-  )
+  return t('quiz.betting.correctCount', { count: props.correctCount })
 })
 </script>
 
@@ -101,7 +97,10 @@ const correctCountLabel = computed(() => {
   <!-- Results mode: show win/loss -->
   <div
     v-if="mode === 'results'"
-    class="flex flex-col pb-default pt-medium text-on-accent"
+    :class="[
+      'flex flex-col pb-default pt-medium',
+      isWin !== null ? 'text-on-accent' : 'text-text-default',
+    ]"
   >
     <!-- Info rows -->
     <div

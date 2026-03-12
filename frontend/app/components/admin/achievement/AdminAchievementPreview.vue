@@ -31,17 +31,17 @@ const state = ref<'pending' | 'completed'>('pending')
           v-if="achievement.imageCompleted && state === 'completed'"
           :src="achievement.imageCompleted"
           class="size-full object-cover"
-        />
+        >
         <img
           v-else-if="achievement.imagePending"
           :src="achievement.imagePending"
           class="size-full object-cover"
-        />
+        >
         <img
           v-else
           src="/images/achievement-placeholder.png"
           class="size-full object-cover"
-        />
+        >
       </div>
       <div class="flex flex-col items-center gap-1 text-center text-balance">
         <h3 class="text-heading">

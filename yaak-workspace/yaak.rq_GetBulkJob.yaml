@@ -1,0 +1,42 @@
+type: http_request
+model: http_request
+id: rq_GetBulkJob
+createdAt: 2026-03-10T12:00:00
+updatedAt: 2026-03-10T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_BulkJobs
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    query GetBulkJob($id: ID!) {
+      bulkJob(id: $id) {
+        id
+        operationType
+        status
+        totalCount
+        processedCount
+        successCount
+        failureCount
+        errorMessage
+        createdAt
+        startedAt
+        completedAt
+      }
+    }
+  variables: |
+    {
+      "id": "BJ01ARZ3NDEKTSV4RRFFQ69G5FAV"
+    }
+bodyType: graphql
+description: Get a single bulk job status by ID
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_GetBulkJob
+method: POST
+name: Get Bulk Job
+sortPriority: 1000.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

@@ -99,6 +99,11 @@ VALUES (
 )
 RETURNING id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at;
 
+-- name: GetQuizSubmissionCountBySessionID :one
+SELECT COUNT(*)::int
+FROM quiz_submissions
+WHERE session_id = @sessionid::text;
+
 -- name: UpdateQuizSubmission :one
 UPDATE quiz_submissions
 SET

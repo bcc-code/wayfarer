@@ -274,15 +274,29 @@ func (r *queryResolver) Feedback(ctx context.Context, filter *model.FeedbackFilt
 	if filter != nil && filter.Tags != nil {
 		filterTags = filter.Tags
 	}
+	filterHandled := ""
+	if filter != nil && filter.Handled != nil {
+		if *filter.Handled {
+			filterHandled = "true"
+		} else {
+			filterHandled = "false"
+		}
+	}
+	filterPlatform := ""
+	if filter != nil && filter.Platform != nil {
+		filterPlatform = *filter.Platform
+	}
 
 	// Fetch one more than requested to determine if there are more results
 	rows, err := r.DB.Queries.GetFeedbackCursor(ctx, sqlc.GetFeedbackCursorParams{
-		Aftercursor:  afterCursor,
-		Beforecursor: beforeCursor,
-		Isbackward:   isBackward,
-		Querylimit:   int32(limit + 1),
-		Filteruserid: filterUserID,
-		Filtertags:   filterTags,
+		Aftercursor:    afterCursor,
+		Beforecursor:   beforeCursor,
+		Isbackward:     isBackward,
+		Querylimit:     int32(limit + 1),
+		Filteruserid:   filterUserID,
+		Filtertags:     filterTags,
+		Filterhandled:  filterHandled,
+		Filterplatform: filterPlatform,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch feedback: %w", err)
@@ -303,8 +317,10 @@ func (r *queryResolver) Feedback(ctx context.Context, filter *model.FeedbackFilt
 
 	// Get total count
 	totalCount, err := r.DB.Queries.CountAllFeedback(ctx, sqlc.CountAllFeedbackParams{
-		Filteruserid: filterUserID,
-		Filtertags:   filterTags,
+		Filteruserid:   filterUserID,
+		Filtertags:     filterTags,
+		Filterhandled:  filterHandled,
+		Filterplatform: filterPlatform,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to count feedback: %w", err)
@@ -325,6 +341,30 @@ func (r *queryResolver) Feedback(ctx context.Context, filter *model.FeedbackFilt
 		TotalCount:      int(totalCount),
 		HasMore:         hasMore,
 	}), nil
+}
+
+// FeedbackTags is the resolver for the feedbackTags field.
+func (r *queryResolver) FeedbackTags(ctx context.Context) ([]string, error) {
+	tags, err := r.DB.Queries.GetDistinctFeedbackTags(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get feedback tags: %w", err)
+	}
+	return tags, nil
+}
+
+// FeedbackPlatforms is the resolver for the feedbackPlatforms field.
+func (r *queryResolver) FeedbackPlatforms(ctx context.Context) ([]string, error) {
+	platforms, err := r.DB.Queries.GetDistinctFeedbackPlatforms(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get feedback platforms: %w", err)
+	}
+	result := make([]string, 0, len(platforms))
+	for _, p := range platforms {
+		if p != nil {
+			result = append(result, *p)
+		}
+	}
+	return result, nil
 }
 
 // User is the resolver for the user field.

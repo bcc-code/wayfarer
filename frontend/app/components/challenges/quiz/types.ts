@@ -86,6 +86,7 @@ export interface QuizActionState {
   isSubmitting: boolean // Currently submitting
   isAnswerLocked: boolean // Answer confirmed
   isBetSaved: boolean // Bet saved (session betting)
+  canChangeBet: boolean // Can edit saved bet (ordering: true, predefined: false)
   isEditing: boolean // Editing saved bet
   showPreviousButton: boolean
   isLastQuestion: boolean

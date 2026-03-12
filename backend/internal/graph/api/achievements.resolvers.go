@@ -16,6 +16,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/pubsub"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/ulid"
@@ -176,6 +177,11 @@ func (r *contentAchievementResolver) CompletedItemCount(ctx context.Context, obj
 		return 0, fmt.Errorf("failed to load user progress: %w", err)
 	}
 	return len(progress), nil
+}
+
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *contentAchievementResolver) TranslationStatus(ctx context.Context, obj *model.ContentAchievement) ([]model.TranslationFieldStatus, error) {
+	return r.achievementTranslationStatus(ctx, obj.ID)
 }
 
 // CreateSimpleAchievement is the resolver for the createSimpleAchievement field.
@@ -1218,8 +1224,78 @@ func (r *mutationResolver) RevokeAchievement(ctx context.Context, userID string,
 }
 
 // BulkAwardAchievements is the resolver for the bulkAwardAchievements field.
-func (r *mutationResolver) BulkAwardAchievements(ctx context.Context, userIds []string, achievementID string) ([]model.Achievement, error) {
-	panic(fmt.Errorf("not implemented: BulkAwardAchievements - bulkAwardAchievements"))
+func (r *mutationResolver) BulkAwardAchievements(ctx context.Context, userIds []string, teamID *string, achievementID string) ([]model.Achievement, error) {
+	// Resolve target users and achievement (also checks if achievement is awardable)
+	target, err := resolveBulkAwardTarget(ctx, r.DB.Queries, r.Loaders, userIds, teamID, achievementID)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(target.UserIDs) == 0 {
+		// No users to award, return empty result
+		return []model.Achievement{}, nil
+	}
+
+	hasTeamId := teamID != nil && *teamID != ""
+
+	// Award achievement to all users in a single batch query
+	// Returns only newly inserted rows (not already awarded users)
+	awardedRows, err := r.DB.Queries.AwardUserAchievementsBatch(ctx, sqlc.AwardUserAchievementsBatchParams{
+		UserIds:       target.UserIDs,
+		AchievementID: achievementID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to award achievement: %w", err)
+	}
+
+	// Collect newly awarded user IDs
+	newlyAwardedUserIDs := make([]string, len(awardedRows))
+	for i, row := range awardedRows {
+		newlyAwardedUserIDs[i] = row.UserID
+	}
+
+	// Invalidate user caches and achievement timestamp caches for all attempted users
+	for _, uid := range target.UserIDs {
+		r.Cache.InvalidateUser(uid)
+		r.Cache.Delete(cache.UserAchievementTimestampKey(uid, achievementID))
+	}
+
+	// Invalidate achievement cache
+	r.Cache.InvalidateAchievement(achievementID)
+
+	// Invalidate project leaderboards
+	r.Cache.InvalidateProject(target.ProjectID)
+
+	// Invalidate event leaderboards if achievement belongs to an event
+	if target.EventID != nil && *target.EventID != "" {
+		r.Cache.InvalidateEvent(*target.EventID)
+	}
+
+	// Invalidate team cache if teamID was provided
+	if hasTeamId {
+		r.Cache.InvalidateTeam(*teamID)
+	}
+
+	// Send push notifications in background only for newly awarded users
+	if r.PushService != nil && len(newlyAwardedUserIDs) > 0 {
+		pushInfo := getAchievementPushInfo(target.Achievement)
+		for _, uid := range newlyAwardedUserIDs {
+			go push.SendTranslatedAchievementNotification(r.PushService, r.Loaders, uid, pushInfo)
+		}
+	}
+
+	// Notify Firestore listeners only for newly awarded users
+	for _, uid := range newlyAwardedUserIDs {
+		go r.FirebaseService.NotifyUserAchievements(context.Background(), uid)
+	}
+
+	// Load and return the achievement with translation
+	translated, err := r.LoadAchievementWithTranslation(ctx, achievementID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load achievement: %w", err)
+	}
+
+	return []model.Achievement{translated}, nil
 }
 
 // MarkContentItemCompleted is the resolver for the markContentItemCompleted field.
@@ -1452,6 +1528,41 @@ func (r *mutationResolver) RecalculateContentAchievements(ctx context.Context, p
 	}, nil
 }
 
+// BulkAwardAchievementsAsync is the resolver for the bulkAwardAchievementsAsync field.
+func (r *mutationResolver) BulkAwardAchievementsAsync(ctx context.Context, userIds []string, teamID *string, achievementID string) (*model.BulkJob, error) {
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	if r.BulkService == nil {
+		return nil, fmt.Errorf("bulk service not initialized")
+	}
+
+	// Resolve target users and achievement
+	target, err := resolveBulkAwardTarget(ctx, r.DB.Queries, r.Loaders, userIds, teamID, achievementID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create job and publish to Pub/Sub
+	params := pubsub.BulkAwardAchievementParams{
+		AchievementID: achievementID,
+		UserIDs:       target.UserIDs,
+	}
+	if teamID != nil {
+		params.TeamID = *teamID
+	}
+
+	return r.BulkService.CreateBulkJobAndPublish(
+		ctx,
+		currentUserID,
+		&target.ProjectID,
+		len(target.UserIDs),
+		params,
+	)
+}
+
 // Achievement is the resolver for the achievement field.
 func (r *queryResolver) Achievement(ctx context.Context, id string) (model.Achievement, error) {
 	return r.LoadAchievementWithTranslation(ctx, id)
@@ -1615,6 +1726,11 @@ func (r *quizAchievementResolver) Quiz(ctx context.Context, obj *model.QuizAchie
 	return thunk()
 }
 
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *quizAchievementResolver) TranslationStatus(ctx context.Context, obj *model.QuizAchievement) ([]model.TranslationFieldStatus, error) {
+	return r.achievementTranslationStatus(ctx, obj.ID)
+}
+
 // ImagePendingObject is the resolver for the imagePendingObject field.
 func (r *simpleAchievementResolver) ImagePendingObject(ctx context.Context, obj *model.SimpleAchievement) (*model.Image, error) {
 	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImagePending)
@@ -1650,6 +1766,11 @@ func (r *simpleAchievementResolver) CelebratedAt(ctx context.Context, obj *model
 	return resolveCelebratedAt(ctx, r.Resolver, obj.ID)
 }
 
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *simpleAchievementResolver) TranslationStatus(ctx context.Context, obj *model.SimpleAchievement) ([]model.TranslationFieldStatus, error) {
+	return r.achievementTranslationStatus(ctx, obj.ID)
+}
+
 // ImagePendingObject is the resolver for the imagePendingObject field.
 func (r *streakAchievementResolver) ImagePendingObject(ctx context.Context, obj *model.StreakAchievement) (*model.Image, error) {
 	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImagePending)
@@ -1683,6 +1804,11 @@ func (r *streakAchievementResolver) AchievedAt(ctx context.Context, obj *model.S
 // CelebratedAt is the resolver for the celebratedAt field.
 func (r *streakAchievementResolver) CelebratedAt(ctx context.Context, obj *model.StreakAchievement) (*scalars.DateTime, error) {
 	return resolveCelebratedAt(ctx, r.Resolver, obj.ID)
+}
+
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *streakAchievementResolver) TranslationStatus(ctx context.Context, obj *model.StreakAchievement) ([]model.TranslationFieldStatus, error) {
+	return r.achievementTranslationStatus(ctx, obj.ID)
 }
 
 // Streak is the resolver for the streak field.

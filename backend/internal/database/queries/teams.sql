@@ -244,8 +244,21 @@ SELECT DISTINCT user_id
 FROM team_members
 WHERE team_id = ANY(@teamids::text[]);
 
+-- name: GetUserIDsByTeamIDs :many
+-- Returns user_id and team_id for grouping by team
+SELECT team_id, user_id
+FROM team_members
+WHERE team_id = ANY(@teamids::text[]);
+
 -- name: GetUserIDsInSuperTeams :many
 SELECT DISTINCT tm.user_id
+FROM team_members tm
+JOIN teams t ON t.id = tm.team_id
+WHERE t.super_team_id = ANY(@superteamids::text[]);
+
+-- name: GetUserIDsBySuperTeamIDs :many
+-- Returns user_id and super_team_id for grouping by super team
+SELECT t.super_team_id, tm.user_id
 FROM team_members tm
 JOIN teams t ON t.id = tm.team_id
 WHERE t.super_team_id = ANY(@superteamids::text[]);

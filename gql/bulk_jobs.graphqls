@@ -1,0 +1,50 @@
+# Bulk Jobs - Async job tracking for long-running bulk operations
+
+enum BulkJobStatus {
+    PENDING
+    PROCESSING
+    COMPLETED
+    FAILED
+}
+
+type BulkJob {
+    id: ID!
+    operationType: String!
+    status: BulkJobStatus!
+    totalCount: Int!
+    processedCount: Int!
+    successCount: Int!
+    failureCount: Int!
+    errorMessage: String
+    createdAt: DateTime!
+    startedAt: DateTime
+    completedAt: DateTime
+}
+
+# ==================== Filtering ====================
+
+input BulkJobFilter {
+    status: BulkJobStatus
+    operationType: String
+    projectId: ID
+    createdBy: ID
+}
+
+# ==================== Pagination ====================
+
+type BulkJobEdge {
+    cursor: String!
+    node: BulkJob!
+}
+
+type BulkJobConnection {
+    edges: [BulkJobEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+extend type Query {
+    bulkJob(id: ID!): BulkJob
+    myBulkJobs(limit: Int): [BulkJob!]!
+    bulkJobs(filter: BulkJobFilter, first: Int, after: String, last: Int, before: String): BulkJobConnection! @requireRole(roles: ["admin", "superadmin"])
+}

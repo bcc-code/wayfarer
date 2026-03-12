@@ -20,6 +20,7 @@ interface Achievement {
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 # ==================== Achievement Implementations ====================
@@ -42,6 +43,7 @@ type SimpleAchievement implements Achievement {
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 type ContentAchievement implements Achievement {
@@ -68,6 +70,7 @@ type ContentAchievement implements Achievement {
     nextItem: ContentItem @goField(forceResolver: true)
     totalItems: Int!
     completedItemCount: Int! @goField(forceResolver: true)
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 type StreakAchievement implements Achievement {
@@ -89,6 +92,7 @@ type StreakAchievement implements Achievement {
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     streak: Streak! @goField(forceResolver: true)
 }
 
@@ -113,6 +117,7 @@ type QuizAchievement implements Achievement {
     quiz: Quiz @goField(forceResolver: true)
     minScorePercentage: Int
     requireCompletion: Boolean!
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 # ==================== Achievement Input Types ====================
@@ -293,7 +298,7 @@ extend type Mutation {
     # Award/revoke (M2M)
     awardAchievement(userId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
     revokeAchievement(userId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
-    bulkAwardAchievements(userIds: [ID!]!, achievementId: ID!): [Achievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    bulkAwardAchievements(userIds: [ID!], teamId: ID, achievementId: ID!): [Achievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
     # Content progress (M2M) - marks content completed across ALL published achievements containing this content
     markContentItemCompleted(userId: ID!, externalContentId: ID!): [ContentAchievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
@@ -307,4 +312,7 @@ extend type Mutation {
 
     # Force recalculate content achievements - awards achievements to users who completed all items but weren't awarded
     recalculateContentAchievements(projectId: ID!, achievementId: ID!): RecalculateResult! @requireRole(roles: ["admin", "superadmin"])
+
+    # Async bulk operations - returns BulkJob for tracking progress
+    bulkAwardAchievementsAsync(userIds: [ID!], teamId: ID, achievementId: ID!): BulkJob! @requireRole(roles: ["m2m", "admin", "superadmin"])
 }

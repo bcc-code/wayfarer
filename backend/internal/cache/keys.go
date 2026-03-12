@@ -22,13 +22,18 @@ const (
 	PrefixAchievement    = "achievement:"
 	PrefixStreak         = "streak:"
 	PrefixQuiz           = "quiz:"
+	PrefixQuizSession    = "quizsession:"
 	PrefixQuizSubmission = "quizsubmission:"
 
 	// Relationship/Junction tables
-	PrefixUserProjects = "userprojects:"
-	PrefixUserEvents   = "userevents:"
-	PrefixTeamMembers  = "teammembers:"
-	PrefixUserRoles    = "userroles:"
+	PrefixUserProjects       = "userprojects:"
+	PrefixUserEvents         = "userevents:"
+	PrefixTeamMembers        = "teammembers:"
+	PrefixUserRoles          = "userroles:"
+	PrefixUserIDsByTeam      = "useridsbyteam:"
+	PrefixUserIDsBySuperTeam = "useridsbysuperteam:"
+	PrefixUserIDsByChurch    = "useridsbychurch:"
+	PrefixUserIDsInProject   = "useridsinproject:"
 
 	// Progress tracking
 	PrefixUserAchievements         = "userachievements:"
@@ -97,6 +102,9 @@ const (
 
 	// Score journal
 	PrefixScoreJournal = "scorejournal:"
+
+	// User project points (myPoints field)
+	PrefixUserProjectPoints = "userprojectpoints:"
 )
 
 // Key builders for different entity types
@@ -273,6 +281,11 @@ func QuizzesByEventKey(eventID string) string {
 	return fmt.Sprintf("%s:event:%s", PrefixQuiz, eventID)
 }
 
+// QuizSessionKey builds a cache key for a quiz session by ID
+func QuizSessionKey(sessionID string) string {
+	return PrefixQuizSession + sessionID
+}
+
 // QuizSubmissionKey builds a cache key for a quiz submission by ID
 func QuizSubmissionKey(submissionID string) string {
 	return PrefixQuizSubmission + submissionID
@@ -331,6 +344,26 @@ func TeamMembersByTeamKey(teamID string) string {
 // UsersByTeamKey builds a cache key for users in a team
 func UsersByTeamKey(teamID string) string {
 	return fmt.Sprintf("%s:team:%s", PrefixUser, teamID)
+}
+
+// UserIDsByTeamKey builds a cache key for user IDs in a team
+func UserIDsByTeamKey(teamID string) string {
+	return PrefixUserIDsByTeam + teamID
+}
+
+// UserIDsBySuperTeamKey builds a cache key for user IDs in a super team
+func UserIDsBySuperTeamKey(superTeamID string) string {
+	return PrefixUserIDsBySuperTeam + superTeamID
+}
+
+// UserIDsByChurchInProjectKey builds a cache key for user IDs by church in a project
+func UserIDsByChurchInProjectKey(churchID, projectID string) string {
+	return fmt.Sprintf("%s%s:%s", PrefixUserIDsByChurch, churchID, projectID)
+}
+
+// UserIDsInProjectKey builds a cache key for user IDs in a project
+func UserIDsInProjectKey(projectID string) string {
+	return PrefixUserIDsInProject + projectID
 }
 
 // UserRolesKey builds a cache key for user roles
@@ -400,6 +433,7 @@ func ExtractUserTag(key string) (string, bool) {
 		PrefixUserContentProgress, PrefixUserAchievements,
 		PrefixUserStreakActivity, PrefixUserChallengeEnrollments,
 		PrefixUserChallengeCompletions, PrefixUserConsents,
+		PrefixUserProjectPoints,
 	}
 	for _, prefix := range prefixes {
 		if strings.HasPrefix(key, prefix) {
@@ -1236,4 +1270,9 @@ func ExternalContentTranslationsKey(externalContentID string) string {
 // ScoreJournalKey builds a cache key for a score journal entry by ID
 func ScoreJournalKey(id string) string {
 	return PrefixScoreJournal + id
+}
+
+// UserProjectPointsKey builds a cache key for a user's points in a project (myPoints field)
+func UserProjectPointsKey(userID, projectID string) string {
+	return fmt.Sprintf("%s%s:%s", PrefixUserProjectPoints, userID, projectID)
 }

@@ -88,7 +88,7 @@ const dotClasses = cva('w-1.5 h-1.5 rounded-full', {
         v-bind="api.getThumbProps({ index })"
         class="bg-accent p-button-medium-vertical shadow-medium rounded-button-medium flex gap text-on-accent"
       >
-        <input v-bind="api.getHiddenInputProps({ index })" />
+        <input v-bind="api.getHiddenInputProps({ index })" >
         <IconChevronLeft class="size-5" />
         <IconChevronRight class="size-5" />
       </div>

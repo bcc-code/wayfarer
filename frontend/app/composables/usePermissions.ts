@@ -251,6 +251,13 @@ export function usePermissions() {
     return isSuperAdmin.value || isAdmin.value || isChurchAdmin.value
   })
 
+  /**
+   * Can access maintenance tools (superadmin only)
+   */
+  const canAccessMaintenance = computed(() => {
+    return isSuperAdmin.value
+  })
+
   return {
     // Scoped helpers
     hasProjectAdminFor,
@@ -287,5 +294,6 @@ export function usePermissions() {
     canManageConsents,
     canToggleLeaderboardExclusion,
     canManageChurchAdmins,
+    canAccessMaintenance,
   }
 }

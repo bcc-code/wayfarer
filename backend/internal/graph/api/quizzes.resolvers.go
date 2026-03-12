@@ -37,6 +37,11 @@ func (r *freeTextQuestionResolver) Quiz(ctx context.Context, obj *model.FreeText
 	return r.ApplyTranslationToQuiz(ctx, quiz), nil
 }
 
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *freeTextQuestionResolver) TranslationStatus(ctx context.Context, obj *model.FreeTextQuestion) ([]model.TranslationFieldStatus, error) {
+	return r.quizQuestionTranslationStatus(ctx, obj.ID)
+}
+
 // Submission is the resolver for the submission field.
 func (r *freeTextResponseResolver) Submission(ctx context.Context, obj *model.FreeTextResponse) (*model.QuizSubmission, error) {
 	row, err := r.DB.Queries.GetQuizSubmissionByID(ctx, obj.SubmissionID)
@@ -73,6 +78,11 @@ func (r *jsonQuestionResolver) Quiz(ctx context.Context, obj *model.JSONQuestion
 		return nil, err
 	}
 	return r.ApplyTranslationToQuiz(ctx, quiz), nil
+}
+
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *jsonQuestionResolver) TranslationStatus(ctx context.Context, obj *model.JSONQuestion) ([]model.TranslationFieldStatus, error) {
+	return r.quizQuestionTranslationStatus(ctx, obj.ID)
 }
 
 // Submission is the resolver for the submission field.
@@ -1948,6 +1958,11 @@ func (r *numberQuestionResolver) Quiz(ctx context.Context, obj *model.NumberQues
 	return r.ApplyTranslationToQuiz(ctx, quiz), nil
 }
 
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *numberQuestionResolver) TranslationStatus(ctx context.Context, obj *model.NumberQuestion) ([]model.TranslationFieldStatus, error) {
+	return r.quizQuestionTranslationStatus(ctx, obj.ID)
+}
+
 // Submission is the resolver for the submission field.
 func (r *numberResponseResolver) Submission(ctx context.Context, obj *model.NumberResponse) (*model.QuizSubmission, error) {
 	row, err := r.DB.Queries.GetQuizSubmissionByID(ctx, obj.SubmissionID)
@@ -1984,6 +1999,11 @@ func (r *orderingQuestionResolver) Quiz(ctx context.Context, obj *model.Ordering
 		return nil, err
 	}
 	return r.ApplyTranslationToQuiz(ctx, quiz), nil
+}
+
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *orderingQuestionResolver) TranslationStatus(ctx context.Context, obj *model.OrderingQuestion) ([]model.TranslationFieldStatus, error) {
+	return r.quizQuestionTranslationStatus(ctx, obj.ID)
 }
 
 // OrderingItems is the resolver for the orderingItems field.
@@ -2070,6 +2090,11 @@ func (r *predefinedQuestionResolver) Quiz(ctx context.Context, obj *model.Predef
 		return nil, err
 	}
 	return r.ApplyTranslationToQuiz(ctx, quiz), nil
+}
+
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *predefinedQuestionResolver) TranslationStatus(ctx context.Context, obj *model.PredefinedQuestion) ([]model.TranslationFieldStatus, error) {
+	return r.quizQuestionTranslationStatus(ctx, obj.ID)
 }
 
 // PredefinedAnswers is the resolver for the predefinedAnswers field.
@@ -2638,6 +2663,11 @@ func (r *quizResolver) UserActiveSession(ctx context.Context, obj *model.Quiz) (
 	return convertQuizSessionToModel(row), nil
 }
 
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *quizResolver) TranslationStatus(ctx context.Context, obj *model.Quiz) ([]model.TranslationFieldStatus, error) {
+	return r.quizTranslationStatus(ctx, obj.ID)
+}
+
 // Question is the resolver for the question field.
 func (r *quizOrderingItemResolver) Question(ctx context.Context, obj *model.QuizOrderingItem) (model.QuizQuestion, error) {
 	row, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
@@ -2701,6 +2731,11 @@ func (r *quizPredefinedAnswerResolver) Question(ctx context.Context, obj *model.
 // IsCorrect is the resolver for the isCorrect field on QuizPredefinedAnswer.
 func (r *quizPredefinedAnswerResolver) IsCorrect(ctx context.Context, obj *model.QuizPredefinedAnswer) (*bool, error) {
 	return &obj.IsCorrectValue, nil
+}
+
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *quizPredefinedAnswerResolver) TranslationStatus(ctx context.Context, obj *model.QuizPredefinedAnswer) ([]model.TranslationFieldStatus, error) {
+	return r.quizAnswerTranslationStatus(ctx, obj.ID)
 }
 
 // Quiz is the resolver for the quiz field on QuizSubmission.

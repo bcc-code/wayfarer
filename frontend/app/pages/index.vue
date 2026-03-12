@@ -1,10 +1,15 @@
 <script setup lang="ts">
-// Age group filter for leaderboard rank
+import { AGE_RANGE_ADULT, AGE_RANGE_YOUNG } from '~/utils/constants'
+
 function getAgeRangeFilter(age: number | null | undefined) {
   if (age == null) return undefined
-  if (age >= 13 && age <= 19) return { min: 13, max: 19 } // U18
-  if (age >= 20 && age <= 37) return { min: 20, max: 37 } // O18
-  return undefined // Outside defined age groups
+  if (age >= AGE_RANGE_YOUNG.min && age <= AGE_RANGE_YOUNG.max)
+    return AGE_RANGE_YOUNG
+  if (age >= AGE_RANGE_ADULT.min && age <= AGE_RANGE_ADULT.max)
+    return AGE_RANGE_ADULT
+
+  // If not in any of the ranges, return a dummy range to hide rank
+  return { min: 200, max: 201 }
 }
 
 const { isAuthReady } = useAuthReady()
@@ -200,7 +205,7 @@ const hiddenTreasuresLink = computed(() => {
         key="current-project"
         :project-name="data.myCurrentProject.name"
         :banner="data.myCurrentProject.branding.bannerImage"
-        :score="data.myCurrentProject.leaderboard.me?.score"
+        :score="data.myCurrentProject.myPoints"
         :rank="data.myCurrentProject.leaderboard.me?.rank"
         :achievements="data.myCurrentProject.achievements"
       >

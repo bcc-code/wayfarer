@@ -1,10 +1,12 @@
 extend type Query {
     adminDashboardStats: AdminDashboardStats! @requireRole(roles: ["admin", "superadmin"])
     churchAdminStatistics: ChurchAdminStatistics! @requireRole(roles: ["church_admin", "admin", "superadmin"])
+    previewMissingContentProgress(first: Int, after: String): MissingContentProgressPreview! @requireRole(roles: ["superadmin"])
 }
 
 extend type Mutation {
     clearAllCache: Boolean! @requireRole(roles: ["admin", "superadmin"])
+    fixMissingContentProgress: FixMissingContentProgressResult! @requireRole(roles: ["superadmin"])
 }
 
 type AdminDashboardStats {
@@ -37,4 +39,23 @@ type ChurchAdminStatistics {
     totalUsersInTeams: Int!
     userScores: [UserScore!]!
     lastUpdatedAt: DateTime!
+}
+
+# Maintenance tool types
+
+type MissingContentProgressUser {
+    user: User!
+    eventCount: Int!
+}
+
+type MissingContentProgressPreview {
+    affectedUsers: [MissingContentProgressUser!]!
+    totalUsers: Int!
+    totalEvents: Int!
+}
+
+type FixMissingContentProgressResult {
+    usersFixed: Int!
+    progressRecordsCreated: Int!
+    achievementsAwarded: Int!
 }

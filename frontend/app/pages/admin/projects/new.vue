@@ -146,17 +146,17 @@ async function createProject(event: FormSubmitEvent<Schema>) {
         <UFormField name="branding.banner" label="Banner" hint="(valgfritt)">
           <AdminFileUpload v-model="state.branding.banner" />
         </UFormField>
-        <UFormField name="name" label="Navn">
+        <AdminTranslatableFormField name="name" label="Navn">
           <UInput v-model="state.name" size="xl" required class="w-full" />
-        </UFormField>
-        <UFormField
+        </AdminTranslatableFormField>
+        <AdminTranslatableFormField
           name="description"
           label="Beskrivelse"
           hint="(valgfritt)"
           help="Dette er kun for at admins skal ha bedre kontekst"
         >
           <UTextarea v-model="state.description" class="w-full" autoresize />
-        </UFormField>
+        </AdminTranslatableFormField>
         <UFormField label="Prosjektvarighet">
           <DateRangeField
             v-model:start="state.startDate"

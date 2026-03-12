@@ -53,7 +53,9 @@ OFFSET @offsetcount::int;
 SELECT COUNT(*) FROM user_feedback
 WHERE
     (@filteruserid::text = '' OR user_id = @filteruserid::text)
-    AND (cardinality(@filtertags::text[]) = 0 OR tags && @filtertags::text[]);
+    AND (cardinality(@filtertags::text[]) = 0 OR tags && @filtertags::text[])
+    AND (@filterhandled::text = '' OR (@filterhandled::text = 'true' AND handled_at IS NOT NULL) OR (@filterhandled::text = 'false' AND handled_at IS NULL))
+    AND (@filterplatform::text = '' OR platform = @filterplatform::text);
 
 -- name: GetFeedbackCursor :many
 SELECT * FROM user_feedback
@@ -62,6 +64,8 @@ WHERE
     AND (@beforecursor::text = '' OR id > @beforecursor::text)
     AND (@filteruserid::text = '' OR user_id = @filteruserid::text)
     AND (cardinality(@filtertags::text[]) = 0 OR tags && @filtertags::text[])
+    AND (@filterhandled::text = '' OR (@filterhandled::text = 'true' AND handled_at IS NOT NULL) OR (@filterhandled::text = 'false' AND handled_at IS NULL))
+    AND (@filterplatform::text = '' OR platform = @filterplatform::text)
 ORDER BY
     CASE WHEN @isbackward::bool = true THEN id END ASC,
     CASE WHEN @isbackward::bool = false OR @isbackward::bool IS NULL THEN id END DESC
@@ -84,3 +88,9 @@ UPDATE user_feedback
 SET tags = @tags::text[]
 WHERE id = @id::text
 RETURNING *;
+
+-- name: GetDistinctFeedbackTags :many
+SELECT DISTINCT unnest(tags)::text AS tag FROM user_feedback ORDER BY tag;
+
+-- name: GetDistinctFeedbackPlatforms :many
+SELECT DISTINCT platform FROM user_feedback WHERE platform IS NOT NULL ORDER BY platform;

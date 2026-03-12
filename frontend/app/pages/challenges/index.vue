@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { QuizSessionState } from '~/api/generated'
+
 const { isAuthReady } = useAuthReady()
 
 const {

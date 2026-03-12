@@ -740,6 +740,71 @@ func (q *Queries) GetTeamsFilteredCursor(ctx context.Context, arg GetTeamsFilter
 	return items, nil
 }
 
+const GetUserIDsBySuperTeamIDs = `-- name: GetUserIDsBySuperTeamIDs :many
+SELECT t.super_team_id, tm.user_id
+FROM team_members tm
+JOIN teams t ON t.id = tm.team_id
+WHERE t.super_team_id = ANY($1::text[])
+`
+
+type GetUserIDsBySuperTeamIDsRow struct {
+	SuperTeamID *string `json:"super_team_id"`
+	UserID      string  `json:"user_id"`
+}
+
+// Returns user_id and super_team_id for grouping by super team
+func (q *Queries) GetUserIDsBySuperTeamIDs(ctx context.Context, superteamids []string) ([]*GetUserIDsBySuperTeamIDsRow, error) {
+	rows, err := q.db.Query(ctx, GetUserIDsBySuperTeamIDs, superteamids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUserIDsBySuperTeamIDsRow{}
+	for rows.Next() {
+		var i GetUserIDsBySuperTeamIDsRow
+		if err := rows.Scan(&i.SuperTeamID, &i.UserID); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetUserIDsByTeamIDs = `-- name: GetUserIDsByTeamIDs :many
+SELECT team_id, user_id
+FROM team_members
+WHERE team_id = ANY($1::text[])
+`
+
+type GetUserIDsByTeamIDsRow struct {
+	TeamID string `json:"team_id"`
+	UserID string `json:"user_id"`
+}
+
+// Returns user_id and team_id for grouping by team
+func (q *Queries) GetUserIDsByTeamIDs(ctx context.Context, teamids []string) ([]*GetUserIDsByTeamIDsRow, error) {
+	rows, err := q.db.Query(ctx, GetUserIDsByTeamIDs, teamids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUserIDsByTeamIDsRow{}
+	for rows.Next() {
+		var i GetUserIDsByTeamIDsRow
+		if err := rows.Scan(&i.TeamID, &i.UserID); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetUserIDsInSuperTeams = `-- name: GetUserIDsInSuperTeams :many
 SELECT DISTINCT tm.user_id
 FROM team_members tm

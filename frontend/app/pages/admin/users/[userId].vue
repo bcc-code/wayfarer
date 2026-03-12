@@ -12,7 +12,15 @@ definePageMeta({
 })
 
 gql(`
-	query AdminUserPage($id: ID!) {
+	query AdminUserPageCurrentProject {
+		currentProject {
+			id
+		}
+	}
+`)
+
+gql(`
+	query AdminUserPage($id: ID!, $projectId: ID!) {
 		user(id: $id) {
 			id
       personUuid
@@ -26,6 +34,7 @@ gql(`
 			image
 			language
 			churchLockedUntil
+			points(projectId: $projectId)
 			church {
 				id
 				name
@@ -178,16 +187,28 @@ gql(`
 const route = useRoute('admin-users-userId')
 
 const { isAuthReady } = useAuthReady()
+
+// First query to get current project ID
+const { data: currentProjectData } = useAdminUserPageCurrentProjectQuery({
+  pause: computed(() => !isAuthReady.value),
+})
+
+const currentProjectId = computed(
+  () => currentProjectData.value?.currentProject.id,
+)
+
+// Main query that depends on having the project ID
 const {
   data,
   fetching,
   error,
   executeQuery: refetch,
 } = useAdminUserPageQuery({
-  variables: {
+  variables: computed(() => ({
     id: route.params.userId,
-  },
-  pause: computed(() => !isAuthReady.value),
+    projectId: currentProjectId.value ?? '',
+  })),
+  pause: computed(() => !isAuthReady.value || !currentProjectId.value),
 })
 
 const { executeMutation: assignRole } = useAssignRoleMutation()
@@ -443,10 +464,6 @@ const scoreEntries = computed(
 
 const scoreTotalCount = computed(
   () => data.value?.adminScoreJournal.totalCount ?? 0,
-)
-
-const scoreTotal = computed(() =>
-  scoreEntries.value.reduce((acc, entry) => acc + entry.points, 0),
 )
 
 function formatSourceType(type: string) {
@@ -898,14 +915,15 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
             <div class="flex items-center justify-between">
               <h2 class="text-xl font-semibold">
                 Poenglogg
-                <template v-if="scoreTotalCount > 0">
-                  <UBadge color="neutral" variant="soft">
-                    {{ scoreTotal }} poeng
-                  </UBadge>
-                  <span class="text-dimmed text-sm font-normal">
-                    ({{ scoreTotalCount }} oppføringer)
-                  </span>
-                </template>
+                <UBadge color="neutral" variant="soft">
+                  {{ data.user.points }} poeng
+                </UBadge>
+                <span
+                  v-if="scoreTotalCount > 0"
+                  class="text-dimmed text-sm font-normal"
+                >
+                  ({{ scoreTotalCount }} oppføringer)
+                </span>
               </h2>
               <UButton variant="ghost" size="sm" :to="{ name: 'admin-scores' }">
                 Vis alle

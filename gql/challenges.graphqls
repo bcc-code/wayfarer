@@ -27,6 +27,7 @@ interface Challenge {
     requiresSuperTeamMembership: Boolean!
     userCompletedAt: DateTime @goField(forceResolver: true)
     userEnrolledAt: DateTime @goField(forceResolver: true)
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
 # ==================== Challenge Implementations ====================
@@ -49,6 +50,7 @@ type SimpleChallenge implements Challenge {
     requiresSuperTeamMembership: Boolean!
     userCompletedAt: DateTime @goField(forceResolver: true)
     userEnrolledAt: DateTime @goField(forceResolver: true)
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     # SimpleChallenge-specific fields
     allowSelfCompletion: Boolean!
 }
@@ -71,6 +73,7 @@ type QuizChallenge implements Challenge {
     requiresSuperTeamMembership: Boolean!
     userCompletedAt: DateTime @goField(forceResolver: true)
     userEnrolledAt: DateTime @goField(forceResolver: true)
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     # QuizChallenge-specific fields - no url, linked to quiz
     quiz: Quiz! @goField(forceResolver: true)
 }
@@ -93,6 +96,7 @@ type ExternalChallenge implements Challenge {
     requiresSuperTeamMembership: Boolean!
     userCompletedAt: DateTime @goField(forceResolver: true)
     userEnrolledAt: DateTime @goField(forceResolver: true)
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     # ExternalChallenge-specific fields - url is required
     url: String!
 }
@@ -115,6 +119,7 @@ type PluginChallenge implements Challenge {
     requiresSuperTeamMembership: Boolean!
     userCompletedAt: DateTime @goField(forceResolver: true)
     userEnrolledAt: DateTime @goField(forceResolver: true)
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     # PluginChallenge-specific fields - pluginChallengeId is required, plugin_data is internal-only
     pluginChallengeId: String!
 }
@@ -237,4 +242,10 @@ extend type Mutation {
     completeChallenge(userId: ID!, challengeId: ID!, completedAt: DateTime): Challenge! @requireRole(roles: ["m2m", "admin", "superadmin"])
     uncompleteChallenge(userId: ID!, challengeId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
     bulkCompleteChallenges(target: EnrollmentTargetInput!, challengeId: ID!, completedAt: DateTime): [Challenge!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
+
+    # Async bulk operations - returns BulkJob for tracking progress
+    bulkEnrollUsersInChallengeAsync(target: EnrollmentTargetInput!, challengeId: ID!): BulkJob! @requireRole(roles: ["admin", "superadmin", "m2m", "church_admin"])
+    bulkUnenrollUsersFromChallengeAsync(target: EnrollmentTargetInput!, challengeId: ID!): BulkJob! @requireRole(roles: ["admin", "superadmin", "m2m"])
+    bulkCompleteChallengesAsync(target: EnrollmentTargetInput!, challengeId: ID!, completedAt: DateTime): BulkJob! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    bulkPublishChallengesAsync(ids: [ID!]!, publishedAt: DateTime!): BulkJob! @requireRole(roles: ["admin", "superadmin"])
 }

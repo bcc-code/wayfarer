@@ -28,6 +28,7 @@ type Config struct {
 	Plugin   PluginConfig
 	Firebase FirebaseConfig
 	Resend   ResendConfig
+	PubSub   PubSubConfig
 }
 
 // ServerConfig holds HTTP server configuration
@@ -140,6 +141,7 @@ type PluginConfig struct {
 	LadderToHeavenTeamRenameChallengeID string // Challenge ID to complete when team renames (empty = disabled)
 	LadderToHeavenCryptexSecretKey      string // Secret key for Cryptex JWT token signing (empty = endpoint disabled)
 	LadderToHeavenCryptexBaseURL        string // Base URL for Cryptex admin login (e.g., https://cryptex.example.com)
+	LadderToHeavenExcaliburBaseURL      string // Base URL for Excalibur user login (e.g., https://dev.excalibur.bcc.media)
 }
 
 // FirebaseConfig holds Firebase Admin SDK configuration
@@ -153,6 +155,13 @@ type ResendConfig struct {
 	APIKey         string // Resend API key for sending emails
 	AdminBaseURL   string // Base URL for admin panel links (e.g., "https://admin.example.com")
 	SSFTicketEmail string // Email address for SSF ticket forwarding
+}
+
+// PubSubConfig holds GCP Pub/Sub configuration for async bulk operations
+type PubSubConfig struct {
+	Enabled   bool   // Enable/disable Pub/Sub integration
+	ProjectID string // GCP project ID
+	TopicID   string // Pub/Sub topic ID for bulk operations
 }
 
 // Load reads all environment variables and returns a Config struct
@@ -247,6 +256,7 @@ func Load() (*Config, error) {
 			LadderToHeavenTeamRenameChallengeID: getEnv("PLUGIN_LADDER_TO_HEAVEN_TEAM_RENAME_CHALLENGE_ID", ""),
 			LadderToHeavenCryptexSecretKey:      getEnv("PLUGIN_LADDER_TO_HEAVEN_CRYPTEX_SECRET_KEY", ""),
 			LadderToHeavenCryptexBaseURL:        getEnv("PLUGIN_LADDER_TO_HEAVEN_CRYPTEX_BASE_URL", ""),
+			LadderToHeavenExcaliburBaseURL:      getEnv("PLUGIN_LADDER_TO_HEAVEN_EXCALIBUR_BASE_URL", ""),
 		},
 		Firebase: FirebaseConfig{
 			ServiceAccountJSON: getEnv("FIREBASE_SERVICE_ACCOUNT", ""),
@@ -256,6 +266,11 @@ func Load() (*Config, error) {
 			APIKey:         getEnv("RESEND_API_KEY", ""),
 			AdminBaseURL:   getEnv("ADMIN_BASE_URL", ""),
 			SSFTicketEmail: getEnv("SSF_TICKET_EMAIL", ""),
+		},
+		PubSub: PubSubConfig{
+			Enabled:   getEnvAsBool("PUBSUB_ENABLED", false),
+			ProjectID: getEnv("PUBSUB_PROJECT_ID", ""),
+			TopicID:   getEnv("PUBSUB_TOPIC_ID", "wayfarer-bulk-operations"),
 		},
 	}
 

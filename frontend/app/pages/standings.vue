@@ -2,7 +2,10 @@
 const { track } = useAnalytics()
 
 const params = useUrlSearchParams('history')
-const savedTab = useLocalStorage<'global' | 'unit' | 'local'>('standings-tab', 'global')
+const savedTab = useLocalStorage<'global' | 'unit' | 'local'>(
+  'standings-tab',
+  'global',
+)
 const tab = computed({
   get() {
     if (typeof params.tab === 'string') return params.tab

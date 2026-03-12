@@ -1,0 +1,17 @@
+query AdminQuizSessions($quizId: ID!, $state: QuizSessionState) {
+  quizSessions(quizId: $quizId, state: $state) {
+    id
+    name
+    state
+    openAt
+    lockAt
+    finishAt
+    createdAt
+    accessCount
+    submissionCount
+    createdBy {
+      id
+      name
+    }
+  }
+}

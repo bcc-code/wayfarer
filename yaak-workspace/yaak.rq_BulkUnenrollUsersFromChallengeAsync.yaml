@@ -1,0 +1,48 @@
+type: http_request
+model: http_request
+id: rq_BulkUnenrollUsersFromChallengeAsync
+createdAt: 2026-03-10T12:00:00
+updatedAt: 2026-03-10T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_ChallengeEnroll
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation BulkUnenrollUsersFromChallengeAsync($target: EnrollmentTargetInput!, $challengeId: ID!) {
+      bulkUnenrollUsersFromChallengeAsync(target: $target, challengeId: $challengeId) {
+        id
+        operationType
+        status
+        totalCount
+        processedCount
+        successCount
+        failureCount
+        errorMessage
+        createdAt
+        startedAt
+        completedAt
+      }
+    }
+  variables: |
+    {
+      "target": {
+        "userIds": [
+          "US01ARZ3NDEKTSV4RRFFQ69G5FAV",
+          "US02BRZ3NDEKTSV4RRFFQ69G5FAV"
+        ]
+      },
+      "challengeId": "CL01ARZ3NDEKTSV4RRFFQ69G5FAV"
+    }
+bodyType: graphql
+description: Async bulk unenrollment of users from a challenge
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_BulkUnenrollUsersFromChallengeAsync
+method: POST
+name: Bulk Unenroll Users From Challenge Async
+sortPriority: 6200.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

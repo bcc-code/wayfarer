@@ -15,6 +15,9 @@ gql(`
 			description
       startDate
       endDate
+      translationStatus {
+        ...TranslationStatus
+      }
       parentProject {
         id
         name
@@ -170,17 +173,17 @@ async function deleteEvent() {
           class="flex max-w-md flex-col gap-6"
           @submit.prevent="updateEvent"
         >
-          <UFormField name="name" label="Navn">
+          <AdminTranslatableFormField label="Navn" :translation-status="data?.event.translationStatus" name="name">
             <UInput v-model="state.name" size="xl" required class="w-full" />
-          </UFormField>
-          <UFormField name="description" label="Beskrivelse">
+          </AdminTranslatableFormField>
+          <AdminTranslatableFormField label="Beskrivelse" :translation-status="data?.event.translationStatus" name="description">
             <UTextarea
               v-model="state.description"
               class="w-full"
               autoresize
               required
             />
-          </UFormField>
+          </AdminTranslatableFormField>
           <DateRangeField
             v-model:start="state.startDate"
             v-model:end="state.endDate"

@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import type { FormSubmitEvent } from '@nuxt/ui'
-import type { ExternalContentType } from '~/api/generated'
+import type {
+  ExternalContentType,
+  TranslationStatusFragment,
+} from '~/api/generated'
 import z from 'zod'
 
 type AchievementType = 'SIMPLE' | 'CONTENT' | 'STREAK' | 'QUIZ'
@@ -63,6 +66,7 @@ const props = defineProps<{
   projectId: string
   initialData?: InitialData
   achievementType?: AchievementType
+  translationStatus?: TranslationStatusFragment[]
   isEditMode?: boolean
   colors?: Colors
   submitLabel: string
@@ -238,31 +242,32 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
       </div>
 
       <!-- Common Fields -->
-      <UFormField name="name" label="Navn">
+      <AdminTranslatableFormField label="Navn" :translation-status="translationStatus" name="name">
         <UInput v-model="state.name" size="xl" required class="w-full" />
-      </UFormField>
+      </AdminTranslatableFormField>
 
-      <UFormField name="descriptionPending" label="Beskrivelse (ikke oppnådd)">
+      <AdminTranslatableFormField label="Beskrivelse (ikke oppnådd)" :translation-status="translationStatus" name="descriptionPending">
         <UTextarea
           v-model="state.descriptionPending"
           class="w-full"
           autoresize
           required
         />
-      </UFormField>
+      </AdminTranslatableFormField>
 
-      <UFormField name="descriptionCompleted" label="Beskrivelse (oppnådd)">
+      <AdminTranslatableFormField label="Beskrivelse (oppnådd)" :translation-status="translationStatus" name="descriptionCompleted">
         <UTextarea
           v-model="state.descriptionCompleted"
           class="w-full"
           autoresize
           required
         />
-      </UFormField>
+      </AdminTranslatableFormField>
 
-      <UFormField
-        name="notificationText"
+      <AdminTranslatableFormField
         label="Varslingstekst"
+        :translation-status="translationStatus"
+        name="notificationText"
         help="Tekst som vises i push-varsler når brukere oppnår denne utmerkelsen"
       >
         <UInput
@@ -271,7 +276,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
           required
           class="w-full"
         />
-      </UFormField>
+      </AdminTranslatableFormField>
 
       <UFormField
         name="imagePending"

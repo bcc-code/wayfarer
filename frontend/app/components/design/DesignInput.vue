@@ -22,7 +22,7 @@ const modelValue = defineModel<string>()
         :id="id"
         v-model="modelValue"
         class="text-label w-full px-3 py-4 focus-visible:outline-none rounded-list size-full"
-      />
+      >
     </DesignPanel>
   </div>
 </template>
