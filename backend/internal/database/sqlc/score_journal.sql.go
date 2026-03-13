@@ -87,6 +87,84 @@ func (q *Queries) CountScoreJournalFiltered(ctx context.Context, arg CountScoreJ
 	return count, err
 }
 
+const CreateBulkScoreAdjustmentBatch = `-- name: CreateBulkScoreAdjustmentBatch :many
+INSERT INTO score_journal (
+    id,
+    project_id,
+    user_id,
+    event_id,
+    points,
+    source_type,
+    reason,
+    awarded_by,
+    created_at
+)
+SELECT
+    unnest($1::text[]),
+    $2::text,
+    unnest($3::text[]),
+    $4::text,
+    unnest($5::int[]),
+    'MANUAL',
+    unnest($6::text[]),
+    $7::text,
+    now()
+RETURNING id, project_id, user_id, event_id, challenge_id, points, source_type, source_id, reason, awarded_by, created_at
+`
+
+type CreateBulkScoreAdjustmentBatchParams struct {
+	Ids       []string `json:"ids"`
+	ProjectID string   `json:"project_id"`
+	UserIds   []string `json:"user_ids"`
+	EventID   *string  `json:"event_id"`
+	Points    []int32  `json:"points"`
+	Reasons   []string `json:"reasons"`
+	AwardedBy *string  `json:"awarded_by"`
+}
+
+// Creates score journal entries for multiple users in one batch
+// Each adjustment can have different points and reason
+// All arrays must have the same length
+func (q *Queries) CreateBulkScoreAdjustmentBatch(ctx context.Context, arg CreateBulkScoreAdjustmentBatchParams) ([]*ScoreJournal, error) {
+	rows, err := q.db.Query(ctx, CreateBulkScoreAdjustmentBatch,
+		arg.Ids,
+		arg.ProjectID,
+		arg.UserIds,
+		arg.EventID,
+		arg.Points,
+		arg.Reasons,
+		arg.AwardedBy,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*ScoreJournal{}
+	for rows.Next() {
+		var i ScoreJournal
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.UserID,
+			&i.EventID,
+			&i.ChallengeID,
+			&i.Points,
+			&i.SourceType,
+			&i.SourceID,
+			&i.Reason,
+			&i.AwardedBy,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const CreateScoreJournalEntry = `-- name: CreateScoreJournalEntry :one
 INSERT INTO score_journal (
     id,

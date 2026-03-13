@@ -138,3 +138,30 @@ SELECT
     sqlc.narg('awarded_by')::text,
     now()
 RETURNING *;
+
+-- name: CreateBulkScoreAdjustmentBatch :many
+-- Creates score journal entries for multiple users in one batch
+-- Each adjustment can have different points and reason
+-- All arrays must have the same length
+INSERT INTO score_journal (
+    id,
+    project_id,
+    user_id,
+    event_id,
+    points,
+    source_type,
+    reason,
+    awarded_by,
+    created_at
+)
+SELECT
+    unnest(@ids::text[]),
+    @project_id::text,
+    unnest(@user_ids::text[]),
+    sqlc.narg('event_id')::text,
+    unnest(@points::int[]),
+    'MANUAL',
+    unnest(@reasons::text[]),
+    sqlc.narg('awarded_by')::text,
+    now()
+RETURNING *;

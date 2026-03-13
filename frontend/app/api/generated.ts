@@ -100,6 +100,21 @@ export type AssignRoleInput = {
   userId: Scalars['ID']['input'];
 };
 
+export type AsyncBulkScoreAdjustmentByTargetInput = {
+  distributionMode: TeamScoreDistributionMode;
+  eventId?: InputMaybe<Scalars['ID']['input']>;
+  points: Scalars['Int']['input'];
+  projectId: Scalars['ID']['input'];
+  reason?: InputMaybe<Scalars['String']['input']>;
+  target: EnrollmentTargetInput;
+};
+
+export type AsyncBulkScoreAdjustmentInput = {
+  adjustments: Array<BulkScoreAdjustmentItemInput>;
+  eventId?: InputMaybe<Scalars['ID']['input']>;
+  projectId: Scalars['ID']['input'];
+};
+
 export type Branding = {
   __typename?: 'Branding';
   /** @deprecated Use bannerImage instead */
@@ -160,6 +175,12 @@ export enum BulkJobStatus {
   Pending = 'PENDING',
   Processing = 'PROCESSING'
 }
+
+export type BulkScoreAdjustmentItemInput = {
+  points: Scalars['Int']['input'];
+  reason?: InputMaybe<Scalars['String']['input']>;
+  userId: Scalars['ID']['input'];
+};
 
 export type Challenge = {
   buttonText?: Maybe<Scalars['String']['output']>;
@@ -994,6 +1015,8 @@ export type Mutation = {
   assignTeamsToSuperTeam: SuperTeam;
   assignUserToEvent: User;
   assignUserToProject: User;
+  asyncBulkScoreAdjustment: BulkJob;
+  asyncBulkScoreAdjustmentByTarget: BulkJob;
   awardAchievement: Achievement;
   awardSuperTeamAchievement: Achievement;
   bulkAwardAchievements: Array<Achievement>;
@@ -1178,6 +1201,16 @@ export type MutationAssignUserToEventArgs = {
 export type MutationAssignUserToProjectArgs = {
   projectId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
+};
+
+
+export type MutationAsyncBulkScoreAdjustmentArgs = {
+  input: AsyncBulkScoreAdjustmentInput;
+};
+
+
+export type MutationAsyncBulkScoreAdjustmentByTargetArgs = {
+  input: AsyncBulkScoreAdjustmentByTargetInput;
 };
 
 

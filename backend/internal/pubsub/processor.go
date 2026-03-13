@@ -24,6 +24,7 @@ type BulkOperationProcessor interface {
 	ProcessBulkPublishChallenge(ctx context.Context, jobID string, params BulkPublishChallengeParams) error
 	ProcessBulkAwardAchievement(ctx context.Context, jobID string, params BulkAwardAchievementParams) error
 	ProcessBulkGrantQuizSessionAccess(ctx context.Context, jobID string, params BulkGrantQuizSessionAccessParams) error
+	ProcessBulkScoreAdjustment(ctx context.Context, jobID string, params BulkScoreAdjustmentParams) error
 }
 
 // Processor handles processing of bulk operation messages
@@ -99,6 +100,14 @@ func (p *Processor) Process(ctx context.Context, msg BulkOperationMessage) error
 			processErr = fmt.Errorf("failed to unmarshal params: %w", err)
 		} else {
 			processErr = p.operationProcessors.ProcessBulkGrantQuizSessionAccess(ctx, msg.JobID, params)
+		}
+
+	case OperationBulkScoreAdjustment:
+		var params BulkScoreAdjustmentParams
+		if err := json.Unmarshal(msg.Params, &params); err != nil {
+			processErr = fmt.Errorf("failed to unmarshal params: %w", err)
+		} else {
+			processErr = p.operationProcessors.ProcessBulkScoreAdjustment(ctx, msg.JobID, params)
 		}
 
 	default:

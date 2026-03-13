@@ -144,3 +144,20 @@ func (p *Processor) ProcessBulkGrantQuizSessionAccess(ctx context.Context, jobID
 	})
 	return err
 }
+
+// ProcessBulkScoreAdjustment processes bulk score adjustment
+func (p *Processor) ProcessBulkScoreAdjustment(ctx context.Context, jobID string, params pubsub.BulkScoreAdjustmentParams) error {
+	successCount, failureCount, err := p.service.CreateBulkScoreAdjustments(ctx, params)
+	if err != nil {
+		return err
+	}
+
+	// Mark job completed
+	_, err = p.service.DB.Queries.MarkBulkJobCompleted(ctx, sqlc.MarkBulkJobCompletedParams{
+		ID:             jobID,
+		Processedcount: int32(successCount + failureCount),
+		Successcount:   int32(successCount),
+		Failurecount:   int32(failureCount),
+	})
+	return err
+}

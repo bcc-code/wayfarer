@@ -136,6 +136,21 @@ type AssignRoleInput struct {
 	ScopeID   *string    `json:"scopeId,omitempty"`
 }
 
+type AsyncBulkScoreAdjustmentByTargetInput struct {
+	ProjectID        string                    `json:"projectId"`
+	EventID          *string                   `json:"eventId,omitempty"`
+	Target           *EnrollmentTargetInput    `json:"target"`
+	Points           int                       `json:"points"`
+	DistributionMode TeamScoreDistributionMode `json:"distributionMode"`
+	Reason           *string                   `json:"reason,omitempty"`
+}
+
+type AsyncBulkScoreAdjustmentInput struct {
+	ProjectID   string                         `json:"projectId"`
+	EventID     *string                        `json:"eventId,omitempty"`
+	Adjustments []BulkScoreAdjustmentItemInput `json:"adjustments"`
+}
+
 type Branding struct {
 	Logo        *string `json:"logo,omitempty"`
 	LogoImage   *Image  `json:"logoImage,omitempty"`
@@ -182,6 +197,12 @@ type BulkJobFilter struct {
 	OperationType *string        `json:"operationType,omitempty"`
 	ProjectID     *string        `json:"projectId,omitempty"`
 	CreatedBy     *string        `json:"createdBy,omitempty"`
+}
+
+type BulkScoreAdjustmentItemInput struct {
+	UserID string  `json:"userId"`
+	Points int     `json:"points"`
+	Reason *string `json:"reason,omitempty"`
 }
 
 type ChallengeConnection struct {

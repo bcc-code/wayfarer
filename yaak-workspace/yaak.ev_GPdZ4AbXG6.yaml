@@ -3,7 +3,7 @@ model: environment
 id: ev_GPdZ4AbXG6
 workspaceId: wk_XKsmbMdFg7
 createdAt: 2025-11-25T12:37:04.349121
-updatedAt: 2026-01-23T12:17:22.036395
+updatedAt: 2026-03-13T10:18:11.810690
 name: Local
 public: true
 base: false
@@ -26,5 +26,9 @@ variables:
   name: HT_TOKEN
   value: REPLACE
   id: Syd8Dp8ybI
+- enabled: true
+  name: TOKEN
+  value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVVMwMUtFSE5LMUFRNjlZSldIWVdKMVNZUjVCMSIsInVzZXJfcm9sZXMiOlsic3VwZXJhZG1pbiJdLCJpc3MiOiJ3YXlmYXJlciIsImV4cCI6MTc3MzQ4Mjk0NCwiaWF0IjoxNzczMzk2NTQ0fQ.4eK8cP882ouucQAtcbSVMJh_ltfWKA-9PVGrz5vlm9I
+  id: iXA9VcysEK
 color: var(--success)
 sortPriority: 0.0

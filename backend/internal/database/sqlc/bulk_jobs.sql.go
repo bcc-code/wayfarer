@@ -94,7 +94,7 @@ type CreateBulkJobParams struct {
 	ID            string  `json:"id"`
 	Operationtype string  `json:"operationtype"`
 	Status        string  `json:"status"`
-	Createdby     string  `json:"createdby"`
+	Createdby     *string `json:"createdby"`
 	Projectid     *string `json:"projectid"`
 	Inputparams   []byte  `json:"inputparams"`
 	Totalcount    int32   `json:"totalcount"`

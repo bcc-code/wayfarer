@@ -500,6 +500,8 @@ type ComplexityRoot struct {
 		AssignTeamsToSuperTeam                      func(childComplexity int, superTeamID string, teamIds []string) int
 		AssignUserToEvent                           func(childComplexity int, userID string, eventID string) int
 		AssignUserToProject                         func(childComplexity int, userID string, projectID string) int
+		AsyncBulkScoreAdjustment                    func(childComplexity int, input model.AsyncBulkScoreAdjustmentInput) int
+		AsyncBulkScoreAdjustmentByTarget            func(childComplexity int, input model.AsyncBulkScoreAdjustmentByTargetInput) int
 		AwardAchievement                            func(childComplexity int, userID string, achievementID string) int
 		AwardSuperTeamAchievement                   func(childComplexity int, superTeamID string, achievementID string) int
 		BulkAwardAchievements                       func(childComplexity int, userIds []string, teamID *string, achievementID string) int
@@ -1474,6 +1476,8 @@ type MutationResolver interface {
 	CreateScoreAdjustment(ctx context.Context, input model.CreateScoreAdjustmentInput) (*model.ScoreJournal, error)
 	CreateTeamScoreAdjustment(ctx context.Context, input model.CreateTeamScoreAdjustmentInput) ([]model.ScoreJournal, error)
 	DeleteScoreJournalEntry(ctx context.Context, id string) (bool, error)
+	AsyncBulkScoreAdjustment(ctx context.Context, input model.AsyncBulkScoreAdjustmentInput) (*model.BulkJob, error)
+	AsyncBulkScoreAdjustmentByTarget(ctx context.Context, input model.AsyncBulkScoreAdjustmentByTargetInput) (*model.BulkJob, error)
 	AcceptConsent(ctx context.Context, consentID string) (*model.UserConsent, error)
 	RejectConsent(ctx context.Context, consentID string) (*model.UserConsent, error)
 	CreateConsent(ctx context.Context, key string, title string, shortText *string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string) (*model.Consent, error)
@@ -3577,6 +3581,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.AssignUserToProject(childComplexity, args["userId"].(string), args["projectId"].(string)), true
+	case "Mutation.asyncBulkScoreAdjustment":
+		if e.complexity.Mutation.AsyncBulkScoreAdjustment == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_asyncBulkScoreAdjustment_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AsyncBulkScoreAdjustment(childComplexity, args["input"].(model.AsyncBulkScoreAdjustmentInput)), true
+	case "Mutation.asyncBulkScoreAdjustmentByTarget":
+		if e.complexity.Mutation.AsyncBulkScoreAdjustmentByTarget == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_asyncBulkScoreAdjustmentByTarget_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AsyncBulkScoreAdjustmentByTarget(childComplexity, args["input"].(model.AsyncBulkScoreAdjustmentByTargetInput)), true
 	case "Mutation.awardAchievement":
 		if e.complexity.Mutation.AwardAchievement == nil {
 			break
@@ -8293,8 +8319,11 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputAchievementFilter,
 		ec.unmarshalInputAgeRangeInput,
 		ec.unmarshalInputAssignRoleInput,
+		ec.unmarshalInputAsyncBulkScoreAdjustmentByTargetInput,
+		ec.unmarshalInputAsyncBulkScoreAdjustmentInput,
 		ec.unmarshalInputBrandingInput,
 		ec.unmarshalInputBulkJobFilter,
+		ec.unmarshalInputBulkScoreAdjustmentItemInput,
 		ec.unmarshalInputChallengeFilter,
 		ec.unmarshalInputChurchFilter,
 		ec.unmarshalInputChurchInProjectInput,
@@ -9963,6 +9992,30 @@ input CreateTeamScoreAdjustmentInput {
     reason: String
 }
 
+# Individual score adjustment item for bulk operations
+input BulkScoreAdjustmentItemInput {
+    userId: ID!
+    points: Int!
+    reason: String
+}
+
+# Async bulk score adjustment - supports different points/reason per user
+input AsyncBulkScoreAdjustmentInput {
+    projectId: ID!
+    eventId: ID
+    adjustments: [BulkScoreAdjustmentItemInput!]!
+}
+
+# Async bulk score adjustment by target - all targets get same points
+input AsyncBulkScoreAdjustmentByTargetInput {
+    projectId: ID!
+    eventId: ID
+    target: EnrollmentTargetInput!
+    points: Int!
+    distributionMode: TeamScoreDistributionMode!
+    reason: String
+}
+
 # ==================== Score Pagination ====================
 
 type ScoreJournalEdge {
@@ -9989,6 +10042,8 @@ extend type Mutation {
     createScoreAdjustment(input: CreateScoreAdjustmentInput!): ScoreJournal! @requireRole(roles: ["m2m", "admin", "superadmin"])
     createTeamScoreAdjustment(input: CreateTeamScoreAdjustmentInput!): [ScoreJournal!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
     deleteScoreJournalEntry(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    asyncBulkScoreAdjustment(input: AsyncBulkScoreAdjustmentInput!): BulkJob! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    asyncBulkScoreAdjustmentByTarget(input: AsyncBulkScoreAdjustmentByTargetInput!): BulkJob! @requireRole(roles: ["m2m", "admin", "superadmin"])
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/consents.graphqls", Input: `# ==================== Consent Types ====================
@@ -11356,6 +11411,28 @@ func (ec *executionContext) field_Mutation_assignUserToProject_args(ctx context.
 		return nil, err
 	}
 	args["projectId"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_asyncBulkScoreAdjustmentByTarget_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAsyncBulkScoreAdjustmentByTargetInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAsyncBulkScoreAdjustmentByTargetInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_asyncBulkScoreAdjustment_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAsyncBulkScoreAdjustmentInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAsyncBulkScoreAdjustmentInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -28707,6 +28784,172 @@ func (ec *executionContext) fieldContext_Mutation_deleteScoreJournalEntry(ctx co
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deleteScoreJournalEntry_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_asyncBulkScoreAdjustment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_asyncBulkScoreAdjustment,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().AsyncBulkScoreAdjustment(ctx, fc.Args["input"].(model.AsyncBulkScoreAdjustmentInput))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
+				if err != nil {
+					var zeroVal *model.BulkJob
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.BulkJob
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNBulkJob2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐBulkJob,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_asyncBulkScoreAdjustment(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_BulkJob_id(ctx, field)
+			case "operationType":
+				return ec.fieldContext_BulkJob_operationType(ctx, field)
+			case "status":
+				return ec.fieldContext_BulkJob_status(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_BulkJob_totalCount(ctx, field)
+			case "processedCount":
+				return ec.fieldContext_BulkJob_processedCount(ctx, field)
+			case "successCount":
+				return ec.fieldContext_BulkJob_successCount(ctx, field)
+			case "failureCount":
+				return ec.fieldContext_BulkJob_failureCount(ctx, field)
+			case "errorMessage":
+				return ec.fieldContext_BulkJob_errorMessage(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_BulkJob_createdAt(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_BulkJob_startedAt(ctx, field)
+			case "completedAt":
+				return ec.fieldContext_BulkJob_completedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type BulkJob", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_asyncBulkScoreAdjustment_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_asyncBulkScoreAdjustmentByTarget(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_asyncBulkScoreAdjustmentByTarget,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().AsyncBulkScoreAdjustmentByTarget(ctx, fc.Args["input"].(model.AsyncBulkScoreAdjustmentByTargetInput))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
+				if err != nil {
+					var zeroVal *model.BulkJob
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.BulkJob
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNBulkJob2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐBulkJob,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_asyncBulkScoreAdjustmentByTarget(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_BulkJob_id(ctx, field)
+			case "operationType":
+				return ec.fieldContext_BulkJob_operationType(ctx, field)
+			case "status":
+				return ec.fieldContext_BulkJob_status(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_BulkJob_totalCount(ctx, field)
+			case "processedCount":
+				return ec.fieldContext_BulkJob_processedCount(ctx, field)
+			case "successCount":
+				return ec.fieldContext_BulkJob_successCount(ctx, field)
+			case "failureCount":
+				return ec.fieldContext_BulkJob_failureCount(ctx, field)
+			case "errorMessage":
+				return ec.fieldContext_BulkJob_errorMessage(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_BulkJob_createdAt(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_BulkJob_startedAt(ctx, field)
+			case "completedAt":
+				return ec.fieldContext_BulkJob_completedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type BulkJob", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_asyncBulkScoreAdjustmentByTarget_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -53551,6 +53794,109 @@ func (ec *executionContext) unmarshalInputAssignRoleInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputAsyncBulkScoreAdjustmentByTargetInput(ctx context.Context, obj any) (model.AsyncBulkScoreAdjustmentByTargetInput, error) {
+	var it model.AsyncBulkScoreAdjustmentByTargetInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"projectId", "eventId", "target", "points", "distributionMode", "reason"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "projectId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectID = data
+		case "eventId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("eventId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EventID = data
+		case "target":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("target"))
+			data, err := ec.unmarshalNEnrollmentTargetInput2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEnrollmentTargetInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Target = data
+		case "points":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("points"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Points = data
+		case "distributionMode":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("distributionMode"))
+			data, err := ec.unmarshalNTeamScoreDistributionMode2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeamScoreDistributionMode(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DistributionMode = data
+		case "reason":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reason"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Reason = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputAsyncBulkScoreAdjustmentInput(ctx context.Context, obj any) (model.AsyncBulkScoreAdjustmentInput, error) {
+	var it model.AsyncBulkScoreAdjustmentInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"projectId", "eventId", "adjustments"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "projectId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectID = data
+		case "eventId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("eventId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EventID = data
+		case "adjustments":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("adjustments"))
+			data, err := ec.unmarshalNBulkScoreAdjustmentItemInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐBulkScoreAdjustmentItemInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Adjustments = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputBrandingInput(ctx context.Context, obj any) (model.BrandingInput, error) {
 	var it model.BrandingInput
 	asMap := map[string]any{}
@@ -53641,6 +53987,47 @@ func (ec *executionContext) unmarshalInputBulkJobFilter(ctx context.Context, obj
 				return it, err
 			}
 			it.CreatedBy = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputBulkScoreAdjustmentItemInput(ctx context.Context, obj any) (model.BulkScoreAdjustmentItemInput, error) {
+	var it model.BulkScoreAdjustmentItemInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"userId", "points", "reason"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "userId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UserID = data
+		case "points":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("points"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Points = data
+		case "reason":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reason"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Reason = data
 		}
 	}
 
@@ -62827,6 +63214,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "deleteScoreJournalEntry":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteScoreJournalEntry(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "asyncBulkScoreAdjustment":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_asyncBulkScoreAdjustment(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "asyncBulkScoreAdjustmentByTarget":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_asyncBulkScoreAdjustmentByTarget(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -73368,6 +73769,16 @@ func (ec *executionContext) unmarshalNAssignRoleInput2githubᚗcomᚋbccᚑmedia
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNAsyncBulkScoreAdjustmentByTargetInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAsyncBulkScoreAdjustmentByTargetInput(ctx context.Context, v any) (model.AsyncBulkScoreAdjustmentByTargetInput, error) {
+	res, err := ec.unmarshalInputAsyncBulkScoreAdjustmentByTargetInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNAsyncBulkScoreAdjustmentInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAsyncBulkScoreAdjustmentInput(ctx context.Context, v any) (model.AsyncBulkScoreAdjustmentInput, error) {
+	res, err := ec.unmarshalInputAsyncBulkScoreAdjustmentInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v any) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -73527,6 +73938,26 @@ func (ec *executionContext) unmarshalNBulkJobStatus2githubᚗcomᚋbccᚑmedia�
 
 func (ec *executionContext) marshalNBulkJobStatus2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐBulkJobStatus(ctx context.Context, sel ast.SelectionSet, v model.BulkJobStatus) graphql.Marshaler {
 	return v
+}
+
+func (ec *executionContext) unmarshalNBulkScoreAdjustmentItemInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐBulkScoreAdjustmentItemInput(ctx context.Context, v any) (model.BulkScoreAdjustmentItemInput, error) {
+	res, err := ec.unmarshalInputBulkScoreAdjustmentItemInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNBulkScoreAdjustmentItemInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐBulkScoreAdjustmentItemInputᚄ(ctx context.Context, v any) ([]model.BulkScoreAdjustmentItemInput, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]model.BulkScoreAdjustmentItemInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNBulkScoreAdjustmentItemInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐBulkScoreAdjustmentItemInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
 }
 
 func (ec *executionContext) marshalNChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge(ctx context.Context, sel ast.SelectionSet, v model.Challenge) graphql.Marshaler {
@@ -74190,6 +74621,11 @@ func (ec *executionContext) unmarshalNDeviceMetadata2ᚖgithubᚗcomᚋbccᚑmed
 func (ec *executionContext) unmarshalNEnrollmentTargetInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEnrollmentTargetInput(ctx context.Context, v any) (model.EnrollmentTargetInput, error) {
 	res, err := ec.unmarshalInputEnrollmentTargetInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNEnrollmentTargetInput2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEnrollmentTargetInput(ctx context.Context, v any) (*model.EnrollmentTargetInput, error) {
+	res, err := ec.unmarshalInputEnrollmentTargetInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNEvent2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEvent(ctx context.Context, sel ast.SelectionSet, v model.Event) graphql.Marshaler {

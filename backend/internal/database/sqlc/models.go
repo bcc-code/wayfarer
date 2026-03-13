@@ -44,7 +44,7 @@ type BulkJob struct {
 	ID             string             `json:"id"`
 	OperationType  string             `json:"operation_type"`
 	Status         string             `json:"status"`
-	CreatedBy      string             `json:"created_by"`
+	CreatedBy      *string            `json:"created_by"`
 	ProjectID      *string            `json:"project_id"`
 	InputParams    []byte             `json:"input_params"`
 	TotalCount     int32              `json:"total_count"`

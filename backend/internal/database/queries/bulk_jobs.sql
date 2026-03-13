@@ -14,7 +14,7 @@ INSERT INTO bulk_jobs (
     @id::text,
     @operationtype::text,
     @status::text,
-    @createdby::text,
+    sqlc.narg('createdby')::text,
     sqlc.narg('projectid')::text,
     @inputparams::jsonb,
     @totalcount::int,

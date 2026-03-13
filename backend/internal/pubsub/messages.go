@@ -17,6 +17,9 @@ const (
 
 	// Quiz session operations
 	OperationBulkGrantQuizSessionAccess OperationType = "BULK_GRANT_QUIZ_SESSION_ACCESS"
+
+	// Score adjustment operations
+	OperationBulkScoreAdjustment OperationType = "BULK_SCORE_ADJUSTMENT"
 )
 
 // BulkOperationMessage is the message published to Pub/Sub for async processing
@@ -100,6 +103,25 @@ type BulkGrantQuizSessionAccessParams struct {
 
 func (p BulkGrantQuizSessionAccessParams) OperationType() OperationType {
 	return OperationBulkGrantQuizSessionAccess
+}
+
+// BulkScoreAdjustmentItem represents a single score adjustment for a user
+type BulkScoreAdjustmentItem struct {
+	UserID string `json:"user_id"`
+	Points int32  `json:"points"`
+	Reason string `json:"reason,omitempty"`
+}
+
+// BulkScoreAdjustmentParams contains parameters for bulk score adjustment
+type BulkScoreAdjustmentParams struct {
+	ProjectID   string                    `json:"project_id"`
+	EventID     string                    `json:"event_id,omitempty"`
+	Adjustments []BulkScoreAdjustmentItem `json:"adjustments"`
+	AwardedBy   string                    `json:"awarded_by,omitempty"`
+}
+
+func (p BulkScoreAdjustmentParams) OperationType() OperationType {
+	return OperationBulkScoreAdjustment
 }
 
 // JobStatus represents the status of a bulk job

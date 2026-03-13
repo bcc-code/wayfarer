@@ -14,6 +14,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/pubsub"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 )
 
@@ -192,6 +193,176 @@ func (r *mutationResolver) DeleteScoreJournalEntry(ctx context.Context, id strin
 		return false, fmt.Errorf("failed to delete score journal entry: %w", err)
 	}
 	return true, nil
+}
+
+// AsyncBulkScoreAdjustment is the resolver for the asyncBulkScoreAdjustment field.
+func (r *mutationResolver) AsyncBulkScoreAdjustment(ctx context.Context, input model.AsyncBulkScoreAdjustmentInput) (*model.BulkJob, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	if r.BulkService == nil {
+		return nil, fmt.Errorf("bulk service not initialized")
+	}
+
+	if len(input.Adjustments) == 0 {
+		return nil, fmt.Errorf("adjustments cannot be empty")
+	}
+
+	// Limit to prevent memory issues
+	if len(input.Adjustments) > 10000 {
+		return nil, fmt.Errorf("too many adjustments: max 10000 per request")
+	}
+
+	// Determine createdBy and awardedBy (empty for M2M, which becomes NULL)
+	roles := middleware.GetUserRoles(ctx)
+	isM2M := slices.Contains(roles, "m2m")
+
+	var createdBy, awardedBy string
+	if !isM2M {
+		createdBy = userID
+		awardedBy = userID
+	}
+
+	// Convert input to pubsub params
+	adjustments := make([]pubsub.BulkScoreAdjustmentItem, len(input.Adjustments))
+	for i, adj := range input.Adjustments {
+		reason := ""
+		if adj.Reason != nil {
+			reason = *adj.Reason
+		}
+		adjustments[i] = pubsub.BulkScoreAdjustmentItem{
+			UserID: adj.UserID,
+			Points: int32(adj.Points),
+			Reason: reason,
+		}
+	}
+
+	eventID := ""
+	if input.EventID != nil {
+		eventID = *input.EventID
+	}
+
+	params := pubsub.BulkScoreAdjustmentParams{
+		ProjectID:   input.ProjectID,
+		EventID:     eventID,
+		Adjustments: adjustments,
+		AwardedBy:   awardedBy,
+	}
+
+	// Create job and publish to Pub/Sub
+	return r.BulkService.CreateBulkJobAndPublish(
+		ctx,
+		createdBy,
+		&input.ProjectID,
+		len(input.Adjustments),
+		params,
+	)
+}
+
+// AsyncBulkScoreAdjustmentByTarget is the resolver for the asyncBulkScoreAdjustmentByTarget field.
+func (r *mutationResolver) AsyncBulkScoreAdjustmentByTarget(ctx context.Context, input model.AsyncBulkScoreAdjustmentByTargetInput) (*model.BulkJob, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	if r.BulkService == nil {
+		return nil, fmt.Errorf("bulk service not initialized")
+	}
+
+	if input.Target == nil {
+		return nil, fmt.Errorf("target cannot be nil")
+	}
+
+	// Resolve target to user IDs
+	targetUserIDs, err := r.BulkService.ResolveEnrollmentTarget(ctx, *input.Target)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve target: %w", err)
+	}
+
+	if len(targetUserIDs) == 0 {
+		return nil, fmt.Errorf("no users found for target")
+	}
+
+	// Determine createdBy and awardedBy (empty for M2M, which becomes NULL)
+	roles := middleware.GetUserRoles(ctx)
+	isM2M := slices.Contains(roles, "m2m")
+
+	var createdBy, awardedBy string
+	if !isM2M {
+		createdBy = userID
+		awardedBy = userID
+	}
+
+	// Calculate points per user based on distribution mode
+	reason := ""
+	if input.Reason != nil {
+		reason = *input.Reason
+	}
+
+	adjustments := make([]pubsub.BulkScoreAdjustmentItem, len(targetUserIDs))
+
+	switch input.DistributionMode {
+	case model.TeamScoreDistributionModeSplit:
+		basePoints := int32(input.Points / len(targetUserIDs))
+		remainder := input.Points % len(targetUserIDs)
+		for i, uid := range targetUserIDs {
+			points := basePoints
+			if i < remainder {
+				points++
+			}
+			adjustments[i] = pubsub.BulkScoreAdjustmentItem{
+				UserID: uid,
+				Points: points,
+				Reason: reason,
+			}
+		}
+	case model.TeamScoreDistributionModeEach:
+		for i, uid := range targetUserIDs {
+			adjustments[i] = pubsub.BulkScoreAdjustmentItem{
+				UserID: uid,
+				Points: int32(input.Points),
+				Reason: reason,
+			}
+		}
+	default:
+		return nil, fmt.Errorf("invalid distribution mode: %s", input.DistributionMode)
+	}
+
+	eventID := ""
+	if input.EventID != nil {
+		eventID = *input.EventID
+	}
+
+	params := pubsub.BulkScoreAdjustmentParams{
+		ProjectID:   input.ProjectID,
+		EventID:     eventID,
+		Adjustments: adjustments,
+		AwardedBy:   awardedBy,
+	}
+
+	// Invalidate team/superteam caches if targeting them
+	if len(input.Target.TeamIds) > 0 {
+		for _, teamID := range input.Target.TeamIds {
+			r.Cache.InvalidateTeam(teamID)
+		}
+	}
+	if len(input.Target.SuperTeamIds) > 0 {
+		for _, superTeamID := range input.Target.SuperTeamIds {
+			r.Cache.InvalidateSuperTeam(superTeamID)
+		}
+	}
+
+	// Create job and publish to Pub/Sub
+	return r.BulkService.CreateBulkJobAndPublish(
+		ctx,
+		createdBy,
+		&input.ProjectID,
+		len(adjustments),
+		params,
+	)
 }
 
 // ScoreJournal is the resolver for the scoreJournal field.

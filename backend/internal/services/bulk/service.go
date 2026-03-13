@@ -71,12 +71,18 @@ func (s *Service) CreateBulkJobAndPublish(
 		return nil, fmt.Errorf("failed to marshal params: %w", err)
 	}
 
+	// Convert createdBy to pointer (nil for M2M users who pass empty string)
+	var createdByPtr *string
+	if createdBy != "" {
+		createdByPtr = &createdBy
+	}
+
 	// Create job record
 	createParams := sqlc.CreateBulkJobParams{
 		ID:            jobID,
 		Operationtype: string(operationType),
 		Status:        string(pubsub.JobStatusPending),
-		Createdby:     createdBy,
+		Createdby:     createdByPtr,
 		Projectid:     projectID,
 		Inputparams:   paramsJSON,
 		Totalcount:    int32(totalCount),
@@ -897,6 +903,88 @@ func (s *Service) GrantQuizSessionAccess(ctx context.Context, params pubsub.Bulk
 	// 3. Firebase notification
 	if s.FirebaseService != nil && successCount > 0 {
 		go s.FirebaseService.NotifyProjectQuizSessions(context.Background(), params.ProjectID)
+	}
+
+	return successCount, failureCount, nil
+}
+
+// CreateBulkScoreAdjustments creates score journal entries for multiple users in batches
+func (s *Service) CreateBulkScoreAdjustments(
+	ctx context.Context,
+	params pubsub.BulkScoreAdjustmentParams,
+) (int, int, error) {
+	if len(params.Adjustments) == 0 {
+		return 0, 0, nil
+	}
+
+	// Determine awarded_by pointer (nil for M2M)
+	var awardedByPtr *string
+	if params.AwardedBy != "" {
+		awardedByPtr = &params.AwardedBy
+	}
+
+	// Convert eventID to pointer
+	var eventIDPtr *string
+	if params.EventID != "" {
+		eventIDPtr = &params.EventID
+	}
+
+	successCount := 0
+	failureCount := 0
+
+	// Process in batches of 100
+	for i := 0; i < len(params.Adjustments); i += pubsub.BatchSize {
+		end := i + pubsub.BatchSize
+		if end > len(params.Adjustments) {
+			end = len(params.Adjustments)
+		}
+		batch := params.Adjustments[i:end]
+
+		// Prepare arrays for batch insert
+		ids := make([]string, len(batch))
+		userIDs := make([]string, len(batch))
+		points := make([]int32, len(batch))
+		reasons := make([]string, len(batch))
+
+		for j, adj := range batch {
+			ids[j] = ulid.NewScoreJournalID()
+			userIDs[j] = adj.UserID
+			points[j] = adj.Points
+			reasons[j] = adj.Reason
+		}
+
+		// Execute batch insert
+		_, err := s.DB.Queries.CreateBulkScoreAdjustmentBatch(ctx, sqlc.CreateBulkScoreAdjustmentBatchParams{
+			Ids:       ids,
+			ProjectID: params.ProjectID,
+			UserIds:   userIDs,
+			EventID:   eventIDPtr,
+			Points:    points,
+			Reasons:   reasons,
+			AwardedBy: awardedByPtr,
+		})
+		if err != nil {
+			s.Logger.Error("Failed to create bulk score adjustments",
+				"batch_start", i,
+				"batch_size", len(batch),
+				"error", err,
+			)
+			failureCount += len(batch)
+			continue
+		}
+
+		successCount += len(batch)
+
+		// Cache invalidation per batch
+		for _, adj := range batch {
+			s.Cache.InvalidateUser(adj.UserID)
+		}
+	}
+
+	// Invalidate project and event caches once at end
+	s.Cache.InvalidateProject(params.ProjectID)
+	if params.EventID != "" {
+		s.Cache.InvalidateEvent(params.EventID)
 	}
 
 	return successCount, failureCount, nil
