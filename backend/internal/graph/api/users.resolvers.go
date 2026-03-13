@@ -143,20 +143,33 @@ func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error
 
 // Users is the resolver for the users field.
 func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter, first *int, after *string, last *int, before *string) (*model.UserConnection, error) {
-	// Validate user authentication and get basic info
-	userInfo, err := validateUserAccess(ctx, r.Loaders.UserByIDLoader)
-	if err != nil {
-		return nil, err
+	// Check for M2M role from JWT token (M2M users don't exist in the database)
+	userRoles := middleware.GetUserRoles(ctx)
+	isM2M := false
+	for _, role := range userRoles {
+		if role == "m2m" {
+			isM2M = true
+			break
+		}
 	}
 
-	// Check what permissions the user has
-	perms, err := checkUserPermissions(ctx, r.RoleService, userInfo, filter)
-	if err != nil {
-		return nil, err
-	}
+	// M2M users bypass normal user validation and have unfiltered access
+	if !isM2M {
+		// Validate user authentication and get basic info
+		userInfo, err := validateUserAccess(ctx, r.Loaders.UserByIDLoader)
+		if err != nil {
+			return nil, err
+		}
 
-	// Apply permission-based filters
-	filter = applyPermissionFilters(filter, perms)
+		// Check what permissions the user has
+		perms, err := checkUserPermissions(ctx, r.RoleService, userInfo, filter)
+		if err != nil {
+			return nil, err
+		}
+
+		// Apply permission-based filters
+		filter = applyPermissionFilters(filter, perms)
+	}
 
 	// Build cache key from filter and pagination parameters
 	cacheKeyParams := buildCacheKeyParams(filter, first, after, last, before)
