@@ -113,6 +113,26 @@ func (r *mutationResolver) UnlockUserChurch(ctx context.Context, userID string) 
 
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
+	// Check for M2M role from JWT token (M2M users don't exist in the database)
+	userRoles := middleware.GetUserRoles(ctx)
+	isM2M := false
+	for _, role := range userRoles {
+		if role == "m2m" {
+			isM2M = true
+			break
+		}
+	}
+
+	// M2M users can access any user
+	if isM2M {
+		requestedUserThunk := r.Loaders.UserByIDLoader.Load(ctx, id)
+		requestedUser, err := requestedUserThunk()
+		if err != nil {
+			return nil, fmt.Errorf("failed to load requested user: %w", err)
+		}
+		return requestedUser, nil
+	}
+
 	// Get current user ID from context
 	currentUserID, ok := middleware.GetUserID(ctx)
 	if !ok || currentUserID == "" {
