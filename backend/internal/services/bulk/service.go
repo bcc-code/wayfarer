@@ -917,6 +917,13 @@ func (s *Service) CreateBulkScoreAdjustments(
 		return 0, 0, nil
 	}
 
+	s.Logger.Info("CreateBulkScoreAdjustments: starting",
+		"project_id", params.ProjectID,
+		"event_id", params.EventID,
+		"adjustment_count", len(params.Adjustments),
+		"awarded_by", params.AwardedBy,
+	)
+
 	// Determine awarded_by pointer (nil for M2M)
 	var awardedByPtr *string
 	if params.AwardedBy != "" {
@@ -939,6 +946,11 @@ func (s *Service) CreateBulkScoreAdjustments(
 			end = len(params.Adjustments)
 		}
 		batch := params.Adjustments[i:end]
+
+		s.Logger.Debug("CreateBulkScoreAdjustments: processing batch",
+			"batch_start", i,
+			"batch_size", len(batch),
+		)
 
 		// Prepare arrays for batch insert
 		ids := make([]string, len(batch))
@@ -967,6 +979,14 @@ func (s *Service) CreateBulkScoreAdjustments(
 			s.Logger.Error("Failed to create bulk score adjustments",
 				"batch_start", i,
 				"batch_size", len(batch),
+				"project_id", params.ProjectID,
+				"project_id_len", len(params.ProjectID),
+				"event_id", params.EventID,
+				"event_id_len", len(params.EventID),
+				"first_user_id", userIDs[0],
+				"first_user_id_len", len(userIDs[0]),
+				"first_id", ids[0],
+				"first_id_len", len(ids[0]),
 				"error", err,
 			)
 			failureCount += len(batch)
@@ -986,6 +1006,12 @@ func (s *Service) CreateBulkScoreAdjustments(
 	if params.EventID != "" {
 		s.Cache.InvalidateEvent(params.EventID)
 	}
+
+	s.Logger.Info("CreateBulkScoreAdjustments: completed",
+		"project_id", params.ProjectID,
+		"success_count", successCount,
+		"failure_count", failureCount,
+	)
 
 	return successCount, failureCount, nil
 }

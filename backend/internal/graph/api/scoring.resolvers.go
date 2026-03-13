@@ -219,6 +219,14 @@ func (r *mutationResolver) AsyncBulkScoreAdjustment(ctx context.Context, input m
 	roles := middleware.GetUserRoles(ctx)
 	isM2M := slices.Contains(roles, "m2m")
 
+	slog.Info("AsyncBulkScoreAdjustment: starting",
+		"project_id", input.ProjectID,
+		"event_id", input.EventID,
+		"adjustment_count", len(input.Adjustments),
+		"requested_by", userID,
+		"is_m2m", isM2M,
+	)
+
 	var createdBy, awardedBy string
 	if !isM2M {
 		createdBy = userID
@@ -239,6 +247,10 @@ func (r *mutationResolver) AsyncBulkScoreAdjustment(ctx context.Context, input m
 		}
 	}
 
+	slog.Debug("AsyncBulkScoreAdjustment: adjustments",
+		"adjustments", adjustments,
+	)
+
 	eventID := ""
 	if input.EventID != nil {
 		eventID = *input.EventID
@@ -252,13 +264,29 @@ func (r *mutationResolver) AsyncBulkScoreAdjustment(ctx context.Context, input m
 	}
 
 	// Create job and publish to Pub/Sub
-	return r.BulkService.CreateBulkJobAndPublish(
+	job, err := r.BulkService.CreateBulkJobAndPublish(
 		ctx,
 		createdBy,
 		&input.ProjectID,
 		len(input.Adjustments),
 		params,
 	)
+	if err != nil {
+		slog.Error("AsyncBulkScoreAdjustment: failed to create job",
+			"project_id", input.ProjectID,
+			"adjustment_count", len(input.Adjustments),
+			"error", err,
+		)
+		return nil, err
+	}
+
+	slog.Info("AsyncBulkScoreAdjustment: job created",
+		"project_id", input.ProjectID,
+		"adjustment_count", len(input.Adjustments),
+		"job_id", job.ID,
+	)
+
+	return job, nil
 }
 
 // AsyncBulkScoreAdjustmentByTarget is the resolver for the asyncBulkScoreAdjustmentByTarget field.
