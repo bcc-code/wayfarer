@@ -121,9 +121,11 @@ export function useAuth() {
   const { track } = useAnalytics()
 
   async function loginWithRedirect() {
+    const params = new URLSearchParams(window.location.search)
+    const redirect = params.get('redirect')
     return auth0.loginWithRedirect({
       appState: {
-        targetUrl: window.location.pathname,
+        targetUrl: redirect || (window.location.pathname === '/login' ? '/' : window.location.pathname + window.location.search),
       },
     })
   }

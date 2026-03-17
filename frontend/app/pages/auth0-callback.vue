@@ -38,7 +38,7 @@ onMounted(async () => {
     if (hasCallbackParams) {
       // Handle the Auth0 callback and get the redirect target
       const result = await auth0.handleRedirectCallback()
-      targetUrl = result.appState?.target || '/'
+      targetUrl = result.appState?.targetUrl || '/'
     }
 
     // Exchange Auth0 token for Wayfarer JWT if authenticated

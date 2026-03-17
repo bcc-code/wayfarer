@@ -79,7 +79,7 @@ export default defineNuxtPlugin((nuxtApp) => {
               isRedirecting = true
               await auth0.loginWithRedirect({
                 appState: {
-                  targetUrl: window.location.pathname,
+                  targetUrl: window.location.pathname + window.location.search,
                 },
               })
             },
