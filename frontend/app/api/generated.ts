@@ -3564,6 +3564,18 @@ export type BulkEnrollUsersInChallengeMutation = { __typename?: 'Mutation', bulk
     | { __typename?: 'SimpleChallenge', id: string }
   > };
 
+export type EnrollInChallengeMutationVariables = Exact<{
+  challengeId: Scalars['ID']['input'];
+}>;
+
+
+export type EnrollInChallengeMutation = { __typename?: 'Mutation', enrollInChallenge:
+    | { __typename?: 'ExternalChallenge', id: string, userEnrolledAt?: any | null }
+    | { __typename?: 'PluginChallenge', id: string, userEnrolledAt?: any | null }
+    | { __typename?: 'QuizChallenge', id: string, userEnrolledAt?: any | null }
+    | { __typename?: 'SimpleChallenge', id: string, userEnrolledAt?: any | null }
+   };
+
 export type AcceptConsentMutationVariables = Exact<{
   consentId: Scalars['ID']['input'];
 }>;
@@ -4903,6 +4915,18 @@ export const BulkEnrollUsersInChallengeDocument = gql`
 
 export function useBulkEnrollUsersInChallengeMutation() {
   return Urql.useMutation<BulkEnrollUsersInChallengeMutation, BulkEnrollUsersInChallengeMutationVariables>(BulkEnrollUsersInChallengeDocument);
+};
+export const EnrollInChallengeDocument = gql`
+    mutation EnrollInChallenge($challengeId: ID!) {
+  enrollInChallenge(challengeId: $challengeId) {
+    id
+    userEnrolledAt
+  }
+}
+    `;
+
+export function useEnrollInChallengeMutation() {
+  return Urql.useMutation<EnrollInChallengeMutation, EnrollInChallengeMutationVariables>(EnrollInChallengeDocument);
 };
 export const AcceptConsentDocument = gql`
     mutation AcceptConsent($consentId: ID!) {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const route = useRoute('challenges-challengeId')
+const router = useRouter()
 
 const { isAuthReady } = useAuthReady()
 const {
@@ -19,6 +20,26 @@ const {
 useFirestoreRefresh(['ChallengePageDocument'], () => {
   refresh({ requestPolicy: 'network-only' })
 })
+
+// Self-enroll via ?enroll=true query param (e.g. from QR code)
+const shouldEnroll = ref(route.query.enroll === 'true')
+if (shouldEnroll.value) {
+  router.replace({ query: { ...route.query, enroll: undefined } })
+}
+
+const { executeMutation: enrollInChallenge } = useEnrollInChallengeMutation()
+
+watch(isAuthReady, async (ready) => {
+  if (!ready || !shouldEnroll.value) return
+  shouldEnroll.value = false
+
+  try {
+    await enrollInChallenge({ challengeId: route.params.challengeId })
+    refresh({ requestPolicy: 'network-only' })
+  } catch {
+    // Silently handle — page still loads normally
+  }
+}, { immediate: true })
 
 const isInitialLoading = computed(() => fetching.value && !data.value)
 </script>
