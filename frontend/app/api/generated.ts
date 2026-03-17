@@ -588,7 +588,9 @@ export type CreateStreakInput = {
 };
 
 export type CreateSuperTeamInput = {
+  color?: InputMaybe<Scalars['String']['input']>;
   description: Scalars['String']['input'];
+  imageUrl?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
   teamIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
@@ -2911,8 +2913,10 @@ export type SubmitQuizAnswerInput = {
 
 export type SuperTeam = {
   __typename?: 'SuperTeam';
+  color?: Maybe<Scalars['String']['output']>;
   description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
+  imageObject?: Maybe<Image>;
   members: UserConnection;
   name: Scalars['String']['output'];
   parentProject: Project;
@@ -3172,7 +3176,9 @@ export type UpdateStreakInput = {
 };
 
 export type UpdateSuperTeamInput = {
+  color?: InputMaybe<Scalars['String']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
+  imageUrl?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -4079,7 +4085,7 @@ export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User'
       | { __typename: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
       | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
       | { __typename: 'StreakAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
-    >, leaderboard: { __typename?: 'LeaderboardConnection', me?: { __typename?: 'LeaderboardEntry', rank?: number | null } | null } } };
+    >, leaderboard: { __typename?: 'LeaderboardConnection', me?: { __typename?: 'LeaderboardEntry', rank?: number | null } | null }, myTeam?: { __typename?: 'Team', superTeam?: { __typename?: 'SuperTeam', id: string, name: string, color?: string | null, imageObject?: { __typename?: 'Image', url: string, blurhash?: string | null } | null } | null } | null } };
 
 export type ConsentsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4106,7 +4112,7 @@ export type StandingsLocalPageQuery = { __typename?: 'Query', me: { __typename?:
 export type StandingsUnitPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type StandingsUnitPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, myTeam?: { __typename?: 'Team', id: string, name: string, memberLeaderboard: Array<{ __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> }> } | null } };
+export type StandingsUnitPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, myTeam?: { __typename?: 'Team', id: string, name: string, memberLeaderboard: Array<{ __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> }>, superTeam?: { __typename?: 'SuperTeam', id: string, name: string, color?: string | null, imageObject?: { __typename?: 'Image', url: string, blurhash?: string | null } | null } | null } | null } };
 
 export type VapidPublicKeyQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -5875,6 +5881,17 @@ export const ProfilePageDocument = gql`
         rank
       }
     }
+    myTeam {
+      superTeam {
+        id
+        name
+        color
+        imageObject {
+          url
+          blurhash
+        }
+      }
+    }
   }
 }
     ${BrandingFieldsFragmentDoc}
@@ -6017,6 +6034,15 @@ export const StandingsUnitPageDocument = gql`
       name
       memberLeaderboard {
         ...LeaderboardEntryFields
+      }
+      superTeam {
+        id
+        name
+        color
+        imageObject {
+          url
+          blurhash
+        }
       }
     }
   }

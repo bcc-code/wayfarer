@@ -1145,6 +1145,8 @@ func (r *queryResolver) Superteams(ctx context.Context, filter *model.SuperTeamF
 			ProjectID:   row.ProjectID,
 			Name:        row.Name,
 			Description: description,
+			ImageUrl:    row.ImageUrl,
+			Color:       row.Color,
 		}
 	}
 
@@ -1163,6 +1165,11 @@ func (r *queryResolver) Superteams(ctx context.Context, filter *model.SuperTeamF
 	r.Cache.Set(cacheKey, connection)
 
 	return connection, nil
+}
+
+// ImageObject is the resolver for the imageObject field.
+func (r *superTeamResolver) ImageObject(ctx context.Context, obj *model.SuperTeam) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.ImageUrl)
 }
 
 // Members is the resolver for the members field.

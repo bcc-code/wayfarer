@@ -137,6 +137,8 @@ CREATE TABLE super_teams (
     project_id CHAR(28) NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     description TEXT,
+    image_url VARCHAR(500),
+    color VARCHAR(7),
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     INDEX idx_super_teams_project (project_id)

@@ -1134,8 +1134,10 @@ type ComplexityRoot struct {
 	}
 
 	SuperTeam struct {
+		Color         func(childComplexity int) int
 		Description   func(childComplexity int) int
 		ID            func(childComplexity int) int
+		ImageObject   func(childComplexity int) int
 		Members       func(childComplexity int, first *int, after *string, last *int, before *string) int
 		Name          func(childComplexity int) int
 		ParentProject func(childComplexity int) int
@@ -1784,6 +1786,8 @@ type StreakAchievementResolver interface {
 	Streak(ctx context.Context, obj *model.StreakAchievement) (*model.Streak, error)
 }
 type SuperTeamResolver interface {
+	ImageObject(ctx context.Context, obj *model.SuperTeam) (*model.Image, error)
+
 	Members(ctx context.Context, obj *model.SuperTeam, first *int, after *string, last *int, before *string) (*model.UserConnection, error)
 	ParentProject(ctx context.Context, obj *model.SuperTeam) (*model.Project, error)
 	Teams(ctx context.Context, obj *model.SuperTeam) ([]model.Team, error)
@@ -7542,6 +7546,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.StreakEdge.Node(childComplexity), true
 
+	case "SuperTeam.color":
+		if e.complexity.SuperTeam.Color == nil {
+			break
+		}
+
+		return e.complexity.SuperTeam.Color(childComplexity), true
 	case "SuperTeam.description":
 		if e.complexity.SuperTeam.Description == nil {
 			break
@@ -7554,6 +7564,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SuperTeam.ID(childComplexity), true
+	case "SuperTeam.imageObject":
+		if e.complexity.SuperTeam.ImageObject == nil {
+			break
+		}
+
+		return e.complexity.SuperTeam.ImageObject(childComplexity), true
 	case "SuperTeam.members":
 		if e.complexity.SuperTeam.Members == nil {
 			break
@@ -8968,6 +8984,8 @@ type SuperTeam {
     id: ID!
     name: String!
     description: String!
+    imageObject: Image @goField(forceResolver: true)
+    color: String
     members(first: Int, after: String, last: Int, before: String): UserConnection! @goField(forceResolver: true)
     parentProject: Project! @goField(forceResolver: true)
     teams: [Team!]! @goField(forceResolver: true)
@@ -8989,12 +9007,16 @@ input UpdateTeamInput {
 input CreateSuperTeamInput {
     name: String!
     description: String!
+    imageUrl: String
+    color: String
     teamIds: [ID!]
 }
 
 input UpdateSuperTeamInput {
     name: String
     description: String
+    imageUrl: String
+    color: String
 }
 
 input TeamFilter {
@@ -24151,6 +24173,10 @@ func (ec *executionContext) fieldContext_Mutation_createSuperTeam(ctx context.Co
 				return ec.fieldContext_SuperTeam_name(ctx, field)
 			case "description":
 				return ec.fieldContext_SuperTeam_description(ctx, field)
+			case "imageObject":
+				return ec.fieldContext_SuperTeam_imageObject(ctx, field)
+			case "color":
+				return ec.fieldContext_SuperTeam_color(ctx, field)
 			case "members":
 				return ec.fieldContext_SuperTeam_members(ctx, field)
 			case "parentProject":
@@ -24224,6 +24250,10 @@ func (ec *executionContext) fieldContext_Mutation_updateSuperTeam(ctx context.Co
 				return ec.fieldContext_SuperTeam_name(ctx, field)
 			case "description":
 				return ec.fieldContext_SuperTeam_description(ctx, field)
+			case "imageObject":
+				return ec.fieldContext_SuperTeam_imageObject(ctx, field)
+			case "color":
+				return ec.fieldContext_SuperTeam_color(ctx, field)
 			case "members":
 				return ec.fieldContext_SuperTeam_members(ctx, field)
 			case "parentProject":
@@ -24356,6 +24386,10 @@ func (ec *executionContext) fieldContext_Mutation_assignTeamsToSuperTeam(ctx con
 				return ec.fieldContext_SuperTeam_name(ctx, field)
 			case "description":
 				return ec.fieldContext_SuperTeam_description(ctx, field)
+			case "imageObject":
+				return ec.fieldContext_SuperTeam_imageObject(ctx, field)
+			case "color":
+				return ec.fieldContext_SuperTeam_color(ctx, field)
 			case "members":
 				return ec.fieldContext_SuperTeam_members(ctx, field)
 			case "parentProject":
@@ -37644,6 +37678,10 @@ func (ec *executionContext) fieldContext_Query_superteam(ctx context.Context, fi
 				return ec.fieldContext_SuperTeam_name(ctx, field)
 			case "description":
 				return ec.fieldContext_SuperTeam_description(ctx, field)
+			case "imageObject":
+				return ec.fieldContext_SuperTeam_imageObject(ctx, field)
+			case "color":
+				return ec.fieldContext_SuperTeam_color(ctx, field)
 			case "members":
 				return ec.fieldContext_SuperTeam_members(ctx, field)
 			case "parentProject":
@@ -47976,6 +48014,74 @@ func (ec *executionContext) fieldContext_SuperTeam_description(_ context.Context
 	return fc, nil
 }
 
+func (ec *executionContext) _SuperTeam_imageObject(ctx context.Context, field graphql.CollectedField, obj *model.SuperTeam) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SuperTeam_imageObject,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.SuperTeam().ImageObject(ctx, obj)
+		},
+		nil,
+		ec.marshalOImage2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐImage,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_SuperTeam_imageObject(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SuperTeam",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "url":
+				return ec.fieldContext_Image_url(ctx, field)
+			case "width":
+				return ec.fieldContext_Image_width(ctx, field)
+			case "height":
+				return ec.fieldContext_Image_height(ctx, field)
+			case "blurhash":
+				return ec.fieldContext_Image_blurhash(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Image", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SuperTeam_color(ctx context.Context, field graphql.CollectedField, obj *model.SuperTeam) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SuperTeam_color,
+		func(ctx context.Context) (any, error) {
+			return obj.Color, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_SuperTeam_color(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SuperTeam",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _SuperTeam_members(ctx context.Context, field graphql.CollectedField, obj *model.SuperTeam) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -48313,6 +48419,10 @@ func (ec *executionContext) fieldContext_SuperTeamEdge_node(_ context.Context, f
 				return ec.fieldContext_SuperTeam_name(ctx, field)
 			case "description":
 				return ec.fieldContext_SuperTeam_description(ctx, field)
+			case "imageObject":
+				return ec.fieldContext_SuperTeam_imageObject(ctx, field)
+			case "color":
+				return ec.fieldContext_SuperTeam_color(ctx, field)
 			case "members":
 				return ec.fieldContext_SuperTeam_members(ctx, field)
 			case "parentProject":
@@ -48917,6 +49027,10 @@ func (ec *executionContext) fieldContext_Team_superTeam(_ context.Context, field
 				return ec.fieldContext_SuperTeam_name(ctx, field)
 			case "description":
 				return ec.fieldContext_SuperTeam_description(ctx, field)
+			case "imageObject":
+				return ec.fieldContext_SuperTeam_imageObject(ctx, field)
+			case "color":
+				return ec.fieldContext_SuperTeam_color(ctx, field)
 			case "members":
 				return ec.fieldContext_SuperTeam_members(ctx, field)
 			case "parentProject":
@@ -50003,6 +50117,10 @@ func (ec *executionContext) fieldContext_User_superTeams(_ context.Context, fiel
 				return ec.fieldContext_SuperTeam_name(ctx, field)
 			case "description":
 				return ec.fieldContext_SuperTeam_description(ctx, field)
+			case "imageObject":
+				return ec.fieldContext_SuperTeam_imageObject(ctx, field)
+			case "color":
+				return ec.fieldContext_SuperTeam_color(ctx, field)
 			case "members":
 				return ec.fieldContext_SuperTeam_members(ctx, field)
 			case "parentProject":
@@ -55650,7 +55768,7 @@ func (ec *executionContext) unmarshalInputCreateSuperTeamInput(ctx context.Conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "teamIds"}
+	fieldsInOrder := [...]string{"name", "description", "imageUrl", "color", "teamIds"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -55671,6 +55789,20 @@ func (ec *executionContext) unmarshalInputCreateSuperTeamInput(ctx context.Conte
 				return it, err
 			}
 			it.Description = data
+		case "imageUrl":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imageUrl"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImageURL = data
+		case "color":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("color"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Color = data
 		case "teamIds":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("teamIds"))
 			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
@@ -58194,7 +58326,7 @@ func (ec *executionContext) unmarshalInputUpdateSuperTeamInput(ctx context.Conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description"}
+	fieldsInOrder := [...]string{"name", "description", "imageUrl", "color"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -58215,6 +58347,20 @@ func (ec *executionContext) unmarshalInputUpdateSuperTeamInput(ctx context.Conte
 				return it, err
 			}
 			it.Description = data
+		case "imageUrl":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imageUrl"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImageURL = data
+		case "color":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("color"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Color = data
 		}
 	}
 
@@ -71251,6 +71397,41 @@ func (ec *executionContext) _SuperTeam(ctx context.Context, sel ast.SelectionSet
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "imageObject":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SuperTeam_imageObject(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "color":
+			out.Values[i] = ec._SuperTeam_color(ctx, field, obj)
 		case "members":
 			field := field
 

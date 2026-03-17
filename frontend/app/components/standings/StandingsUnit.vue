@@ -109,6 +109,12 @@ const showEditButton = computed(
         v-if="data.myCurrentProject.myTeam"
         class="p-medium gap-medium mb-list-section-gap flex flex-col items-center"
       >
+        <DesignImage
+          v-if="data?.myCurrentProject.myTeam?.superTeam?.imageObject"
+          :image="data.myCurrentProject.myTeam.superTeam.imageObject"
+          :alt="data.myCurrentProject.myTeam.superTeam.name"
+          class="size-30 rounded-full"
+        />
         <h2 class="text-heading text-balance">
           {{ data.myCurrentProject.myTeam.name }}
         </h2>
@@ -155,7 +161,7 @@ const showEditButton = computed(
                       v-for="(member, index) in teamMembers"
                       :key="member.id"
                     >
-                      <hr v-if="index > 0" class="border-border-default mx-3" >
+                      <hr v-if="index > 0" class="border-border-default mx-3" />
                       <button
                         class="flex items-center justify-between gap-2.5 px-3 py-2 h-12"
                         @click="selectTeamLead(member.id)"
