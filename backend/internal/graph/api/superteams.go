@@ -106,6 +106,21 @@ func buildCountSuperTeamsFilterParams(filter *model.SuperTeamFilter) sqlc.CountS
 	return params
 }
 
+// convertSuperTeamRowToModel converts a sqlc SuperTeam row to the GraphQL model
+func convertSuperTeamRowToModel(row *sqlc.SuperTeam) *model.SuperTeam {
+	st := &model.SuperTeam{
+		ID:        row.ID,
+		Name:      row.Name,
+		ImageUrl:  row.ImageUrl,
+		Color:     row.Color,
+		ProjectID: row.ProjectID,
+	}
+	if row.Description != nil {
+		st.Description = *row.Description
+	}
+	return st
+}
+
 // buildSuperTeamCacheKeyParams converts filter and pagination parameters to a map for cache key generation
 func buildSuperTeamCacheKeyParams(filter *model.SuperTeamFilter, first *int, after *string, last *int, before *string) map[string]string {
 	params := make(map[string]string)

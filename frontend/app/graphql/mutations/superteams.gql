@@ -1,0 +1,21 @@
+mutation CreateSuperTeam($projectId: ID!, $input: CreateSuperTeamInput!) {
+  createSuperTeam(projectId: $projectId, input: $input) {
+    id
+  }
+}
+
+mutation UpdateSuperTeam($id: ID!, $input: UpdateSuperTeamInput!) {
+  updateSuperTeam(id: $id, input: $input) {
+    id
+  }
+}
+
+mutation DeleteSuperTeam($id: ID!) {
+  deleteSuperTeam(id: $id)
+}
+
+mutation AssignTeamsToSuperTeam($superTeamId: ID!, $teamIds: [ID!]!) {
+  assignTeamsToSuperTeam(superTeamId: $superTeamId, teamIds: $teamIds) {
+    id
+  }
+}

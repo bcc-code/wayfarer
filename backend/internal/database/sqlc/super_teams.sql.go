@@ -34,6 +34,15 @@ func (q *Queries) ClearSuperTeamAssignmentsForProject(ctx context.Context, proje
 	return err
 }
 
+const ClearTeamsFromSuperTeam = `-- name: ClearTeamsFromSuperTeam :exec
+UPDATE teams SET super_team_id = NULL WHERE super_team_id = $1::text
+`
+
+func (q *Queries) ClearTeamsFromSuperTeam(ctx context.Context, superTeamID string) error {
+	_, err := q.db.Exec(ctx, ClearTeamsFromSuperTeam, superTeamID)
+	return err
+}
+
 const CountSuperTeamsFiltered = `-- name: CountSuperTeamsFiltered :one
 SELECT COUNT(DISTINCT st.id)
 FROM super_teams st
@@ -118,6 +127,15 @@ func (q *Queries) CreateSuperTeam(ctx context.Context, arg CreateSuperTeamParams
 		&i.Color,
 	)
 	return &i, err
+}
+
+const DeleteSuperTeam = `-- name: DeleteSuperTeam :exec
+DELETE FROM super_teams WHERE id = $1::text
+`
+
+func (q *Queries) DeleteSuperTeam(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, DeleteSuperTeam, id)
+	return err
 }
 
 const DeleteSuperTeamsByProjectID = `-- name: DeleteSuperTeamsByProjectID :exec
@@ -376,4 +394,46 @@ func (q *Queries) GetTeamsWithScoresForDistribution(ctx context.Context, project
 		return nil, err
 	}
 	return items, nil
+}
+
+const UpdateSuperTeam = `-- name: UpdateSuperTeam :one
+UPDATE super_teams
+SET
+    name = COALESCE($1::text, name),
+    description = COALESCE($2::text, description),
+    image_url = COALESCE($3::text, image_url),
+    color = COALESCE($4::text, color),
+    updated_at = now()
+WHERE id = $5::text
+RETURNING id, project_id, name, description, created_at, updated_at, image_url, color
+`
+
+type UpdateSuperTeamParams struct {
+	Name        *string `json:"name"`
+	Description *string `json:"description"`
+	ImageUrl    *string `json:"image_url"`
+	Color       *string `json:"color"`
+	ID          string  `json:"id"`
+}
+
+func (q *Queries) UpdateSuperTeam(ctx context.Context, arg UpdateSuperTeamParams) (*SuperTeam, error) {
+	row := q.db.QueryRow(ctx, UpdateSuperTeam,
+		arg.Name,
+		arg.Description,
+		arg.ImageUrl,
+		arg.Color,
+		arg.ID,
+	)
+	var i SuperTeam
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.Name,
+		&i.Description,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ImageUrl,
+		&i.Color,
+	)
+	return &i, err
 }

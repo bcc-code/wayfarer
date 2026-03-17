@@ -3927,6 +3927,37 @@ export type CreateStreakMutationVariables = Exact<{
 
 export type CreateStreakMutation = { __typename?: 'Mutation', createStreak: { __typename?: 'Streak', id: string } };
 
+export type CreateSuperTeamMutationVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+  input: CreateSuperTeamInput;
+}>;
+
+
+export type CreateSuperTeamMutation = { __typename?: 'Mutation', createSuperTeam: { __typename?: 'SuperTeam', id: string } };
+
+export type UpdateSuperTeamMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateSuperTeamInput;
+}>;
+
+
+export type UpdateSuperTeamMutation = { __typename?: 'Mutation', updateSuperTeam: { __typename?: 'SuperTeam', id: string } };
+
+export type DeleteSuperTeamMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteSuperTeamMutation = { __typename?: 'Mutation', deleteSuperTeam: boolean };
+
+export type AssignTeamsToSuperTeamMutationVariables = Exact<{
+  superTeamId: Scalars['ID']['input'];
+  teamIds: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+}>;
+
+
+export type AssignTeamsToSuperTeamMutation = { __typename?: 'Mutation', assignTeamsToSuperTeam: { __typename?: 'SuperTeam', id: string } };
+
 export type CreateTeamMutationVariables = Exact<{
   projectId: Scalars['ID']['input'];
   input: CreateTeamInput;
@@ -4361,7 +4392,7 @@ export type AdminProjectPageQuery = { __typename?: 'Query', project: { __typenam
         | { __typename: 'PluginChallenge', id: string, name: string, description: any, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
         | { __typename: 'QuizChallenge', id: string, name: string, description: any, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
         | { __typename: 'SimpleChallenge', id: string, name: string, description: any, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
-       }> } };
+       }> }, superteams: { __typename?: 'SuperTeamConnection', edges: Array<{ __typename?: 'SuperTeamEdge', node: { __typename?: 'SuperTeam', id: string, name: string, description: string, color?: string | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, teams: Array<{ __typename?: 'Team', id: string }> } }> } };
 
 export type AdminProjectStreakPageQueryVariables = Exact<{
   streakId: Scalars['ID']['input'];
@@ -4369,6 +4400,21 @@ export type AdminProjectStreakPageQueryVariables = Exact<{
 
 
 export type AdminProjectStreakPageQuery = { __typename?: 'Query', streak: { __typename?: 'Streak', id: string, name: string, description: string, status: number, relevantDays: Array<{ __typename?: 'DateRange', start: any, end: any }>, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }>, project: { __typename?: 'Project', id: string, name: string } } };
+
+export type AdminSuperTeamDetailPageQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminSuperTeamDetailPageQuery = { __typename?: 'Query', superteam: { __typename?: 'SuperTeam', id: string, name: string, description: string, color?: string | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, teams: Array<{ __typename?: 'Team', id: string, name: string, description: string }> }, teams: { __typename?: 'TeamConnection', edges: Array<{ __typename?: 'TeamEdge', node: { __typename?: 'Team', id: string, name: string, superTeam?: { __typename?: 'SuperTeam', id: string } | null } }> } };
+
+export type AdminSuperTeamNewPageQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminSuperTeamNewPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string } };
 
 export type AdminProjectsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -5482,6 +5528,48 @@ export const CreateStreakDocument = gql`
 
 export function useCreateStreakMutation() {
   return Urql.useMutation<CreateStreakMutation, CreateStreakMutationVariables>(CreateStreakDocument);
+};
+export const CreateSuperTeamDocument = gql`
+    mutation CreateSuperTeam($projectId: ID!, $input: CreateSuperTeamInput!) {
+  createSuperTeam(projectId: $projectId, input: $input) {
+    id
+  }
+}
+    `;
+
+export function useCreateSuperTeamMutation() {
+  return Urql.useMutation<CreateSuperTeamMutation, CreateSuperTeamMutationVariables>(CreateSuperTeamDocument);
+};
+export const UpdateSuperTeamDocument = gql`
+    mutation UpdateSuperTeam($id: ID!, $input: UpdateSuperTeamInput!) {
+  updateSuperTeam(id: $id, input: $input) {
+    id
+  }
+}
+    `;
+
+export function useUpdateSuperTeamMutation() {
+  return Urql.useMutation<UpdateSuperTeamMutation, UpdateSuperTeamMutationVariables>(UpdateSuperTeamDocument);
+};
+export const DeleteSuperTeamDocument = gql`
+    mutation DeleteSuperTeam($id: ID!) {
+  deleteSuperTeam(id: $id)
+}
+    `;
+
+export function useDeleteSuperTeamMutation() {
+  return Urql.useMutation<DeleteSuperTeamMutation, DeleteSuperTeamMutationVariables>(DeleteSuperTeamDocument);
+};
+export const AssignTeamsToSuperTeamDocument = gql`
+    mutation AssignTeamsToSuperTeam($superTeamId: ID!, $teamIds: [ID!]!) {
+  assignTeamsToSuperTeam(superTeamId: $superTeamId, teamIds: $teamIds) {
+    id
+  }
+}
+    `;
+
+export function useAssignTeamsToSuperTeamMutation() {
+  return Urql.useMutation<AssignTeamsToSuperTeamMutation, AssignTeamsToSuperTeamMutationVariables>(AssignTeamsToSuperTeamDocument);
 };
 export const CreateTeamDocument = gql`
     mutation CreateTeam($projectId: ID!, $input: CreateTeamInput!) {
@@ -6851,6 +6939,22 @@ export const AdminProjectPageDocument = gql`
       }
     }
   }
+  superteams(first: 50, filter: {projectId: $projectId}) {
+    edges {
+      node {
+        id
+        name
+        description
+        color
+        imageObject {
+          ...ImageFields
+        }
+        teams {
+          id
+        }
+      }
+    }
+  }
 }
     ${ImageFieldsFragmentDoc}`;
 
@@ -6881,6 +6985,51 @@ export const AdminProjectStreakPageDocument = gql`
 
 export function useAdminProjectStreakPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectStreakPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectStreakPageQuery, AdminProjectStreakPageQueryVariables | undefined>({ query: AdminProjectStreakPageDocument, variables: undefined, ...options });
+};
+export const AdminSuperTeamDetailPageDocument = gql`
+    query AdminSuperTeamDetailPage($id: ID!, $projectId: ID!) {
+  superteam(id: $id) {
+    id
+    name
+    description
+    color
+    imageObject {
+      ...ImageFields
+    }
+    teams {
+      id
+      name
+      description
+    }
+  }
+  teams(first: 200, filter: {projectId: $projectId}) {
+    edges {
+      node {
+        id
+        name
+        superTeam {
+          id
+        }
+      }
+    }
+  }
+}
+    ${ImageFieldsFragmentDoc}`;
+
+export function useAdminSuperTeamDetailPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminSuperTeamDetailPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminSuperTeamDetailPageQuery, AdminSuperTeamDetailPageQueryVariables | undefined>({ query: AdminSuperTeamDetailPageDocument, variables: undefined, ...options });
+};
+export const AdminSuperTeamNewPageDocument = gql`
+    query AdminSuperTeamNewPage($projectId: ID!) {
+  project(id: $projectId) {
+    id
+    name
+  }
+}
+    `;
+
+export function useAdminSuperTeamNewPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminSuperTeamNewPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminSuperTeamNewPageQuery, AdminSuperTeamNewPageQueryVariables | undefined>({ query: AdminSuperTeamNewPageDocument, variables: undefined, ...options });
 };
 export const AdminProjectsPageDocument = gql`
     query AdminProjectsPage {

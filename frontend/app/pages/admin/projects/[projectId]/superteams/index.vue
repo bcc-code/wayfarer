@@ -80,7 +80,8 @@ async function makeRequest<T>(
     const errorData = await response.json().catch(() => ({}))
     console.error('Request failed:', response.status, errorData) // Debug log
     throw new Error(
-      (errorData as { error?: string }).error || `Request failed: ${response.status}`,
+      (errorData as { error?: string }).error ||
+        `Request failed: ${response.status}`,
     )
   }
 
@@ -99,7 +100,8 @@ async function previewDistribution() {
     )
     previewData.value = data
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to preview distribution'
+    error.value =
+      err instanceof Error ? err.message : 'Failed to preview distribution'
     toast.add({
       title: 'Preview failed',
       description: error.value,
@@ -129,7 +131,8 @@ async function executeDistribution() {
       color: 'success',
     })
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to execute distribution'
+    error.value =
+      err instanceof Error ? err.message : 'Failed to execute distribution'
     toast.add({
       title: 'Distribution failed',
       description: error.value,
@@ -230,12 +233,14 @@ const churchAnalysis = computed((): ChurchInfo[] => {
     }
   }
 
-  return Array.from(churchMap.values()).sort((a, b) => b.totalScore - a.totalScore)
+  return Array.from(churchMap.values()).sort(
+    (a, b) => b.totalScore - a.totalScore,
+  )
 })
 
 // Get church color by ID
 function getChurchColor(churchId: string): string {
-  const info = churchAnalysis.value.find(c => c.churchId === churchId)
+  const info = churchAnalysis.value.find((c) => c.churchId === churchId)
   return info?.color ?? '#888'
 }
 
@@ -281,8 +286,8 @@ function getTeamsByChurch(st: SuperteamResult): Map<string, TeamInfo[]> {
       <header class="mb-12">
         <h1 class="text-3xl font-semibold">LADD Superteams</h1>
         <p class="text-muted mt-2 max-w-2xl">
-          Distribute teams with scores into 4 balanced superteams (Purple, Green,
-          Red, Yellow). Teams from the same church are kept together.
+          Distribute teams with scores into 4 balanced superteams (Purple,
+          Green, Red, Yellow). Teams from the same church are kept together.
         </p>
       </header>
 
@@ -322,7 +327,10 @@ function getTeamsByChurch(st: SuperteamResult): Map<string, TeamInfo[]> {
             v-for="st in previewData.superteams"
             :key="st.name"
             class="border-default rounded-lg border p-4"
-            :style="{ borderLeftColor: superteamColors[st.name], borderLeftWidth: '4px' }"
+            :style="{
+              borderLeftColor: superteamColors[st.name],
+              borderLeftWidth: '4px',
+            }"
           >
             <div class="text-lg font-semibold">{{ st.name }}</div>
             <div class="text-muted text-sm">
@@ -335,9 +343,7 @@ function getTeamsByChurch(st: SuperteamResult): Map<string, TeamInfo[]> {
         </div>
 
         <!-- Balance metric -->
-        <div class="text-muted">
-          Balance: {{ balanceMetric }}
-        </div>
+        <div class="text-muted">Balance: {{ balanceMetric }}</div>
 
         <!-- Chart -->
         <div class="border-default rounded-lg border p-4">
@@ -367,7 +373,10 @@ function getTeamsByChurch(st: SuperteamResult): Map<string, TeamInfo[]> {
               v-for="church in churchAnalysis"
               :key="church.churchId"
               class="flex items-center gap-1.5 rounded-full px-2 py-1 text-xs"
-              :style="{ backgroundColor: church.color + '20', color: church.color }"
+              :style="{
+                backgroundColor: church.color + '20',
+                color: church.color,
+              }"
             >
               <div
                 class="size-2.5 rounded-full"
@@ -385,12 +394,17 @@ function getTeamsByChurch(st: SuperteamResult): Map<string, TeamInfo[]> {
               :key="st.name"
               class="flex items-center gap-4"
             >
-              <div class="w-20 font-medium" :style="{ color: superteamColors[st.name] }">
+              <div
+                class="w-20 font-medium"
+                :style="{ color: superteamColors[st.name] }"
+              >
                 {{ st.name }}
               </div>
               <div class="flex flex-1 gap-0.5 overflow-hidden rounded">
                 <div
-                  v-for="(teams, churchId) in Object.fromEntries(getTeamsByChurch(st))"
+                  v-for="(teams, churchId) in Object.fromEntries(
+                    getTeamsByChurch(st),
+                  )"
                   :key="churchId"
                   class="flex"
                 >
@@ -411,13 +425,19 @@ function getTeamsByChurch(st: SuperteamResult): Map<string, TeamInfo[]> {
 
           <!-- Church split summary -->
           <div class="mt-6 border-t pt-4">
-            <h3 class="mb-3 text-sm font-medium text-gray-500">Church Assignment Summary</h3>
+            <h3 class="mb-3 text-sm font-medium text-gray-500">
+              Church Assignment Summary
+            </h3>
             <div class="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
               <div
                 v-for="church in churchAnalysis"
                 :key="church.churchId"
                 class="flex items-center justify-between rounded-lg px-3 py-2"
-                :class="church.superteams.length > 1 ? 'bg-amber-50 dark:bg-amber-900/20' : 'bg-green-50 dark:bg-green-900/20'"
+                :class="
+                  church.superteams.length > 1
+                    ? 'bg-amber-50 dark:bg-amber-900/20'
+                    : 'bg-green-50 dark:bg-green-900/20'
+                "
               >
                 <div class="flex items-center gap-2">
                   <div
@@ -427,7 +447,9 @@ function getTeamsByChurch(st: SuperteamResult): Map<string, TeamInfo[]> {
                   <span class="font-medium">{{ church.label }}</span>
                 </div>
                 <div class="flex items-center gap-2 text-sm">
-                  <span class="text-gray-500">{{ church.teamCount }} teams in</span>
+                  <span class="text-gray-500"
+                    >{{ church.teamCount }} teams in</span
+                  >
                   <div class="flex gap-0.5">
                     <div
                       v-for="stName in church.superteams"
@@ -439,7 +461,11 @@ function getTeamsByChurch(st: SuperteamResult): Map<string, TeamInfo[]> {
                   </div>
                   <span
                     class="rounded px-1.5 py-0.5 text-xs font-medium"
-                    :class="church.superteams.length > 1 ? 'bg-amber-200 text-amber-800 dark:bg-amber-800 dark:text-amber-200' : 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200'"
+                    :class="
+                      church.superteams.length > 1
+                        ? 'bg-amber-200 text-amber-800 dark:bg-amber-800 dark:text-amber-200'
+                        : 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200'
+                    "
                   >
                     {{ church.superteams.length > 1 ? 'SPLIT' : 'TOGETHER' }}
                   </span>
@@ -517,7 +543,9 @@ function getTeamsByChurch(st: SuperteamResult): Map<string, TeamInfo[]> {
                     <td class="text-muted px-4 py-2 text-sm">
                       {{ team.church_name || team.church_id || '-' }}
                     </td>
-                    <td class="px-4 py-2 text-right">{{ team.member_count }}</td>
+                    <td class="px-4 py-2 text-right">
+                      {{ team.member_count }}
+                    </td>
                     <td class="px-4 py-2 text-right font-medium">
                       {{ formatNumber(team.total_score) }}
                     </td>
@@ -543,7 +571,9 @@ function getTeamsByChurch(st: SuperteamResult): Map<string, TeamInfo[]> {
         class="text-muted rounded-lg border border-dashed p-12 text-center"
       >
         <Icon name="lucide:users" class="mx-auto mb-4 size-12 opacity-50" />
-        <p class="text-lg">Click "Preview Distribution" to see the proposed superteam assignments</p>
+        <p class="text-lg">
+          Click "Preview Distribution" to see the proposed superteam assignments
+        </p>
       </div>
     </UContainer>
   </div>
