@@ -160,13 +160,13 @@ func (h *excaliburUserURLHandler) handle(c *gin.Context) {
 	normalizedPath := "/" + strings.TrimPrefix(path, "/")
 	userURL := fmt.Sprintf("%s%s?token=%s", baseURL, normalizedPath, url.QueryEscape(tokenString))
 
-	slog.Info("excalibur_user_url: redirecting to Excalibur",
+	slog.Info("excalibur_user_url: URL generated successfully",
 		"user_id", userID,
 		"church_id", user.ChurchID,
 		"project_id", projectID,
 	)
 
-	c.Redirect(http.StatusFound, userURL)
+	c.JSON(http.StatusOK, gin.H{"url": userURL})
 }
 
 // getQuerier returns the querier to use (test mock or real implementation).

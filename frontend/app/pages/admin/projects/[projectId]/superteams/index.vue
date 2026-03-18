@@ -149,11 +149,31 @@ async function previewDistribution() {
 
 // Execute distribution
 async function executeDistribution() {
+  if (!previewData.value) {
+    toast.add({
+      title: 'Preview required',
+      description: 'Please preview the distribution before executing',
+      color: 'warning',
+    })
+    return
+  }
+
   isDistributeLoading.value = true
   error.value = null
 
   try {
-    const body: Record<string, string> = { project_id: route.params.projectId }
+    // Pass the previewed superteam assignments to ensure what user saw is what gets stored
+    const body: {
+      project_id: string
+      event_id?: string
+      superteams: { name: string; team_ids: string[] }[]
+    } = {
+      project_id: route.params.projectId,
+      superteams: previewData.value.superteams.map((st) => ({
+        name: st.name,
+        team_ids: st.teams.map((t) => t.team_id),
+      })),
+    }
     if (selectedEventId.value) {
       body.event_id = selectedEventId.value
     }
@@ -359,7 +379,7 @@ function getTeamsByChurch(st: SuperteamResult): Map<string, TeamInfo[]> {
         </UButton>
         <UButton
           :loading="isDistributeLoading"
-          :disabled="isPreviewLoading"
+          :disabled="isPreviewLoading || !previewData"
           color="primary"
           @click="executeDistribution"
         >

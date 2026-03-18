@@ -2,6 +2,7 @@ package ladder_to_heaven
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"sort"
@@ -31,6 +32,7 @@ type distributionQuerier interface {
 	GetTeamsWithScoresForDistribution(ctx context.Context, projectID string) ([]*sqlc.GetTeamsWithScoresForDistributionRow, error)
 	GetTeamsWithScoresAndAttendingForDistribution(ctx context.Context, arg sqlc.GetTeamsWithScoresAndAttendingForDistributionParams) ([]*sqlc.GetTeamsWithScoresAndAttendingForDistributionRow, error)
 	GetUserIDsByEventID(ctx context.Context, eventID string) ([]string, error)
+	GetTeamsByIDs(ctx context.Context, ids []string) ([]*sqlc.GetTeamsByIDsRow, error)
 	ClearSuperTeamAssignmentsForProject(ctx context.Context, projectID string) error
 	DeleteSuperTeamsByProjectID(ctx context.Context, projectID string) error
 	CreateSuperTeam(ctx context.Context, arg sqlc.CreateSuperTeamParams) (*sqlc.SuperTeam, error)
@@ -78,8 +80,15 @@ type DistributionResponse struct {
 
 // DistributeRequest is the request body for the distribute endpoint.
 type DistributeRequest struct {
-	ProjectID string `json:"project_id" binding:"required"`
-	EventID   string `json:"event_id"` // Optional: if provided, fetch attending users from user_events
+	ProjectID  string                     `json:"project_id" binding:"required"`
+	EventID    string                     `json:"event_id"`   // Optional: if provided, fetch attending users from user_events
+	Superteams []SuperteamAssignmentInput `json:"superteams"` // Optional: if provided, use this distribution instead of recalculating
+}
+
+// SuperteamAssignmentInput represents a superteam assignment from the frontend.
+type SuperteamAssignmentInput struct {
+	Name    string   `json:"name" binding:"required"`
+	TeamIDs []string `json:"team_ids" binding:"required"`
 }
 
 // DistributionWeights configures the relative importance of balancing factors.
@@ -194,8 +203,17 @@ func (h *superteamDistributionHandler) handle(c *gin.Context) {
 	querier := h.getQuerier()
 
 	var result DistributionResponse
+	var err error
 
-	if req.EventID != "" {
+	// If superteams are provided, use them directly instead of recalculating
+	if len(req.Superteams) > 0 {
+		result, err = h.buildDistributionFromInput(ctx, querier, req.Superteams, req.ProjectID)
+		if err != nil {
+			slog.Error("superteam_distribution: failed to build distribution from input", "error", err, "project_id", req.ProjectID)
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+	} else if req.EventID != "" {
 		// Use attending-aware distribution
 		attendingUserIDs, err := querier.GetUserIDsByEventID(ctx, req.EventID)
 		if err != nil {
@@ -827,6 +845,90 @@ func (h *superteamDistributionHandler) swapChurchesBetweenBuckets(bucket1, bucke
 	for _, team := range church2.Teams {
 		bucket1.MemberCount += team.MemberCount
 	}
+}
+
+// buildDistributionFromInput creates a DistributionResponse from user-provided superteam assignments.
+// It validates that all team IDs exist and belong to the specified project.
+func (h *superteamDistributionHandler) buildDistributionFromInput(ctx context.Context, querier distributionQuerier, assignments []SuperteamAssignmentInput, projectID string) (DistributionResponse, error) {
+	// Validate we have exactly 4 superteams
+	if len(assignments) != 4 {
+		return DistributionResponse{}, fmt.Errorf("expected 4 superteams, got %d", len(assignments))
+	}
+
+	// Validate superteam names
+	nameSet := make(map[string]bool)
+	for _, name := range superteamNames {
+		nameSet[name] = true
+	}
+	for _, assignment := range assignments {
+		if !nameSet[assignment.Name] {
+			return DistributionResponse{}, fmt.Errorf("invalid superteam name: %s", assignment.Name)
+		}
+	}
+
+	// Collect all team IDs and check for duplicates
+	allTeamIDs := make([]string, 0)
+	seenTeamIDs := make(map[string]bool)
+	for _, assignment := range assignments {
+		for _, teamID := range assignment.TeamIDs {
+			if seenTeamIDs[teamID] {
+				return DistributionResponse{}, fmt.Errorf("team %s appears in multiple superteams", teamID)
+			}
+			seenTeamIDs[teamID] = true
+			allTeamIDs = append(allTeamIDs, teamID)
+		}
+	}
+
+	// Fetch all teams to validate they exist and belong to this project
+	teams, err := querier.GetTeamsByIDs(ctx, allTeamIDs)
+	if err != nil {
+		return DistributionResponse{}, fmt.Errorf("failed to fetch teams: %w", err)
+	}
+
+	// Create a map for quick lookup
+	teamMap := make(map[string]*sqlc.GetTeamsByIDsRow)
+	for _, team := range teams {
+		teamMap[team.ID] = team
+	}
+
+	// Validate all teams exist and belong to this project
+	for _, teamID := range allTeamIDs {
+		team, exists := teamMap[teamID]
+		if !exists {
+			return DistributionResponse{}, fmt.Errorf("team %s not found", teamID)
+		}
+		if team.ProjectID != projectID {
+			return DistributionResponse{}, fmt.Errorf("team %s does not belong to project %s", teamID, projectID)
+		}
+	}
+
+	// Build the result
+	buckets := make([]SuperteamResult, 4)
+	for i, assignment := range assignments {
+		buckets[i] = SuperteamResult{
+			SuperTeamID: ulid.NewSuperTeamID(),
+			Name:        assignment.Name,
+			Teams:       make([]TeamInfo, 0, len(assignment.TeamIDs)),
+			Churches:    []string{},
+		}
+
+		for _, teamID := range assignment.TeamIDs {
+			team := teamMap[teamID]
+			buckets[i].Teams = append(buckets[i].Teams, TeamInfo{
+				TeamID:   team.ID,
+				TeamName: team.Name,
+				// Note: church info not available from GetTeamsByIDs, but not needed for storage
+			})
+		}
+
+		buckets[i].TeamCount = len(buckets[i].Teams)
+	}
+
+	// Note: Variance is 0 since we don't have score info - not needed for execute
+	return DistributionResponse{
+		Superteams: buckets,
+		Variance:   0,
+	}, nil
 }
 
 // refineDistributionByScore attempts to improve score balance by swapping churches between buckets.

@@ -483,6 +483,11 @@ func (m *mockDistributionQuerier) GetUserIDsByEventID(_ context.Context, _ strin
 	return m.attendingUserIDs, nil
 }
 
+func (m *mockDistributionQuerier) GetTeamsByIDs(_ context.Context, ids []string) ([]*sqlc.GetTeamsByIDsRow, error) {
+	// Return empty slice by default - tests that need this can override
+	return []*sqlc.GetTeamsByIDsRow{}, nil
+}
+
 func (m *mockDistributionQuerier) ClearSuperTeamAssignmentsForProject(_ context.Context, _ string) error {
 	return nil
 }
