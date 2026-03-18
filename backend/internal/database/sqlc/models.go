@@ -619,6 +619,8 @@ type SuperTeam struct {
 	Description *string            `json:"description"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	ImageUrl    *string            `json:"image_url"`
+	Color       *string            `json:"color"`
 }
 
 type Team struct {

@@ -1,10 +1,10 @@
 -- name: GetSuperTeamsByIDs :many
-SELECT id, project_id, name, description, created_at, updated_at
+SELECT id, project_id, name, description, image_url, color, created_at, updated_at
 FROM super_teams
 WHERE id = ANY(@ids::text[]);
 
 -- name: GetSuperTeamsFilteredCursor :many
-SELECT st.id, st.project_id, st.name, st.description, st.created_at, st.updated_at
+SELECT st.id, st.project_id, st.name, st.description, st.image_url, st.color, st.created_at, st.updated_at
 FROM super_teams st
 LEFT JOIN (
     SELECT super_team_id, COUNT(*) as team_count
@@ -58,7 +58,7 @@ WHERE
     AND (@maxmembers::int <= 0 OR COALESCE(m.member_count, 0) <= @maxmembers::int);
 
 -- name: GetSuperTeamsByUserIDs :many
-SELECT DISTINCT st.id, st.project_id, st.name, st.description, st.created_at, st.updated_at, tm.user_id
+SELECT DISTINCT st.id, st.project_id, st.name, st.description, st.image_url, st.color, st.created_at, st.updated_at, tm.user_id
 FROM super_teams st
 INNER JOIN teams t ON st.id = t.super_team_id
 INNER JOIN team_members tm ON t.id = tm.team_id
@@ -66,8 +66,8 @@ WHERE tm.user_id = ANY(@userids::text[])
 ORDER BY st.name ASC;
 
 -- name: CreateSuperTeam :one
-INSERT INTO super_teams (id, project_id, name, description)
-VALUES (@id, @project_id, @name, @description)
+INSERT INTO super_teams (id, project_id, name, description, image_url, color)
+VALUES (@id, @project_id, @name, @description, @image_url, @color)
 RETURNING *;
 
 -- name: DeleteSuperTeamsByProjectID :exec
@@ -78,6 +78,23 @@ UPDATE teams SET super_team_id = NULL WHERE project_id = @project_id;
 
 -- name: AssignTeamToSuperTeam :exec
 UPDATE teams SET super_team_id = @super_team_id WHERE id = @team_id;
+
+-- name: UpdateSuperTeam :one
+UPDATE super_teams
+SET
+    name = COALESCE(sqlc.narg('name')::text, name),
+    description = COALESCE(sqlc.narg('description')::text, description),
+    image_url = COALESCE(sqlc.narg('image_url')::text, image_url),
+    color = COALESCE(sqlc.narg('color')::text, color),
+    updated_at = now()
+WHERE id = @id::text
+RETURNING *;
+
+-- name: DeleteSuperTeam :exec
+DELETE FROM super_teams WHERE id = @id::text;
+
+-- name: ClearTeamsFromSuperTeam :exec
+UPDATE teams SET super_team_id = NULL WHERE super_team_id = @super_team_id::text;
 
 -- name: GetTeamsWithScoresForDistribution :many
 -- Returns teams with total score > 0 and team lead's church

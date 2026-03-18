@@ -34,6 +34,15 @@ func (q *Queries) ClearSuperTeamAssignmentsForProject(ctx context.Context, proje
 	return err
 }
 
+const ClearTeamsFromSuperTeam = `-- name: ClearTeamsFromSuperTeam :exec
+UPDATE teams SET super_team_id = NULL WHERE super_team_id = $1::text
+`
+
+func (q *Queries) ClearTeamsFromSuperTeam(ctx context.Context, superTeamID string) error {
+	_, err := q.db.Exec(ctx, ClearTeamsFromSuperTeam, superTeamID)
+	return err
+}
+
 const CountSuperTeamsFiltered = `-- name: CountSuperTeamsFiltered :one
 SELECT COUNT(DISTINCT st.id)
 FROM super_teams st
@@ -83,9 +92,9 @@ func (q *Queries) CountSuperTeamsFiltered(ctx context.Context, arg CountSuperTea
 }
 
 const CreateSuperTeam = `-- name: CreateSuperTeam :one
-INSERT INTO super_teams (id, project_id, name, description)
-VALUES ($1, $2, $3, $4)
-RETURNING id, project_id, name, description, created_at, updated_at
+INSERT INTO super_teams (id, project_id, name, description, image_url, color)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, project_id, name, description, created_at, updated_at, image_url, color
 `
 
 type CreateSuperTeamParams struct {
@@ -93,6 +102,8 @@ type CreateSuperTeamParams struct {
 	ProjectID   string  `json:"project_id"`
 	Name        string  `json:"name"`
 	Description *string `json:"description"`
+	ImageUrl    *string `json:"image_url"`
+	Color       *string `json:"color"`
 }
 
 func (q *Queries) CreateSuperTeam(ctx context.Context, arg CreateSuperTeamParams) (*SuperTeam, error) {
@@ -101,6 +112,8 @@ func (q *Queries) CreateSuperTeam(ctx context.Context, arg CreateSuperTeamParams
 		arg.ProjectID,
 		arg.Name,
 		arg.Description,
+		arg.ImageUrl,
+		arg.Color,
 	)
 	var i SuperTeam
 	err := row.Scan(
@@ -110,8 +123,19 @@ func (q *Queries) CreateSuperTeam(ctx context.Context, arg CreateSuperTeamParams
 		&i.Description,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ImageUrl,
+		&i.Color,
 	)
 	return &i, err
+}
+
+const DeleteSuperTeam = `-- name: DeleteSuperTeam :exec
+DELETE FROM super_teams WHERE id = $1::text
+`
+
+func (q *Queries) DeleteSuperTeam(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, DeleteSuperTeam, id)
+	return err
 }
 
 const DeleteSuperTeamsByProjectID = `-- name: DeleteSuperTeamsByProjectID :exec
@@ -124,25 +148,38 @@ func (q *Queries) DeleteSuperTeamsByProjectID(ctx context.Context, projectID str
 }
 
 const GetSuperTeamsByIDs = `-- name: GetSuperTeamsByIDs :many
-SELECT id, project_id, name, description, created_at, updated_at
+SELECT id, project_id, name, description, image_url, color, created_at, updated_at
 FROM super_teams
 WHERE id = ANY($1::text[])
 `
 
-func (q *Queries) GetSuperTeamsByIDs(ctx context.Context, ids []string) ([]*SuperTeam, error) {
+type GetSuperTeamsByIDsRow struct {
+	ID          string             `json:"id"`
+	ProjectID   string             `json:"project_id"`
+	Name        string             `json:"name"`
+	Description *string            `json:"description"`
+	ImageUrl    *string            `json:"image_url"`
+	Color       *string            `json:"color"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetSuperTeamsByIDs(ctx context.Context, ids []string) ([]*GetSuperTeamsByIDsRow, error) {
 	rows, err := q.db.Query(ctx, GetSuperTeamsByIDs, ids)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*SuperTeam{}
+	items := []*GetSuperTeamsByIDsRow{}
 	for rows.Next() {
-		var i SuperTeam
+		var i GetSuperTeamsByIDsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.ProjectID,
 			&i.Name,
 			&i.Description,
+			&i.ImageUrl,
+			&i.Color,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -157,7 +194,7 @@ func (q *Queries) GetSuperTeamsByIDs(ctx context.Context, ids []string) ([]*Supe
 }
 
 const GetSuperTeamsByUserIDs = `-- name: GetSuperTeamsByUserIDs :many
-SELECT DISTINCT st.id, st.project_id, st.name, st.description, st.created_at, st.updated_at, tm.user_id
+SELECT DISTINCT st.id, st.project_id, st.name, st.description, st.image_url, st.color, st.created_at, st.updated_at, tm.user_id
 FROM super_teams st
 INNER JOIN teams t ON st.id = t.super_team_id
 INNER JOIN team_members tm ON t.id = tm.team_id
@@ -170,6 +207,8 @@ type GetSuperTeamsByUserIDsRow struct {
 	ProjectID   string             `json:"project_id"`
 	Name        string             `json:"name"`
 	Description *string            `json:"description"`
+	ImageUrl    *string            `json:"image_url"`
+	Color       *string            `json:"color"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 	UserID      string             `json:"user_id"`
@@ -189,6 +228,8 @@ func (q *Queries) GetSuperTeamsByUserIDs(ctx context.Context, userids []string) 
 			&i.ProjectID,
 			&i.Name,
 			&i.Description,
+			&i.ImageUrl,
+			&i.Color,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.UserID,
@@ -204,7 +245,7 @@ func (q *Queries) GetSuperTeamsByUserIDs(ctx context.Context, userids []string) 
 }
 
 const GetSuperTeamsFilteredCursor = `-- name: GetSuperTeamsFilteredCursor :many
-SELECT st.id, st.project_id, st.name, st.description, st.created_at, st.updated_at
+SELECT st.id, st.project_id, st.name, st.description, st.image_url, st.color, st.created_at, st.updated_at
 FROM super_teams st
 LEFT JOIN (
     SELECT super_team_id, COUNT(*) as team_count
@@ -247,7 +288,18 @@ type GetSuperTeamsFilteredCursorParams struct {
 	Querylimit   int32    `json:"querylimit"`
 }
 
-func (q *Queries) GetSuperTeamsFilteredCursor(ctx context.Context, arg GetSuperTeamsFilteredCursorParams) ([]*SuperTeam, error) {
+type GetSuperTeamsFilteredCursorRow struct {
+	ID          string             `json:"id"`
+	ProjectID   string             `json:"project_id"`
+	Name        string             `json:"name"`
+	Description *string            `json:"description"`
+	ImageUrl    *string            `json:"image_url"`
+	Color       *string            `json:"color"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetSuperTeamsFilteredCursor(ctx context.Context, arg GetSuperTeamsFilteredCursorParams) ([]*GetSuperTeamsFilteredCursorRow, error) {
 	rows, err := q.db.Query(ctx, GetSuperTeamsFilteredCursor,
 		arg.Ids,
 		arg.Projectid,
@@ -264,14 +316,16 @@ func (q *Queries) GetSuperTeamsFilteredCursor(ctx context.Context, arg GetSuperT
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*SuperTeam{}
+	items := []*GetSuperTeamsFilteredCursorRow{}
 	for rows.Next() {
-		var i SuperTeam
+		var i GetSuperTeamsFilteredCursorRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.ProjectID,
 			&i.Name,
 			&i.Description,
+			&i.ImageUrl,
+			&i.Color,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -340,4 +394,46 @@ func (q *Queries) GetTeamsWithScoresForDistribution(ctx context.Context, project
 		return nil, err
 	}
 	return items, nil
+}
+
+const UpdateSuperTeam = `-- name: UpdateSuperTeam :one
+UPDATE super_teams
+SET
+    name = COALESCE($1::text, name),
+    description = COALESCE($2::text, description),
+    image_url = COALESCE($3::text, image_url),
+    color = COALESCE($4::text, color),
+    updated_at = now()
+WHERE id = $5::text
+RETURNING id, project_id, name, description, created_at, updated_at, image_url, color
+`
+
+type UpdateSuperTeamParams struct {
+	Name        *string `json:"name"`
+	Description *string `json:"description"`
+	ImageUrl    *string `json:"image_url"`
+	Color       *string `json:"color"`
+	ID          string  `json:"id"`
+}
+
+func (q *Queries) UpdateSuperTeam(ctx context.Context, arg UpdateSuperTeamParams) (*SuperTeam, error) {
+	row := q.db.QueryRow(ctx, UpdateSuperTeam,
+		arg.Name,
+		arg.Description,
+		arg.ImageUrl,
+		arg.Color,
+		arg.ID,
+	)
+	var i SuperTeam
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.Name,
+		&i.Description,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ImageUrl,
+		&i.Color,
+	)
+	return &i, err
 }

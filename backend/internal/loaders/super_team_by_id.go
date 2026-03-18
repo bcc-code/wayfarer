@@ -51,6 +51,8 @@ func superTeamByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(co
 					ID:          row.ID,
 					Name:        row.Name,
 					Description: description,
+					ImageUrl:    row.ImageUrl,
+					Color:       row.Color,
 					ProjectID:   row.ProjectID,
 				}
 

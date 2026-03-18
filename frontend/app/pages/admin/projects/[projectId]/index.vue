@@ -66,6 +66,22 @@ gql(`
         }
       }
     }
+    superteams(first: 50, filter: { projectId: $projectId }) {
+      edges {
+        node {
+          id
+          name
+          description
+          color
+          imageObject {
+            ...ImageFields
+          }
+          teams {
+            id
+          }
+        }
+      }
+    }
   }
 `)
 
@@ -251,6 +267,11 @@ async function handleReorder() {
               slot: 'achievements',
             },
             { value: 'challenges', label: 'Utfordringer', slot: 'challenges' },
+            {
+              value: 'superteams',
+              label: 'Superteams',
+              slot: 'superteams',
+            },
           ]"
           variant="link"
         >
@@ -314,6 +335,72 @@ async function handleReorder() {
                 </div>
               </template>
             </UTable>
+          </template>
+          <template #superteams>
+            <div v-if="canEdit" class="my-2">
+              <UButton
+                icon="lucide:plus"
+                :to="{
+                  name: 'admin-projects-projectId-superteams-new',
+                  params: { projectId: route.params.projectId },
+                }"
+              >
+                Opprett superteam
+              </UButton>
+            </div>
+            <UTable
+              :data="data.superteams.edges.map((e) => e.node)"
+              :columns="[
+                { accessorKey: 'color', header: 'Farge' },
+                { accessorKey: 'imageObject', header: 'Bilde' },
+                { accessorKey: 'name', header: 'Navn' },
+                { accessorKey: 'teams', header: 'Lag' },
+                { id: 'actions' },
+              ]"
+            >
+              <template #color-cell="{ row }">
+                <div
+                  v-if="row.original.color"
+                  class="size-6 rounded-full border"
+                  :style="{ backgroundColor: row.original.color }"
+                />
+              </template>
+              <template #imageObject-cell="{ row }">
+                <img
+                  v-if="row.original.imageObject?.url"
+                  :src="row.original.imageObject.url"
+                  height="32"
+                  width="32"
+                  class="bg-muted size-8 rounded"
+                >
+              </template>
+              <template #teams-cell="{ row }">
+                {{ row.original.teams.length }} lag
+              </template>
+              <template #actions-cell="{ row }">
+                <div class="flex justify-end">
+                  <UButton
+                    variant="ghost"
+                    size="sm"
+                    :to="{
+                      name: 'admin-projects-projectId-superteams-superTeamId',
+                      params: {
+                        projectId: route.params.projectId,
+                        superTeamId: row.original.id,
+                      },
+                    }"
+                  >
+                    Rediger
+                  </UButton>
+                </div>
+              </template>
+            </UTable>
+            <div
+              v-if="data.superteams.edges.length === 0"
+              class="text-dimmed py-8 text-center"
+            >
+              Ingen superteams ennå
+            </div>
           </template>
           <template #achievements>
             <div v-if="canEdit" class="mt-2 mb-4">

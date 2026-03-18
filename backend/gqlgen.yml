@@ -187,6 +187,8 @@ models:
     extraFields:
       ProjectID:
         type: string
+      ImageUrl:
+        type: "*string"
 
   Streak:
     fields:

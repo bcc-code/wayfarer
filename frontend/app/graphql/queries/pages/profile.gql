@@ -65,5 +65,16 @@ query ProfilePage($ageFilter: LeaderboardFilter) {
         rank
       }
     }
+    myTeam {
+      superTeam {
+        id
+        name
+        color
+        imageObject {
+          url
+          blurhash
+        }
+      }
+    }
   }
 }

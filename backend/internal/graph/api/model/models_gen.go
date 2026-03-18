@@ -590,6 +590,8 @@ type CreateStreakInput struct {
 type CreateSuperTeamInput struct {
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
+	ImageURL    *string  `json:"imageUrl,omitempty"`
+	Color       *string  `json:"color,omitempty"`
 	TeamIds     []string `json:"teamIds,omitempty"`
 }
 
@@ -1907,9 +1909,12 @@ type SuperTeam struct {
 	ID            string          `json:"id"`
 	Name          string          `json:"name"`
 	Description   string          `json:"description"`
+	ImageObject   *Image          `json:"imageObject,omitempty"`
+	Color         *string         `json:"color,omitempty"`
 	Members       *UserConnection `json:"members"`
 	ParentProject *Project        `json:"parentProject"`
 	Teams         []Team          `json:"teams"`
+	ImageUrl      *string         `json:"-"`
 	ProjectID     string          `json:"-"`
 }
 
@@ -2151,6 +2156,8 @@ type UpdateStreakInput struct {
 type UpdateSuperTeamInput struct {
 	Name        *string `json:"name,omitempty"`
 	Description *string `json:"description,omitempty"`
+	ImageURL    *string `json:"imageUrl,omitempty"`
+	Color       *string `json:"color,omitempty"`
 }
 
 type UpdateTeamInput struct {

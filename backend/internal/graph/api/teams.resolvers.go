@@ -753,22 +753,167 @@ func (r *mutationResolver) AssignTeamLead(ctx context.Context, teamID string, us
 
 // CreateSuperTeam is the resolver for the createSuperTeam field.
 func (r *mutationResolver) CreateSuperTeam(ctx context.Context, projectID string, input model.CreateSuperTeamInput) (*model.SuperTeam, error) {
-	panic(fmt.Errorf("not implemented: CreateSuperTeam - createSuperTeam"))
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	if !r.RoleService.CanManageProject(ctx, userID, projectID) {
+		return nil, fmt.Errorf("unauthorized to create superteams in this project")
+	}
+
+	id := ulid.NewSuperTeamID()
+
+	row, err := r.DB.Queries.CreateSuperTeam(ctx, sqlc.CreateSuperTeamParams{
+		ID:          id,
+		ProjectID:   projectID,
+		Name:        input.Name,
+		Description: &input.Description,
+		ImageUrl:    input.ImageURL,
+		Color:       input.Color,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create superteam: %w", err)
+	}
+
+	// Assign teams if provided
+	for _, teamID := range input.TeamIds {
+		if err := r.DB.Queries.AssignTeamToSuperTeam(ctx, sqlc.AssignTeamToSuperTeamParams{
+			SuperTeamID: &id,
+			TeamID:      teamID,
+		}); err != nil {
+			return nil, fmt.Errorf("failed to assign team %s to superteam: %w", teamID, err)
+		}
+		r.Cache.InvalidateTeam(teamID)
+	}
+
+	// Invalidate caches
+	r.Cache.InvalidateSuperTeam(id)
+	r.Cache.DeletePrefix(cache.PrefixSuperTeamsFilter)
+	r.Cache.DeletePrefix(cache.PrefixSuperTeamsCount)
+
+	return convertSuperTeamRowToModel(row), nil
 }
 
 // UpdateSuperTeam is the resolver for the updateSuperTeam field.
 func (r *mutationResolver) UpdateSuperTeam(ctx context.Context, id string, input model.UpdateSuperTeamInput) (*model.SuperTeam, error) {
-	panic(fmt.Errorf("not implemented: UpdateSuperTeam - updateSuperTeam"))
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load existing to get project ID for auth check
+	existingST, err := r.Loaders.SuperTeamByIDLoader.Load(ctx, id)()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load superteam: %w", err)
+	}
+
+	if !r.RoleService.CanManageProject(ctx, userID, existingST.ProjectID) {
+		return nil, fmt.Errorf("unauthorized to update this superteam")
+	}
+
+	row, err := r.DB.Queries.UpdateSuperTeam(ctx, sqlc.UpdateSuperTeamParams{
+		ID:          id,
+		Name:        input.Name,
+		Description: input.Description,
+		ImageUrl:    input.ImageURL,
+		Color:       input.Color,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update superteam: %w", err)
+	}
+
+	// Invalidate caches
+	r.Cache.InvalidateSuperTeam(id)
+	r.Cache.DeletePrefix(cache.PrefixSuperTeamsFilter)
+	r.Cache.DeletePrefix(cache.PrefixSuperTeamsCount)
+	r.Loaders.SuperTeamByIDLoader.Clear(ctx, id)
+
+	return convertSuperTeamRowToModel(row), nil
 }
 
 // DeleteSuperTeam is the resolver for the deleteSuperTeam field.
 func (r *mutationResolver) DeleteSuperTeam(ctx context.Context, id string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteSuperTeam - deleteSuperTeam"))
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return false, fmt.Errorf("user not authenticated")
+	}
+
+	existingST, err := r.Loaders.SuperTeamByIDLoader.Load(ctx, id)()
+	if err != nil {
+		return false, fmt.Errorf("failed to load superteam: %w", err)
+	}
+
+	if !r.RoleService.CanManageProject(ctx, userID, existingST.ProjectID) {
+		return false, fmt.Errorf("unauthorized to delete this superteam")
+	}
+
+	// Clear team assignments before deleting
+	if err := r.DB.Queries.ClearTeamsFromSuperTeam(ctx, id); err != nil {
+		return false, fmt.Errorf("failed to clear team assignments: %w", err)
+	}
+
+	if err := r.DB.Queries.DeleteSuperTeam(ctx, id); err != nil {
+		return false, fmt.Errorf("failed to delete superteam: %w", err)
+	}
+
+	// Invalidate caches
+	r.Cache.InvalidateSuperTeam(id)
+	r.Cache.DeletePrefix(cache.PrefixSuperTeamsFilter)
+	r.Cache.DeletePrefix(cache.PrefixSuperTeamsCount)
+	r.Cache.DeletePrefix(cache.PrefixTeamsFilter)
+	r.Cache.DeletePrefix(cache.PrefixTeamsCount)
+
+	return true, nil
 }
 
 // AssignTeamsToSuperTeam is the resolver for the assignTeamsToSuperTeam field.
 func (r *mutationResolver) AssignTeamsToSuperTeam(ctx context.Context, superTeamID string, teamIds []string) (*model.SuperTeam, error) {
-	panic(fmt.Errorf("not implemented: AssignTeamsToSuperTeam - assignTeamsToSuperTeam"))
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	existingST, err := r.Loaders.SuperTeamByIDLoader.Load(ctx, superTeamID)()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load superteam: %w", err)
+	}
+
+	if !r.RoleService.CanManageProject(ctx, userID, existingST.ProjectID) {
+		return nil, fmt.Errorf("unauthorized to assign teams to this superteam")
+	}
+
+	// Clear existing assignments
+	if err := r.DB.Queries.ClearTeamsFromSuperTeam(ctx, superTeamID); err != nil {
+		return nil, fmt.Errorf("failed to clear existing team assignments: %w", err)
+	}
+
+	// Assign new teams
+	for _, teamID := range teamIds {
+		if err := r.DB.Queries.AssignTeamToSuperTeam(ctx, sqlc.AssignTeamToSuperTeamParams{
+			SuperTeamID: &superTeamID,
+			TeamID:      teamID,
+		}); err != nil {
+			return nil, fmt.Errorf("failed to assign team %s: %w", teamID, err)
+		}
+		r.Cache.InvalidateTeam(teamID)
+	}
+
+	// Invalidate caches
+	r.Cache.InvalidateSuperTeam(superTeamID)
+	r.Cache.DeletePrefix(cache.PrefixSuperTeamsFilter)
+	r.Cache.DeletePrefix(cache.PrefixSuperTeamsCount)
+	r.Cache.DeletePrefix(cache.PrefixTeamsFilter)
+	r.Cache.DeletePrefix(cache.PrefixTeamsCount)
+	r.Loaders.SuperTeamByIDLoader.Clear(ctx, superTeamID)
+
+	// Reload and return
+	reloaded, err := r.Loaders.SuperTeamByIDLoader.Load(ctx, superTeamID)()
+	if err != nil {
+		return nil, fmt.Errorf("failed to reload superteam: %w", err)
+	}
+
+	return reloaded, nil
 }
 
 // RevokeTeamAchievement is the resolver for the revokeTeamAchievement field.
@@ -1145,6 +1290,8 @@ func (r *queryResolver) Superteams(ctx context.Context, filter *model.SuperTeamF
 			ProjectID:   row.ProjectID,
 			Name:        row.Name,
 			Description: description,
+			ImageUrl:    row.ImageUrl,
+			Color:       row.Color,
 		}
 	}
 
@@ -1163,6 +1310,11 @@ func (r *queryResolver) Superteams(ctx context.Context, filter *model.SuperTeamF
 	r.Cache.Set(cacheKey, connection)
 
 	return connection, nil
+}
+
+// ImageObject is the resolver for the imageObject field.
+func (r *superTeamResolver) ImageObject(ctx context.Context, obj *model.SuperTeam) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.ImageUrl)
 }
 
 // Members is the resolver for the members field.
