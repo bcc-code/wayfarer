@@ -170,16 +170,12 @@ func TestExcaliburUserURLHandler_Success(t *testing.T) {
 
 	handler.handle(c)
 
-	assert.Equal(t, http.StatusOK, w.Code)
+	// Should return 302 Found redirect
+	assert.Equal(t, http.StatusFound, w.Code)
 
-	var response map[string]interface{}
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	require.NoError(t, err)
-
-	// Response should contain "url" field
-	userURL, ok := response["url"].(string)
-	require.True(t, ok, "Response should contain url")
-	require.NotEmpty(t, userURL, "URL should not be empty")
+	// Get the redirect location
+	userURL := w.Header().Get("Location")
+	require.NotEmpty(t, userURL, "Location header should be set")
 
 	// URL should have the correct format
 	assert.True(t, strings.HasPrefix(userURL, testExcaliburBaseURL+"/callback?token="),
