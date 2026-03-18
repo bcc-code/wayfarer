@@ -24,6 +24,8 @@ var priorityChurchIDs = []string{"CH_PLACEHOLDER_1", "CH_PLACEHOLDER_2", "CH_PLA
 // distributionQuerier defines the database operations needed by the distribution handler.
 type distributionQuerier interface {
 	GetTeamsWithScoresForDistribution(ctx context.Context, projectID string) ([]*sqlc.GetTeamsWithScoresForDistributionRow, error)
+	GetTeamsWithScoresAndAttendingForDistribution(ctx context.Context, arg sqlc.GetTeamsWithScoresAndAttendingForDistributionParams) ([]*sqlc.GetTeamsWithScoresAndAttendingForDistributionRow, error)
+	GetUserIDsByEventID(ctx context.Context, eventID string) ([]string, error)
 	ClearSuperTeamAssignmentsForProject(ctx context.Context, projectID string) error
 	DeleteSuperTeamsByProjectID(ctx context.Context, projectID string) error
 	CreateSuperTeam(ctx context.Context, arg sqlc.CreateSuperTeamParams) (*sqlc.SuperTeam, error)
@@ -42,23 +44,25 @@ type superteamDistributionHandler struct {
 
 // TeamInfo represents a team with its score for distribution.
 type TeamInfo struct {
-	TeamID      string `json:"team_id"`
-	TeamName    string `json:"team_name"`
-	ChurchID    string `json:"church_id"`
-	ChurchName  string `json:"church_name"`
-	TotalScore  int64  `json:"total_score"`
-	MemberCount int32  `json:"member_count"`
+	TeamID         string `json:"team_id"`
+	TeamName       string `json:"team_name"`
+	ChurchID       string `json:"church_id"`
+	ChurchName     string `json:"church_name"`
+	TotalScore     int64  `json:"total_score"`
+	MemberCount    int32  `json:"member_count"`
+	AttendingCount int32  `json:"attending_count"`
 }
 
 // SuperteamResult represents a superteam with its assigned teams.
 type SuperteamResult struct {
-	SuperTeamID string     `json:"super_team_id"`
-	Name        string     `json:"name"`
-	TotalScore  int64      `json:"total_score"`
-	TeamCount   int        `json:"team_count"`
-	MemberCount int32      `json:"member_count"`
-	Teams       []TeamInfo `json:"teams"`
-	Churches    []string   `json:"churches"`
+	SuperTeamID    string     `json:"super_team_id"`
+	Name           string     `json:"name"`
+	TotalScore     int64      `json:"total_score"`
+	TeamCount      int        `json:"team_count"`
+	MemberCount    int32      `json:"member_count"`
+	AttendingCount int32      `json:"attending_count"`
+	Teams          []TeamInfo `json:"teams"`
+	Churches       []string   `json:"churches"`
 }
 
 // DistributionResponse is the response for preview/execute endpoints.
@@ -70,6 +74,24 @@ type DistributionResponse struct {
 // DistributeRequest is the request body for the distribute endpoint.
 type DistributeRequest struct {
 	ProjectID string `json:"project_id" binding:"required"`
+	EventID   string `json:"event_id"` // Optional: if provided, fetch attending users from user_events
+}
+
+// DistributionWeights configures the relative importance of balancing factors.
+// Higher weight means more importance in the distribution algorithm.
+type DistributionWeights struct {
+	Attending float64 // Weight for attending member balance (default 0.6)
+	Score     float64 // Weight for score balance (default 0.3)
+	TeamCount float64 // Weight for team count balance (default 0.1)
+}
+
+// DefaultDistributionWeights returns the default weights for distribution.
+func DefaultDistributionWeights() DistributionWeights {
+	return DistributionWeights{
+		Attending: 0.6,
+		Score:     0.3,
+		TeamCount: 0.1,
+	}
 }
 
 // allowedDistributionRoles are the roles that can use distribution endpoints.
@@ -85,30 +107,67 @@ func (h *superteamDistributionHandler) preview(c *gin.Context) {
 		return
 	}
 
+	eventID := c.Query("event_id") // Optional
+
 	if !h.checkAuth(c) {
 		return
 	}
 
 	querier := h.getQuerier()
 
-	// Get teams with scores
-	teams, err := querier.GetTeamsWithScoresForDistribution(ctx, projectID)
-	if err != nil {
-		slog.Error("superteam_distribution: failed to get teams", "error", err, "project_id", projectID)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve teams"})
-		return
-	}
+	var result DistributionResponse
 
-	if len(teams) == 0 {
-		c.JSON(http.StatusOK, DistributionResponse{
-			Superteams: []SuperteamResult{},
-			Variance:   0,
+	if eventID != "" {
+		// Use attending-aware distribution
+		attendingUserIDs, err := querier.GetUserIDsByEventID(ctx, eventID)
+		if err != nil {
+			slog.Error("superteam_distribution: failed to get attending users", "error", err, "event_id", eventID)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve attending users"})
+			return
+		}
+
+		teams, err := querier.GetTeamsWithScoresAndAttendingForDistribution(ctx, sqlc.GetTeamsWithScoresAndAttendingForDistributionParams{
+			AttendingUserIds: attendingUserIDs,
+			ProjectID:        projectID,
 		})
-		return
-	}
+		if err != nil {
+			slog.Error("superteam_distribution: failed to get teams with attending", "error", err, "project_id", projectID)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve teams"})
+			return
+		}
 
-	// Calculate distribution (preview only, no IDs assigned)
-	result := h.calculateDistribution(teams, false)
+		if len(teams) == 0 {
+			c.JSON(http.StatusOK, DistributionResponse{
+				Superteams: []SuperteamResult{},
+				Variance:   0,
+			})
+			return
+		}
+
+		if len(attendingUserIDs) == 0 {
+			slog.Warn("superteam_distribution: no attending users found, falling back to score-based distribution", "event_id", eventID)
+		}
+
+		result = h.calculateDistributionWithAttending(teams, false)
+	} else {
+		// Fall back to current score-based distribution
+		teams, err := querier.GetTeamsWithScoresForDistribution(ctx, projectID)
+		if err != nil {
+			slog.Error("superteam_distribution: failed to get teams", "error", err, "project_id", projectID)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve teams"})
+			return
+		}
+
+		if len(teams) == 0 {
+			c.JSON(http.StatusOK, DistributionResponse{
+				Superteams: []SuperteamResult{},
+				Variance:   0,
+			})
+			return
+		}
+
+		result = h.calculateDistribution(teams, false)
+	}
 
 	c.JSON(http.StatusOK, result)
 }
@@ -129,24 +188,59 @@ func (h *superteamDistributionHandler) handle(c *gin.Context) {
 
 	querier := h.getQuerier()
 
-	// Get teams with scores
-	teams, err := querier.GetTeamsWithScoresForDistribution(ctx, req.ProjectID)
-	if err != nil {
-		slog.Error("superteam_distribution: failed to get teams", "error", err, "project_id", req.ProjectID)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve teams"})
-		return
-	}
+	var result DistributionResponse
 
-	if len(teams) == 0 {
-		c.JSON(http.StatusOK, DistributionResponse{
-			Superteams: []SuperteamResult{},
-			Variance:   0,
+	if req.EventID != "" {
+		// Use attending-aware distribution
+		attendingUserIDs, err := querier.GetUserIDsByEventID(ctx, req.EventID)
+		if err != nil {
+			slog.Error("superteam_distribution: failed to get attending users", "error", err, "event_id", req.EventID)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve attending users"})
+			return
+		}
+
+		teams, err := querier.GetTeamsWithScoresAndAttendingForDistribution(ctx, sqlc.GetTeamsWithScoresAndAttendingForDistributionParams{
+			AttendingUserIds: attendingUserIDs,
+			ProjectID:        req.ProjectID,
 		})
-		return
-	}
+		if err != nil {
+			slog.Error("superteam_distribution: failed to get teams with attending", "error", err, "project_id", req.ProjectID)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve teams"})
+			return
+		}
 
-	// Calculate distribution with IDs
-	result := h.calculateDistribution(teams, true)
+		if len(teams) == 0 {
+			c.JSON(http.StatusOK, DistributionResponse{
+				Superteams: []SuperteamResult{},
+				Variance:   0,
+			})
+			return
+		}
+
+		if len(attendingUserIDs) == 0 {
+			slog.Warn("superteam_distribution: no attending users found, falling back to score-based distribution", "event_id", req.EventID)
+		}
+
+		result = h.calculateDistributionWithAttending(teams, true)
+	} else {
+		// Fall back to current score-based distribution
+		teams, err := querier.GetTeamsWithScoresForDistribution(ctx, req.ProjectID)
+		if err != nil {
+			slog.Error("superteam_distribution: failed to get teams", "error", err, "project_id", req.ProjectID)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve teams"})
+			return
+		}
+
+		if len(teams) == 0 {
+			c.JSON(http.StatusOK, DistributionResponse{
+				Superteams: []SuperteamResult{},
+				Variance:   0,
+			})
+			return
+		}
+
+		result = h.calculateDistribution(teams, true)
+	}
 
 	// Execute the distribution in a transaction
 	tx, err := h.db.Pool.Begin(ctx)
@@ -213,9 +307,14 @@ func (h *superteamDistributionHandler) handle(c *gin.Context) {
 	// Clear cache to ensure fresh data for leaderboards
 	h.cache.Clear()
 
+	// Calculate total team count from result
+	totalTeamCount := 0
+	for _, st := range result.Superteams {
+		totalTeamCount += st.TeamCount
+	}
 	slog.Info("superteam_distribution: distribution executed successfully",
 		"project_id", req.ProjectID,
-		"team_count", len(teams),
+		"team_count", totalTeamCount,
 	)
 
 	c.JSON(http.StatusOK, result)
@@ -223,11 +322,12 @@ func (h *superteamDistributionHandler) handle(c *gin.Context) {
 
 // churchGroup holds all teams from a single church for batch assignment
 type churchGroup struct {
-	ChurchID   string
-	ChurchName string
-	Teams      []TeamInfo
-	TotalScore int64
-	TeamCount  int
+	ChurchID       string
+	ChurchName     string
+	Teams          []TeamInfo
+	TotalScore     int64
+	TeamCount      int
+	AttendingCount int32
 }
 
 // calculateDistribution implements a church-cohesive greedy bin-packing algorithm.
@@ -360,10 +460,170 @@ func (h *superteamDistributionHandler) calculateDistribution(teams []*sqlc.GetTe
 	}
 }
 
+// calculateDistributionWithAttending implements an attending-aware church-cohesive distribution.
+// It prioritizes balancing attending members across superteams while maintaining the hard
+// constraint that churches are never split.
+func (h *superteamDistributionHandler) calculateDistributionWithAttending(teams []*sqlc.GetTeamsWithScoresAndAttendingForDistributionRow, generateIDs bool) DistributionResponse {
+	// Group teams by church
+	churchGroups := make(map[string]*churchGroup)
+	var totalPoints int64
+	var totalAttending int32
+	for _, team := range teams {
+		totalPoints += team.TotalScore
+		totalAttending += team.AttendingCount
+		if churchGroups[team.ChurchID] == nil {
+			churchGroups[team.ChurchID] = &churchGroup{
+				ChurchID:   team.ChurchID,
+				ChurchName: team.ChurchName,
+				Teams:      []TeamInfo{},
+			}
+		}
+		churchGroups[team.ChurchID].Teams = append(churchGroups[team.ChurchID].Teams, TeamInfo{
+			TeamID:         team.TeamID,
+			TeamName:       team.TeamName,
+			ChurchID:       team.ChurchID,
+			ChurchName:     team.ChurchName,
+			TotalScore:     team.TotalScore,
+			MemberCount:    team.MemberCount,
+			AttendingCount: team.AttendingCount,
+		})
+		churchGroups[team.ChurchID].TotalScore += team.TotalScore
+		churchGroups[team.ChurchID].TeamCount++
+		churchGroups[team.ChurchID].AttendingCount += team.AttendingCount
+	}
+
+	// Convert to slice and sort churches by attending count (descending)
+	// This ensures larger churches are placed first
+	churches := make([]*churchGroup, 0, len(churchGroups))
+	for _, cg := range churchGroups {
+		churches = append(churches, cg)
+	}
+	sort.Slice(churches, func(i, j int) bool {
+		return churches[i].AttendingCount > churches[j].AttendingCount
+	})
+
+	// Initialize 4 superteam buckets
+	buckets := make([]SuperteamResult, 4)
+	for i := 0; i < 4; i++ {
+		buckets[i] = SuperteamResult{
+			Name:       superteamNames[i],
+			Teams:      []TeamInfo{},
+			Churches:   []string{},
+			TotalScore: 0,
+		}
+		if generateIDs {
+			buckets[i].SuperTeamID = ulid.NewSuperTeamID()
+		}
+	}
+
+	// Track which churches have been assigned
+	assignedChurches := make(map[string]bool)
+
+	// Pre-seed priority churches to their designated buckets
+	for i, churchID := range priorityChurchIDs {
+		if cg, exists := churchGroups[churchID]; exists {
+			h.assignChurchToBucket(cg, &buckets[i])
+			assignedChurches[churchID] = true
+		}
+	}
+
+	// Pre-calculate averages for normalization
+	avgTeamCount := float64(len(teams)) / 4.0
+	avgScore := float64(totalPoints) / 4.0
+	avgAttending := float64(totalAttending) / 4.0
+
+	// Get distribution weights
+	weights := DefaultDistributionWeights()
+
+	// Check if we have any attending users
+	hasAttending := totalAttending > 0
+
+	// Assign remaining churches using weighted multi-objective balancing
+	for _, cg := range churches {
+		if assignedChurches[cg.ChurchID] {
+			continue
+		}
+
+		// Find bucket with best combined balance after adding this church
+		targetIdx := 0
+		bestImbalance := float64(1 << 62)
+		for i := 0; i < 4; i++ {
+			// Calculate what the bucket would look like after adding this church
+			newScore := buckets[i].TotalScore + cg.TotalScore
+			newTeamCount := len(buckets[i].Teams) + cg.TeamCount
+			newAttending := buckets[i].AttendingCount + cg.AttendingCount
+
+			var combinedImbalance float64
+
+			if hasAttending {
+				// Normalize relative to averages and apply weights
+				scoreImbalance := float64(newScore) / avgScore
+				teamCountImbalance := float64(newTeamCount) / avgTeamCount
+				attendingImbalance := float64(newAttending) / avgAttending
+
+				// Weighted combined imbalance - lower is better
+				combinedImbalance = weights.Attending*attendingImbalance +
+					weights.Score*scoreImbalance +
+					weights.TeamCount*teamCountImbalance
+			} else {
+				// Fall back to score + team count when no attending data
+				scoreImbalance := float64(newScore) / avgScore
+				teamCountImbalance := float64(newTeamCount) / avgTeamCount
+				combinedImbalance = scoreImbalance + teamCountImbalance
+			}
+
+			if combinedImbalance < bestImbalance {
+				bestImbalance = combinedImbalance
+				targetIdx = i
+			}
+		}
+
+		h.assignChurchToBucket(cg, &buckets[targetIdx])
+		assignedChurches[cg.ChurchID] = true
+	}
+
+	// Calculate team counts
+	for i := range buckets {
+		buckets[i].TeamCount = len(buckets[i].Teams)
+	}
+
+	// Recalculate churches list for consistency
+	for i := range buckets {
+		buckets[i].Churches = h.getUniqueChurches(buckets[i].Teams)
+	}
+
+	// Calculate variance for balance metric
+	variance := h.calculateVariance(buckets)
+
+	// Log the distribution result for visibility
+	bucketScores := make([]int64, len(buckets))
+	bucketTeamCounts := make([]int, len(buckets))
+	bucketAttendingCounts := make([]int32, len(buckets))
+	for i := range buckets {
+		bucketScores[i] = buckets[i].TotalScore
+		bucketTeamCounts[i] = buckets[i].TeamCount
+		bucketAttendingCounts[i] = buckets[i].AttendingCount
+	}
+	slog.Info("superteam_distribution: attending-aware distribution calculated",
+		"total_points", totalPoints,
+		"total_attending", totalAttending,
+		"bucket_scores", bucketScores,
+		"bucket_team_counts", bucketTeamCounts,
+		"bucket_attending_counts", bucketAttendingCounts,
+		"variance", variance,
+	)
+
+	return DistributionResponse{
+		Superteams: buckets,
+		Variance:   variance,
+	}
+}
+
 // assignChurchToBucket adds all teams from a church to a bucket
 func (h *superteamDistributionHandler) assignChurchToBucket(cg *churchGroup, bucket *SuperteamResult) {
 	bucket.Teams = append(bucket.Teams, cg.Teams...)
 	bucket.TotalScore += cg.TotalScore
+	bucket.AttendingCount += cg.AttendingCount
 	for _, team := range cg.Teams {
 		bucket.MemberCount += team.MemberCount
 	}

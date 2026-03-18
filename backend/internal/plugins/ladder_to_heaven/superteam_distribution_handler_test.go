@@ -466,11 +466,21 @@ func TestHasDistributionRole(t *testing.T) {
 
 // Mock implementation for testing
 type mockDistributionQuerier struct {
-	teams []*sqlc.GetTeamsWithScoresForDistributionRow
+	teams              []*sqlc.GetTeamsWithScoresForDistributionRow
+	teamsWithAttending []*sqlc.GetTeamsWithScoresAndAttendingForDistributionRow
+	attendingUserIDs   []string
 }
 
 func (m *mockDistributionQuerier) GetTeamsWithScoresForDistribution(_ context.Context, _ string) ([]*sqlc.GetTeamsWithScoresForDistributionRow, error) {
 	return m.teams, nil
+}
+
+func (m *mockDistributionQuerier) GetTeamsWithScoresAndAttendingForDistribution(_ context.Context, _ sqlc.GetTeamsWithScoresAndAttendingForDistributionParams) ([]*sqlc.GetTeamsWithScoresAndAttendingForDistributionRow, error) {
+	return m.teamsWithAttending, nil
+}
+
+func (m *mockDistributionQuerier) GetUserIDsByEventID(_ context.Context, _ string) ([]string, error) {
+	return m.attendingUserIDs, nil
 }
 
 func (m *mockDistributionQuerier) ClearSuperTeamAssignmentsForProject(_ context.Context, _ string) error {
@@ -811,4 +821,379 @@ func TestSuperteamDistributionHandler_ChurchesNeverSplit(t *testing.T) {
 	assert.Equal(t, 14, totalTeams)
 
 	visualizeDistribution(t, result)
+}
+
+// Tests for attending-aware distribution
+
+func TestSuperteamDistributionHandler_Preview_WithEventID(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockQuerier := &mockDistributionQuerier{
+		attendingUserIDs: []string{"US001", "US002", "US003", "US004"},
+		teamsWithAttending: []*sqlc.GetTeamsWithScoresAndAttendingForDistributionRow{
+			{TeamID: "TM001", TeamName: "Team 1", ChurchID: "CH001", TotalScore: 1000, MemberCount: 5, AttendingCount: 2},
+			{TeamID: "TM002", TeamName: "Team 2", ChurchID: "CH002", TotalScore: 800, MemberCount: 4, AttendingCount: 1},
+			{TeamID: "TM003", TeamName: "Team 3", ChurchID: "CH003", TotalScore: 1200, MemberCount: 6, AttendingCount: 1},
+			{TeamID: "TM004", TeamName: "Team 4", ChurchID: "CH004", TotalScore: 600, MemberCount: 3, AttendingCount: 0},
+		},
+	}
+
+	handler := &superteamDistributionHandler{
+		db:          nil,
+		cache:       nil,
+		jwtConfig:   config.JWTConfig{Issuer: "wayfarer"},
+		testQuerier: mockQuerier,
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/plugins/ladder-to-heaven/preview-superteams?project_id=PR123&event_id=EV123", nil)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+	c.Set("user_id", testUserID)
+	c.Set("user_roles", []string{"admin"})
+
+	handler.preview(c)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response DistributionResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	// Should have 4 superteams
+	assert.Len(t, response.Superteams, 4)
+
+	// All 4 teams should be distributed
+	totalTeams := 0
+	totalAttending := int32(0)
+	for _, st := range response.Superteams {
+		totalTeams += st.TeamCount
+		totalAttending += st.AttendingCount
+	}
+	assert.Equal(t, 4, totalTeams)
+	assert.Equal(t, int32(4), totalAttending) // Total attending across all superteams
+}
+
+func TestSuperteamDistributionHandler_CalculateDistributionWithAttending_AttendingBalance(t *testing.T) {
+	handler := &superteamDistributionHandler{}
+
+	// Create teams with varying attending counts across different churches
+	// The algorithm should try to balance attending members across superteams
+	teams := []*sqlc.GetTeamsWithScoresAndAttendingForDistributionRow{
+		// Church A: 3 teams with 10 attending total
+		{TeamID: "TM001", TeamName: "A1", ChurchID: "CH_A", TotalScore: 1000, MemberCount: 8, AttendingCount: 5},
+		{TeamID: "TM002", TeamName: "A2", ChurchID: "CH_A", TotalScore: 800, MemberCount: 6, AttendingCount: 3},
+		{TeamID: "TM003", TeamName: "A3", ChurchID: "CH_A", TotalScore: 600, MemberCount: 4, AttendingCount: 2},
+		// Church B: 2 teams with 8 attending total
+		{TeamID: "TM004", TeamName: "B1", ChurchID: "CH_B", TotalScore: 900, MemberCount: 7, AttendingCount: 5},
+		{TeamID: "TM005", TeamName: "B2", ChurchID: "CH_B", TotalScore: 700, MemberCount: 5, AttendingCount: 3},
+		// Church C: 2 teams with 6 attending total
+		{TeamID: "TM006", TeamName: "C1", ChurchID: "CH_C", TotalScore: 850, MemberCount: 6, AttendingCount: 4},
+		{TeamID: "TM007", TeamName: "C2", ChurchID: "CH_C", TotalScore: 650, MemberCount: 4, AttendingCount: 2},
+		// Church D: 1 team with 4 attending
+		{TeamID: "TM008", TeamName: "D1", ChurchID: "CH_D", TotalScore: 1100, MemberCount: 8, AttendingCount: 4},
+	}
+
+	result := handler.calculateDistributionWithAttending(teams, false)
+
+	// All 8 teams should be distributed
+	totalTeams := 0
+	totalAttending := int32(0)
+	for _, st := range result.Superteams {
+		totalTeams += st.TeamCount
+		totalAttending += st.AttendingCount
+	}
+	assert.Equal(t, 8, totalTeams)
+	assert.Equal(t, int32(28), totalAttending) // 10+8+6+4 = 28 total attending
+
+	// Check that churches are kept together
+	churchToSuperteams := make(map[string]map[string]bool)
+	for _, st := range result.Superteams {
+		for _, team := range st.Teams {
+			if churchToSuperteams[team.ChurchID] == nil {
+				churchToSuperteams[team.ChurchID] = make(map[string]bool)
+			}
+			churchToSuperteams[team.ChurchID][st.Name] = true
+		}
+	}
+
+	for churchID, superteams := range churchToSuperteams {
+		assert.Equal(t, 1, len(superteams),
+			"Church %s should be in exactly 1 superteam, but is in %d", churchID, len(superteams))
+	}
+
+	// Verify attending counts are reasonably balanced (within 2x of average)
+	avgAttending := float64(totalAttending) / 4.0
+	for _, st := range result.Superteams {
+		if st.TeamCount > 0 { // Only check non-empty superteams
+			ratio := float64(st.AttendingCount) / avgAttending
+			assert.Greater(t, ratio, 0.0, "Superteam %s should have some attending members", st.Name)
+		}
+	}
+
+	visualizeDistributionWithAttending(t, result)
+}
+
+func TestSuperteamDistributionHandler_CalculateDistributionWithAttending_NoAttending(t *testing.T) {
+	handler := &superteamDistributionHandler{}
+
+	// All teams have 0 attending - should fall back to score-based distribution
+	teams := []*sqlc.GetTeamsWithScoresAndAttendingForDistributionRow{
+		{TeamID: "TM001", TeamName: "A1", ChurchID: "CH_A", TotalScore: 1000, MemberCount: 8, AttendingCount: 0},
+		{TeamID: "TM002", TeamName: "B1", ChurchID: "CH_B", TotalScore: 1000, MemberCount: 8, AttendingCount: 0},
+		{TeamID: "TM003", TeamName: "C1", ChurchID: "CH_C", TotalScore: 1000, MemberCount: 8, AttendingCount: 0},
+		{TeamID: "TM004", TeamName: "D1", ChurchID: "CH_D", TotalScore: 1000, MemberCount: 8, AttendingCount: 0},
+	}
+
+	result := handler.calculateDistributionWithAttending(teams, false)
+
+	// All 4 teams should be distributed
+	totalTeams := 0
+	for _, st := range result.Superteams {
+		totalTeams += st.TeamCount
+	}
+	assert.Equal(t, 4, totalTeams)
+
+	// Each superteam should have exactly one team (perfectly balanced by score/count)
+	for _, st := range result.Superteams {
+		assert.Equal(t, 1, st.TeamCount)
+		assert.Equal(t, int32(0), st.AttendingCount)
+	}
+}
+
+func TestSuperteamDistributionHandler_CalculateDistributionWithAttending_OneChurchAllAttending(t *testing.T) {
+	handler := &superteamDistributionHandler{}
+
+	// Edge case: all attending members are in one church
+	// Church constraint wins - all teams from that church stay together
+	teams := []*sqlc.GetTeamsWithScoresAndAttendingForDistributionRow{
+		// Church A: all attending (20 total)
+		{TeamID: "TM001", TeamName: "A1", ChurchID: "CH_A", TotalScore: 1000, MemberCount: 10, AttendingCount: 10},
+		{TeamID: "TM002", TeamName: "A2", ChurchID: "CH_A", TotalScore: 800, MemberCount: 10, AttendingCount: 10},
+		// Other churches: no attending
+		{TeamID: "TM003", TeamName: "B1", ChurchID: "CH_B", TotalScore: 500, MemberCount: 5, AttendingCount: 0},
+		{TeamID: "TM004", TeamName: "C1", ChurchID: "CH_C", TotalScore: 500, MemberCount: 5, AttendingCount: 0},
+		{TeamID: "TM005", TeamName: "D1", ChurchID: "CH_D", TotalScore: 500, MemberCount: 5, AttendingCount: 0},
+		{TeamID: "TM006", TeamName: "E1", ChurchID: "CH_E", TotalScore: 500, MemberCount: 5, AttendingCount: 0},
+	}
+
+	result := handler.calculateDistributionWithAttending(teams, false)
+
+	// Find the superteam with CH_A
+	var superteamWithA *SuperteamResult
+	for i := range result.Superteams {
+		for _, team := range result.Superteams[i].Teams {
+			if team.ChurchID == "CH_A" {
+				superteamWithA = &result.Superteams[i]
+				break
+			}
+		}
+		if superteamWithA != nil {
+			break
+		}
+	}
+
+	require.NotNil(t, superteamWithA, "Should find superteam with CH_A")
+
+	// Both CH_A teams should be in the same superteam (church cohesion)
+	churchATeamCount := 0
+	for _, team := range superteamWithA.Teams {
+		if team.ChurchID == "CH_A" {
+			churchATeamCount++
+		}
+	}
+	assert.Equal(t, 2, churchATeamCount, "Both CH_A teams should be in the same superteam")
+
+	// That superteam should have all 20 attending members
+	assert.Equal(t, int32(20), superteamWithA.AttendingCount)
+
+	// All 6 teams should be distributed
+	totalTeams := 0
+	for _, st := range result.Superteams {
+		totalTeams += st.TeamCount
+	}
+	assert.Equal(t, 6, totalTeams)
+}
+
+func TestSuperteamDistributionHandler_CalculateDistributionWithAttending_ChurchCohesion(t *testing.T) {
+	handler := &superteamDistributionHandler{}
+
+	// Multiple teams from the same church - they should never be split
+	teams := []*sqlc.GetTeamsWithScoresAndAttendingForDistributionRow{
+		// Church with 5 teams (large church)
+		{TeamID: "TM01", TeamName: "Large1", ChurchID: "CH_LARGE", TotalScore: 2000, MemberCount: 10, AttendingCount: 8},
+		{TeamID: "TM02", TeamName: "Large2", ChurchID: "CH_LARGE", TotalScore: 1800, MemberCount: 9, AttendingCount: 7},
+		{TeamID: "TM03", TeamName: "Large3", ChurchID: "CH_LARGE", TotalScore: 1600, MemberCount: 8, AttendingCount: 6},
+		{TeamID: "TM04", TeamName: "Large4", ChurchID: "CH_LARGE", TotalScore: 1400, MemberCount: 7, AttendingCount: 5},
+		{TeamID: "TM05", TeamName: "Large5", ChurchID: "CH_LARGE", TotalScore: 1200, MemberCount: 6, AttendingCount: 4},
+		// Small churches
+		{TeamID: "TM06", TeamName: "Small1", ChurchID: "CH_S1", TotalScore: 800, MemberCount: 5, AttendingCount: 3},
+		{TeamID: "TM07", TeamName: "Small2", ChurchID: "CH_S2", TotalScore: 700, MemberCount: 4, AttendingCount: 2},
+		{TeamID: "TM08", TeamName: "Small3", ChurchID: "CH_S3", TotalScore: 600, MemberCount: 4, AttendingCount: 2},
+	}
+
+	result := handler.calculateDistributionWithAttending(teams, false)
+
+	// Find which superteam has the large church
+	var largeSuperteam *SuperteamResult
+	for i := range result.Superteams {
+		for _, team := range result.Superteams[i].Teams {
+			if team.ChurchID == "CH_LARGE" {
+				largeSuperteam = &result.Superteams[i]
+				break
+			}
+		}
+		if largeSuperteam != nil {
+			break
+		}
+	}
+
+	require.NotNil(t, largeSuperteam, "Should find superteam with CH_LARGE")
+
+	// All 5 teams from CH_LARGE should be in the same superteam
+	largeChurchTeamCount := 0
+	for _, team := range largeSuperteam.Teams {
+		if team.ChurchID == "CH_LARGE" {
+			largeChurchTeamCount++
+		}
+	}
+	assert.Equal(t, 5, largeChurchTeamCount, "All CH_LARGE teams should be in the same superteam")
+
+	// Total attending for that superteam should be 30 (8+7+6+5+4)
+	assert.GreaterOrEqual(t, largeSuperteam.AttendingCount, int32(30))
+
+	// All 8 teams should be distributed
+	totalTeams := 0
+	for _, st := range result.Superteams {
+		totalTeams += st.TeamCount
+	}
+	assert.Equal(t, 8, totalTeams)
+
+	visualizeDistributionWithAttending(t, result)
+}
+
+func TestSuperteamDistributionHandler_CalculateDistributionWithAttending_GeneratesIDs(t *testing.T) {
+	handler := &superteamDistributionHandler{}
+
+	teams := []*sqlc.GetTeamsWithScoresAndAttendingForDistributionRow{
+		{TeamID: "TM001", TeamName: "Team 1", ChurchID: "CH001", TotalScore: 1000, MemberCount: 5, AttendingCount: 3},
+	}
+
+	result := handler.calculateDistributionWithAttending(teams, true)
+
+	// All superteams should have IDs when generateIDs is true
+	for _, st := range result.Superteams {
+		assert.NotEmpty(t, st.SuperTeamID, "SuperTeamID should be generated")
+		assert.Len(t, st.SuperTeamID, 28, "SuperTeamID should be 28 characters (ST prefix + ULID)")
+		assert.Equal(t, "ST", st.SuperTeamID[:2], "SuperTeamID should have ST prefix")
+	}
+
+	// Test without ID generation
+	resultNoIDs := handler.calculateDistributionWithAttending(teams, false)
+	for _, st := range resultNoIDs.Superteams {
+		assert.Empty(t, st.SuperTeamID, "SuperTeamID should be empty when generateIDs is false")
+	}
+}
+
+func TestDefaultDistributionWeights(t *testing.T) {
+	weights := DefaultDistributionWeights()
+
+	assert.Equal(t, 0.6, weights.Attending)
+	assert.Equal(t, 0.3, weights.Score)
+	assert.Equal(t, 0.1, weights.TeamCount)
+
+	// Weights should sum to approximately 1.0 (allow for floating point precision)
+	total := weights.Attending + weights.Score + weights.TeamCount
+	assert.InDelta(t, 1.0, total, 0.0001)
+}
+
+// visualizeDistributionWithAttending prints a visual representation with attending counts
+func visualizeDistributionWithAttending(t *testing.T, result DistributionResponse) {
+	t.Helper()
+
+	// Calculate totals
+	var totalScore int64
+	var totalTeams int
+	var totalAttending int32
+	for _, st := range result.Superteams {
+		totalScore += st.TotalScore
+		totalTeams += st.TeamCount
+		totalAttending += st.AttendingCount
+	}
+	targetScore := totalScore / 4
+	targetAttending := totalAttending / 4
+
+	t.Logf("\n")
+	t.Logf("============================================================")
+	t.Logf("SUPERTEAM DISTRIBUTION WITH ATTENDING VISUALIZATION")
+	t.Logf("============================================================")
+	t.Logf("Total Teams: %d | Total Score: %d | Total Attending: %d", totalTeams, totalScore, totalAttending)
+	t.Logf("Target per ST - Score: %d | Attending: %d", targetScore, targetAttending)
+	t.Logf("------------------------------------------------------------")
+
+	// Collect all unique churches and assign them short labels
+	churchLabels := make(map[string]string)
+	labelIndex := 0
+	labels := []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P"}
+	for _, st := range result.Superteams {
+		for _, team := range st.Teams {
+			if team.ChurchID != "" {
+				if _, exists := churchLabels[team.ChurchID]; !exists {
+					if labelIndex < len(labels) {
+						churchLabels[team.ChurchID] = labels[labelIndex]
+						labelIndex++
+					} else {
+						churchLabels[team.ChurchID] = "?"
+					}
+				}
+			}
+		}
+	}
+
+	// Print church legend
+	t.Logf("\nCHURCH LEGEND:")
+	for churchID, label := range churchLabels {
+		t.Logf("  [%s] = %s", label, churchID)
+	}
+	t.Logf("")
+
+	// Print each superteam
+	for _, st := range result.Superteams {
+		scoreDeviation := st.TotalScore - targetScore
+		scoreDeviationPct := float64(0)
+		if targetScore > 0 {
+			scoreDeviationPct = float64(scoreDeviation) / float64(targetScore) * 100
+		}
+
+		attendingDeviation := st.AttendingCount - int32(targetAttending)
+		attendingDeviationPct := float64(0)
+		if targetAttending > 0 {
+			attendingDeviationPct = float64(attendingDeviation) / float64(targetAttending) * 100
+		}
+
+		t.Logf("%-8s | Teams: %3d | Score: %8d (%+.1f%%) | Attending: %3d (%+.1f%%)",
+			st.Name, st.TeamCount, st.TotalScore, scoreDeviationPct, st.AttendingCount, attendingDeviationPct)
+
+		// Group teams by church for visualization
+		churchTeams := make(map[string][]TeamInfo)
+		for _, team := range st.Teams {
+			label := churchLabels[team.ChurchID]
+			if label == "" {
+				label = "?"
+			}
+			churchTeams[label] = append(churchTeams[label], team)
+		}
+
+		// Build visual bar showing church distribution
+		var bar string
+		for label, teams := range churchTeams {
+			for range teams {
+				bar += "[" + label + "]"
+			}
+		}
+		t.Logf("         | %s", bar)
+		t.Logf("")
+	}
+
+	t.Logf("============================================================\n")
 }

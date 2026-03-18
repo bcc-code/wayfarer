@@ -339,6 +339,71 @@ func (q *Queries) GetSuperTeamsFilteredCursor(ctx context.Context, arg GetSuperT
 	return items, nil
 }
 
+const GetTeamsWithScoresAndAttendingForDistribution = `-- name: GetTeamsWithScoresAndAttendingForDistribution :many
+SELECT
+    t.id AS team_id,
+    t.name AS team_name,
+    COALESCE(lead_user.church_id, '') AS church_id,
+    COALESCE(c.name, '') AS church_name,
+    COALESCE(SUM(sj.points), 0)::bigint AS total_score,
+    COUNT(DISTINCT tm.user_id)::int AS member_count,
+    COUNT(DISTINCT CASE WHEN tm.user_id = ANY($1::text[]) THEN tm.user_id END)::int AS attending_count
+FROM teams t
+LEFT JOIN user_roles ur ON ur.team_id = t.id AND ur.role = 'TEAM_LEAD'
+LEFT JOIN users lead_user ON ur.user_id = lead_user.id
+LEFT JOIN churches c ON lead_user.church_id = c.id
+INNER JOIN team_members tm ON t.id = tm.team_id
+LEFT JOIN score_journal sj ON sj.user_id = tm.user_id AND sj.project_id = t.project_id
+WHERE t.project_id = $2
+  AND t.leaderboard_excluded = false
+GROUP BY t.id, t.name, lead_user.church_id, c.name
+HAVING COALESCE(SUM(sj.points), 0) > 0
+`
+
+type GetTeamsWithScoresAndAttendingForDistributionParams struct {
+	AttendingUserIds []string `json:"attending_user_ids"`
+	ProjectID        string   `json:"project_id"`
+}
+
+type GetTeamsWithScoresAndAttendingForDistributionRow struct {
+	TeamID         string `json:"team_id"`
+	TeamName       string `json:"team_name"`
+	ChurchID       string `json:"church_id"`
+	ChurchName     string `json:"church_name"`
+	TotalScore     int64  `json:"total_score"`
+	MemberCount    int32  `json:"member_count"`
+	AttendingCount int32  `json:"attending_count"`
+}
+
+// Returns teams with total score > 0, team lead's church, and attending member count
+func (q *Queries) GetTeamsWithScoresAndAttendingForDistribution(ctx context.Context, arg GetTeamsWithScoresAndAttendingForDistributionParams) ([]*GetTeamsWithScoresAndAttendingForDistributionRow, error) {
+	rows, err := q.db.Query(ctx, GetTeamsWithScoresAndAttendingForDistribution, arg.AttendingUserIds, arg.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetTeamsWithScoresAndAttendingForDistributionRow{}
+	for rows.Next() {
+		var i GetTeamsWithScoresAndAttendingForDistributionRow
+		if err := rows.Scan(
+			&i.TeamID,
+			&i.TeamName,
+			&i.ChurchID,
+			&i.ChurchName,
+			&i.TotalScore,
+			&i.MemberCount,
+			&i.AttendingCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetTeamsWithScoresForDistribution = `-- name: GetTeamsWithScoresForDistribution :many
 SELECT
     t.id AS team_id,

@@ -4416,6 +4416,13 @@ export type AdminSuperTeamNewPageQueryVariables = Exact<{
 
 export type AdminSuperTeamNewPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string } };
 
+export type SuperteamsPageEventsQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type SuperteamsPageEventsQuery = { __typename?: 'Query', events: { __typename?: 'EventConnection', edges: Array<{ __typename?: 'EventEdge', node: { __typename?: 'Event', id: string, name: string, startDate: any } }> } };
+
 export type AdminProjectsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -7030,6 +7037,23 @@ export const AdminSuperTeamNewPageDocument = gql`
 
 export function useAdminSuperTeamNewPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminSuperTeamNewPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminSuperTeamNewPageQuery, AdminSuperTeamNewPageQueryVariables | undefined>({ query: AdminSuperTeamNewPageDocument, variables: undefined, ...options });
+};
+export const SuperteamsPageEventsDocument = gql`
+    query SuperteamsPageEvents($projectId: ID!) {
+  events(first: 100, filter: {projectId: $projectId}) {
+    edges {
+      node {
+        id
+        name
+        startDate
+      }
+    }
+  }
+}
+    `;
+
+export function useSuperteamsPageEventsQuery(options?: Omit<Urql.UseQueryArgs<never, SuperteamsPageEventsQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<SuperteamsPageEventsQuery, SuperteamsPageEventsQueryVariables | undefined>({ query: SuperteamsPageEventsDocument, variables: undefined, ...options });
 };
 export const AdminProjectsPageDocument = gql`
     query AdminProjectsPage {

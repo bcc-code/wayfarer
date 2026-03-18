@@ -452,7 +452,7 @@ async function enrollUnitLeadersInChallenge() {
                 {{ $t('admin.gamenight.lockBetting') }}
               </UButton>
               <p>
-                {{ $t('admin.gamenight.bettingLockedNotice') }} <br />
+                {{ $t('admin.gamenight.bettingLockedNotice') }} <br >
                 {{ $t('admin.gamenight.reopenBettingHint') }}
               </p>
             </div>

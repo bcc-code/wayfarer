@@ -43,6 +43,30 @@ func (q *Queries) GetUserEvents(ctx context.Context, userid string) ([]*GetUserE
 	return items, nil
 }
 
+const GetUserIDsByEventID = `-- name: GetUserIDsByEventID :many
+SELECT user_id FROM user_events WHERE event_id = $1
+`
+
+func (q *Queries) GetUserIDsByEventID(ctx context.Context, eventID string) ([]string, error) {
+	rows, err := q.db.Query(ctx, GetUserIDsByEventID, eventID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var user_id string
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const IsUserInEvent = `-- name: IsUserInEvent :one
 SELECT EXISTS(
     SELECT 1

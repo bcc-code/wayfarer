@@ -6,9 +6,41 @@ definePageMeta({
   middleware: 'admin',
 })
 
+gql(`
+  query SuperteamsPageEvents($projectId: ID!) {
+    events(first: 100, filter: { projectId: $projectId }) {
+      edges {
+        node {
+          id
+          name
+          startDate
+        }
+      }
+    }
+  }
+`)
+
 const route = useRoute('admin-projects-projectId-superteams')
 const config = useRuntimeConfig()
 const toast = useToast()
+
+// Auth and events query
+const { isAuthReady } = useAuthReady()
+const { data: eventsData, fetching: eventsFetching } = useSuperteamsPageEventsQuery({
+  variables: { projectId: route.params.projectId },
+  pause: computed(() => !isAuthReady.value),
+})
+
+// Event selection
+const selectedEventId = ref<string | null>(null)
+
+const eventOptions = computed(() => {
+  const events = eventsData.value?.events.edges ?? []
+  return events.map((edge) => ({
+    value: edge.node.id,
+    label: edge.node.name,
+  }))
+})
 
 // Response types matching backend
 interface TeamInfo {
@@ -18,6 +50,7 @@ interface TeamInfo {
   church_name: string
   total_score: number
   member_count: number
+  attending_count: number
 }
 
 interface SuperteamResult {
@@ -26,6 +59,7 @@ interface SuperteamResult {
   total_score: number
   team_count: number
   member_count: number
+  attending_count: number
   teams: TeamInfo[]
   churches: string[]
 }
@@ -94,10 +128,11 @@ async function previewDistribution() {
   error.value = null
 
   try {
-    const data = await makeRequest<DistributionResponse>(
-      `/plugins/ladder-to-heaven/preview-superteams?project_id=${route.params.projectId}`,
-      'GET',
-    )
+    let endpoint = `/plugins/ladder-to-heaven/preview-superteams?project_id=${route.params.projectId}`
+    if (selectedEventId.value) {
+      endpoint += `&event_id=${selectedEventId.value}`
+    }
+    const data = await makeRequest<DistributionResponse>(endpoint, 'GET')
     previewData.value = data
   } catch (err) {
     error.value =
@@ -118,10 +153,14 @@ async function executeDistribution() {
   error.value = null
 
   try {
+    const body: Record<string, string> = { project_id: route.params.projectId }
+    if (selectedEventId.value) {
+      body.event_id = selectedEventId.value
+    }
     const data = await makeRequest<DistributionResponse>(
       '/plugins/ladder-to-heaven/distribute-superteams',
       'POST',
-      { project_id: route.params.projectId },
+      body,
     )
     previewData.value = data
 
@@ -291,6 +330,22 @@ function getTeamsByChurch(st: SuperteamResult): Map<string, TeamInfo[]> {
         </p>
       </header>
 
+      <!-- Event selection -->
+      <div class="mb-6">
+        <UFormField label="Attendance Event (optional)">
+          <USelect
+            v-model="selectedEventId"
+            :items="eventOptions"
+            :loading="eventsFetching"
+            placeholder="None (score-based only)"
+            class="w-80"
+          />
+        </UFormField>
+        <p v-if="selectedEventId" class="text-muted mt-1 text-sm">
+          Distribution will prioritize balancing attending members.
+        </p>
+      </div>
+
       <!-- Action buttons -->
       <div class="mb-8 flex gap-4">
         <UButton
@@ -334,7 +389,13 @@ function getTeamsByChurch(st: SuperteamResult): Map<string, TeamInfo[]> {
           >
             <div class="text-lg font-semibold">{{ st.name }}</div>
             <div class="text-muted text-sm">
-              {{ st.team_count }} teams, {{ st.member_count }} members
+              {{ st.team_count }} teams,
+              <template v-if="selectedEventId">
+                {{ st.attending_count }} attending / {{ st.member_count }} members
+              </template>
+              <template v-else>
+                {{ st.member_count }} members
+              </template>
             </div>
             <div class="mt-2 text-2xl font-bold">
               {{ formatNumber(st.total_score) }}
@@ -527,6 +588,12 @@ function getTeamsByChurch(st: SuperteamResult): Map<string, TeamInfo[]> {
                       Members
                     </th>
                     <th
+                      v-if="selectedEventId"
+                      class="px-4 py-2 text-right text-sm font-medium text-gray-500"
+                    >
+                      Attending
+                    </th>
+                    <th
                       class="px-4 py-2 text-right text-sm font-medium text-gray-500"
                     >
                       Score
@@ -546,13 +613,16 @@ function getTeamsByChurch(st: SuperteamResult): Map<string, TeamInfo[]> {
                     <td class="px-4 py-2 text-right">
                       {{ team.member_count }}
                     </td>
+                    <td v-if="selectedEventId" class="px-4 py-2 text-right">
+                      {{ team.attending_count }}
+                    </td>
                     <td class="px-4 py-2 text-right font-medium">
                       {{ formatNumber(team.total_score) }}
                     </td>
                   </tr>
                   <tr v-if="st.teams.length === 0">
                     <td
-                      colspan="4"
+                      :colspan="selectedEventId ? 5 : 4"
                       class="text-muted px-4 py-4 text-center text-sm"
                     >
                       No teams assigned

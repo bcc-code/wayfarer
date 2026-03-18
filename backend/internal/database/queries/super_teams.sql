@@ -115,3 +115,24 @@ WHERE t.project_id = @project_id
   AND t.leaderboard_excluded = false
 GROUP BY t.id, t.name, lead_user.church_id, c.name
 HAVING COALESCE(SUM(sj.points), 0) > 0;
+
+-- name: GetTeamsWithScoresAndAttendingForDistribution :many
+-- Returns teams with total score > 0, team lead's church, and attending member count
+SELECT
+    t.id AS team_id,
+    t.name AS team_name,
+    COALESCE(lead_user.church_id, '') AS church_id,
+    COALESCE(c.name, '') AS church_name,
+    COALESCE(SUM(sj.points), 0)::bigint AS total_score,
+    COUNT(DISTINCT tm.user_id)::int AS member_count,
+    COUNT(DISTINCT CASE WHEN tm.user_id = ANY(@attending_user_ids::text[]) THEN tm.user_id END)::int AS attending_count
+FROM teams t
+LEFT JOIN user_roles ur ON ur.team_id = t.id AND ur.role = 'TEAM_LEAD'
+LEFT JOIN users lead_user ON ur.user_id = lead_user.id
+LEFT JOIN churches c ON lead_user.church_id = c.id
+INNER JOIN team_members tm ON t.id = tm.team_id
+LEFT JOIN score_journal sj ON sj.user_id = tm.user_id AND sj.project_id = t.project_id
+WHERE t.project_id = @project_id
+  AND t.leaderboard_excluded = false
+GROUP BY t.id, t.name, lead_user.church_id, c.name
+HAVING COALESCE(SUM(sj.points), 0) > 0;

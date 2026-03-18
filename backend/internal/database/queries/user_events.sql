@@ -19,3 +19,6 @@ SELECT EXISTS(
     FROM user_events
     WHERE user_id = @userid::text AND event_id = @eventid::text
 ) AS is_member;
+
+-- name: GetUserIDsByEventID :many
+SELECT user_id FROM user_events WHERE event_id = @event_id;

@@ -182,7 +182,7 @@ function handleDrop(event: SortableEvent) {
           @click.stop
           @keydown="handleEditKeydown"
           @blur="saveEditing"
-        />
+        >
         <button
           v-else
           type="button"
