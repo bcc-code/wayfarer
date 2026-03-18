@@ -19,7 +19,12 @@ var superteamNames = []string{"Purple", "Green", "Red", "Yellow"}
 
 // Priority churches that must each be in a different superteam.
 // Order maps to superteam order: [0]=Purple, [1]=Green, [2]=Red, [3]=Yellow.
-var priorityChurchIDs = []string{"CH_PLACEHOLDER_1", "CH_PLACEHOLDER_2", "CH_PLACEHOLDER_3", "CH_PLACEHOLDER_4"}
+var priorityChurchIDs = []string{
+	"CH01KC9E89Q9K4Q1M4MNJC99CQKJ", // Oslo Follo -> Purple
+	"CH01KC9E885FZ3DXF7NDQCJJT4C9", // Exter -> Green
+	"CH01KC9E8BHK3C9VSD3ABGFPDWZF", // Sveits -> Red
+	"CH01KC9E8D1FVXY513F3K59H2D47", // København -> Yellow
+}
 
 // distributionQuerier defines the database operations needed by the distribution handler.
 type distributionQuerier interface {
@@ -427,6 +432,9 @@ func (h *superteamDistributionHandler) calculateDistribution(teams []*sqlc.GetTe
 		assignedChurches[cg.ChurchID] = true
 	}
 
+	// Refinement phase: try swapping churches to improve score balance
+	h.refineDistributionByScore(buckets, churchGroups)
+
 	// Calculate team counts
 	for i := range buckets {
 		buckets[i].TeamCount = len(buckets[i].Teams)
@@ -581,6 +589,9 @@ func (h *superteamDistributionHandler) calculateDistributionWithAttending(teams 
 		h.assignChurchToBucket(cg, &buckets[targetIdx])
 		assignedChurches[cg.ChurchID] = true
 	}
+
+	// Refinement phase: try swapping churches to improve score balance
+	h.refineDistributionByScore(buckets, churchGroups)
 
 	// Calculate team counts
 	for i := range buckets {
@@ -737,4 +748,143 @@ func containsString(slice []string, str string) bool {
 		}
 	}
 	return false
+}
+
+// isPriorityChurchInAssignedBucket checks if a church is a priority church in its designated bucket.
+func isPriorityChurchInAssignedBucket(churchID string, bucketIdx int) bool {
+	for i, priorityID := range priorityChurchIDs {
+		if priorityID == churchID && i == bucketIdx {
+			return true
+		}
+	}
+	return false
+}
+
+// abs64 returns the absolute value of an int64.
+func abs64(x int64) int64 {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+
+// removeString removes a string from a slice and returns the new slice.
+func removeString(slice []string, str string) []string {
+	result := make([]string, 0, len(slice))
+	for _, s := range slice {
+		if s != str {
+			result = append(result, s)
+		}
+	}
+	return result
+}
+
+// removeChurchTeams removes all teams belonging to a church from a team slice.
+func removeChurchTeams(teams []TeamInfo, churchID string) []TeamInfo {
+	result := make([]TeamInfo, 0, len(teams))
+	for _, team := range teams {
+		if team.ChurchID != churchID {
+			result = append(result, team)
+		}
+	}
+	return result
+}
+
+// swapChurchesBetweenBuckets swaps two churches between their respective buckets.
+func (h *superteamDistributionHandler) swapChurchesBetweenBuckets(bucket1, bucket2 *SuperteamResult, church1, church2 *churchGroup) {
+	// Remove church1 from bucket1
+	bucket1.Teams = removeChurchTeams(bucket1.Teams, church1.ChurchID)
+	bucket1.TotalScore -= church1.TotalScore
+	bucket1.AttendingCount -= church1.AttendingCount
+	bucket1.Churches = removeString(bucket1.Churches, church1.ChurchID)
+	for _, team := range church1.Teams {
+		bucket1.MemberCount -= team.MemberCount
+	}
+
+	// Remove church2 from bucket2
+	bucket2.Teams = removeChurchTeams(bucket2.Teams, church2.ChurchID)
+	bucket2.TotalScore -= church2.TotalScore
+	bucket2.AttendingCount -= church2.AttendingCount
+	bucket2.Churches = removeString(bucket2.Churches, church2.ChurchID)
+	for _, team := range church2.Teams {
+		bucket2.MemberCount -= team.MemberCount
+	}
+
+	// Add church1 to bucket2
+	bucket2.Teams = append(bucket2.Teams, church1.Teams...)
+	bucket2.TotalScore += church1.TotalScore
+	bucket2.AttendingCount += church1.AttendingCount
+	bucket2.Churches = append(bucket2.Churches, church1.ChurchID)
+	for _, team := range church1.Teams {
+		bucket2.MemberCount += team.MemberCount
+	}
+
+	// Add church2 to bucket1
+	bucket1.Teams = append(bucket1.Teams, church2.Teams...)
+	bucket1.TotalScore += church2.TotalScore
+	bucket1.AttendingCount += church2.AttendingCount
+	bucket1.Churches = append(bucket1.Churches, church2.ChurchID)
+	for _, team := range church2.Teams {
+		bucket1.MemberCount += team.MemberCount
+	}
+}
+
+// refineDistributionByScore attempts to improve score balance by swapping churches between buckets.
+// It iteratively finds the highest and lowest score buckets and tries swapping churches to reduce variance.
+func (h *superteamDistributionHandler) refineDistributionByScore(buckets []SuperteamResult, churchGroups map[string]*churchGroup) {
+	const maxIterations = 10
+
+	for iter := 0; iter < maxIterations; iter++ {
+		// Find highest and lowest score buckets
+		highIdx, lowIdx := 0, 0
+		for i := 1; i < 4; i++ {
+			if buckets[i].TotalScore > buckets[highIdx].TotalScore {
+				highIdx = i
+			}
+			if buckets[i].TotalScore < buckets[lowIdx].TotalScore {
+				lowIdx = i
+			}
+		}
+
+		if highIdx == lowIdx {
+			break // Already balanced
+		}
+
+		currentDiff := buckets[highIdx].TotalScore - buckets[lowIdx].TotalScore
+		improved := false
+
+		// Try swapping churches to reduce imbalance
+		for _, highChurchID := range buckets[highIdx].Churches {
+			if isPriorityChurchInAssignedBucket(highChurchID, highIdx) {
+				continue
+			}
+			highChurch := churchGroups[highChurchID]
+
+			for _, lowChurchID := range buckets[lowIdx].Churches {
+				if isPriorityChurchInAssignedBucket(lowChurchID, lowIdx) {
+					continue
+				}
+				lowChurch := churchGroups[lowChurchID]
+
+				// Calculate new scores after swap
+				newHighScore := buckets[highIdx].TotalScore - highChurch.TotalScore + lowChurch.TotalScore
+				newLowScore := buckets[lowIdx].TotalScore - lowChurch.TotalScore + highChurch.TotalScore
+				newDiff := abs64(newHighScore - newLowScore)
+
+				if newDiff < currentDiff {
+					// Perform the swap
+					h.swapChurchesBetweenBuckets(&buckets[highIdx], &buckets[lowIdx], highChurch, lowChurch)
+					improved = true
+					break
+				}
+			}
+			if improved {
+				break
+			}
+		}
+
+		if !improved {
+			break
+		}
+	}
 }
