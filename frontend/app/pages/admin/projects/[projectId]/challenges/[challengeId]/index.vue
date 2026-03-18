@@ -211,11 +211,21 @@ async function handleDelete() {
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error />
       <div v-else-if="initialData" class="space-y-6">
-        <div
-          v-if="data?.challenge.__typename === 'QuizChallenge'"
-          class="flex gap-2"
-        >
+        <div class="flex gap-2">
           <UButton
+            variant="soft"
+            :to="{
+              name: 'admin-projects-projectId-challenges-challengeId-enrollments',
+              params: {
+                projectId: route.params.projectId,
+                challengeId: route.params.challengeId,
+              },
+            }"
+          >
+            Påmeldinger
+          </UButton>
+          <UButton
+            v-if="data?.challenge.__typename === 'QuizChallenge'"
             variant="soft"
             :to="{
               name: 'admin-projects-projectId-challenges-challengeId-sessions',

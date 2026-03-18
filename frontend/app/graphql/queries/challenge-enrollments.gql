@@ -1,0 +1,11 @@
+query AdminChallengeEnrollments($challengeId: ID!) {
+  challengeEnrollments(challengeId: $challengeId) {
+    user {
+      id
+      name
+      email
+    }
+    enrolledAt
+    completedAt
+  }
+}

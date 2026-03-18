@@ -21,6 +21,12 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+// User is the resolver for the user field.
+func (r *challengeEnrollmentResolver) User(ctx context.Context, obj *model.ChallengeEnrollment) (*model.User, error) {
+	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.UserID)
+	return thunk()
+}
+
 // ImageObject is the resolver for the imageObject field.
 func (r *externalChallengeResolver) ImageObject(ctx context.Context, obj *model.ExternalChallenge) (*model.Image, error) {
 	return resolveImageByURL(ctx, r.Loaders, obj.Image)
@@ -1314,6 +1320,28 @@ func (r *queryResolver) Challenges(ctx context.Context, filter *model.ChallengeF
 	return connection, nil
 }
 
+// ChallengeEnrollments is the resolver for the challengeEnrollments field.
+func (r *queryResolver) ChallengeEnrollments(ctx context.Context, challengeID string) ([]model.ChallengeEnrollment, error) {
+	rows, err := r.DB.Queries.GetChallengeEnrollmentsWithCompletion(ctx, challengeID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get challenge enrollments: %w", err)
+	}
+
+	result := make([]model.ChallengeEnrollment, len(rows))
+	for i, row := range rows {
+		enrollment := model.ChallengeEnrollment{
+			UserID:     row.UserID,
+			EnrolledAt: scalars.DateTime{Time: row.EnrolledAt.Time},
+		}
+		if row.CompletedAt.Valid {
+			enrollment.CompletedAt = &scalars.DateTime{Time: row.CompletedAt.Time}
+		}
+		result[i] = enrollment
+	}
+
+	return result, nil
+}
+
 // ImageObject is the resolver for the imageObject field.
 func (r *quizChallengeResolver) ImageObject(ctx context.Context, obj *model.QuizChallenge) (*model.Image, error) {
 	return resolveImageByURL(ctx, r.Loaders, obj.Image)
@@ -1385,6 +1413,11 @@ func (r *simpleChallengeResolver) TranslationStatus(ctx context.Context, obj *mo
 	return r.challengeTranslationStatus(ctx, obj.ID)
 }
 
+// ChallengeEnrollment returns ChallengeEnrollmentResolver implementation.
+func (r *Resolver) ChallengeEnrollment() ChallengeEnrollmentResolver {
+	return &challengeEnrollmentResolver{r}
+}
+
 // ExternalChallenge returns ExternalChallengeResolver implementation.
 func (r *Resolver) ExternalChallenge() ExternalChallengeResolver {
 	return &externalChallengeResolver{r}
@@ -1399,6 +1432,7 @@ func (r *Resolver) QuizChallenge() QuizChallengeResolver { return &quizChallenge
 // SimpleChallenge returns SimpleChallengeResolver implementation.
 func (r *Resolver) SimpleChallenge() SimpleChallengeResolver { return &simpleChallengeResolver{r} }
 
+type challengeEnrollmentResolver struct{ *Resolver }
 type externalChallengeResolver struct{ *Resolver }
 type pluginChallengeResolver struct{ *Resolver }
 type quizChallengeResolver struct{ *Resolver }

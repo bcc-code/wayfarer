@@ -99,6 +99,44 @@ func (q *Queries) GetBulkUserEnrollmentTimestamps(ctx context.Context, arg GetBu
 	return items, nil
 }
 
+const GetChallengeEnrollmentsWithCompletion = `-- name: GetChallengeEnrollmentsWithCompletion :many
+SELECT
+    uce.user_id,
+    uce.enrolled_at,
+    ucc.completed_at
+FROM user_challenge_enrollments uce
+LEFT JOIN user_challenge_completions ucc
+    ON ucc.user_id = uce.user_id AND ucc.challenge_id = uce.challenge_id
+WHERE uce.challenge_id = $1::text
+ORDER BY uce.enrolled_at DESC
+`
+
+type GetChallengeEnrollmentsWithCompletionRow struct {
+	UserID      string             `json:"user_id"`
+	EnrolledAt  pgtype.Timestamptz `json:"enrolled_at"`
+	CompletedAt pgtype.Timestamptz `json:"completed_at"`
+}
+
+func (q *Queries) GetChallengeEnrollmentsWithCompletion(ctx context.Context, challengeid string) ([]*GetChallengeEnrollmentsWithCompletionRow, error) {
+	rows, err := q.db.Query(ctx, GetChallengeEnrollmentsWithCompletion, challengeid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetChallengeEnrollmentsWithCompletionRow{}
+	for rows.Next() {
+		var i GetChallengeEnrollmentsWithCompletionRow
+		if err := rows.Scan(&i.UserID, &i.EnrolledAt, &i.CompletedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetEnrolledUsersForChallenge = `-- name: GetEnrolledUsersForChallenge :many
 SELECT user_id, enrolled_at
 FROM user_challenge_enrollments

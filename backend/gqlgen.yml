@@ -148,6 +148,14 @@ models:
       EventID:
         type: "*string"
 
+  ChallengeEnrollment:
+    fields:
+      user:
+        resolver: true
+    extraFields:
+      UserID:
+        type: string
+
   Event:
     fields:
       parentProject:

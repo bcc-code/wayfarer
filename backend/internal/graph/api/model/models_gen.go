@@ -216,6 +216,13 @@ type ChallengeEdge struct {
 	Node   Challenge `json:"node"`
 }
 
+type ChallengeEnrollment struct {
+	User        *User             `json:"user"`
+	EnrolledAt  scalars.DateTime  `json:"enrolledAt"`
+	CompletedAt *scalars.DateTime `json:"completedAt,omitempty"`
+	UserID      string            `json:"-"`
+}
+
 type ChallengeFilter struct {
 	ProjectID       *string           `json:"projectId,omitempty"`
 	EventID         *string           `json:"eventId,omitempty"`

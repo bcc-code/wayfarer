@@ -55,6 +55,17 @@ DELETE FROM user_challenge_enrollments
 WHERE challenge_id = @challengeid::text
   AND user_id = ANY(@userids::text[]);
 
+-- name: GetChallengeEnrollmentsWithCompletion :many
+SELECT
+    uce.user_id,
+    uce.enrolled_at,
+    ucc.completed_at
+FROM user_challenge_enrollments uce
+LEFT JOIN user_challenge_completions ucc
+    ON ucc.user_id = uce.user_id AND ucc.challenge_id = uce.challenge_id
+WHERE uce.challenge_id = @challengeid::text
+ORDER BY uce.enrolled_at DESC;
+
 -- name: GetUserEnrolledChallengeIDsInProject :many
 SELECT uce.challenge_id
 FROM user_challenge_enrollments uce

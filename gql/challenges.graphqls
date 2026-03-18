@@ -187,6 +187,12 @@ type ChallengeConnection {
 
 # ==================== Enrollment Types ====================
 
+type ChallengeEnrollment {
+    user: User! @goField(forceResolver: true)
+    enrolledAt: DateTime!
+    completedAt: DateTime
+}
+
 # Enrollment target selector - specify ONE of these
 input EnrollmentTargetInput {
     userIds: [ID!]
@@ -206,6 +212,7 @@ input ChurchInProjectInput {
 extend type Query {
     challenge(id: ID!): Challenge!
     challenges(filter: ChallengeFilter, first: Int, after: String, last: Int, before: String): ChallengeConnection!
+    challengeEnrollments(challengeId: ID!): [ChallengeEnrollment!]! @requireRole(roles: ["admin", "superadmin"])
 }
 
 # ==================== Mutations ====================

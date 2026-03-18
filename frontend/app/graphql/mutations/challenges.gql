@@ -26,3 +26,59 @@ mutation BulkEnrollUsersInChallenge(
     id
   }
 }
+
+mutation EnrollUserInChallenge($userId: ID!, $challengeId: ID!) {
+  enrollUserInChallenge(userId: $userId, challengeId: $challengeId) {
+    id
+  }
+}
+
+mutation UnenrollUserFromChallenge($userId: ID!, $challengeId: ID!) {
+  unenrollUserFromChallenge(userId: $userId, challengeId: $challengeId)
+}
+
+mutation CompleteChallenge($userId: ID!, $challengeId: ID!) {
+  completeChallenge(userId: $userId, challengeId: $challengeId) {
+    id
+  }
+}
+
+mutation UncompleteChallenge($userId: ID!, $challengeId: ID!) {
+  uncompleteChallenge(userId: $userId, challengeId: $challengeId)
+}
+
+mutation BulkEnrollUsersInChallengeAsync(
+  $target: EnrollmentTargetInput!
+  $challengeId: ID!
+) {
+  bulkEnrollUsersInChallengeAsync(target: $target, challengeId: $challengeId) {
+    id
+    totalCount
+    status
+  }
+}
+
+mutation BulkUnenrollUsersFromChallengeAsync(
+  $target: EnrollmentTargetInput!
+  $challengeId: ID!
+) {
+  bulkUnenrollUsersFromChallengeAsync(
+    target: $target
+    challengeId: $challengeId
+  ) {
+    id
+    totalCount
+    status
+  }
+}
+
+mutation BulkCompleteChallengesAsync(
+  $target: EnrollmentTargetInput!
+  $challengeId: ID!
+) {
+  bulkCompleteChallengesAsync(target: $target, challengeId: $challengeId) {
+    id
+    totalCount
+    status
+  }
+}

@@ -217,6 +217,13 @@ export type ChallengeEdge = {
   node: Challenge;
 };
 
+export type ChallengeEnrollment = {
+  __typename?: 'ChallengeEnrollment';
+  completedAt?: Maybe<Scalars['DateTime']['output']>;
+  enrolledAt: Scalars['DateTime']['output'];
+  user: User;
+};
+
 export type ChallengeFilter = {
   challengeType?: InputMaybe<ChallengeType>;
   eventId?: InputMaybe<Scalars['ID']['input']>;
@@ -2102,6 +2109,7 @@ export type Query = {
   bulkJob?: Maybe<BulkJob>;
   bulkJobs: BulkJobConnection;
   challenge: Challenge;
+  challengeEnrollments: Array<ChallengeEnrollment>;
   challenges: ChallengeConnection;
   church: Church;
   churchAdminStatistics: ChurchAdminStatistics;
@@ -2196,6 +2204,11 @@ export type QueryBulkJobsArgs = {
 
 export type QueryChallengeArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryChallengeEnrollmentsArgs = {
+  challengeId: Scalars['ID']['input'];
 };
 
 
@@ -3564,6 +3577,72 @@ export type BulkEnrollUsersInChallengeMutation = { __typename?: 'Mutation', bulk
     | { __typename?: 'SimpleChallenge', id: string }
   > };
 
+export type EnrollUserInChallengeMutationVariables = Exact<{
+  userId: Scalars['ID']['input'];
+  challengeId: Scalars['ID']['input'];
+}>;
+
+
+export type EnrollUserInChallengeMutation = { __typename?: 'Mutation', enrollUserInChallenge:
+    | { __typename?: 'ExternalChallenge', id: string }
+    | { __typename?: 'PluginChallenge', id: string }
+    | { __typename?: 'QuizChallenge', id: string }
+    | { __typename?: 'SimpleChallenge', id: string }
+   };
+
+export type UnenrollUserFromChallengeMutationVariables = Exact<{
+  userId: Scalars['ID']['input'];
+  challengeId: Scalars['ID']['input'];
+}>;
+
+
+export type UnenrollUserFromChallengeMutation = { __typename?: 'Mutation', unenrollUserFromChallenge: boolean };
+
+export type CompleteChallengeMutationVariables = Exact<{
+  userId: Scalars['ID']['input'];
+  challengeId: Scalars['ID']['input'];
+}>;
+
+
+export type CompleteChallengeMutation = { __typename?: 'Mutation', completeChallenge:
+    | { __typename?: 'ExternalChallenge', id: string }
+    | { __typename?: 'PluginChallenge', id: string }
+    | { __typename?: 'QuizChallenge', id: string }
+    | { __typename?: 'SimpleChallenge', id: string }
+   };
+
+export type UncompleteChallengeMutationVariables = Exact<{
+  userId: Scalars['ID']['input'];
+  challengeId: Scalars['ID']['input'];
+}>;
+
+
+export type UncompleteChallengeMutation = { __typename?: 'Mutation', uncompleteChallenge: boolean };
+
+export type BulkEnrollUsersInChallengeAsyncMutationVariables = Exact<{
+  target: EnrollmentTargetInput;
+  challengeId: Scalars['ID']['input'];
+}>;
+
+
+export type BulkEnrollUsersInChallengeAsyncMutation = { __typename?: 'Mutation', bulkEnrollUsersInChallengeAsync: { __typename?: 'BulkJob', id: string, totalCount: number, status: BulkJobStatus } };
+
+export type BulkUnenrollUsersFromChallengeAsyncMutationVariables = Exact<{
+  target: EnrollmentTargetInput;
+  challengeId: Scalars['ID']['input'];
+}>;
+
+
+export type BulkUnenrollUsersFromChallengeAsyncMutation = { __typename?: 'Mutation', bulkUnenrollUsersFromChallengeAsync: { __typename?: 'BulkJob', id: string, totalCount: number, status: BulkJobStatus } };
+
+export type BulkCompleteChallengesAsyncMutationVariables = Exact<{
+  target: EnrollmentTargetInput;
+  challengeId: Scalars['ID']['input'];
+}>;
+
+
+export type BulkCompleteChallengesAsyncMutation = { __typename?: 'Mutation', bulkCompleteChallengesAsync: { __typename?: 'BulkJob', id: string, totalCount: number, status: BulkJobStatus } };
+
 export type AcceptConsentMutationVariables = Exact<{
   consentId: Scalars['ID']['input'];
 }>;
@@ -4000,6 +4079,13 @@ export type AdminProjectQuizzesQueryVariables = Exact<{
 
 export type AdminProjectQuizzesQuery = { __typename?: 'Query', quizzes: { __typename?: 'QuizConnection', edges: Array<{ __typename?: 'QuizEdge', node: { __typename?: 'Quiz', id: string, name: string } }> } };
 
+export type AdminChallengeEnrollmentsQueryVariables = Exact<{
+  challengeId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminChallengeEnrollmentsQuery = { __typename?: 'Query', challengeEnrollments: Array<{ __typename?: 'ChallengeEnrollment', enrolledAt: any, completedAt?: any | null, user: { __typename?: 'User', id: string, name: string, email: string } }> };
+
 export type GetFirebaseTokenQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -4276,6 +4362,18 @@ export type AdminProjectAchievementsNewPageQueryVariables = Exact<{
 
 
 export type AdminProjectAchievementsNewPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } };
+
+export type AdminChallengeEnrollmentsPageQueryVariables = Exact<{
+  challengeId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminChallengeEnrollmentsPageQuery = { __typename?: 'Query', challenge:
+    | { __typename?: 'ExternalChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename?: 'PluginChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename?: 'QuizChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename?: 'SimpleChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
+   };
 
 export type AdminProjectChallengePageQueryVariables = Exact<{
   challengeId: Scalars['ID']['input'];
@@ -4903,6 +5001,85 @@ export const BulkEnrollUsersInChallengeDocument = gql`
 
 export function useBulkEnrollUsersInChallengeMutation() {
   return Urql.useMutation<BulkEnrollUsersInChallengeMutation, BulkEnrollUsersInChallengeMutationVariables>(BulkEnrollUsersInChallengeDocument);
+};
+export const EnrollUserInChallengeDocument = gql`
+    mutation EnrollUserInChallenge($userId: ID!, $challengeId: ID!) {
+  enrollUserInChallenge(userId: $userId, challengeId: $challengeId) {
+    id
+  }
+}
+    `;
+
+export function useEnrollUserInChallengeMutation() {
+  return Urql.useMutation<EnrollUserInChallengeMutation, EnrollUserInChallengeMutationVariables>(EnrollUserInChallengeDocument);
+};
+export const UnenrollUserFromChallengeDocument = gql`
+    mutation UnenrollUserFromChallenge($userId: ID!, $challengeId: ID!) {
+  unenrollUserFromChallenge(userId: $userId, challengeId: $challengeId)
+}
+    `;
+
+export function useUnenrollUserFromChallengeMutation() {
+  return Urql.useMutation<UnenrollUserFromChallengeMutation, UnenrollUserFromChallengeMutationVariables>(UnenrollUserFromChallengeDocument);
+};
+export const CompleteChallengeDocument = gql`
+    mutation CompleteChallenge($userId: ID!, $challengeId: ID!) {
+  completeChallenge(userId: $userId, challengeId: $challengeId) {
+    id
+  }
+}
+    `;
+
+export function useCompleteChallengeMutation() {
+  return Urql.useMutation<CompleteChallengeMutation, CompleteChallengeMutationVariables>(CompleteChallengeDocument);
+};
+export const UncompleteChallengeDocument = gql`
+    mutation UncompleteChallenge($userId: ID!, $challengeId: ID!) {
+  uncompleteChallenge(userId: $userId, challengeId: $challengeId)
+}
+    `;
+
+export function useUncompleteChallengeMutation() {
+  return Urql.useMutation<UncompleteChallengeMutation, UncompleteChallengeMutationVariables>(UncompleteChallengeDocument);
+};
+export const BulkEnrollUsersInChallengeAsyncDocument = gql`
+    mutation BulkEnrollUsersInChallengeAsync($target: EnrollmentTargetInput!, $challengeId: ID!) {
+  bulkEnrollUsersInChallengeAsync(target: $target, challengeId: $challengeId) {
+    id
+    totalCount
+    status
+  }
+}
+    `;
+
+export function useBulkEnrollUsersInChallengeAsyncMutation() {
+  return Urql.useMutation<BulkEnrollUsersInChallengeAsyncMutation, BulkEnrollUsersInChallengeAsyncMutationVariables>(BulkEnrollUsersInChallengeAsyncDocument);
+};
+export const BulkUnenrollUsersFromChallengeAsyncDocument = gql`
+    mutation BulkUnenrollUsersFromChallengeAsync($target: EnrollmentTargetInput!, $challengeId: ID!) {
+  bulkUnenrollUsersFromChallengeAsync(target: $target, challengeId: $challengeId) {
+    id
+    totalCount
+    status
+  }
+}
+    `;
+
+export function useBulkUnenrollUsersFromChallengeAsyncMutation() {
+  return Urql.useMutation<BulkUnenrollUsersFromChallengeAsyncMutation, BulkUnenrollUsersFromChallengeAsyncMutationVariables>(BulkUnenrollUsersFromChallengeAsyncDocument);
+};
+export const BulkCompleteChallengesAsyncDocument = gql`
+    mutation BulkCompleteChallengesAsync($target: EnrollmentTargetInput!, $challengeId: ID!) {
+  bulkCompleteChallengesAsync(target: $target, challengeId: $challengeId) {
+    id
+    totalCount
+    status
+  }
+}
+    `;
+
+export function useBulkCompleteChallengesAsyncMutation() {
+  return Urql.useMutation<BulkCompleteChallengesAsyncMutation, BulkCompleteChallengesAsyncMutationVariables>(BulkCompleteChallengesAsyncDocument);
 };
 export const AcceptConsentDocument = gql`
     mutation AcceptConsent($consentId: ID!) {
@@ -5615,6 +5792,23 @@ export const AdminProjectQuizzesDocument = gql`
 
 export function useAdminProjectQuizzesQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectQuizzesQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectQuizzesQuery, AdminProjectQuizzesQueryVariables | undefined>({ query: AdminProjectQuizzesDocument, variables: undefined, ...options });
+};
+export const AdminChallengeEnrollmentsDocument = gql`
+    query AdminChallengeEnrollments($challengeId: ID!) {
+  challengeEnrollments(challengeId: $challengeId) {
+    user {
+      id
+      name
+      email
+    }
+    enrolledAt
+    completedAt
+  }
+}
+    `;
+
+export function useAdminChallengeEnrollmentsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminChallengeEnrollmentsQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminChallengeEnrollmentsQuery, AdminChallengeEnrollmentsQueryVariables | undefined>({ query: AdminChallengeEnrollmentsDocument, variables: undefined, ...options });
 };
 export const GetFirebaseTokenDocument = gql`
     query GetFirebaseToken {
@@ -6588,6 +6782,22 @@ export const AdminProjectAchievementsNewPageDocument = gql`
 
 export function useAdminProjectAchievementsNewPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectAchievementsNewPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectAchievementsNewPageQuery, AdminProjectAchievementsNewPageQueryVariables | undefined>({ query: AdminProjectAchievementsNewPageDocument, variables: undefined, ...options });
+};
+export const AdminChallengeEnrollmentsPageDocument = gql`
+    query AdminChallengeEnrollmentsPage($challengeId: ID!) {
+  challenge(id: $challengeId) {
+    id
+    name
+    project {
+      id
+      name
+    }
+  }
+}
+    `;
+
+export function useAdminChallengeEnrollmentsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminChallengeEnrollmentsPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminChallengeEnrollmentsPageQuery, AdminChallengeEnrollmentsPageQueryVariables | undefined>({ query: AdminChallengeEnrollmentsPageDocument, variables: undefined, ...options });
 };
 export const AdminProjectChallengePageDocument = gql`
     query AdminProjectChallengePage($challengeId: ID!) {
