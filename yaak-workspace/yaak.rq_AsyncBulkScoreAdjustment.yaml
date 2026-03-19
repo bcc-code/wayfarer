@@ -1,0 +1,52 @@
+type: http_request
+model: http_request
+id: rq_AsyncBulkScoreAdjustment
+createdAt: 2026-03-19T12:00:00
+updatedAt: 2026-03-19T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_BulkJobs
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation AsyncBulkScoreAdjustment($input: AsyncBulkScoreAdjustmentInput!) {
+      asyncBulkScoreAdjustment(input: $input) {
+        id
+        operationType
+        status
+        totalCount
+        processedCount
+        successCount
+        failureCount
+        errorMessage
+        createdAt
+        startedAt
+        completedAt
+      }
+    }
+  variables: |
+    {
+      "input": {
+        "projectId": "PR01K9VZ8684DP9R4W3ZEV526E5X",
+        "eventId": null,
+        "adjustments": [
+          {
+            "userId": "US01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            "points": 100,
+            "reason": "Bulk adjustment"
+          }
+        ]
+      }
+    }
+bodyType: graphql
+description: Async bulk score adjustment - supports different points/reason per user
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_AsyncBulkScoreAdjustment
+method: POST
+name: Async Bulk Score Adjustment
+sortPriority: 4000.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

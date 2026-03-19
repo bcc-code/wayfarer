@@ -1,0 +1,67 @@
+type: http_request
+model: http_request
+id: rq_AsyncBulkScoreAdjustmentByTarget
+createdAt: 2026-03-19T12:00:00
+updatedAt: 2026-03-19T10:49:25.591690
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_BulkJobs
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation AsyncBulkScoreAdjustmentByTarget($input: AsyncBulkScoreAdjustmentByTargetInput!) {
+      asyncBulkScoreAdjustmentByTarget(input: $input) {
+        id
+        operationType
+        status
+        totalCount
+        processedCount
+        successCount
+        failureCount
+        errorMessage
+        createdAt
+        startedAt
+        completedAt
+      }
+    }
+  variables: |
+    {
+      "input": {
+        "projectId": "PR01K9VZ8684DP9R4W3ZEV526E5X",
+        "eventId": null,
+        "target": {
+          "teamIds": ["TM01KH0T2BH8P77WEJYREXDV7YYX",
+    "TM01KH0ZR1GBEJM0NA1YPFH11XVQ",
+    "TM01KHF94RKDYSA98GHARVZ5CBMB",
+    "TM01KJ3RF8RDQ5Y8CDNK39YS65PP",
+    "TM01KM2T3CEV5AX1HKG5B50HR9Y6",
+    "TM01KM2T4J56ZF66X56N11QPSR3C",
+    "TM01KM2V582H9P2KTZ1RJ7ZJFMH9",
+    "TM01KH0T2BGMVT2C8NVVG38WXBRA",
+    "TM01KH0T2BGMVT2C8NVVG4J5KHMD",
+    "TM01KH0T2BGMVT2C8NVVG69A8WCW",
+    "TM01KH0T2BGMVT2C8NVVG7NNFRD3",
+    "TM01KH0T2BH8P77WEJYRESWP5685",
+    "TM01KH0T2BH8P77WEJYRESWTFDGT",
+    "TM01KH0T2BH8P77WEJYRF0X964Q9",
+    "TM01KH0Z8Z1Q8D616RTZDMWMBKA1",
+    "TM01KFFS0WRE0E1NDTVRPJZJ6RKF",
+    "TM01KFFS0DDEK044XR4AJS5SM7FR"]
+        },
+        "points": 10000,
+        "distributionMode": "EACH",
+        "reason": "Bulk target adjustment"
+      }
+    }
+bodyType: graphql
+description: Async bulk score adjustment by target - all targets get same points
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_AsyncBulkScoreAdjustmentByTarget
+method: POST
+name: Async Bulk Score Adjustment By Target
+sortPriority: 4100.0
+url: ${[ HOST ]}/graphql
+urlParameters: []
