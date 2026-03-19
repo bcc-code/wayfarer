@@ -327,7 +327,7 @@
       "reopenBetting": "Reabrir las apuestas",
       "makeSureEverybodyBet": "Asegúrate de que todos hayan terminado de apostar antes de cerrar la apuesta",
       "allBetNextStep": "Finalizar la apuesta",
-      "cannotReopenAfterContinue": "{B>IMPORTANTE:&lt;B} Si cierras la apuesta, ya no podrás volver a abrirla.",
+      "cannotReopenAfterContinue": "IMPORTANTE: Si cierras la apuesta, ya no podrás volver a abrirla.",
       "step4Title": "Reproducir película 2",
       "step4Description": "Esto se hace una vez que se han realizado las apuestas",
       "step5TitleBigScreen": "Mostrar la vista de pantalla grande de la tarea de la unidad en la pantalla grande",
