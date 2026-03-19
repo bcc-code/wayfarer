@@ -54,7 +54,13 @@ const schema = z
     name: z.string().min(1, 'Name is required'),
     description: z.string().optional(),
     image: z.string().optional(),
-    url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+    url: z
+      .string()
+      .refine((val) => val === '' || val.startsWith('/') || z.string().url().safeParse(val).success, {
+        message: 'Must be a valid URL or a local path starting with /',
+      })
+      .optional()
+      .or(z.literal('')),
     buttonText: z.string().optional(),
     publishedAt: z.string().optional(),
     endTime: z.string().optional(),
