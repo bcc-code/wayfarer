@@ -62,6 +62,10 @@
       "perfect": "Perfetto!",
       "thanksForAnswers": "Grazie per le tue risposte!",
       "resultsRevealedLater": "I risultati saranno resi noti in seguito."
+    },
+    "notSubmitted": {
+      "title": "Non hai consegnato",
+      "message": "Non hai partecipato a questa scommessa"
     }
   },
   "challenges": {
@@ -314,7 +318,7 @@
       "step3Title": "Effettua la scommessa",
       "step3Description": "Quando inizi il gioco, tutti riceveranno una sfida su Interact. Non farlo prima di aver EFFETTIVAMENTE deciso di scommettere.",
       "startBetting": "Inizia a scommettere",
-      "bettingStartingIn": "Il conteggio alla rovescia inizierà tra{seconds}pochi secondi...",
+      "bettingStartingIn": "Il conteggio alla rovescia inizierà tra {seconds} pochi secondi...",
       "cancelBettingCountdown": "Annulla",
       "lockBetting": "Blocca le scommesse",
       "lockBettingDescription": "Quando tutti hanno fatto le loro previsioni, puoi bloccare le scommesse.",
@@ -338,13 +342,13 @@
       "step6Title": "Vai alla pagina di amministrazione per avviare l'attività dell'unità",
       "step6Description": "Il compito dell’unità è un sistema separato, quindi deve avere una propria pagina di amministrazione. Continua lì e poi verrai reindirizzato qui più tardi.",
       "goToUnitTaskAdmin": "Vai alla pagina di amministrazione dell'attività dell'unità",
-      "completeStepsOnOtherPage": "Completa il passaggio da{from} a {to} nell'altra pagina",
+      "completeStepsOnOtherPage": "Completa il passaggio da {from} a {to} nell'altra pagina",
       "step12Title": "Riproduzione del filmato 3",
       "step13Title": "Assegnate i punti ai partecipanti per le loro scommesse",
       "step13Description": "Tutti devono accedere alla pagina \"Sfide\" in Interact e aprire la sfida completata per vedere il risultato.",
       "releasePointsNow": "Sblocca i punti ora",
       "youAreDone": "Hai finito! 🎉",
-      "canClosePageSafely": "Game Night{number}  può essere tranquillamente chiuso e puoi chiudere questa pagina.",
+      "canClosePageSafely": "Game Night {number} può essere tranquillamente chiuso e puoi chiudere questa pagina.",
       "errors": {
         "couldNotStartBetting": "Impossibile avviare le scommesse",
         "couldNotLockBetting": "Impossibile bloccare le scommesse",

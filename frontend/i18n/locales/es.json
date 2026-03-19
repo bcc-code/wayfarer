@@ -34,12 +34,38 @@
     "finishReview": "Finalizar revisión",
     "yourNumber": "Tu número",
     "writeYourAnswer": "Escribe tu respuesta...",
+    "close": "Cerrar",
+    "betting": {
+      "remainingPoints": "Puntos restantes",
+      "yourBet": "Tu esfuerzo",
+      "maxBetMessage": "Puedes apostar como máximo el {percentage}% de tus puntos",
+      "sessionLocked": "La respuesta está bloqueada",
+      "registeredBet": "La apuesta ha sido registrada",
+      "bettingClosed": "La votación ha terminado",
+      "yourBetIs": "Has apostado {bet} puntos",
+      "results": "Resultado",
+      "yourPoints": "Tus puntos",
+      "winnings": "Ganancia",
+      "pointsLost": "Puntos perdidos",
+      "pointsEarned": "Puntos ganados",
+      "resultYourBet": "Tu esfuerzo",
+      "correctCount": "Tenías {count} razón",
+      "correctCountAll": "Las tenías todas correctas",
+      "correctCountNone": "No tenías ninguna correcta",
+      "bettingResult": "Resultados de Tipping"
+    },
     "result": {
       "receivedNoPoints": "No has sumado ningún punto.",
       "receivedPoints": "Has acumulado {points} puntos.",
       "betterLuckNextTime": "¡Más suerte la próxima vez!",
       "wellDone": "¡Buen trabajo!",
-      "perfect": "Sí, ¡perfecto!"
+      "perfect": "Sí, ¡perfecto!",
+      "thanksForAnswers": "¡Gracias por tus respuestas!",
+      "resultsRevealedLater": "Los resultados se darán a conocer más adelante."
+    },
+    "notSubmitted": {
+      "title": "No has entregado",
+      "message": "No participaste en esta quiniela"
     }
   },
   "challenges": {
@@ -97,7 +123,8 @@
     "saveChanges": "Guardar cambios",
     "unitName": "Nombre de la unidad",
     "noUnitLeader": "Sin jefe de unidad",
-    "selectUnitLeader": "Seleccionar jefe de unidad"
+    "selectUnitLeader": "Seleccionar jefe de unidad",
+    "description": "Solo los puntos de los tres primeros son visibles para todos"
   },
   "place": "ubicación",
   "points": "puntos",
@@ -148,8 +175,8 @@
   },
   "goToHiddenTreasures": "Ir al estudio bíblico",
   "gameNights": {
-    "yourCode": "Tu código de unidad para Game Night",
-    "yourCodeHint": "Abre la página en tu PC e introduce el código."
+    "yourCode": "Introduce tu código:",
+    "yourCodeHint": "Accede a esta página web desde un ordenador:"
   },
   "admin": {
     "common": {
@@ -172,6 +199,7 @@
       "comingSoon": "Próximamente",
       "kickOff": "Inicio",
       "statistics": "Estadísticas",
+      "gameNight": "Game Night {number}",
       "kickOffButton": "Comience ahora la incorporación de la unidad",
       "kickOffOnboardingDescription": "Esta acción inicia la incorporación de unidades para toda la iglesia local.",
       "kickOffOnboardingDescriptionWarning": "⚠ No empiecen si no están listos.",
@@ -268,6 +296,66 @@
       "excludeFromLeaderboard": "Excluir de la lista superior",
       "excludeFromLeaderboardTooltip": "Cuando esté activada, esta unidad no aparecerá en la lista superior.",
       "excludedFromLeaderboard": "Oculto de las listas principales"
+    },
+    "gamenight": {
+      "importantResources": "Recursos importantes",
+      "importantResourcesDescription": "Tenlos a mano o envíalos al operador de la pantalla gigante. Se deben usar durante toda la noche.",
+      "linkToAllFilms": "Enlace a todos los vídeos",
+      "findFilmsHere": "Copiar el enlace a los vídeos",
+      "bigScreen": "Visualización en pantalla grande",
+      "usedInStep5": "Esto se debe utilizar en los pasos 1 y 5",
+      "findBigScreenHere": "Copiar enlace a la vista de pantalla grande",
+      "step1Title": "Consejo: Puedes usar ",
+      "step1Description": "Esto se puede mostrar en la pantalla gigante cuando los jóvenes entren en la sala",
+      "tip": "Consejo:",
+      "fullscreenTip": "Pulsa en «Pantalla completa» en la esquina inferior derecha de la vista de pantalla grande.",
+      "openBigScreenNewTab": "Copiar enlace a la vista de pantalla grande",
+      "goToNextStep": "Pasa al siguiente paso",
+      "step2Title": "Reproducir película 1",
+      "step2Description": "Esto se hace cuando los jóvenes se han sentado y la velada ya ha comenzado",
+      "goToFilm": "Copiar enlace a la película {number}",
+      "filmFinishedNextStep": "La película está terminada, pasa al siguiente paso",
+      "step3Title": "Realiza la apuesta",
+      "step3Description": "Cuando comiences a apostar, todos recibiréis un reto de apuestas en Interact. No hagáis esto hasta que realmente vayáis a apostar.",
+      "startBetting": "Empieza a apostar",
+      "bettingStartingIn": "Las apuestas comienzan en {seconds} unos segundos...",
+      "cancelBettingCountdown": "Cancelar",
+      "lockBetting": "Congelar la inclinación",
+      "lockBettingDescription": "Cuando todos hayan hecho sus apuestas, puedes cerrar el plazo de apuestas.",
+      "bettingLockedNotice": "En ese momento, se informará a los participantes de que las apuestas están suspendidas.",
+      "reopenBettingHint": "Si alguien no ha podido hacer su pronóstico, puedes volver a abrir la votación.",
+      "reopenBetting": "Reabrir las apuestas",
+      "makeSureEverybodyBet": "Asegúrate de que todos hayan terminado de apostar antes de cerrar la apuesta",
+      "allBetNextStep": "Finalizar la apuesta",
+      "cannotReopenAfterContinue": "{B>IMPORTANTE:&lt;B} Si cierras la apuesta, ya no podrás volver a abrirla.",
+      "step4Title": "Reproducir película 2",
+      "step4Description": "Esto se hace una vez que se han realizado las apuestas",
+      "step5TitleBigScreen": "Mostrar la vista de pantalla grande de la tarea de la unidad en la pantalla grande",
+      "step5Title": "Envía el código a la tarea de Unit",
+      "step5Description": "Los jefes de unidad deben acceder a la página «Retos» en Interact. Allí verán el código y la página web en la que debe utilizarse (pc26.bcc.media)",
+      "unitLeaderMustGoTo": "El jefe de unidad debe acceder a",
+      "onAPC": "en un ordenador",
+      "ifUnitLeaderMissing": "Si a la unidad le falta el código, lo encontrarás a la derecha del nombre de la unidad en",
+      "unitAdminPage": "página de administración de la unidad",
+      "giveUnitLeadersAccess": "Enviar el código a los jefes de unidad",
+      "unitLeaderAccessSent": "Código enviado a los jefes de unidad",
+      "step6Title": "Ve a la página de administración para iniciar la tarea de unit",
+      "step6Description": "La tarea de Unit es un sistema independiente, por lo que debe tener su propia página de administración. Sigue por ahí y luego te llevarán de vuelta aquí más tarde.",
+      "goToUnitTaskAdmin": "Ve a la página de administración de la tarea de Unit",
+      "completeStepsOnOtherPage": "Completa el paso {from} hasta {to} el otro lado",
+      "step12Title": "Reproducir película 3",
+      "step13Title": "Otorga puntos a los participantes por sus pronósticos",
+      "step13Description": "Todos deben entrar en la página «Desafíos» de Interact y abrir el desafío completado para ver el resultado.",
+      "releasePointsNow": "Liberar puntos ahora",
+      "youAreDone": "¡Ya has terminado! 🎉",
+      "canClosePageSafely": "Ya puedes dar por terminada {number} la «Game Night» y cerrar esta página.",
+      "errors": {
+        "couldNotStartBetting": "No pude iniciar el juego",
+        "couldNotLockBetting": "No se pudo bloquear la apuesta",
+        "couldNotReopenBetting": "No se pudo reabrir la casa de apuestas",
+        "couldNotFinishBetting": "No pude cerrar la apuesta",
+        "couldNotSendUnitLeaderAccess": "No se pudo enviar el código a los jefes de unidad"
+      }
     },
     "statistics": {
       "totalUsersInTeams": "Personas en unidades",
