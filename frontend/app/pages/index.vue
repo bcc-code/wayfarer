@@ -178,11 +178,10 @@ const hiddenTreasuresLink = computed(() => {
 
     <template #title>
       <div class="flex gap-small items-center">
-        <DesignImage
-          v-if="data?.myCurrentProject.myTeam?.superTeam?.imageObject"
-          :image="data.myCurrentProject.myTeam.superTeam.imageObject"
-          :alt="data.myCurrentProject.myTeam.superTeam.name"
-          class="size-11 rounded-full"
+        <SuperTeamBadge
+          v-if="data?.myCurrentProject.myTeam?.superTeam"
+          :superteam="data.myCurrentProject.myTeam.superTeam"
+          class="size-11"
         />
         <h1 class="text-text-default text-heading">{{ data?.me.name }}</h1>
       </div>

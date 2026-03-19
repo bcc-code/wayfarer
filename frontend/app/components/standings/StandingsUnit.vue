@@ -109,11 +109,10 @@ const showEditButton = computed(
         v-if="data.myCurrentProject.myTeam"
         class="p-medium gap-medium mb-list-section-gap flex flex-col items-center"
       >
-        <DesignImage
-          v-if="data?.myCurrentProject.myTeam?.superTeam?.imageObject"
-          :image="data.myCurrentProject.myTeam.superTeam.imageObject"
-          :alt="data.myCurrentProject.myTeam.superTeam.name"
-          class="size-30 rounded-full"
+        <SuperTeamBadge
+          v-if="data?.myCurrentProject.myTeam?.superTeam"
+          :superteam="data.myCurrentProject.myTeam.superTeam"
+          class="size-30"
         />
         <h2 class="text-heading text-balance">
           {{ data.myCurrentProject.myTeam.name }}
