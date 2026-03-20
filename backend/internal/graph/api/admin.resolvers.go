@@ -13,6 +13,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/pubsub"
 	"github.com/bcc-media/wayfarer/internal/services"
 )
 
@@ -22,9 +23,31 @@ func (r *mutationResolver) ClearAllCache(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-// FixMissingContentProgress is the resolver for the fixMissingContentProgress field.
-func (r *mutationResolver) FixMissingContentProgress(ctx context.Context) (*model.FixMissingContentProgressResult, error) {
-	return r.Resolver.fixMissingContentProgress(ctx)
+// FixMissingContentProgressAsync is the resolver for the fixMissingContentProgressAsync field.
+func (r *mutationResolver) FixMissingContentProgressAsync(ctx context.Context) (*model.BulkJob, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Count pending events for totalCount
+	totalEvents, err := r.DB.Queries.CountMissingContentProgressEvents(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count missing content events: %w", err)
+	}
+
+	if totalEvents == 0 {
+		return nil, fmt.Errorf("no missing content events to process")
+	}
+
+	// Create job and publish to Pub/Sub
+	return r.BulkService.CreateBulkJobAndPublish(
+		ctx,
+		userID,
+		nil, // No project scope - this is a global maintenance operation
+		int(totalEvents),
+		pubsub.FixMissingContentProgressParams{},
+	)
 }
 
 // AdminDashboardStats is the resolver for the adminDashboardStats field.

@@ -355,6 +355,7 @@ func main() {
 		firebaseService,
 		pubsubPublisher,
 		lgr,
+		contentAchievementService,
 	)
 	slog.Info("Bulk operations service initialized")
 

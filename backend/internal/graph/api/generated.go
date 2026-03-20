@@ -552,7 +552,7 @@ type ComplexityRoot struct {
 		EnrollUserInChallenge                       func(childComplexity int, userID string, challengeID string) int
 		FinalizeQuiz                                func(childComplexity int, submissionID string) int
 		FinishQuizSession                           func(childComplexity int, id string) int
-		FixMissingContentProgress                   func(childComplexity int) int
+		FixMissingContentProgressAsync              func(childComplexity int) int
 		ForwardFeedbackToDesk                       func(childComplexity int, feedbackID string, destination model.ForwardDestination) int
 		GrantQuizSessionAccess                      func(childComplexity int, input model.GrantQuizSessionAccessInput) int
 		GrantQuizSessionAccessAsync                 func(childComplexity int, input model.GrantQuizSessionAccessInput) int
@@ -1514,7 +1514,7 @@ type MutationResolver interface {
 	ResetQuizSessionSubmission(ctx context.Context, sessionID string) (bool, error)
 	CreateContentAchievementFromExternalContent(ctx context.Context, input model.CreateContentAchievementFromExternalContentInput) (*model.ContentAchievement, error)
 	ClearAllCache(ctx context.Context) (bool, error)
-	FixMissingContentProgress(ctx context.Context) (*model.FixMissingContentProgressResult, error)
+	FixMissingContentProgressAsync(ctx context.Context) (*model.BulkJob, error)
 	RegisterPushSubscription(ctx context.Context, input model.RegisterPushSubscriptionInput) (*model.PushSubscription, error)
 	UnregisterPushSubscription(ctx context.Context, endpoint string) (bool, error)
 	SetNotificationPreference(ctx context.Context, input model.SetNotificationPreferenceInput) (*model.PushNotificationPreference, error)
@@ -4147,12 +4147,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.FinishQuizSession(childComplexity, args["id"].(string)), true
-	case "Mutation.fixMissingContentProgress":
-		if e.complexity.Mutation.FixMissingContentProgress == nil {
+	case "Mutation.fixMissingContentProgressAsync":
+		if e.complexity.Mutation.FixMissingContentProgressAsync == nil {
 			break
 		}
 
-		return e.complexity.Mutation.FixMissingContentProgress(childComplexity), true
+		return e.complexity.Mutation.FixMissingContentProgressAsync(childComplexity), true
 	case "Mutation.forwardFeedbackToDesk":
 		if e.complexity.Mutation.ForwardFeedbackToDesk == nil {
 			break
@@ -10844,7 +10844,7 @@ extend type Mutation {
 
 extend type Mutation {
     clearAllCache: Boolean! @requireRole(roles: ["admin", "superadmin"])
-    fixMissingContentProgress: FixMissingContentProgressResult! @requireRole(roles: ["superadmin"])
+    fixMissingContentProgressAsync: BulkJob! @requireRole(roles: ["superadmin"])
 }
 
 type AdminDashboardStats {
@@ -31384,14 +31384,14 @@ func (ec *executionContext) fieldContext_Mutation_clearAllCache(_ context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_fixMissingContentProgress(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_fixMissingContentProgressAsync(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Mutation_fixMissingContentProgress,
+		ec.fieldContext_Mutation_fixMissingContentProgressAsync,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Mutation().FixMissingContentProgress(ctx)
+			return ec.resolvers.Mutation().FixMissingContentProgressAsync(ctx)
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -31399,11 +31399,11 @@ func (ec *executionContext) _Mutation_fixMissingContentProgress(ctx context.Cont
 			directive1 := func(ctx context.Context) (any, error) {
 				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"superadmin"})
 				if err != nil {
-					var zeroVal *model.FixMissingContentProgressResult
+					var zeroVal *model.BulkJob
 					return zeroVal, err
 				}
 				if ec.directives.RequireRole == nil {
-					var zeroVal *model.FixMissingContentProgressResult
+					var zeroVal *model.BulkJob
 					return zeroVal, errors.New("directive requireRole is not implemented")
 				}
 				return ec.directives.RequireRole(ctx, nil, directive0, roles)
@@ -31412,13 +31412,13 @@ func (ec *executionContext) _Mutation_fixMissingContentProgress(ctx context.Cont
 			next = directive1
 			return next
 		},
-		ec.marshalNFixMissingContentProgressResult2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐFixMissingContentProgressResult,
+		ec.marshalNBulkJob2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐBulkJob,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_Mutation_fixMissingContentProgress(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_fixMissingContentProgressAsync(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -31426,14 +31426,30 @@ func (ec *executionContext) fieldContext_Mutation_fixMissingContentProgress(_ co
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "usersFixed":
-				return ec.fieldContext_FixMissingContentProgressResult_usersFixed(ctx, field)
-			case "progressRecordsCreated":
-				return ec.fieldContext_FixMissingContentProgressResult_progressRecordsCreated(ctx, field)
-			case "achievementsAwarded":
-				return ec.fieldContext_FixMissingContentProgressResult_achievementsAwarded(ctx, field)
+			case "id":
+				return ec.fieldContext_BulkJob_id(ctx, field)
+			case "operationType":
+				return ec.fieldContext_BulkJob_operationType(ctx, field)
+			case "status":
+				return ec.fieldContext_BulkJob_status(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_BulkJob_totalCount(ctx, field)
+			case "processedCount":
+				return ec.fieldContext_BulkJob_processedCount(ctx, field)
+			case "successCount":
+				return ec.fieldContext_BulkJob_successCount(ctx, field)
+			case "failureCount":
+				return ec.fieldContext_BulkJob_failureCount(ctx, field)
+			case "errorMessage":
+				return ec.fieldContext_BulkJob_errorMessage(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_BulkJob_createdAt(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_BulkJob_startedAt(ctx, field)
+			case "completedAt":
+				return ec.fieldContext_BulkJob_completedAt(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type FixMissingContentProgressResult", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type BulkJob", field.Name)
 		},
 	}
 	return fc, nil
@@ -63616,9 +63632,9 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "fixMissingContentProgress":
+		case "fixMissingContentProgressAsync":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_fixMissingContentProgress(ctx, field)
+				return ec._Mutation_fixMissingContentProgressAsync(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -75142,20 +75158,6 @@ func (ec *executionContext) marshalNFirebaseTokenResponse2ᚖgithubᚗcomᚋbcc�
 		return graphql.Null
 	}
 	return ec._FirebaseTokenResponse(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNFixMissingContentProgressResult2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐFixMissingContentProgressResult(ctx context.Context, sel ast.SelectionSet, v model.FixMissingContentProgressResult) graphql.Marshaler {
-	return ec._FixMissingContentProgressResult(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNFixMissingContentProgressResult2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐFixMissingContentProgressResult(ctx context.Context, sel ast.SelectionSet, v *model.FixMissingContentProgressResult) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._FixMissingContentProgressResult(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v any) (float64, error) {

@@ -1068,7 +1068,7 @@ export type Mutation = {
   enrollUserInChallenge: Challenge;
   finalizeQuiz: QuizSubmission;
   finishQuizSession: QuizSession;
-  fixMissingContentProgress: FixMissingContentProgressResult;
+  fixMissingContentProgressAsync: BulkJob;
   forwardFeedbackToDesk: Scalars['Boolean']['output'];
   grantQuizSessionAccess: Scalars['Int']['output'];
   grantQuizSessionAccessAsync: BulkJob;
@@ -4261,10 +4261,17 @@ export type MaintenanceContentProgressPreviewQueryVariables = Exact<{
 
 export type MaintenanceContentProgressPreviewQuery = { __typename?: 'Query', previewMissingContentProgress: { __typename?: 'MissingContentProgressPreview', totalUsers: number, totalEvents: number, affectedUsers: Array<{ __typename?: 'MissingContentProgressUser', eventCount: number, user: { __typename?: 'User', id: string, name: string } }> } };
 
-export type FixMissingContentProgressMutationVariables = Exact<{ [key: string]: never; }>;
+export type FixMissingContentProgressAsyncMutationVariables = Exact<{ [key: string]: never; }>;
 
 
-export type FixMissingContentProgressMutation = { __typename?: 'Mutation', fixMissingContentProgress: { __typename?: 'FixMissingContentProgressResult', usersFixed: number, progressRecordsCreated: number, achievementsAwarded: number } };
+export type FixMissingContentProgressAsyncMutation = { __typename?: 'Mutation', fixMissingContentProgressAsync: { __typename?: 'BulkJob', id: string, operationType: string, status: BulkJobStatus, totalCount: number, processedCount: number, successCount: number, failureCount: number, errorMessage?: string | null } };
+
+export type BulkJobStatusQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type BulkJobStatusQuery = { __typename?: 'Query', bulkJob?: { __typename?: 'BulkJob', id: string, status: BulkJobStatus, totalCount: number, processedCount: number, successCount: number, failureCount: number, errorMessage?: string | null, completedAt?: any | null } | null };
 
 export type ChurchAdminsPageQueryVariables = Exact<{
   churchId: Scalars['ID']['input'];
@@ -4409,19 +4416,19 @@ export type AdminSuperTeamDetailPageQueryVariables = Exact<{
 
 export type AdminSuperTeamDetailPageQuery = { __typename?: 'Query', superteam: { __typename?: 'SuperTeam', id: string, name: string, description: string, color?: string | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, teams: Array<{ __typename?: 'Team', id: string, name: string, description: string }> }, teams: { __typename?: 'TeamConnection', edges: Array<{ __typename?: 'TeamEdge', node: { __typename?: 'Team', id: string, name: string, superTeam?: { __typename?: 'SuperTeam', id: string } | null } }> } };
 
-export type AdminSuperTeamNewPageQueryVariables = Exact<{
-  projectId: Scalars['ID']['input'];
-}>;
-
-
-export type AdminSuperTeamNewPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string } };
-
 export type SuperteamsPageEventsQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
 }>;
 
 
 export type SuperteamsPageEventsQuery = { __typename?: 'Query', events: { __typename?: 'EventConnection', edges: Array<{ __typename?: 'EventEdge', node: { __typename?: 'Event', id: string, name: string, startDate: any } }> } };
+
+export type AdminSuperTeamNewPageQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminSuperTeamNewPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string } };
 
 export type AdminProjectsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -6477,18 +6484,41 @@ export const MaintenanceContentProgressPreviewDocument = gql`
 export function useMaintenanceContentProgressPreviewQuery(options?: Omit<Urql.UseQueryArgs<never, MaintenanceContentProgressPreviewQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<MaintenanceContentProgressPreviewQuery, MaintenanceContentProgressPreviewQueryVariables | undefined>({ query: MaintenanceContentProgressPreviewDocument, variables: undefined, ...options });
 };
-export const FixMissingContentProgressDocument = gql`
-    mutation FixMissingContentProgress {
-  fixMissingContentProgress {
-    usersFixed
-    progressRecordsCreated
-    achievementsAwarded
+export const FixMissingContentProgressAsyncDocument = gql`
+    mutation FixMissingContentProgressAsync {
+  fixMissingContentProgressAsync {
+    id
+    operationType
+    status
+    totalCount
+    processedCount
+    successCount
+    failureCount
+    errorMessage
   }
 }
     `;
 
-export function useFixMissingContentProgressMutation() {
-  return Urql.useMutation<FixMissingContentProgressMutation, FixMissingContentProgressMutationVariables>(FixMissingContentProgressDocument);
+export function useFixMissingContentProgressAsyncMutation() {
+  return Urql.useMutation<FixMissingContentProgressAsyncMutation, FixMissingContentProgressAsyncMutationVariables>(FixMissingContentProgressAsyncDocument);
+};
+export const BulkJobStatusDocument = gql`
+    query BulkJobStatus($id: ID!) {
+  bulkJob(id: $id) {
+    id
+    status
+    totalCount
+    processedCount
+    successCount
+    failureCount
+    errorMessage
+    completedAt
+  }
+}
+    `;
+
+export function useBulkJobStatusQuery(options?: Omit<Urql.UseQueryArgs<never, BulkJobStatusQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<BulkJobStatusQuery, BulkJobStatusQueryVariables | undefined>({ query: BulkJobStatusDocument, variables: undefined, ...options });
 };
 export const ChurchAdminsPageDocument = gql`
     query ChurchAdminsPage($churchId: ID!) {
@@ -7026,18 +7056,6 @@ export const AdminSuperTeamDetailPageDocument = gql`
 export function useAdminSuperTeamDetailPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminSuperTeamDetailPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminSuperTeamDetailPageQuery, AdminSuperTeamDetailPageQueryVariables | undefined>({ query: AdminSuperTeamDetailPageDocument, variables: undefined, ...options });
 };
-export const AdminSuperTeamNewPageDocument = gql`
-    query AdminSuperTeamNewPage($projectId: ID!) {
-  project(id: $projectId) {
-    id
-    name
-  }
-}
-    `;
-
-export function useAdminSuperTeamNewPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminSuperTeamNewPageQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<AdminSuperTeamNewPageQuery, AdminSuperTeamNewPageQueryVariables | undefined>({ query: AdminSuperTeamNewPageDocument, variables: undefined, ...options });
-};
 export const SuperteamsPageEventsDocument = gql`
     query SuperteamsPageEvents($projectId: ID!) {
   events(first: 100, filter: {projectId: $projectId}) {
@@ -7054,6 +7072,18 @@ export const SuperteamsPageEventsDocument = gql`
 
 export function useSuperteamsPageEventsQuery(options?: Omit<Urql.UseQueryArgs<never, SuperteamsPageEventsQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<SuperteamsPageEventsQuery, SuperteamsPageEventsQueryVariables | undefined>({ query: SuperteamsPageEventsDocument, variables: undefined, ...options });
+};
+export const AdminSuperTeamNewPageDocument = gql`
+    query AdminSuperTeamNewPage($projectId: ID!) {
+  project(id: $projectId) {
+    id
+    name
+  }
+}
+    `;
+
+export function useAdminSuperTeamNewPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminSuperTeamNewPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminSuperTeamNewPageQuery, AdminSuperTeamNewPageQueryVariables | undefined>({ query: AdminSuperTeamNewPageDocument, variables: undefined, ...options });
 };
 export const AdminProjectsPageDocument = gql`
     query AdminProjectsPage {

@@ -20,6 +20,9 @@ const (
 
 	// Score adjustment operations
 	OperationBulkScoreAdjustment OperationType = "BULK_SCORE_ADJUSTMENT"
+
+	// Maintenance operations
+	OperationFixMissingContentProgress OperationType = "FIX_MISSING_CONTENT_PROGRESS"
 )
 
 // BulkOperationMessage is the message published to Pub/Sub for async processing
@@ -122,6 +125,14 @@ type BulkScoreAdjustmentParams struct {
 
 func (p BulkScoreAdjustmentParams) OperationType() OperationType {
 	return OperationBulkScoreAdjustment
+}
+
+// FixMissingContentProgressParams contains parameters for fixing missing content progress
+// (empty struct - processes all pending events from the database)
+type FixMissingContentProgressParams struct{}
+
+func (p FixMissingContentProgressParams) OperationType() OperationType {
+	return OperationFixMissingContentProgress
 }
 
 // JobStatus represents the status of a bulk job

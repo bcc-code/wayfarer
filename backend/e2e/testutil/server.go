@@ -160,6 +160,13 @@ func SetupTestServer(ctx context.Context, dbMgr *TestDBManager) (*gin.Engine, fu
 		return nil, nil, err
 	}
 
+	// Create content achievement service for tests (without push or webhooks)
+	contentAchievementService := &services.ContentAchievementService{
+		DB:      dbMgr.DB,
+		Cache:   testCache,
+		Loaders: dataLoaders,
+	}
+
 	// Create bulk service (without pub/sub for testing - sync processing only)
 	bulkService := bulk.NewService(
 		dbMgr.DB,
@@ -169,6 +176,7 @@ func SetupTestServer(ctx context.Context, dbMgr *TestDBManager) (*gin.Engine, fu
 		nil, // FirebaseService
 		nil, // Publisher
 		logger,
+		contentAchievementService,
 	)
 
 	// Create router
@@ -218,6 +226,13 @@ func SetupTestServerWithCache(ctx context.Context, dbMgr *TestDBManager) (*gin.E
 		return nil, nil, nil, err
 	}
 
+	// Create content achievement service for tests (without push or webhooks)
+	contentAchievementService := &services.ContentAchievementService{
+		DB:      dbMgr.DB,
+		Cache:   testCache,
+		Loaders: dataLoaders,
+	}
+
 	// Create bulk service (without pub/sub for testing - sync processing only)
 	bulkService := bulk.NewService(
 		dbMgr.DB,
@@ -227,6 +242,7 @@ func SetupTestServerWithCache(ctx context.Context, dbMgr *TestDBManager) (*gin.E
 		nil, // FirebaseService
 		nil, // Publisher
 		logger,
+		contentAchievementService,
 	)
 
 	// Create router

@@ -23,11 +23,31 @@ gql(`
 `)
 
 gql(`
-  mutation FixMissingContentProgress {
-    fixMissingContentProgress {
-      usersFixed
-      progressRecordsCreated
-      achievementsAwarded
+  mutation FixMissingContentProgressAsync {
+    fixMissingContentProgressAsync {
+      id
+      operationType
+      status
+      totalCount
+      processedCount
+      successCount
+      failureCount
+      errorMessage
+    }
+  }
+`)
+
+gql(`
+  query BulkJobStatus($id: ID!) {
+    bulkJob(id: $id) {
+      id
+      status
+      totalCount
+      processedCount
+      successCount
+      failureCount
+      errorMessage
+      completedAt
     }
   }
 `)
@@ -55,34 +75,82 @@ const columns: TableColumn<UserRow>[] = [
   { accessorKey: 'eventCount', header: 'Manglende fremgang' },
 ]
 
-const {
-  executeMutation: fix,
-  fetching: fixing,
-  data: fixResult,
-} = useFixMissingContentProgressMutation()
+const { executeMutation: fix, fetching: fixing } =
+  useFixMissingContentProgressAsyncMutation()
 
 const showConfirmModal = ref(false)
+const jobId = ref<string | null>(null)
+const jobStatus = ref<string | null>(null)
+const jobResult = ref<{
+  successCount: number
+  failureCount: number
+  totalCount: number
+} | null>(null)
 const fixComplete = ref(false)
+
+const { executeQuery: checkJobStatus } = useBulkJobStatusQuery({
+  variables: computed(() => ({ id: jobId.value ?? '' })),
+  pause: computed(() => !jobId.value),
+  requestPolicy: 'network-only',
+})
+
+async function pollJobStatus() {
+  if (!jobId.value) return
+
+  const result = await checkJobStatus()
+  const job = result.data?.bulkJob
+  if (!job) return
+
+  jobStatus.value = job.status
+
+  if (job.status === 'COMPLETED' || job.status === 'FAILED') {
+    jobResult.value = {
+      successCount: job.successCount,
+      failureCount: job.failureCount,
+      totalCount: job.totalCount,
+    }
+    fixComplete.value = true
+    refetch({ requestPolicy: 'network-only' })
+  } else {
+    // Poll again after 1 second
+    setTimeout(pollJobStatus, 1000)
+  }
+}
 
 async function handleFix() {
   showConfirmModal.value = false
+  jobId.value = null
+  jobStatus.value = null
+  jobResult.value = null
+  fixComplete.value = false
+
   const result = await fix({})
-  if (result.data?.fixMissingContentProgress) {
-    fixComplete.value = true
-    refetch({ requestPolicy: 'network-only' })
+  if (result.data?.fixMissingContentProgressAsync) {
+    const job = result.data.fixMissingContentProgressAsync
+    jobId.value = job.id
+    jobStatus.value = job.status
+    // Start polling for job completion
+    pollJobStatus()
   }
 }
 
 const toast = useToast()
 
 watch(fixComplete, (complete) => {
-  if (complete && fixResult.value?.fixMissingContentProgress) {
-    const result = fixResult.value.fixMissingContentProgress
-    toast.add({
-      title: 'Reparasjon fullfort',
-      description: `Opprettet ${result.progressRecordsCreated} fremgangsregistreringer og tildelt ${result.achievementsAwarded} prestasjoner for ${result.usersFixed} brukere.`,
-      color: 'success',
-    })
+  if (complete && jobResult.value) {
+    if (jobStatus.value === 'COMPLETED') {
+      toast.add({
+        title: 'Reparasjon fullfort',
+        description: `Behandlet ${jobResult.value.successCount} av ${jobResult.value.totalCount} hendelser.`,
+        color: 'success',
+      })
+    } else {
+      toast.add({
+        title: 'Reparasjon feilet',
+        description: 'Se jobbstatus for detaljer.',
+        color: 'error',
+      })
+    }
   }
 })
 </script>
@@ -149,9 +217,17 @@ watch(fixComplete, (complete) => {
       </div>
 
       <div
-        v-if="
-          fixComplete && fixResult?.fixMissingContentProgress?.usersFixed === 0
-        "
+        v-if="jobId && !fixComplete"
+        class="bg-info/10 border-info mb-8 rounded-lg border p-4"
+      >
+        <div class="flex items-center gap-2">
+          <UIcon name="lucide:loader-2" class="text-info h-5 w-5 animate-spin" />
+          <span>Behandler... Status: {{ jobStatus }}</span>
+        </div>
+      </div>
+
+      <div
+        v-if="fixComplete && jobResult?.successCount === 0"
         class="bg-success/10 border-success mb-8 rounded-lg border p-4"
       >
         <div class="flex items-center gap-2">
@@ -161,32 +237,30 @@ watch(fixComplete, (complete) => {
       </div>
 
       <div
-        v-if="
-          fixComplete &&
-          fixResult?.fixMissingContentProgress &&
-          fixResult.fixMissingContentProgress.usersFixed > 0
-        "
+        v-if="fixComplete && jobStatus === 'COMPLETED' && jobResult && jobResult.successCount > 0"
         class="bg-success/10 border-success mb-8 rounded-lg border p-4"
       >
         <div class="flex flex-col gap-2">
           <div class="flex items-center gap-2">
             <UIcon name="lucide:check-circle" class="text-success h-5 w-5" />
-            <span class="font-medium">Reparasjon fullført</span>
+            <span class="font-medium">Reparasjon fullfort</span>
           </div>
           <ul class="text-muted list-inside list-disc text-sm">
-            <li>
-              {{ fixResult.fixMissingContentProgress.usersFixed }} brukere
-              berørt
-            </li>
-            <li>
-              {{ fixResult.fixMissingContentProgress.progressRecordsCreated }}
-              fremgangsregistreringer opprettet
-            </li>
-            <li>
-              {{ fixResult.fixMissingContentProgress.achievementsAwarded }}
-              prestasjoner tildelt
+            <li>{{ jobResult.successCount }} hendelser behandlet</li>
+            <li v-if="jobResult.failureCount > 0">
+              {{ jobResult.failureCount }} feil
             </li>
           </ul>
+        </div>
+      </div>
+
+      <div
+        v-if="fixComplete && jobStatus === 'FAILED'"
+        class="bg-error/10 border-error mb-8 rounded-lg border p-4"
+      >
+        <div class="flex items-center gap-2">
+          <UIcon name="lucide:x-circle" class="text-error h-5 w-5" />
+          <span>Reparasjon feilet.</span>
         </div>
       </div>
 

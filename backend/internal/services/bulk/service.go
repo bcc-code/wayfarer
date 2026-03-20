@@ -15,6 +15,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/pubsub"
+	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -22,13 +23,14 @@ import (
 
 // Service handles bulk operations for challenges and achievements
 type Service struct {
-	DB              *database.DB
-	Cache           *cache.CacheWithRegistry
-	Loaders         *loaders.Loaders
-	PushService     *push.Service
-	FirebaseService *firebase.Service
-	Publisher       *pubsub.Publisher
-	Logger          *slog.Logger
+	DB                        *database.DB
+	Cache                     *cache.CacheWithRegistry
+	Loaders                   *loaders.Loaders
+	PushService               *push.Service
+	FirebaseService           *firebase.Service
+	Publisher                 *pubsub.Publisher
+	Logger                    *slog.Logger
+	ContentAchievementService *services.ContentAchievementService
 }
 
 // NewService creates a new bulk operations service
@@ -40,15 +42,17 @@ func NewService(
 	firebaseService *firebase.Service,
 	publisher *pubsub.Publisher,
 	logger *slog.Logger,
+	contentAchievementService *services.ContentAchievementService,
 ) *Service {
 	return &Service{
-		DB:              db,
-		Cache:           cache,
-		Loaders:         loaders,
-		PushService:     pushService,
-		FirebaseService: firebaseService,
-		Publisher:       publisher,
-		Logger:          logger,
+		DB:                        db,
+		Cache:                     cache,
+		Loaders:                   loaders,
+		PushService:               pushService,
+		FirebaseService:           firebaseService,
+		Publisher:                 publisher,
+		Logger:                    logger,
+		ContentAchievementService: contentAchievementService,
 	}
 }
 
@@ -1012,6 +1016,53 @@ func (s *Service) CreateBulkScoreAdjustments(
 		"success_count", successCount,
 		"failure_count", failureCount,
 	)
+
+	return successCount, failureCount, nil
+}
+
+// FixMissingContentProgress processes missing content events using the ContentAchievementService.
+// This ensures all hooks (cache invalidation, webhooks, push notifications, Firebase, score journals) are triggered.
+func (s *Service) FixMissingContentProgress(ctx context.Context) (int, int, error) {
+	// Get all missing events with user and task info
+	events, err := s.DB.Queries.GetMissingContentEventsForProcessing(ctx)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to get missing content events: %w", err)
+	}
+
+	if len(events) == 0 {
+		return 0, 0, nil
+	}
+
+	// Track unique users for Firebase notification
+	userSet := make(map[string]bool)
+	for _, event := range events {
+		userSet[event.UserID] = true
+	}
+
+	s.Logger.Info("FixMissingContentProgress: processing missing content events",
+		"event_count", len(events),
+		"user_count", len(userSet))
+
+	successCount := 0
+	failureCount := 0
+
+	// Process each event using the ContentAchievementService
+	for _, event := range events {
+		s.ContentAchievementService.ProcessContentEvent(ctx, event.UserID, event.TaskID)
+		successCount++
+	}
+
+	// Notify Firebase for content updates for each affected user
+	if s.FirebaseService != nil {
+		for userID := range userSet {
+			go s.FirebaseService.NotifyUserContent(context.Background(), userID)
+		}
+	}
+
+	s.Logger.Info("FixMissingContentProgress: completed",
+		"success_count", successCount,
+		"failure_count", failureCount,
+		"users_notified", len(userSet))
 
 	return successCount, failureCount, nil
 }
