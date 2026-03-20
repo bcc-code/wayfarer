@@ -28,6 +28,8 @@ defmodule ElixirBackend.ULID do
   def new_streak_id, do: new_id("SK")
   def new_streak_relevant_day_id, do: new_id("SD")
   def new_external_content_id, do: new_id("EC")
+  def new_achievement_id, do: new_id("AC")
+  def new_content_item_id, do: new_id("CI")
 
   # Encode a UUID v7 binary into 26-char Crockford Base32 (ULID format)
   defp encode_crockford(uuid_string) do
