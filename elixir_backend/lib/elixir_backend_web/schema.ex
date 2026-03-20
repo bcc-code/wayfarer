@@ -18,6 +18,8 @@ defmodule ElixirBackendWeb.Schema do
   import_types(ElixirBackendWeb.Schema.QuizTypes)
   import_types(ElixirBackendWeb.Schema.ScoringTypes)
   import_types(ElixirBackendWeb.Schema.BulkJobTypes)
+  import_types(ElixirBackendWeb.Schema.PushNotificationTypes)
+  import_types(ElixirBackendWeb.Schema.WebhookTypes)
 
   # Queries
   import_types(ElixirBackendWeb.Schema.ChurchQueries)
@@ -33,6 +35,8 @@ defmodule ElixirBackendWeb.Schema do
   import_types(ElixirBackendWeb.Schema.QuizQueries)
   import_types(ElixirBackendWeb.Schema.ScoringQueries)
   import_types(ElixirBackendWeb.Schema.BulkJobQueries)
+  import_types(ElixirBackendWeb.Schema.PushNotificationQueries)
+  import_types(ElixirBackendWeb.Schema.WebhookQueries)
 
   # Mutations
   import_types(ElixirBackendWeb.Schema.ChurchMutations)
@@ -46,6 +50,8 @@ defmodule ElixirBackendWeb.Schema do
   import_types(ElixirBackendWeb.Schema.AchievementMutations)
   import_types(ElixirBackendWeb.Schema.QuizMutations)
   import_types(ElixirBackendWeb.Schema.ScoringMutations)
+  import_types(ElixirBackendWeb.Schema.PushNotificationMutations)
+  import_types(ElixirBackendWeb.Schema.WebhookMutations)
 
   query do
     import_fields(:church_queries)
@@ -61,6 +67,8 @@ defmodule ElixirBackendWeb.Schema do
     import_fields(:quiz_queries)
     import_fields(:scoring_queries)
     import_fields(:bulk_job_queries)
+    import_fields(:push_notification_queries)
+    import_fields(:webhook_queries)
   end
 
   mutation do
@@ -75,6 +83,8 @@ defmodule ElixirBackendWeb.Schema do
     import_fields(:achievement_mutations)
     import_fields(:quiz_mutations)
     import_fields(:scoring_mutations)
+    import_fields(:push_notification_mutations)
+    import_fields(:webhook_mutations)
   end
 
   # Dataloader plugin for batch-loading associations
