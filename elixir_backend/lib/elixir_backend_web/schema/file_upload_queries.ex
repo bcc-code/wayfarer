@@ -1,5 +1,6 @@
 defmodule ElixirBackendWeb.Schema.FileUploadQueries do
   use Absinthe.Schema.Notation
+  @moduledoc false
 
   alias ElixirBackend.FileUploads
 

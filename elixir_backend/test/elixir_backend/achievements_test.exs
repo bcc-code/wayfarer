@@ -181,7 +181,7 @@ defmodule ElixirBackend.AchievementsTest do
     test "rejects award when awardable_from is in the future" do
       project = create_project()
       user = create_user()
-      future = DateTime.utc_now() |> DateTime.add(86400) |> DateTime.truncate(:second)
+      future = DateTime.utc_now() |> DateTime.add(86_400) |> DateTime.truncate(:second)
       a = create_simple_achievement(project, %{awardable_from: future})
 
       assert {:error, "achievement is not yet available for awarding"} =
@@ -191,7 +191,7 @@ defmodule ElixirBackend.AchievementsTest do
     test "allows award when awardable_from is in the past" do
       project = create_project()
       user = create_user()
-      past = DateTime.utc_now() |> DateTime.add(-86400) |> DateTime.truncate(:second)
+      past = DateTime.utc_now() |> DateTime.add(-86_400) |> DateTime.truncate(:second)
       a = create_simple_achievement(project, %{awardable_from: past})
 
       assert {:ok, _} = Achievements.award_achievement(user.id, a.id)

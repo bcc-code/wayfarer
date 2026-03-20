@@ -231,23 +231,25 @@ defmodule ElixirBackend.Achievements do
     Repo.transaction(fn ->
       {:ok, achievement} = update_achievement(id, Map.drop(attrs, [:items]))
 
-      if items do
-        from(ci in ContentAchievementItem, where: ci.achievement_id == ^id)
-        |> Repo.delete_all()
-
-        Enum.each(items, fn item ->
-          %ContentAchievementItem{}
-          |> ContentAchievementItem.changeset(%{
-            id: ULID.new_content_item_id(),
-            achievement_id: id,
-            external_content_id: item.external_content_id,
-            sort_order: Map.get(item, :sort_order, 0)
-          })
-          |> Repo.insert!()
-        end)
-      end
+      if items, do: replace_content_items(id, items)
 
       achievement
+    end)
+  end
+
+  defp replace_content_items(achievement_id, items) do
+    from(ci in ContentAchievementItem, where: ci.achievement_id == ^achievement_id)
+    |> Repo.delete_all()
+
+    Enum.each(items, fn item ->
+      %ContentAchievementItem{}
+      |> ContentAchievementItem.changeset(%{
+        id: ULID.new_content_item_id(),
+        achievement_id: achievement_id,
+        external_content_id: item.external_content_id,
+        sort_order: Map.get(item, :sort_order, 0)
+      })
+      |> Repo.insert!()
     end)
   end
 
@@ -301,19 +303,19 @@ defmodule ElixirBackend.Achievements do
   # ── Write: Award/Revoke ──
 
   def award_achievement(user_id, achievement_id) do
-    with {:ok, achievement} <- get_achievement(achievement_id) do
-      # Check awardable_from
-      if achievement.awardable_from do
-        now = DateTime.utc_now()
+    with {:ok, achievement} <- get_achievement(achievement_id),
+         :ok <- check_awardable(achievement) do
+      do_award(user_id, achievement)
+    end
+  end
 
-        if DateTime.compare(now, achievement.awardable_from) == :lt do
-          {:error, "achievement is not yet available for awarding"}
-        else
-          do_award(user_id, achievement)
-        end
-      else
-        do_award(user_id, achievement)
-      end
+  defp check_awardable(%{awardable_from: nil}), do: :ok
+
+  defp check_awardable(%{awardable_from: awardable_from}) do
+    if DateTime.compare(DateTime.utc_now(), awardable_from) == :lt do
+      {:error, "achievement is not yet available for awarding"}
+    else
+      :ok
     end
   end
 

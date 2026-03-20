@@ -47,25 +47,35 @@ defmodule ElixirBackend.Roles.UserRole do
 
   defp validate_scope(changeset) do
     role = get_field(changeset, :role)
-    church_id = get_field(changeset, :church_id)
-    project_id = get_field(changeset, :project_id)
-    team_id = get_field(changeset, :team_id)
 
-    cond do
-      role in @global_roles and (church_id || project_id || team_id) ->
-        add_error(changeset, :role, "global roles must not have a scope")
+    scope = %{
+      church_id: get_field(changeset, :church_id),
+      project_id: get_field(changeset, :project_id),
+      team_id: get_field(changeset, :team_id)
+    }
 
-      role == "CHURCH_ADMIN" and is_nil(church_id) ->
-        add_error(changeset, :church_id, "CHURCH_ADMIN requires a church scope")
-
-      role == "PROJECT_ADMIN" and is_nil(project_id) ->
-        add_error(changeset, :project_id, "PROJECT_ADMIN requires a project scope")
-
-      role == "TEAM_LEAD" and is_nil(team_id) ->
-        add_error(changeset, :team_id, "TEAM_LEAD requires a team scope")
-
-      true ->
-        changeset
+    case check_scope(role, scope) do
+      :ok -> changeset
+      {:error, field, message} -> add_error(changeset, field, message)
     end
   end
+
+  defp check_scope(role, scope) when role in @global_roles do
+    if scope.church_id || scope.project_id || scope.team_id do
+      {:error, :role, "global roles must not have a scope"}
+    else
+      :ok
+    end
+  end
+
+  defp check_scope("CHURCH_ADMIN", %{church_id: nil}),
+    do: {:error, :church_id, "CHURCH_ADMIN requires a church scope"}
+
+  defp check_scope("PROJECT_ADMIN", %{project_id: nil}),
+    do: {:error, :project_id, "PROJECT_ADMIN requires a project scope"}
+
+  defp check_scope("TEAM_LEAD", %{team_id: nil}),
+    do: {:error, :team_id, "TEAM_LEAD requires a team scope"}
+
+  defp check_scope(_role, _scope), do: :ok
 end

@@ -1,5 +1,6 @@
 defmodule ElixirBackendWeb.Schema.TranslationTypes do
   use Absinthe.Schema.Notation
+  @moduledoc false
 
   object :translation_field_status do
     field :language_code, non_null(:string)

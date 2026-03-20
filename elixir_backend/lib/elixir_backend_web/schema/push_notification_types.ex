@@ -1,5 +1,6 @@
 defmodule ElixirBackendWeb.Schema.PushNotificationTypes do
   use Absinthe.Schema.Notation
+  @moduledoc false
 
   enum :notification_type do
     value(:achievement_unlocked, as: "ACHIEVEMENT_UNLOCKED")

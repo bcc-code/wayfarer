@@ -156,30 +156,7 @@ defmodule ElixirBackend.Quizzes do
 
   def update_question(id, attrs) do
     with {:ok, question} <- get_question(id) do
-      predefined_answers = attrs[:predefined_answers]
-      ordering_items = attrs[:ordering_items]
-
-      result =
-        Repo.transaction(fn ->
-          updated =
-            question
-            |> QuizQuestion.update_changeset(
-              Map.drop(attrs, [:predefined_answers, :ordering_items])
-            )
-            |> Repo.update!()
-
-          if predefined_answers do
-            from(a in QuizPredefinedAnswer, where: a.question_id == ^id) |> Repo.delete_all()
-            insert_predefined_answers(id, predefined_answers)
-          end
-
-          if ordering_items do
-            from(oi in QuizOrderingItem, where: oi.question_id == ^id) |> Repo.delete_all()
-            insert_ordering_items(id, ordering_items)
-          end
-
-          updated
-        end)
+      result = do_update_question(id, question, attrs)
 
       with {:ok, _} <- result do
         Cache.del(Cache.quiz_questions_key(question.quiz_id))
@@ -188,6 +165,30 @@ defmodule ElixirBackend.Quizzes do
 
       result
     end
+  end
+
+  defp do_update_question(id, question, attrs) do
+    predefined_answers = attrs[:predefined_answers]
+    ordering_items = attrs[:ordering_items]
+
+    Repo.transaction(fn ->
+      updated =
+        question
+        |> QuizQuestion.update_changeset(Map.drop(attrs, [:predefined_answers, :ordering_items]))
+        |> Repo.update!()
+
+      if predefined_answers do
+        from(a in QuizPredefinedAnswer, where: a.question_id == ^id) |> Repo.delete_all()
+        insert_predefined_answers(id, predefined_answers)
+      end
+
+      if ordering_items do
+        from(oi in QuizOrderingItem, where: oi.question_id == ^id) |> Repo.delete_all()
+        insert_ordering_items(id, ordering_items)
+      end
+
+      updated
+    end)
   end
 
   def delete_question(id) do

@@ -1,5 +1,6 @@
 defmodule ElixirBackendWeb.Schema.ConsentTypes do
   use Absinthe.Schema.Notation
+  @moduledoc false
 
   alias ElixirBackend.Translations
 

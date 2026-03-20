@@ -198,7 +198,7 @@ defmodule ElixirBackend.RolesTest do
         Roles.users_with_role("PROJECT_ADMIN", scope_type: "PROJECT", scope_id: p2.id)
 
       assert length(users_p1) == 1
-      assert length(users_p2) == 0
+      assert users_p2 == []
     end
   end
 end

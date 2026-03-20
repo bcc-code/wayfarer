@@ -1,5 +1,6 @@
 defmodule ElixirBackendWeb.Schema.FeedbackMutations do
   use Absinthe.Schema.Notation
+  @moduledoc false
 
   alias ElixirBackend.Feedback
 

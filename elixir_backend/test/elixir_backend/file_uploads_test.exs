@@ -12,7 +12,7 @@ defmodule ElixirBackend.FileUploadsTest do
         FileUploads.create_upload(%{
           filename: "photo.jpg",
           stored_filename: "abc123.jpg",
-          file_size: 12345,
+          file_size: 12_345,
           mime_type: "image/jpeg",
           public_url: "https://cdn.example.com/abc123.jpg",
           uploaded_by: user.id,
@@ -22,7 +22,7 @@ defmodule ElixirBackend.FileUploadsTest do
         })
 
       assert upload.filename == "photo.jpg"
-      assert upload.file_size == 12345
+      assert upload.file_size == 12_345
       assert upload.width == 1920
       assert upload.blurhash == "LEHV6nWB2yk8pyo0adR*.7kCMdnj"
     end

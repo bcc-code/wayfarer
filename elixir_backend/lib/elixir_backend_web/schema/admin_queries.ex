@@ -1,5 +1,6 @@
 defmodule ElixirBackendWeb.Schema.AdminQueries do
   use Absinthe.Schema.Notation
+  @moduledoc false
 
   alias ElixirBackend.Admin
 

@@ -1,5 +1,6 @@
 defmodule ElixirBackendWeb.Schema.ScoringMutations do
   use Absinthe.Schema.Notation
+  @moduledoc false
 
   alias ElixirBackend.Scoring
 

@@ -1,5 +1,6 @@
 defmodule ElixirBackendWeb.Schema.QuizTypes do
   use Absinthe.Schema.Notation
+  @moduledoc false
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
   alias ElixirBackend.Quizzes

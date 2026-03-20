@@ -1,5 +1,6 @@
 defmodule ElixirBackendWeb.Schema.FeedbackTypes do
   use Absinthe.Schema.Notation
+  @moduledoc false
 
   object :user_feedback do
     field :id, non_null(:id)

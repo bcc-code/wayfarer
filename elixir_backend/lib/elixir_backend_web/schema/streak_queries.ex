@@ -1,5 +1,6 @@
 defmodule ElixirBackendWeb.Schema.StreakQueries do
   use Absinthe.Schema.Notation
+  @moduledoc false
 
   alias ElixirBackend.Streaks
 

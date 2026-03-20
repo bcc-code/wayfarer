@@ -1,5 +1,6 @@
 defmodule ElixirBackendWeb.Schema.AchievementTypes do
   use Absinthe.Schema.Notation
+  @moduledoc false
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
   alias ElixirBackend.Achievements

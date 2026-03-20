@@ -1,5 +1,6 @@
 defmodule ElixirBackendWeb.Schema.AchievementQueries do
   use Absinthe.Schema.Notation
+  @moduledoc false
 
   alias ElixirBackend.Achievements
 

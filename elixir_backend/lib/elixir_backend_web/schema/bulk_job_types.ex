@@ -1,5 +1,6 @@
 defmodule ElixirBackendWeb.Schema.BulkJobTypes do
   use Absinthe.Schema.Notation
+  @moduledoc false
 
   enum :bulk_job_status do
     value(:pending, as: "PENDING")

@@ -163,7 +163,7 @@ defmodule ElixirBackend.TeamsTest do
       assert {:ok, _} = Teams.remove_members(team.id, [user.id])
 
       members = Teams.get_team_members(team.id)
-      assert length(members) == 0
+      assert members == []
     end
   end
 

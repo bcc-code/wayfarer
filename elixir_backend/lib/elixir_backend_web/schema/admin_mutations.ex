@@ -1,5 +1,6 @@
 defmodule ElixirBackendWeb.Schema.AdminMutations do
   use Absinthe.Schema.Notation
+  @moduledoc false
 
   object :admin_mutations do
     field :clear_all_cache, non_null(:boolean) do

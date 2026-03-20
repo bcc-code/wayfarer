@@ -109,27 +109,27 @@ defmodule ElixirBackend.Streaks do
   end
 
   def update_streak(id, attrs) do
-    with {:ok, streak} <- get_streak(id) do
-      result =
-        Repo.transaction(fn ->
-          updated_streak =
-            streak
-            |> Streak.update_changeset(Map.drop(attrs, [:relevant_days]))
-            |> Repo.update!()
-
-          if Map.has_key?(attrs, :relevant_days) do
-            from(rd in StreakRelevantDay, where: rd.streak_id == ^id) |> Repo.delete_all()
-            insert_relevant_days(id, attrs.relevant_days)
-          end
-
-          updated_streak
-        end)
-
-      with {:ok, updated} <- result do
-        Cache.invalidate_streak(id, streak.project_id)
-        {:ok, updated}
-      end
+    with {:ok, streak} <- get_streak(id),
+         {:ok, updated} <- do_update_streak(id, streak, attrs) do
+      Cache.invalidate_streak(id, streak.project_id)
+      {:ok, updated}
     end
+  end
+
+  defp do_update_streak(id, streak, attrs) do
+    Repo.transaction(fn ->
+      updated_streak =
+        streak
+        |> Streak.update_changeset(Map.drop(attrs, [:relevant_days]))
+        |> Repo.update!()
+
+      if Map.has_key?(attrs, :relevant_days) do
+        from(rd in StreakRelevantDay, where: rd.streak_id == ^id) |> Repo.delete_all()
+        insert_relevant_days(id, attrs.relevant_days)
+      end
+
+      updated_streak
+    end)
   end
 
   def delete_streak(id) do

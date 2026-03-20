@@ -222,7 +222,7 @@ defmodule ElixirBackendWeb.Schema.RolesTest do
       conn = graphql_query(conn, query, %{"role" => "ADMIN"})
       data = json_response(conn, 200)["data"]["usersWithRole"]
 
-      assert length(data) >= 1
+      assert data != []
       assert Enum.any?(data, fn u -> u["name"] == "AdminUser" end)
     end
 
@@ -251,7 +251,7 @@ defmodule ElixirBackendWeb.Schema.RolesTest do
         })
 
       data = json_response(conn, 200)["data"]["usersWithRole"]
-      assert length(data) >= 1
+      assert data != []
     end
   end
 end

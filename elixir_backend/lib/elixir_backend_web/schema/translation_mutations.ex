@@ -1,5 +1,6 @@
 defmodule ElixirBackendWeb.Schema.TranslationMutations do
   use Absinthe.Schema.Notation
+  @moduledoc false
 
   alias ElixirBackend.Translations
   alias ElixirBackendWeb.Schema.Middleware.RequireRole

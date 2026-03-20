@@ -1,5 +1,6 @@
 defmodule ElixirBackendWeb.Schema.BulkJobQueries do
   use Absinthe.Schema.Notation
+  @moduledoc false
 
   alias ElixirBackend.BulkJobs
 

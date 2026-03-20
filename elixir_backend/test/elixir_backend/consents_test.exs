@@ -55,7 +55,7 @@ defmodule ElixirBackend.ConsentsTest do
         })
 
       consents = Consents.list_consents()
-      assert length(consents) >= 1
+      assert consents != []
       assert Enum.all?(consents, fn c -> c.published_at != nil end)
     end
   end

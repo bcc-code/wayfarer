@@ -66,7 +66,7 @@ defmodule ElixirBackendWeb.Schema.BulkJobsTest do
         )
 
       data = json_response(resp, 200)["data"]["myBulkJobs"]
-      assert length(data) >= 1
+      assert data != []
     end
   end
 

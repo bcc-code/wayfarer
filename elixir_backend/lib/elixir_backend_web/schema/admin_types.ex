@@ -1,5 +1,6 @@
 defmodule ElixirBackendWeb.Schema.AdminTypes do
   use Absinthe.Schema.Notation
+  @moduledoc false
 
   object :admin_dashboard_stats do
     field :total_users, non_null(:integer)

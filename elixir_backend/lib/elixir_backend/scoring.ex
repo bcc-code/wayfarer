@@ -61,51 +61,55 @@ defmodule ElixirBackend.Scoring do
   end
 
   def create_team_adjustment(attrs) do
-    team_id = attrs[:team_id] || attrs["team_id"]
-    project_id = attrs[:project_id] || attrs["project_id"]
-    event_id = attrs[:event_id] || attrs["event_id"]
-    points = attrs[:points] || attrs["points"]
-    reason = attrs[:reason] || attrs["reason"]
-    distribution_mode = attrs[:distribution_mode] || attrs["distribution_mode"]
-
-    # Get team members
-    members =
-      from(tm in ElixirBackend.Teams.TeamMember,
-        where: tm.team_id == ^team_id,
-        select: tm.user_id
-      )
-      |> Repo.all()
+    parsed = parse_team_adjustment_attrs(attrs)
+    members = get_team_member_ids(parsed.team_id)
 
     if members == [] do
       {:ok, []}
     else
-      member_points =
-        case distribution_mode do
-          "SPLIT" -> div(points, length(members))
-          "EACH" -> points
-          _ -> points
-        end
-
-      entries =
-        Enum.map(members, fn user_id ->
-          {:ok, entry} =
-            create_entry(%{
-              project_id: project_id,
-              user_id: user_id,
-              event_id: event_id,
-              points: member_points,
-              source_type: "MANUAL",
-              reason: reason
-            })
-
-          entry
-        end)
-
-      # Update leaderboards for each entry
+      member_points = calculate_member_points(parsed.points, parsed.distribution_mode, members)
+      entries = create_member_entries(members, parsed, member_points)
       Enum.each(entries, &update_leaderboards/1)
-
       {:ok, entries}
     end
+  end
+
+  defp parse_team_adjustment_attrs(attrs) do
+    %{
+      team_id: attrs[:team_id] || attrs["team_id"],
+      project_id: attrs[:project_id] || attrs["project_id"],
+      event_id: attrs[:event_id] || attrs["event_id"],
+      points: attrs[:points] || attrs["points"],
+      reason: attrs[:reason] || attrs["reason"],
+      distribution_mode: attrs[:distribution_mode] || attrs["distribution_mode"]
+    }
+  end
+
+  defp get_team_member_ids(team_id) do
+    from(tm in ElixirBackend.Teams.TeamMember,
+      where: tm.team_id == ^team_id,
+      select: tm.user_id
+    )
+    |> Repo.all()
+  end
+
+  defp calculate_member_points(points, "SPLIT", members), do: div(points, length(members))
+  defp calculate_member_points(points, _mode, _members), do: points
+
+  defp create_member_entries(members, parsed, member_points) do
+    Enum.map(members, fn user_id ->
+      {:ok, entry} =
+        create_entry(%{
+          project_id: parsed.project_id,
+          user_id: user_id,
+          event_id: parsed.event_id,
+          points: member_points,
+          source_type: "MANUAL",
+          reason: parsed.reason
+        })
+
+      entry
+    end)
   end
 
   def delete_entry(id) do
@@ -478,111 +482,114 @@ defmodule ElixirBackend.Scoring do
       |> Repo.all()
 
     Enum.each(team_memberships, fn membership ->
-      # Project team
+      upsert_team_project_leaderboard(entry, membership, now)
+      if entry.event_id, do: upsert_team_event_leaderboard(entry, membership, now)
+      if membership.super_team_id, do: upsert_superteam_leaderboards(entry, membership, now)
+    end)
+  end
+
+  defp upsert_team_project_leaderboard(entry, membership, now) do
+    Repo.insert_all(
+      "leaderboard_project_teams",
+      [
+        %{
+          project_id: entry.project_id,
+          team_id: membership.team_id,
+          score: entry.points,
+          last_score_at: entry.created_at,
+          updated_at: now
+        }
+      ],
+      on_conflict:
+        from(lt in "leaderboard_project_teams",
+          update: [
+            set: [
+              score: fragment("? + ?", lt.score, ^entry.points),
+              last_score_at: ^entry.created_at,
+              updated_at: ^now
+            ]
+          ]
+        ),
+      conflict_target: [:project_id, :team_id]
+    )
+  end
+
+  defp upsert_team_event_leaderboard(entry, membership, now) do
+    Repo.insert_all(
+      "leaderboard_event_teams",
+      [
+        %{
+          event_id: entry.event_id,
+          team_id: membership.team_id,
+          score: entry.points,
+          last_score_at: entry.created_at,
+          updated_at: now
+        }
+      ],
+      on_conflict:
+        from(lt in "leaderboard_event_teams",
+          update: [
+            set: [
+              score: fragment("? + ?", lt.score, ^entry.points),
+              last_score_at: ^entry.created_at,
+              updated_at: ^now
+            ]
+          ]
+        ),
+      conflict_target: [:event_id, :team_id]
+    )
+  end
+
+  defp upsert_superteam_leaderboards(entry, membership, now) do
+    Repo.insert_all(
+      "leaderboard_project_superteams",
+      [
+        %{
+          project_id: entry.project_id,
+          super_team_id: membership.super_team_id,
+          score: entry.points,
+          last_score_at: entry.created_at,
+          updated_at: now
+        }
+      ],
+      on_conflict:
+        from(ls in "leaderboard_project_superteams",
+          update: [
+            set: [
+              score: fragment("? + ?", ls.score, ^entry.points),
+              last_score_at: ^entry.created_at,
+              updated_at: ^now
+            ]
+          ]
+        ),
+      conflict_target: [:project_id, :super_team_id]
+    )
+
+    if entry.event_id do
       Repo.insert_all(
-        "leaderboard_project_teams",
+        "leaderboard_event_superteams",
         [
           %{
-            project_id: entry.project_id,
-            team_id: membership.team_id,
+            event_id: entry.event_id,
+            super_team_id: membership.super_team_id,
             score: entry.points,
             last_score_at: entry.created_at,
             updated_at: now
           }
         ],
         on_conflict:
-          from(lt in "leaderboard_project_teams",
+          from(ls in "leaderboard_event_superteams",
             update: [
               set: [
-                score: fragment("? + ?", lt.score, ^entry.points),
+                score: fragment("? + ?", ls.score, ^entry.points),
                 last_score_at: ^entry.created_at,
                 updated_at: ^now
               ]
             ]
           ),
-        conflict_target: [:project_id, :team_id]
+        conflict_target: [:event_id, :super_team_id]
       )
-
-      # Event team
-      if entry.event_id do
-        Repo.insert_all(
-          "leaderboard_event_teams",
-          [
-            %{
-              event_id: entry.event_id,
-              team_id: membership.team_id,
-              score: entry.points,
-              last_score_at: entry.created_at,
-              updated_at: now
-            }
-          ],
-          on_conflict:
-            from(lt in "leaderboard_event_teams",
-              update: [
-                set: [
-                  score: fragment("? + ?", lt.score, ^entry.points),
-                  last_score_at: ^entry.created_at,
-                  updated_at: ^now
-                ]
-              ]
-            ),
-          conflict_target: [:event_id, :team_id]
-        )
-      end
-
-      # Superteam
-      if membership.super_team_id do
-        Repo.insert_all(
-          "leaderboard_project_superteams",
-          [
-            %{
-              project_id: entry.project_id,
-              super_team_id: membership.super_team_id,
-              score: entry.points,
-              last_score_at: entry.created_at,
-              updated_at: now
-            }
-          ],
-          on_conflict:
-            from(ls in "leaderboard_project_superteams",
-              update: [
-                set: [
-                  score: fragment("? + ?", ls.score, ^entry.points),
-                  last_score_at: ^entry.created_at,
-                  updated_at: ^now
-                ]
-              ]
-            ),
-          conflict_target: [:project_id, :super_team_id]
-        )
-
-        if entry.event_id do
-          Repo.insert_all(
-            "leaderboard_event_superteams",
-            [
-              %{
-                event_id: entry.event_id,
-                super_team_id: membership.super_team_id,
-                score: entry.points,
-                last_score_at: entry.created_at,
-                updated_at: now
-              }
-            ],
-            on_conflict:
-              from(ls in "leaderboard_event_superteams",
-                update: [
-                  set: [
-                    score: fragment("? + ?", ls.score, ^entry.points),
-                    last_score_at: ^entry.created_at,
-                    updated_at: ^now
-                  ]
-                ]
-              ),
-            conflict_target: [:event_id, :super_team_id]
-          )
-        end
-      end
-    end)
+    end
   end
 
   # ── Private: Helpers ──

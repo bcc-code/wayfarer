@@ -1,5 +1,6 @@
 defmodule ElixirBackendWeb.Schema.ExternalContentTypes do
   use Absinthe.Schema.Notation
+  @moduledoc false
 
   alias ElixirBackend.ExternalContent, as: EC
 

@@ -1,5 +1,6 @@
 defmodule ElixirBackendWeb.Schema.PushNotificationMutations do
   use Absinthe.Schema.Notation
+  @moduledoc false
 
   alias ElixirBackend.PushNotifications
 

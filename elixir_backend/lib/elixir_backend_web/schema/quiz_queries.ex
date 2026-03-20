@@ -1,5 +1,6 @@
 defmodule ElixirBackendWeb.Schema.QuizQueries do
   use Absinthe.Schema.Notation
+  @moduledoc false
 
   alias ElixirBackend.Quizzes
 

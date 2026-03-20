@@ -1,5 +1,6 @@
 defmodule ElixirBackendWeb.Schema.FileUploadTypes do
   use Absinthe.Schema.Notation
+  @moduledoc false
 
   object :file_upload do
     field :id, non_null(:id)

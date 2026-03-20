@@ -1,5 +1,6 @@
 defmodule ElixirBackendWeb.Schema.WebhookMutations do
   use Absinthe.Schema.Notation
+  @moduledoc false
 
   alias ElixirBackend.Webhooks
 

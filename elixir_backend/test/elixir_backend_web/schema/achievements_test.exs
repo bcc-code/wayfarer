@@ -170,7 +170,7 @@ defmodule ElixirBackendWeb.Schema.AchievementsTest do
       admin = create_user(%{name: "Admin"})
       user = create_user(%{name: "Target"})
       project = create_project()
-      future = DateTime.utc_now() |> DateTime.add(86400) |> DateTime.truncate(:second)
+      future = DateTime.utc_now() |> DateTime.add(86_400) |> DateTime.truncate(:second)
 
       {:ok, a} =
         Achievements.create_simple_achievement(%{

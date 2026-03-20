@@ -1,5 +1,6 @@
 defmodule ElixirBackendWeb.Schema.StreakMutations do
   use Absinthe.Schema.Notation
+  @moduledoc false
 
   alias ElixirBackend.Streaks
 
