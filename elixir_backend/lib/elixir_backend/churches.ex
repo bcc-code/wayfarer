@@ -5,16 +5,19 @@ defmodule ElixirBackend.Churches do
 
   import Ecto.Query
   alias ElixirBackend.Repo
+  alias ElixirBackend.Cache
   alias ElixirBackend.Pagination
   alias ElixirBackend.Churches.Church
 
   # ── Read ──
 
   def get_church(id) do
-    case Repo.get(Church, id) do
-      nil -> {:error, :not_found}
-      church -> {:ok, church}
-    end
+    Cache.fetch(Cache.church_key(id), fn ->
+      case Repo.get(Church, id) do
+        nil -> {:error, :not_found}
+        church -> {:ok, church}
+      end
+    end)
   end
 
   def get_church!(id), do: Repo.get!(Church, id)
@@ -39,9 +42,15 @@ defmodule ElixirBackend.Churches do
 
   def update_church(id, attrs) do
     with {:ok, church} <- get_church(id) do
-      church
-      |> Church.update_changeset(attrs)
-      |> Repo.update()
+      result =
+        church
+        |> Church.update_changeset(attrs)
+        |> Repo.update()
+
+      with {:ok, updated} <- result do
+        Cache.invalidate_church(id)
+        {:ok, updated}
+      end
     end
   end
 

@@ -6,6 +6,7 @@ defmodule ElixirBackend.Achievements do
   import Ecto.Query
   alias ElixirBackend.Repo
   alias ElixirBackend.ULID
+  alias ElixirBackend.Cache
   alias ElixirBackend.Pagination
 
   alias ElixirBackend.Achievements.{
@@ -21,10 +22,12 @@ defmodule ElixirBackend.Achievements do
   # ── Read ──
 
   def get_achievement(id) do
-    case Repo.get(Achievement, id) do
-      nil -> {:error, :not_found}
-      achievement -> {:ok, achievement}
-    end
+    Cache.fetch(Cache.achievement_key(id), fn ->
+      case Repo.get(Achievement, id) do
+        nil -> {:error, :not_found}
+        achievement -> {:ok, achievement}
+      end
+    end)
   end
 
   def get_achievement!(id), do: Repo.get!(Achievement, id)
@@ -64,13 +67,23 @@ defmodule ElixirBackend.Achievements do
   end
 
   def get_user_achieved_at(achievement_id, user_id) do
-    query =
-      from(ua in UserAchievement,
-        where: ua.achievement_id == ^achievement_id and ua.user_id == ^user_id,
-        select: ua.achieved_at
-      )
+    key = Cache.user_achieved_at_key(user_id, achievement_id)
 
-    Repo.one(query)
+    case Cache.get(key) do
+      {:ok, value} ->
+        value
+
+      :miss ->
+        query =
+          from(ua in UserAchievement,
+            where: ua.achievement_id == ^achievement_id and ua.user_id == ^user_id,
+            select: ua.achieved_at
+          )
+
+        result = Repo.one(query)
+        Cache.put(key, result)
+        result
+    end
   end
 
   def get_user_celebrated_at(achievement_id, user_id) do
@@ -200,9 +213,15 @@ defmodule ElixirBackend.Achievements do
 
   def update_achievement(id, attrs) do
     with {:ok, achievement} <- get_achievement(id) do
-      achievement
-      |> Achievement.update_changeset(attrs)
-      |> Repo.update()
+      result =
+        achievement
+        |> Achievement.update_changeset(attrs)
+        |> Repo.update()
+
+      with {:ok, updated} <- result do
+        Cache.invalidate_achievement(id, achievement.project_id)
+        {:ok, updated}
+      end
     end
   end
 
@@ -270,7 +289,12 @@ defmodule ElixirBackend.Achievements do
 
   def delete_achievement(id) do
     with {:ok, achievement} <- get_achievement(id) do
-      Repo.delete(achievement)
+      result = Repo.delete(achievement)
+
+      with {:ok, deleted} <- result do
+        Cache.invalidate_achievement(id, achievement.project_id)
+        {:ok, deleted}
+      end
     end
   end
 
@@ -300,8 +324,12 @@ defmodule ElixirBackend.Achievements do
       )
 
     case Repo.delete_all(query) do
-      {count, _} when count > 0 -> {:ok, true}
-      _ -> {:ok, false}
+      {count, _} when count > 0 ->
+        Cache.invalidate_user_achievement(user_id, achievement_id)
+        {:ok, true}
+
+      _ ->
+        {:ok, false}
     end
   end
 
@@ -412,9 +440,17 @@ defmodule ElixirBackend.Achievements do
   defp create_achievement(attrs) do
     id = ULID.new_achievement_id()
 
-    %Achievement{}
-    |> Achievement.changeset(Map.put(attrs, :id, id))
-    |> Repo.insert()
+    result =
+      %Achievement{}
+      |> Achievement.changeset(Map.put(attrs, :id, id))
+      |> Repo.insert()
+
+    with {:ok, achievement} <- result do
+      if achievement.project_id,
+        do: Cache.del(Cache.achievements_by_project_key(achievement.project_id))
+
+      {:ok, achievement}
+    end
   end
 
   defp do_award(user_id, achievement) do
@@ -431,6 +467,7 @@ defmodule ElixirBackend.Achievements do
       conflict_target: [:user_id, :achievement_id]
     )
 
+    Cache.invalidate_user_achievement(user_id, achievement.id)
     {:ok, achievement}
   end
 

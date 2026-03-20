@@ -6,6 +6,7 @@ defmodule ElixirBackend.Quizzes do
   import Ecto.Query
   alias ElixirBackend.Repo
   alias ElixirBackend.ULID
+  alias ElixirBackend.Cache
   alias ElixirBackend.Pagination
 
   alias ElixirBackend.Quizzes.{
@@ -21,10 +22,12 @@ defmodule ElixirBackend.Quizzes do
   # ── Quiz Read ──
 
   def get_quiz(id) do
-    case Repo.get(Quiz, id) do
-      nil -> {:error, :not_found}
-      quiz -> {:ok, quiz}
-    end
+    Cache.fetch(Cache.quiz_key(id), fn ->
+      case Repo.get(Quiz, id) do
+        nil -> {:error, :not_found}
+        quiz -> {:ok, quiz}
+      end
+    end)
   end
 
   def get_quiz!(id), do: Repo.get!(Quiz, id)
@@ -46,11 +49,13 @@ defmodule ElixirBackend.Quizzes do
   end
 
   def get_questions(quiz_id) do
-    from(q in QuizQuestion,
-      where: q.quiz_id == ^quiz_id,
-      order_by: [asc: q.question_order]
-    )
-    |> Repo.all()
+    Cache.fetch_raw(Cache.quiz_questions_key(quiz_id), fn ->
+      from(q in QuizQuestion,
+        where: q.quiz_id == ^quiz_id,
+        order_by: [asc: q.question_order]
+      )
+      |> Repo.all()
+    end)
   end
 
   def get_question(id) do
@@ -61,11 +66,13 @@ defmodule ElixirBackend.Quizzes do
   end
 
   def get_predefined_answers(question_id) do
-    from(a in QuizPredefinedAnswer,
-      where: a.question_id == ^question_id,
-      order_by: [asc: a.answer_order]
-    )
-    |> Repo.all()
+    Cache.fetch_raw(Cache.quiz_answers_key(question_id), fn ->
+      from(a in QuizPredefinedAnswer,
+        where: a.question_id == ^question_id,
+        order_by: [asc: a.answer_order]
+      )
+      |> Repo.all()
+    end)
   end
 
   def get_ordering_items(question_id) do
@@ -88,15 +95,26 @@ defmodule ElixirBackend.Quizzes do
 
   def update_quiz(id, attrs) do
     with {:ok, quiz} <- get_quiz(id) do
-      quiz
-      |> Quiz.update_changeset(attrs)
-      |> Repo.update()
+      result =
+        quiz
+        |> Quiz.update_changeset(attrs)
+        |> Repo.update()
+
+      with {:ok, updated} <- result do
+        Cache.invalidate_quiz(id)
+        {:ok, updated}
+      end
     end
   end
 
   def delete_quiz(id) do
     with {:ok, quiz} <- get_quiz(id) do
-      Repo.delete(quiz)
+      result = Repo.delete(quiz)
+
+      with {:ok, deleted} <- result do
+        Cache.invalidate_quiz(id)
+        {:ok, deleted}
+      end
     end
   end
 
@@ -107,22 +125,26 @@ defmodule ElixirBackend.Quizzes do
     predefined_answers = attrs[:predefined_answers] || []
     ordering_items = attrs[:ordering_items] || []
 
-    Repo.transaction(fn ->
-      question =
-        %QuizQuestion{}
-        |> QuizQuestion.changeset(
-          attrs
-          |> Map.put(:id, id)
-          |> Map.put(:quiz_id, quiz_id)
-          |> Map.drop([:predefined_answers, :ordering_items])
-        )
-        |> Repo.insert!()
+    result =
+      Repo.transaction(fn ->
+        question =
+          %QuizQuestion{}
+          |> QuizQuestion.changeset(
+            attrs
+            |> Map.put(:id, id)
+            |> Map.put(:quiz_id, quiz_id)
+            |> Map.drop([:predefined_answers, :ordering_items])
+          )
+          |> Repo.insert!()
 
-      insert_predefined_answers(question.id, predefined_answers)
-      insert_ordering_items(question.id, ordering_items)
+        insert_predefined_answers(question.id, predefined_answers)
+        insert_ordering_items(question.id, ordering_items)
 
-      question
-    end)
+        question
+      end)
+
+    with {:ok, _} <- result, do: Cache.del(Cache.quiz_questions_key(quiz_id))
+    result
   end
 
   def update_question(id, attrs) do
@@ -130,55 +152,79 @@ defmodule ElixirBackend.Quizzes do
       predefined_answers = attrs[:predefined_answers]
       ordering_items = attrs[:ordering_items]
 
-      Repo.transaction(fn ->
-        updated =
-          question
-          |> QuizQuestion.update_changeset(
-            Map.drop(attrs, [:predefined_answers, :ordering_items])
-          )
-          |> Repo.update!()
+      result =
+        Repo.transaction(fn ->
+          updated =
+            question
+            |> QuizQuestion.update_changeset(
+              Map.drop(attrs, [:predefined_answers, :ordering_items])
+            )
+            |> Repo.update!()
 
-        if predefined_answers do
-          from(a in QuizPredefinedAnswer, where: a.question_id == ^id) |> Repo.delete_all()
-          insert_predefined_answers(id, predefined_answers)
-        end
+          if predefined_answers do
+            from(a in QuizPredefinedAnswer, where: a.question_id == ^id) |> Repo.delete_all()
+            insert_predefined_answers(id, predefined_answers)
+          end
 
-        if ordering_items do
-          from(oi in QuizOrderingItem, where: oi.question_id == ^id) |> Repo.delete_all()
-          insert_ordering_items(id, ordering_items)
-        end
+          if ordering_items do
+            from(oi in QuizOrderingItem, where: oi.question_id == ^id) |> Repo.delete_all()
+            insert_ordering_items(id, ordering_items)
+          end
 
-        updated
-      end)
+          updated
+        end)
+
+      with {:ok, _} <- result do
+        Cache.del(Cache.quiz_questions_key(question.quiz_id))
+        Cache.invalidate_quiz_answers(id)
+      end
+
+      result
     end
   end
 
   def delete_question(id) do
     with {:ok, question} <- get_question(id) do
-      Repo.delete(question)
+      result = Repo.delete(question)
+
+      with {:ok, _} <- result do
+        Cache.del(Cache.quiz_questions_key(question.quiz_id))
+        Cache.invalidate_quiz_answers(id)
+      end
+
+      result
     end
   end
 
   def reorder_questions(quiz_id, question_ids) do
-    Repo.transaction(fn ->
-      # First pass: set to negative temp values to avoid unique constraint violations
-      question_ids
-      |> Enum.with_index(1)
-      |> Enum.each(fn {qid, order} ->
-        from(q in QuizQuestion, where: q.id == ^qid and q.quiz_id == ^quiz_id)
-        |> Repo.update_all(set: [question_order: -order])
+    result =
+      Repo.transaction(fn ->
+        # First pass: set to negative temp values to avoid unique constraint violations
+        question_ids
+        |> Enum.with_index(1)
+        |> Enum.each(fn {qid, order} ->
+          from(q in QuizQuestion, where: q.id == ^qid and q.quiz_id == ^quiz_id)
+          |> Repo.update_all(set: [question_order: -order])
+        end)
+
+        # Second pass: set to final positive values
+        question_ids
+        |> Enum.with_index(1)
+        |> Enum.each(fn {qid, order} ->
+          from(q in QuizQuestion, where: q.id == ^qid and q.quiz_id == ^quiz_id)
+          |> Repo.update_all(set: [question_order: order])
+        end)
+
+        # Query DB directly inside transaction to see uncommitted changes
+        from(q in QuizQuestion,
+          where: q.quiz_id == ^quiz_id,
+          order_by: [asc: q.question_order]
+        )
+        |> Repo.all()
       end)
 
-      # Second pass: set to final positive values
-      question_ids
-      |> Enum.with_index(1)
-      |> Enum.each(fn {qid, order} ->
-        from(q in QuizQuestion, where: q.id == ^qid and q.quiz_id == ^quiz_id)
-        |> Repo.update_all(set: [question_order: order])
-      end)
-
-      get_questions(quiz_id)
-    end)
+    with {:ok, _} <- result, do: Cache.del(Cache.quiz_questions_key(quiz_id))
+    result
   end
 
   # ── Submission ──

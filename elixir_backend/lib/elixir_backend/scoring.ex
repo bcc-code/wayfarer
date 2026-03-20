@@ -6,6 +6,7 @@ defmodule ElixirBackend.Scoring do
   import Ecto.Query
   alias ElixirBackend.Repo
   alias ElixirBackend.ULID
+  alias ElixirBackend.Cache
   alias ElixirBackend.Scoring.ScoreJournal
 
   # ── Score Journal Read ──
@@ -116,22 +117,46 @@ defmodule ElixirBackend.Scoring do
   # ── Leaderboard ──
 
   def get_project_leaderboard(project_id, entity_type, filter \\ %{}, pagination_opts \\ %{}) do
-    case entity_type do
-      "PERSONS" -> get_project_person_leaderboard(project_id, filter, pagination_opts)
-      "TEAMS" -> get_project_team_leaderboard(project_id, filter, pagination_opts)
-      "SUPERTEAMS" -> get_project_superteam_leaderboard(project_id, filter, pagination_opts)
-      "CHURCHES" -> get_project_church_leaderboard(project_id, filter, pagination_opts)
-      _ -> {:error, "invalid entity type"}
+    key = Cache.leaderboard_key("project", project_id, String.downcase(entity_type))
+
+    case Cache.get(key) do
+      {:ok, cached} ->
+        {:ok, cached}
+
+      :miss ->
+        result =
+          case entity_type do
+            "PERSONS" -> get_project_person_leaderboard(project_id, filter, pagination_opts)
+            "TEAMS" -> get_project_team_leaderboard(project_id, filter, pagination_opts)
+            "SUPERTEAMS" -> get_project_superteam_leaderboard(project_id, filter, pagination_opts)
+            "CHURCHES" -> get_project_church_leaderboard(project_id, filter, pagination_opts)
+            _ -> {:error, "invalid entity type"}
+          end
+
+        with {:ok, data} <- result, do: Cache.put(key, data)
+        result
     end
   end
 
   def get_event_leaderboard(event_id, entity_type, filter \\ %{}, pagination_opts \\ %{}) do
-    case entity_type do
-      "PERSONS" -> get_event_person_leaderboard(event_id, filter, pagination_opts)
-      "TEAMS" -> get_event_team_leaderboard(event_id, filter, pagination_opts)
-      "SUPERTEAMS" -> get_event_superteam_leaderboard(event_id, filter, pagination_opts)
-      "CHURCHES" -> get_event_church_leaderboard(event_id, filter, pagination_opts)
-      _ -> {:error, "invalid entity type"}
+    key = Cache.leaderboard_key("event", event_id, String.downcase(entity_type))
+
+    case Cache.get(key) do
+      {:ok, cached} ->
+        {:ok, cached}
+
+      :miss ->
+        result =
+          case entity_type do
+            "PERSONS" -> get_event_person_leaderboard(event_id, filter, pagination_opts)
+            "TEAMS" -> get_event_team_leaderboard(event_id, filter, pagination_opts)
+            "SUPERTEAMS" -> get_event_superteam_leaderboard(event_id, filter, pagination_opts)
+            "CHURCHES" -> get_event_church_leaderboard(event_id, filter, pagination_opts)
+            _ -> {:error, "invalid entity type"}
+          end
+
+        with {:ok, data} <- result, do: Cache.put(key, data)
+        result
     end
   end
 
@@ -140,6 +165,9 @@ defmodule ElixirBackend.Scoring do
     update_person_leaderboard(entry)
     update_church_leaderboard(entry)
     update_team_leaderboards(entry)
+    # Invalidate cached leaderboards for affected scope
+    if entry.project_id, do: Cache.invalidate_leaderboards(entry.project_id)
+    if entry.event_id, do: Cache.invalidate_leaderboards(entry.event_id)
   end
 
   # ── Private: Leaderboard Queries ──

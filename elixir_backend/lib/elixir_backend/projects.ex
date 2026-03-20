@@ -6,6 +6,7 @@ defmodule ElixirBackend.Projects do
   import Ecto.Query
   alias ElixirBackend.Repo
   alias ElixirBackend.ULID
+  alias ElixirBackend.Cache
   alias ElixirBackend.Pagination
   alias ElixirBackend.Projects.Project
   alias ElixirBackend.Accounts.UserProject
@@ -13,10 +14,12 @@ defmodule ElixirBackend.Projects do
   # ── Read ──
 
   def get_project(id) do
-    case Repo.get(Project, id) do
-      nil -> {:error, :not_found}
-      project -> {:ok, project}
-    end
+    Cache.fetch(Cache.project_key(id), fn ->
+      case Repo.get(Project, id) do
+        nil -> {:error, :not_found}
+        project -> {:ok, project}
+      end
+    end)
   end
 
   def get_project!(id), do: Repo.get!(Project, id)
@@ -38,15 +41,18 @@ defmodule ElixirBackend.Projects do
   end
 
   def my_projects(user_id) do
-    query =
-      from(p in Project,
-        join: up in UserProject,
-        on: up.project_id == p.id,
-        where: up.user_id == ^user_id,
-        order_by: [desc: p.start_date]
-      )
+    Cache.fetch_raw(Cache.projects_by_user_key(user_id), fn ->
+      query =
+        from(p in Project,
+          join: up in UserProject,
+          on: up.project_id == p.id,
+          where: up.user_id == ^user_id,
+          order_by: [desc: p.start_date]
+        )
 
-    {:ok, Repo.all(query)}
+      Repo.all(query)
+    end)
+    |> then(&{:ok, &1})
   end
 
   # ── Write ──
@@ -54,30 +60,53 @@ defmodule ElixirBackend.Projects do
   def create_project(attrs) do
     id = ULID.new_project_id()
 
-    %Project{}
-    |> Project.create_changeset(Map.put(attrs, :id, id))
-    |> Repo.insert()
+    result =
+      %Project{}
+      |> Project.create_changeset(Map.put(attrs, :id, id))
+      |> Repo.insert()
+
+    with {:ok, project} <- result do
+      Cache.put(Cache.project_key(project.id), project)
+      {:ok, project}
+    end
   end
 
   def update_project(id, attrs) do
     with {:ok, project} <- get_project(id) do
-      project
-      |> Project.update_changeset(attrs)
-      |> Repo.update()
+      result =
+        project
+        |> Project.update_changeset(attrs)
+        |> Repo.update()
+
+      with {:ok, updated} <- result do
+        Cache.invalidate_project(id)
+        {:ok, updated}
+      end
     end
   end
 
   def delete_project(id) do
     with {:ok, project} <- get_project(id) do
-      Repo.delete(project)
+      result = Repo.delete(project)
+
+      with {:ok, deleted} <- result do
+        Cache.invalidate_project(id)
+        {:ok, deleted}
+      end
     end
   end
 
   def archive_project(id) do
     with {:ok, project} <- get_project(id) do
-      project
-      |> Ecto.Changeset.change(archived: true)
-      |> Repo.update()
+      result =
+        project
+        |> Ecto.Changeset.change(archived: true)
+        |> Repo.update()
+
+      with {:ok, updated} <- result do
+        Cache.invalidate_project(id)
+        {:ok, updated}
+      end
     end
   end
 
@@ -88,6 +117,7 @@ defmodule ElixirBackend.Projects do
     |> UserProject.changeset(%{user_id: user_id, project_id: project_id, joined_at: joined_at})
     |> Repo.insert(on_conflict: :nothing, conflict_target: [:user_id, :project_id])
 
+    Cache.invalidate_user_memberships(user_id)
     get_project(project_id)
   end
 

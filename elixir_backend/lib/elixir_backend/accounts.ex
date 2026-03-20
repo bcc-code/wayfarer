@@ -102,8 +102,12 @@ defmodule ElixirBackend.Accounts do
     |> UserProject.changeset(%{user_id: user_id, project_id: project_id, joined_at: joined_at})
     |> Repo.insert(on_conflict: :nothing, conflict_target: [:user_id, :project_id])
     |> case do
-      {:ok, _} -> get_user(user_id)
-      error -> error
+      {:ok, _} ->
+        Cache.invalidate_user_memberships(user_id)
+        get_user(user_id)
+
+      error ->
+        error
     end
   end
 
@@ -114,6 +118,7 @@ defmodule ElixirBackend.Accounts do
       )
 
     Repo.delete_all(query)
+    Cache.invalidate_user_memberships(user_id)
     get_user(user_id)
   end
 
@@ -124,8 +129,12 @@ defmodule ElixirBackend.Accounts do
     |> UserEvent.changeset(%{user_id: user_id, event_id: event_id, joined_at: joined_at})
     |> Repo.insert(on_conflict: :nothing, conflict_target: [:user_id, :event_id])
     |> case do
-      {:ok, _} -> get_user(user_id)
-      error -> error
+      {:ok, _} ->
+        Cache.invalidate_user_memberships(user_id)
+        get_user(user_id)
+
+      error ->
+        error
     end
   end
 

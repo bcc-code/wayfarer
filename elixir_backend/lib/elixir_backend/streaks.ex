@@ -6,16 +6,19 @@ defmodule ElixirBackend.Streaks do
   import Ecto.Query
   alias ElixirBackend.Repo
   alias ElixirBackend.ULID
+  alias ElixirBackend.Cache
   alias ElixirBackend.Pagination
   alias ElixirBackend.Streaks.{Streak, StreakRelevantDay, UserStreakActivity}
 
   # ── Read ──
 
   def get_streak(id) do
-    case Repo.get(Streak, id) do
-      nil -> {:error, :not_found}
-      streak -> {:ok, streak}
-    end
+    Cache.fetch(Cache.streak_key(id), fn ->
+      case Repo.get(Streak, id) do
+        nil -> {:error, :not_found}
+        streak -> {:ok, streak}
+      end
+    end)
   end
 
   def get_streak!(id), do: Repo.get!(Streak, id)
@@ -82,45 +85,61 @@ defmodule ElixirBackend.Streaks do
     id = ULID.new_streak_id()
     relevant_days_input = attrs[:relevant_days] || []
 
-    Repo.transaction(fn ->
-      streak_attrs =
-        attrs
-        |> Map.put(:id, id)
-        |> Map.drop([:relevant_days])
+    result =
+      Repo.transaction(fn ->
+        streak_attrs =
+          attrs
+          |> Map.put(:id, id)
+          |> Map.drop([:relevant_days])
 
-      streak =
-        %Streak{}
-        |> Streak.changeset(streak_attrs)
-        |> Repo.insert!()
+        streak =
+          %Streak{}
+          |> Streak.changeset(streak_attrs)
+          |> Repo.insert!()
 
-      _days = insert_relevant_days(streak.id, relevant_days_input)
+        _days = insert_relevant_days(streak.id, relevant_days_input)
 
-      streak
-    end)
+        streak
+      end)
+
+    with {:ok, streak} <- result do
+      if streak.project_id, do: Cache.del(Cache.streaks_by_project_key(streak.project_id))
+      {:ok, streak}
+    end
   end
 
   def update_streak(id, attrs) do
     with {:ok, streak} <- get_streak(id) do
-      Repo.transaction(fn ->
-        updated_streak =
-          streak
-          |> Streak.update_changeset(Map.drop(attrs, [:relevant_days]))
-          |> Repo.update!()
+      result =
+        Repo.transaction(fn ->
+          updated_streak =
+            streak
+            |> Streak.update_changeset(Map.drop(attrs, [:relevant_days]))
+            |> Repo.update!()
 
-        if Map.has_key?(attrs, :relevant_days) do
-          # Replace all relevant days
-          from(rd in StreakRelevantDay, where: rd.streak_id == ^id) |> Repo.delete_all()
-          insert_relevant_days(id, attrs.relevant_days)
-        end
+          if Map.has_key?(attrs, :relevant_days) do
+            from(rd in StreakRelevantDay, where: rd.streak_id == ^id) |> Repo.delete_all()
+            insert_relevant_days(id, attrs.relevant_days)
+          end
 
-        updated_streak
-      end)
+          updated_streak
+        end)
+
+      with {:ok, updated} <- result do
+        Cache.invalidate_streak(id, streak.project_id)
+        {:ok, updated}
+      end
     end
   end
 
   def delete_streak(id) do
     with {:ok, streak} <- get_streak(id) do
-      Repo.delete(streak)
+      result = Repo.delete(streak)
+
+      with {:ok, deleted} <- result do
+        Cache.invalidate_streak(id, streak.project_id)
+        {:ok, deleted}
+      end
     end
   end
 

@@ -4,36 +4,53 @@ defmodule ElixirBackend.Consents do
   import Ecto.Query
   alias ElixirBackend.Repo
   alias ElixirBackend.ULID
+  alias ElixirBackend.Cache
   alias ElixirBackend.Consents.{Consent, UserConsentHistory}
 
   def get_consent(id) do
-    case Repo.get(Consent, id) do
-      nil -> {:error, :not_found}
-      c -> {:ok, c}
-    end
+    Cache.fetch(Cache.consent_key(id), fn ->
+      case Repo.get(Consent, id) do
+        nil -> {:error, :not_found}
+        c -> {:ok, c}
+      end
+    end)
   end
 
   def list_consents do
-    from(c in Consent,
-      where: not is_nil(c.published_at),
-      order_by: [asc: c.key, desc: c.version]
-    )
-    |> Repo.all()
+    Cache.fetch_raw(Cache.consents_latest_key(), fn ->
+      from(c in Consent,
+        where: not is_nil(c.published_at),
+        order_by: [asc: c.key, desc: c.version]
+      )
+      |> Repo.all()
+    end)
   end
 
   def create_consent(attrs) do
     id = ULID.new_consent_id()
 
-    %Consent{}
-    |> Consent.changeset(Map.put(attrs, :id, id))
-    |> Repo.insert()
+    result =
+      %Consent{}
+      |> Consent.changeset(Map.put(attrs, :id, id))
+      |> Repo.insert()
+
+    with {:ok, consent} <- result do
+      Cache.del(Cache.consents_latest_key())
+      {:ok, consent}
+    end
   end
 
   def update_consent(id, attrs) do
     with {:ok, consent} <- get_consent(id) do
-      consent
-      |> Consent.changeset(attrs)
-      |> Repo.update()
+      result =
+        consent
+        |> Consent.changeset(attrs)
+        |> Repo.update()
+
+      with {:ok, updated} <- result do
+        Cache.invalidate_consent(id)
+        {:ok, updated}
+      end
     end
   end
 

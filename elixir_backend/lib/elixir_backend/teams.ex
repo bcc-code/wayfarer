@@ -6,16 +6,19 @@ defmodule ElixirBackend.Teams do
   import Ecto.Query
   alias ElixirBackend.Repo
   alias ElixirBackend.ULID
+  alias ElixirBackend.Cache
   alias ElixirBackend.Pagination
   alias ElixirBackend.Teams.{Team, SuperTeam, TeamMember}
 
   # ── Teams: Read ──
 
   def get_team(id) do
-    case Repo.get(Team, id) do
-      nil -> {:error, :not_found}
-      team -> {:ok, team}
-    end
+    Cache.fetch(Cache.team_key(id), fn ->
+      case Repo.get(Team, id) do
+        nil -> {:error, :not_found}
+        team -> {:ok, team}
+      end
+    end)
   end
 
   def get_team!(id), do: Repo.get!(Team, id)
@@ -64,27 +67,44 @@ defmodule ElixirBackend.Teams do
     id = ULID.new_team_id()
     join_code = generate_join_code()
 
-    %Team{}
-    |> Team.changeset(
-      attrs
-      |> Map.put(:id, id)
-      |> Map.put(:project_id, project_id)
-      |> Map.put(:join_code, join_code)
-    )
-    |> Repo.insert()
+    result =
+      %Team{}
+      |> Team.changeset(
+        attrs
+        |> Map.put(:id, id)
+        |> Map.put(:project_id, project_id)
+        |> Map.put(:join_code, join_code)
+      )
+      |> Repo.insert()
+
+    with {:ok, team} <- result do
+      Cache.del(Cache.teams_by_project_key(project_id))
+      {:ok, team}
+    end
   end
 
   def update_team(id, attrs) do
     with {:ok, team} <- get_team(id) do
-      team
-      |> Team.update_changeset(attrs)
-      |> Repo.update()
+      result =
+        team
+        |> Team.update_changeset(attrs)
+        |> Repo.update()
+
+      with {:ok, updated} <- result do
+        Cache.invalidate_team(id, team.project_id)
+        {:ok, updated}
+      end
     end
   end
 
   def delete_team(id) do
     with {:ok, team} <- get_team(id) do
-      Repo.delete(team)
+      result = Repo.delete(team)
+
+      with {:ok, deleted} <- result do
+        Cache.invalidate_team(id, team.project_id)
+        {:ok, deleted}
+      end
     end
   end
 
@@ -97,6 +117,8 @@ defmodule ElixirBackend.Teams do
 
       team ->
         add_member(team.id, user_id)
+        Cache.del(Cache.team_members_key(team.id))
+        Cache.invalidate_user_teams(user_id)
         {:ok, team}
     end
   end
@@ -110,6 +132,8 @@ defmodule ElixirBackend.Teams do
       |> Repo.insert(on_conflict: :nothing, conflict_target: [:team_id, :user_id])
     end)
 
+    Cache.del(Cache.team_members_key(team_id))
+    Enum.each(user_ids, &Cache.invalidate_user_teams/1)
     get_team(team_id)
   end
 
@@ -120,14 +144,22 @@ defmodule ElixirBackend.Teams do
       )
 
     Repo.delete_all(query)
+    Cache.del(Cache.team_members_key(team_id))
+    Enum.each(user_ids, &Cache.invalidate_user_teams/1)
     get_team(team_id)
   end
 
   def regenerate_join_code(team_id) do
     with {:ok, team} <- get_team(team_id) do
-      team
-      |> Ecto.Changeset.change(join_code: generate_join_code())
-      |> Repo.update()
+      result =
+        team
+        |> Ecto.Changeset.change(join_code: generate_join_code())
+        |> Repo.update()
+
+      with {:ok, updated} <- result do
+        Cache.invalidate_team(team_id, team.project_id)
+        {:ok, updated}
+      end
     end
   end
 
@@ -143,6 +175,7 @@ defmodule ElixirBackend.Teams do
       )
       |> Repo.update_all(set: [is_team_lead: true])
 
+      Cache.del(Cache.team_members_key(team_id))
       get_team(team_id)
     else
       {:error, "user is not a member of the team"}
@@ -152,10 +185,12 @@ defmodule ElixirBackend.Teams do
   # ── SuperTeams: Read ──
 
   def get_super_team(id) do
-    case Repo.get(SuperTeam, id) do
-      nil -> {:error, :not_found}
-      super_team -> {:ok, super_team}
-    end
+    Cache.fetch(Cache.super_team_key(id), fn ->
+      case Repo.get(SuperTeam, id) do
+        nil -> {:error, :not_found}
+        super_team -> {:ok, super_team}
+      end
+    end)
   end
 
   def get_super_team!(id), do: Repo.get!(SuperTeam, id)
@@ -201,15 +236,26 @@ defmodule ElixirBackend.Teams do
 
   def update_super_team(id, attrs) do
     with {:ok, super_team} <- get_super_team(id) do
-      super_team
-      |> SuperTeam.update_changeset(attrs)
-      |> Repo.update()
+      result =
+        super_team
+        |> SuperTeam.update_changeset(attrs)
+        |> Repo.update()
+
+      with {:ok, updated} <- result do
+        Cache.invalidate_super_team(id, super_team.project_id)
+        {:ok, updated}
+      end
     end
   end
 
   def delete_super_team(id) do
     with {:ok, super_team} <- get_super_team(id) do
-      Repo.delete(super_team)
+      result = Repo.delete(super_team)
+
+      with {:ok, deleted} <- result do
+        Cache.invalidate_super_team(id, super_team.project_id)
+        {:ok, deleted}
+      end
     end
   end
 
@@ -220,6 +266,8 @@ defmodule ElixirBackend.Teams do
       )
 
     Repo.update_all(query, set: [super_team_id: super_team_id])
+    Cache.del(Cache.teams_by_superteam_key(super_team_id))
+    Enum.each(team_ids, fn tid -> Cache.del(Cache.team_key(tid)) end)
 
     get_super_team(super_team_id)
   end

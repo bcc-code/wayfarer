@@ -6,18 +6,22 @@ defmodule ElixirBackend.Roles do
   import Ecto.Query
   alias ElixirBackend.Repo
   alias ElixirBackend.ULID
+  alias ElixirBackend.Cache
   alias ElixirBackend.Roles.UserRole
 
   # ── Read ──
 
   def list_user_roles(user_id) do
-    query =
-      from(ur in UserRole,
-        where: ur.user_id == ^user_id,
-        order_by: [asc: ur.assigned_at]
-      )
+    roles =
+      Cache.fetch_raw(Cache.user_roles_key(user_id), fn ->
+        from(ur in UserRole,
+          where: ur.user_id == ^user_id,
+          order_by: [asc: ur.assigned_at]
+        )
+        |> Repo.all()
+      end)
 
-    {:ok, Repo.all(query)}
+    {:ok, roles}
   end
 
   def users_with_role(role, opts \\ []) do
@@ -66,9 +70,15 @@ defmodule ElixirBackend.Roles do
         |> Map.put(:id, id)
         |> Map.put(:assigned_at, assigned_at)
 
-      %UserRole{}
-      |> UserRole.changeset(role_attrs)
-      |> Repo.insert()
+      result =
+        %UserRole{}
+        |> UserRole.changeset(role_attrs)
+        |> Repo.insert()
+
+      with {:ok, role} <- result do
+        Cache.invalidate_user_roles(role_attrs.user_id)
+        {:ok, role}
+      end
     end
   end
 
@@ -109,8 +119,12 @@ defmodule ElixirBackend.Roles do
     query = apply_scope_filter(query, attrs)
 
     case Repo.delete_all(query) do
-      {count, _} when count > 0 -> {:ok, true}
-      _ -> {:ok, false}
+      {count, _} when count > 0 ->
+        Cache.invalidate_user_roles(attrs.user_id)
+        {:ok, true}
+
+      _ ->
+        {:ok, false}
     end
   end
 

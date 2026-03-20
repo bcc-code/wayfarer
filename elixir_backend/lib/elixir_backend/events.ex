@@ -6,6 +6,7 @@ defmodule ElixirBackend.Events do
   import Ecto.Query
   alias ElixirBackend.Repo
   alias ElixirBackend.ULID
+  alias ElixirBackend.Cache
   alias ElixirBackend.Pagination
   alias ElixirBackend.Events.Event
   alias ElixirBackend.Accounts.UserEvent
@@ -13,10 +14,12 @@ defmodule ElixirBackend.Events do
   # ── Read ──
 
   def get_event(id) do
-    case Repo.get(Event, id) do
-      nil -> {:error, :not_found}
-      event -> {:ok, event}
-    end
+    Cache.fetch(Cache.event_key(id), fn ->
+      case Repo.get(Event, id) do
+        nil -> {:error, :not_found}
+        event -> {:ok, event}
+      end
+    end)
   end
 
   def get_event!(id), do: Repo.get!(Event, id)
@@ -38,6 +41,18 @@ defmodule ElixirBackend.Events do
   end
 
   def my_events(user_id, project_id \\ nil) do
+    # Only cache when no project_id filter (common case)
+    if is_nil(project_id) do
+      Cache.fetch_raw(Cache.events_by_user_key(user_id), fn ->
+        do_my_events_query(user_id, nil)
+      end)
+      |> then(&{:ok, &1})
+    else
+      {:ok, do_my_events_query(user_id, project_id)}
+    end
+  end
+
+  defp do_my_events_query(user_id, project_id) do
     query =
       from(e in Event,
         join: ue in UserEvent,
@@ -52,7 +67,7 @@ defmodule ElixirBackend.Events do
         query
       end
 
-    {:ok, Repo.all(query)}
+    Repo.all(query)
   end
 
   # ── Write ──
@@ -60,31 +75,57 @@ defmodule ElixirBackend.Events do
   def create_event(project_id, attrs) do
     id = ULID.new_event_id()
 
-    %Event{}
-    |> Event.create_changeset(attrs |> Map.put(:id, id) |> Map.put(:project_id, project_id))
-    |> Repo.insert()
+    result =
+      %Event{}
+      |> Event.create_changeset(attrs |> Map.put(:id, id) |> Map.put(:project_id, project_id))
+      |> Repo.insert()
+
+    with {:ok, event} <- result do
+      Cache.del(Cache.events_by_project_key(project_id))
+      {:ok, event}
+    end
   end
 
   def update_event(id, attrs) do
     with {:ok, event} <- get_event(id) do
-      event
-      |> Event.update_changeset(attrs)
-      |> Repo.update()
+      result =
+        event
+        |> Event.update_changeset(attrs)
+        |> Repo.update()
+
+      with {:ok, updated} <- result do
+        Cache.invalidate_event(id, event.project_id)
+        {:ok, updated}
+      end
     end
   end
 
   def delete_event(id) do
     with {:ok, event} <- get_event(id) do
-      Repo.delete(event)
+      result = Repo.delete(event)
+
+      with {:ok, deleted} <- result do
+        Cache.invalidate_event(id, event.project_id)
+        {:ok, deleted}
+      end
     end
   end
 
   def move_event(id, new_project_id) do
     with {:ok, event} <- get_event(id) do
-      event
-      |> Ecto.Changeset.change(project_id: new_project_id)
-      |> Ecto.Changeset.foreign_key_constraint(:project_id)
-      |> Repo.update()
+      old_project_id = event.project_id
+
+      result =
+        event
+        |> Ecto.Changeset.change(project_id: new_project_id)
+        |> Ecto.Changeset.foreign_key_constraint(:project_id)
+        |> Repo.update()
+
+      with {:ok, updated} <- result do
+        Cache.invalidate_event(id, old_project_id)
+        Cache.del(Cache.events_by_project_key(new_project_id))
+        {:ok, updated}
+      end
     end
   end
 
@@ -95,6 +136,7 @@ defmodule ElixirBackend.Events do
     |> UserEvent.changeset(%{user_id: user_id, event_id: event_id, joined_at: joined_at})
     |> Repo.insert(on_conflict: :nothing, conflict_target: [:user_id, :event_id])
 
+    Cache.invalidate_user_memberships(user_id)
     get_event(event_id)
   end
 
