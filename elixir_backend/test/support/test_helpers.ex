@@ -100,6 +100,21 @@ defmodule ElixirBackend.TestHelpers do
     |> Repo.insert!()
   end
 
+  def create_quiz(project, attrs \\ %{}) do
+    defaults = %{
+      name: "Test Quiz",
+      description: "A test quiz",
+      project_id: project.id,
+      randomize_questions: false,
+      reveal_correct_answers: true,
+      allow_retakes: false,
+      completion_points: 10
+    }
+
+    {:ok, quiz} = ElixirBackend.Quizzes.create_quiz(Map.merge(defaults, attrs))
+    quiz
+  end
+
   def create_streak(project, attrs \\ %{}) do
     default_attrs = %{
       name: "Test Streak",

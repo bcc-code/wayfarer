@@ -30,6 +30,14 @@ defmodule ElixirBackend.ULID do
   def new_external_content_id, do: new_id("EC")
   def new_achievement_id, do: new_id("AC")
   def new_content_item_id, do: new_id("CI")
+  def new_quiz_id, do: new_id("QZ")
+  def new_quiz_question_id, do: new_id("QQ")
+  def new_quiz_answer_id, do: new_id("QA")
+  def new_quiz_submission_id, do: new_id("QS")
+  def new_quiz_response_id, do: new_id("QR")
+  def new_quiz_session_id, do: new_id("QN")
+  def new_quiz_session_access_id, do: new_id("QX")
+  def new_quiz_ordering_item_id, do: new_id("QI")
 
   # Encode a UUID v7 binary into 26-char Crockford Base32 (ULID format)
   defp encode_crockford(uuid_string) do

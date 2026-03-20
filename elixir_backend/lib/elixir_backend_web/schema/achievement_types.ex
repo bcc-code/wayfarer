@@ -253,11 +253,6 @@ defmodule ElixirBackendWeb.Schema.AchievementTypes do
 
   # ── Supporting Types ──
 
-  # Placeholder until Phase 7 (Quizzes)
-  object :quiz do
-    field :id, non_null(:id)
-  end
-
   object :content_item do
     field :id, non_null(:id)
     field :sort_order, non_null(:integer)

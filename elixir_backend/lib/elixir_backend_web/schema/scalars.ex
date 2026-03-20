@@ -44,6 +44,28 @@ defmodule ElixirBackendWeb.Schema.Scalars do
     end)
   end
 
+  scalar :json, name: "JSON" do
+    serialize(fn value -> value end)
+
+    parse(fn
+      %Absinthe.Blueprint.Input.String{value: value} ->
+        case Jason.decode(value) do
+          {:ok, decoded} -> {:ok, decoded}
+          _ -> :error
+        end
+
+      %Absinthe.Blueprint.Input.Null{} ->
+        {:ok, nil}
+
+      # Already parsed maps/lists from variables
+      %{value: value} ->
+        {:ok, value}
+
+      _ ->
+        :error
+    end)
+  end
+
   scalar :html, name: "HTML" do
     serialize(fn value -> value end)
 
