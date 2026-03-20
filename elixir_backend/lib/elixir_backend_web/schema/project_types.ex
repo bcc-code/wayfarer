@@ -2,7 +2,7 @@ defmodule ElixirBackendWeb.Schema.ProjectTypes do
   @moduledoc "Absinthe types for projects: object, branding, inputs, pagination."
   use Absinthe.Schema.Notation
 
-  import Absinthe.Resolution.Helpers, only: [dataloader: 1]
+  import Absinthe.Resolution.Helpers, only: [on_load: 2]
 
   # ── Branding types ──
 
@@ -53,7 +53,18 @@ defmodule ElixirBackendWeb.Schema.ProjectTypes do
     field :info_message_start, :datetime
     field :info_message_end, :datetime
 
-    field :events, non_null(list_of(non_null(:event))), resolve: dataloader(ElixirBackend.Repo)
+    field :events, non_null(list_of(non_null(:event))) do
+      resolve(fn project, _, %{context: %{loader: loader}} = resolution ->
+        loader
+        |> Dataloader.load(ElixirBackend.Repo, :events, project)
+        |> on_load(fn loader ->
+          events = Dataloader.get(loader, ElixirBackend.Repo, :events, project)
+
+          {:ok, events}
+          |> Translations.translate_list(:event, resolution)
+        end)
+      end)
+    end
 
     field :leaderboard, non_null(:leaderboard_connection) do
       arg(:entity_type, non_null(:leaderboard_entity_type))

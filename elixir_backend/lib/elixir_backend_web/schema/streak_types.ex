@@ -1,7 +1,7 @@
 defmodule ElixirBackendWeb.Schema.StreakTypes do
   use Absinthe.Schema.Notation
   @moduledoc false
-  import Absinthe.Resolution.Helpers, only: [dataloader: 1]
+  import Absinthe.Resolution.Helpers, only: [on_load: 2]
 
   alias ElixirBackend.Streaks
   alias ElixirBackend.Translations
@@ -10,7 +10,17 @@ defmodule ElixirBackendWeb.Schema.StreakTypes do
     field :id, non_null(:id)
     field :name, non_null(:string)
     field :description, non_null(:string)
-    field :project, non_null(:project), resolve: dataloader(ElixirBackend.Repo)
+
+    field :project, non_null(:project) do
+      resolve(fn streak, _, %{context: %{loader: loader}} = res ->
+        loader
+        |> Dataloader.load(ElixirBackend.Repo, :project, streak)
+        |> on_load(fn loader ->
+          {:ok, Dataloader.get(loader, ElixirBackend.Repo, :project, streak)}
+          |> Translations.translate_result(:project, res)
+        end)
+      end)
+    end
 
     field :translation_status, non_null(list_of(non_null(:translation_field_status))) do
       resolve(fn streak, _, _ ->

@@ -1,7 +1,7 @@
 defmodule ElixirBackendWeb.Schema.QuizTypes do
   use Absinthe.Schema.Notation
   @moduledoc false
-  import Absinthe.Resolution.Helpers, only: [dataloader: 1]
+  import Absinthe.Resolution.Helpers, only: [on_load: 2]
 
   alias ElixirBackend.Quizzes
   alias ElixirBackend.Translations
@@ -36,7 +36,18 @@ defmodule ElixirBackendWeb.Schema.QuizTypes do
     field :name, non_null(:string)
     field :description, non_null(:string)
     field :image, :string, resolve: fn q, _, _ -> {:ok, q.image_url} end
-    field :project, non_null(:project), resolve: dataloader(ElixirBackend.Repo)
+
+    field :project, non_null(:project) do
+      resolve(fn quiz, _, %{context: %{loader: loader}} = res ->
+        loader
+        |> Dataloader.load(ElixirBackend.Repo, :project, quiz)
+        |> on_load(fn loader ->
+          {:ok, Dataloader.get(loader, ElixirBackend.Repo, :project, quiz)}
+          |> Translations.translate_result(:project, res)
+        end)
+      end)
+    end
+
     field :timeout_seconds, :integer
     field :randomize_questions, non_null(:boolean)
     field :reveal_correct_answers, non_null(:boolean)
@@ -49,8 +60,9 @@ defmodule ElixirBackendWeb.Schema.QuizTypes do
     end
 
     field :questions, non_null(list_of(non_null(:quiz_question))) do
-      resolve(fn quiz, _, _ ->
+      resolve(fn quiz, _, resolution ->
         {:ok, Quizzes.get_questions(quiz.id)}
+        |> Translations.translate_list(:quiz_question, resolution)
       end)
     end
 
@@ -117,7 +129,10 @@ defmodule ElixirBackendWeb.Schema.QuizTypes do
     end
 
     field :predefined_answers, non_null(list_of(non_null(:quiz_predefined_answer))) do
-      resolve(fn q, _, _ -> {:ok, Quizzes.get_predefined_answers(q.id)} end)
+      resolve(fn q, _, resolution ->
+        {:ok, Quizzes.get_predefined_answers(q.id)}
+        |> Translations.translate_list(:quiz_answer, resolution)
+      end)
     end
   end
 

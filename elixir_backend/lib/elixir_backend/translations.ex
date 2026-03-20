@@ -156,6 +156,41 @@ defmodule ElixirBackend.Translations do
     end
   end
 
+  # ── Resolver helpers ──
+
+  @doc "Extracts the language from an Absinthe resolution context."
+  def language_from_context(%{context: %{language: lang}}), do: lang
+  def language_from_context(_), do: @default_language
+
+  @doc "Translates an {:ok, entity} result using the language from context."
+  def translate_result({:ok, entity}, entity_type, resolution) do
+    {:ok, apply_translation(entity, entity_type, language_from_context(resolution))}
+  end
+
+  def translate_result(error, _entity_type, _resolution), do: error
+
+  @doc "Translates each item in an {:ok, list} result."
+  def translate_list({:ok, items}, entity_type, resolution) when is_list(items) do
+    lang = language_from_context(resolution)
+    {:ok, Enum.map(items, &apply_translation(&1, entity_type, lang))}
+  end
+
+  def translate_list(error, _entity_type, _resolution), do: error
+
+  @doc "Translates each edge node in an {:ok, connection} result."
+  def translate_connection({:ok, conn}, entity_type, resolution) do
+    lang = language_from_context(resolution)
+
+    edges =
+      Enum.map(conn.edges, fn edge ->
+        %{edge | node: apply_translation(edge.node, entity_type, lang)}
+      end)
+
+    {:ok, %{conn | edges: edges}}
+  end
+
+  def translate_connection(error, _entity_type, _resolution), do: error
+
   defp overlay_fields(entity, translation, fields) do
     Enum.reduce(fields, entity, fn field, acc ->
       case Map.get(translation, field) do

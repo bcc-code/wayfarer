@@ -43,11 +43,14 @@ defmodule ElixirBackendWeb.Schema.EventTypes do
     end
 
     field :parent_project, non_null(:project) do
-      resolve(fn event, _, %{context: %{loader: loader}} ->
+      resolve(fn event, _, %{context: %{loader: loader}} = resolution ->
         loader
         |> Dataloader.load(ElixirBackend.Repo, :project, event)
         |> on_load(fn loader ->
-          {:ok, Dataloader.get(loader, ElixirBackend.Repo, :project, event)}
+          project = Dataloader.get(loader, ElixirBackend.Repo, :project, event)
+
+          {:ok, project}
+          |> Translations.translate_result(:project, resolution)
         end)
       end)
     end

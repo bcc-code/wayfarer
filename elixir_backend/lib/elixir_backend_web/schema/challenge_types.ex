@@ -2,7 +2,7 @@ defmodule ElixirBackendWeb.Schema.ChallengeTypes do
   @moduledoc "Absinthe types for challenges: interface, concrete types, inputs, and pagination."
   use Absinthe.Schema.Notation
 
-  import Absinthe.Resolution.Helpers, only: [dataloader: 1]
+  import Absinthe.Resolution.Helpers, only: [on_load: 2]
 
   alias ElixirBackend.Translations
   alias ElixirBackendWeb.Schema.ChallengeResolvers
@@ -69,8 +69,29 @@ defmodule ElixirBackendWeb.Schema.ChallengeTypes do
       resolve(fn c, _, _ -> {:ok, Translations.translation_status(:challenge, c.id)} end)
     end
 
-    field :project, non_null(:project), resolve: dataloader(ElixirBackend.Repo)
-    field :event, :event, resolve: dataloader(ElixirBackend.Repo)
+    field :project, non_null(:project) do
+      resolve(fn c, _, %{context: %{loader: loader}} = res ->
+        loader
+        |> Dataloader.load(ElixirBackend.Repo, :project, c)
+        |> on_load(fn loader ->
+          {:ok, Dataloader.get(loader, ElixirBackend.Repo, :project, c)}
+          |> Translations.translate_result(:project, res)
+        end)
+      end)
+    end
+
+    field :event, :event do
+      resolve(fn c, _, %{context: %{loader: loader}} = res ->
+        loader
+        |> Dataloader.load(ElixirBackend.Repo, :event, c)
+        |> on_load(fn loader ->
+          case Dataloader.get(loader, ElixirBackend.Repo, :event, c) do
+            nil -> {:ok, nil}
+            event -> {:ok, event} |> Translations.translate_result(:event, res)
+          end
+        end)
+      end)
+    end
 
     field :user_completed_at, :datetime do
       resolve(&ChallengeResolvers.resolve_user_completed_at/3)
@@ -102,8 +123,29 @@ defmodule ElixirBackendWeb.Schema.ChallengeTypes do
       resolve(fn c, _, _ -> {:ok, Translations.translation_status(:challenge, c.id)} end)
     end
 
-    field :project, non_null(:project), resolve: dataloader(ElixirBackend.Repo)
-    field :event, :event, resolve: dataloader(ElixirBackend.Repo)
+    field :project, non_null(:project) do
+      resolve(fn c, _, %{context: %{loader: loader}} = res ->
+        loader
+        |> Dataloader.load(ElixirBackend.Repo, :project, c)
+        |> on_load(fn loader ->
+          {:ok, Dataloader.get(loader, ElixirBackend.Repo, :project, c)}
+          |> Translations.translate_result(:project, res)
+        end)
+      end)
+    end
+
+    field :event, :event do
+      resolve(fn c, _, %{context: %{loader: loader}} = res ->
+        loader
+        |> Dataloader.load(ElixirBackend.Repo, :event, c)
+        |> on_load(fn loader ->
+          case Dataloader.get(loader, ElixirBackend.Repo, :event, c) do
+            nil -> {:ok, nil}
+            event -> {:ok, event} |> Translations.translate_result(:event, res)
+          end
+        end)
+      end)
+    end
 
     field :user_completed_at, :datetime do
       resolve(&ChallengeResolvers.resolve_user_completed_at/3)
@@ -135,8 +177,29 @@ defmodule ElixirBackendWeb.Schema.ChallengeTypes do
       resolve(fn c, _, _ -> {:ok, Translations.translation_status(:challenge, c.id)} end)
     end
 
-    field :project, non_null(:project), resolve: dataloader(ElixirBackend.Repo)
-    field :event, :event, resolve: dataloader(ElixirBackend.Repo)
+    field :project, non_null(:project) do
+      resolve(fn c, _, %{context: %{loader: loader}} = res ->
+        loader
+        |> Dataloader.load(ElixirBackend.Repo, :project, c)
+        |> on_load(fn loader ->
+          {:ok, Dataloader.get(loader, ElixirBackend.Repo, :project, c)}
+          |> Translations.translate_result(:project, res)
+        end)
+      end)
+    end
+
+    field :event, :event do
+      resolve(fn c, _, %{context: %{loader: loader}} = res ->
+        loader
+        |> Dataloader.load(ElixirBackend.Repo, :event, c)
+        |> on_load(fn loader ->
+          case Dataloader.get(loader, ElixirBackend.Repo, :event, c) do
+            nil -> {:ok, nil}
+            event -> {:ok, event} |> Translations.translate_result(:event, res)
+          end
+        end)
+      end)
+    end
 
     field :user_completed_at, :datetime do
       resolve(&ChallengeResolvers.resolve_user_completed_at/3)
@@ -168,8 +231,29 @@ defmodule ElixirBackendWeb.Schema.ChallengeTypes do
       resolve(fn c, _, _ -> {:ok, Translations.translation_status(:challenge, c.id)} end)
     end
 
-    field :project, non_null(:project), resolve: dataloader(ElixirBackend.Repo)
-    field :event, :event, resolve: dataloader(ElixirBackend.Repo)
+    field :project, non_null(:project) do
+      resolve(fn c, _, %{context: %{loader: loader}} = res ->
+        loader
+        |> Dataloader.load(ElixirBackend.Repo, :project, c)
+        |> on_load(fn loader ->
+          {:ok, Dataloader.get(loader, ElixirBackend.Repo, :project, c)}
+          |> Translations.translate_result(:project, res)
+        end)
+      end)
+    end
+
+    field :event, :event do
+      resolve(fn c, _, %{context: %{loader: loader}} = res ->
+        loader
+        |> Dataloader.load(ElixirBackend.Repo, :event, c)
+        |> on_load(fn loader ->
+          case Dataloader.get(loader, ElixirBackend.Repo, :event, c) do
+            nil -> {:ok, nil}
+            event -> {:ok, event} |> Translations.translate_result(:event, res)
+          end
+        end)
+      end)
+    end
 
     field :user_completed_at, :datetime do
       resolve(&ChallengeResolvers.resolve_user_completed_at/3)

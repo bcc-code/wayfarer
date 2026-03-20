@@ -1,7 +1,7 @@
 defmodule ElixirBackendWeb.Schema.AchievementTypes do
   use Absinthe.Schema.Notation
   @moduledoc false
-  import Absinthe.Resolution.Helpers, only: [dataloader: 1]
+  import Absinthe.Resolution.Helpers, only: [on_load: 2]
 
   alias ElixirBackend.Achievements
   alias ElixirBackend.Translations
@@ -54,8 +54,29 @@ defmodule ElixirBackendWeb.Schema.AchievementTypes do
       resolve(fn a, _, _ -> {:ok, Translations.translation_status(:achievement, a.id)} end)
     end
 
-    field :project, non_null(:project), resolve: dataloader(ElixirBackend.Repo)
-    field :event, :event, resolve: dataloader(ElixirBackend.Repo)
+    field :project, non_null(:project) do
+      resolve(fn a, _, %{context: %{loader: loader}} = res ->
+        loader
+        |> Dataloader.load(ElixirBackend.Repo, :project, a)
+        |> on_load(fn loader ->
+          {:ok, Dataloader.get(loader, ElixirBackend.Repo, :project, a)}
+          |> Translations.translate_result(:project, res)
+        end)
+      end)
+    end
+
+    field :event, :event do
+      resolve(fn a, _, %{context: %{loader: loader}} = res ->
+        loader
+        |> Dataloader.load(ElixirBackend.Repo, :event, a)
+        |> on_load(fn loader ->
+          case Dataloader.get(loader, ElixirBackend.Repo, :event, a) do
+            nil -> {:ok, nil}
+            event -> {:ok, event} |> Translations.translate_result(:event, res)
+          end
+        end)
+      end)
+    end
 
     field :achieved_at, :datetime do
       resolve(&resolve_achieved_at/3)
@@ -92,8 +113,29 @@ defmodule ElixirBackendWeb.Schema.AchievementTypes do
       resolve(fn a, _, _ -> {:ok, Translations.translation_status(:achievement, a.id)} end)
     end
 
-    field :project, non_null(:project), resolve: dataloader(ElixirBackend.Repo)
-    field :event, :event, resolve: dataloader(ElixirBackend.Repo)
+    field :project, non_null(:project) do
+      resolve(fn a, _, %{context: %{loader: loader}} = res ->
+        loader
+        |> Dataloader.load(ElixirBackend.Repo, :project, a)
+        |> on_load(fn loader ->
+          {:ok, Dataloader.get(loader, ElixirBackend.Repo, :project, a)}
+          |> Translations.translate_result(:project, res)
+        end)
+      end)
+    end
+
+    field :event, :event do
+      resolve(fn a, _, %{context: %{loader: loader}} = res ->
+        loader
+        |> Dataloader.load(ElixirBackend.Repo, :event, a)
+        |> on_load(fn loader ->
+          case Dataloader.get(loader, ElixirBackend.Repo, :event, a) do
+            nil -> {:ok, nil}
+            event -> {:ok, event} |> Translations.translate_result(:event, res)
+          end
+        end)
+      end)
+    end
 
     field :achieved_at, :datetime do
       resolve(&resolve_achieved_at/3)
@@ -173,8 +215,29 @@ defmodule ElixirBackendWeb.Schema.AchievementTypes do
       resolve(fn a, _, _ -> {:ok, Translations.translation_status(:achievement, a.id)} end)
     end
 
-    field :project, non_null(:project), resolve: dataloader(ElixirBackend.Repo)
-    field :event, :event, resolve: dataloader(ElixirBackend.Repo)
+    field :project, non_null(:project) do
+      resolve(fn a, _, %{context: %{loader: loader}} = res ->
+        loader
+        |> Dataloader.load(ElixirBackend.Repo, :project, a)
+        |> on_load(fn loader ->
+          {:ok, Dataloader.get(loader, ElixirBackend.Repo, :project, a)}
+          |> Translations.translate_result(:project, res)
+        end)
+      end)
+    end
+
+    field :event, :event do
+      resolve(fn a, _, %{context: %{loader: loader}} = res ->
+        loader
+        |> Dataloader.load(ElixirBackend.Repo, :event, a)
+        |> on_load(fn loader ->
+          case Dataloader.get(loader, ElixirBackend.Repo, :event, a) do
+            nil -> {:ok, nil}
+            event -> {:ok, event} |> Translations.translate_result(:event, res)
+          end
+        end)
+      end)
+    end
 
     field :achieved_at, :datetime do
       resolve(&resolve_achieved_at/3)
@@ -202,10 +265,14 @@ defmodule ElixirBackendWeb.Schema.AchievementTypes do
     end
 
     field :streak, non_null(:streak) do
-      resolve(fn achievement, _, _ ->
+      resolve(fn achievement, _, resolution ->
         case Achievements.get_streak_achievement_data(achievement.id) do
-          nil -> {:error, "streak data not found"}
-          sa -> ElixirBackend.Streaks.get_streak(sa.streak_id)
+          nil ->
+            {:error, "streak data not found"}
+
+          sa ->
+            ElixirBackend.Streaks.get_streak(sa.streak_id)
+            |> Translations.translate_result(:streak, resolution)
         end
       end)
     end
@@ -229,8 +296,29 @@ defmodule ElixirBackendWeb.Schema.AchievementTypes do
       resolve(fn a, _, _ -> {:ok, Translations.translation_status(:achievement, a.id)} end)
     end
 
-    field :project, non_null(:project), resolve: dataloader(ElixirBackend.Repo)
-    field :event, :event, resolve: dataloader(ElixirBackend.Repo)
+    field :project, non_null(:project) do
+      resolve(fn a, _, %{context: %{loader: loader}} = res ->
+        loader
+        |> Dataloader.load(ElixirBackend.Repo, :project, a)
+        |> on_load(fn loader ->
+          {:ok, Dataloader.get(loader, ElixirBackend.Repo, :project, a)}
+          |> Translations.translate_result(:project, res)
+        end)
+      end)
+    end
+
+    field :event, :event do
+      resolve(fn a, _, %{context: %{loader: loader}} = res ->
+        loader
+        |> Dataloader.load(ElixirBackend.Repo, :event, a)
+        |> on_load(fn loader ->
+          case Dataloader.get(loader, ElixirBackend.Repo, :event, a) do
+            nil -> {:ok, nil}
+            event -> {:ok, event} |> Translations.translate_result(:event, res)
+          end
+        end)
+      end)
+    end
 
     field :achieved_at, :datetime do
       resolve(&resolve_achieved_at/3)

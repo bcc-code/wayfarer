@@ -3,19 +3,22 @@ defmodule ElixirBackendWeb.Schema.ConsentQueries do
   @moduledoc false
 
   alias ElixirBackend.Consents
+  alias ElixirBackend.Translations
 
   object :consent_queries do
     field :consents, non_null(list_of(non_null(:consent))) do
-      resolve(fn _, _, _ ->
+      resolve(fn _, _, resolution ->
         {:ok, Consents.list_consents()}
+        |> Translations.translate_list(:consent, resolution)
       end)
     end
 
     field :consent, non_null(:consent) do
       arg(:id, non_null(:id))
 
-      resolve(fn _, %{id: id}, _ ->
+      resolve(fn _, %{id: id}, resolution ->
         Consents.get_consent(id)
+        |> Translations.translate_result(:consent, resolution)
       end)
     end
 
@@ -24,10 +27,14 @@ defmodule ElixirBackendWeb.Schema.ConsentQueries do
         roles: ["user", "admin", "superadmin"]
       )
 
-      resolve(fn _, _, %{context: context} ->
+      resolve(fn _, _, %{context: context} = resolution ->
         case context[:current_user_id] do
-          nil -> {:ok, []}
-          user_id -> {:ok, Consents.pending_consents(user_id)}
+          nil ->
+            {:ok, []}
+
+          user_id ->
+            {:ok, Consents.pending_consents(user_id)}
+            |> Translations.translate_list(:consent, resolution)
         end
       end)
     end

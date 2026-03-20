@@ -3,13 +3,15 @@ defmodule ElixirBackendWeb.Schema.StreakQueries do
   @moduledoc false
 
   alias ElixirBackend.Streaks
+  alias ElixirBackend.Translations
 
   object :streak_queries do
     field :streak, non_null(:streak) do
       arg(:id, non_null(:id))
 
-      resolve(fn _, %{id: id}, _ ->
+      resolve(fn _, %{id: id}, resolution ->
         Streaks.get_streak(id)
+        |> Translations.translate_result(:streak, resolution)
       end)
     end
 
@@ -20,10 +22,12 @@ defmodule ElixirBackendWeb.Schema.StreakQueries do
       arg(:last, :integer)
       arg(:before, :string)
 
-      resolve(fn _, args, _ ->
+      resolve(fn _, args, resolution ->
         filter = args[:filter] || %{}
         pagination = Map.take(args, [:first, :after, :last, :before])
+
         Streaks.list_streaks(filter, pagination)
+        |> Translations.translate_connection(:streak, resolution)
       end)
     end
   end

@@ -3,6 +3,7 @@ defmodule ElixirBackendWeb.Schema.QuizQueries do
   @moduledoc false
 
   alias ElixirBackend.Quizzes
+  alias ElixirBackend.Translations
 
   object :quiz_queries do
     field :quiz, non_null(:quiz) do
@@ -12,8 +13,9 @@ defmodule ElixirBackendWeb.Schema.QuizQueries do
         roles: ["user", "admin", "superadmin"]
       )
 
-      resolve(fn _, %{id: id}, _ ->
+      resolve(fn _, %{id: id}, resolution ->
         Quizzes.get_quiz(id)
+        |> Translations.translate_result(:quiz, resolution)
       end)
     end
 
@@ -26,10 +28,12 @@ defmodule ElixirBackendWeb.Schema.QuizQueries do
 
       middleware(ElixirBackendWeb.Schema.Middleware.RequireRole, roles: ["admin", "superadmin"])
 
-      resolve(fn _, args, _ ->
+      resolve(fn _, args, resolution ->
         filter = args[:filter] || %{}
         pagination = Map.take(args, [:first, :after, :last, :before])
+
         Quizzes.list_quizzes(filter, pagination)
+        |> Translations.translate_connection(:quiz, resolution)
       end)
     end
 

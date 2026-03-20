@@ -3,16 +3,18 @@ defmodule ElixirBackendWeb.Schema.ChallengeQueries do
   use Absinthe.Schema.Notation
 
   alias ElixirBackend.Challenges
+  alias ElixirBackend.Translations
 
   object :challenge_queries do
     field :challenge, non_null(:challenge) do
       arg(:id, non_null(:id))
 
-      resolve(fn _parent, %{id: id}, %{context: context} ->
+      resolve(fn _parent, %{id: id}, %{context: context} = resolution ->
         Challenges.get_visible_challenge(id,
           user_id: context[:current_user_id],
           roles: context[:roles] || []
         )
+        |> Translations.translate_result(:challenge, resolution)
       end)
     end
 
@@ -23,7 +25,7 @@ defmodule ElixirBackendWeb.Schema.ChallengeQueries do
       arg(:last, :integer)
       arg(:before, :string)
 
-      resolve(fn _parent, args, %{context: context} ->
+      resolve(fn _parent, args, %{context: context} = resolution ->
         filter = Map.get(args, :filter, %{}) || %{}
 
         pagination_opts =
@@ -39,6 +41,7 @@ defmodule ElixirBackendWeb.Schema.ChallengeQueries do
           )
 
         {:ok, result}
+        |> Translations.translate_connection(:challenge, resolution)
       end)
     end
   end

@@ -3,13 +3,15 @@ defmodule ElixirBackendWeb.Schema.AchievementQueries do
   @moduledoc false
 
   alias ElixirBackend.Achievements
+  alias ElixirBackend.Translations
 
   object :achievement_queries do
     field :achievement, non_null(:achievement) do
       arg(:id, non_null(:id))
 
-      resolve(fn _, %{id: id}, _ ->
+      resolve(fn _, %{id: id}, resolution ->
         Achievements.get_achievement(id)
+        |> Translations.translate_result(:achievement, resolution)
       end)
     end
 
@@ -20,10 +22,12 @@ defmodule ElixirBackendWeb.Schema.AchievementQueries do
       arg(:last, :integer)
       arg(:before, :string)
 
-      resolve(fn _, args, _ ->
+      resolve(fn _, args, resolution ->
         filter = args.filter
         pagination = Map.take(args, [:first, :after, :last, :before])
+
         Achievements.list_achievements(filter, pagination)
+        |> Translations.translate_connection(:achievement, resolution)
       end)
     end
   end
