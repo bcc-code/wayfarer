@@ -95,11 +95,57 @@ defmodule ElixirBackend.BulkJobs do
   end
 
   def update_progress(id, attrs) do
-    with {:ok, job} <- get_job(id) do
-      job
-      |> BulkJob.changeset(attrs)
-      |> Repo.update()
+    set_fields =
+      attrs
+      |> Map.take([:total_count, :processed_count, :success_count, :failure_count])
+      |> Enum.to_list()
+
+    from(j in BulkJob, where: j.id == ^id)
+    |> Repo.update_all(set: set_fields)
+
+    :ok
+  end
+
+  @doc """
+  Creates a bulk job record and enqueues an Oban worker to process it atomically.
+
+  Both the job record and the Oban job are inserted in a single transaction.
+  Returns `{:ok, bulk_job}` on success.
+  """
+  def enqueue(attrs) do
+    id = ULID.new_bulk_job_id()
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    Ecto.Multi.new()
+    |> Ecto.Multi.insert(
+      :bulk_job,
+      %BulkJob{}
+      |> BulkJob.changeset(Map.merge(attrs, %{id: id, created_at: now}))
+    )
+    |> Oban.insert(:oban_job, fn %{bulk_job: job} ->
+      ElixirBackend.Workers.BulkOperation.new(%{"bulk_job_id" => job.id})
+    end)
+    |> Repo.transaction()
+    |> case do
+      {:ok, %{bulk_job: job}} -> {:ok, job}
+      {:error, _step, changeset, _} -> {:error, changeset}
     end
+  end
+
+  @doc """
+  Deletes completed and failed bulk jobs older than the given number of days.
+  Returns the number of deleted records.
+  """
+  def cleanup_old_jobs(retention_days \\ 7) do
+    cutoff = DateTime.utc_now() |> DateTime.add(-retention_days, :day)
+
+    {deleted, _} =
+      from(j in BulkJob,
+        where: j.status in ["COMPLETED", "FAILED"] and j.completed_at < ^cutoff
+      )
+      |> Repo.delete_all()
+
+    deleted
   end
 
   # ── Private ──

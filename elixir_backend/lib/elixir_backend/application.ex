@@ -16,6 +16,7 @@ defmodule ElixirBackend.Application do
       ] ++
         ElixirBackend.Cache.child_specs() ++
         [
+          {Oban, Application.fetch_env!(:elixir_backend, Oban)},
           # Start to serve requests, typically the last entry
           ElixirBackendWeb.Endpoint
         ]

@@ -65,7 +65,9 @@ defmodule ElixirBackend.MixProject do
       # ULID generation
       {:uniq, "~> 0.6"},
       # Caching
-      {:cachex, "~> 4.0"}
+      {:cachex, "~> 4.0"},
+      # Background jobs
+      {:oban, "~> 2.19"}
     ]
   end
 

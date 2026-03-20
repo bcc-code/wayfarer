@@ -32,6 +32,23 @@ config :elixir_backend, ElixirBackendWeb.Endpoint,
 # at the `config/runtime.exs`.
 config :elixir_backend, ElixirBackend.Mailer, adapter: Swoosh.Adapters.Local
 
+# Configures Oban background jobs
+config :elixir_backend, Oban,
+  repo: ElixirBackend.Repo,
+  queues: [default: 10, bulk: 5, maintenance: 2],
+  plugins: [
+    Oban.Plugins.Pruner,
+    {Oban.Plugins.Cron,
+     crontab: [
+       # Quiz session state transitions — every minute
+       {"* * * * *", ElixirBackend.Workers.QuizSessionTransitions},
+       # Cleanup old bulk jobs — daily at 03:00
+       {"0 3 * * *", ElixirBackend.Workers.BulkJobCleanup},
+       # Sync incomplete user data — daily at 04:00
+       {"0 4 * * *", ElixirBackend.Workers.UserDataSync}
+     ]}
+  ]
+
 # Configures Elixir's Logger
 config :logger, :default_formatter,
   format: "$time $metadata[$level] $message\n",

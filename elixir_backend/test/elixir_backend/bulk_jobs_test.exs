@@ -75,13 +75,14 @@ defmodule ElixirBackend.BulkJobsTest do
       {:ok, job} =
         BulkJobs.create_job(%{operation_type: "TEST", created_by: user.id, total_count: 10})
 
-      {:ok, updated} =
+      :ok =
         BulkJobs.update_progress(job.id, %{
           processed_count: 5,
           success_count: 4,
           failure_count: 1
         })
 
+      {:ok, updated} = BulkJobs.get_job(job.id)
       assert updated.processed_count == 5
       assert updated.success_count == 4
       assert updated.failure_count == 1

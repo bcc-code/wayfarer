@@ -434,6 +434,27 @@ defmodule ElixirBackend.Quizzes do
     end
   end
 
+  @doc """
+  Transitions all quiz sessions whose scheduled time has passed.
+  Handles DRAFT->OPEN, OPEN->LOCKED, and LOCKED->FINISHED in bulk.
+  """
+  def transition_due_sessions do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    transitions = [
+      {"DRAFT", "OPEN", :open_at},
+      {"OPEN", "LOCKED", :lock_at},
+      {"LOCKED", "FINISHED", :finish_at}
+    ]
+
+    Enum.each(transitions, fn {from_state, to_state, time_field} ->
+      from(s in QuizSession,
+        where: s.state == ^from_state and field(s, ^time_field) <= ^now
+      )
+      |> Repo.update_all(set: [state: to_state, updated_at: now])
+    end)
+  end
+
   def get_quiz_sessions(quiz_id, state \\ nil) do
     query = from(s in QuizSession, where: s.quiz_id == ^quiz_id)
 
