@@ -612,6 +612,29 @@ func (r *mutationResolver) EnrollInChallenge(ctx context.Context, challengeID st
 		fmt.Printf("DEBUG: Set cache key=%s, value=%v\n", cacheKey, ts)
 	}
 
+	// Grant quiz session access for quiz challenges
+	if _, ok := challenge.(*model.QuizChallenge); ok {
+		quiz, err := r.DB.Queries.GetQuizByChallengeID(ctx, challengeID)
+		if err == nil && quiz != nil {
+			sessions, err := r.DB.Queries.GetQuizSessionsByQuiz(ctx, sqlc.GetQuizSessionsByQuizParams{
+				Quizid: quiz.ID,
+				State:  "",
+			})
+			if err == nil {
+				for _, session := range sessions {
+					_, _ = r.DB.Queries.CreateQuizSessionAccess(ctx, sqlc.CreateQuizSessionAccessParams{
+						ID:         ulid.NewQuizSessionAccessID(),
+						Sessionid:  session.ID,
+						Userid:     userID,
+						Grantedby:  userID,
+						Sourcetype: "DIRECT",
+						Sourceid:   &challengeID,
+					})
+				}
+			}
+		}
+	}
+
 	// Return challenge with translations
 	return r.ApplyTranslationToChallenge(ctx, challenge), nil
 }
