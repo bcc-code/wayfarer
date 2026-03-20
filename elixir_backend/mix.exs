@@ -63,7 +63,9 @@ defmodule ElixirBackend.MixProject do
       # JWT parsing
       {:joken, "~> 2.6"},
       # ULID generation
-      {:uniq, "~> 0.6"}
+      {:uniq, "~> 0.6"},
+      # Caching
+      {:cachex, "~> 4.0"}
     ]
   end
 

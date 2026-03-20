@@ -7,16 +7,18 @@ defmodule ElixirBackend.Application do
 
   @impl true
   def start(_type, _args) do
-    children = [
-      ElixirBackendWeb.Telemetry,
-      ElixirBackend.Repo,
-      {DNSCluster, query: Application.get_env(:elixir_backend, :dns_cluster_query) || :ignore},
-      {Phoenix.PubSub, name: ElixirBackend.PubSub},
-      # Start a worker by calling: ElixirBackend.Worker.start_link(arg)
-      # {ElixirBackend.Worker, arg},
-      # Start to serve requests, typically the last entry
-      ElixirBackendWeb.Endpoint
-    ]
+    children =
+      [
+        ElixirBackendWeb.Telemetry,
+        ElixirBackend.Repo,
+        {DNSCluster, query: Application.get_env(:elixir_backend, :dns_cluster_query) || :ignore},
+        {Phoenix.PubSub, name: ElixirBackend.PubSub}
+      ] ++
+        ElixirBackend.Cache.child_specs() ++
+        [
+          # Start to serve requests, typically the last entry
+          ElixirBackendWeb.Endpoint
+        ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options

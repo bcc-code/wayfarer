@@ -6,16 +6,19 @@ defmodule ElixirBackend.Challenges do
   import Ecto.Query
   alias ElixirBackend.Repo
   alias ElixirBackend.ULID
+  alias ElixirBackend.Cache
   alias ElixirBackend.Pagination
   alias ElixirBackend.Challenges.{Challenge, Completion, Enrollment}
 
   # ── Read ──
 
   def get_challenge(id) do
-    case Repo.get(Challenge, id) do
-      nil -> {:error, :not_found}
-      challenge -> {:ok, challenge}
-    end
+    Cache.fetch_challenge(id, fn ->
+      case Repo.get(Challenge, id) do
+        nil -> {:error, :not_found}
+        challenge -> {:ok, challenge}
+      end
+    end)
   end
 
   def get_challenge!(id), do: Repo.get!(Challenge, id)
@@ -103,17 +106,29 @@ defmodule ElixirBackend.Challenges do
         Map.put(attrs, :published_at, DateTime.utc_now() |> DateTime.truncate(:second))
       end
 
-    %Challenge{}
-    |> Challenge.create_changeset(Map.put(attrs, :id, id))
-    |> Repo.insert()
+    result =
+      %Challenge{}
+      |> Challenge.create_changeset(Map.put(attrs, :id, id))
+      |> Repo.insert()
+
+    with {:ok, challenge} <- result do
+      Cache.put_challenge(challenge)
+      {:ok, challenge}
+    end
   end
 
   # ── Update ──
 
   def update_challenge(%Challenge{} = challenge, attrs) do
-    challenge
-    |> Challenge.update_changeset(attrs)
-    |> Repo.update()
+    result =
+      challenge
+      |> Challenge.update_changeset(attrs)
+      |> Repo.update()
+
+    with {:ok, updated} <- result do
+      Cache.put_challenge(updated)
+      {:ok, updated}
+    end
   end
 
   def update_challenge(id, attrs) when is_binary(id) do
@@ -125,7 +140,12 @@ defmodule ElixirBackend.Challenges do
   # ── Delete ──
 
   def delete_challenge(%Challenge{} = challenge) do
-    Repo.delete(challenge)
+    result = Repo.delete(challenge)
+
+    with {:ok, deleted} <- result do
+      Cache.delete_challenge(deleted.id)
+      {:ok, deleted}
+    end
   end
 
   def delete_challenge(id) when is_binary(id) do
@@ -138,9 +158,15 @@ defmodule ElixirBackend.Challenges do
 
   def publish_challenge(id, published_at) do
     with {:ok, challenge} <- get_challenge(id) do
-      challenge
-      |> Ecto.Changeset.change(published_at: published_at)
-      |> Repo.update()
+      result =
+        challenge
+        |> Ecto.Changeset.change(published_at: published_at)
+        |> Repo.update()
+
+      with {:ok, updated} <- result do
+        Cache.put_challenge(updated)
+        {:ok, updated}
+      end
     end
   end
 
@@ -148,10 +174,16 @@ defmodule ElixirBackend.Challenges do
 
   def assign_challenge_to_event(challenge_id, event_id) do
     with {:ok, challenge} <- get_challenge(challenge_id) do
-      challenge
-      |> Ecto.Changeset.change(event_id: event_id)
-      |> Ecto.Changeset.foreign_key_constraint(:event_id)
-      |> Repo.update()
+      result =
+        challenge
+        |> Ecto.Changeset.change(event_id: event_id)
+        |> Ecto.Changeset.foreign_key_constraint(:event_id)
+        |> Repo.update()
+
+      with {:ok, updated} <- result do
+        Cache.put_challenge(updated)
+        {:ok, updated}
+      end
     end
   end
 
@@ -162,9 +194,15 @@ defmodule ElixirBackend.Challenges do
       changes = %{visible_at: visible_at}
       changes = if started_at, do: Map.put(changes, :started_at, started_at), else: changes
 
-      challenge
-      |> Ecto.Changeset.change(changes)
-      |> Repo.update()
+      result =
+        challenge
+        |> Ecto.Changeset.change(changes)
+        |> Repo.update()
+
+      with {:ok, updated} <- result do
+        Cache.put_challenge(updated)
+        {:ok, updated}
+      end
     end
   end
 
@@ -177,9 +215,15 @@ defmodule ElixirBackend.Challenges do
         |> maybe_put(:requires_team_membership, opts[:requires_team_membership])
         |> maybe_put(:requires_super_team_membership, opts[:requires_super_team_membership])
 
-      challenge
-      |> Ecto.Changeset.change(changes)
-      |> Repo.update()
+      result =
+        challenge
+        |> Ecto.Changeset.change(changes)
+        |> Repo.update()
+
+      with {:ok, updated} <- result do
+        Cache.put_challenge(updated)
+        {:ok, updated}
+      end
     end
   end
 
@@ -188,13 +232,19 @@ defmodule ElixirBackend.Challenges do
   def complete_challenge(user_id, challenge_id, completed_at \\ nil) do
     completed_at = completed_at || DateTime.utc_now() |> DateTime.truncate(:second)
 
-    %Completion{}
-    |> Completion.changeset(%{
-      user_id: user_id,
-      challenge_id: challenge_id,
-      completed_at: completed_at
-    })
-    |> Repo.insert(on_conflict: :nothing, conflict_target: [:user_id, :challenge_id])
+    result =
+      %Completion{}
+      |> Completion.changeset(%{
+        user_id: user_id,
+        challenge_id: challenge_id,
+        completed_at: completed_at
+      })
+      |> Repo.insert(on_conflict: :nothing, conflict_target: [:user_id, :challenge_id])
+
+    with {:ok, completion} <- result do
+      Cache.put_completion(user_id, challenge_id, completion.completed_at)
+      {:ok, completion}
+    end
   end
 
   def uncomplete_challenge(user_id, challenge_id) do
@@ -204,8 +254,12 @@ defmodule ElixirBackend.Challenges do
       )
 
     case Repo.delete_all(query) do
-      {count, _} when count > 0 -> {:ok, true}
-      _ -> {:ok, false}
+      {count, _} when count > 0 ->
+        Cache.delete_completion(user_id, challenge_id)
+        {:ok, true}
+
+      _ ->
+        {:ok, false}
     end
   end
 
@@ -246,8 +300,12 @@ defmodule ElixirBackend.Challenges do
         |> Repo.insert(on_conflict: :nothing, conflict_target: [:user_id, :challenge_id])
 
       case result do
-        {:ok, _} -> {:ok, challenge}
-        error -> error
+        {:ok, enrollment} ->
+          Cache.put_enrollment(user_id, challenge_id, enrollment.enrolled_at)
+          {:ok, challenge}
+
+        error ->
+          error
       end
     end
   end
@@ -259,8 +317,12 @@ defmodule ElixirBackend.Challenges do
       )
 
     case Repo.delete_all(query) do
-      {count, _} when count > 0 -> {:ok, true}
-      _ -> {:ok, false}
+      {count, _} when count > 0 ->
+        Cache.delete_enrollment(user_id, challenge_id)
+        {:ok, true}
+
+      _ ->
+        {:ok, false}
     end
   end
 
@@ -271,23 +333,39 @@ defmodule ElixirBackend.Challenges do
   # ── Enrollment per-user lookups (for resolvers) ──
 
   def get_user_completed_at(user_id, challenge_id) do
-    query =
-      from(c in Completion,
-        where: c.user_id == ^user_id and c.challenge_id == ^challenge_id,
-        select: c.completed_at
-      )
+    case Cache.get_completion(user_id, challenge_id) do
+      {:ok, timestamp} ->
+        {:ok, timestamp}
 
-    {:ok, Repo.one(query)}
+      :miss ->
+        query =
+          from(c in Completion,
+            where: c.user_id == ^user_id and c.challenge_id == ^challenge_id,
+            select: c.completed_at
+          )
+
+        timestamp = Repo.one(query)
+        Cache.put_completion(user_id, challenge_id, timestamp)
+        {:ok, timestamp}
+    end
   end
 
   def get_user_enrolled_at(user_id, challenge_id) do
-    query =
-      from(e in Enrollment,
-        where: e.user_id == ^user_id and e.challenge_id == ^challenge_id,
-        select: e.enrolled_at
-      )
+    case Cache.get_enrollment(user_id, challenge_id) do
+      {:ok, timestamp} ->
+        {:ok, timestamp}
 
-    {:ok, Repo.one(query)}
+      :miss ->
+        query =
+          from(e in Enrollment,
+            where: e.user_id == ^user_id and e.challenge_id == ^challenge_id,
+            select: e.enrolled_at
+          )
+
+        timestamp = Repo.one(query)
+        Cache.put_enrollment(user_id, challenge_id, timestamp)
+        {:ok, timestamp}
+    end
   end
 
   # ── Private helpers ──

@@ -34,6 +34,7 @@ defmodule ElixirBackendWeb.ConnCase do
 
   setup tags do
     ElixirBackend.DataCase.setup_sandbox(tags)
+    ElixirBackend.Cache.clear_all()
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
 end
