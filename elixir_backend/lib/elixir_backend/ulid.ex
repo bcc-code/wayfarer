@@ -44,6 +44,10 @@ defmodule ElixirBackend.ULID do
   def new_push_notification_log_id, do: new_id("PN")
   def new_webhook_id, do: new_id("WH")
   def new_webhook_log_id, do: new_id("WL")
+  def new_consent_id, do: new_id("CN")
+  def new_consent_history_id, do: new_id("UH")
+  def new_feedback_id, do: new_id("FB")
+  def new_file_upload_id, do: new_id("FL")
 
   # Encode a UUID v7 binary into 26-char Crockford Base32 (ULID format)
   defp encode_crockford(uuid_string) do

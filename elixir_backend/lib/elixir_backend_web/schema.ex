@@ -20,6 +20,10 @@ defmodule ElixirBackendWeb.Schema do
   import_types(ElixirBackendWeb.Schema.BulkJobTypes)
   import_types(ElixirBackendWeb.Schema.PushNotificationTypes)
   import_types(ElixirBackendWeb.Schema.WebhookTypes)
+  import_types(ElixirBackendWeb.Schema.ConsentTypes)
+  import_types(ElixirBackendWeb.Schema.FeedbackTypes)
+  import_types(ElixirBackendWeb.Schema.FileUploadTypes)
+  import_types(ElixirBackendWeb.Schema.AdminTypes)
 
   # Queries
   import_types(ElixirBackendWeb.Schema.ChurchQueries)
@@ -37,6 +41,11 @@ defmodule ElixirBackendWeb.Schema do
   import_types(ElixirBackendWeb.Schema.BulkJobQueries)
   import_types(ElixirBackendWeb.Schema.PushNotificationQueries)
   import_types(ElixirBackendWeb.Schema.WebhookQueries)
+  import_types(ElixirBackendWeb.Schema.ConsentQueries)
+  import_types(ElixirBackendWeb.Schema.FeedbackQueries)
+  import_types(ElixirBackendWeb.Schema.FileUploadQueries)
+  import_types(ElixirBackendWeb.Schema.SettingsQueries)
+  import_types(ElixirBackendWeb.Schema.AdminQueries)
 
   # Mutations
   import_types(ElixirBackendWeb.Schema.ChurchMutations)
@@ -52,6 +61,9 @@ defmodule ElixirBackendWeb.Schema do
   import_types(ElixirBackendWeb.Schema.ScoringMutations)
   import_types(ElixirBackendWeb.Schema.PushNotificationMutations)
   import_types(ElixirBackendWeb.Schema.WebhookMutations)
+  import_types(ElixirBackendWeb.Schema.ConsentMutations)
+  import_types(ElixirBackendWeb.Schema.FeedbackMutations)
+  import_types(ElixirBackendWeb.Schema.AdminMutations)
 
   query do
     import_fields(:church_queries)
@@ -69,6 +81,11 @@ defmodule ElixirBackendWeb.Schema do
     import_fields(:bulk_job_queries)
     import_fields(:push_notification_queries)
     import_fields(:webhook_queries)
+    import_fields(:consent_queries)
+    import_fields(:feedback_queries)
+    import_fields(:file_upload_queries)
+    import_fields(:settings_queries)
+    import_fields(:admin_queries)
   end
 
   mutation do
@@ -85,6 +102,9 @@ defmodule ElixirBackendWeb.Schema do
     import_fields(:scoring_mutations)
     import_fields(:push_notification_mutations)
     import_fields(:webhook_mutations)
+    import_fields(:consent_mutations)
+    import_fields(:feedback_mutations)
+    import_fields(:admin_mutations)
   end
 
   # Dataloader plugin for batch-loading associations
