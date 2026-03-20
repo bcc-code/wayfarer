@@ -34,18 +34,25 @@
     "finishReview": "Lopeta läpikäynti",
     "yourNumber": "Sinun numerosi",
     "writeYourAnswer": "Kirjoita vastauksesi...",
-    "close": "Sulje tietokilpailu",
+    "close": "Sulje",
     "betting": {
       "remainingPoints": "Jäljellä olevat pisteet",
       "yourBet": "Sinun panoksesi",
       "maxBetMessage": "Voit panostaa enintään {percentage}% pisteitäsi.",
       "sessionLocked": "Vastaus on lukittu",
-      "potentialWinnings": "{amount} pisteitä potentiaalisissa voitoissa",
-      "bettingClosed": "Vedonlyönti on päättynyt. Voit sulkea tietokilpailun.",
+      "registeredBet": "Vedonlyönti on kirjattu",
+      "bettingClosed": "Vedonlyönti on päättynyt",
+      "yourBetIs": "Panostit {bet} pistettä",
       "results": "Tulos",
       "yourPoints": "Pisteesi",
       "winnings": "Voitot",
-      "losses": "Menetetyt pisteet"
+      "pointsLost": "Menetettyjä pisteitä",
+      "pointsEarned": "Ansaittuja pisteitä",
+      "resultYourBet": "Panoksesi",
+      "correctCount": "Sait {count} oikein",
+      "correctCountAll": "Sait kaikki oikein",
+      "correctCountNone": "Sinulla ei ollut yhtään oikeaa",
+      "bettingResult": "Vedonlyöntitulokset"
     },
     "result": {
       "receivedNoPoints": "Et saanut yhtään pistettä.",
@@ -55,6 +62,10 @@
       "perfect": "Täydellistä!",
       "thanksForAnswers": "Kiitos vastauksistasi!",
       "resultsRevealedLater": "Tulokset julkistetaan myöhemmin."
+    },
+    "notSubmitted": {
+      "title": "Et ole toimittanut",
+      "message": "Et osallistunut tähän vedonlyöntiin"
     }
   },
   "challenges": {
@@ -164,8 +175,8 @@
   },
   "goToHiddenTreasures": "Mene raamattutunnille",
   "gameNights": {
-    "yourCode": "Game Night -pelin yksikkökoodisi",
-    "yourCodeHint": "Avaa sivu tietokoneellasi ja syötä koodi."
+    "yourCode": "Kirjoita koodisi:",
+    "yourCodeHint": "Siirry tälle verkkosivulle tietokoneella:"
   },
   "admin": {
     "common": {
@@ -188,6 +199,7 @@
       "comingSoon": "Tulossa pian",
       "kickOff": "Kick-off",
       "statistics": "Tilastot",
+      "gameNight": "Game Night {number}",
       "kickOffButton": "Aloita yksikköjen perehdytys",
       "kickOffOnboardingDescription": "Tämä toimenpide käynnistää yksikön perehdyttämisen koko paikallisessa seurakunnassa.",
       "kickOffOnboardingDescriptionWarning": "⚠ Älä aloita, jos ette ole valmiina.",
@@ -284,6 +296,66 @@
       "excludeFromLeaderboard": "Piilota listoilta",
       "excludeFromLeaderboardTooltip": "Kun tämä on aktivoitu, ei yksikkö näy tuloslistoilla.",
       "excludedFromLeaderboard": "Piilotettu listoilta"
+    },
+    "gamenight": {
+      "importantResources": "Tärkeitä resursseja",
+      "importantResourcesDescription": "Pidä nämä valmiina tai lähetä ne suurikokoisen näytön operaattorille. Niitä käytetään koko illan ajan.",
+      "linkToAllFilms": "Linkki kaikkiin videoihin",
+      "findFilmsHere": "Kopioi linkki videoihin",
+      "bigScreen": "Suurikuvatoisto",
+      "usedInStep5": "Tätä käytetään vaiheissa 1 ja 5",
+      "findBigScreenHere": "Kopioi linkki suurikokoiseen näkymään",
+      "step1Title": "Vinkkejä: Voit käyttää ",
+      "step1Description": "Tämä voidaan näyttää valkokankaalla, kun nuoret saapuvat saliin",
+      "tip": "Vinkkejä",
+      "fullscreenTip": "Napauta suurennetun näytön oikeassa alakulmassa olevaa ”Koko näyttö” -painiketta.",
+      "openBigScreenNewTab": "Kopioi linkki suurikokoiseen näkymään",
+      "goToNextStep": "Siirry seuraavaan vaiheeseen",
+      "step2Title": "Toista video 1",
+      "step2Description": "Tämä tehdään, kun nuoret ovat istuutuneet ja ilta on alkanut",
+      "goToFilm": "Kopioi linkki videoon {number}",
+      "filmFinishedNextStep": "Video on valmis, siirry seuraavaan vaiheeseen",
+      "step3Title": "Suorita vedonlyönti",
+      "step3Description": "Kun vedonlyönti alkaa, kaikki saavat vedonlyöntihaasteen Interactissa. Älä tee tätä ennen kuin olet TODELLA valmis aloittamaan vedonlyönnin",
+      "startBetting": "Aloita vedonlyönti",
+      "bettingStartingIn": "Vedonlyönti alkaa {seconds} sekunnin kuluttua...",
+      "cancelBettingCountdown": "Peruuta",
+      "lockBetting": "Pysäytä vedonlyönti",
+      "lockBettingDescription": "Kun kaikki ovat tehneet veikkauksensa, voit pysäyttää vedonlyönnin.",
+      "bettingLockedNotice": "Silloin osallistujille ilmoitetaan, että vedonlyönti on pysäytetty.",
+      "reopenBettingHint": "Jos joku ei ehtinyt tehdä vedonlyöntiään, voit avata sen uudelleen.",
+      "reopenBetting": "Avaa vedonlyönti uudelleen",
+      "makeSureEverybodyBet": "Varmista, että kaikki ovat saaneet vedonlyöntinsä tehtyä, ennen kuin lopetat",
+      "allBetNextStep": "Lopeta vedonlyönti",
+      "cannotReopenAfterContinue": "TÄRKEÄÄ: Jos lopetat vedonlyönnin, et voi enää avata sitä uudelleen.",
+      "step4Title": "Toista video 2",
+      "step4Description": "Tämä tehdään vedonlyönnin päätyttyä",
+      "step5TitleBigScreen": "Näytä yksikkötehtävän suurikokoinen näkymä suurella näytöllä",
+      "step5Title": "Lähetä koodi yksikkötehtävään",
+      "step5Description": "Yksikön johtajien on avattava Interactin ”Haasteet”-sivu. Siellä he näkevät koodin ja verkkosivuston, jolla sitä käytetään (pc26.bcc.media)",
+      "unitLeaderMustGoTo": "Yksikön johtajan on kirjauduttava sisään",
+      "onAPC": "tietokoneella",
+      "ifUnitLeaderMissing": "Jos laitteesta puuttuu koodi, löydät sen yksikön nimen oikealta puolelta",
+      "unitAdminPage": "yksikköjen hallinnointisivu",
+      "giveUnitLeadersAccess": "Lähetä koodi yksikönjohtajille",
+      "unitLeaderAccessSent": "Koodi lähetetty yksikönjohtajille",
+      "step6Title": "Siirry hallintasivulle käynnistääksesi yksikkötehtävän",
+      "step6Description": "Yksikkötehtävä on erillinen järjestelmä, joten sille on oltava oma hallintasivu. Jatka siitä, niin sinut ohjataan myöhemmin takaisin tänne.",
+      "goToUnitTaskAdmin": "Siirry yksikkötehtävän hallintasivulle",
+      "completeStepsOnOtherPage": "Suorita vaiheet {from} - {to} toisella sivustolla",
+      "step12Title": "Toista video 3",
+      "step13Title": "Anna osallistujille pisteitä veikkauksista",
+      "step13Description": "Kaikkien on mentävä Interactin ”Haasteet”-sivulle ja avattava valmis haaste nähdäkseen tuloksen.",
+      "releasePointsNow": "Vapauta pisteet nyt",
+      "youAreDone": "Olet nyt valmis! 🎉",
+      "canClosePageSafely": "Game Night -pelin{number} voi lopettaa huoletta, ja voit sulkea tämän sivun.",
+      "errors": {
+        "couldNotStartBetting": "Ei voitu aloittaa vedonlyöntiä",
+        "couldNotLockBetting": "En voitu lukita vedonlyöntiä",
+        "couldNotReopenBetting": "Vedonlyöntiä ei voitu avata uudelleen",
+        "couldNotFinishBetting": "Ei voitu lopettaa vedonlyöntiä",
+        "couldNotSendUnitLeaderAccess": "Ei voitu lähettää koodia yksikönjohtajille"
+      }
     },
     "statistics": {
       "totalUsersInTeams": "Yksiköiden jäsenet",
