@@ -6,6 +6,7 @@ defmodule ElixirBackend.Cache do
   - `:challenges` — Challenge structs by ID
   - `:user_challenge_completions` — Completion timestamps by {user_id, challenge_id}
   - `:user_challenge_enrollments` — Enrollment timestamps by {user_id, challenge_id}
+  - `:users` — User structs by ID
   """
 
   # Default TTL: 15 minutes (matching Go backend)
@@ -16,13 +17,15 @@ defmodule ElixirBackend.Cache do
   def challenge_cache, do: :challenges
   def completion_cache, do: :user_challenge_completions
   def enrollment_cache, do: :user_challenge_enrollments
+  def user_cache, do: :users
 
   @doc "All cache specs for the supervision tree."
   def child_specs do
     [
       Supervisor.child_spec({Cachex, challenge_cache()}, id: challenge_cache()),
       Supervisor.child_spec({Cachex, completion_cache()}, id: completion_cache()),
-      Supervisor.child_spec({Cachex, enrollment_cache()}, id: enrollment_cache())
+      Supervisor.child_spec({Cachex, enrollment_cache()}, id: enrollment_cache()),
+      Supervisor.child_spec({Cachex, user_cache()}, id: user_cache())
     ]
   end
 
@@ -123,6 +126,41 @@ defmodule ElixirBackend.Cache do
     Cachex.del(enrollment_cache(), enrollment_key(user_id, challenge_id))
   end
 
+  # ── User cache ──
+
+  @doc "Cache key for a user by ID."
+  def user_key(user_id), do: "user:#{user_id}"
+
+  @doc "Get a user from cache."
+  def get_user(user_id) do
+    case Cachex.get(user_cache(), user_key(user_id)) do
+      {:ok, nil} -> :miss
+      {:ok, value} -> {:ok, value}
+      _ -> :miss
+    end
+  end
+
+  @doc "Store a user in cache with default TTL."
+  def put_user(user) do
+    Cachex.put(user_cache(), user_key(user.id), user, expire: @default_ttl)
+  end
+
+  @doc "Invalidate a cached user."
+  def delete_user(user_id) do
+    Cachex.del(user_cache(), user_key(user_id))
+  end
+
+  @doc "Get-or-compute a user."
+  def fetch_user(user_id, fallback) do
+    Cachex.fetch(user_cache(), user_key(user_id), fn _key ->
+      case fallback.() do
+        {:ok, user} -> {:commit, user, expire: @default_ttl}
+        error -> {:ignore, error}
+      end
+    end)
+    |> normalize_fetch_result()
+  end
+
   # ── Utilities ──
 
   @doc "Clear all caches (for testing)."
@@ -130,6 +168,7 @@ defmodule ElixirBackend.Cache do
     Cachex.clear(challenge_cache())
     Cachex.clear(completion_cache())
     Cachex.clear(enrollment_cache())
+    Cachex.clear(user_cache())
     :ok
   end
 

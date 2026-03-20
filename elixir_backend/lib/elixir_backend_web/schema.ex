@@ -6,13 +6,18 @@ defmodule ElixirBackendWeb.Schema do
   import_types(ElixirBackendWeb.Schema.ChallengeTypes)
   import_types(ElixirBackendWeb.Schema.ChallengeQueries)
   import_types(ElixirBackendWeb.Schema.ChallengeMutations)
+  import_types(ElixirBackendWeb.Schema.UserTypes)
+  import_types(ElixirBackendWeb.Schema.UserQueries)
+  import_types(ElixirBackendWeb.Schema.UserMutations)
 
   query do
     import_fields(:challenge_queries)
+    import_fields(:user_queries)
   end
 
   mutation do
     import_fields(:challenge_mutations)
+    import_fields(:user_mutations)
   end
 
   # Dataloader plugin for batch-loading associations

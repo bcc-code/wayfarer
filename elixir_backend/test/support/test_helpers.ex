@@ -7,6 +7,9 @@ defmodule ElixirBackend.TestHelpers do
   alias ElixirBackend.ULID
   alias ElixirBackend.Projects.Project
   alias ElixirBackend.Accounts.User
+  alias ElixirBackend.Accounts.UserProject
+  alias ElixirBackend.Accounts.UserEvent
+  alias ElixirBackend.Churches.Church
   alias ElixirBackend.Events.Event
 
   def create_project(attrs \\ %{}) do
@@ -22,14 +25,42 @@ defmodule ElixirBackend.TestHelpers do
     |> Repo.insert!()
   end
 
+  def create_church(attrs \\ %{}) do
+    defaults = %{
+      id: ULID.new_church_id(),
+      name: "Test Church",
+      country: "NO",
+      category: "L"
+    }
+
+    %Church{}
+    |> Church.changeset(Map.merge(defaults, attrs))
+    |> Repo.insert!()
+  end
+
   def create_user(attrs \\ %{}) do
+    # Auto-create church if not provided
+    church_id =
+      if attrs[:church_id] do
+        attrs[:church_id]
+      else
+        create_church().id
+      end
+
+    unique = System.unique_integer([:positive])
+
     defaults = %{
       id: ULID.new_user_id(),
-      name: "Test User"
+      name: "Test User",
+      members_id: "member-#{unique}",
+      email: "test-#{unique}@example.com",
+      gender: "MALE",
+      church_id: church_id,
+      birthdate: ~D[2000-01-15]
     }
 
     %User{}
-    |> User.changeset(Map.merge(defaults, attrs))
+    |> User.create_changeset(Map.merge(defaults, attrs))
     |> Repo.insert!()
   end
 
@@ -42,6 +73,26 @@ defmodule ElixirBackend.TestHelpers do
 
     %Event{}
     |> Event.changeset(Map.merge(defaults, attrs))
+    |> Repo.insert!()
+  end
+
+  def create_user_project(user, project) do
+    %UserProject{}
+    |> UserProject.changeset(%{
+      user_id: user.id,
+      project_id: project.id,
+      joined_at: DateTime.utc_now() |> DateTime.truncate(:second)
+    })
+    |> Repo.insert!()
+  end
+
+  def create_user_event(user, event) do
+    %UserEvent{}
+    |> UserEvent.changeset(%{
+      user_id: user.id,
+      event_id: event.id,
+      joined_at: DateTime.utc_now() |> DateTime.truncate(:second)
+    })
     |> Repo.insert!()
   end
 

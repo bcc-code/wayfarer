@@ -23,6 +23,7 @@ defmodule ElixirBackend.ULID do
   def new_event_id, do: new_id("EV")
   def new_team_id, do: new_id("TM")
   def new_super_team_id, do: new_id("ST")
+  def new_church_id, do: new_id("CH")
 
   # Encode a UUID v7 binary into 26-char Crockford Base32 (ULID format)
   defp encode_crockford(uuid_string) do

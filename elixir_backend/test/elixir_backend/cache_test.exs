@@ -487,6 +487,91 @@ defmodule ElixirBackend.CacheTest do
     end
   end
 
+  # ── User cache ──
+
+  describe "user cache — key" do
+    test "cache key contains user ID" do
+      user_id = "US01K8XV6VK9ED2GBZSQ2VDTAT8T"
+      cache_key = Cache.user_key(user_id)
+
+      assert cache_key != ""
+      assert String.contains?(cache_key, user_id)
+    end
+  end
+
+  describe "user cache — behavior" do
+    test "put and get user" do
+      user = create_user(%{name: "Cache User"})
+      Cache.put_user(user)
+
+      assert {:ok, cached} = Cache.get_user(user.id)
+      assert cached.id == user.id
+      assert cached.name == "Cache User"
+    end
+
+    test "cache miss returns :miss" do
+      assert :miss = Cache.get_user("nonexistent")
+    end
+
+    test "delete removes from cache" do
+      user = create_user(%{name: "Delete User"})
+      Cache.put_user(user)
+
+      assert {:ok, _} = Cache.get_user(user.id)
+
+      Cache.delete_user(user.id)
+      assert :miss = Cache.get_user(user.id)
+    end
+
+    test "fetch_user populates cache on miss" do
+      user = create_user(%{name: "Fetch User"})
+      # Ensure not in cache
+      Cache.delete_user(user.id)
+
+      {:ok, found} =
+        Cache.fetch_user(user.id, fn ->
+          case Repo.get(ElixirBackend.Accounts.User, user.id) do
+            nil -> {:error, :not_found}
+            u -> {:ok, u}
+          end
+        end)
+
+      assert found.id == user.id
+
+      # Should now be in cache
+      assert {:ok, cached} = Cache.get_user(user.id)
+      assert cached.id == user.id
+    end
+  end
+
+  describe "user cache — invalidation on mutations" do
+    test "lock_user_church updates cache" do
+      user = create_user()
+
+      # Prime the cache
+      {:ok, _} = ElixirBackend.Accounts.get_user(user.id)
+      assert {:ok, cached} = Cache.get_user(user.id)
+      assert cached.church_locked_until == nil
+
+      {:ok, _} = ElixirBackend.Accounts.lock_user_church(user.id)
+
+      {:ok, cached} = Cache.get_user(user.id)
+      assert cached.church_locked_until != nil
+    end
+
+    test "unlock_user_church updates cache" do
+      user = create_user()
+
+      {:ok, _} = ElixirBackend.Accounts.lock_user_church(user.id)
+      {:ok, cached} = Cache.get_user(user.id)
+      assert cached.church_locked_until != nil
+
+      {:ok, _} = ElixirBackend.Accounts.unlock_user_church(user.id)
+      {:ok, cached} = Cache.get_user(user.id)
+      assert cached.church_locked_until == nil
+    end
+  end
+
   # ── clear_all ──
 
   describe "clear_all" do
@@ -494,12 +579,14 @@ defmodule ElixirBackend.CacheTest do
       Cache.put_challenge(%{id: "CL1", name: "test"})
       Cache.put_completion("US1", "CL1", ~U[2026-01-01 00:00:00Z])
       Cache.put_enrollment("US1", "CL1", ~U[2026-01-01 00:00:00Z])
+      Cache.put_user(%{id: "US1", name: "test"})
 
       Cache.clear_all()
 
       assert :miss = Cache.get_challenge("CL1")
       assert :miss = Cache.get_completion("US1", "CL1")
       assert :miss = Cache.get_enrollment("US1", "CL1")
+      assert :miss = Cache.get_user("US1")
     end
   end
 end

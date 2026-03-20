@@ -23,6 +23,27 @@ defmodule ElixirBackendWeb.Schema.Scalars do
     end)
   end
 
+  scalar :date, name: "Date" do
+    serialize(fn
+      %Date{} = d -> Date.to_iso8601(d)
+      nil -> nil
+    end)
+
+    parse(fn
+      %Absinthe.Blueprint.Input.String{value: value} ->
+        case Date.from_iso8601(value) do
+          {:ok, d} -> {:ok, d}
+          _ -> :error
+        end
+
+      %Absinthe.Blueprint.Input.Null{} ->
+        {:ok, nil}
+
+      _ ->
+        :error
+    end)
+  end
+
   scalar :html, name: "HTML" do
     serialize(fn value -> value end)
 

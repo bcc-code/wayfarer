@@ -1,18 +1,25 @@
 defmodule ElixirBackend.Pagination do
   @moduledoc """
-  Cursor-based pagination using composite cursors (published_at, id).
-  Encodes/decodes cursors as Base64-encoded JSON.
+  Cursor-based pagination with configurable sort fields.
+
+  Sort modes:
+  - `:published_at` (default) — uses COALESCE(published_at, inserted_at)
+  - `:created_at` — uses inserted_at directly
   """
 
   import Ecto.Query
 
   @default_page_size 10
 
-  @doc "Encode a cursor from a challenge's sort key and id."
-  def encode_cursor(%{published_at: published_at, id: id}) do
-    sort_key = published_at || nil
+  @doc "Encode a cursor from a record's sort key and id."
+  def encode_cursor(record, sort_field \\ :published_at) do
+    sort_key =
+      case sort_field do
+        :created_at -> Map.get(record, :inserted_at)
+        _ -> Map.get(record, :published_at) || Map.get(record, :inserted_at)
+      end
 
-    %{s: sort_key && DateTime.to_iso8601(sort_key), i: id}
+    %{s: sort_key && DateTime.to_iso8601(sort_key), i: record.id}
     |> Jason.encode!()
     |> Base.url_encode64(padding: false)
   end
@@ -40,27 +47,34 @@ defmodule ElixirBackend.Pagination do
 
   @doc """
   Apply cursor pagination to a query.
-  Uses COALESCE(published_at, created_at) as the sort key.
+  Options:
+  - `:sort_field` — `:published_at` (default) or `:created_at`
+  - `:first`, `:after`, `:last`, `:before` — standard cursor pagination args
   """
   def paginate(query, opts) do
     {direction, limit, cursor} = pagination_params(opts)
+    sort_field = opts[:sort_field] || :published_at
 
     query
-    |> apply_cursor(cursor, direction)
-    |> apply_order(direction)
+    |> apply_cursor(cursor, direction, sort_field)
+    |> apply_order(direction, sort_field)
     |> limit(^(limit + 1))
   end
 
   @doc "Build a connection response from paginated results."
   def build_connection(items, opts, total_count) do
     {direction, limit, _cursor} = pagination_params(opts)
+    sort_field = opts[:sort_field] || :published_at
     backward? = direction == :backward
 
     has_more = length(items) > limit
     items = Enum.take(items, limit)
     items = if(backward?, do: Enum.reverse(items), else: items)
 
-    edges = Enum.map(items, fn item -> %{cursor: encode_cursor(item), node: item} end)
+    edges =
+      Enum.map(items, fn item ->
+        %{cursor: encode_cursor(item, sort_field), node: item}
+      end)
 
     %{
       edges: edges,
@@ -89,19 +103,39 @@ defmodule ElixirBackend.Pagination do
     }
   end
 
-  defp apply_cursor(query, nil, _direction), do: query
+  defp apply_cursor(query, nil, _direction, _sort_field), do: query
 
-  defp apply_cursor(query, cursor_string, direction) do
+  defp apply_cursor(query, cursor_string, direction, sort_field) do
     case decode_cursor(cursor_string) do
       {:ok, %{sort_key: sort_key, id: id}} ->
-        apply_cursor_where(query, sort_key, id, direction)
+        apply_cursor_where(query, sort_key, id, direction, sort_field)
 
       _ ->
         query
     end
   end
 
-  defp apply_cursor_where(query, sort_key, id, :forward) do
+  # ── :created_at sort (uses inserted_at directly) ──
+
+  defp apply_cursor_where(query, sort_key, id, :forward, :created_at) do
+    if sort_key do
+      where(query, [c], c.inserted_at < ^sort_key or (c.inserted_at == ^sort_key and c.id < ^id))
+    else
+      where(query, [c], c.id < ^id)
+    end
+  end
+
+  defp apply_cursor_where(query, sort_key, id, :backward, :created_at) do
+    if sort_key do
+      where(query, [c], c.inserted_at > ^sort_key or (c.inserted_at == ^sort_key and c.id > ^id))
+    else
+      where(query, [c], c.id > ^id)
+    end
+  end
+
+  # ── :published_at sort (COALESCE(published_at, inserted_at)) ──
+
+  defp apply_cursor_where(query, sort_key, id, :forward, _sort_field) do
     if sort_key do
       where(
         query,
@@ -114,7 +148,7 @@ defmodule ElixirBackend.Pagination do
     end
   end
 
-  defp apply_cursor_where(query, sort_key, id, :backward) do
+  defp apply_cursor_where(query, sort_key, id, :backward, _sort_field) do
     if sort_key do
       where(
         query,
@@ -127,14 +161,24 @@ defmodule ElixirBackend.Pagination do
     end
   end
 
-  defp apply_order(query, :forward) do
+  # ── Ordering ──
+
+  defp apply_order(query, :forward, :created_at) do
+    order_by(query, [c], desc: c.inserted_at, desc: c.id)
+  end
+
+  defp apply_order(query, :backward, :created_at) do
+    order_by(query, [c], asc: c.inserted_at, asc: c.id)
+  end
+
+  defp apply_order(query, :forward, _sort_field) do
     order_by(query, [c],
       desc: fragment("COALESCE(?, ?)", c.published_at, c.inserted_at),
       desc: c.id
     )
   end
 
-  defp apply_order(query, :backward) do
+  defp apply_order(query, :backward, _sort_field) do
     order_by(query, [c],
       asc: fragment("COALESCE(?, ?)", c.published_at, c.inserted_at),
       asc: c.id
