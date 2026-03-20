@@ -9,7 +9,8 @@ import Config
 
 config :elixir_backend,
   ecto_repos: [ElixirBackend.Repo],
-  generators: [timestamp_type: :utc_datetime]
+  generators: [timestamp_type: :utc_datetime],
+  jwt_secret: "dev-secret"
 
 # Configures the endpoint
 config :elixir_backend, ElixirBackendWeb.Endpoint,

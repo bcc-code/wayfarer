@@ -1,0 +1,35 @@
+defmodule ElixirBackendWeb.Schema.Scalars do
+  @moduledoc "Custom GraphQL scalar types: DateTime and HTML."
+  use Absinthe.Schema.Notation
+
+  scalar :datetime, name: "DateTime" do
+    serialize(fn
+      %DateTime{} = dt -> DateTime.to_iso8601(dt)
+      nil -> nil
+    end)
+
+    parse(fn
+      %Absinthe.Blueprint.Input.String{value: value} ->
+        case DateTime.from_iso8601(value) do
+          {:ok, dt, _} -> {:ok, dt}
+          _ -> :error
+        end
+
+      %Absinthe.Blueprint.Input.Null{} ->
+        {:ok, nil}
+
+      _ ->
+        :error
+    end)
+  end
+
+  scalar :html, name: "HTML" do
+    serialize(fn value -> value end)
+
+    parse(fn
+      %Absinthe.Blueprint.Input.String{value: value} -> {:ok, value}
+      %Absinthe.Blueprint.Input.Null{} -> {:ok, nil}
+      _ -> :error
+    end)
+  end
+end

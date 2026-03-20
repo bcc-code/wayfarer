@@ -28,6 +28,7 @@ defmodule ElixirBackendWeb.ConnCase do
       import Plug.Conn
       import Phoenix.ConnTest
       import ElixirBackendWeb.ConnCase
+      import ElixirBackend.TestHelpers
     end
   end
 
