@@ -10,6 +10,7 @@ defmodule ElixirBackendWeb.Schema do
   import_types(ElixirBackendWeb.Schema.EventTypes)
   import_types(ElixirBackendWeb.Schema.ChallengeTypes)
   import_types(ElixirBackendWeb.Schema.TeamTypes)
+  import_types(ElixirBackendWeb.Schema.RoleTypes)
   import_types(ElixirBackendWeb.Schema.UserTypes)
 
   # Queries
@@ -18,6 +19,7 @@ defmodule ElixirBackendWeb.Schema do
   import_types(ElixirBackendWeb.Schema.EventQueries)
   import_types(ElixirBackendWeb.Schema.ChallengeQueries)
   import_types(ElixirBackendWeb.Schema.TeamQueries)
+  import_types(ElixirBackendWeb.Schema.RoleQueries)
   import_types(ElixirBackendWeb.Schema.UserQueries)
 
   # Mutations
@@ -26,6 +28,7 @@ defmodule ElixirBackendWeb.Schema do
   import_types(ElixirBackendWeb.Schema.EventMutations)
   import_types(ElixirBackendWeb.Schema.ChallengeMutations)
   import_types(ElixirBackendWeb.Schema.TeamMutations)
+  import_types(ElixirBackendWeb.Schema.RoleMutations)
   import_types(ElixirBackendWeb.Schema.UserMutations)
 
   query do
@@ -34,6 +37,7 @@ defmodule ElixirBackendWeb.Schema do
     import_fields(:event_queries)
     import_fields(:challenge_queries)
     import_fields(:team_queries)
+    import_fields(:role_queries)
     import_fields(:user_queries)
   end
 
@@ -43,6 +47,7 @@ defmodule ElixirBackendWeb.Schema do
     import_fields(:event_mutations)
     import_fields(:challenge_mutations)
     import_fields(:team_mutations)
+    import_fields(:role_mutations)
     import_fields(:user_mutations)
   end
 
