@@ -35,6 +35,8 @@ defmodule ElixirBackendWeb.Schema.ProjectTypes do
 
   # ── Project object ──
 
+  alias ElixirBackend.Translations
+
   object :project do
     field :id, non_null(:id)
     field :name, non_null(:string)
@@ -71,6 +73,12 @@ defmodule ElixirBackendWeb.Schema.ProjectTypes do
           filter,
           pagination
         )
+      end)
+    end
+
+    field :translation_status, non_null(list_of(non_null(:translation_field_status))) do
+      resolve(fn project, _, _ ->
+        {:ok, Translations.translation_status(:project, project.id)}
       end)
     end
 

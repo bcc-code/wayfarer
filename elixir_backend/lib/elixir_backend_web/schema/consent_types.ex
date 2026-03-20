@@ -1,6 +1,8 @@
 defmodule ElixirBackendWeb.Schema.ConsentTypes do
   use Absinthe.Schema.Notation
 
+  alias ElixirBackend.Translations
+
   enum :consent_action do
     value(:accepted, as: "ACCEPTED")
     value(:rejected, as: "REJECTED")
@@ -16,6 +18,12 @@ defmodule ElixirBackendWeb.Schema.ConsentTypes do
     field :url, :string
     field :published_at, :datetime
     field :managed_by, :string
+
+    field :translation_status, non_null(list_of(non_null(:translation_field_status))) do
+      resolve(fn consent, _, _ ->
+        {:ok, Translations.translation_status(:consent, consent.id)}
+      end)
+    end
   end
 
   object :user_consent do

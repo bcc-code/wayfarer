@@ -65,6 +65,13 @@ defmodule ElixirBackend.Quizzes do
     end
   end
 
+  def get_predefined_answer(id) do
+    case Repo.get(QuizPredefinedAnswer, id) do
+      nil -> {:error, :not_found}
+      a -> {:ok, a}
+    end
+  end
+
   def get_predefined_answers(question_id) do
     Cache.fetch_raw(Cache.quiz_answers_key(question_id), fn ->
       from(a in QuizPredefinedAnswer,

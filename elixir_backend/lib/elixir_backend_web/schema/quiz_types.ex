@@ -3,6 +3,7 @@ defmodule ElixirBackendWeb.Schema.QuizTypes do
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
   alias ElixirBackend.Quizzes
+  alias ElixirBackend.Translations
 
   # ── Enums ──
 
@@ -41,6 +42,10 @@ defmodule ElixirBackendWeb.Schema.QuizTypes do
     field :allow_retakes, non_null(:boolean)
     field :completion_points, non_null(:integer)
     field :end_time, :datetime
+
+    field :translation_status, non_null(list_of(non_null(:translation_field_status))) do
+      resolve(fn quiz, _, _ -> {:ok, Translations.translation_status(:quiz, quiz.id)} end)
+    end
 
     field :questions, non_null(list_of(non_null(:quiz_question))) do
       resolve(fn quiz, _, _ ->
@@ -84,6 +89,7 @@ defmodule ElixirBackendWeb.Schema.QuizTypes do
     field :timeout_seconds, :integer
     field :points, :integer
     field :betting_enabled, non_null(:boolean)
+    field :translation_status, non_null(list_of(non_null(:translation_field_status)))
 
     resolve_type(fn
       %{question_type: "PREDEFINED"}, _ -> :predefined_question
@@ -105,6 +111,10 @@ defmodule ElixirBackendWeb.Schema.QuizTypes do
     field :betting_enabled, non_null(:boolean)
     field :allow_multiple_selection, non_null(:boolean)
 
+    field :translation_status, non_null(list_of(non_null(:translation_field_status))) do
+      resolve(fn q, _, _ -> {:ok, Translations.translation_status(:quiz_question, q.id)} end)
+    end
+
     field :predefined_answers, non_null(list_of(non_null(:quiz_predefined_answer))) do
       resolve(fn q, _, _ -> {:ok, Quizzes.get_predefined_answers(q.id)} end)
     end
@@ -118,6 +128,10 @@ defmodule ElixirBackendWeb.Schema.QuizTypes do
     field :timeout_seconds, :integer
     field :points, :integer
     field :betting_enabled, non_null(:boolean)
+
+    field :translation_status, non_null(list_of(non_null(:translation_field_status))) do
+      resolve(fn q, _, _ -> {:ok, Translations.translation_status(:quiz_question, q.id)} end)
+    end
   end
 
   object :number_question do
@@ -131,6 +145,10 @@ defmodule ElixirBackendWeb.Schema.QuizTypes do
     field :min_value, :float
     field :max_value, :float
     field :step_value, :float
+
+    field :translation_status, non_null(list_of(non_null(:translation_field_status))) do
+      resolve(fn q, _, _ -> {:ok, Translations.translation_status(:quiz_question, q.id)} end)
+    end
   end
 
   object :json_question do
@@ -141,6 +159,10 @@ defmodule ElixirBackendWeb.Schema.QuizTypes do
     field :timeout_seconds, :integer
     field :points, :integer
     field :betting_enabled, non_null(:boolean)
+
+    field :translation_status, non_null(list_of(non_null(:translation_field_status))) do
+      resolve(fn q, _, _ -> {:ok, Translations.translation_status(:quiz_question, q.id)} end)
+    end
   end
 
   object :ordering_question do
@@ -152,6 +174,10 @@ defmodule ElixirBackendWeb.Schema.QuizTypes do
     field :points, :integer
     field :betting_enabled, non_null(:boolean)
 
+    field :translation_status, non_null(list_of(non_null(:translation_field_status))) do
+      resolve(fn q, _, _ -> {:ok, Translations.translation_status(:quiz_question, q.id)} end)
+    end
+
     field :ordering_items, non_null(list_of(non_null(:quiz_ordering_item))) do
       resolve(fn q, _, _ -> {:ok, Quizzes.get_ordering_items(q.id)} end)
     end
@@ -162,6 +188,10 @@ defmodule ElixirBackendWeb.Schema.QuizTypes do
     field :answer_text, non_null(:string)
     field :answer_order, non_null(:integer)
     field :is_correct, :boolean
+
+    field :translation_status, non_null(list_of(non_null(:translation_field_status))) do
+      resolve(fn a, _, _ -> {:ok, Translations.translation_status(:quiz_answer, a.id)} end)
+    end
   end
 
   object :quiz_ordering_item do

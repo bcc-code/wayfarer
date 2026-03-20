@@ -3,12 +3,19 @@ defmodule ElixirBackendWeb.Schema.StreakTypes do
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
   alias ElixirBackend.Streaks
+  alias ElixirBackend.Translations
 
   object :streak do
     field :id, non_null(:id)
     field :name, non_null(:string)
     field :description, non_null(:string)
     field :project, non_null(:project), resolve: dataloader(ElixirBackend.Repo)
+
+    field :translation_status, non_null(list_of(non_null(:translation_field_status))) do
+      resolve(fn streak, _, _ ->
+        {:ok, Translations.translation_status(:streak, streak.id)}
+      end)
+    end
 
     field :relevant_days, non_null(list_of(non_null(:date_range))) do
       resolve(fn streak, _, _ ->

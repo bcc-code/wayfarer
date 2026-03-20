@@ -24,6 +24,7 @@ defmodule ElixirBackendWeb.Schema do
   import_types(ElixirBackendWeb.Schema.FeedbackTypes)
   import_types(ElixirBackendWeb.Schema.FileUploadTypes)
   import_types(ElixirBackendWeb.Schema.AdminTypes)
+  import_types(ElixirBackendWeb.Schema.TranslationTypes)
 
   # Queries
   import_types(ElixirBackendWeb.Schema.ChurchQueries)
@@ -64,6 +65,7 @@ defmodule ElixirBackendWeb.Schema do
   import_types(ElixirBackendWeb.Schema.ConsentMutations)
   import_types(ElixirBackendWeb.Schema.FeedbackMutations)
   import_types(ElixirBackendWeb.Schema.AdminMutations)
+  import_types(ElixirBackendWeb.Schema.TranslationMutations)
 
   query do
     import_fields(:church_queries)
@@ -105,6 +107,7 @@ defmodule ElixirBackendWeb.Schema do
     import_fields(:consent_mutations)
     import_fields(:feedback_mutations)
     import_fields(:admin_mutations)
+    import_fields(:translation_mutations)
   end
 
   # Dataloader plugin for batch-loading associations

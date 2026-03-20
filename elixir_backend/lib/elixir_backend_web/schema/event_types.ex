@@ -4,6 +4,8 @@ defmodule ElixirBackendWeb.Schema.EventTypes do
 
   import Absinthe.Resolution.Helpers, only: [on_load: 2]
 
+  alias ElixirBackend.Translations
+
   # ── Event object ──
 
   object :event do
@@ -31,6 +33,12 @@ defmodule ElixirBackendWeb.Schema.EventTypes do
           filter,
           pagination
         )
+      end)
+    end
+
+    field :translation_status, non_null(list_of(non_null(:translation_field_status))) do
+      resolve(fn event, _, _ ->
+        {:ok, Translations.translation_status(:event, event.id)}
       end)
     end
 

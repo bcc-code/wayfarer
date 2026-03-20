@@ -4,6 +4,7 @@ defmodule ElixirBackendWeb.Schema.ChallengeTypes do
 
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
+  alias ElixirBackend.Translations
   alias ElixirBackendWeb.Schema.ChallengeResolvers
 
   # ── Enums ──
@@ -34,6 +35,7 @@ defmodule ElixirBackendWeb.Schema.ChallengeTypes do
     field :event, :event
     field :user_completed_at, :datetime
     field :user_enrolled_at, :datetime
+    field :translation_status, non_null(list_of(non_null(:translation_field_status)))
 
     resolve_type(fn
       %{challenge_type: "SIMPLE"}, _ -> :simple_challenge
@@ -62,6 +64,10 @@ defmodule ElixirBackendWeb.Schema.ChallengeTypes do
     field :requires_team_membership, non_null(:boolean)
     field :requires_super_team_membership, non_null(:boolean)
     field :allow_self_completion, non_null(:boolean)
+
+    field :translation_status, non_null(list_of(non_null(:translation_field_status))) do
+      resolve(fn c, _, _ -> {:ok, Translations.translation_status(:challenge, c.id)} end)
+    end
 
     field :project, non_null(:project), resolve: dataloader(ElixirBackend.Repo)
     field :event, :event, resolve: dataloader(ElixirBackend.Repo)
@@ -92,6 +98,10 @@ defmodule ElixirBackendWeb.Schema.ChallengeTypes do
     field :requires_super_team_membership, non_null(:boolean)
     # Skipped for spike: quiz field resolver (quiz: Quiz!)
 
+    field :translation_status, non_null(list_of(non_null(:translation_field_status))) do
+      resolve(fn c, _, _ -> {:ok, Translations.translation_status(:challenge, c.id)} end)
+    end
+
     field :project, non_null(:project), resolve: dataloader(ElixirBackend.Repo)
     field :event, :event, resolve: dataloader(ElixirBackend.Repo)
 
@@ -121,6 +131,10 @@ defmodule ElixirBackendWeb.Schema.ChallengeTypes do
     field :requires_super_team_membership, non_null(:boolean)
     field :url, non_null(:string)
 
+    field :translation_status, non_null(list_of(non_null(:translation_field_status))) do
+      resolve(fn c, _, _ -> {:ok, Translations.translation_status(:challenge, c.id)} end)
+    end
+
     field :project, non_null(:project), resolve: dataloader(ElixirBackend.Repo)
     field :event, :event, resolve: dataloader(ElixirBackend.Repo)
 
@@ -149,6 +163,10 @@ defmodule ElixirBackendWeb.Schema.ChallengeTypes do
     field :requires_team_membership, non_null(:boolean)
     field :requires_super_team_membership, non_null(:boolean)
     field :plugin_challenge_id, non_null(:string)
+
+    field :translation_status, non_null(list_of(non_null(:translation_field_status))) do
+      resolve(fn c, _, _ -> {:ok, Translations.translation_status(:challenge, c.id)} end)
+    end
 
     field :project, non_null(:project), resolve: dataloader(ElixirBackend.Repo)
     field :event, :event, resolve: dataloader(ElixirBackend.Repo)

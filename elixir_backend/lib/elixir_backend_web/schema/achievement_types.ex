@@ -3,6 +3,7 @@ defmodule ElixirBackendWeb.Schema.AchievementTypes do
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
   alias ElixirBackend.Achievements
+  alias ElixirBackend.Translations
 
   # ── Interface ──
 
@@ -21,6 +22,7 @@ defmodule ElixirBackendWeb.Schema.AchievementTypes do
     field :event, :event
     field :achieved_at, :datetime
     field :celebrated_at, :datetime
+    field :translation_status, non_null(list_of(non_null(:translation_field_status)))
 
     resolve_type(fn
       %{achievement_type: "SIMPLE"}, _ -> :simple_achievement
@@ -46,6 +48,11 @@ defmodule ElixirBackendWeb.Schema.AchievementTypes do
     field :points, non_null(:integer)
     field :hidden, non_null(:boolean)
     field :awardable_from, :datetime
+
+    field :translation_status, non_null(list_of(non_null(:translation_field_status))) do
+      resolve(fn a, _, _ -> {:ok, Translations.translation_status(:achievement, a.id)} end)
+    end
+
     field :project, non_null(:project), resolve: dataloader(ElixirBackend.Repo)
     field :event, :event, resolve: dataloader(ElixirBackend.Repo)
 
@@ -79,6 +86,11 @@ defmodule ElixirBackendWeb.Schema.AchievementTypes do
     field :points, non_null(:integer)
     field :hidden, non_null(:boolean)
     field :awardable_from, :datetime
+
+    field :translation_status, non_null(list_of(non_null(:translation_field_status))) do
+      resolve(fn a, _, _ -> {:ok, Translations.translation_status(:achievement, a.id)} end)
+    end
+
     field :project, non_null(:project), resolve: dataloader(ElixirBackend.Repo)
     field :event, :event, resolve: dataloader(ElixirBackend.Repo)
 
@@ -155,6 +167,11 @@ defmodule ElixirBackendWeb.Schema.AchievementTypes do
     field :points, non_null(:integer)
     field :hidden, non_null(:boolean)
     field :awardable_from, :datetime
+
+    field :translation_status, non_null(list_of(non_null(:translation_field_status))) do
+      resolve(fn a, _, _ -> {:ok, Translations.translation_status(:achievement, a.id)} end)
+    end
+
     field :project, non_null(:project), resolve: dataloader(ElixirBackend.Repo)
     field :event, :event, resolve: dataloader(ElixirBackend.Repo)
 
@@ -206,6 +223,11 @@ defmodule ElixirBackendWeb.Schema.AchievementTypes do
     field :points, non_null(:integer)
     field :hidden, non_null(:boolean)
     field :awardable_from, :datetime
+
+    field :translation_status, non_null(list_of(non_null(:translation_field_status))) do
+      resolve(fn a, _, _ -> {:ok, Translations.translation_status(:achievement, a.id)} end)
+    end
+
     field :project, non_null(:project), resolve: dataloader(ElixirBackend.Repo)
     field :event, :event, resolve: dataloader(ElixirBackend.Repo)
 

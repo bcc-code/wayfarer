@@ -109,6 +109,13 @@ defmodule ElixirBackend.Cache do
   def team_members_key(tid), do: "team:members:#{tid}"
 
   # ══════════════════════════════════════════════════════════
+  # Translation cache keys
+  # ══════════════════════════════════════════════════════════
+
+  def translation_key(entity_type, entity_id, language_code),
+    do: "translation:#{entity_type}:#{entity_id}:#{language_code}"
+
+  # ══════════════════════════════════════════════════════════
   # Role cache keys
   # ══════════════════════════════════════════════════════════
 
