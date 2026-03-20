@@ -12,6 +12,8 @@ defmodule ElixirBackendWeb.Schema do
   import_types(ElixirBackendWeb.Schema.TeamTypes)
   import_types(ElixirBackendWeb.Schema.RoleTypes)
   import_types(ElixirBackendWeb.Schema.UserTypes)
+  import_types(ElixirBackendWeb.Schema.StreakTypes)
+  import_types(ElixirBackendWeb.Schema.ExternalContentTypes)
 
   # Queries
   import_types(ElixirBackendWeb.Schema.ChurchQueries)
@@ -21,6 +23,8 @@ defmodule ElixirBackendWeb.Schema do
   import_types(ElixirBackendWeb.Schema.TeamQueries)
   import_types(ElixirBackendWeb.Schema.RoleQueries)
   import_types(ElixirBackendWeb.Schema.UserQueries)
+  import_types(ElixirBackendWeb.Schema.StreakQueries)
+  import_types(ElixirBackendWeb.Schema.ExternalContentQueries)
 
   # Mutations
   import_types(ElixirBackendWeb.Schema.ChurchMutations)
@@ -30,6 +34,7 @@ defmodule ElixirBackendWeb.Schema do
   import_types(ElixirBackendWeb.Schema.TeamMutations)
   import_types(ElixirBackendWeb.Schema.RoleMutations)
   import_types(ElixirBackendWeb.Schema.UserMutations)
+  import_types(ElixirBackendWeb.Schema.StreakMutations)
 
   query do
     import_fields(:church_queries)
@@ -39,6 +44,8 @@ defmodule ElixirBackendWeb.Schema do
     import_fields(:team_queries)
     import_fields(:role_queries)
     import_fields(:user_queries)
+    import_fields(:streak_queries)
+    import_fields(:external_content_queries)
   end
 
   mutation do
@@ -49,6 +56,7 @@ defmodule ElixirBackendWeb.Schema do
     import_fields(:team_mutations)
     import_fields(:role_mutations)
     import_fields(:user_mutations)
+    import_fields(:streak_mutations)
   end
 
   # Dataloader plugin for batch-loading associations

@@ -14,8 +14,8 @@ defmodule ElixirBackend.Repo.Migrations.CreateUserRoles do
     end
 
     create unique_index(:user_roles, [:user_id, :role, :church_id, :project_id, :team_id],
-      name: :user_roles_unique_assignment
-    )
+             name: :user_roles_unique_assignment
+           )
 
     create index(:user_roles, [:user_id])
     create index(:user_roles, [:role])

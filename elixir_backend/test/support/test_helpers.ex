@@ -100,6 +100,18 @@ defmodule ElixirBackend.TestHelpers do
     |> Repo.insert!()
   end
 
+  def create_streak(project, attrs \\ %{}) do
+    default_attrs = %{
+      name: "Test Streak",
+      description: "A test streak",
+      project_id: project.id,
+      relevant_days: [%{start: ~D[2026-03-01], end: ~D[2026-03-31]}]
+    }
+
+    {:ok, streak} = ElixirBackend.Streaks.create_streak(Map.merge(default_attrs, attrs))
+    streak
+  end
+
   def build_auth_token(user_id, roles \\ ["user"]) do
     secret = Application.get_env(:elixir_backend, :jwt_secret, "dev-secret")
     signer = Joken.Signer.create("HS256", secret)

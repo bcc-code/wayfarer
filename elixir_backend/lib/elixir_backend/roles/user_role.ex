@@ -15,6 +15,7 @@ defmodule ElixirBackend.Roles.UserRole do
     belongs_to :church, ElixirBackend.Churches.Church, type: :string
     belongs_to :project, ElixirBackend.Projects.Project, type: :string
     belongs_to :team, ElixirBackend.Teams.Team, type: :string
+
     belongs_to :assigned_by_user, ElixirBackend.Accounts.User,
       type: :string,
       foreign_key: :assigned_by
@@ -22,7 +23,16 @@ defmodule ElixirBackend.Roles.UserRole do
 
   def changeset(user_role, attrs) do
     user_role
-    |> cast(attrs, [:id, :user_id, :role, :church_id, :project_id, :team_id, :assigned_by, :assigned_at])
+    |> cast(attrs, [
+      :id,
+      :user_id,
+      :role,
+      :church_id,
+      :project_id,
+      :team_id,
+      :assigned_by,
+      :assigned_at
+    ])
     |> validate_required([:id, :user_id, :role, :assigned_at])
     |> validate_inclusion(:role, @valid_roles)
     |> validate_scope()

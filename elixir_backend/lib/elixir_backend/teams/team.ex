@@ -19,7 +19,15 @@ defmodule ElixirBackend.Teams.Team do
 
   def changeset(team, attrs) do
     team
-    |> cast(attrs, [:id, :name, :description, :join_code, :leaderboard_excluded, :project_id, :super_team_id])
+    |> cast(attrs, [
+      :id,
+      :name,
+      :description,
+      :join_code,
+      :leaderboard_excluded,
+      :project_id,
+      :super_team_id
+    ])
     |> validate_required([:id, :name, :join_code, :project_id])
     |> unique_constraint(:join_code)
     |> foreign_key_constraint(:project_id)

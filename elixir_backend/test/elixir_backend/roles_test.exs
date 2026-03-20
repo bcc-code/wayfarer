@@ -191,8 +191,11 @@ defmodule ElixirBackend.RolesTest do
         scope_id: p1.id
       })
 
-      {:ok, users_p1} = Roles.users_with_role("PROJECT_ADMIN", scope_type: "PROJECT", scope_id: p1.id)
-      {:ok, users_p2} = Roles.users_with_role("PROJECT_ADMIN", scope_type: "PROJECT", scope_id: p2.id)
+      {:ok, users_p1} =
+        Roles.users_with_role("PROJECT_ADMIN", scope_type: "PROJECT", scope_id: p1.id)
+
+      {:ok, users_p2} =
+        Roles.users_with_role("PROJECT_ADMIN", scope_type: "PROJECT", scope_id: p2.id)
 
       assert length(users_p1) == 1
       assert length(users_p2) == 0
