@@ -96,6 +96,49 @@ func (q *Queries) GetMissingContentEventsForProcessing(ctx context.Context) ([]*
 	return items, nil
 }
 
+const GetMissingContentEventsForUsers = `-- name: GetMissingContentEventsForUsers :many
+SELECT DISTINCT
+    u.id AS user_id,
+    ece.task_id
+FROM external_content_events ece
+INNER JOIN users u ON u.person_uuid = ece.person_id
+INNER JOIN external_content ec ON ec.task_id = ece.task_id
+INNER JOIN content_achievement_items cai ON cai.external_content_id = ec.id
+LEFT JOIN user_content_progress ucp ON
+    ucp.user_id = u.id
+    AND ucp.achievement_id = cai.achievement_id
+    AND ucp.external_content_id = cai.external_content_id
+WHERE ucp.user_id IS NULL
+AND u.id = ANY($1::text[])
+`
+
+type GetMissingContentEventsForUsersRow struct {
+	UserID string `json:"user_id"`
+	TaskID string `json:"task_id"`
+}
+
+// Get events for specific users that are missing content progress.
+// Used by batched job processing.
+func (q *Queries) GetMissingContentEventsForUsers(ctx context.Context, userids []string) ([]*GetMissingContentEventsForUsersRow, error) {
+	rows, err := q.db.Query(ctx, GetMissingContentEventsForUsers, userids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetMissingContentEventsForUsersRow{}
+	for rows.Next() {
+		var i GetMissingContentEventsForUsersRow
+		if err := rows.Scan(&i.UserID, &i.TaskID); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetMissingContentProgressPreview = `-- name: GetMissingContentProgressPreview :many
 
 SELECT
@@ -144,6 +187,42 @@ func (q *Queries) GetMissingContentProgressPreview(ctx context.Context, arg GetM
 			return nil, err
 		}
 		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetMissingContentProgressUserIDs = `-- name: GetMissingContentProgressUserIDs :many
+SELECT DISTINCT u.id AS user_id
+FROM external_content_events ece
+INNER JOIN users u ON u.person_uuid = ece.person_id
+INNER JOIN external_content ec ON ec.task_id = ece.task_id
+INNER JOIN content_achievement_items cai ON cai.external_content_id = ec.id
+LEFT JOIN user_content_progress ucp ON
+    ucp.user_id = u.id
+    AND ucp.achievement_id = cai.achievement_id
+    AND ucp.external_content_id = cai.external_content_id
+WHERE ucp.user_id IS NULL
+ORDER BY u.id ASC
+`
+
+// Get distinct user IDs that have missing content progress.
+// Used to batch users into separate jobs.
+func (q *Queries) GetMissingContentProgressUserIDs(ctx context.Context) ([]string, error) {
+	rows, err := q.db.Query(ctx, GetMissingContentProgressUserIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var user_id string
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

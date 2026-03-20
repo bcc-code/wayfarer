@@ -1022,9 +1022,13 @@ func (s *Service) CreateBulkScoreAdjustments(
 
 // FixMissingContentProgress processes missing content events using the ContentAchievementService.
 // This ensures all hooks (cache invalidation, webhooks, push notifications, Firebase, score journals) are triggered.
-func (s *Service) FixMissingContentProgress(ctx context.Context) (int, int, error) {
-	// Get all missing events with user and task info
-	events, err := s.DB.Queries.GetMissingContentEventsForProcessing(ctx)
+func (s *Service) FixMissingContentProgress(ctx context.Context, params pubsub.FixMissingContentProgressParams) (int, int, error) {
+	if len(params.UserIDs) == 0 {
+		return 0, 0, nil
+	}
+
+	// Get missing events for the specific users in this batch
+	events, err := s.DB.Queries.GetMissingContentEventsForUsers(ctx, params.UserIDs)
 	if err != nil {
 		return 0, 0, fmt.Errorf("failed to get missing content events: %w", err)
 	}
@@ -1041,7 +1045,8 @@ func (s *Service) FixMissingContentProgress(ctx context.Context) (int, int, erro
 
 	s.Logger.Info("FixMissingContentProgress: processing missing content events",
 		"event_count", len(events),
-		"user_count", len(userSet))
+		"user_count", len(userSet),
+		"batch_user_count", len(params.UserIDs))
 
 	successCount := 0
 	failureCount := 0

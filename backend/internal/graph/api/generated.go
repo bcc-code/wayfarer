@@ -1514,7 +1514,7 @@ type MutationResolver interface {
 	ResetQuizSessionSubmission(ctx context.Context, sessionID string) (bool, error)
 	CreateContentAchievementFromExternalContent(ctx context.Context, input model.CreateContentAchievementFromExternalContentInput) (*model.ContentAchievement, error)
 	ClearAllCache(ctx context.Context) (bool, error)
-	FixMissingContentProgressAsync(ctx context.Context) (*model.BulkJob, error)
+	FixMissingContentProgressAsync(ctx context.Context) ([]model.BulkJob, error)
 	RegisterPushSubscription(ctx context.Context, input model.RegisterPushSubscriptionInput) (*model.PushSubscription, error)
 	UnregisterPushSubscription(ctx context.Context, endpoint string) (bool, error)
 	SetNotificationPreference(ctx context.Context, input model.SetNotificationPreferenceInput) (*model.PushNotificationPreference, error)
@@ -10844,7 +10844,7 @@ extend type Mutation {
 
 extend type Mutation {
     clearAllCache: Boolean! @requireRole(roles: ["admin", "superadmin"])
-    fixMissingContentProgressAsync: BulkJob! @requireRole(roles: ["superadmin"])
+    fixMissingContentProgressAsync: [BulkJob!]! @requireRole(roles: ["superadmin"])
 }
 
 type AdminDashboardStats {
@@ -31399,11 +31399,11 @@ func (ec *executionContext) _Mutation_fixMissingContentProgressAsync(ctx context
 			directive1 := func(ctx context.Context) (any, error) {
 				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"superadmin"})
 				if err != nil {
-					var zeroVal *model.BulkJob
+					var zeroVal []model.BulkJob
 					return zeroVal, err
 				}
 				if ec.directives.RequireRole == nil {
-					var zeroVal *model.BulkJob
+					var zeroVal []model.BulkJob
 					return zeroVal, errors.New("directive requireRole is not implemented")
 				}
 				return ec.directives.RequireRole(ctx, nil, directive0, roles)
@@ -31412,7 +31412,7 @@ func (ec *executionContext) _Mutation_fixMissingContentProgressAsync(ctx context
 			next = directive1
 			return next
 		},
-		ec.marshalNBulkJob2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐBulkJob,
+		ec.marshalNBulkJob2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐBulkJobᚄ,
 		true,
 		true,
 	)

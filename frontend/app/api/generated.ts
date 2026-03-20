@@ -1068,7 +1068,7 @@ export type Mutation = {
   enrollUserInChallenge: Challenge;
   finalizeQuiz: QuizSubmission;
   finishQuizSession: QuizSession;
-  fixMissingContentProgressAsync: BulkJob;
+  fixMissingContentProgressAsync: Array<BulkJob>;
   forwardFeedbackToDesk: Scalars['Boolean']['output'];
   grantQuizSessionAccess: Scalars['Int']['output'];
   grantQuizSessionAccessAsync: BulkJob;
@@ -4264,7 +4264,7 @@ export type MaintenanceContentProgressPreviewQuery = { __typename?: 'Query', pre
 export type FixMissingContentProgressAsyncMutationVariables = Exact<{ [key: string]: never; }>;
 
 
-export type FixMissingContentProgressAsyncMutation = { __typename?: 'Mutation', fixMissingContentProgressAsync: { __typename?: 'BulkJob', id: string, operationType: string, status: BulkJobStatus, totalCount: number, processedCount: number, successCount: number, failureCount: number, errorMessage?: string | null } };
+export type FixMissingContentProgressAsyncMutation = { __typename?: 'Mutation', fixMissingContentProgressAsync: Array<{ __typename?: 'BulkJob', id: string, operationType: string, status: BulkJobStatus, totalCount: number, processedCount: number, successCount: number, failureCount: number, errorMessage?: string | null }> };
 
 export type BulkJobStatusQueryVariables = Exact<{
   id: Scalars['ID']['input'];

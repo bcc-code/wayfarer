@@ -66,3 +66,35 @@ LEFT JOIN user_content_progress ucp ON
     AND ucp.achievement_id = cai.achievement_id
     AND ucp.external_content_id = cai.external_content_id
 WHERE ucp.user_id IS NULL;
+
+-- name: GetMissingContentProgressUserIDs :many
+-- Get distinct user IDs that have missing content progress.
+-- Used to batch users into separate jobs.
+SELECT DISTINCT u.id AS user_id
+FROM external_content_events ece
+INNER JOIN users u ON u.person_uuid = ece.person_id
+INNER JOIN external_content ec ON ec.task_id = ece.task_id
+INNER JOIN content_achievement_items cai ON cai.external_content_id = ec.id
+LEFT JOIN user_content_progress ucp ON
+    ucp.user_id = u.id
+    AND ucp.achievement_id = cai.achievement_id
+    AND ucp.external_content_id = cai.external_content_id
+WHERE ucp.user_id IS NULL
+ORDER BY u.id ASC;
+
+-- name: GetMissingContentEventsForUsers :many
+-- Get events for specific users that are missing content progress.
+-- Used by batched job processing.
+SELECT DISTINCT
+    u.id AS user_id,
+    ece.task_id
+FROM external_content_events ece
+INNER JOIN users u ON u.person_uuid = ece.person_id
+INNER JOIN external_content ec ON ec.task_id = ece.task_id
+INNER JOIN content_achievement_items cai ON cai.external_content_id = ec.id
+LEFT JOIN user_content_progress ucp ON
+    ucp.user_id = u.id
+    AND ucp.achievement_id = cai.achievement_id
+    AND ucp.external_content_id = cai.external_content_id
+WHERE ucp.user_id IS NULL
+AND u.id = ANY(@userids::text[]);

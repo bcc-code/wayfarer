@@ -163,8 +163,8 @@ func (p *Processor) ProcessBulkScoreAdjustment(ctx context.Context, jobID string
 }
 
 // ProcessFixMissingContentProgress processes missing content progress events
-func (p *Processor) ProcessFixMissingContentProgress(ctx context.Context, jobID string, _ pubsub.FixMissingContentProgressParams) error {
-	successCount, failureCount, err := p.service.FixMissingContentProgress(ctx)
+func (p *Processor) ProcessFixMissingContentProgress(ctx context.Context, jobID string, params pubsub.FixMissingContentProgressParams) error {
+	successCount, failureCount, err := p.service.FixMissingContentProgress(ctx, params)
 	if err != nil {
 		return err
 	}

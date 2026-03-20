@@ -128,8 +128,9 @@ func (p BulkScoreAdjustmentParams) OperationType() OperationType {
 }
 
 // FixMissingContentProgressParams contains parameters for fixing missing content progress
-// (empty struct - processes all pending events from the database)
-type FixMissingContentProgressParams struct{}
+type FixMissingContentProgressParams struct {
+	UserIDs []string `json:"user_ids"`
+}
 
 func (p FixMissingContentProgressParams) OperationType() OperationType {
 	return OperationFixMissingContentProgress
