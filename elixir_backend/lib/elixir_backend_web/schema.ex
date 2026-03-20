@@ -17,6 +17,7 @@ defmodule ElixirBackendWeb.Schema do
   import_types(ElixirBackendWeb.Schema.AchievementTypes)
   import_types(ElixirBackendWeb.Schema.QuizTypes)
   import_types(ElixirBackendWeb.Schema.ScoringTypes)
+  import_types(ElixirBackendWeb.Schema.BulkJobTypes)
 
   # Queries
   import_types(ElixirBackendWeb.Schema.ChurchQueries)
@@ -31,6 +32,7 @@ defmodule ElixirBackendWeb.Schema do
   import_types(ElixirBackendWeb.Schema.AchievementQueries)
   import_types(ElixirBackendWeb.Schema.QuizQueries)
   import_types(ElixirBackendWeb.Schema.ScoringQueries)
+  import_types(ElixirBackendWeb.Schema.BulkJobQueries)
 
   # Mutations
   import_types(ElixirBackendWeb.Schema.ChurchMutations)
@@ -58,6 +60,7 @@ defmodule ElixirBackendWeb.Schema do
     import_fields(:achievement_queries)
     import_fields(:quiz_queries)
     import_fields(:scoring_queries)
+    import_fields(:bulk_job_queries)
   end
 
   mutation do

@@ -39,6 +39,7 @@ defmodule ElixirBackend.ULID do
   def new_quiz_session_access_id, do: new_id("QX")
   def new_quiz_ordering_item_id, do: new_id("QI")
   def new_score_journal_id, do: new_id("SJ")
+  def new_bulk_job_id, do: new_id("BJ")
 
   # Encode a UUID v7 binary into 26-char Crockford Base32 (ULID format)
   defp encode_crockford(uuid_string) do
