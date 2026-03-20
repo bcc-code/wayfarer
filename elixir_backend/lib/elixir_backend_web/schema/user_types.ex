@@ -40,13 +40,6 @@ defmodule ElixirBackendWeb.Schema.UserTypes do
     field :created_at, non_null(:datetime), resolve: fn user, _, _ -> {:ok, user.inserted_at} end
   end
 
-  object :church do
-    field :id, non_null(:id)
-    field :name, non_null(:string)
-    field :country, non_null(:string)
-    field :category, non_null(:string)
-  end
-
   # ── Pagination ──
 
   object :user_edge do

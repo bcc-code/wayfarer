@@ -162,21 +162,6 @@ defmodule ElixirBackendWeb.Schema.ChallengeTypes do
     end
   end
 
-  # ── Minimal FK types ──
-
-  object :project do
-    field :id, non_null(:id)
-    field :name, non_null(:string)
-    field :start_date, :datetime
-    field :end_date, :datetime
-  end
-
-  object :event do
-    field :id, non_null(:id)
-    field :name, non_null(:string)
-    field :project_id, non_null(:id)
-  end
-
   # ── Pagination ──
 
   object :challenge_edge do

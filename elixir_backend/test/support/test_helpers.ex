@@ -16,6 +16,7 @@ defmodule ElixirBackend.TestHelpers do
     defaults = %{
       id: ULID.new_project_id(),
       name: "Test Project",
+      description: "A test project",
       start_date: ~U[2026-01-01 00:00:00Z],
       end_date: ~U[2026-12-31 23:59:59Z]
     }
@@ -68,6 +69,9 @@ defmodule ElixirBackend.TestHelpers do
     defaults = %{
       id: ULID.new_event_id(),
       name: "Test Event",
+      description: "A test event",
+      start_date: ~U[2026-06-01 00:00:00Z],
+      end_date: ~U[2026-06-30 23:59:59Z],
       project_id: project.id
     }
 
@@ -124,5 +128,35 @@ defmodule ElixirBackend.TestHelpers do
       "/api/graphql",
       Jason.encode!(%{query: query, variables: variables})
     )
+  end
+
+  @doc "Default branding input for project creation tests."
+  def default_branding_input do
+    %{
+      "logo" => nil,
+      "banner" => nil,
+      "rounding" => 8,
+      "colors" => %{
+        "light" => default_color_set_input(),
+        "dark" => default_color_set_input()
+      }
+    }
+  end
+
+  defp default_color_set_input do
+    %{
+      "accent" => "#000000",
+      "accentContrast" => "#FFFFFF",
+      "onAccent" => "#FFFFFF",
+      "backgroundDefault" => "#FFFFFF",
+      "backgroundRaised" => "#F5F5F5",
+      "backgroundIndent" => "#E0E0E0",
+      "textDefault" => "#000000",
+      "textMuted" => "#666666",
+      "textHint" => "#999999",
+      "shadowDefault" => "#00000020",
+      "shadowBlank" => "#00000000",
+      "borderDefault" => "#E0E0E0"
+    }
   end
 end

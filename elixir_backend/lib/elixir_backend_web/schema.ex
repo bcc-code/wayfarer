@@ -3,19 +3,40 @@ defmodule ElixirBackendWeb.Schema do
   use Absinthe.Schema
 
   import_types(ElixirBackendWeb.Schema.Scalars)
+
+  # Domain types
+  import_types(ElixirBackendWeb.Schema.ChurchTypes)
+  import_types(ElixirBackendWeb.Schema.ProjectTypes)
+  import_types(ElixirBackendWeb.Schema.EventTypes)
   import_types(ElixirBackendWeb.Schema.ChallengeTypes)
-  import_types(ElixirBackendWeb.Schema.ChallengeQueries)
-  import_types(ElixirBackendWeb.Schema.ChallengeMutations)
   import_types(ElixirBackendWeb.Schema.UserTypes)
+
+  # Queries
+  import_types(ElixirBackendWeb.Schema.ChurchQueries)
+  import_types(ElixirBackendWeb.Schema.ProjectQueries)
+  import_types(ElixirBackendWeb.Schema.EventQueries)
+  import_types(ElixirBackendWeb.Schema.ChallengeQueries)
   import_types(ElixirBackendWeb.Schema.UserQueries)
+
+  # Mutations
+  import_types(ElixirBackendWeb.Schema.ChurchMutations)
+  import_types(ElixirBackendWeb.Schema.ProjectMutations)
+  import_types(ElixirBackendWeb.Schema.EventMutations)
+  import_types(ElixirBackendWeb.Schema.ChallengeMutations)
   import_types(ElixirBackendWeb.Schema.UserMutations)
 
   query do
+    import_fields(:church_queries)
+    import_fields(:project_queries)
+    import_fields(:event_queries)
     import_fields(:challenge_queries)
     import_fields(:user_queries)
   end
 
   mutation do
+    import_fields(:church_mutations)
+    import_fields(:project_mutations)
+    import_fields(:event_mutations)
     import_fields(:challenge_mutations)
     import_fields(:user_mutations)
   end

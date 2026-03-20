@@ -20,4 +20,10 @@ defmodule ElixirBackend.Churches.Church do
     |> validate_required([:id, :name, :country, :category])
     |> validate_inclusion(:category, @categories)
   end
+
+  def update_changeset(church, attrs) do
+    church
+    |> cast(attrs, [:name, :country, :category])
+    |> validate_inclusion(:category, @categories)
+  end
 end
