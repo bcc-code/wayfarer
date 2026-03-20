@@ -16,6 +16,7 @@ defmodule ElixirBackendWeb.Schema do
   import_types(ElixirBackendWeb.Schema.ExternalContentTypes)
   import_types(ElixirBackendWeb.Schema.AchievementTypes)
   import_types(ElixirBackendWeb.Schema.QuizTypes)
+  import_types(ElixirBackendWeb.Schema.ScoringTypes)
 
   # Queries
   import_types(ElixirBackendWeb.Schema.ChurchQueries)
@@ -29,6 +30,7 @@ defmodule ElixirBackendWeb.Schema do
   import_types(ElixirBackendWeb.Schema.ExternalContentQueries)
   import_types(ElixirBackendWeb.Schema.AchievementQueries)
   import_types(ElixirBackendWeb.Schema.QuizQueries)
+  import_types(ElixirBackendWeb.Schema.ScoringQueries)
 
   # Mutations
   import_types(ElixirBackendWeb.Schema.ChurchMutations)
@@ -41,6 +43,7 @@ defmodule ElixirBackendWeb.Schema do
   import_types(ElixirBackendWeb.Schema.StreakMutations)
   import_types(ElixirBackendWeb.Schema.AchievementMutations)
   import_types(ElixirBackendWeb.Schema.QuizMutations)
+  import_types(ElixirBackendWeb.Schema.ScoringMutations)
 
   query do
     import_fields(:church_queries)
@@ -54,6 +57,7 @@ defmodule ElixirBackendWeb.Schema do
     import_fields(:external_content_queries)
     import_fields(:achievement_queries)
     import_fields(:quiz_queries)
+    import_fields(:scoring_queries)
   end
 
   mutation do
@@ -67,6 +71,7 @@ defmodule ElixirBackendWeb.Schema do
     import_fields(:streak_mutations)
     import_fields(:achievement_mutations)
     import_fields(:quiz_mutations)
+    import_fields(:scoring_mutations)
   end
 
   # Dataloader plugin for batch-loading associations

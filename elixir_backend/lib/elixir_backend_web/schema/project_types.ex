@@ -53,6 +53,27 @@ defmodule ElixirBackendWeb.Schema.ProjectTypes do
 
     field :events, non_null(list_of(non_null(:event))), resolve: dataloader(ElixirBackend.Repo)
 
+    field :leaderboard, non_null(:leaderboard_connection) do
+      arg(:entity_type, non_null(:leaderboard_entity_type))
+      arg(:filter, :leaderboard_filter)
+      arg(:first, :integer)
+      arg(:after, :string)
+      arg(:last, :integer)
+      arg(:before, :string)
+
+      resolve(fn project, args, _ ->
+        filter = args[:filter] || %{}
+        pagination = Map.take(args, [:first, :after, :last, :before])
+
+        ElixirBackend.Scoring.get_project_leaderboard(
+          project.id,
+          args.entity_type,
+          filter,
+          pagination
+        )
+      end)
+    end
+
     field :branding, non_null(:branding) do
       resolve(fn project, _, _ ->
         {:ok,

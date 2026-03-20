@@ -13,6 +13,27 @@ defmodule ElixirBackendWeb.Schema.EventTypes do
     field :start_date, non_null(:datetime)
     field :end_date, non_null(:datetime)
 
+    field :leaderboard, non_null(:leaderboard_connection) do
+      arg(:entity_type, non_null(:leaderboard_entity_type))
+      arg(:filter, :leaderboard_filter)
+      arg(:first, :integer)
+      arg(:after, :string)
+      arg(:last, :integer)
+      arg(:before, :string)
+
+      resolve(fn event, args, _ ->
+        filter = args[:filter] || %{}
+        pagination = Map.take(args, [:first, :after, :last, :before])
+
+        ElixirBackend.Scoring.get_event_leaderboard(
+          event.id,
+          args.entity_type,
+          filter,
+          pagination
+        )
+      end)
+    end
+
     field :parent_project, non_null(:project) do
       resolve(fn event, _, %{context: %{loader: loader}} ->
         loader
