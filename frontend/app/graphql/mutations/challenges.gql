@@ -26,3 +26,10 @@ mutation BulkEnrollUsersInChallenge(
     id
   }
 }
+
+mutation EnrollInChallenge($challengeId: ID!) {
+  enrollInChallenge(challengeId: $challengeId) {
+    id
+    userEnrolledAt
+  }
+}

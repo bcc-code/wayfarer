@@ -55,7 +55,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
       // Clear redirect attempts on successful login flow
       redirectAttempts.value = 0
       lastRedirectTime.value = 0
-      return navigateTo('/login', { replace: true })
+      const redirect = to.fullPath === '/' ? undefined : to.fullPath
+      return navigateTo({ path: '/login', query: { redirect } }, { replace: true })
     }
   } else {
     // Have valid token - clear redirect attempts
