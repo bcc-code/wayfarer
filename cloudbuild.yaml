@@ -66,6 +66,7 @@ steps:
       - |
         if [ -n "$_STATIC_BUCKET" ]; then
           gsutil -m rsync -r /workspace/static-files $_STATIC_BUCKET
+          gsutil setmeta -h "Cache-Control:no-cache" $_STATIC_BUCKET/service-worker.js
           echo "Synced static files to $_STATIC_BUCKET"
         else
           echo "Skipping bucket sync: _STATIC_BUCKET not configured"
