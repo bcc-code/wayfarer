@@ -7461,7 +7461,7 @@ export const AdminUserPageDocument = gql`
       }
     }
   }
-  adminScoreJournal(filter: {userId: $id}, first: 100) {
+  adminScoreJournal(filter: {userId: $id}, last: 100) {
     totalCount
     edges {
       node {
