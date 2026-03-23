@@ -244,7 +244,11 @@ func (s *ContentAchievementService) processAchievements(ctx context.Context, use
 	// Get all published achievements containing this content
 	achievements, err := s.DB.Queries.GetPublishedContentAchievementsByExternalContent(ctx, content.ID)
 	if err != nil {
-		slog.Error("content_achievements: failed to get achievements", "error", err)
+		slog.Error("content_achievements: failed to get achievements",
+			"user_id", userID,
+			"task_id", taskID,
+			"content_id", content.ID,
+			"error", err)
 		return
 	}
 
@@ -258,7 +262,11 @@ func (s *ContentAchievementService) processAchievements(ctx context.Context, use
 		ExternalContentID: content.ID,
 	})
 	if err != nil {
-		slog.Error("content_achievements: failed to mark content completed", "error", err)
+		slog.Error("content_achievements: failed to mark content completed",
+			"user_id", userID,
+			"external_content_id", content.ID,
+			"achievement_count", len(achievements),
+			"error", err)
 		return
 	}
 
@@ -288,7 +296,10 @@ func (s *ContentAchievementService) processAchievements(ctx context.Context, use
 		AchievementIds: achievementIDs,
 	})
 	if err != nil {
-		slog.Error("content_achievements: failed to check awarded achievements", "error", err)
+		slog.Error("content_achievements: failed to check awarded achievements",
+			"user_id", userID,
+			"achievement_ids", achievementIDs,
+			"error", err)
 		return
 	}
 
@@ -331,7 +342,9 @@ func (s *ContentAchievementService) processAchievements(ctx context.Context, use
 	if len(uncachedIDs) > 0 {
 		dbCounts, err := s.DB.Queries.GetContentItemCounts(ctx, uncachedIDs)
 		if err != nil {
-			slog.Error("content_achievements: failed to get content item counts", "error", err)
+			slog.Error("content_achievements: failed to get content item counts",
+				"uncached_ids", uncachedIDs,
+				"error", err)
 			return
 		}
 		for _, c := range dbCounts {
@@ -348,7 +361,10 @@ func (s *ContentAchievementService) processAchievements(ctx context.Context, use
 		AchievementIds: pendingIDs,
 	})
 	if err != nil {
-		slog.Error("content_achievements: failed to get user progress counts", "error", err)
+		slog.Error("content_achievements: failed to get user progress counts",
+			"user_id", userID,
+			"pending_ids", pendingIDs,
+			"error", err)
 		return
 	}
 
