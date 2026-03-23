@@ -165,3 +165,4 @@ SELECT
     sqlc.narg('awarded_by')::text,
     now()
 RETURNING *;
+

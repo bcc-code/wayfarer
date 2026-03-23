@@ -160,7 +160,7 @@ const showEditButton = computed(
                       v-for="(member, index) in teamMembers"
                       :key="member.id"
                     >
-                      <hr v-if="index > 0" class="border-border-default mx-3" />
+                      <hr v-if="index > 0" class="border-border-default mx-3" >
                       <button
                         class="flex items-center justify-between gap-2.5 px-3 py-2 h-12"
                         @click="selectTeamLead(member.id)"

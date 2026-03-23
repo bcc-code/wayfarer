@@ -488,6 +488,17 @@ type ComplexityRoot struct {
 		User       func(childComplexity int) int
 	}
 
+	MissingScoreJournalPreview struct {
+		AffectedUsers func(childComplexity int) int
+		TotalEvents   func(childComplexity int) int
+		TotalUsers    func(childComplexity int) int
+	}
+
+	MissingScoreJournalUser struct {
+		EventCount func(childComplexity int) int
+		User       func(childComplexity int) int
+	}
+
 	Mutation struct {
 		AcceptConsent                               func(childComplexity int, consentID string) int
 		AddQuizQuestion                             func(childComplexity int, quizID string, input model.CreateQuizQuestionInput) int
@@ -553,6 +564,7 @@ type ComplexityRoot struct {
 		FinalizeQuiz                                func(childComplexity int, submissionID string) int
 		FinishQuizSession                           func(childComplexity int, id string) int
 		FixMissingContentProgressAsync              func(childComplexity int) int
+		FixMissingScoreJournalAsync                 func(childComplexity int, achievementID string) int
 		ForwardFeedbackToDesk                       func(childComplexity int, feedbackID string, destination model.ForwardDestination) int
 		GrantQuizSessionAccess                      func(childComplexity int, input model.GrantQuizSessionAccessInput) int
 		GrantQuizSessionAccessAsync                 func(childComplexity int, input model.GrantQuizSessionAccessInput) int
@@ -826,6 +838,7 @@ type ComplexityRoot struct {
 		MyPushNotificationPreferences func(childComplexity int) int
 		PendingConsents               func(childComplexity int) int
 		PreviewMissingContentProgress func(childComplexity int, first *int, after *string) int
+		PreviewMissingScoreJournal    func(childComplexity int, achievementID string, first *int, after *string) int
 		Project                       func(childComplexity int, id string) int
 		Projects                      func(childComplexity int, filter *model.ProjectFilter, first *int, after *string, last *int, before *string) int
 		PushNotificationsEnabled      func(childComplexity int) int
@@ -1515,6 +1528,7 @@ type MutationResolver interface {
 	CreateContentAchievementFromExternalContent(ctx context.Context, input model.CreateContentAchievementFromExternalContentInput) (*model.ContentAchievement, error)
 	ClearAllCache(ctx context.Context) (bool, error)
 	FixMissingContentProgressAsync(ctx context.Context) ([]model.BulkJob, error)
+	FixMissingScoreJournalAsync(ctx context.Context, achievementID string) ([]model.BulkJob, error)
 	RegisterPushSubscription(ctx context.Context, input model.RegisterPushSubscriptionInput) (*model.PushSubscription, error)
 	UnregisterPushSubscription(ctx context.Context, endpoint string) (bool, error)
 	SetNotificationPreference(ctx context.Context, input model.SetNotificationPreferenceInput) (*model.PushNotificationPreference, error)
@@ -1643,6 +1657,7 @@ type QueryResolver interface {
 	AdminDashboardStats(ctx context.Context) (*model.AdminDashboardStats, error)
 	ChurchAdminStatistics(ctx context.Context) (*model.ChurchAdminStatistics, error)
 	PreviewMissingContentProgress(ctx context.Context, first *int, after *string) (*model.MissingContentProgressPreview, error)
+	PreviewMissingScoreJournal(ctx context.Context, achievementID string, first *int, after *string) (*model.MissingScoreJournalPreview, error)
 	MyPushNotificationPreferences(ctx context.Context) ([]model.PushNotificationPreference, error)
 	PushNotificationsEnabled(ctx context.Context) (bool, error)
 	VapidPublicKey(ctx context.Context) (string, error)
@@ -3464,6 +3479,38 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.MissingContentProgressUser.User(childComplexity), true
 
+	case "MissingScoreJournalPreview.affectedUsers":
+		if e.complexity.MissingScoreJournalPreview.AffectedUsers == nil {
+			break
+		}
+
+		return e.complexity.MissingScoreJournalPreview.AffectedUsers(childComplexity), true
+	case "MissingScoreJournalPreview.totalEvents":
+		if e.complexity.MissingScoreJournalPreview.TotalEvents == nil {
+			break
+		}
+
+		return e.complexity.MissingScoreJournalPreview.TotalEvents(childComplexity), true
+	case "MissingScoreJournalPreview.totalUsers":
+		if e.complexity.MissingScoreJournalPreview.TotalUsers == nil {
+			break
+		}
+
+		return e.complexity.MissingScoreJournalPreview.TotalUsers(childComplexity), true
+
+	case "MissingScoreJournalUser.eventCount":
+		if e.complexity.MissingScoreJournalUser.EventCount == nil {
+			break
+		}
+
+		return e.complexity.MissingScoreJournalUser.EventCount(childComplexity), true
+	case "MissingScoreJournalUser.user":
+		if e.complexity.MissingScoreJournalUser.User == nil {
+			break
+		}
+
+		return e.complexity.MissingScoreJournalUser.User(childComplexity), true
+
 	case "Mutation.acceptConsent":
 		if e.complexity.Mutation.AcceptConsent == nil {
 			break
@@ -4153,6 +4200,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.FixMissingContentProgressAsync(childComplexity), true
+	case "Mutation.fixMissingScoreJournalAsync":
+		if e.complexity.Mutation.FixMissingScoreJournalAsync == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_fixMissingScoreJournalAsync_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.FixMissingScoreJournalAsync(childComplexity, args["achievementId"].(string)), true
 	case "Mutation.forwardFeedbackToDesk":
 		if e.complexity.Mutation.ForwardFeedbackToDesk == nil {
 			break
@@ -6003,6 +6061,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.PreviewMissingContentProgress(childComplexity, args["first"].(*int), args["after"].(*string)), true
+	case "Query.previewMissingScoreJournal":
+		if e.complexity.Query.PreviewMissingScoreJournal == nil {
+			break
+		}
+
+		args, err := ec.field_Query_previewMissingScoreJournal_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.PreviewMissingScoreJournal(childComplexity, args["achievementId"].(string), args["first"].(*int), args["after"].(*string)), true
 	case "Query.project":
 		if e.complexity.Query.Project == nil {
 			break
@@ -10840,11 +10909,13 @@ extend type Mutation {
     adminDashboardStats: AdminDashboardStats! @requireRole(roles: ["admin", "superadmin"])
     churchAdminStatistics: ChurchAdminStatistics! @requireRole(roles: ["church_admin", "admin", "superadmin"])
     previewMissingContentProgress(first: Int, after: String): MissingContentProgressPreview! @requireRole(roles: ["superadmin"])
+    previewMissingScoreJournal(achievementId: ID!, first: Int, after: String): MissingScoreJournalPreview! @requireRole(roles: ["superadmin"])
 }
 
 extend type Mutation {
     clearAllCache: Boolean! @requireRole(roles: ["admin", "superadmin"])
     fixMissingContentProgressAsync: [BulkJob!]! @requireRole(roles: ["superadmin"])
+    fixMissingScoreJournalAsync(achievementId: ID!): [BulkJob!]! @requireRole(roles: ["superadmin"])
 }
 
 type AdminDashboardStats {
@@ -10896,6 +10967,19 @@ type FixMissingContentProgressResult {
     usersFixed: Int!
     progressRecordsCreated: Int!
     achievementsAwarded: Int!
+}
+
+# Missing score journal maintenance types
+
+type MissingScoreJournalUser {
+    user: User!
+    eventCount: Int!
+}
+
+type MissingScoreJournalPreview {
+    affectedUsers: [MissingScoreJournalUser!]!
+    totalUsers: Int!
+    totalEvents: Int!
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/push_notifications.graphqls", Input: `# ==================== Push Notification Types ====================
@@ -12153,6 +12237,17 @@ func (ec *executionContext) field_Mutation_finishQuizSession_args(ctx context.Co
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_fixMissingScoreJournalAsync_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "achievementId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["achievementId"] = arg0
 	return args, nil
 }
 
@@ -13604,6 +13699,27 @@ func (ec *executionContext) field_Query_previewMissingContentProgress_args(ctx c
 		return nil, err
 	}
 	args["after"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_previewMissingScoreJournal_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "achievementId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["achievementId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg2
 	return args, nil
 }
 
@@ -22715,6 +22831,203 @@ func (ec *executionContext) fieldContext_MissingContentProgressUser_eventCount(_
 	return fc, nil
 }
 
+func (ec *executionContext) _MissingScoreJournalPreview_affectedUsers(ctx context.Context, field graphql.CollectedField, obj *model.MissingScoreJournalPreview) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MissingScoreJournalPreview_affectedUsers,
+		func(ctx context.Context) (any, error) {
+			return obj.AffectedUsers, nil
+		},
+		nil,
+		ec.marshalNMissingScoreJournalUser2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMissingScoreJournalUserᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MissingScoreJournalPreview_affectedUsers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MissingScoreJournalPreview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "user":
+				return ec.fieldContext_MissingScoreJournalUser_user(ctx, field)
+			case "eventCount":
+				return ec.fieldContext_MissingScoreJournalUser_eventCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MissingScoreJournalUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MissingScoreJournalPreview_totalUsers(ctx context.Context, field graphql.CollectedField, obj *model.MissingScoreJournalPreview) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MissingScoreJournalPreview_totalUsers,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalUsers, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MissingScoreJournalPreview_totalUsers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MissingScoreJournalPreview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MissingScoreJournalPreview_totalEvents(ctx context.Context, field graphql.CollectedField, obj *model.MissingScoreJournalPreview) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MissingScoreJournalPreview_totalEvents,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalEvents, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MissingScoreJournalPreview_totalEvents(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MissingScoreJournalPreview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MissingScoreJournalUser_user(ctx context.Context, field graphql.CollectedField, obj *model.MissingScoreJournalUser) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MissingScoreJournalUser_user,
+		func(ctx context.Context) (any, error) {
+			return obj.User, nil
+		},
+		nil,
+		ec.marshalNUser2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUser,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MissingScoreJournalUser_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MissingScoreJournalUser",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "membersId":
+				return ec.fieldContext_User_membersId(ctx, field)
+			case "personUuid":
+				return ec.fieldContext_User_personUuid(ctx, field)
+			case "gender":
+				return ec.fieldContext_User_gender(ctx, field)
+			case "churchId":
+				return ec.fieldContext_User_churchId(ctx, field)
+			case "church":
+				return ec.fieldContext_User_church(ctx, field)
+			case "churchLockedUntil":
+				return ec.fieldContext_User_churchLockedUntil(ctx, field)
+			case "birthdate":
+				return ec.fieldContext_User_birthdate(ctx, field)
+			case "age":
+				return ec.fieldContext_User_age(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "image":
+				return ec.fieldContext_User_image(ctx, field)
+			case "imageObject":
+				return ec.fieldContext_User_imageObject(ctx, field)
+			case "projects":
+				return ec.fieldContext_User_projects(ctx, field)
+			case "events":
+				return ec.fieldContext_User_events(ctx, field)
+			case "teams":
+				return ec.fieldContext_User_teams(ctx, field)
+			case "superTeams":
+				return ec.fieldContext_User_superTeams(ctx, field)
+			case "roles":
+				return ec.fieldContext_User_roles(ctx, field)
+			case "consentStatus":
+				return ec.fieldContext_User_consentStatus(ctx, field)
+			case "language":
+				return ec.fieldContext_User_language(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_User_createdAt(ctx, field)
+			case "points":
+				return ec.fieldContext_User_points(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MissingScoreJournalUser_eventCount(ctx context.Context, field graphql.CollectedField, obj *model.MissingScoreJournalUser) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MissingScoreJournalUser_eventCount,
+		func(ctx context.Context) (any, error) {
+			return obj.EventCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MissingScoreJournalUser_eventCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MissingScoreJournalUser",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation__empty(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -31455,6 +31768,89 @@ func (ec *executionContext) fieldContext_Mutation_fixMissingContentProgressAsync
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_fixMissingScoreJournalAsync(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_fixMissingScoreJournalAsync,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().FixMissingScoreJournalAsync(ctx, fc.Args["achievementId"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"superadmin"})
+				if err != nil {
+					var zeroVal []model.BulkJob
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal []model.BulkJob
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNBulkJob2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐBulkJobᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_fixMissingScoreJournalAsync(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_BulkJob_id(ctx, field)
+			case "operationType":
+				return ec.fieldContext_BulkJob_operationType(ctx, field)
+			case "status":
+				return ec.fieldContext_BulkJob_status(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_BulkJob_totalCount(ctx, field)
+			case "processedCount":
+				return ec.fieldContext_BulkJob_processedCount(ctx, field)
+			case "successCount":
+				return ec.fieldContext_BulkJob_successCount(ctx, field)
+			case "failureCount":
+				return ec.fieldContext_BulkJob_failureCount(ctx, field)
+			case "errorMessage":
+				return ec.fieldContext_BulkJob_errorMessage(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_BulkJob_createdAt(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_BulkJob_startedAt(ctx, field)
+			case "completedAt":
+				return ec.fieldContext_BulkJob_completedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type BulkJob", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_fixMissingScoreJournalAsync_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_registerPushSubscription(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -39571,6 +39967,73 @@ func (ec *executionContext) fieldContext_Query_previewMissingContentProgress(ctx
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_previewMissingContentProgress_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_previewMissingScoreJournal(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_previewMissingScoreJournal,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().PreviewMissingScoreJournal(ctx, fc.Args["achievementId"].(string), fc.Args["first"].(*int), fc.Args["after"].(*string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"superadmin"})
+				if err != nil {
+					var zeroVal *model.MissingScoreJournalPreview
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.MissingScoreJournalPreview
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNMissingScoreJournalPreview2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMissingScoreJournalPreview,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_previewMissingScoreJournal(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "affectedUsers":
+				return ec.fieldContext_MissingScoreJournalPreview_affectedUsers(ctx, field)
+			case "totalUsers":
+				return ec.fieldContext_MissingScoreJournalPreview_totalUsers(ctx, field)
+			case "totalEvents":
+				return ec.fieldContext_MissingScoreJournalPreview_totalEvents(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MissingScoreJournalPreview", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_previewMissingScoreJournal_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -62783,6 +63246,99 @@ func (ec *executionContext) _MissingContentProgressUser(ctx context.Context, sel
 	return out
 }
 
+var missingScoreJournalPreviewImplementors = []string{"MissingScoreJournalPreview"}
+
+func (ec *executionContext) _MissingScoreJournalPreview(ctx context.Context, sel ast.SelectionSet, obj *model.MissingScoreJournalPreview) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, missingScoreJournalPreviewImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MissingScoreJournalPreview")
+		case "affectedUsers":
+			out.Values[i] = ec._MissingScoreJournalPreview_affectedUsers(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalUsers":
+			out.Values[i] = ec._MissingScoreJournalPreview_totalUsers(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalEvents":
+			out.Values[i] = ec._MissingScoreJournalPreview_totalEvents(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var missingScoreJournalUserImplementors = []string{"MissingScoreJournalUser"}
+
+func (ec *executionContext) _MissingScoreJournalUser(ctx context.Context, sel ast.SelectionSet, obj *model.MissingScoreJournalUser) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, missingScoreJournalUserImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MissingScoreJournalUser")
+		case "user":
+			out.Values[i] = ec._MissingScoreJournalUser_user(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "eventCount":
+			out.Values[i] = ec._MissingScoreJournalUser_eventCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -63635,6 +64191,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "fixMissingContentProgressAsync":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_fixMissingContentProgressAsync(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "fixMissingScoreJournalAsync":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_fixMissingScoreJournalAsync(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -66853,6 +67416,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_previewMissingContentProgress(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "previewMissingScoreJournal":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_previewMissingScoreJournal(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -75559,6 +76144,68 @@ func (ec *executionContext) marshalNMissingContentProgressUser2ᚕgithubᚗcom�
 				defer wg.Done()
 			}
 			ret[i] = ec.marshalNMissingContentProgressUser2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMissingContentProgressUser(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNMissingScoreJournalPreview2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMissingScoreJournalPreview(ctx context.Context, sel ast.SelectionSet, v model.MissingScoreJournalPreview) graphql.Marshaler {
+	return ec._MissingScoreJournalPreview(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNMissingScoreJournalPreview2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMissingScoreJournalPreview(ctx context.Context, sel ast.SelectionSet, v *model.MissingScoreJournalPreview) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._MissingScoreJournalPreview(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNMissingScoreJournalUser2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMissingScoreJournalUser(ctx context.Context, sel ast.SelectionSet, v model.MissingScoreJournalUser) graphql.Marshaler {
+	return ec._MissingScoreJournalUser(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNMissingScoreJournalUser2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMissingScoreJournalUserᚄ(ctx context.Context, sel ast.SelectionSet, v []model.MissingScoreJournalUser) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNMissingScoreJournalUser2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMissingScoreJournalUser(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)

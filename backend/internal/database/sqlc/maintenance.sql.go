@@ -54,6 +54,55 @@ func (q *Queries) CountMissingContentProgressUsers(ctx context.Context) (int64, 
 	return count, err
 }
 
+const CountMissingScoreJournalEvents = `-- name: CountMissingScoreJournalEvents :one
+SELECT COUNT(*)
+FROM (
+    SELECT DISTINCT ece.id
+    FROM external_content_events ece
+    INNER JOIN users u ON u.person_uuid = ece.person_id
+    INNER JOIN external_content ec ON ec.task_id = ece.task_id
+    INNER JOIN content_achievement_items cai ON cai.external_content_id = ec.id
+    WHERE cai.achievement_id = $1::text
+    AND NOT EXISTS (
+        SELECT 1
+        FROM score_journal sj
+        WHERE sj.user_id = u.id
+        AND sj.source_id = ec.id
+    )
+) AS missing
+`
+
+// Count how many external_content_events are missing score journal entries for an achievement.
+func (q *Queries) CountMissingScoreJournalEvents(ctx context.Context, achievementid string) (int64, error) {
+	row := q.db.QueryRow(ctx, CountMissingScoreJournalEvents, achievementid)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const CountMissingScoreJournalUsers = `-- name: CountMissingScoreJournalUsers :one
+SELECT COUNT(DISTINCT u.id)
+FROM external_content_events ece
+INNER JOIN users u ON u.person_uuid = ece.person_id
+INNER JOIN external_content ec ON ec.task_id = ece.task_id
+INNER JOIN content_achievement_items cai ON cai.external_content_id = ec.id
+WHERE cai.achievement_id = $1::text
+AND NOT EXISTS (
+    SELECT 1
+    FROM score_journal sj
+    WHERE sj.user_id = u.id
+    AND sj.source_id = ec.id
+)
+`
+
+// Count how many distinct users are affected by missing score journal entries for an achievement.
+func (q *Queries) CountMissingScoreJournalUsers(ctx context.Context, achievementid string) (int64, error) {
+	row := q.db.QueryRow(ctx, CountMissingScoreJournalUsers, achievementid)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const GetMissingContentEventsForProcessing = `-- name: GetMissingContentEventsForProcessing :many
 SELECT DISTINCT
     u.id AS user_id,
@@ -212,6 +261,152 @@ ORDER BY u.id ASC
 // Used to batch users into separate jobs.
 func (q *Queries) GetMissingContentProgressUserIDs(ctx context.Context) ([]string, error) {
 	rows, err := q.db.Query(ctx, GetMissingContentProgressUserIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var user_id string
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetMissingScoreJournalForUsers = `-- name: GetMissingScoreJournalForUsers :many
+SELECT DISTINCT
+    u.id AS user_id,
+    ec.id AS external_content_id
+FROM external_content_events ece
+INNER JOIN users u ON u.person_uuid = ece.person_id
+INNER JOIN external_content ec ON ec.task_id = ece.task_id
+INNER JOIN content_achievement_items cai ON cai.external_content_id = ec.id
+WHERE cai.achievement_id = $1::text
+AND NOT EXISTS (
+    SELECT 1
+    FROM score_journal sj
+    WHERE sj.user_id = u.id
+    AND sj.source_id = ec.id
+)
+AND u.id = ANY($2::text[])
+`
+
+type GetMissingScoreJournalForUsersParams struct {
+	Achievementid string   `json:"achievementid"`
+	Userids       []string `json:"userids"`
+}
+
+type GetMissingScoreJournalForUsersRow struct {
+	UserID            string `json:"user_id"`
+	ExternalContentID string `json:"external_content_id"`
+}
+
+// Get external_content_ids for specific users that are missing score journal entries.
+// Used by batched job processing.
+func (q *Queries) GetMissingScoreJournalForUsers(ctx context.Context, arg GetMissingScoreJournalForUsersParams) ([]*GetMissingScoreJournalForUsersRow, error) {
+	rows, err := q.db.Query(ctx, GetMissingScoreJournalForUsers, arg.Achievementid, arg.Userids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetMissingScoreJournalForUsersRow{}
+	for rows.Next() {
+		var i GetMissingScoreJournalForUsersRow
+		if err := rows.Scan(&i.UserID, &i.ExternalContentID); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetMissingScoreJournalPreview = `-- name: GetMissingScoreJournalPreview :many
+
+SELECT
+    u.id AS user_id,
+    COUNT(DISTINCT ece.id)::int AS event_count
+FROM external_content_events ece
+INNER JOIN users u ON u.person_uuid = ece.person_id
+INNER JOIN external_content ec ON ec.task_id = ece.task_id
+INNER JOIN content_achievement_items cai ON cai.external_content_id = ec.id
+WHERE cai.achievement_id = $1::text
+AND NOT EXISTS (
+    SELECT 1
+    FROM score_journal sj
+    WHERE sj.user_id = u.id
+    AND sj.source_id = ec.id
+)
+GROUP BY u.id
+ORDER BY event_count DESC, u.id ASC
+LIMIT CASE WHEN $3::int IS NULL THEN 50 ELSE $3::int END
+OFFSET CASE WHEN $2::int IS NULL THEN 0 ELSE $2::int END
+`
+
+type GetMissingScoreJournalPreviewParams struct {
+	Achievementid string `json:"achievementid"`
+	Queryoffset   int32  `json:"queryoffset"`
+	Querylimit    int32  `json:"querylimit"`
+}
+
+type GetMissingScoreJournalPreviewRow struct {
+	UserID     string `json:"user_id"`
+	EventCount int32  `json:"event_count"`
+}
+
+// ==================== Missing Score Journal Queries ====================
+// These queries find external_content_events that are missing score_journal entries.
+// The score_journal.source_id references external_content.id for content achievements.
+// Get users with external_content_events for an achievement that are missing score_journal entries.
+// Each row shows a user ID and how many events are missing score journal entries.
+func (q *Queries) GetMissingScoreJournalPreview(ctx context.Context, arg GetMissingScoreJournalPreviewParams) ([]*GetMissingScoreJournalPreviewRow, error) {
+	rows, err := q.db.Query(ctx, GetMissingScoreJournalPreview, arg.Achievementid, arg.Queryoffset, arg.Querylimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetMissingScoreJournalPreviewRow{}
+	for rows.Next() {
+		var i GetMissingScoreJournalPreviewRow
+		if err := rows.Scan(&i.UserID, &i.EventCount); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetMissingScoreJournalUserIDs = `-- name: GetMissingScoreJournalUserIDs :many
+SELECT DISTINCT u.id AS user_id
+FROM external_content_events ece
+INNER JOIN users u ON u.person_uuid = ece.person_id
+INNER JOIN external_content ec ON ec.task_id = ece.task_id
+INNER JOIN content_achievement_items cai ON cai.external_content_id = ec.id
+WHERE cai.achievement_id = $1::text
+AND NOT EXISTS (
+    SELECT 1
+    FROM score_journal sj
+    WHERE sj.user_id = u.id
+    AND sj.source_id = ec.id
+)
+ORDER BY u.id ASC
+`
+
+// Get distinct user IDs that have missing score journal entries for an achievement.
+// Used to batch users into separate jobs.
+func (q *Queries) GetMissingScoreJournalUserIDs(ctx context.Context, achievementid string) ([]string, error) {
+	rows, err := q.db.Query(ctx, GetMissingScoreJournalUserIDs, achievementid)
 	if err != nil {
 		return nil, err
 	}

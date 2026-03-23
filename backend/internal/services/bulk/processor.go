@@ -178,3 +178,20 @@ func (p *Processor) ProcessFixMissingContentProgress(ctx context.Context, jobID 
 	})
 	return err
 }
+
+// ProcessFixMissingScoreJournal processes missing score journal entries
+func (p *Processor) ProcessFixMissingScoreJournal(ctx context.Context, jobID string, params pubsub.FixMissingScoreJournalParams) error {
+	successCount, failureCount, err := p.service.FixMissingScoreJournal(ctx, params)
+	if err != nil {
+		return err
+	}
+
+	// Mark job completed
+	_, err = p.service.DB.Queries.MarkBulkJobCompleted(ctx, sqlc.MarkBulkJobCompletedParams{
+		ID:             jobID,
+		Processedcount: int32(successCount + failureCount),
+		Successcount:   int32(successCount),
+		Failurecount:   int32(failureCount),
+	})
+	return err
+}
