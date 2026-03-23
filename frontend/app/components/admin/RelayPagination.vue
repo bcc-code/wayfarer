@@ -5,13 +5,13 @@ const pagination = defineModel<UsePaginationReturn>('pagination', {
   required: true,
 })
 
-// Computed properties for button states
+// Computed properties for button states using direction-aware properties
 const canGoToPrevious = computed(() => {
-  return pagination.value.pageInfo.value?.hasPreviousPage ?? false
+  return !pagination.value.isFirstPage.value
 })
 
 const canGoToNext = computed(() => {
-  return pagination.value.pageInfo.value?.hasNextPage ?? false
+  return !pagination.value.isLastPage.value
 })
 
 // Button handlers
