@@ -23,7 +23,6 @@ const (
 
 	// Maintenance operations
 	OperationFixMissingContentProgress OperationType = "FIX_MISSING_CONTENT_PROGRESS"
-	OperationFixMissingScoreJournal    OperationType = "FIX_MISSING_SCORE_JOURNAL"
 )
 
 // BulkOperationMessage is the message published to Pub/Sub for async processing
@@ -135,16 +134,6 @@ type FixMissingContentProgressParams struct {
 
 func (p FixMissingContentProgressParams) OperationType() OperationType {
 	return OperationFixMissingContentProgress
-}
-
-// FixMissingScoreJournalParams contains parameters for fixing missing score journal entries
-type FixMissingScoreJournalParams struct {
-	AchievementID string   `json:"achievement_id"`
-	UserIDs       []string `json:"user_ids"`
-}
-
-func (p FixMissingScoreJournalParams) OperationType() OperationType {
-	return OperationFixMissingScoreJournal
 }
 
 // JobStatus represents the status of a bulk job

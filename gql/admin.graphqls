@@ -8,7 +8,6 @@ extend type Query {
 extend type Mutation {
     clearAllCache: Boolean! @requireRole(roles: ["admin", "superadmin"])
     fixMissingContentProgressAsync: [BulkJob!]! @requireRole(roles: ["superadmin"])
-    fixMissingScoreJournalAsync(achievementId: ID!): [BulkJob!]! @requireRole(roles: ["superadmin"])
 }
 
 type AdminDashboardStats {

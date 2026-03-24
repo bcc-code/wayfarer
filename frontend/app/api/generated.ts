@@ -1082,7 +1082,6 @@ export type Mutation = {
   finalizeQuiz: QuizSubmission;
   finishQuizSession: QuizSession;
   fixMissingContentProgressAsync: Array<BulkJob>;
-  fixMissingScoreJournalAsync: Array<BulkJob>;
   forwardFeedbackToDesk: Scalars['Boolean']['output'];
   grantQuizSessionAccess: Scalars['Int']['output'];
   grantQuizSessionAccessAsync: BulkJob;
@@ -1501,11 +1500,6 @@ export type MutationFinalizeQuizArgs = {
 
 export type MutationFinishQuizSessionArgs = {
   id: Scalars['ID']['input'];
-};
-
-
-export type MutationFixMissingScoreJournalAsyncArgs = {
-  achievementId: Scalars['ID']['input'];
 };
 
 
@@ -4293,6 +4287,14 @@ export type AdminBulkJobsPageQueryVariables = Exact<{
 
 export type AdminBulkJobsPageQuery = { __typename?: 'Query', bulkJobs: { __typename?: 'BulkJobConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'BulkJobEdge', cursor: string, node: { __typename?: 'BulkJob', id: string, operationType: string, status: BulkJobStatus, totalCount: number, processedCount: number, successCount: number, failureCount: number, errorMessage?: string | null, createdAt: any, startedAt?: any | null, completedAt?: any | null } }> } };
 
+export type MaintenanceScoreJournalPreviewQueryVariables = Exact<{
+  achievementId: Scalars['ID']['input'];
+  first?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type MaintenanceScoreJournalPreviewQuery = { __typename?: 'Query', previewMissingScoreJournal: { __typename?: 'MissingScoreJournalPreview', totalUsers: number, totalEvents: number, affectedUsers: Array<{ __typename?: 'MissingScoreJournalUser', eventCount: number, user: { __typename?: 'User', id: string, name: string } }> } };
+
 export type MaintenanceContentProgressPreviewQueryVariables = Exact<{
   first?: InputMaybe<Scalars['Int']['input']>;
 }>;
@@ -4311,21 +4313,6 @@ export type BulkJobStatusQueryVariables = Exact<{
 
 
 export type BulkJobStatusQuery = { __typename?: 'Query', bulkJob?: { __typename?: 'BulkJob', id: string, status: BulkJobStatus, totalCount: number, processedCount: number, successCount: number, failureCount: number, errorMessage?: string | null, completedAt?: any | null } | null };
-
-export type MaintenanceScoreJournalPreviewQueryVariables = Exact<{
-  achievementId: Scalars['ID']['input'];
-  first?: InputMaybe<Scalars['Int']['input']>;
-}>;
-
-
-export type MaintenanceScoreJournalPreviewQuery = { __typename?: 'Query', previewMissingScoreJournal: { __typename?: 'MissingScoreJournalPreview', totalUsers: number, totalEvents: number, affectedUsers: Array<{ __typename?: 'MissingScoreJournalUser', eventCount: number, user: { __typename?: 'User', id: string, name: string } }> } };
-
-export type FixMissingScoreJournalAsyncMutationVariables = Exact<{
-  achievementId: Scalars['ID']['input'];
-}>;
-
-
-export type FixMissingScoreJournalAsyncMutation = { __typename?: 'Mutation', fixMissingScoreJournalAsync: Array<{ __typename?: 'BulkJob', id: string, operationType: string, status: BulkJobStatus, totalCount: number, processedCount: number, successCount: number, failureCount: number, errorMessage?: string | null }> };
 
 export type ChurchAdminsPageQueryVariables = Exact<{
   churchId: Scalars['ID']['input'];
@@ -6531,6 +6518,25 @@ export const AdminBulkJobsPageDocument = gql`
 export function useAdminBulkJobsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminBulkJobsPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminBulkJobsPageQuery, AdminBulkJobsPageQueryVariables | undefined>({ query: AdminBulkJobsPageDocument, variables: undefined, ...options });
 };
+export const MaintenanceScoreJournalPreviewDocument = gql`
+    query MaintenanceScoreJournalPreview($achievementId: ID!, $first: Int) {
+  previewMissingScoreJournal(achievementId: $achievementId, first: $first) {
+    totalUsers
+    totalEvents
+    affectedUsers {
+      user {
+        id
+        name
+      }
+      eventCount
+    }
+  }
+}
+    `;
+
+export function useMaintenanceScoreJournalPreviewQuery(options?: Omit<Urql.UseQueryArgs<never, MaintenanceScoreJournalPreviewQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<MaintenanceScoreJournalPreviewQuery, MaintenanceScoreJournalPreviewQueryVariables | undefined>({ query: MaintenanceScoreJournalPreviewDocument, variables: undefined, ...options });
+};
 export const MaintenanceContentProgressPreviewDocument = gql`
     query MaintenanceContentProgressPreview($first: Int) {
   previewMissingContentProgress(first: $first) {
@@ -6585,43 +6591,6 @@ export const BulkJobStatusDocument = gql`
 
 export function useBulkJobStatusQuery(options?: Omit<Urql.UseQueryArgs<never, BulkJobStatusQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<BulkJobStatusQuery, BulkJobStatusQueryVariables | undefined>({ query: BulkJobStatusDocument, variables: undefined, ...options });
-};
-export const MaintenanceScoreJournalPreviewDocument = gql`
-    query MaintenanceScoreJournalPreview($achievementId: ID!, $first: Int) {
-  previewMissingScoreJournal(achievementId: $achievementId, first: $first) {
-    totalUsers
-    totalEvents
-    affectedUsers {
-      user {
-        id
-        name
-      }
-      eventCount
-    }
-  }
-}
-    `;
-
-export function useMaintenanceScoreJournalPreviewQuery(options?: Omit<Urql.UseQueryArgs<never, MaintenanceScoreJournalPreviewQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<MaintenanceScoreJournalPreviewQuery, MaintenanceScoreJournalPreviewQueryVariables | undefined>({ query: MaintenanceScoreJournalPreviewDocument, variables: undefined, ...options });
-};
-export const FixMissingScoreJournalAsyncDocument = gql`
-    mutation FixMissingScoreJournalAsync($achievementId: ID!) {
-  fixMissingScoreJournalAsync(achievementId: $achievementId) {
-    id
-    operationType
-    status
-    totalCount
-    processedCount
-    successCount
-    failureCount
-    errorMessage
-  }
-}
-    `;
-
-export function useFixMissingScoreJournalAsyncMutation() {
-  return Urql.useMutation<FixMissingScoreJournalAsyncMutation, FixMissingScoreJournalAsyncMutationVariables>(FixMissingScoreJournalAsyncDocument);
 };
 export const ChurchAdminsPageDocument = gql`
     query ChurchAdminsPage($churchId: ID!) {

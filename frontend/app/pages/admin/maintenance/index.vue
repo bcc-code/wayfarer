@@ -13,11 +13,11 @@ const tools = [
     to: '/admin/maintenance/fix-content-progress',
   },
   {
-    title: 'Fix poengjournal',
+    title: 'Check points journal',
     description:
-      'Finner og fikser brukere som mangler poengjournal-oppforinger for fullfort innhold.',
+      'Viser brukere som mangler poengjournal-oppforinger for fullfort innhold.',
     icon: 'lucide:calculator',
-    to: '/admin/maintenance/fix-score-journal',
+    to: '/admin/maintenance/check-points-journal',
   },
   {
     title: 'Massejobber',

@@ -157,39 +157,3 @@ FROM (
         AND sj.source_id = ec.id
     )
 ) AS missing;
-
--- name: GetMissingScoreJournalUserIDs :many
--- Get distinct user IDs that have missing score journal entries for an achievement.
--- Used to batch users into separate jobs.
-SELECT DISTINCT u.id AS user_id
-FROM external_content_events ece
-INNER JOIN users u ON u.person_uuid = ece.person_id
-INNER JOIN external_content ec ON ec.task_id = ece.task_id
-INNER JOIN content_achievement_items cai ON cai.external_content_id = ec.id
-WHERE cai.achievement_id = @achievementid::text
-AND NOT EXISTS (
-    SELECT 1
-    FROM score_journal sj
-    WHERE sj.user_id = u.id
-    AND sj.source_id = ec.id
-)
-ORDER BY u.id ASC;
-
--- name: GetMissingScoreJournalForUsers :many
--- Get external_content_ids for specific users that are missing score journal entries.
--- Used by batched job processing.
-SELECT DISTINCT
-    u.id AS user_id,
-    ec.id AS external_content_id
-FROM external_content_events ece
-INNER JOIN users u ON u.person_uuid = ece.person_id
-INNER JOIN external_content ec ON ec.task_id = ece.task_id
-INNER JOIN content_achievement_items cai ON cai.external_content_id = ec.id
-WHERE cai.achievement_id = @achievementid::text
-AND NOT EXISTS (
-    SELECT 1
-    FROM score_journal sj
-    WHERE sj.user_id = u.id
-    AND sj.source_id = ec.id
-)
-AND u.id = ANY(@userids::text[]);

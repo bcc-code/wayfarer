@@ -71,55 +71,6 @@ func (r *mutationResolver) FixMissingContentProgressAsync(ctx context.Context) (
 	return jobs, nil
 }
 
-// FixMissingScoreJournalAsync is the resolver for the fixMissingScoreJournalAsync field.
-func (r *mutationResolver) FixMissingScoreJournalAsync(ctx context.Context, achievementID string) ([]model.BulkJob, error) {
-	userID, ok := middleware.GetUserID(ctx)
-	if !ok {
-		return nil, fmt.Errorf("user not authenticated")
-	}
-
-	// Get all affected user IDs for this achievement
-	affectedUserIDs, err := r.DB.Queries.GetMissingScoreJournalUserIDs(ctx, achievementID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get affected users: %w", err)
-	}
-
-	if len(affectedUserIDs) == 0 {
-		return nil, fmt.Errorf("no missing score journal entries to fix")
-	}
-
-	// Batch users into chunks and create a job for each
-	var jobs []model.BulkJob
-	for i := 0; i < len(affectedUserIDs); i += fixMissingScoreJournalUserBatchSize {
-		end := i + fixMissingScoreJournalUserBatchSize
-		if end > len(affectedUserIDs) {
-			end = len(affectedUserIDs)
-		}
-		batch := affectedUserIDs[i:end]
-
-		job, err := r.BulkService.CreateBulkJobAndPublish(
-			ctx,
-			userID,
-			nil, // No project scope - this is a global maintenance operation
-			len(batch),
-			pubsub.FixMissingScoreJournalParams{
-				AchievementID: achievementID,
-				UserIDs:       batch,
-			},
-		)
-		if err != nil {
-			// Log and continue to create other jobs
-			continue
-		}
-		jobs = append(jobs, *job)
-	}
-
-	if len(jobs) == 0 {
-		return nil, fmt.Errorf("failed to create any batch jobs")
-	}
-	return jobs, nil
-}
-
 // AdminDashboardStats is the resolver for the adminDashboardStats field.
 func (r *queryResolver) AdminDashboardStats(ctx context.Context) (*model.AdminDashboardStats, error) {
 	cacheKey := "admin:dashboard:stats"

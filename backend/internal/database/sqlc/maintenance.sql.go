@@ -279,56 +279,6 @@ func (q *Queries) GetMissingContentProgressUserIDs(ctx context.Context) ([]strin
 	return items, nil
 }
 
-const GetMissingScoreJournalForUsers = `-- name: GetMissingScoreJournalForUsers :many
-SELECT DISTINCT
-    u.id AS user_id,
-    ec.id AS external_content_id
-FROM external_content_events ece
-INNER JOIN users u ON u.person_uuid = ece.person_id
-INNER JOIN external_content ec ON ec.task_id = ece.task_id
-INNER JOIN content_achievement_items cai ON cai.external_content_id = ec.id
-WHERE cai.achievement_id = $1::text
-AND NOT EXISTS (
-    SELECT 1
-    FROM score_journal sj
-    WHERE sj.user_id = u.id
-    AND sj.source_id = ec.id
-)
-AND u.id = ANY($2::text[])
-`
-
-type GetMissingScoreJournalForUsersParams struct {
-	Achievementid string   `json:"achievementid"`
-	Userids       []string `json:"userids"`
-}
-
-type GetMissingScoreJournalForUsersRow struct {
-	UserID            string `json:"user_id"`
-	ExternalContentID string `json:"external_content_id"`
-}
-
-// Get external_content_ids for specific users that are missing score journal entries.
-// Used by batched job processing.
-func (q *Queries) GetMissingScoreJournalForUsers(ctx context.Context, arg GetMissingScoreJournalForUsersParams) ([]*GetMissingScoreJournalForUsersRow, error) {
-	rows, err := q.db.Query(ctx, GetMissingScoreJournalForUsers, arg.Achievementid, arg.Userids)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []*GetMissingScoreJournalForUsersRow{}
-	for rows.Next() {
-		var i GetMissingScoreJournalForUsersRow
-		if err := rows.Scan(&i.UserID, &i.ExternalContentID); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const GetMissingScoreJournalPreview = `-- name: GetMissingScoreJournalPreview :many
 
 SELECT
@@ -380,44 +330,6 @@ func (q *Queries) GetMissingScoreJournalPreview(ctx context.Context, arg GetMiss
 			return nil, err
 		}
 		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const GetMissingScoreJournalUserIDs = `-- name: GetMissingScoreJournalUserIDs :many
-SELECT DISTINCT u.id AS user_id
-FROM external_content_events ece
-INNER JOIN users u ON u.person_uuid = ece.person_id
-INNER JOIN external_content ec ON ec.task_id = ece.task_id
-INNER JOIN content_achievement_items cai ON cai.external_content_id = ec.id
-WHERE cai.achievement_id = $1::text
-AND NOT EXISTS (
-    SELECT 1
-    FROM score_journal sj
-    WHERE sj.user_id = u.id
-    AND sj.source_id = ec.id
-)
-ORDER BY u.id ASC
-`
-
-// Get distinct user IDs that have missing score journal entries for an achievement.
-// Used to batch users into separate jobs.
-func (q *Queries) GetMissingScoreJournalUserIDs(ctx context.Context, achievementid string) ([]string, error) {
-	rows, err := q.db.Query(ctx, GetMissingScoreJournalUserIDs, achievementid)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []string{}
-	for rows.Next() {
-		var user_id string
-		if err := rows.Scan(&user_id); err != nil {
-			return nil, err
-		}
-		items = append(items, user_id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

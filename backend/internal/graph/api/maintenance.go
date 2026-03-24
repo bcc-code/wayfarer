@@ -8,9 +8,6 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 )
 
-// fixMissingScoreJournalUserBatchSize is the maximum number of users per job for score journal fixes
-const fixMissingScoreJournalUserBatchSize = 250
-
 // previewMissingContentProgress retrieves a preview of users with missing content progress records.
 func (r *Resolver) previewMissingContentProgress(ctx context.Context, first *int, after *string) (*model.MissingContentProgressPreview, error) {
 	limit := 50

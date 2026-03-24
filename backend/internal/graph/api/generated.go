@@ -564,7 +564,6 @@ type ComplexityRoot struct {
 		FinalizeQuiz                                func(childComplexity int, submissionID string) int
 		FinishQuizSession                           func(childComplexity int, id string) int
 		FixMissingContentProgressAsync              func(childComplexity int) int
-		FixMissingScoreJournalAsync                 func(childComplexity int, achievementID string) int
 		ForwardFeedbackToDesk                       func(childComplexity int, feedbackID string, destination model.ForwardDestination) int
 		GrantQuizSessionAccess                      func(childComplexity int, input model.GrantQuizSessionAccessInput) int
 		GrantQuizSessionAccessAsync                 func(childComplexity int, input model.GrantQuizSessionAccessInput) int
@@ -1528,7 +1527,6 @@ type MutationResolver interface {
 	CreateContentAchievementFromExternalContent(ctx context.Context, input model.CreateContentAchievementFromExternalContentInput) (*model.ContentAchievement, error)
 	ClearAllCache(ctx context.Context) (bool, error)
 	FixMissingContentProgressAsync(ctx context.Context) ([]model.BulkJob, error)
-	FixMissingScoreJournalAsync(ctx context.Context, achievementID string) ([]model.BulkJob, error)
 	RegisterPushSubscription(ctx context.Context, input model.RegisterPushSubscriptionInput) (*model.PushSubscription, error)
 	UnregisterPushSubscription(ctx context.Context, endpoint string) (bool, error)
 	SetNotificationPreference(ctx context.Context, input model.SetNotificationPreferenceInput) (*model.PushNotificationPreference, error)
@@ -4200,17 +4198,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.FixMissingContentProgressAsync(childComplexity), true
-	case "Mutation.fixMissingScoreJournalAsync":
-		if e.complexity.Mutation.FixMissingScoreJournalAsync == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_fixMissingScoreJournalAsync_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.FixMissingScoreJournalAsync(childComplexity, args["achievementId"].(string)), true
 	case "Mutation.forwardFeedbackToDesk":
 		if e.complexity.Mutation.ForwardFeedbackToDesk == nil {
 			break
@@ -10915,7 +10902,6 @@ extend type Mutation {
 extend type Mutation {
     clearAllCache: Boolean! @requireRole(roles: ["admin", "superadmin"])
     fixMissingContentProgressAsync: [BulkJob!]! @requireRole(roles: ["superadmin"])
-    fixMissingScoreJournalAsync(achievementId: ID!): [BulkJob!]! @requireRole(roles: ["superadmin"])
 }
 
 type AdminDashboardStats {
@@ -12237,17 +12223,6 @@ func (ec *executionContext) field_Mutation_finishQuizSession_args(ctx context.Co
 		return nil, err
 	}
 	args["id"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_fixMissingScoreJournalAsync_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "achievementId", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["achievementId"] = arg0
 	return args, nil
 }
 
@@ -31764,89 +31739,6 @@ func (ec *executionContext) fieldContext_Mutation_fixMissingContentProgressAsync
 			}
 			return nil, fmt.Errorf("no field named %q was found under type BulkJob", field.Name)
 		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_fixMissingScoreJournalAsync(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_fixMissingScoreJournalAsync,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().FixMissingScoreJournalAsync(ctx, fc.Args["achievementId"].(string))
-		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"superadmin"})
-				if err != nil {
-					var zeroVal []model.BulkJob
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal []model.BulkJob
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
-		ec.marshalNBulkJob2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐBulkJobᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_fixMissingScoreJournalAsync(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_BulkJob_id(ctx, field)
-			case "operationType":
-				return ec.fieldContext_BulkJob_operationType(ctx, field)
-			case "status":
-				return ec.fieldContext_BulkJob_status(ctx, field)
-			case "totalCount":
-				return ec.fieldContext_BulkJob_totalCount(ctx, field)
-			case "processedCount":
-				return ec.fieldContext_BulkJob_processedCount(ctx, field)
-			case "successCount":
-				return ec.fieldContext_BulkJob_successCount(ctx, field)
-			case "failureCount":
-				return ec.fieldContext_BulkJob_failureCount(ctx, field)
-			case "errorMessage":
-				return ec.fieldContext_BulkJob_errorMessage(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_BulkJob_createdAt(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_BulkJob_startedAt(ctx, field)
-			case "completedAt":
-				return ec.fieldContext_BulkJob_completedAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type BulkJob", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_fixMissingScoreJournalAsync_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
 	}
 	return fc, nil
 }
@@ -64191,13 +64083,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "fixMissingContentProgressAsync":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_fixMissingContentProgressAsync(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "fixMissingScoreJournalAsync":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_fixMissingScoreJournalAsync(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
