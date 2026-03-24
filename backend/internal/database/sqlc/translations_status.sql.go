@@ -310,37 +310,3 @@ func (q *Queries) GetQuizTranslationStatus(ctx context.Context, quizID string) (
 	}
 	return items, nil
 }
-
-const GetStreakTranslationStatus = `-- name: GetStreakTranslationStatus :many
-SELECT language_code,
-  (name IS NOT NULL AND name != '') AS has_name,
-  (description IS NOT NULL AND description != '') AS has_description
-FROM streak_translations
-WHERE streak_id = $1::text
-`
-
-type GetStreakTranslationStatusRow struct {
-	LanguageCode   string `json:"language_code"`
-	HasName        *bool  `json:"has_name"`
-	HasDescription *bool  `json:"has_description"`
-}
-
-func (q *Queries) GetStreakTranslationStatus(ctx context.Context, streakID string) ([]*GetStreakTranslationStatusRow, error) {
-	rows, err := q.db.Query(ctx, GetStreakTranslationStatus, streakID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []*GetStreakTranslationStatusRow{}
-	for rows.Next() {
-		var i GetStreakTranslationStatusRow
-		if err := rows.Scan(&i.LanguageCode, &i.HasName, &i.HasDescription); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}

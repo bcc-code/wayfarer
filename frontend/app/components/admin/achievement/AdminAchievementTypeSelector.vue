@@ -22,11 +22,12 @@ const typeOptions = [
     description:
       'Krever fullføring av innholdselementer (artikler, episoder, etc.)',
   },
-  // {
-  //   value: 'STREAK' as AchievementType,
-  //   label: 'Streak',
-  //   description: 'Requires maintaining activity for a number of days',
-  // },
+  {
+    value: 'STREAK' as AchievementType,
+    label: 'Streak',
+    description:
+      'Krever fullføring av innhold innen frist',
+  },
   {
     value: 'QUIZ' as AchievementType,
     label: 'Quiz',

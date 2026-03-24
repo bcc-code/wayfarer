@@ -700,23 +700,6 @@ func (r *projectResolver) Achievements(ctx context.Context, obj *model.Project) 
 	return result, nil
 }
 
-// Streaks is the resolver for the streaks field.
-func (r *projectResolver) Streaks(ctx context.Context, obj *model.Project) ([]model.Streak, error) {
-	thunk := r.Loaders.StreaksByProjectLoader.Load(ctx, obj.ID)
-	streaks, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load streaks: %w", err)
-	}
-
-	result := make([]model.Streak, len(streaks))
-	for i, s := range streaks {
-		translated := r.ApplyTranslationToStreak(ctx, s)
-		result[i] = *translated
-	}
-
-	return result, nil
-}
-
 // Journal is the resolver for the journal field.
 // User-facing: returns the current user's score journal for this project
 func (r *projectResolver) Journal(ctx context.Context, obj *model.Project, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error) {

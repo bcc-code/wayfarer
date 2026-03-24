@@ -211,8 +211,8 @@ func TestExtractUserTag(t *testing.T) {
 			wantOK: true,
 		},
 		{
-			name:   "user streak activity key",
-			key:    "userstreak:US123:SK789",
+			name:   "user streak progress key",
+			key:    "userstreakprogress:US123:AC789",
 			wantID: "US123",
 			wantOK: true,
 		},
@@ -266,7 +266,7 @@ func TestCacheWithRegistry_UserInvalidation(t *testing.T) {
 	c.Set(UserContentProgressKey(userID, "AC001"), "progress-1")
 	c.Set(UserContentProgressKey(userID, "AC002"), "progress-2")
 	c.Set(UserAchievementTimestampKey(userID, "AC001"), "timestamp")
-	c.Set(UserStreakActivityKey(userID, "SK001"), "streak")
+	c.Set(UserStreakProgressKey(userID, "AC001"), "streak")
 	c.Set(UserChallengeEnrollmentKey(userID, "CL001"), "enrolled")
 	c.Set(UserChallengeCompletionKey(userID, "CL001"), "completed")
 
@@ -303,8 +303,8 @@ func TestCacheWithRegistry_UserInvalidation(t *testing.T) {
 	assert.False(t, found, "content progress 2 should be deleted")
 	_, found = c.Get(UserAchievementTimestampKey(userID, "AC001"))
 	assert.False(t, found, "achievement timestamp should be deleted")
-	_, found = c.Get(UserStreakActivityKey(userID, "SK001"))
-	assert.False(t, found, "streak activity should be deleted")
+	_, found = c.Get(UserStreakProgressKey(userID, "AC001"))
+	assert.False(t, found, "streak progress should be deleted")
 	_, found = c.Get(UserChallengeEnrollmentKey(userID, "CL001"))
 	assert.False(t, found, "challenge enrollment should be deleted")
 	_, found = c.Get(UserChallengeCompletionKey(userID, "CL001"))

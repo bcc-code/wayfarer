@@ -116,10 +116,10 @@ func extractPrefixes(key string) []string {
 		PrefixTeamLeaderboardTags,   // Must be before PrefixTeamMemberLeaderboard and PrefixTeam
 		PrefixTeamMemberLeaderboard, // Must be before PrefixTeam
 		PrefixUser, PrefixChurch, PrefixProject, PrefixEvent, PrefixTeam,
-		PrefixSuperTeam, PrefixChallenge, PrefixAchievement, PrefixStreak,
+		PrefixSuperTeam, PrefixChallenge, PrefixAchievement,
 		PrefixUserProjects, PrefixUserEvents, PrefixTeamMembers, PrefixUserRoles,
 		PrefixUserChallengeEnrollments, PrefixUserChallengeCompletions,
-		PrefixUserContentProgress, PrefixUserAchievements, PrefixUserStreakActivity,
+		PrefixUserContentProgress, PrefixUserAchievements, PrefixUserStreakProgress,
 		PrefixUserConsents, PrefixUserProjectPoints,
 		PrefixUsersFilter, PrefixUsersCount,
 		PrefixProjectsFilter, PrefixProjectsCount,
@@ -129,7 +129,6 @@ func extractPrefixes(key string) []string {
 		PrefixAchievementsFilter, PrefixAchievementsCount,
 		PrefixChallengesFilter, PrefixChallengesCount,
 		PrefixChurchesFilter, PrefixChurchesCount,
-		PrefixStreaksFilter, PrefixStreaksCount,
 	} {
 		if len(key) >= len(prefix) && key[:len(prefix)] == prefix {
 			prefixes = append(prefixes, prefix)
@@ -244,7 +243,7 @@ func (c *CacheWithRegistry) invalidateUserLocal(userID string) {
 	// Invalidate content progress, achievements, and streak activity
 	c.DeletePrefix(PrefixUserContentProgress + userID)
 	c.DeletePrefix(PrefixUserAchievements + userID)
-	c.DeletePrefix(PrefixUserStreakActivity + userID)
+	c.DeletePrefix(PrefixUserStreakProgress + userID)
 	// Invalidate user project points cache (myPoints field)
 	c.DeletePrefix(PrefixUserProjectPoints + userID)
 	// Invalidate user filter/count queries (gender/church changes affect results)

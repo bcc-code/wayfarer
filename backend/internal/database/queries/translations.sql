@@ -13,12 +13,6 @@ FROM event_translations
 WHERE event_id = ANY(@entity_ids::text[])
   AND language_code = @language_code::text;
 
--- name: GetStreakTranslationsByIDs :many
-SELECT streak_id, language_code, name, description
-FROM streak_translations
-WHERE streak_id = ANY(@entity_ids::text[])
-  AND language_code = @language_code::text;
-
 -- name: GetChallengeTranslationsByIDs :many
 SELECT challenge_id, language_code, name, description, button_text, notification_text
 FROM challenge_translations
@@ -56,9 +50,6 @@ DELETE FROM project_translations WHERE project_id = @project_id::text;
 
 -- name: DeleteEventTranslations :exec
 DELETE FROM event_translations WHERE event_id = @event_id::text;
-
--- name: DeleteStreakTranslations :exec
-DELETE FROM streak_translations WHERE streak_id = @streak_id::text;
 
 -- name: DeleteChallengeTranslations :exec
 DELETE FROM challenge_translations WHERE challenge_id = @challenge_id::text;

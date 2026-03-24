@@ -130,8 +130,7 @@ func TestMultipleAchievementsInCache(t *testing.T) {
 			Points:               150,
 			Hidden:               false,
 			ProjectID:            "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
-			StreakID:             "SK01K8XV6VK9ED2GBZSQ2VDTAT8T",
-			NeededStreak:         7,
+			TotalItems:           0,
 		},
 	}
 

@@ -49,11 +49,18 @@ gql(`
         }
       }
       ... on StreakAchievement {
-        neededStreak
-        streak {
+        totalItems
+        completedItemCount
+        items {
           id
-          name
-          description
+          sortOrder
+          externalContent {
+            id
+            planId
+            taskId
+            contentType
+            title
+          }
         }
       }
       ... on QuizAchievement {
@@ -149,8 +156,14 @@ const initialData = computed(() => {
   if (a.__typename === 'StreakAchievement') {
     return {
       ...base,
-      streakId: a.streak.id,
-      neededStreak: a.neededStreak,
+      streakItems: a.items.map((item) => ({
+        id: item.id,
+        externalContent: {
+          id: item.externalContent.id,
+          title: item.externalContent.title,
+          contentType: item.externalContent.contentType,
+        },
+      })),
     }
   }
 
@@ -207,8 +220,9 @@ async function handleSubmit(formData: AchievementFormData) {
         id: route.params.achievementId,
         input: {
           ...baseInput,
-          streakId: formData.streakId,
-          neededStreak: formData.neededStreak,
+          items: formData.items?.map((item) => ({
+            externalContentId: item.externalContent.id,
+          })),
         },
       })
       break

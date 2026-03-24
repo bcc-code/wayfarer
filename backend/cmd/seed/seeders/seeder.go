@@ -36,7 +36,6 @@ type Stats struct {
 	Events       int
 	SuperTeams   int
 	Teams        int
-	Streaks      int
 	Challenges   int
 	Achievements int
 }
@@ -49,7 +48,6 @@ type SeededData struct {
 	EventIDs       map[string][]string // projectID -> []eventID
 	SuperTeamIDs   map[string][]string // projectID -> []superTeamID
 	TeamIDs        map[string][]string // projectID -> []teamID
-	StreakIDs      map[string][]string // projectID -> []streakID
 	ChallengeIDs   map[string][]string // projectID -> []challengeID
 	AchievementIDs map[string][]string // projectID -> []achievementID
 }
@@ -60,7 +58,6 @@ func NewSeededData() *SeededData {
 		EventIDs:       make(map[string][]string),
 		SuperTeamIDs:   make(map[string][]string),
 		TeamIDs:        make(map[string][]string),
-		StreakIDs:      make(map[string][]string),
 		ChallengeIDs:   make(map[string][]string),
 		AchievementIDs: make(map[string][]string),
 	}

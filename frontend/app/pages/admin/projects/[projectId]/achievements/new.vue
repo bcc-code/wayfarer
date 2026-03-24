@@ -75,8 +75,10 @@ async function handleSubmit(formData: AchievementFormData) {
       response = await createStreak({
         input: {
           ...baseInput,
-          streakId: formData.streakId!,
-          neededStreak: formData.neededStreak!,
+          items:
+            formData.items?.map((item) => ({
+              externalContentId: item.externalContent.id,
+            })) ?? [],
         },
       })
       break

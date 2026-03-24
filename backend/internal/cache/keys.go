@@ -12,18 +12,18 @@ import (
 // These prefixes enable tag-based invalidation by matching prefix patterns
 const (
 	// Core entities
-	PrefixUser           = "user:"
-	PrefixChurch         = "church:"
-	PrefixProject        = "project:"
-	PrefixEvent          = "event:"
-	PrefixTeam           = "team:"
-	PrefixSuperTeam      = "superteam:"
-	PrefixChallenge      = "challenge:"
-	PrefixAchievement    = "achievement:"
-	PrefixStreak         = "streak:"
-	PrefixQuiz           = "quiz:"
-	PrefixQuizSession    = "quizsession:"
-	PrefixQuizSubmission = "quizsubmission:"
+	PrefixUser               = "user:"
+	PrefixChurch             = "church:"
+	PrefixProject            = "project:"
+	PrefixEvent              = "event:"
+	PrefixTeam               = "team:"
+	PrefixSuperTeam          = "superteam:"
+	PrefixChallenge          = "challenge:"
+	PrefixAchievement        = "achievement:"
+	PrefixUserStreakProgress = "userstreakprogress:"
+	PrefixQuiz               = "quiz:"
+	PrefixQuizSession        = "quizsession:"
+	PrefixQuizSubmission     = "quizsubmission:"
 
 	// Relationship/Junction tables
 	PrefixUserProjects       = "userprojects:"
@@ -40,7 +40,6 @@ const (
 	PrefixUserChallengeCompletions = "userchallenges:"
 	PrefixUserChallengeEnrollments = "userchallengeenrollments:"
 	PrefixUserContentProgress      = "usercontent:"
-	PrefixUserStreakActivity       = "userstreak:"
 
 	// Computed data
 	PrefixLeaderboard           = "leaderboard:"
@@ -67,8 +66,6 @@ const (
 	PrefixChallengesCount       = "challengescount:"
 	PrefixChurchesFilter        = "churchesfilter:"
 	PrefixChurchesCount         = "churchescount:"
-	PrefixStreaksFilter         = "streaksfilter:"
-	PrefixStreaksCount          = "streakscount:"
 	PrefixQuizzesFilter         = "quizzesfilter:"
 	PrefixQuizzesCount          = "quizzescount:"
 	PrefixQuizSubmissionsFilter = "quizsubmissionsfilter:"
@@ -241,24 +238,14 @@ func UserContentProgressKey(userID, achievementID string) string {
 	return fmt.Sprintf("%s%s:%s", PrefixUserContentProgress, userID, achievementID)
 }
 
-// StreakKey builds a cache key for a streak by ID
-func StreakKey(streakID string) string {
-	return PrefixStreak + streakID
+// StreakItemsByAchievementKey builds a cache key for streak items by achievement ID
+func StreakItemsByAchievementKey(achievementID string) string {
+	return fmt.Sprintf("%s:streakitems:%s", PrefixAchievement, achievementID)
 }
 
-// StreaksByProjectKey builds a cache key for streaks in a project
-func StreaksByProjectKey(projectID string) string {
-	return fmt.Sprintf("%s:project:%s", PrefixStreak, projectID)
-}
-
-// RelevantDaysByStreakKey builds a cache key for relevant days by streak
-func RelevantDaysByStreakKey(streakID string) string {
-	return fmt.Sprintf("%s:relevant_days:%s", PrefixStreak, streakID)
-}
-
-// UserStreakActivityKey builds a cache key for user streak activity
-func UserStreakActivityKey(userID string, streakID string) string {
-	return fmt.Sprintf("%s%s:%s", PrefixUserStreakActivity, userID, streakID)
+// UserStreakProgressKey builds a cache key for user streak progress
+func UserStreakProgressKey(userID, achievementID string) string {
+	return fmt.Sprintf("%s%s:%s", PrefixUserStreakProgress, userID, achievementID)
 }
 
 // QuizKey builds a cache key for a quiz by ID
@@ -431,7 +418,7 @@ func ExtractUserTag(key string) (string, bool) {
 	prefixes := []string{
 		PrefixUserProjects, PrefixUserEvents, PrefixUserRoles,
 		PrefixUserContentProgress, PrefixUserAchievements,
-		PrefixUserStreakActivity, PrefixUserChallengeEnrollments,
+		PrefixUserStreakProgress, PrefixUserChallengeEnrollments,
 		PrefixUserChallengeCompletions, PrefixUserConsents,
 		PrefixUserProjectPoints,
 	}
@@ -962,68 +949,6 @@ func ChurchesCountKey(params map[string]string) string {
 	hashStr := hex.EncodeToString(hash[:])[:16]
 
 	return PrefixChurchesCount + hashStr
-}
-
-// StreaksFilterKey builds a cache key for filtered streaks query results
-func StreaksFilterKey(params map[string]string) string {
-	if len(params) == 0 {
-		return PrefixStreaksFilter + "all"
-	}
-
-	// Sort keys for deterministic ordering
-	keys := make([]string, 0, len(params))
-	for k := range params {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	// Build deterministic string from sorted key-value pairs
-	var builder strings.Builder
-	for i, k := range keys {
-		if i > 0 {
-			builder.WriteString(":")
-		}
-		builder.WriteString(k)
-		builder.WriteString("=")
-		builder.WriteString(params[k])
-	}
-
-	// Hash the parameter string for a shorter key
-	hash := sha256.Sum256([]byte(builder.String()))
-	hashStr := hex.EncodeToString(hash[:])[:16]
-
-	return PrefixStreaksFilter + hashStr
-}
-
-// StreaksCountKey builds a cache key for filtered streaks count query results
-func StreaksCountKey(params map[string]string) string {
-	if len(params) == 0 {
-		return PrefixStreaksCount + "all"
-	}
-
-	// Sort keys for deterministic ordering
-	keys := make([]string, 0, len(params))
-	for k := range params {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	// Build deterministic string from sorted key-value pairs
-	var builder strings.Builder
-	for i, k := range keys {
-		if i > 0 {
-			builder.WriteString(":")
-		}
-		builder.WriteString(k)
-		builder.WriteString("=")
-		builder.WriteString(params[k])
-	}
-
-	// Hash the parameter string for a shorter key
-	hash := sha256.Sum256([]byte(builder.String()))
-	hashStr := hex.EncodeToString(hash[:])[:16]
-
-	return PrefixStreaksCount + hashStr
 }
 
 // LeaderboardKey builds a cache key for leaderboard query results (user-agnostic)

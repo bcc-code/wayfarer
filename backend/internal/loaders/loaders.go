@@ -36,10 +36,8 @@ type Loaders struct {
 	ChallengeByIDLoader                      *dataloader.Loader[string, model.Challenge]
 	ChallengesByProjectLoader                *dataloader.Loader[string, []model.Challenge]
 	ChallengesByEventLoader                  *dataloader.Loader[string, []model.Challenge]
-	StreakByIDLoader                         *dataloader.Loader[string, *model.Streak]
-	StreaksByProjectLoader                   *dataloader.Loader[string, []*model.Streak]
-	RelevantDaysByStreakLoader               *dataloader.Loader[string, []model.DateRange]
-	UserStreakActivityLoader                 *dataloader.Loader[UserStreakActivityKey, []*sqlc.UserStreakActivity]
+	StreakItemsByAchievementLoader           *dataloader.Loader[string, []*model.ContentItem]
+	UserStreakProgressLoader                 *dataloader.Loader[UserAchievementKey, []*sqlc.UserStreakProgress]
 	UserContentProgressLoader                *dataloader.Loader[UserAchievementKey, []*sqlc.UserContentProgress]
 	UserAchievementTimestampLoader           *dataloader.Loader[UserAchievementKey, *time.Time]
 	UserAchievementCelebratedTimestampLoader *dataloader.Loader[UserAchievementKey, *time.Time]
@@ -104,10 +102,8 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		ChallengeByIDLoader:                      newBatchedLoader(challengeByIDBatchFunc(db, cache)),
 		ChallengesByProjectLoader:                newBatchedLoader(challengesByProjectBatchFunc(db, cache)),
 		ChallengesByEventLoader:                  newBatchedLoader(challengesByEventBatchFunc(db, cache)),
-		StreakByIDLoader:                         newBatchedLoader(streakByIDBatchFunc(db, cache)),
-		StreaksByProjectLoader:                   newBatchedLoader(streaksByProjectBatchFunc(db, cache)),
-		RelevantDaysByStreakLoader:               newBatchedLoader(relevantDaysByStreakBatchFunc(db, cache)),
-		UserStreakActivityLoader:                 newBatchedLoader(userStreakActivityBatchFunc(db, cache)),
+		StreakItemsByAchievementLoader:           newBatchedLoader(streakItemsByAchievementBatchFunc(db, cache)),
+		UserStreakProgressLoader:                 newBatchedLoader(userStreakProgressBatchFunc(db, cache)),
 		UserContentProgressLoader:                newBatchedLoader(userContentProgressBatchFunc(db, cache)),
 		UserAchievementTimestampLoader:           newBatchedLoader(userAchievementTimestampBatchFunc(db, cache)),
 		UserAchievementCelebratedTimestampLoader: newBatchedLoader(userAchievementCelebratedTimestampBatchFunc(db, cache)),

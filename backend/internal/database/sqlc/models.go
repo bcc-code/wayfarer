@@ -581,35 +581,15 @@ type Setting struct {
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
-type Streak struct {
-	ID          string             `json:"id"`
-	ProjectID   string             `json:"project_id"`
-	Name        string             `json:"name"`
-	Description string             `json:"description"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
-}
-
 type StreakAchievement struct {
 	AchievementID string `json:"achievement_id"`
-	StreakID      string `json:"streak_id"`
-	NeededStreak  int32  `json:"needed_streak"`
 }
 
-type StreakRelevantDay struct {
-	ID        string      `json:"id"`
-	StreakID  string      `json:"streak_id"`
-	StartDate pgtype.Date `json:"start_date"`
-	EndDate   pgtype.Date `json:"end_date"`
-}
-
-type StreakTranslation struct {
-	StreakID     string             `json:"streak_id"`
-	LanguageCode string             `json:"language_code"`
-	Name         *string            `json:"name"`
-	Description  *string            `json:"description"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+type StreakAchievementItem struct {
+	ID                string `json:"id"`
+	AchievementID     string `json:"achievement_id"`
+	ExternalContentID string `json:"external_content_id"`
+	SortOrder         int32  `json:"sort_order"`
 }
 
 type SuperTeam struct {
@@ -748,11 +728,11 @@ type UserRole struct {
 	AssignedAt pgtype.Timestamptz `json:"assigned_at"`
 }
 
-type UserStreakActivity struct {
-	UserID       string             `json:"user_id"`
-	StreakID     string             `json:"streak_id"`
-	ActivityDate pgtype.Date        `json:"activity_date"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+type UserStreakProgress struct {
+	UserID            string             `json:"user_id"`
+	AchievementID     string             `json:"achievement_id"`
+	ExternalContentID string             `json:"external_content_id"`
+	CompletedAt       pgtype.Timestamptz `json:"completed_at"`
 }
 
 type Webhook struct {

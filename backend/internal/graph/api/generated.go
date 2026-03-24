@@ -73,7 +73,6 @@ type ResolverRoot interface {
 	ScoreJournal() ScoreJournalResolver
 	SimpleAchievement() SimpleAchievementResolver
 	SimpleChallenge() SimpleChallengeResolver
-	Streak() StreakResolver
 	StreakAchievement() StreakAchievementResolver
 	SuperTeam() SuperTeamResolver
 	Team() TeamResolver
@@ -267,11 +266,6 @@ type ComplexityRoot struct {
 		ExternalContent func(childComplexity int) int
 		ID              func(childComplexity int) int
 		SortOrder       func(childComplexity int) int
-	}
-
-	DateRange struct {
-		End   func(childComplexity int) int
-		Start func(childComplexity int) int
 	}
 
 	Event struct {
@@ -539,7 +533,6 @@ type ComplexityRoot struct {
 		CreateQuizSubmission                        func(childComplexity int, quizID string, userID string, responses []model.SubmitQuizAnswerInput, completedAt *scalars.DateTime) int
 		CreateScoreAdjustment                       func(childComplexity int, input model.CreateScoreAdjustmentInput) int
 		CreateSimpleAchievement                     func(childComplexity int, input model.CreateSimpleAchievementInput) int
-		CreateStreak                                func(childComplexity int, input model.CreateStreakInput) int
 		CreateStreakAchievement                     func(childComplexity int, input model.CreateStreakAchievementInput) int
 		CreateSuperTeam                             func(childComplexity int, projectID string, input model.CreateSuperTeamInput) int
 		CreateTeam                                  func(childComplexity int, projectID string, input model.CreateTeamInput) int
@@ -554,7 +547,6 @@ type ComplexityRoot struct {
 		DeleteQuizQuestion                          func(childComplexity int, id string) int
 		DeleteQuizSession                           func(childComplexity int, id string) int
 		DeleteScoreJournalEntry                     func(childComplexity int, id string) int
-		DeleteStreak                                func(childComplexity int, id string) int
 		DeleteSuperTeam                             func(childComplexity int, id string) int
 		DeleteTeam                                  func(childComplexity int, id string) int
 		DeleteWebhook                               func(childComplexity int, id string) int
@@ -576,13 +568,14 @@ type ComplexityRoot struct {
 		MarkAchievementCelebrated                   func(childComplexity int, achievementID string) int
 		MarkContentItemCompleted                    func(childComplexity int, userID string, externalContentID string) int
 		MarkFeedbackHandled                         func(childComplexity int, feedbackID string) int
+		MarkStreakItemCompleted                     func(childComplexity int, userID string, externalContentID string, force *bool) int
 		MoveEvent                                   func(childComplexity int, id string, newProjectID string) int
 		OpenQuizSession                             func(childComplexity int, id string) int
 		PublishChallenge                            func(childComplexity int, id string, publishedAt scalars.DateTime) int
 		RecalculateContentAchievements              func(childComplexity int, projectID string, achievementID string) int
+		RecalculateStreakAchievements               func(childComplexity int, projectID string, achievementID string) int
 		RecordBetResult                             func(childComplexity int, input model.RecordBetResultInput) int
 		RecordBetResults                            func(childComplexity int, inputs []model.RecordBetResultInput) int
-		RecordStreakActivity                        func(childComplexity int, userID string, achievementID string, currentStreak int) int
 		RegenerateJoinCode                          func(childComplexity int, teamID string) int
 		RegisterPushSubscription                    func(childComplexity int, input model.RegisterPushSubscriptionInput) int
 		RejectConsent                               func(childComplexity int, consentID string) int
@@ -613,6 +606,7 @@ type ComplexityRoot struct {
 		UnenrollUserFromChallenge                   func(childComplexity int, userID string, challengeID string) int
 		UnlockUserChurch                            func(childComplexity int, userID string) int
 		UnmarkContentItemCompleted                  func(childComplexity int, userID string, externalContentID string) int
+		UnmarkStreakItemCompleted                   func(childComplexity int, userID string, externalContentID string) int
 		UnregisterPushSubscription                  func(childComplexity int, endpoint string) int
 		UpdateAchievement                           func(childComplexity int, id string, input model.UpdateAchievementInput) int
 		UpdateAvatar                                func(childComplexity int, file graphql.Upload) int
@@ -628,7 +622,6 @@ type ComplexityRoot struct {
 		UpdateQuizAnswer                            func(childComplexity int, responseID string, input model.UpdateQuizAnswerInput) int
 		UpdateQuizQuestion                          func(childComplexity int, id string, input model.UpdateQuizQuestionInput) int
 		UpdateQuizSession                           func(childComplexity int, id string, input model.UpdateQuizSessionInput) int
-		UpdateStreak                                func(childComplexity int, id string, input model.UpdateStreakInput) int
 		UpdateStreakAchievement                     func(childComplexity int, id string, input model.UpdateStreakAchievementInput) int
 		UpdateSuperTeam                             func(childComplexity int, id string, input model.UpdateSuperTeamInput) int
 		UpdateTeam                                  func(childComplexity int, id string, input model.UpdateTeamInput) int
@@ -774,7 +767,6 @@ type ComplexityRoot struct {
 		Name              func(childComplexity int) int
 		Rules             func(childComplexity int) int
 		StartDate         func(childComplexity int) int
-		Streaks           func(childComplexity int) int
 		Teams             func(childComplexity int) int
 		TranslationStatus func(childComplexity int) int
 	}
@@ -848,8 +840,6 @@ type ComplexityRoot struct {
 		QuizSubmissions               func(childComplexity int, quizID string, userID *string, first *int, after *string, last *int, before *string) int
 		Quizzes                       func(childComplexity int, filter *model.QuizFilter, first *int, after *string, last *int, before *string) int
 		ScoreJournal                  func(childComplexity int, projectID string, userID string, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) int
-		Streak                        func(childComplexity int, id string) int
-		Streaks                       func(childComplexity int, filter *model.StreakFilter, first *int, after *string, last *int, before *string) int
 		Superteam                     func(childComplexity int, id string) int
 		Superteams                    func(childComplexity int, filter *model.SuperTeamFilter, first *int, after *string, last *int, before *string) int
 		Team                          func(childComplexity int, id string) int
@@ -1095,22 +1085,12 @@ type ComplexityRoot struct {
 		VisibleAt                   func(childComplexity int) int
 	}
 
-	Streak struct {
-		Description       func(childComplexity int) int
-		ID                func(childComplexity int) int
-		ListenedDays      func(childComplexity int, last int) int
-		Name              func(childComplexity int) int
-		Project           func(childComplexity int) int
-		RelevantDays      func(childComplexity int) int
-		Status            func(childComplexity int) int
-		TranslationStatus func(childComplexity int) int
-	}
-
 	StreakAchievement struct {
 		AchievedAt           func(childComplexity int) int
 		AwardableFrom        func(childComplexity int) int
 		CelebratedAt         func(childComplexity int) int
 		Challenge            func(childComplexity int) int
+		CompletedItemCount   func(childComplexity int) int
 		DescriptionCompleted func(childComplexity int) int
 		DescriptionPending   func(childComplexity int) int
 		Event                func(childComplexity int) int
@@ -1120,29 +1100,15 @@ type ComplexityRoot struct {
 		ImageCompletedObject func(childComplexity int) int
 		ImagePending         func(childComplexity int) int
 		ImagePendingObject   func(childComplexity int) int
+		Items                func(childComplexity int) int
 		Name                 func(childComplexity int) int
-		NeededStreak         func(childComplexity int) int
+		NextItem             func(childComplexity int) int
 		NotificationText     func(childComplexity int) int
 		Points               func(childComplexity int) int
 		Project              func(childComplexity int) int
-		Streak               func(childComplexity int) int
+		TotalItems           func(childComplexity int) int
 		TranslationStatus    func(childComplexity int) int
-	}
-
-	StreakConnection struct {
-		Edges      func(childComplexity int) int
-		PageInfo   func(childComplexity int) int
-		TotalCount func(childComplexity int) int
-	}
-
-	StreakDay struct {
-		Active func(childComplexity int) int
-		Date   func(childComplexity int) int
-	}
-
-	StreakEdge struct {
-		Cursor func(childComplexity int) int
-		Node   func(childComplexity int) int
+		UserCompletedItems   func(childComplexity int) int
 	}
 
 	SuperTeam struct {
@@ -1448,9 +1414,11 @@ type MutationResolver interface {
 	BulkAwardAchievements(ctx context.Context, userIds []string, teamID *string, achievementID string) ([]model.Achievement, error)
 	MarkContentItemCompleted(ctx context.Context, userID string, externalContentID string) ([]model.ContentAchievement, error)
 	UnmarkContentItemCompleted(ctx context.Context, userID string, externalContentID string) ([]model.ContentAchievement, error)
-	RecordStreakActivity(ctx context.Context, userID string, achievementID string, currentStreak int) (*model.StreakAchievement, error)
+	MarkStreakItemCompleted(ctx context.Context, userID string, externalContentID string, force *bool) ([]model.StreakAchievement, error)
+	UnmarkStreakItemCompleted(ctx context.Context, userID string, externalContentID string) ([]model.StreakAchievement, error)
 	MarkAchievementCelebrated(ctx context.Context, achievementID string) (bool, error)
 	RecalculateContentAchievements(ctx context.Context, projectID string, achievementID string) (*model.RecalculateResult, error)
+	RecalculateStreakAchievements(ctx context.Context, projectID string, achievementID string) (*model.RecalculateResult, error)
 	BulkAwardAchievementsAsync(ctx context.Context, userIds []string, teamID *string, achievementID string) (*model.BulkJob, error)
 	CreateChallenge(ctx context.Context, projectID string, eventID *string, input model.CreateChallengeInput) (model.Challenge, error)
 	UpdateChallenge(ctx context.Context, id string, input model.UpdateChallengeInput) (model.Challenge, error)
@@ -1474,9 +1442,6 @@ type MutationResolver interface {
 	BulkUnenrollUsersFromChallengeAsync(ctx context.Context, target model.EnrollmentTargetInput, challengeID string) (*model.BulkJob, error)
 	BulkCompleteChallengesAsync(ctx context.Context, target model.EnrollmentTargetInput, challengeID string, completedAt *scalars.DateTime) (*model.BulkJob, error)
 	BulkPublishChallengesAsync(ctx context.Context, ids []string, publishedAt scalars.DateTime) (*model.BulkJob, error)
-	CreateStreak(ctx context.Context, input model.CreateStreakInput) (*model.Streak, error)
-	UpdateStreak(ctx context.Context, id string, input model.UpdateStreakInput) (*model.Streak, error)
-	DeleteStreak(ctx context.Context, id string) (bool, error)
 	UpdateAvatar(ctx context.Context, file graphql.Upload) (*model.User, error)
 	AssignUserToProject(ctx context.Context, userID string, projectID string) (*model.User, error)
 	RemoveUserFromProject(ctx context.Context, userID string, projectID string) (*model.User, error)
@@ -1602,7 +1567,6 @@ type ProjectResolver interface {
 	MyChurchTeams(ctx context.Context, obj *model.Project) ([]model.Team, error)
 	MyTeam(ctx context.Context, obj *model.Project) (*model.Team, error)
 	Achievements(ctx context.Context, obj *model.Project) ([]model.Achievement, error)
-	Streaks(ctx context.Context, obj *model.Project) ([]model.Streak, error)
 	Journal(ctx context.Context, obj *model.Project, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error)
 	MyPoints(ctx context.Context, obj *model.Project) (int, error)
 
@@ -1631,8 +1595,6 @@ type QueryResolver interface {
 	Achievements(ctx context.Context, filter model.AchievementFilter, first *int, after *string, last *int, before *string) (*model.AchievementConnection, error)
 	Challenge(ctx context.Context, id string) (model.Challenge, error)
 	Challenges(ctx context.Context, filter *model.ChallengeFilter, first *int, after *string, last *int, before *string) (*model.ChallengeConnection, error)
-	Streak(ctx context.Context, id string) (*model.Streak, error)
-	Streaks(ctx context.Context, filter *model.StreakFilter, first *int, after *string, last *int, before *string) (*model.StreakConnection, error)
 	User(ctx context.Context, id string) (*model.User, error)
 	Users(ctx context.Context, filter *model.UserFilter, first *int, after *string, last *int, before *string) (*model.UserConnection, error)
 	UserRoles(ctx context.Context, userID string) ([]model.UserRole, error)
@@ -1778,13 +1740,6 @@ type SimpleChallengeResolver interface {
 	UserEnrolledAt(ctx context.Context, obj *model.SimpleChallenge) (*scalars.DateTime, error)
 	TranslationStatus(ctx context.Context, obj *model.SimpleChallenge) ([]model.TranslationFieldStatus, error)
 }
-type StreakResolver interface {
-	Status(ctx context.Context, obj *model.Streak) (int, error)
-	RelevantDays(ctx context.Context, obj *model.Streak) ([]model.DateRange, error)
-	ListenedDays(ctx context.Context, obj *model.Streak, last int) ([]model.StreakDay, error)
-	Project(ctx context.Context, obj *model.Streak) (*model.Project, error)
-	TranslationStatus(ctx context.Context, obj *model.Streak) ([]model.TranslationFieldStatus, error)
-}
 type StreakAchievementResolver interface {
 	ImagePendingObject(ctx context.Context, obj *model.StreakAchievement) (*model.Image, error)
 
@@ -1795,8 +1750,12 @@ type StreakAchievementResolver interface {
 	AchievedAt(ctx context.Context, obj *model.StreakAchievement) (*scalars.DateTime, error)
 	CelebratedAt(ctx context.Context, obj *model.StreakAchievement) (*scalars.DateTime, error)
 
+	Items(ctx context.Context, obj *model.StreakAchievement) ([]model.ContentItem, error)
+	UserCompletedItems(ctx context.Context, obj *model.StreakAchievement) ([]model.ContentItem, error)
+	NextItem(ctx context.Context, obj *model.StreakAchievement) (*model.ContentItem, error)
+
+	CompletedItemCount(ctx context.Context, obj *model.StreakAchievement) (int, error)
 	TranslationStatus(ctx context.Context, obj *model.StreakAchievement) ([]model.TranslationFieldStatus, error)
-	Streak(ctx context.Context, obj *model.StreakAchievement) (*model.Streak, error)
 }
 type SuperTeamResolver interface {
 	ImageObject(ctx context.Context, obj *model.SuperTeam) (*model.Image, error)
@@ -2582,19 +2541,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ContentItem.SortOrder(childComplexity), true
-
-	case "DateRange.end":
-		if e.complexity.DateRange.End == nil {
-			break
-		}
-
-		return e.complexity.DateRange.End(childComplexity), true
-	case "DateRange.start":
-		if e.complexity.DateRange.Start == nil {
-			break
-		}
-
-		return e.complexity.DateRange.Start(childComplexity), true
 
 	case "Event.challenges":
 		if e.complexity.Event.Challenges == nil {
@@ -3933,17 +3879,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.CreateSimpleAchievement(childComplexity, args["input"].(model.CreateSimpleAchievementInput)), true
-	case "Mutation.createStreak":
-		if e.complexity.Mutation.CreateStreak == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_createStreak_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.CreateStreak(childComplexity, args["input"].(model.CreateStreakInput)), true
 	case "Mutation.createStreakAchievement":
 		if e.complexity.Mutation.CreateStreakAchievement == nil {
 			break
@@ -4098,17 +4033,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.DeleteScoreJournalEntry(childComplexity, args["id"].(string)), true
-	case "Mutation.deleteStreak":
-		if e.complexity.Mutation.DeleteStreak == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_deleteStreak_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.DeleteStreak(childComplexity, args["id"].(string)), true
 	case "Mutation.deleteSuperTeam":
 		if e.complexity.Mutation.DeleteSuperTeam == nil {
 			break
@@ -4330,6 +4254,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.MarkFeedbackHandled(childComplexity, args["feedbackId"].(string)), true
+	case "Mutation.markStreakItemCompleted":
+		if e.complexity.Mutation.MarkStreakItemCompleted == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_markStreakItemCompleted_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.MarkStreakItemCompleted(childComplexity, args["userId"].(string), args["externalContentId"].(string), args["force"].(*bool)), true
 	case "Mutation.moveEvent":
 		if e.complexity.Mutation.MoveEvent == nil {
 			break
@@ -4374,6 +4309,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.RecalculateContentAchievements(childComplexity, args["projectId"].(string), args["achievementId"].(string)), true
+	case "Mutation.recalculateStreakAchievements":
+		if e.complexity.Mutation.RecalculateStreakAchievements == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_recalculateStreakAchievements_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RecalculateStreakAchievements(childComplexity, args["projectId"].(string), args["achievementId"].(string)), true
 	case "Mutation.recordBetResult":
 		if e.complexity.Mutation.RecordBetResult == nil {
 			break
@@ -4396,17 +4342,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.RecordBetResults(childComplexity, args["inputs"].([]model.RecordBetResultInput)), true
-	case "Mutation.recordStreakActivity":
-		if e.complexity.Mutation.RecordStreakActivity == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_recordStreakActivity_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.RecordStreakActivity(childComplexity, args["userId"].(string), args["achievementId"].(string), args["currentStreak"].(int)), true
 	case "Mutation.regenerateJoinCode":
 		if e.complexity.Mutation.RegenerateJoinCode == nil {
 			break
@@ -4737,6 +4672,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UnmarkContentItemCompleted(childComplexity, args["userId"].(string), args["externalContentId"].(string)), true
+	case "Mutation.unmarkStreakItemCompleted":
+		if e.complexity.Mutation.UnmarkStreakItemCompleted == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_unmarkStreakItemCompleted_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UnmarkStreakItemCompleted(childComplexity, args["userId"].(string), args["externalContentId"].(string)), true
 	case "Mutation.unregisterPushSubscription":
 		if e.complexity.Mutation.UnregisterPushSubscription == nil {
 			break
@@ -4902,17 +4848,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UpdateQuizSession(childComplexity, args["id"].(string), args["input"].(model.UpdateQuizSessionInput)), true
-	case "Mutation.updateStreak":
-		if e.complexity.Mutation.UpdateStreak == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_updateStreak_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.UpdateStreak(childComplexity, args["id"].(string), args["input"].(model.UpdateStreakInput)), true
 	case "Mutation.updateStreakAchievement":
 		if e.complexity.Mutation.UpdateStreakAchievement == nil {
 			break
@@ -5660,12 +5595,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Project.StartDate(childComplexity), true
-	case "Project.streaks":
-		if e.complexity.Project.Streaks == nil {
-			break
-		}
-
-		return e.complexity.Project.Streaks(childComplexity), true
 	case "Project.teams":
 		if e.complexity.Project.Teams == nil {
 			break
@@ -6164,28 +6093,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.ScoreJournal(childComplexity, args["projectId"].(string), args["userId"].(string), args["filter"].(*model.ScoreJournalFilter), args["first"].(*int), args["after"].(*string), args["last"].(*int), args["before"].(*string)), true
-	case "Query.streak":
-		if e.complexity.Query.Streak == nil {
-			break
-		}
-
-		args, err := ec.field_Query_streak_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.Streak(childComplexity, args["id"].(string)), true
-	case "Query.streaks":
-		if e.complexity.Query.Streaks == nil {
-			break
-		}
-
-		args, err := ec.field_Query_streaks_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.Streaks(childComplexity, args["filter"].(*model.StreakFilter), args["first"].(*int), args["after"].(*string), args["last"].(*int), args["before"].(*string)), true
 	case "Query.superteam":
 		if e.complexity.Query.Superteam == nil {
 			break
@@ -7382,60 +7289,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SimpleChallenge.VisibleAt(childComplexity), true
 
-	case "Streak.description":
-		if e.complexity.Streak.Description == nil {
-			break
-		}
-
-		return e.complexity.Streak.Description(childComplexity), true
-	case "Streak.id":
-		if e.complexity.Streak.ID == nil {
-			break
-		}
-
-		return e.complexity.Streak.ID(childComplexity), true
-	case "Streak.listenedDays":
-		if e.complexity.Streak.ListenedDays == nil {
-			break
-		}
-
-		args, err := ec.field_Streak_listenedDays_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Streak.ListenedDays(childComplexity, args["last"].(int)), true
-	case "Streak.name":
-		if e.complexity.Streak.Name == nil {
-			break
-		}
-
-		return e.complexity.Streak.Name(childComplexity), true
-	case "Streak.project":
-		if e.complexity.Streak.Project == nil {
-			break
-		}
-
-		return e.complexity.Streak.Project(childComplexity), true
-	case "Streak.relevantDays":
-		if e.complexity.Streak.RelevantDays == nil {
-			break
-		}
-
-		return e.complexity.Streak.RelevantDays(childComplexity), true
-	case "Streak.status":
-		if e.complexity.Streak.Status == nil {
-			break
-		}
-
-		return e.complexity.Streak.Status(childComplexity), true
-	case "Streak.translationStatus":
-		if e.complexity.Streak.TranslationStatus == nil {
-			break
-		}
-
-		return e.complexity.Streak.TranslationStatus(childComplexity), true
-
 	case "StreakAchievement.achievedAt":
 		if e.complexity.StreakAchievement.AchievedAt == nil {
 			break
@@ -7460,6 +7313,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.StreakAchievement.Challenge(childComplexity), true
+	case "StreakAchievement.completedItemCount":
+		if e.complexity.StreakAchievement.CompletedItemCount == nil {
+			break
+		}
+
+		return e.complexity.StreakAchievement.CompletedItemCount(childComplexity), true
 	case "StreakAchievement.descriptionCompleted":
 		if e.complexity.StreakAchievement.DescriptionCompleted == nil {
 			break
@@ -7514,18 +7373,24 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.StreakAchievement.ImagePendingObject(childComplexity), true
+	case "StreakAchievement.items":
+		if e.complexity.StreakAchievement.Items == nil {
+			break
+		}
+
+		return e.complexity.StreakAchievement.Items(childComplexity), true
 	case "StreakAchievement.name":
 		if e.complexity.StreakAchievement.Name == nil {
 			break
 		}
 
 		return e.complexity.StreakAchievement.Name(childComplexity), true
-	case "StreakAchievement.neededStreak":
-		if e.complexity.StreakAchievement.NeededStreak == nil {
+	case "StreakAchievement.nextItem":
+		if e.complexity.StreakAchievement.NextItem == nil {
 			break
 		}
 
-		return e.complexity.StreakAchievement.NeededStreak(childComplexity), true
+		return e.complexity.StreakAchievement.NextItem(childComplexity), true
 	case "StreakAchievement.notificationText":
 		if e.complexity.StreakAchievement.NotificationText == nil {
 			break
@@ -7544,63 +7409,24 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.StreakAchievement.Project(childComplexity), true
-	case "StreakAchievement.streak":
-		if e.complexity.StreakAchievement.Streak == nil {
+	case "StreakAchievement.totalItems":
+		if e.complexity.StreakAchievement.TotalItems == nil {
 			break
 		}
 
-		return e.complexity.StreakAchievement.Streak(childComplexity), true
+		return e.complexity.StreakAchievement.TotalItems(childComplexity), true
 	case "StreakAchievement.translationStatus":
 		if e.complexity.StreakAchievement.TranslationStatus == nil {
 			break
 		}
 
 		return e.complexity.StreakAchievement.TranslationStatus(childComplexity), true
-
-	case "StreakConnection.edges":
-		if e.complexity.StreakConnection.Edges == nil {
+	case "StreakAchievement.userCompletedItems":
+		if e.complexity.StreakAchievement.UserCompletedItems == nil {
 			break
 		}
 
-		return e.complexity.StreakConnection.Edges(childComplexity), true
-	case "StreakConnection.pageInfo":
-		if e.complexity.StreakConnection.PageInfo == nil {
-			break
-		}
-
-		return e.complexity.StreakConnection.PageInfo(childComplexity), true
-	case "StreakConnection.totalCount":
-		if e.complexity.StreakConnection.TotalCount == nil {
-			break
-		}
-
-		return e.complexity.StreakConnection.TotalCount(childComplexity), true
-
-	case "StreakDay.active":
-		if e.complexity.StreakDay.Active == nil {
-			break
-		}
-
-		return e.complexity.StreakDay.Active(childComplexity), true
-	case "StreakDay.date":
-		if e.complexity.StreakDay.Date == nil {
-			break
-		}
-
-		return e.complexity.StreakDay.Date(childComplexity), true
-
-	case "StreakEdge.cursor":
-		if e.complexity.StreakEdge.Cursor == nil {
-			break
-		}
-
-		return e.complexity.StreakEdge.Cursor(childComplexity), true
-	case "StreakEdge.node":
-		if e.complexity.StreakEdge.Node == nil {
-			break
-		}
-
-		return e.complexity.StreakEdge.Node(childComplexity), true
+		return e.complexity.StreakAchievement.UserCompletedItems(childComplexity), true
 
 	case "SuperTeam.color":
 		if e.complexity.SuperTeam.Color == nil {
@@ -8417,13 +8243,11 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateScoreAdjustmentInput,
 		ec.unmarshalInputCreateSimpleAchievementInput,
 		ec.unmarshalInputCreateStreakAchievementInput,
-		ec.unmarshalInputCreateStreakInput,
 		ec.unmarshalInputCreateSuperTeamInput,
 		ec.unmarshalInputCreateTeamInput,
 		ec.unmarshalInputCreateTeamScoreAdjustmentInput,
 		ec.unmarshalInputCreateUserInput,
 		ec.unmarshalInputCreateWebhookInput,
-		ec.unmarshalInputDateRangeInput,
 		ec.unmarshalInputDeviceMetadata,
 		ec.unmarshalInputEnrollmentTargetInput,
 		ec.unmarshalInputEventFilter,
@@ -8439,7 +8263,6 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputScoreJournalFilter,
 		ec.unmarshalInputSendPushNotificationInput,
 		ec.unmarshalInputSetNotificationPreferenceInput,
-		ec.unmarshalInputStreakFilter,
 		ec.unmarshalInputSubmitFeedbackInput,
 		ec.unmarshalInputSubmitQuizAnswerInput,
 		ec.unmarshalInputSuperTeamFilter,
@@ -8456,7 +8279,6 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputUpdateQuizQuestionInput,
 		ec.unmarshalInputUpdateQuizSessionInput,
 		ec.unmarshalInputUpdateStreakAchievementInput,
-		ec.unmarshalInputUpdateStreakInput,
 		ec.unmarshalInputUpdateSuperTeamInput,
 		ec.unmarshalInputUpdateTeamInput,
 		ec.unmarshalInputUpdateWebhookInput,
@@ -8842,7 +8664,6 @@ type Project {
     myChurchTeams: [Team!]! @goField(forceResolver: true)
     myTeam: Team @goField(forceResolver: true)
     achievements: [Achievement!]! @goField(forceResolver: true)
-    streaks: [Streak!]! @goField(forceResolver: true)
     journal(
         filter: ScoreJournalFilter
         first: Int
@@ -9248,12 +9069,16 @@ type StreakAchievement implements Achievement {
     challenge: Challenge @goField(forceResolver: true)
     achievedAt: DateTime @goField(forceResolver: true)
     celebratedAt: DateTime @goField(forceResolver: true)
-    neededStreak: Int!
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
+    # Content items with deadlines (external_content.complete_by)
+    items: [ContentItem!]! @goField(forceResolver: true)
+    userCompletedItems: [ContentItem!]! @goField(forceResolver: true)
+    nextItem: ContentItem @goField(forceResolver: true)
+    totalItems: Int!
+    completedItemCount: Int! @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
-    streak: Streak! @goField(forceResolver: true)
 }
 
 type QuizAchievement implements Achievement {
@@ -9326,8 +9151,7 @@ input CreateStreakAchievementInput {
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
-    neededStreak: Int!
-    streakId: ID!
+    items: [ContentItemInput!]!
 }
 
 input CreateQuizAchievementInput {
@@ -9388,8 +9212,7 @@ input UpdateStreakAchievementInput {
     points: Int
     hidden: Boolean
     awardableFrom: DateTime
-    neededStreak: Int
-    streakId: ID
+    items: [ContentItemInput!]
 }
 
 input UpdateQuizAchievementInput {
@@ -9464,14 +9287,19 @@ extend type Mutation {
     markContentItemCompleted(userId: ID!, externalContentId: ID!): [ContentAchievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
     unmarkContentItemCompleted(userId: ID!, externalContentId: ID!): [ContentAchievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
-    # Streak tracking (M2M)
-    recordStreakActivity(userId: ID!, achievementId: ID!, currentStreak: Int!): StreakAchievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    # Streak progress (M2M) - marks content completed across ALL published streak achievements containing this content
+    # Enforces external_content.complete_by deadline unless force=true
+    markStreakItemCompleted(userId: ID!, externalContentId: ID!, force: Boolean): [StreakAchievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    unmarkStreakItemCompleted(userId: ID!, externalContentId: ID!): [StreakAchievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
     # Mark achievement as celebrated (any authenticated user)
     markAchievementCelebrated(achievementId: ID!): Boolean!
 
     # Force recalculate content achievements - awards achievements to users who completed all items but weren't awarded
     recalculateContentAchievements(projectId: ID!, achievementId: ID!): RecalculateResult! @requireRole(roles: ["admin", "superadmin"])
+
+    # Force recalculate streak achievements - awards achievements to users who completed all items before deadlines but weren't awarded
+    recalculateStreakAchievements(projectId: ID!, achievementId: ID!): RecalculateResult! @requireRole(roles: ["admin", "superadmin"])
 
     # Async bulk operations - returns BulkJob for tracking progress
     bulkAwardAchievementsAsync(userIds: [ID!], teamId: ID, achievementId: ID!): BulkJob! @requireRole(roles: ["m2m", "admin", "superadmin"])
@@ -9727,84 +9555,6 @@ extend type Mutation {
     bulkUnenrollUsersFromChallengeAsync(target: EnrollmentTargetInput!, challengeId: ID!): BulkJob! @requireRole(roles: ["admin", "superadmin", "m2m"])
     bulkCompleteChallengesAsync(target: EnrollmentTargetInput!, challengeId: ID!, completedAt: DateTime): BulkJob! @requireRole(roles: ["m2m", "admin", "superadmin"])
     bulkPublishChallengesAsync(ids: [ID!]!, publishedAt: DateTime!): BulkJob! @requireRole(roles: ["admin", "superadmin"])
-}
-`, BuiltIn: false},
-	{Name: "../../../../gql/streaks.graphqls", Input: `# Streak queries and mutations
-
-# ==================== Streak Types ====================
-
-type Streak {
-    id: ID!
-    name: String!
-    description: String!
-    status: Int! @goField(forceResolver: true)
-    relevantDays: [DateRange!]! @goField(forceResolver: true)
-    listenedDays(last: Int!): [StreakDay!]! @goField(forceResolver: true)
-    project: Project! @goField(forceResolver: true)
-    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
-}
-
-type StreakDay {
-    date: Date!
-    active: Boolean!
-}
-
-type DateRange {
-    start: Date!
-    end: Date!
-}
-
-# ==================== Streak Input Types ====================
-
-input DateRangeInput {
-    start: Date!
-    end: Date!
-}
-
-input CreateStreakInput {
-    name: String!
-    description: String!
-    projectId: ID!
-    relevantDays: [DateRangeInput!]!
-}
-
-input UpdateStreakInput {
-    name: String
-    description: String
-    relevantDays: [DateRangeInput!]
-}
-
-input StreakFilter {
-    projectId: ID  # Filter by project
-    ids: [ID!]  # Support bulk ID lookup for M2M API
-}
-
-# ==================== Streak Pagination ====================
-
-type StreakEdge {
-    cursor: String!
-    node: Streak!
-}
-
-type StreakConnection {
-    edges: [StreakEdge!]!
-    pageInfo: PageInfo!
-    totalCount: Int!
-}
-
-# ==================== Queries ====================
-
-extend type Query {
-    streak(id: ID!): Streak!
-    streaks(filter: StreakFilter, first: Int, after: String, last: Int, before: String): StreakConnection!
-}
-
-# ==================== Mutations ====================
-
-extend type Mutation {
-    createStreak(input: CreateStreakInput!): Streak! @requireRole(roles: ["admin", "superadmin"])
-    updateStreak(id: ID!, input: UpdateStreakInput!): Streak! @requireRole(roles: ["admin", "superadmin"])
-    deleteStreak(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/users.graphqls", Input: `# User queries and mutations
@@ -11969,17 +11719,6 @@ func (ec *executionContext) field_Mutation_createStreakAchievement_args(ctx cont
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_createStreak_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateStreakInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateStreakInput)
-	if err != nil {
-		return nil, err
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
 func (ec *executionContext) field_Mutation_createSuperTeam_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -12123,17 +11862,6 @@ func (ec *executionContext) field_Mutation_deleteQuiz_args(ctx context.Context, 
 }
 
 func (ec *executionContext) field_Mutation_deleteScoreJournalEntry_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["id"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_deleteStreak_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
@@ -12373,6 +12101,27 @@ func (ec *executionContext) field_Mutation_markFeedbackHandled_args(ctx context.
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_markStreakItemCompleted_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["userId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "externalContentId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["externalContentId"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "force", ec.unmarshalOBoolean2ᚖbool)
+	if err != nil {
+		return nil, err
+	}
+	args["force"] = arg2
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_moveEvent_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -12432,6 +12181,22 @@ func (ec *executionContext) field_Mutation_recalculateContentAchievements_args(c
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_recalculateStreakAchievements_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "projectId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["projectId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "achievementId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["achievementId"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_recordBetResult_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -12451,27 +12216,6 @@ func (ec *executionContext) field_Mutation_recordBetResults_args(ctx context.Con
 		return nil, err
 	}
 	args["inputs"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_recordStreakActivity_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["userId"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "achievementId", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["achievementId"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "currentStreak", ec.unmarshalNInt2int)
-	if err != nil {
-		return nil, err
-	}
-	args["currentStreak"] = arg2
 	return args, nil
 }
 
@@ -12885,6 +12629,22 @@ func (ec *executionContext) field_Mutation_unmarkContentItemCompleted_args(ctx c
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_unmarkStreakItemCompleted_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["userId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "externalContentId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["externalContentId"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_unregisterPushSubscription_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -13149,22 +12909,6 @@ func (ec *executionContext) field_Mutation_updateStreakAchievement_args(ctx cont
 	}
 	args["id"] = arg0
 	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateStreakAchievementInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUpdateStreakAchievementInput)
-	if err != nil {
-		return nil, err
-	}
-	args["input"] = arg1
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_updateStreak_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["id"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateStreakInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUpdateStreakInput)
 	if err != nil {
 		return nil, err
 	}
@@ -13897,48 +13641,6 @@ func (ec *executionContext) field_Query_scoreJournal_args(ctx context.Context, r
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_streak_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["id"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_streaks_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOStreakFilter2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakFilter)
-	if err != nil {
-		return nil, err
-	}
-	args["filter"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
-	if err != nil {
-		return nil, err
-	}
-	args["first"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
-	if err != nil {
-		return nil, err
-	}
-	args["after"] = arg2
-	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "last", ec.unmarshalOInt2ᚖint)
-	if err != nil {
-		return nil, err
-	}
-	args["last"] = arg3
-	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "before", ec.unmarshalOString2ᚖstring)
-	if err != nil {
-		return nil, err
-	}
-	args["before"] = arg4
-	return args, nil
-}
-
 func (ec *executionContext) field_Query_superteam_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -14143,17 +13845,6 @@ func (ec *executionContext) field_Quiz_sessions_args(ctx context.Context, rawArg
 		return nil, err
 	}
 	args["state"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Streak_listenedDays_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "last", ec.unmarshalNInt2int)
-	if err != nil {
-		return nil, err
-	}
-	args["last"] = arg0
 	return args, nil
 }
 
@@ -17443,8 +17134,6 @@ func (ec *executionContext) fieldContext_ContentAchievement_project(_ context.Co
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
 				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
 			case "myPoints":
@@ -18002,64 +17691,6 @@ func (ec *executionContext) fieldContext_ContentItem_sortOrder(_ context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _DateRange_start(ctx context.Context, field graphql.CollectedField, obj *model.DateRange) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_DateRange_start,
-		func(ctx context.Context) (any, error) {
-			return obj.Start, nil
-		},
-		nil,
-		ec.marshalNDate2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDate,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_DateRange_start(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "DateRange",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Date does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _DateRange_end(ctx context.Context, field graphql.CollectedField, obj *model.DateRange) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_DateRange_end,
-		func(ctx context.Context) (any, error) {
-			return obj.End, nil
-		},
-		nil,
-		ec.marshalNDate2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDate,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_DateRange_end(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "DateRange",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Date does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Event_id(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -18343,8 +17974,6 @@ func (ec *executionContext) fieldContext_Event_parentProject(_ context.Context, 
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
 				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
 			case "myPoints":
@@ -18789,8 +18418,6 @@ func (ec *executionContext) fieldContext_ExternalChallenge_project(_ context.Con
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
 				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
 			case "myPoints":
@@ -23091,8 +22718,6 @@ func (ec *executionContext) fieldContext_Mutation_joinProject(ctx context.Contex
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
 				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
 			case "myPoints":
@@ -23196,8 +22821,6 @@ func (ec *executionContext) fieldContext_Mutation_createProject(ctx context.Cont
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
 				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
 			case "myPoints":
@@ -23301,8 +22924,6 @@ func (ec *executionContext) fieldContext_Mutation_updateProject(ctx context.Cont
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
 				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
 			case "myPoints":
@@ -25154,18 +24775,24 @@ func (ec *executionContext) fieldContext_Mutation_createStreakAchievement(ctx co
 				return ec.fieldContext_StreakAchievement_achievedAt(ctx, field)
 			case "celebratedAt":
 				return ec.fieldContext_StreakAchievement_celebratedAt(ctx, field)
-			case "neededStreak":
-				return ec.fieldContext_StreakAchievement_neededStreak(ctx, field)
 			case "points":
 				return ec.fieldContext_StreakAchievement_points(ctx, field)
 			case "hidden":
 				return ec.fieldContext_StreakAchievement_hidden(ctx, field)
 			case "awardableFrom":
 				return ec.fieldContext_StreakAchievement_awardableFrom(ctx, field)
+			case "items":
+				return ec.fieldContext_StreakAchievement_items(ctx, field)
+			case "userCompletedItems":
+				return ec.fieldContext_StreakAchievement_userCompletedItems(ctx, field)
+			case "nextItem":
+				return ec.fieldContext_StreakAchievement_nextItem(ctx, field)
+			case "totalItems":
+				return ec.fieldContext_StreakAchievement_totalItems(ctx, field)
+			case "completedItemCount":
+				return ec.fieldContext_StreakAchievement_completedItemCount(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_StreakAchievement_translationStatus(ctx, field)
-			case "streak":
-				return ec.fieldContext_StreakAchievement_streak(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type StreakAchievement", field.Name)
 		},
@@ -25421,18 +25048,24 @@ func (ec *executionContext) fieldContext_Mutation_updateStreakAchievement(ctx co
 				return ec.fieldContext_StreakAchievement_achievedAt(ctx, field)
 			case "celebratedAt":
 				return ec.fieldContext_StreakAchievement_celebratedAt(ctx, field)
-			case "neededStreak":
-				return ec.fieldContext_StreakAchievement_neededStreak(ctx, field)
 			case "points":
 				return ec.fieldContext_StreakAchievement_points(ctx, field)
 			case "hidden":
 				return ec.fieldContext_StreakAchievement_hidden(ctx, field)
 			case "awardableFrom":
 				return ec.fieldContext_StreakAchievement_awardableFrom(ctx, field)
+			case "items":
+				return ec.fieldContext_StreakAchievement_items(ctx, field)
+			case "userCompletedItems":
+				return ec.fieldContext_StreakAchievement_userCompletedItems(ctx, field)
+			case "nextItem":
+				return ec.fieldContext_StreakAchievement_nextItem(ctx, field)
+			case "totalItems":
+				return ec.fieldContext_StreakAchievement_totalItems(ctx, field)
+			case "completedItemCount":
+				return ec.fieldContext_StreakAchievement_completedItemCount(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_StreakAchievement_translationStatus(ctx, field)
-			case "streak":
-				return ec.fieldContext_StreakAchievement_streak(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type StreakAchievement", field.Name)
 		},
@@ -26122,15 +25755,15 @@ func (ec *executionContext) fieldContext_Mutation_unmarkContentItemCompleted(ctx
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_recordStreakActivity(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_markStreakItemCompleted(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Mutation_recordStreakActivity,
+		ec.fieldContext_Mutation_markStreakItemCompleted,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().RecordStreakActivity(ctx, fc.Args["userId"].(string), fc.Args["achievementId"].(string), fc.Args["currentStreak"].(int))
+			return ec.resolvers.Mutation().MarkStreakItemCompleted(ctx, fc.Args["userId"].(string), fc.Args["externalContentId"].(string), fc.Args["force"].(*bool))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -26138,11 +25771,11 @@ func (ec *executionContext) _Mutation_recordStreakActivity(ctx context.Context, 
 			directive1 := func(ctx context.Context) (any, error) {
 				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
 				if err != nil {
-					var zeroVal *model.StreakAchievement
+					var zeroVal []model.StreakAchievement
 					return zeroVal, err
 				}
 				if ec.directives.RequireRole == nil {
-					var zeroVal *model.StreakAchievement
+					var zeroVal []model.StreakAchievement
 					return zeroVal, errors.New("directive requireRole is not implemented")
 				}
 				return ec.directives.RequireRole(ctx, nil, directive0, roles)
@@ -26151,13 +25784,13 @@ func (ec *executionContext) _Mutation_recordStreakActivity(ctx context.Context, 
 			next = directive1
 			return next
 		},
-		ec.marshalNStreakAchievement2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakAchievement,
+		ec.marshalNStreakAchievement2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakAchievementᚄ,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_Mutation_recordStreakActivity(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_markStreakItemCompleted(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -26193,18 +25826,24 @@ func (ec *executionContext) fieldContext_Mutation_recordStreakActivity(ctx conte
 				return ec.fieldContext_StreakAchievement_achievedAt(ctx, field)
 			case "celebratedAt":
 				return ec.fieldContext_StreakAchievement_celebratedAt(ctx, field)
-			case "neededStreak":
-				return ec.fieldContext_StreakAchievement_neededStreak(ctx, field)
 			case "points":
 				return ec.fieldContext_StreakAchievement_points(ctx, field)
 			case "hidden":
 				return ec.fieldContext_StreakAchievement_hidden(ctx, field)
 			case "awardableFrom":
 				return ec.fieldContext_StreakAchievement_awardableFrom(ctx, field)
+			case "items":
+				return ec.fieldContext_StreakAchievement_items(ctx, field)
+			case "userCompletedItems":
+				return ec.fieldContext_StreakAchievement_userCompletedItems(ctx, field)
+			case "nextItem":
+				return ec.fieldContext_StreakAchievement_nextItem(ctx, field)
+			case "totalItems":
+				return ec.fieldContext_StreakAchievement_totalItems(ctx, field)
+			case "completedItemCount":
+				return ec.fieldContext_StreakAchievement_completedItemCount(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_StreakAchievement_translationStatus(ctx, field)
-			case "streak":
-				return ec.fieldContext_StreakAchievement_streak(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type StreakAchievement", field.Name)
 		},
@@ -26216,7 +25855,114 @@ func (ec *executionContext) fieldContext_Mutation_recordStreakActivity(ctx conte
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_recordStreakActivity_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_markStreakItemCompleted_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_unmarkStreakItemCompleted(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_unmarkStreakItemCompleted,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UnmarkStreakItemCompleted(ctx, fc.Args["userId"].(string), fc.Args["externalContentId"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
+				if err != nil {
+					var zeroVal []model.StreakAchievement
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal []model.StreakAchievement
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNStreakAchievement2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakAchievementᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_unmarkStreakItemCompleted(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_StreakAchievement_id(ctx, field)
+			case "name":
+				return ec.fieldContext_StreakAchievement_name(ctx, field)
+			case "descriptionPending":
+				return ec.fieldContext_StreakAchievement_descriptionPending(ctx, field)
+			case "descriptionCompleted":
+				return ec.fieldContext_StreakAchievement_descriptionCompleted(ctx, field)
+			case "notificationText":
+				return ec.fieldContext_StreakAchievement_notificationText(ctx, field)
+			case "imagePending":
+				return ec.fieldContext_StreakAchievement_imagePending(ctx, field)
+			case "imagePendingObject":
+				return ec.fieldContext_StreakAchievement_imagePendingObject(ctx, field)
+			case "imageCompleted":
+				return ec.fieldContext_StreakAchievement_imageCompleted(ctx, field)
+			case "imageCompletedObject":
+				return ec.fieldContext_StreakAchievement_imageCompletedObject(ctx, field)
+			case "project":
+				return ec.fieldContext_StreakAchievement_project(ctx, field)
+			case "event":
+				return ec.fieldContext_StreakAchievement_event(ctx, field)
+			case "challenge":
+				return ec.fieldContext_StreakAchievement_challenge(ctx, field)
+			case "achievedAt":
+				return ec.fieldContext_StreakAchievement_achievedAt(ctx, field)
+			case "celebratedAt":
+				return ec.fieldContext_StreakAchievement_celebratedAt(ctx, field)
+			case "points":
+				return ec.fieldContext_StreakAchievement_points(ctx, field)
+			case "hidden":
+				return ec.fieldContext_StreakAchievement_hidden(ctx, field)
+			case "awardableFrom":
+				return ec.fieldContext_StreakAchievement_awardableFrom(ctx, field)
+			case "items":
+				return ec.fieldContext_StreakAchievement_items(ctx, field)
+			case "userCompletedItems":
+				return ec.fieldContext_StreakAchievement_userCompletedItems(ctx, field)
+			case "nextItem":
+				return ec.fieldContext_StreakAchievement_nextItem(ctx, field)
+			case "totalItems":
+				return ec.fieldContext_StreakAchievement_totalItems(ctx, field)
+			case "completedItemCount":
+				return ec.fieldContext_StreakAchievement_completedItemCount(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_StreakAchievement_translationStatus(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type StreakAchievement", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_unmarkStreakItemCompleted_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -26323,6 +26069,71 @@ func (ec *executionContext) fieldContext_Mutation_recalculateContentAchievements
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_recalculateContentAchievements_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_recalculateStreakAchievements(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_recalculateStreakAchievements,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().RecalculateStreakAchievements(ctx, fc.Args["projectId"].(string), fc.Args["achievementId"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				if err != nil {
+					var zeroVal *model.RecalculateResult
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.RecalculateResult
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNRecalculateResult2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐRecalculateResult,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_recalculateStreakAchievements(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "awarded":
+				return ec.fieldContext_RecalculateResult_awarded(ctx, field)
+			case "userIds":
+				return ec.fieldContext_RecalculateResult_userIds(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RecalculateResult", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_recalculateStreakAchievements_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -27786,219 +27597,6 @@ func (ec *executionContext) fieldContext_Mutation_bulkPublishChallengesAsync(ctx
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_bulkPublishChallengesAsync_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_createStreak(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_createStreak,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().CreateStreak(ctx, fc.Args["input"].(model.CreateStreakInput))
-		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
-				if err != nil {
-					var zeroVal *model.Streak
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal *model.Streak
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
-		ec.marshalNStreak2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreak,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_createStreak(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Streak_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Streak_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Streak_description(ctx, field)
-			case "status":
-				return ec.fieldContext_Streak_status(ctx, field)
-			case "relevantDays":
-				return ec.fieldContext_Streak_relevantDays(ctx, field)
-			case "listenedDays":
-				return ec.fieldContext_Streak_listenedDays(ctx, field)
-			case "project":
-				return ec.fieldContext_Streak_project(ctx, field)
-			case "translationStatus":
-				return ec.fieldContext_Streak_translationStatus(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Streak", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_createStreak_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_updateStreak(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_updateStreak,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().UpdateStreak(ctx, fc.Args["id"].(string), fc.Args["input"].(model.UpdateStreakInput))
-		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
-				if err != nil {
-					var zeroVal *model.Streak
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal *model.Streak
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
-		ec.marshalNStreak2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreak,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_updateStreak(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Streak_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Streak_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Streak_description(ctx, field)
-			case "status":
-				return ec.fieldContext_Streak_status(ctx, field)
-			case "relevantDays":
-				return ec.fieldContext_Streak_relevantDays(ctx, field)
-			case "listenedDays":
-				return ec.fieldContext_Streak_listenedDays(ctx, field)
-			case "project":
-				return ec.fieldContext_Streak_project(ctx, field)
-			case "translationStatus":
-				return ec.fieldContext_Streak_translationStatus(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Streak", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_updateStreak_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_deleteStreak(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_deleteStreak,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().DeleteStreak(ctx, fc.Args["id"].(string))
-		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
-				if err != nil {
-					var zeroVal bool
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal bool
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_deleteStreak(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_deleteStreak_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -34558,8 +34156,6 @@ func (ec *executionContext) fieldContext_PluginChallenge_project(_ context.Conte
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
 				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
 			case "myPoints":
@@ -36466,53 +36062,6 @@ func (ec *executionContext) fieldContext_Project_achievements(_ context.Context,
 	return fc, nil
 }
 
-func (ec *executionContext) _Project_streaks(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Project_streaks,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Project().Streaks(ctx, obj)
-		},
-		nil,
-		ec.marshalNStreak2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Project_streaks(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Project",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Streak_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Streak_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Streak_description(ctx, field)
-			case "status":
-				return ec.fieldContext_Streak_status(ctx, field)
-			case "relevantDays":
-				return ec.fieldContext_Streak_relevantDays(ctx, field)
-			case "listenedDays":
-				return ec.fieldContext_Streak_listenedDays(ctx, field)
-			case "project":
-				return ec.fieldContext_Streak_project(ctx, field)
-			case "translationStatus":
-				return ec.fieldContext_Streak_translationStatus(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Streak", field.Name)
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Project_journal(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -36845,8 +36394,6 @@ func (ec *executionContext) fieldContext_ProjectEdge_node(_ context.Context, fie
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
 				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
 			case "myPoints":
@@ -37205,8 +36752,6 @@ func (ec *executionContext) fieldContext_Query_project(ctx context.Context, fiel
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
 				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
 			case "myPoints":
@@ -37340,8 +36885,6 @@ func (ec *executionContext) fieldContext_Query_myProjects(_ context.Context, fie
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
 				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
 			case "myPoints":
@@ -37415,8 +36958,6 @@ func (ec *executionContext) fieldContext_Query_myCurrentProject(_ context.Contex
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
 				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
 			case "myPoints":
@@ -37490,8 +37031,6 @@ func (ec *executionContext) fieldContext_Query_currentProject(_ context.Context,
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
 				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
 			case "myPoints":
@@ -38233,114 +37772,6 @@ func (ec *executionContext) fieldContext_Query_challenges(ctx context.Context, f
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_challenges_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_streak(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Query_streak,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().Streak(ctx, fc.Args["id"].(string))
-		},
-		nil,
-		ec.marshalNStreak2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreak,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Query_streak(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Streak_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Streak_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Streak_description(ctx, field)
-			case "status":
-				return ec.fieldContext_Streak_status(ctx, field)
-			case "relevantDays":
-				return ec.fieldContext_Streak_relevantDays(ctx, field)
-			case "listenedDays":
-				return ec.fieldContext_Streak_listenedDays(ctx, field)
-			case "project":
-				return ec.fieldContext_Streak_project(ctx, field)
-			case "translationStatus":
-				return ec.fieldContext_Streak_translationStatus(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Streak", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_streak_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_streaks(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Query_streaks,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().Streaks(ctx, fc.Args["filter"].(*model.StreakFilter), fc.Args["first"].(*int), fc.Args["after"].(*string), fc.Args["last"].(*int), fc.Args["before"].(*string))
-		},
-		nil,
-		ec.marshalNStreakConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakConnection,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Query_streaks(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "edges":
-				return ec.fieldContext_StreakConnection_edges(ctx, field)
-			case "pageInfo":
-				return ec.fieldContext_StreakConnection_pageInfo(ctx, field)
-			case "totalCount":
-				return ec.fieldContext_StreakConnection_totalCount(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type StreakConnection", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_streaks_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -40934,8 +40365,6 @@ func (ec *executionContext) fieldContext_Quiz_project(_ context.Context, field g
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
 				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
 			case "myPoints":
@@ -41895,8 +41324,6 @@ func (ec *executionContext) fieldContext_QuizAchievement_project(_ context.Conte
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
 				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
 			case "myPoints":
@@ -42514,8 +41941,6 @@ func (ec *executionContext) fieldContext_QuizChallenge_project(_ context.Context
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
 				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
 			case "myPoints":
@@ -44970,8 +44395,6 @@ func (ec *executionContext) fieldContext_RoleScope_project(_ context.Context, fi
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
 				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
 			case "myPoints":
@@ -45125,8 +44548,6 @@ func (ec *executionContext) fieldContext_ScoreJournal_project(_ context.Context,
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
 				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
 			case "myPoints":
@@ -46155,8 +45576,6 @@ func (ec *executionContext) fieldContext_SimpleAchievement_project(_ context.Con
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
 				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
 			case "myPoints":
@@ -46643,8 +46062,6 @@ func (ec *executionContext) fieldContext_SimpleChallenge_project(_ context.Conte
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
 				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
 			case "myPoints":
@@ -47063,314 +46480,6 @@ func (ec *executionContext) fieldContext_SimpleChallenge_allowSelfCompletion(_ c
 	return fc, nil
 }
 
-func (ec *executionContext) _Streak_id(ctx context.Context, field graphql.CollectedField, obj *model.Streak) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Streak_id,
-		func(ctx context.Context) (any, error) {
-			return obj.ID, nil
-		},
-		nil,
-		ec.marshalNID2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Streak_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Streak",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Streak_name(ctx context.Context, field graphql.CollectedField, obj *model.Streak) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Streak_name,
-		func(ctx context.Context) (any, error) {
-			return obj.Name, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Streak_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Streak",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Streak_description(ctx context.Context, field graphql.CollectedField, obj *model.Streak) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Streak_description,
-		func(ctx context.Context) (any, error) {
-			return obj.Description, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Streak_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Streak",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Streak_status(ctx context.Context, field graphql.CollectedField, obj *model.Streak) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Streak_status,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Streak().Status(ctx, obj)
-		},
-		nil,
-		ec.marshalNInt2int,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Streak_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Streak",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Streak_relevantDays(ctx context.Context, field graphql.CollectedField, obj *model.Streak) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Streak_relevantDays,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Streak().RelevantDays(ctx, obj)
-		},
-		nil,
-		ec.marshalNDateRange2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐDateRangeᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Streak_relevantDays(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Streak",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "start":
-				return ec.fieldContext_DateRange_start(ctx, field)
-			case "end":
-				return ec.fieldContext_DateRange_end(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type DateRange", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Streak_listenedDays(ctx context.Context, field graphql.CollectedField, obj *model.Streak) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Streak_listenedDays,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Streak().ListenedDays(ctx, obj, fc.Args["last"].(int))
-		},
-		nil,
-		ec.marshalNStreakDay2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakDayᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Streak_listenedDays(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Streak",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "date":
-				return ec.fieldContext_StreakDay_date(ctx, field)
-			case "active":
-				return ec.fieldContext_StreakDay_active(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type StreakDay", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Streak_listenedDays_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Streak_project(ctx context.Context, field graphql.CollectedField, obj *model.Streak) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Streak_project,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Streak().Project(ctx, obj)
-		},
-		nil,
-		ec.marshalNProject2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐProject,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Streak_project(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Streak",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Project_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Project_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Project_description(ctx, field)
-			case "rules":
-				return ec.fieldContext_Project_rules(ctx, field)
-			case "infoMessage":
-				return ec.fieldContext_Project_infoMessage(ctx, field)
-			case "infoMessageStart":
-				return ec.fieldContext_Project_infoMessageStart(ctx, field)
-			case "infoMessageEnd":
-				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
-			case "challenges":
-				return ec.fieldContext_Project_challenges(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_Project_leaderboard(ctx, field)
-			case "events":
-				return ec.fieldContext_Project_events(ctx, field)
-			case "startDate":
-				return ec.fieldContext_Project_startDate(ctx, field)
-			case "endDate":
-				return ec.fieldContext_Project_endDate(ctx, field)
-			case "branding":
-				return ec.fieldContext_Project_branding(ctx, field)
-			case "teams":
-				return ec.fieldContext_Project_teams(ctx, field)
-			case "myChurchTeams":
-				return ec.fieldContext_Project_myChurchTeams(ctx, field)
-			case "myTeam":
-				return ec.fieldContext_Project_myTeam(ctx, field)
-			case "achievements":
-				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
-			case "journal":
-				return ec.fieldContext_Project_journal(ctx, field)
-			case "myPoints":
-				return ec.fieldContext_Project_myPoints(ctx, field)
-			case "archivedAt":
-				return ec.fieldContext_Project_archivedAt(ctx, field)
-			case "translationStatus":
-				return ec.fieldContext_Project_translationStatus(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Streak_translationStatus(ctx context.Context, field graphql.CollectedField, obj *model.Streak) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Streak_translationStatus,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Streak().TranslationStatus(ctx, obj)
-		},
-		nil,
-		ec.marshalNTranslationFieldStatus2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTranslationFieldStatusᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Streak_translationStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Streak",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "languageCode":
-				return ec.fieldContext_TranslationFieldStatus_languageCode(ctx, field)
-			case "fields":
-				return ec.fieldContext_TranslationFieldStatus_fields(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type TranslationFieldStatus", field.Name)
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _StreakAchievement_id(ctx context.Context, field graphql.CollectedField, obj *model.StreakAchievement) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -47710,8 +46819,6 @@ func (ec *executionContext) fieldContext_StreakAchievement_project(_ context.Con
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
 				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
 			case "myPoints":
@@ -47863,35 +46970,6 @@ func (ec *executionContext) fieldContext_StreakAchievement_celebratedAt(_ contex
 	return fc, nil
 }
 
-func (ec *executionContext) _StreakAchievement_neededStreak(ctx context.Context, field graphql.CollectedField, obj *model.StreakAchievement) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_StreakAchievement_neededStreak,
-		func(ctx context.Context) (any, error) {
-			return obj.NeededStreak, nil
-		},
-		nil,
-		ec.marshalNInt2int,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_StreakAchievement_neededStreak(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "StreakAchievement",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _StreakAchievement_points(ctx context.Context, field graphql.CollectedField, obj *model.StreakAchievement) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -47979,6 +47057,175 @@ func (ec *executionContext) fieldContext_StreakAchievement_awardableFrom(_ conte
 	return fc, nil
 }
 
+func (ec *executionContext) _StreakAchievement_items(ctx context.Context, field graphql.CollectedField, obj *model.StreakAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StreakAchievement_items,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.StreakAchievement().Items(ctx, obj)
+		},
+		nil,
+		ec.marshalNContentItem2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐContentItemᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StreakAchievement_items(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StreakAchievement",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ContentItem_id(ctx, field)
+			case "externalContent":
+				return ec.fieldContext_ContentItem_externalContent(ctx, field)
+			case "sortOrder":
+				return ec.fieldContext_ContentItem_sortOrder(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ContentItem", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StreakAchievement_userCompletedItems(ctx context.Context, field graphql.CollectedField, obj *model.StreakAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StreakAchievement_userCompletedItems,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.StreakAchievement().UserCompletedItems(ctx, obj)
+		},
+		nil,
+		ec.marshalNContentItem2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐContentItemᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StreakAchievement_userCompletedItems(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StreakAchievement",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ContentItem_id(ctx, field)
+			case "externalContent":
+				return ec.fieldContext_ContentItem_externalContent(ctx, field)
+			case "sortOrder":
+				return ec.fieldContext_ContentItem_sortOrder(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ContentItem", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StreakAchievement_nextItem(ctx context.Context, field graphql.CollectedField, obj *model.StreakAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StreakAchievement_nextItem,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.StreakAchievement().NextItem(ctx, obj)
+		},
+		nil,
+		ec.marshalOContentItem2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐContentItem,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_StreakAchievement_nextItem(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StreakAchievement",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ContentItem_id(ctx, field)
+			case "externalContent":
+				return ec.fieldContext_ContentItem_externalContent(ctx, field)
+			case "sortOrder":
+				return ec.fieldContext_ContentItem_sortOrder(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ContentItem", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StreakAchievement_totalItems(ctx context.Context, field graphql.CollectedField, obj *model.StreakAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StreakAchievement_totalItems,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalItems, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StreakAchievement_totalItems(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StreakAchievement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StreakAchievement_completedItemCount(ctx context.Context, field graphql.CollectedField, obj *model.StreakAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StreakAchievement_completedItemCount,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.StreakAchievement().CompletedItemCount(ctx, obj)
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StreakAchievement_completedItemCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StreakAchievement",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _StreakAchievement_translationStatus(ctx context.Context, field graphql.CollectedField, obj *model.StreakAchievement) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -48009,290 +47256,6 @@ func (ec *executionContext) fieldContext_StreakAchievement_translationStatus(_ c
 				return ec.fieldContext_TranslationFieldStatus_fields(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type TranslationFieldStatus", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _StreakAchievement_streak(ctx context.Context, field graphql.CollectedField, obj *model.StreakAchievement) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_StreakAchievement_streak,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.StreakAchievement().Streak(ctx, obj)
-		},
-		nil,
-		ec.marshalNStreak2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreak,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_StreakAchievement_streak(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "StreakAchievement",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Streak_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Streak_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Streak_description(ctx, field)
-			case "status":
-				return ec.fieldContext_Streak_status(ctx, field)
-			case "relevantDays":
-				return ec.fieldContext_Streak_relevantDays(ctx, field)
-			case "listenedDays":
-				return ec.fieldContext_Streak_listenedDays(ctx, field)
-			case "project":
-				return ec.fieldContext_Streak_project(ctx, field)
-			case "translationStatus":
-				return ec.fieldContext_Streak_translationStatus(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Streak", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _StreakConnection_edges(ctx context.Context, field graphql.CollectedField, obj *model.StreakConnection) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_StreakConnection_edges,
-		func(ctx context.Context) (any, error) {
-			return obj.Edges, nil
-		},
-		nil,
-		ec.marshalNStreakEdge2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakEdgeᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_StreakConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "StreakConnection",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "cursor":
-				return ec.fieldContext_StreakEdge_cursor(ctx, field)
-			case "node":
-				return ec.fieldContext_StreakEdge_node(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type StreakEdge", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _StreakConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *model.StreakConnection) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_StreakConnection_pageInfo,
-		func(ctx context.Context) (any, error) {
-			return obj.PageInfo, nil
-		},
-		nil,
-		ec.marshalNPageInfo2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐPageInfo,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_StreakConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "StreakConnection",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "hasNextPage":
-				return ec.fieldContext_PageInfo_hasNextPage(ctx, field)
-			case "hasPreviousPage":
-				return ec.fieldContext_PageInfo_hasPreviousPage(ctx, field)
-			case "startCursor":
-				return ec.fieldContext_PageInfo_startCursor(ctx, field)
-			case "endCursor":
-				return ec.fieldContext_PageInfo_endCursor(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _StreakConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.StreakConnection) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_StreakConnection_totalCount,
-		func(ctx context.Context) (any, error) {
-			return obj.TotalCount, nil
-		},
-		nil,
-		ec.marshalNInt2int,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_StreakConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "StreakConnection",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _StreakDay_date(ctx context.Context, field graphql.CollectedField, obj *model.StreakDay) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_StreakDay_date,
-		func(ctx context.Context) (any, error) {
-			return obj.Date, nil
-		},
-		nil,
-		ec.marshalNDate2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDate,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_StreakDay_date(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "StreakDay",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Date does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _StreakDay_active(ctx context.Context, field graphql.CollectedField, obj *model.StreakDay) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_StreakDay_active,
-		func(ctx context.Context) (any, error) {
-			return obj.Active, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_StreakDay_active(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "StreakDay",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _StreakEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *model.StreakEdge) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_StreakEdge_cursor,
-		func(ctx context.Context) (any, error) {
-			return obj.Cursor, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_StreakEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "StreakEdge",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _StreakEdge_node(ctx context.Context, field graphql.CollectedField, obj *model.StreakEdge) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_StreakEdge_node,
-		func(ctx context.Context) (any, error) {
-			return obj.Node, nil
-		},
-		nil,
-		ec.marshalNStreak2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreak,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_StreakEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "StreakEdge",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Streak_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Streak_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Streak_description(ctx, field)
-			case "status":
-				return ec.fieldContext_Streak_status(ctx, field)
-			case "relevantDays":
-				return ec.fieldContext_Streak_relevantDays(ctx, field)
-			case "listenedDays":
-				return ec.fieldContext_Streak_listenedDays(ctx, field)
-			case "project":
-				return ec.fieldContext_Streak_project(ctx, field)
-			case "translationStatus":
-				return ec.fieldContext_Streak_translationStatus(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Streak", field.Name)
 		},
 	}
 	return fc, nil
@@ -48560,8 +47523,6 @@ func (ec *executionContext) fieldContext_SuperTeam_parentProject(_ context.Conte
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
 				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
 			case "myPoints":
@@ -49351,8 +48312,6 @@ func (ec *executionContext) fieldContext_Team_parentProject(_ context.Context, f
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
 				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
 			case "myPoints":
@@ -50341,8 +49300,6 @@ func (ec *executionContext) fieldContext_User_projects(_ context.Context, field 
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
 				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
 			case "myPoints":
@@ -52145,8 +51102,6 @@ func (ec *executionContext) fieldContext_Webhook_project(_ context.Context, fiel
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
 				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
 			case "journal":
 				return ec.fieldContext_Project_journal(ctx, field)
 			case "myPoints":
@@ -55973,7 +54928,7 @@ func (ec *executionContext) unmarshalInputCreateStreakAchievementInput(ctx conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "projectId", "eventId", "challengeId", "points", "hidden", "awardableFrom", "neededStreak", "streakId"}
+	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "projectId", "eventId", "challengeId", "points", "hidden", "awardableFrom", "items"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -56064,68 +55019,13 @@ func (ec *executionContext) unmarshalInputCreateStreakAchievementInput(ctx conte
 				return it, err
 			}
 			it.AwardableFrom = data
-		case "neededStreak":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("neededStreak"))
-			data, err := ec.unmarshalNInt2int(ctx, v)
+		case "items":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("items"))
+			data, err := ec.unmarshalNContentItemInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐContentItemInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.NeededStreak = data
-		case "streakId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("streakId"))
-			data, err := ec.unmarshalNID2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.StreakID = data
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputCreateStreakInput(ctx context.Context, obj any) (model.CreateStreakInput, error) {
-	var it model.CreateStreakInput
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"name", "description", "projectId", "relevantDays"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "name":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Name = data
-		case "description":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Description = data
-		case "projectId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectId"))
-			data, err := ec.unmarshalNID2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ProjectID = data
-		case "relevantDays":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("relevantDays"))
-			data, err := ec.unmarshalNDateRangeInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐDateRangeInputᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RelevantDays = data
+			it.Items = data
 		}
 	}
 
@@ -56408,40 +55308,6 @@ func (ec *executionContext) unmarshalInputCreateWebhookInput(ctx context.Context
 				return it, err
 			}
 			it.Secret = data
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputDateRangeInput(ctx context.Context, obj any) (model.DateRangeInput, error) {
-	var it model.DateRangeInput
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"start", "end"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "start":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("start"))
-			data, err := ec.unmarshalNDate2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDate(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Start = data
-		case "end":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("end"))
-			data, err := ec.unmarshalNDate2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDate(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.End = data
 		}
 	}
 
@@ -57323,40 +56189,6 @@ func (ec *executionContext) unmarshalInputSetNotificationPreferenceInput(ctx con
 				return it, err
 			}
 			it.Enabled = data
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputStreakFilter(ctx context.Context, obj any) (model.StreakFilter, error) {
-	var it model.StreakFilter
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"projectId", "ids"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "projectId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectId"))
-			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ProjectID = data
-		case "ids":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ids"))
-			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Ids = data
 		}
 	}
 
@@ -58545,7 +57377,7 @@ func (ec *executionContext) unmarshalInputUpdateStreakAchievementInput(ctx conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "eventId", "challengeId", "points", "hidden", "awardableFrom", "neededStreak", "streakId"}
+	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "eventId", "challengeId", "points", "hidden", "awardableFrom", "items"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -58629,61 +57461,13 @@ func (ec *executionContext) unmarshalInputUpdateStreakAchievementInput(ctx conte
 				return it, err
 			}
 			it.AwardableFrom = data
-		case "neededStreak":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("neededStreak"))
-			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+		case "items":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("items"))
+			data, err := ec.unmarshalOContentItemInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐContentItemInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.NeededStreak = data
-		case "streakId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("streakId"))
-			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.StreakID = data
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputUpdateStreakInput(ctx context.Context, obj any) (model.UpdateStreakInput, error) {
-	var it model.UpdateStreakInput
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"name", "description", "relevantDays"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "name":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Name = data
-		case "description":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Description = data
-		case "relevantDays":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("relevantDays"))
-			data, err := ec.unmarshalODateRangeInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐDateRangeInputᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RelevantDays = data
+			it.Items = data
 		}
 	}
 
@@ -60941,50 +59725,6 @@ func (ec *executionContext) _ContentItem(ctx context.Context, sel ast.SelectionS
 			out.Values[i] = ec._ContentItem_sortOrder(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var dateRangeImplementors = []string{"DateRange"}
-
-func (ec *executionContext) _DateRange(ctx context.Context, sel ast.SelectionSet, obj *model.DateRange) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, dateRangeImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("DateRange")
-		case "start":
-			out.Values[i] = ec._DateRange_start(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "end":
-			out.Values[i] = ec._DateRange_end(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -63534,9 +62274,16 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "recordStreakActivity":
+		case "markStreakItemCompleted":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_recordStreakActivity(ctx, field)
+				return ec._Mutation_markStreakItemCompleted(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "unmarkStreakItemCompleted":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_unmarkStreakItemCompleted(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -63551,6 +62298,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "recalculateContentAchievements":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_recalculateContentAchievements(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "recalculateStreakAchievements":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_recalculateStreakAchievements(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -63712,27 +62466,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "bulkPublishChallengesAsync":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_bulkPublishChallengesAsync(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "createStreak":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_createStreak(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "updateStreak":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_updateStreak(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "deleteStreak":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_deleteStreak(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -65933,42 +64666,6 @@ func (ec *executionContext) _Project(ctx context.Context, sel ast.SelectionSet, 
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "streaks":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Project_streaks(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "journal":
 			field := field
 
@@ -66776,50 +65473,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_challenges(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "streak":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_streak(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "streaks":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_streaks(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -71093,235 +69746,6 @@ func (ec *executionContext) _SimpleChallenge(ctx context.Context, sel ast.Select
 	return out
 }
 
-var streakImplementors = []string{"Streak"}
-
-func (ec *executionContext) _Streak(ctx context.Context, sel ast.SelectionSet, obj *model.Streak) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, streakImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("Streak")
-		case "id":
-			out.Values[i] = ec._Streak_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "name":
-			out.Values[i] = ec._Streak_name(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "description":
-			out.Values[i] = ec._Streak_description(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "status":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Streak_status(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "relevantDays":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Streak_relevantDays(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "listenedDays":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Streak_listenedDays(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "project":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Streak_project(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "translationStatus":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Streak_translationStatus(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
 var streakAchievementImplementors = []string{"StreakAchievement", "Achievement", "ScoreSource"}
 
 func (ec *executionContext) _StreakAchievement(ctx context.Context, sel ast.SelectionSet, obj *model.StreakAchievement) graphql.Marshaler {
@@ -71608,11 +70032,6 @@ func (ec *executionContext) _StreakAchievement(ctx context.Context, sel ast.Sele
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "neededStreak":
-			out.Values[i] = ec._StreakAchievement_neededStreak(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "points":
 			out.Values[i] = ec._StreakAchievement_points(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -71625,6 +70044,152 @@ func (ec *executionContext) _StreakAchievement(ctx context.Context, sel ast.Sele
 			}
 		case "awardableFrom":
 			out.Values[i] = ec._StreakAchievement_awardableFrom(ctx, field, obj)
+		case "items":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._StreakAchievement_items(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "userCompletedItems":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._StreakAchievement_userCompletedItems(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "nextItem":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._StreakAchievement_nextItem(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "totalItems":
+			out.Values[i] = ec._StreakAchievement_totalItems(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "completedItemCount":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._StreakAchievement_completedItemCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "translationStatus":
 			field := field
 
@@ -71661,179 +70226,6 @@ func (ec *executionContext) _StreakAchievement(ctx context.Context, sel ast.Sele
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "streak":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._StreakAchievement_streak(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var streakConnectionImplementors = []string{"StreakConnection"}
-
-func (ec *executionContext) _StreakConnection(ctx context.Context, sel ast.SelectionSet, obj *model.StreakConnection) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, streakConnectionImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("StreakConnection")
-		case "edges":
-			out.Values[i] = ec._StreakConnection_edges(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "pageInfo":
-			out.Values[i] = ec._StreakConnection_pageInfo(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "totalCount":
-			out.Values[i] = ec._StreakConnection_totalCount(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var streakDayImplementors = []string{"StreakDay"}
-
-func (ec *executionContext) _StreakDay(ctx context.Context, sel ast.SelectionSet, obj *model.StreakDay) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, streakDayImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("StreakDay")
-		case "date":
-			out.Values[i] = ec._StreakDay_date(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "active":
-			out.Values[i] = ec._StreakDay_active(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var streakEdgeImplementors = []string{"StreakEdge"}
-
-func (ec *executionContext) _StreakEdge(ctx context.Context, sel ast.SelectionSet, obj *model.StreakEdge) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, streakEdgeImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("StreakEdge")
-		case "cursor":
-			out.Values[i] = ec._StreakEdge_cursor(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "node":
-			out.Values[i] = ec._StreakEdge_node(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -75167,11 +73559,6 @@ func (ec *executionContext) unmarshalNCreateStreakAchievementInput2githubᚗcom�
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNCreateStreakInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateStreakInput(ctx context.Context, v any) (model.CreateStreakInput, error) {
-	res, err := ec.unmarshalInputCreateStreakInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) unmarshalNCreateSuperTeamInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateSuperTeamInput(ctx context.Context, v any) (model.CreateSuperTeamInput, error) {
 	res, err := ec.unmarshalInputCreateSuperTeamInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -75190,84 +73577,6 @@ func (ec *executionContext) unmarshalNCreateTeamScoreAdjustmentInput2githubᚗco
 func (ec *executionContext) unmarshalNCreateWebhookInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateWebhookInput(ctx context.Context, v any) (model.CreateWebhookInput, error) {
 	res, err := ec.unmarshalInputCreateWebhookInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNDate2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDate(ctx context.Context, v any) (scalars.Date, error) {
-	var res scalars.Date
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNDate2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDate(ctx context.Context, sel ast.SelectionSet, v scalars.Date) graphql.Marshaler {
-	return v
-}
-
-func (ec *executionContext) marshalNDateRange2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐDateRange(ctx context.Context, sel ast.SelectionSet, v model.DateRange) graphql.Marshaler {
-	return ec._DateRange(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNDateRange2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐDateRangeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.DateRange) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNDateRange2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐDateRange(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) unmarshalNDateRangeInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐDateRangeInput(ctx context.Context, v any) (model.DateRangeInput, error) {
-	res, err := ec.unmarshalInputDateRangeInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNDateRangeInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐDateRangeInputᚄ(ctx context.Context, v any) ([]model.DateRangeInput, error) {
-	var vSlice []any
-	vSlice = graphql.CoerceList(v)
-	var err error
-	res := make([]model.DateRangeInput, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNDateRangeInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐDateRangeInput(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
 }
 
 func (ec *executionContext) unmarshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx context.Context, v any) (scalars.DateTime, error) {
@@ -77060,11 +75369,11 @@ func (ec *executionContext) marshalNSimpleChallenge2ᚖgithubᚗcomᚋbccᚑmedi
 	return ec._SimpleChallenge(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNStreak2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreak(ctx context.Context, sel ast.SelectionSet, v model.Streak) graphql.Marshaler {
-	return ec._Streak(ctx, sel, &v)
+func (ec *executionContext) marshalNStreakAchievement2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakAchievement(ctx context.Context, sel ast.SelectionSet, v model.StreakAchievement) graphql.Marshaler {
+	return ec._StreakAchievement(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNStreak2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Streak) graphql.Marshaler {
+func (ec *executionContext) marshalNStreakAchievement2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakAchievementᚄ(ctx context.Context, sel ast.SelectionSet, v []model.StreakAchievement) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -77088,7 +75397,7 @@ func (ec *executionContext) marshalNStreak2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfa
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNStreak2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreak(ctx, sel, v[i])
+			ret[i] = ec.marshalNStreakAchievement2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakAchievement(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -77106,20 +75415,6 @@ func (ec *executionContext) marshalNStreak2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfa
 	}
 
 	return ret
-}
-
-func (ec *executionContext) marshalNStreak2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreak(ctx context.Context, sel ast.SelectionSet, v *model.Streak) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._Streak(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNStreakAchievement2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakAchievement(ctx context.Context, sel ast.SelectionSet, v model.StreakAchievement) graphql.Marshaler {
-	return ec._StreakAchievement(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNStreakAchievement2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakAchievement(ctx context.Context, sel ast.SelectionSet, v *model.StreakAchievement) graphql.Marshaler {
@@ -77130,116 +75425,6 @@ func (ec *executionContext) marshalNStreakAchievement2ᚖgithubᚗcomᚋbccᚑme
 		return graphql.Null
 	}
 	return ec._StreakAchievement(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNStreakConnection2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakConnection(ctx context.Context, sel ast.SelectionSet, v model.StreakConnection) graphql.Marshaler {
-	return ec._StreakConnection(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNStreakConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakConnection(ctx context.Context, sel ast.SelectionSet, v *model.StreakConnection) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._StreakConnection(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNStreakDay2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakDay(ctx context.Context, sel ast.SelectionSet, v model.StreakDay) graphql.Marshaler {
-	return ec._StreakDay(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNStreakDay2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakDayᚄ(ctx context.Context, sel ast.SelectionSet, v []model.StreakDay) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNStreakDay2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakDay(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) marshalNStreakEdge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakEdge(ctx context.Context, sel ast.SelectionSet, v model.StreakEdge) graphql.Marshaler {
-	return ec._StreakEdge(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNStreakEdge2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.StreakEdge) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNStreakEdge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakEdge(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) (string, error) {
@@ -77730,11 +75915,6 @@ func (ec *executionContext) unmarshalNUpdateQuizSessionInput2githubᚗcomᚋbcc�
 
 func (ec *executionContext) unmarshalNUpdateStreakAchievementInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUpdateStreakAchievementInput(ctx context.Context, v any) (model.UpdateStreakAchievementInput, error) {
 	res, err := ec.unmarshalInputUpdateStreakAchievementInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNUpdateStreakInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUpdateStreakInput(ctx context.Context, v any) (model.UpdateStreakInput, error) {
-	res, err := ec.unmarshalInputUpdateStreakInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -78712,24 +76892,6 @@ func (ec *executionContext) unmarshalOCreatePredefinedAnswerInput2ᚕgithubᚗco
 	return res, nil
 }
 
-func (ec *executionContext) unmarshalODateRangeInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐDateRangeInputᚄ(ctx context.Context, v any) ([]model.DateRangeInput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var vSlice []any
-	vSlice = graphql.CoerceList(v)
-	var err error
-	res := make([]model.DateRangeInput, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNDateRangeInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐDateRangeInput(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
 func (ec *executionContext) unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx context.Context, v any) (*scalars.DateTime, error) {
 	if v == nil {
 		return nil, nil
@@ -79095,14 +77257,6 @@ func (ec *executionContext) marshalOScoreSourceType2ᚖgithubᚗcomᚋbccᚑmedi
 		return graphql.Null
 	}
 	return v
-}
-
-func (ec *executionContext) unmarshalOStreakFilter2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakFilter(ctx context.Context, v any) (*model.StreakFilter, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalInputStreakFilter(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {

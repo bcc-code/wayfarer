@@ -32,8 +32,7 @@ interface InitialData {
   // Content achievement
   items?: ContentItem[]
   // Streak achievement
-  streakId?: string
-  neededStreak?: number
+  streakItems?: ContentItem[]
   // Quiz achievement
   quizId?: string
   minScorePercentage?: number
@@ -51,11 +50,8 @@ export interface AchievementFormData {
   hidden: boolean
   awardableFrom?: string
   achievementType: AchievementType
-  // Content achievement
+  // Content achievement / Streak achievement
   items?: ContentItem[]
-  // Streak achievement
-  streakId?: string
-  neededStreak?: number
   // Quiz achievement
   quizId?: string
   minScorePercentage?: number
@@ -109,8 +105,7 @@ const state = reactive<Schema>({
 
 // Type-specific state
 const contentItems = ref<ContentItem[]>(props.initialData?.items ?? [])
-const streakId = ref<string | undefined>(props.initialData?.streakId)
-const neededStreak = ref<number>(props.initialData?.neededStreak ?? 7)
+const streakItems = ref<ContentItem[]>(props.initialData?.streakItems ?? [])
 const quizId = ref<string | undefined>(props.initialData?.quizId)
 const minScorePercentage = ref<number | undefined>(
   props.initialData?.minScorePercentage,
@@ -135,8 +130,7 @@ watch(
       state.awardableFrom = data.awardableFrom ?? ''
       // Type-specific
       contentItems.value = data.items ?? []
-      streakId.value = data.streakId
-      neededStreak.value = data.neededStreak ?? 7
+      streakItems.value = data.streakItems ?? []
       quizId.value = data.quizId
       minScorePercentage.value = data.minScorePercentage
       requireCompletion.value = data.requireCompletion ?? true
@@ -160,11 +154,8 @@ watch(
 const typeSpecificError = computed(() => {
   switch (selectedType.value) {
     case 'STREAK':
-      if (!streakId.value) {
-        return 'En streak må velges'
-      }
-      if (neededStreak.value < 1) {
-        return 'Antall påkrevde dager må være minst 1'
+      if (streakItems.value.length === 0) {
+        return 'Minst ett innholdselement må legges til'
       }
       break
     case 'QUIZ':
@@ -195,8 +186,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
       formData.items = contentItems.value
       break
     case 'STREAK':
-      formData.streakId = streakId.value
-      formData.neededStreak = neededStreak.value
+      formData.items = streakItems.value
       break
     case 'QUIZ':
       formData.quizId = quizId.value
@@ -335,14 +325,8 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
 
       <template v-else-if="selectedType === 'STREAK'">
         <div class="border-default border-t pt-6">
-          <h3 class="mb-4 font-medium">Streak-konfigurasjon</h3>
-          <AdminStreakSelector
-            :project-id="projectId"
-            :streak-id="streakId"
-            :needed-streak="neededStreak"
-            @update:streak-id="(v) => (streakId = v)"
-            @update:needed-streak="(v) => (neededStreak = v)"
-          />
+          <h3 class="mb-4 font-medium">Innholdselementer (med frist)</h3>
+          <AdminContentItemSelector v-model="streakItems" />
         </div>
       </template>
 

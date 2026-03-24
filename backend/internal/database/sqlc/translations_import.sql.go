@@ -236,30 +236,3 @@ func (q *Queries) UpsertQuizTranslation(ctx context.Context, arg UpsertQuizTrans
 	)
 	return err
 }
-
-const UpsertStreakTranslation = `-- name: UpsertStreakTranslation :exec
-INSERT INTO streak_translations (streak_id, language_code, name, description, updated_at)
-VALUES ($1::text, $2::text, $3::text, $4::text, now())
-ON CONFLICT (streak_id, language_code)
-DO UPDATE SET
-    name = COALESCE(NULLIF($3::text, ''), streak_translations.name),
-    description = COALESCE(NULLIF($4::text, ''), streak_translations.description),
-    updated_at = now()
-`
-
-type UpsertStreakTranslationParams struct {
-	StreakID     string `json:"streak_id"`
-	LanguageCode string `json:"language_code"`
-	Name         string `json:"name"`
-	Description  string `json:"description"`
-}
-
-func (q *Queries) UpsertStreakTranslation(ctx context.Context, arg UpsertStreakTranslationParams) error {
-	_, err := q.db.Exec(ctx, UpsertStreakTranslation,
-		arg.StreakID,
-		arg.LanguageCode,
-		arg.Name,
-		arg.Description,
-	)
-	return err
-}

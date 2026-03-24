@@ -19,15 +19,6 @@ DO UPDATE SET
     description = COALESCE(NULLIF(@description::text, ''), event_translations.description),
     updated_at = now();
 
--- name: UpsertStreakTranslation :exec
-INSERT INTO streak_translations (streak_id, language_code, name, description, updated_at)
-VALUES (@streak_id::text, @language_code::text, @name::text, @description::text, now())
-ON CONFLICT (streak_id, language_code)
-DO UPDATE SET
-    name = COALESCE(NULLIF(@name::text, ''), streak_translations.name),
-    description = COALESCE(NULLIF(@description::text, ''), streak_translations.description),
-    updated_at = now();
-
 -- name: UpsertChallengeTranslation :exec
 INSERT INTO challenge_translations (challenge_id, language_code, name, description, button_text, notification_text, updated_at)
 VALUES (@challenge_id::text, @language_code::text, @name::text, @description::text, @button_text::text, @notification_text::text, now())

@@ -564,27 +564,19 @@ type CreateSimpleAchievementInput struct {
 }
 
 type CreateStreakAchievementInput struct {
-	Name                 string            `json:"name"`
-	DescriptionPending   string            `json:"descriptionPending"`
-	DescriptionCompleted string            `json:"descriptionCompleted"`
-	NotificationText     string            `json:"notificationText"`
-	ImagePending         string            `json:"imagePending"`
-	ImageCompleted       string            `json:"imageCompleted"`
-	ProjectID            string            `json:"projectId"`
-	EventID              *string           `json:"eventId,omitempty"`
-	ChallengeID          *string           `json:"challengeId,omitempty"`
-	Points               int               `json:"points"`
-	Hidden               bool              `json:"hidden"`
-	AwardableFrom        *scalars.DateTime `json:"awardableFrom,omitempty"`
-	NeededStreak         int               `json:"neededStreak"`
-	StreakID             string            `json:"streakId"`
-}
-
-type CreateStreakInput struct {
-	Name         string           `json:"name"`
-	Description  string           `json:"description"`
-	ProjectID    string           `json:"projectId"`
-	RelevantDays []DateRangeInput `json:"relevantDays"`
+	Name                 string             `json:"name"`
+	DescriptionPending   string             `json:"descriptionPending"`
+	DescriptionCompleted string             `json:"descriptionCompleted"`
+	NotificationText     string             `json:"notificationText"`
+	ImagePending         string             `json:"imagePending"`
+	ImageCompleted       string             `json:"imageCompleted"`
+	ProjectID            string             `json:"projectId"`
+	EventID              *string            `json:"eventId,omitempty"`
+	ChallengeID          *string            `json:"challengeId,omitempty"`
+	Points               int                `json:"points"`
+	Hidden               bool               `json:"hidden"`
+	AwardableFrom        *scalars.DateTime  `json:"awardableFrom,omitempty"`
+	Items                []ContentItemInput `json:"items"`
 }
 
 type CreateSuperTeamInput struct {
@@ -626,16 +618,6 @@ type CreateWebhookInput struct {
 	IncludeUserData  *bool            `json:"includeUserData,omitempty"`
 	IncludeEventData *bool            `json:"includeEventData,omitempty"`
 	Secret           *string          `json:"secret,omitempty"`
-}
-
-type DateRange struct {
-	Start scalars.Date `json:"start"`
-	End   scalars.Date `json:"end"`
-}
-
-type DateRangeInput struct {
-	Start scalars.Date `json:"start"`
-	End   scalars.Date `json:"end"`
 }
 
 type DeviceMetadata struct {
@@ -1324,7 +1306,6 @@ type Project struct {
 	MyChurchTeams     []Team                   `json:"myChurchTeams"`
 	MyTeam            *Team                    `json:"myTeam,omitempty"`
 	Achievements      []Achievement            `json:"achievements"`
-	Streaks           []Streak                 `json:"streaks"`
 	Journal           *ScoreJournalConnection  `json:"journal"`
 	MyPoints          int                      `json:"myPoints"`
 	ArchivedAt        *bool                    `json:"archivedAt,omitempty"`
@@ -1806,18 +1787,6 @@ func (this SimpleChallenge) GetTranslationStatus() []TranslationFieldStatus {
 
 func (SimpleChallenge) IsScoreSource() {}
 
-type Streak struct {
-	ID                string                   `json:"id"`
-	Name              string                   `json:"name"`
-	Description       string                   `json:"description"`
-	Status            int                      `json:"status"`
-	RelevantDays      []DateRange              `json:"relevantDays"`
-	ListenedDays      []StreakDay              `json:"listenedDays"`
-	Project           *Project                 `json:"project"`
-	TranslationStatus []TranslationFieldStatus `json:"translationStatus"`
-	ProjectID         string                   `json:"-"`
-}
-
 type StreakAchievement struct {
 	ID                   string                   `json:"id"`
 	Name                 string                   `json:"name"`
@@ -1833,12 +1802,15 @@ type StreakAchievement struct {
 	Challenge            Challenge                `json:"challenge,omitempty"`
 	AchievedAt           *scalars.DateTime        `json:"achievedAt,omitempty"`
 	CelebratedAt         *scalars.DateTime        `json:"celebratedAt,omitempty"`
-	NeededStreak         int                      `json:"neededStreak"`
 	Points               int                      `json:"points"`
 	Hidden               bool                     `json:"hidden"`
 	AwardableFrom        *scalars.DateTime        `json:"awardableFrom,omitempty"`
+	Items                []ContentItem            `json:"items"`
+	UserCompletedItems   []ContentItem            `json:"userCompletedItems"`
+	NextItem             *ContentItem             `json:"nextItem,omitempty"`
+	TotalItems           int                      `json:"totalItems"`
+	CompletedItemCount   int                      `json:"completedItemCount"`
 	TranslationStatus    []TranslationFieldStatus `json:"translationStatus"`
-	Streak               *Streak                  `json:"streak"`
 	ChallengeID          *string                  `json:"-"`
 	EventID              *string                  `json:"-"`
 	ProjectID            string                   `json:"-"`
@@ -1875,27 +1847,6 @@ func (this StreakAchievement) GetTranslationStatus() []TranslationFieldStatus {
 }
 
 func (StreakAchievement) IsScoreSource() {}
-
-type StreakConnection struct {
-	Edges      []StreakEdge `json:"edges"`
-	PageInfo   *PageInfo    `json:"pageInfo"`
-	TotalCount int          `json:"totalCount"`
-}
-
-type StreakDay struct {
-	Date   scalars.Date `json:"date"`
-	Active bool         `json:"active"`
-}
-
-type StreakEdge struct {
-	Cursor string  `json:"cursor"`
-	Node   *Streak `json:"node"`
-}
-
-type StreakFilter struct {
-	ProjectID *string  `json:"projectId,omitempty"`
-	Ids       []string `json:"ids,omitempty"`
-}
 
 type SubmitFeedbackInput struct {
 	Message      string          `json:"message"`
@@ -2143,25 +2094,18 @@ type UpdateQuizSessionInput struct {
 }
 
 type UpdateStreakAchievementInput struct {
-	Name                 *string           `json:"name,omitempty"`
-	DescriptionPending   *string           `json:"descriptionPending,omitempty"`
-	DescriptionCompleted *string           `json:"descriptionCompleted,omitempty"`
-	NotificationText     *string           `json:"notificationText,omitempty"`
-	ImagePending         *string           `json:"imagePending,omitempty"`
-	ImageCompleted       *string           `json:"imageCompleted,omitempty"`
-	EventID              *string           `json:"eventId,omitempty"`
-	ChallengeID          *string           `json:"challengeId,omitempty"`
-	Points               *int              `json:"points,omitempty"`
-	Hidden               *bool             `json:"hidden,omitempty"`
-	AwardableFrom        *scalars.DateTime `json:"awardableFrom,omitempty"`
-	NeededStreak         *int              `json:"neededStreak,omitempty"`
-	StreakID             *string           `json:"streakId,omitempty"`
-}
-
-type UpdateStreakInput struct {
-	Name         *string          `json:"name,omitempty"`
-	Description  *string          `json:"description,omitempty"`
-	RelevantDays []DateRangeInput `json:"relevantDays,omitempty"`
+	Name                 *string            `json:"name,omitempty"`
+	DescriptionPending   *string            `json:"descriptionPending,omitempty"`
+	DescriptionCompleted *string            `json:"descriptionCompleted,omitempty"`
+	NotificationText     *string            `json:"notificationText,omitempty"`
+	ImagePending         *string            `json:"imagePending,omitempty"`
+	ImageCompleted       *string            `json:"imageCompleted,omitempty"`
+	EventID              *string            `json:"eventId,omitempty"`
+	ChallengeID          *string            `json:"challengeId,omitempty"`
+	Points               *int               `json:"points,omitempty"`
+	Hidden               *bool              `json:"hidden,omitempty"`
+	AwardableFrom        *scalars.DateTime  `json:"awardableFrom,omitempty"`
+	Items                []ContentItemInput `json:"items,omitempty"`
 }
 
 type UpdateSuperTeamInput struct {

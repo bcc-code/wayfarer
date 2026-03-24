@@ -47,15 +47,6 @@ func (q *Queries) DeleteProjectTranslations(ctx context.Context, projectID strin
 	return err
 }
 
-const DeleteStreakTranslations = `-- name: DeleteStreakTranslations :exec
-DELETE FROM streak_translations WHERE streak_id = $1::text
-`
-
-func (q *Queries) DeleteStreakTranslations(ctx context.Context, streakID string) error {
-	_, err := q.db.Exec(ctx, DeleteStreakTranslations, streakID)
-	return err
-}
-
 const GetAchievementTranslationsByIDs = `-- name: GetAchievementTranslationsByIDs :many
 SELECT achievement_id, language_code, name, description_pending, description_completed, notification_text
 FROM achievement_translations
@@ -351,50 +342,6 @@ func (q *Queries) GetQuizTranslationsByIDs(ctx context.Context, arg GetQuizTrans
 		var i GetQuizTranslationsByIDsRow
 		if err := rows.Scan(
 			&i.QuizID,
-			&i.LanguageCode,
-			&i.Name,
-			&i.Description,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const GetStreakTranslationsByIDs = `-- name: GetStreakTranslationsByIDs :many
-SELECT streak_id, language_code, name, description
-FROM streak_translations
-WHERE streak_id = ANY($1::text[])
-  AND language_code = $2::text
-`
-
-type GetStreakTranslationsByIDsParams struct {
-	EntityIds    []string `json:"entity_ids"`
-	LanguageCode string   `json:"language_code"`
-}
-
-type GetStreakTranslationsByIDsRow struct {
-	StreakID     string  `json:"streak_id"`
-	LanguageCode string  `json:"language_code"`
-	Name         *string `json:"name"`
-	Description  *string `json:"description"`
-}
-
-func (q *Queries) GetStreakTranslationsByIDs(ctx context.Context, arg GetStreakTranslationsByIDsParams) ([]*GetStreakTranslationsByIDsRow, error) {
-	rows, err := q.db.Query(ctx, GetStreakTranslationsByIDs, arg.EntityIds, arg.LanguageCode)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []*GetStreakTranslationsByIDsRow{}
-	for rows.Next() {
-		var i GetStreakTranslationsByIDsRow
-		if err := rows.Scan(
-			&i.StreakID,
 			&i.LanguageCode,
 			&i.Name,
 			&i.Description,

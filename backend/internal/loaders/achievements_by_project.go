@@ -127,8 +127,8 @@ func convertRowToAchievement(row *sqlc.GetAchievementsByProjectIDsRow) (model.Ac
 		}, nil
 
 	case "STREAK":
-		if row.StreakID == nil || row.NeededStreak == nil {
-			return nil, fmt.Errorf("streak achievement missing required fields: streak_id or needed_streak")
+		if row.StreakAchievementID == nil {
+			return nil, fmt.Errorf("streak achievement missing streak data")
 		}
 		return &model.StreakAchievement{
 			ID:                   row.ID,
@@ -144,9 +144,7 @@ func convertRowToAchievement(row *sqlc.GetAchievementsByProjectIDsRow) (model.Ac
 			ProjectID:            row.ProjectID,
 			EventID:              row.EventID,
 			ChallengeID:          row.ChallengeID,
-			StreakID:             *row.StreakID,
-			NeededStreak:         int(*row.NeededStreak),
-			Streak:               nil, // Will be populated by resolver
+			// Items, UserCompletedItems, NextItem, TotalItems, and CompletedItemCount will be populated by resolvers
 		}, nil
 
 	case "QUIZ":

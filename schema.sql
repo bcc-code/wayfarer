@@ -160,24 +160,7 @@ CREATE TABLE teams (
     INDEX idx_teams_leaderboard_excluded (leaderboard_excluded) WHERE leaderboard_excluded = true
 );
 
-CREATE TABLE streaks (
-    id CHAR(28) PRIMARY KEY CHECK (id ~ '^SK[0-9A-Z]{26}$'),
-    project_id CHAR(28) NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    name VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now(),
-    INDEX idx_streaks_project (project_id)
-);
-
-CREATE TABLE streak_relevant_days (
-    id CHAR(28) PRIMARY KEY CHECK (id ~ '^SD[0-9A-Z]{26}$'),
-    streak_id CHAR(28) NOT NULL REFERENCES streaks(id) ON DELETE CASCADE,
-    start_date DATE NOT NULL,
-    end_date DATE NOT NULL,
-    INDEX idx_streak_relevant_days_streak (streak_id),
-    CHECK (end_date >= start_date)
-);
+-- Streaks table removed in migration 00099 (streak achievements now use external content with deadlines)
 
 CREATE TABLE challenges (
     id CHAR(28) PRIMARY KEY CHECK (id ~ '^CL[0-9A-Z]{26}$'),
@@ -255,9 +238,17 @@ CREATE TABLE content_achievement_items (
 );
 
 CREATE TABLE streak_achievements (
-    achievement_id CHAR(28) PRIMARY KEY REFERENCES achievements(id) ON DELETE CASCADE,
-    streak_id CHAR(28) NOT NULL REFERENCES streaks(id) ON DELETE CASCADE,
-    needed_streak INT NOT NULL CHECK (needed_streak > 0)
+    achievement_id CHAR(28) PRIMARY KEY REFERENCES achievements(id) ON DELETE CASCADE
+);
+
+CREATE TABLE streak_achievement_items (
+    id CHAR(28) PRIMARY KEY CHECK (id ~ '^SI[0-9A-Z]{26}$'),
+    achievement_id CHAR(28) NOT NULL REFERENCES streak_achievements(achievement_id) ON DELETE CASCADE,
+    external_content_id CHAR(28) NOT NULL REFERENCES external_content(id) ON DELETE CASCADE,
+    sort_order INT NOT NULL DEFAULT 0,
+    INDEX idx_streak_items_achievement (achievement_id),
+    INDEX idx_streak_items_external_content (external_content_id),
+    UNIQUE (achievement_id, external_content_id)
 );
 
 -- ==================== Junction Tables ====================
@@ -342,15 +333,16 @@ CREATE TABLE user_content_progress (
     INDEX idx_user_content_progress_user_achievement (user_id, achievement_id)
 );
 
-CREATE TABLE user_streak_activity (
+CREATE TABLE user_streak_progress (
     user_id CHAR(28) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    streak_id CHAR(28) NOT NULL REFERENCES streaks(id) ON DELETE CASCADE,
-    activity_date DATE NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    PRIMARY KEY (user_id, streak_id, activity_date),
-    INDEX idx_streak_activity_user (user_id),
-    INDEX idx_streak_activity_streak (streak_id),
-    INDEX idx_streak_activity_date (activity_date)
+    achievement_id CHAR(28) NOT NULL REFERENCES streak_achievements(achievement_id) ON DELETE CASCADE,
+    external_content_id CHAR(28) NOT NULL REFERENCES external_content(id) ON DELETE CASCADE,
+    completed_at TIMESTAMPTZ DEFAULT now(),
+    PRIMARY KEY (user_id, achievement_id, external_content_id),
+    INDEX idx_user_streak_progress_user (user_id),
+    INDEX idx_user_streak_progress_achievement (achievement_id),
+    INDEX idx_user_streak_progress_content (external_content_id),
+    INDEX idx_user_streak_progress_user_achievement (user_id, achievement_id)
 );
 
 -- ==================== Audit/Activity Log ====================
@@ -395,15 +387,7 @@ CREATE TABLE event_translations (
     PRIMARY KEY (event_id, language_code)
 );
 
-CREATE TABLE streak_translations (
-    streak_id CHAR(28) NOT NULL REFERENCES streaks(id) ON DELETE CASCADE,
-    language_code VARCHAR(10) NOT NULL,
-    name VARCHAR(255),
-    description TEXT,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now(),
-    PRIMARY KEY (streak_id, language_code)
-);
+-- streak_translations table removed in migration 00099
 
 CREATE TABLE challenge_translations (
     challenge_id CHAR(28) NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,

@@ -341,26 +341,51 @@ func (q *Queries) CreateContentAchievementJunction(ctx context.Context, achievem
 	return err
 }
 
-const CreateStreakAchievementData = `-- name: CreateStreakAchievementData :exec
-INSERT INTO streak_achievements (
+const CreateStreakAchievementItem = `-- name: CreateStreakAchievementItem :one
+INSERT INTO streak_achievement_items (
+    id,
     achievement_id,
-    streak_id,
-    needed_streak
+    external_content_id,
+    sort_order
 ) VALUES (
     $1::text,
     $2::text,
-    $3::int
-)
+    $3::text,
+    $4::int
+) RETURNING id, achievement_id, external_content_id, sort_order
 `
 
-type CreateStreakAchievementDataParams struct {
-	AchievementID string `json:"achievement_id"`
-	StreakID      string `json:"streak_id"`
-	NeededStreak  int32  `json:"needed_streak"`
+type CreateStreakAchievementItemParams struct {
+	ID                string `json:"id"`
+	AchievementID     string `json:"achievement_id"`
+	ExternalContentID string `json:"external_content_id"`
+	SortOrder         int32  `json:"sort_order"`
 }
 
-func (q *Queries) CreateStreakAchievementData(ctx context.Context, arg CreateStreakAchievementDataParams) error {
-	_, err := q.db.Exec(ctx, CreateStreakAchievementData, arg.AchievementID, arg.StreakID, arg.NeededStreak)
+func (q *Queries) CreateStreakAchievementItem(ctx context.Context, arg CreateStreakAchievementItemParams) (*StreakAchievementItem, error) {
+	row := q.db.QueryRow(ctx, CreateStreakAchievementItem,
+		arg.ID,
+		arg.AchievementID,
+		arg.ExternalContentID,
+		arg.SortOrder,
+	)
+	var i StreakAchievementItem
+	err := row.Scan(
+		&i.ID,
+		&i.AchievementID,
+		&i.ExternalContentID,
+		&i.SortOrder,
+	)
+	return &i, err
+}
+
+const CreateStreakAchievementJunction = `-- name: CreateStreakAchievementJunction :exec
+INSERT INTO streak_achievements (achievement_id)
+VALUES ($1::text)
+`
+
+func (q *Queries) CreateStreakAchievementJunction(ctx context.Context, achievementID string) error {
+	_, err := q.db.Exec(ctx, CreateStreakAchievementJunction, achievementID)
 	return err
 }
 
@@ -383,6 +408,16 @@ WHERE achievement_id = $1::text
 
 func (q *Queries) DeleteContentAchievementItems(ctx context.Context, achievementID string) error {
 	_, err := q.db.Exec(ctx, DeleteContentAchievementItems, achievementID)
+	return err
+}
+
+const DeleteStreakAchievementItems = `-- name: DeleteStreakAchievementItems :exec
+DELETE FROM streak_achievement_items
+WHERE achievement_id = $1::text
+`
+
+func (q *Queries) DeleteStreakAchievementItems(ctx context.Context, achievementID string) error {
+	_, err := q.db.Exec(ctx, DeleteStreakAchievementItems, achievementID)
 	return err
 }
 
@@ -533,8 +568,19 @@ SELECT
         '[]'::jsonb
     ) AS content_items,
     -- Streak achievement data
-    sa.streak_id,
-    sa.needed_streak,
+    sa.achievement_id AS streak_achievement_id,
+    COALESCE(
+        (SELECT jsonb_agg(
+            jsonb_build_object(
+                'id', sai.id,
+                'external_content_id', sai.external_content_id,
+                'sort_order', sai.sort_order
+            ) ORDER BY sai.sort_order
+        )
+        FROM streak_achievement_items sai
+        WHERE sai.achievement_id = a.id),
+        '[]'::jsonb
+    ) AS streak_items,
     -- Quiz achievement data
     qa.quiz_id,
     qa.min_score_percentage,
@@ -565,8 +611,8 @@ type GetAchievementsByIDsRow struct {
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 	ContentAchievementID *string            `json:"content_achievement_id"`
 	ContentItems         interface{}        `json:"content_items"`
-	StreakID             *string            `json:"streak_id"`
-	NeededStreak         *int32             `json:"needed_streak"`
+	StreakAchievementID  *string            `json:"streak_achievement_id"`
+	StreakItems          interface{}        `json:"streak_items"`
 	QuizID               *string            `json:"quiz_id"`
 	MinScorePercentage   *int32             `json:"min_score_percentage"`
 	RequireCompletion    *bool              `json:"require_completion"`
@@ -600,8 +646,8 @@ func (q *Queries) GetAchievementsByIDs(ctx context.Context, ids []string) ([]*Ge
 			&i.UpdatedAt,
 			&i.ContentAchievementID,
 			&i.ContentItems,
-			&i.StreakID,
-			&i.NeededStreak,
+			&i.StreakAchievementID,
+			&i.StreakItems,
 			&i.QuizID,
 			&i.MinScorePercentage,
 			&i.RequireCompletion,
@@ -636,8 +682,7 @@ SELECT
     a.updated_at,
     -- Type-specific fields needed for model construction
     ca.achievement_id AS content_achievement_id,
-    sa.streak_id,
-    sa.needed_streak,
+    sa.achievement_id AS streak_achievement_id,
     -- Quiz achievement data
     qa.quiz_id,
     qa.min_score_percentage,
@@ -669,8 +714,7 @@ type GetAchievementsByProjectIDsRow struct {
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 	ContentAchievementID *string            `json:"content_achievement_id"`
-	StreakID             *string            `json:"streak_id"`
-	NeededStreak         *int32             `json:"needed_streak"`
+	StreakAchievementID  *string            `json:"streak_achievement_id"`
 	QuizID               *string            `json:"quiz_id"`
 	MinScorePercentage   *int32             `json:"min_score_percentage"`
 	RequireCompletion    *bool              `json:"require_completion"`
@@ -703,8 +747,7 @@ func (q *Queries) GetAchievementsByProjectIDs(ctx context.Context, projectIds []
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ContentAchievementID,
-			&i.StreakID,
-			&i.NeededStreak,
+			&i.StreakAchievementID,
 			&i.QuizID,
 			&i.MinScorePercentage,
 			&i.RequireCompletion,
@@ -753,8 +796,19 @@ SELECT
         '[]'::jsonb
     ) AS content_items,
     -- Streak achievement data
-    sa.streak_id,
-    sa.needed_streak,
+    sa.achievement_id AS streak_achievement_id,
+    COALESCE(
+        (SELECT jsonb_agg(
+            jsonb_build_object(
+                'id', sai.id,
+                'external_content_id', sai.external_content_id,
+                'sort_order', sai.sort_order
+            ) ORDER BY sai.sort_order
+        )
+        FROM streak_achievement_items sai
+        WHERE sai.achievement_id = a.id),
+        '[]'::jsonb
+    ) AS streak_items,
     -- Quiz achievement data
     qa.quiz_id,
     qa.min_score_percentage,
@@ -807,8 +861,8 @@ type GetAchievementsFilteredCursorRow struct {
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 	ContentAchievementID *string            `json:"content_achievement_id"`
 	ContentItems         interface{}        `json:"content_items"`
-	StreakID             *string            `json:"streak_id"`
-	NeededStreak         *int32             `json:"needed_streak"`
+	StreakAchievementID  *string            `json:"streak_achievement_id"`
+	StreakItems          interface{}        `json:"streak_items"`
 	QuizID               *string            `json:"quiz_id"`
 	MinScorePercentage   *int32             `json:"min_score_percentage"`
 	RequireCompletion    *bool              `json:"require_completion"`
@@ -851,8 +905,8 @@ func (q *Queries) GetAchievementsFilteredCursor(ctx context.Context, arg GetAchi
 			&i.UpdatedAt,
 			&i.ContentAchievementID,
 			&i.ContentItems,
-			&i.StreakID,
-			&i.NeededStreak,
+			&i.StreakAchievementID,
+			&i.StreakItems,
 			&i.QuizID,
 			&i.MinScorePercentage,
 			&i.RequireCompletion,
@@ -887,8 +941,7 @@ SELECT
     a.created_at,
     a.updated_at,
     ca.achievement_id AS content_achievement_id,
-    sa.streak_id,
-    sa.needed_streak,
+    sa.achievement_id AS streak_achievement_id,
     -- Quiz achievement data
     qa.quiz_id,
     qa.min_score_percentage,
@@ -920,8 +973,7 @@ type GetAllAchievementsByProjectIDRow struct {
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 	ContentAchievementID *string            `json:"content_achievement_id"`
-	StreakID             *string            `json:"streak_id"`
-	NeededStreak         *int32             `json:"needed_streak"`
+	StreakAchievementID  *string            `json:"streak_achievement_id"`
 	QuizID               *string            `json:"quiz_id"`
 	MinScorePercentage   *int32             `json:"min_score_percentage"`
 	RequireCompletion    *bool              `json:"require_completion"`
@@ -956,8 +1008,7 @@ func (q *Queries) GetAllAchievementsByProjectID(ctx context.Context, projectID s
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ContentAchievementID,
-			&i.StreakID,
-			&i.NeededStreak,
+			&i.StreakAchievementID,
 			&i.QuizID,
 			&i.MinScorePercentage,
 			&i.RequireCompletion,
@@ -1074,6 +1125,44 @@ func (q *Queries) GetBulkUserContentProgress(ctx context.Context, arg GetBulkUse
 	items := []*UserContentProgress{}
 	for rows.Next() {
 		var i UserContentProgress
+		if err := rows.Scan(
+			&i.UserID,
+			&i.AchievementID,
+			&i.ExternalContentID,
+			&i.CompletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetBulkUserStreakProgress = `-- name: GetBulkUserStreakProgress :many
+SELECT user_id, achievement_id, external_content_id, completed_at
+FROM user_streak_progress
+WHERE (user_id, achievement_id) IN (
+    SELECT unnest($1::text[]), unnest($2::text[])
+)
+`
+
+type GetBulkUserStreakProgressParams struct {
+	UserIds        []string `json:"user_ids"`
+	AchievementIds []string `json:"achievement_ids"`
+}
+
+func (q *Queries) GetBulkUserStreakProgress(ctx context.Context, arg GetBulkUserStreakProgressParams) ([]*UserStreakProgress, error) {
+	rows, err := q.db.Query(ctx, GetBulkUserStreakProgress, arg.UserIds, arg.AchievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*UserStreakProgress{}
+	for rows.Next() {
+		var i UserStreakProgress
 		if err := rows.Scan(
 			&i.UserID,
 			&i.AchievementID,
@@ -1399,6 +1488,299 @@ func (q *Queries) GetPublishedContentAchievementsByExternalContent(ctx context.C
 	return items, nil
 }
 
+const GetPublishedStreakAchievementsByExternalContent = `-- name: GetPublishedStreakAchievementsByExternalContent :many
+SELECT DISTINCT
+    a.id,
+    a.achievement_type,
+    a.project_id,
+    a.event_id,
+    a.challenge_id,
+    a.name,
+    a.description_pending,
+    a.description_completed,
+    a.notification_text,
+    a.image_pending,
+    a.image_completed,
+    a.points,
+    a.hidden,
+    a.awardable_from,
+    a.created_at,
+    a.updated_at,
+    COALESCE(
+        (SELECT jsonb_agg(
+            jsonb_build_object(
+                'id', sai2.id,
+                'external_content_id', sai2.external_content_id,
+                'sort_order', sai2.sort_order
+            ) ORDER BY sai2.sort_order
+        )
+        FROM streak_achievement_items sai2
+        WHERE sai2.achievement_id = a.id),
+        '[]'::jsonb
+    ) AS streak_items
+FROM achievements a
+INNER JOIN streak_achievements sa ON a.id = sa.achievement_id
+INNER JOIN streak_achievement_items sai ON sa.achievement_id = sai.achievement_id
+WHERE sai.external_content_id = $1::text
+`
+
+type GetPublishedStreakAchievementsByExternalContentRow struct {
+	ID                   string             `json:"id"`
+	AchievementType      string             `json:"achievement_type"`
+	ProjectID            string             `json:"project_id"`
+	EventID              *string            `json:"event_id"`
+	ChallengeID          *string            `json:"challenge_id"`
+	Name                 string             `json:"name"`
+	DescriptionPending   string             `json:"description_pending"`
+	DescriptionCompleted string             `json:"description_completed"`
+	NotificationText     string             `json:"notification_text"`
+	ImagePending         string             `json:"image_pending"`
+	ImageCompleted       string             `json:"image_completed"`
+	Points               int32              `json:"points"`
+	Hidden               *bool              `json:"hidden"`
+	AwardableFrom        pgtype.Timestamptz `json:"awardable_from"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+	StreakItems          interface{}        `json:"streak_items"`
+}
+
+// Get all streak achievements that contain a specific external content
+func (q *Queries) GetPublishedStreakAchievementsByExternalContent(ctx context.Context, externalContentID string) ([]*GetPublishedStreakAchievementsByExternalContentRow, error) {
+	rows, err := q.db.Query(ctx, GetPublishedStreakAchievementsByExternalContent, externalContentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetPublishedStreakAchievementsByExternalContentRow{}
+	for rows.Next() {
+		var i GetPublishedStreakAchievementsByExternalContentRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.AchievementType,
+			&i.ProjectID,
+			&i.EventID,
+			&i.ChallengeID,
+			&i.Name,
+			&i.DescriptionPending,
+			&i.DescriptionCompleted,
+			&i.NotificationText,
+			&i.ImagePending,
+			&i.ImageCompleted,
+			&i.Points,
+			&i.Hidden,
+			&i.AwardableFrom,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.StreakItems,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetStreakAchievementCompletionStatus = `-- name: GetStreakAchievementCompletionStatus :many
+SELECT
+    sai.achievement_id,
+    COUNT(DISTINCT sai.external_content_id)::int AS item_count,
+    COUNT(DISTINCT usp.external_content_id)::int AS progress_count
+FROM streak_achievement_items sai
+LEFT JOIN user_streak_progress usp
+    ON usp.achievement_id = sai.achievement_id
+    AND usp.user_id = $1::text
+    AND usp.external_content_id = sai.external_content_id
+WHERE sai.achievement_id = ANY($2::text[])
+GROUP BY sai.achievement_id
+`
+
+type GetStreakAchievementCompletionStatusParams struct {
+	UserID         string   `json:"user_id"`
+	AchievementIds []string `json:"achievement_ids"`
+}
+
+type GetStreakAchievementCompletionStatusRow struct {
+	AchievementID string `json:"achievement_id"`
+	ItemCount     int32  `json:"item_count"`
+	ProgressCount int32  `json:"progress_count"`
+}
+
+func (q *Queries) GetStreakAchievementCompletionStatus(ctx context.Context, arg GetStreakAchievementCompletionStatusParams) ([]*GetStreakAchievementCompletionStatusRow, error) {
+	rows, err := q.db.Query(ctx, GetStreakAchievementCompletionStatus, arg.UserID, arg.AchievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetStreakAchievementCompletionStatusRow{}
+	for rows.Next() {
+		var i GetStreakAchievementCompletionStatusRow
+		if err := rows.Scan(&i.AchievementID, &i.ItemCount, &i.ProgressCount); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetStreakAchievementForAward = `-- name: GetStreakAchievementForAward :one
+SELECT
+    a.id,
+    a.achievement_type,
+    a.project_id,
+    a.event_id,
+    a.challenge_id,
+    a.name,
+    a.description_pending,
+    a.description_completed,
+    a.notification_text,
+    a.image_pending,
+    a.image_completed,
+    a.points,
+    a.hidden,
+    a.awardable_from,
+    a.created_at,
+    a.updated_at,
+    COALESCE(
+        (SELECT jsonb_agg(
+            jsonb_build_object(
+                'id', sai.id,
+                'external_content_id', sai.external_content_id,
+                'sort_order', sai.sort_order
+            ) ORDER BY sai.sort_order
+        )
+        FROM streak_achievement_items sai
+        WHERE sai.achievement_id = a.id),
+        '[]'::jsonb
+    ) AS streak_items
+FROM achievements a
+INNER JOIN streak_achievements sa ON sa.achievement_id = a.id
+WHERE a.id = $1::text AND a.project_id = $2::text
+`
+
+type GetStreakAchievementForAwardParams struct {
+	AchievementID string `json:"achievement_id"`
+	ProjectID     string `json:"project_id"`
+}
+
+type GetStreakAchievementForAwardRow struct {
+	ID                   string             `json:"id"`
+	AchievementType      string             `json:"achievement_type"`
+	ProjectID            string             `json:"project_id"`
+	EventID              *string            `json:"event_id"`
+	ChallengeID          *string            `json:"challenge_id"`
+	Name                 string             `json:"name"`
+	DescriptionPending   string             `json:"description_pending"`
+	DescriptionCompleted string             `json:"description_completed"`
+	NotificationText     string             `json:"notification_text"`
+	ImagePending         string             `json:"image_pending"`
+	ImageCompleted       string             `json:"image_completed"`
+	Points               int32              `json:"points"`
+	Hidden               *bool              `json:"hidden"`
+	AwardableFrom        pgtype.Timestamptz `json:"awardable_from"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+	StreakItems          interface{}        `json:"streak_items"`
+}
+
+// Get streak achievement data for awarding
+func (q *Queries) GetStreakAchievementForAward(ctx context.Context, arg GetStreakAchievementForAwardParams) (*GetStreakAchievementForAwardRow, error) {
+	row := q.db.QueryRow(ctx, GetStreakAchievementForAward, arg.AchievementID, arg.ProjectID)
+	var i GetStreakAchievementForAwardRow
+	err := row.Scan(
+		&i.ID,
+		&i.AchievementType,
+		&i.ProjectID,
+		&i.EventID,
+		&i.ChallengeID,
+		&i.Name,
+		&i.DescriptionPending,
+		&i.DescriptionCompleted,
+		&i.NotificationText,
+		&i.ImagePending,
+		&i.ImageCompleted,
+		&i.Points,
+		&i.Hidden,
+		&i.AwardableFrom,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.StreakItems,
+	)
+	return &i, err
+}
+
+const GetStreakItemCounts = `-- name: GetStreakItemCounts :many
+SELECT achievement_id, COUNT(*)::int AS item_count
+FROM streak_achievement_items
+WHERE achievement_id = ANY($1::text[])
+GROUP BY achievement_id
+`
+
+type GetStreakItemCountsRow struct {
+	AchievementID string `json:"achievement_id"`
+	ItemCount     int32  `json:"item_count"`
+}
+
+// Get streak item counts per achievement (for caching)
+func (q *Queries) GetStreakItemCounts(ctx context.Context, achievementIds []string) ([]*GetStreakItemCountsRow, error) {
+	rows, err := q.db.Query(ctx, GetStreakItemCounts, achievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetStreakItemCountsRow{}
+	for rows.Next() {
+		var i GetStreakItemCountsRow
+		if err := rows.Scan(&i.AchievementID, &i.ItemCount); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetStreakItemsByAchievementIDs = `-- name: GetStreakItemsByAchievementIDs :many
+
+SELECT id, achievement_id, external_content_id, sort_order
+FROM streak_achievement_items
+WHERE achievement_id = ANY($1::text[])
+ORDER BY achievement_id, sort_order
+`
+
+// ==================== Streak Progress Operations ====================
+func (q *Queries) GetStreakItemsByAchievementIDs(ctx context.Context, achievementIds []string) ([]*StreakAchievementItem, error) {
+	rows, err := q.db.Query(ctx, GetStreakItemsByAchievementIDs, achievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*StreakAchievementItem{}
+	for rows.Next() {
+		var i StreakAchievementItem
+		if err := rows.Scan(
+			&i.ID,
+			&i.AchievementID,
+			&i.ExternalContentID,
+			&i.SortOrder,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetUserAchievementTimestamps = `-- name: GetUserAchievementTimestamps :many
 SELECT achievement_id, achieved_at
 FROM user_achievements
@@ -1546,6 +1928,82 @@ func (q *Queries) GetUserProgressCounts(ctx context.Context, arg GetUserProgress
 	return items, nil
 }
 
+const GetUserStreakProgress = `-- name: GetUserStreakProgress :many
+SELECT user_id, achievement_id, external_content_id, completed_at
+FROM user_streak_progress
+WHERE user_id = $1::text
+  AND achievement_id = ANY($2::text[])
+`
+
+type GetUserStreakProgressParams struct {
+	UserID         string   `json:"user_id"`
+	AchievementIds []string `json:"achievement_ids"`
+}
+
+func (q *Queries) GetUserStreakProgress(ctx context.Context, arg GetUserStreakProgressParams) ([]*UserStreakProgress, error) {
+	rows, err := q.db.Query(ctx, GetUserStreakProgress, arg.UserID, arg.AchievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*UserStreakProgress{}
+	for rows.Next() {
+		var i UserStreakProgress
+		if err := rows.Scan(
+			&i.UserID,
+			&i.AchievementID,
+			&i.ExternalContentID,
+			&i.CompletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetUserStreakProgressCounts = `-- name: GetUserStreakProgressCounts :many
+SELECT achievement_id, COUNT(*)::int AS progress_count
+FROM user_streak_progress
+WHERE user_id = $1::text
+  AND achievement_id = ANY($2::text[])
+GROUP BY achievement_id
+`
+
+type GetUserStreakProgressCountsParams struct {
+	UserID         string   `json:"user_id"`
+	AchievementIds []string `json:"achievement_ids"`
+}
+
+type GetUserStreakProgressCountsRow struct {
+	AchievementID string `json:"achievement_id"`
+	ProgressCount int32  `json:"progress_count"`
+}
+
+// Get user progress counts per streak achievement
+func (q *Queries) GetUserStreakProgressCounts(ctx context.Context, arg GetUserStreakProgressCountsParams) ([]*GetUserStreakProgressCountsRow, error) {
+	rows, err := q.db.Query(ctx, GetUserStreakProgressCounts, arg.UserID, arg.AchievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUserStreakProgressCountsRow{}
+	for rows.Next() {
+		var i GetUserStreakProgressCountsRow
+		if err := rows.Scan(&i.AchievementID, &i.ProgressCount); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetUsersWithUnclaimedContentAchievement = `-- name: GetUsersWithUnclaimedContentAchievement :many
 SELECT DISTINCT u.id AS user_id
 FROM users u
@@ -1580,6 +2038,58 @@ type GetUsersWithUnclaimedContentAchievementParams struct {
 // Find users who completed all items for a content achievement but weren't awarded
 func (q *Queries) GetUsersWithUnclaimedContentAchievement(ctx context.Context, arg GetUsersWithUnclaimedContentAchievementParams) ([]string, error) {
 	rows, err := q.db.Query(ctx, GetUsersWithUnclaimedContentAchievement, arg.AchievementID, arg.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var user_id string
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetUsersWithUnclaimedStreakAchievement = `-- name: GetUsersWithUnclaimedStreakAchievement :many
+SELECT DISTINCT u.id AS user_id
+FROM users u
+INNER JOIN achievements a ON a.id = $1::text
+INNER JOIN streak_achievements sa ON sa.achievement_id = a.id
+WHERE a.project_id = $2::text
+  AND NOT EXISTS (
+    SELECT 1 FROM user_achievements ua
+    WHERE ua.user_id = u.id AND ua.achievement_id = a.id
+  )
+  AND NOT EXISTS (
+    SELECT 1 FROM streak_achievement_items sai
+    WHERE sai.achievement_id = a.id
+    AND NOT EXISTS (
+      SELECT 1 FROM user_streak_progress usp
+      WHERE usp.user_id = u.id
+      AND usp.achievement_id = a.id
+      AND usp.external_content_id = sai.external_content_id
+    )
+  )
+  AND EXISTS (
+    SELECT 1 FROM streak_achievement_items sai
+    WHERE sai.achievement_id = a.id
+  )
+`
+
+type GetUsersWithUnclaimedStreakAchievementParams struct {
+	AchievementID string `json:"achievement_id"`
+	ProjectID     string `json:"project_id"`
+}
+
+// Find users who completed all items for a streak achievement but weren't awarded
+func (q *Queries) GetUsersWithUnclaimedStreakAchievement(ctx context.Context, arg GetUsersWithUnclaimedStreakAchievementParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, GetUsersWithUnclaimedStreakAchievement, arg.AchievementID, arg.ProjectID)
 	if err != nil {
 		return nil, err
 	}
@@ -1656,6 +2166,49 @@ type MarkContentItemCompletedForAllAchievementsParams struct {
 // Mark content completed for a user across all achievements containing this content
 func (q *Queries) MarkContentItemCompletedForAllAchievements(ctx context.Context, arg MarkContentItemCompletedForAllAchievementsParams) error {
 	_, err := q.db.Exec(ctx, MarkContentItemCompletedForAllAchievements, arg.UserID, arg.ExternalContentID)
+	return err
+}
+
+const MarkStreakItemCompleted = `-- name: MarkStreakItemCompleted :exec
+INSERT INTO user_streak_progress (user_id, achievement_id, external_content_id, completed_at)
+VALUES ($1::text, $2::text, $3::text, COALESCE($4::timestamptz, now()))
+ON CONFLICT (user_id, achievement_id, external_content_id) DO NOTHING
+`
+
+type MarkStreakItemCompletedParams struct {
+	UserID            string             `json:"user_id"`
+	AchievementID     string             `json:"achievement_id"`
+	ExternalContentID string             `json:"external_content_id"`
+	CompletedAt       pgtype.Timestamptz `json:"completed_at"`
+}
+
+func (q *Queries) MarkStreakItemCompleted(ctx context.Context, arg MarkStreakItemCompletedParams) error {
+	_, err := q.db.Exec(ctx, MarkStreakItemCompleted,
+		arg.UserID,
+		arg.AchievementID,
+		arg.ExternalContentID,
+		arg.CompletedAt,
+	)
+	return err
+}
+
+const MarkStreakItemCompletedForAllAchievements = `-- name: MarkStreakItemCompletedForAllAchievements :exec
+INSERT INTO user_streak_progress (user_id, achievement_id, external_content_id, completed_at)
+SELECT $1::text, sa.achievement_id, $2::text, now()
+FROM streak_achievements sa
+INNER JOIN streak_achievement_items sai ON sa.achievement_id = sai.achievement_id
+WHERE sai.external_content_id = $2::text
+ON CONFLICT (user_id, achievement_id, external_content_id) DO NOTHING
+`
+
+type MarkStreakItemCompletedForAllAchievementsParams struct {
+	UserID            string `json:"user_id"`
+	ExternalContentID string `json:"external_content_id"`
+}
+
+// Mark content completed for a user across all streak achievements containing this content
+func (q *Queries) MarkStreakItemCompletedForAllAchievements(ctx context.Context, arg MarkStreakItemCompletedForAllAchievementsParams) error {
+	_, err := q.db.Exec(ctx, MarkStreakItemCompletedForAllAchievements, arg.UserID, arg.ExternalContentID)
 	return err
 }
 
@@ -1753,6 +2306,41 @@ func (q *Queries) UnmarkContentItemCompletedForAllAchievements(ctx context.Conte
 	return err
 }
 
+const UnmarkStreakItemCompleted = `-- name: UnmarkStreakItemCompleted :exec
+DELETE FROM user_streak_progress
+WHERE user_id = $1::text
+  AND achievement_id = $2::text
+  AND external_content_id = $3::text
+`
+
+type UnmarkStreakItemCompletedParams struct {
+	UserID            string `json:"user_id"`
+	AchievementID     string `json:"achievement_id"`
+	ExternalContentID string `json:"external_content_id"`
+}
+
+func (q *Queries) UnmarkStreakItemCompleted(ctx context.Context, arg UnmarkStreakItemCompletedParams) error {
+	_, err := q.db.Exec(ctx, UnmarkStreakItemCompleted, arg.UserID, arg.AchievementID, arg.ExternalContentID)
+	return err
+}
+
+const UnmarkStreakItemCompletedForAllAchievements = `-- name: UnmarkStreakItemCompletedForAllAchievements :exec
+DELETE FROM user_streak_progress
+WHERE user_id = $1::text
+  AND external_content_id = $2::text
+`
+
+type UnmarkStreakItemCompletedForAllAchievementsParams struct {
+	UserID            string `json:"user_id"`
+	ExternalContentID string `json:"external_content_id"`
+}
+
+// Unmark content completed for a user across all streak achievements containing this content
+func (q *Queries) UnmarkStreakItemCompletedForAllAchievements(ctx context.Context, arg UnmarkStreakItemCompletedForAllAchievementsParams) error {
+	_, err := q.db.Exec(ctx, UnmarkStreakItemCompletedForAllAchievements, arg.UserID, arg.ExternalContentID)
+	return err
+}
+
 const UpdateAchievement = `-- name: UpdateAchievement :one
 
 UPDATE achievements
@@ -1840,24 +2428,5 @@ type UpdateAchievementSortOrderParams struct {
 
 func (q *Queries) UpdateAchievementSortOrder(ctx context.Context, arg UpdateAchievementSortOrderParams) error {
 	_, err := q.db.Exec(ctx, UpdateAchievementSortOrder, arg.SortOrder, arg.ID)
-	return err
-}
-
-const UpdateStreakAchievementData = `-- name: UpdateStreakAchievementData :exec
-UPDATE streak_achievements
-SET
-    streak_id = CASE WHEN $1::text IS NOT NULL THEN $1::text ELSE streak_id END,
-    needed_streak = CASE WHEN $2::int IS NOT NULL THEN $2::int ELSE needed_streak END
-WHERE achievement_id = $3::text
-`
-
-type UpdateStreakAchievementDataParams struct {
-	StreakID      *string `json:"streak_id"`
-	NeededStreak  *int32  `json:"needed_streak"`
-	AchievementID string  `json:"achievement_id"`
-}
-
-func (q *Queries) UpdateStreakAchievementData(ctx context.Context, arg UpdateStreakAchievementDataParams) error {
-	_, err := q.db.Exec(ctx, UpdateStreakAchievementData, arg.StreakID, arg.NeededStreak, arg.AchievementID)
 	return err
 }

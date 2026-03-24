@@ -780,3 +780,74 @@ func (m *TestDBManager) GetLeaderboardEventChurchPoints(ctx context.Context, eve
 	}
 	return points, nil
 }
+
+// SetCurrentProject updates the settings table to point to a valid project (needed after Clean)
+func (m *TestDBManager) SetCurrentProject(ctx context.Context, projectID string) error {
+	_, err := m.DB.Pool.Exec(ctx, `UPDATE settings SET value_text = $1 WHERE key = 'current_project_id'`, projectID)
+	if err != nil {
+		return fmt.Errorf("failed to update current_project_id setting: %w", err)
+	}
+	return nil
+}
+
+// CreateExternalContentWithDeadline creates an external content record with a complete_by deadline
+func (m *TestDBManager) CreateExternalContentWithDeadline(ctx context.Context, id, planID, taskID, contentType, source string, completeBy time.Time) error {
+	query := `
+		INSERT INTO external_content (id, plan_id, task_id, content_type, source, complete_by, synced_at, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, now(), now(), now())
+	`
+	_, err := m.DB.Pool.Exec(ctx, query, id, planID, taskID, contentType, source, completeBy)
+	if err != nil {
+		return fmt.Errorf("failed to create external content with deadline %s: %w", id, err)
+	}
+	return nil
+}
+
+// CreateStreakAchievement creates a streak achievement with linked content items
+func (m *TestDBManager) CreateStreakAchievement(ctx context.Context, id, projectID, name string, points int, contentIDs []string) error {
+	achievementQuery := `
+		INSERT INTO achievements (
+			id, project_id, name, achievement_type, points, hidden,
+			description_pending, description_completed, notification_text,
+			image_pending, image_completed, sort_order
+		)
+		VALUES ($1, $2, $3, 'STREAK', $4, false,
+			'Complete content before deadlines', 'All content completed on time!', 'Achievement unlocked!',
+			'https://example.com/pending.png', 'https://example.com/completed.png', 0)
+	`
+	_, err := m.DB.Pool.Exec(ctx, achievementQuery, id, projectID, name, points)
+	if err != nil {
+		return fmt.Errorf("failed to create streak achievement %s: %w", id, err)
+	}
+
+	junctionQuery := `INSERT INTO streak_achievements (achievement_id) VALUES ($1)`
+	_, err = m.DB.Pool.Exec(ctx, junctionQuery, id)
+	if err != nil {
+		return fmt.Errorf("failed to create streak_achievements entry for %s: %w", id, err)
+	}
+
+	for i, contentID := range contentIDs {
+		itemID := ulid.NewStreakAchievementItemID()
+		itemQuery := `
+			INSERT INTO streak_achievement_items (id, achievement_id, external_content_id, sort_order)
+			VALUES ($1, $2, $3, $4)
+		`
+		_, err := m.DB.Pool.Exec(ctx, itemQuery, itemID, id, contentID, i)
+		if err != nil {
+			return fmt.Errorf("failed to link content item %s to streak achievement %s: %w", contentID, id, err)
+		}
+	}
+
+	return nil
+}
+
+// GetUserStreakProgress returns the count of completed streak items for a user and achievement
+func (m *TestDBManager) GetUserStreakProgress(ctx context.Context, userID, achievementID string) (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM user_streak_progress WHERE user_id = $1 AND achievement_id = $2`
+	err := m.DB.Pool.QueryRow(ctx, query, userID, achievementID).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count user streak progress: %w", err)
+	}
+	return count, nil
+}

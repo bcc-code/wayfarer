@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
@@ -445,15 +446,23 @@ func (r *mutationResolver) CreateStreakAchievement(ctx context.Context, input mo
 		return nil, fmt.Errorf("failed to create streak achievement: %w", err)
 	}
 
-	// Create streak achievement data
-	streakDataParams := sqlc.CreateStreakAchievementDataParams{
-		AchievementID: achievementID,
-		StreakID:      input.StreakID,
-		NeededStreak:  int32(input.NeededStreak),
+	// Create streak achievement junction
+	if err := qtx.CreateStreakAchievementJunction(ctx, achievementID); err != nil {
+		return nil, fmt.Errorf("failed to create streak achievement junction: %w", err)
 	}
 
-	if err := qtx.CreateStreakAchievementData(ctx, streakDataParams); err != nil {
-		return nil, fmt.Errorf("failed to create streak achievement data: %w", err)
+	// Create streak achievement items
+	for i, item := range input.Items {
+		itemID := ulid.NewStreakAchievementItemID()
+		_, err := qtx.CreateStreakAchievementItem(ctx, sqlc.CreateStreakAchievementItemParams{
+			ID:                itemID,
+			AchievementID:     achievementID,
+			ExternalContentID: item.ExternalContentID,
+			SortOrder:         int32(i),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create streak achievement item: %w", err)
+		}
 	}
 
 	// Commit transaction
@@ -493,8 +502,7 @@ func (r *mutationResolver) CreateStreakAchievement(ctx context.Context, input mo
 		ProjectID:            achievement.ProjectID,
 		EventID:              achievement.EventID,
 		ChallengeID:          achievement.ChallengeID,
-		NeededStreak:         input.NeededStreak,
-		StreakID:             input.StreakID,
+		TotalItems:           len(input.Items),
 	}, nil
 }
 
@@ -761,85 +769,62 @@ func (r *mutationResolver) UpdateStreakAchievement(ctx context.Context, id strin
 		return nil, fmt.Errorf("unauthorized to update achievements in this project")
 	}
 
-	// Start transaction if we need to update streak data
-	if input.NeededStreak != nil || input.StreakID != nil {
-		tx, err := r.DB.Pool.Begin(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	// Start transaction
+	tx, err := r.DB.Pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	qtx := r.DB.Queries.WithTx(tx)
+
+	// Update common fields
+	params := sqlc.UpdateAchievementParams{
+		ID:                   id,
+		Name:                 input.Name,
+		DescriptionPending:   input.DescriptionPending,
+		DescriptionCompleted: input.DescriptionCompleted,
+		NotificationText:     input.NotificationText,
+		ImagePending:         input.ImagePending,
+		ImageCompleted:       input.ImageCompleted,
+		EventID:              input.EventID,
+		ChallengeID:          input.ChallengeID,
+		Hidden:               input.Hidden,
+	}
+	if input.Points != nil {
+		points := int32(*input.Points)
+		params.Points = &points
+	}
+	if input.AwardableFrom != nil {
+		params.AwardableFrom = pgtype.Timestamptz{Time: input.AwardableFrom.Time, Valid: true}
+	}
+
+	if _, err := qtx.UpdateAchievement(ctx, params); err != nil {
+		return nil, fmt.Errorf("failed to update achievement: %w", err)
+	}
+
+	// Update streak items if provided
+	if input.Items != nil {
+		// Delete existing items and re-create
+		if err := qtx.DeleteStreakAchievementItems(ctx, id); err != nil {
+			return nil, fmt.Errorf("failed to delete existing streak items: %w", err)
 		}
-		defer tx.Rollback(ctx)
-
-		qtx := r.DB.Queries.WithTx(tx)
-
-		// Update common fields if provided
-		if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil || input.NotificationText != nil || input.ImagePending != nil || input.ImageCompleted != nil || input.EventID != nil || input.ChallengeID != nil || input.Points != nil || input.Hidden != nil || input.AwardableFrom != nil {
-			params := sqlc.UpdateAchievementParams{
-				ID:                   id,
-				Name:                 input.Name,
-				DescriptionPending:   input.DescriptionPending,
-				DescriptionCompleted: input.DescriptionCompleted,
-				NotificationText:     input.NotificationText,
-				ImagePending:         input.ImagePending,
-				ImageCompleted:       input.ImageCompleted,
-				EventID:              input.EventID,
-				ChallengeID:          input.ChallengeID,
-				Hidden:               input.Hidden,
+		for i, item := range input.Items {
+			itemID := ulid.NewStreakAchievementItemID()
+			_, err := qtx.CreateStreakAchievementItem(ctx, sqlc.CreateStreakAchievementItemParams{
+				ID:                itemID,
+				AchievementID:     id,
+				ExternalContentID: item.ExternalContentID,
+				SortOrder:         int32(i),
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to create streak achievement item: %w", err)
 			}
-			if input.Points != nil {
-				points := int32(*input.Points)
-				params.Points = &points
-			}
-			if input.AwardableFrom != nil {
-				params.AwardableFrom = pgtype.Timestamptz{Time: input.AwardableFrom.Time, Valid: true}
-			}
+		}
+	}
 
-			if _, err := qtx.UpdateAchievement(ctx, params); err != nil {
-				return nil, fmt.Errorf("failed to update achievement: %w", err)
-			}
-		}
-
-		// Update streak-specific data
-		streakParams := sqlc.UpdateStreakAchievementDataParams{
-			AchievementID: id,
-			StreakID:      input.StreakID,
-		}
-		if input.NeededStreak != nil {
-			neededStreak := int32(*input.NeededStreak)
-			streakParams.NeededStreak = &neededStreak
-		}
-
-		if err := qtx.UpdateStreakAchievementData(ctx, streakParams); err != nil {
-			return nil, fmt.Errorf("failed to update streak data: %w", err)
-		}
-
-		if err := tx.Commit(ctx); err != nil {
-			return nil, fmt.Errorf("failed to commit transaction: %w", err)
-		}
-	} else {
-		// Just update common fields without transaction
-		params := sqlc.UpdateAchievementParams{
-			ID:                   id,
-			Name:                 input.Name,
-			DescriptionPending:   input.DescriptionPending,
-			DescriptionCompleted: input.DescriptionCompleted,
-			NotificationText:     input.NotificationText,
-			ImagePending:         input.ImagePending,
-			ImageCompleted:       input.ImageCompleted,
-			EventID:              input.EventID,
-			ChallengeID:          input.ChallengeID,
-			Hidden:               input.Hidden,
-		}
-		if input.Points != nil {
-			points := int32(*input.Points)
-			params.Points = &points
-		}
-		if input.AwardableFrom != nil {
-			params.AwardableFrom = pgtype.Timestamptz{Time: input.AwardableFrom.Time, Valid: true}
-		}
-
-		if _, err := r.DB.Queries.UpdateAchievement(ctx, params); err != nil {
-			return nil, fmt.Errorf("failed to update achievement: %w", err)
-		}
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	// Invalidate caches
@@ -1475,9 +1460,164 @@ func (r *mutationResolver) UnmarkContentItemCompleted(ctx context.Context, userI
 	return result, nil
 }
 
-// RecordStreakActivity is the resolver for the recordStreakActivity field.
-func (r *mutationResolver) RecordStreakActivity(ctx context.Context, userID string, achievementID string, currentStreak int) (*model.StreakAchievement, error) {
-	panic(fmt.Errorf("not implemented: RecordStreakActivity - recordStreakActivity"))
+// MarkStreakItemCompleted is the resolver for the markStreakItemCompleted field.
+// Marks content completed for a user across ALL published streak achievements containing this content.
+// Enforces external_content.complete_by deadline unless force=true.
+func (r *mutationResolver) MarkStreakItemCompleted(ctx context.Context, userID string, externalContentID string, force *bool) ([]model.StreakAchievement, error) {
+	adminID, ok := middleware.GetUserID(ctx)
+	if !ok || adminID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check deadline enforcement unless force=true
+	forceFlag := force != nil && *force
+	if !forceFlag {
+		ec, err := r.DB.Queries.GetExternalContentByID(ctx, externalContentID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get external content: %w", err)
+		}
+		if ec.CompleteBy.Valid && time.Now().After(ec.CompleteBy.Time) {
+			return nil, fmt.Errorf("deadline has passed for this content (complete_by: %s)", ec.CompleteBy.Time.Format(time.RFC3339))
+		}
+	}
+
+	// Get all streak achievements containing this external content
+	achievementRows, err := r.DB.Queries.GetPublishedStreakAchievementsByExternalContent(ctx, externalContentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get streak achievements for external content: %w", err)
+	}
+
+	if len(achievementRows) == 0 {
+		return []model.StreakAchievement{}, nil
+	}
+
+	// Mark content completed for all streak achievements in one query
+	if err := r.DB.Queries.MarkStreakItemCompletedForAllAchievements(ctx, sqlc.MarkStreakItemCompletedForAllAchievementsParams{
+		UserID:            userID,
+		ExternalContentID: externalContentID,
+	}); err != nil {
+		return nil, fmt.Errorf("failed to mark streak item completed: %w", err)
+	}
+
+	achievementIDs := make([]string, len(achievementRows))
+	for i, row := range achievementRows {
+		achievementIDs[i] = row.ID
+	}
+
+	// Invalidate caches
+	for _, id := range achievementIDs {
+		r.Cache.Delete(cache.UserStreakProgressKey(userID, id))
+	}
+
+	// Check which achievements user already has
+	alreadyAwarded, err := r.DB.Queries.GetUserAwardedAchievementIDs(ctx, sqlc.GetUserAwardedAchievementIDsParams{
+		UserID:         userID,
+		AchievementIds: achievementIDs,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to check awarded achievements: %w", err)
+	}
+
+	awardedSet := make(map[string]bool, len(alreadyAwarded))
+	for _, id := range alreadyAwarded {
+		awardedSet[id] = true
+	}
+
+	pendingIDs := make([]string, 0, len(achievementIDs))
+	for _, id := range achievementIDs {
+		if !awardedSet[id] {
+			pendingIDs = append(pendingIDs, id)
+		}
+	}
+
+	// Get item counts
+	itemCounts := make(map[string]int32, len(pendingIDs))
+	if len(pendingIDs) > 0 {
+		dbCounts, err := r.DB.Queries.GetStreakItemCounts(ctx, pendingIDs)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get streak item counts: %w", err)
+		}
+		for _, c := range dbCounts {
+			itemCounts[c.AchievementID] = c.ItemCount
+		}
+	}
+
+	// Get progress counts
+	progressByAchievement := make(map[string]int32)
+	if len(pendingIDs) > 0 {
+		progressCounts, err := r.DB.Queries.GetUserStreakProgressCounts(ctx, sqlc.GetUserStreakProgressCountsParams{
+			UserID:         userID,
+			AchievementIds: pendingIDs,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to get user streak progress counts: %w", err)
+		}
+		for _, p := range progressCounts {
+			progressByAchievement[p.AchievementID] = p.ProgressCount
+		}
+	}
+
+	// Convert to model and auto-award if all items completed
+	result := make([]model.StreakAchievement, 0, len(achievementRows))
+	for _, row := range achievementRows {
+		streakAch := convertPublishedStreakAchievementRow(row)
+		translated := r.ApplyTranslationToAchievement(ctx, streakAch)
+		result = append(result, *translated.(*model.StreakAchievement))
+
+		if awardedSet[row.ID] {
+			continue
+		}
+
+		itemCount := itemCounts[row.ID]
+		progressCount := progressByAchievement[row.ID]
+
+		if progressCount == itemCount && itemCount > 0 {
+			if _, err := r.AwardAchievement(ctx, userID, row.ID); err != nil {
+				slog.Error("failed to auto-award streak achievement", "error", err, "user_id", userID, "achievement_id", row.ID)
+			}
+		}
+	}
+
+	go r.FirebaseService.NotifyUserContent(context.Background(), userID)
+
+	return result, nil
+}
+
+// UnmarkStreakItemCompleted is the resolver for the unmarkStreakItemCompleted field.
+func (r *mutationResolver) UnmarkStreakItemCompleted(ctx context.Context, userID string, externalContentID string) ([]model.StreakAchievement, error) {
+	adminID, ok := middleware.GetUserID(ctx)
+	if !ok || adminID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+	_ = adminID
+
+	achievementRows, err := r.DB.Queries.GetPublishedStreakAchievementsByExternalContent(ctx, externalContentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get streak achievements for external content: %w", err)
+	}
+
+	if err := r.DB.Queries.UnmarkStreakItemCompletedForAllAchievements(ctx, sqlc.UnmarkStreakItemCompletedForAllAchievementsParams{
+		UserID:            userID,
+		ExternalContentID: externalContentID,
+	}); err != nil {
+		return nil, fmt.Errorf("failed to unmark streak item completed: %w", err)
+	}
+
+	// Invalidate caches
+	for _, row := range achievementRows {
+		r.Cache.Delete(cache.UserStreakProgressKey(userID, row.ID))
+	}
+
+	result := make([]model.StreakAchievement, 0, len(achievementRows))
+	for _, row := range achievementRows {
+		streakAch := convertPublishedStreakAchievementRow(row)
+		translated := r.ApplyTranslationToAchievement(ctx, streakAch)
+		result = append(result, *translated.(*model.StreakAchievement))
+	}
+
+	go r.FirebaseService.NotifyUserContent(context.Background(), userID)
+
+	return result, nil
 }
 
 // MarkAchievementCelebrated is the resolver for the markAchievementCelebrated field.
@@ -1520,6 +1660,50 @@ func (r *mutationResolver) RecalculateContentAchievements(ctx context.Context, p
 	// Notify Firebase for each awarded user (same pattern as AwardAchievement resolver)
 	for _, userID := range awardedUserIDs {
 		go r.FirebaseService.NotifyUserAchievements(context.Background(), userID)
+	}
+
+	return &model.RecalculateResult{
+		Awarded: len(awardedUserIDs),
+		UserIds: awardedUserIDs,
+	}, nil
+}
+
+// RecalculateStreakAchievements is the resolver for the recalculateStreakAchievements field.
+func (r *mutationResolver) RecalculateStreakAchievements(ctx context.Context, projectID string, achievementID string) (*model.RecalculateResult, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Verify the achievement exists and belongs to the project
+	_, err := r.DB.Queries.GetStreakAchievementForAward(ctx, sqlc.GetStreakAchievementForAwardParams{
+		AchievementID: achievementID,
+		ProjectID:     projectID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get streak achievement: %w", err)
+	}
+
+	// Find users who completed all items but weren't awarded
+	userRows, err := r.DB.Queries.GetUsersWithUnclaimedStreakAchievement(ctx, sqlc.GetUsersWithUnclaimedStreakAchievementParams{
+		AchievementID: achievementID,
+		ProjectID:     projectID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get unclaimed users: %w", err)
+	}
+
+	awardedUserIDs := make([]string, 0, len(userRows))
+	for _, uid := range userRows {
+		if _, err := r.AwardAchievement(ctx, uid, achievementID); err != nil {
+			slog.Error("failed to award streak achievement during recalculation", "error", err, "user_id", uid, "achievement_id", achievementID)
+			continue
+		}
+		awardedUserIDs = append(awardedUserIDs, uid)
+	}
+
+	for _, uid := range awardedUserIDs {
+		go r.FirebaseService.NotifyUserAchievements(context.Background(), uid)
 	}
 
 	return &model.RecalculateResult{
@@ -1806,14 +1990,119 @@ func (r *streakAchievementResolver) CelebratedAt(ctx context.Context, obj *model
 	return resolveCelebratedAt(ctx, r.Resolver, obj.ID)
 }
 
+// Items is the resolver for the items field.
+func (r *streakAchievementResolver) Items(ctx context.Context, obj *model.StreakAchievement) ([]model.ContentItem, error) {
+	thunk := r.Loaders.StreakItemsByAchievementLoader.Load(ctx, obj.ID)
+	items, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load streak items: %w", err)
+	}
+
+	result := make([]model.ContentItem, len(items))
+	for i, item := range items {
+		result[i] = *item
+	}
+	return result, nil
+}
+
+// UserCompletedItems is the resolver for the userCompletedItems field.
+func (r *streakAchievementResolver) UserCompletedItems(ctx context.Context, obj *model.StreakAchievement) ([]model.ContentItem, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return []model.ContentItem{}, nil
+	}
+
+	thunk := r.Loaders.StreakItemsByAchievementLoader.Load(ctx, obj.ID)
+	items, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load streak items: %w", err)
+	}
+
+	progressThunk := r.Loaders.UserStreakProgressLoader.Load(ctx, loaders.UserAchievementKey{UserID: userID, AchievementID: obj.ID})
+	progress, err := progressThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user streak progress: %w", err)
+	}
+
+	completedSet := make(map[string]bool)
+	for _, p := range progress {
+		completedSet[p.ExternalContentID] = true
+	}
+
+	var completedItems []model.ContentItem
+	for _, item := range items {
+		if completedSet[item.ExternalContentID] {
+			completedItems = append(completedItems, *item)
+		}
+	}
+	if completedItems == nil {
+		completedItems = []model.ContentItem{}
+	}
+	return completedItems, nil
+}
+
+// NextItem is the resolver for the nextItem field.
+func (r *streakAchievementResolver) NextItem(ctx context.Context, obj *model.StreakAchievement) (*model.ContentItem, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		thunk := r.Loaders.StreakItemsByAchievementLoader.Load(ctx, obj.ID)
+		items, err := thunk()
+		if err != nil {
+			return nil, fmt.Errorf("failed to load streak items: %w", err)
+		}
+		if len(items) == 0 {
+			return nil, nil
+		}
+		return items[0], nil
+	}
+
+	thunk := r.Loaders.StreakItemsByAchievementLoader.Load(ctx, obj.ID)
+	items, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load streak items: %w", err)
+	}
+	if len(items) == 0 {
+		return nil, nil
+	}
+
+	progressThunk := r.Loaders.UserStreakProgressLoader.Load(ctx, loaders.UserAchievementKey{UserID: userID, AchievementID: obj.ID})
+	progress, err := progressThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user streak progress: %w", err)
+	}
+
+	completedSet := make(map[string]bool)
+	for _, p := range progress {
+		completedSet[p.ExternalContentID] = true
+	}
+
+	for _, item := range items {
+		if !completedSet[item.ExternalContentID] {
+			return item, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// CompletedItemCount is the resolver for the completedItemCount field.
+func (r *streakAchievementResolver) CompletedItemCount(ctx context.Context, obj *model.StreakAchievement) (int, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return 0, nil
+	}
+
+	progressThunk := r.Loaders.UserStreakProgressLoader.Load(ctx, loaders.UserAchievementKey{UserID: userID, AchievementID: obj.ID})
+	progress, err := progressThunk()
+	if err != nil {
+		return 0, fmt.Errorf("failed to load user streak progress: %w", err)
+	}
+	return len(progress), nil
+}
+
 // TranslationStatus is the resolver for the translationStatus field.
 func (r *streakAchievementResolver) TranslationStatus(ctx context.Context, obj *model.StreakAchievement) ([]model.TranslationFieldStatus, error) {
 	return r.achievementTranslationStatus(ctx, obj.ID)
-}
-
-// Streak is the resolver for the streak field.
-func (r *streakAchievementResolver) Streak(ctx context.Context, obj *model.StreakAchievement) (*model.Streak, error) {
-	return r.LoadStreakWithTranslation(ctx, obj.StreakID)
 }
 
 // ContentAchievement returns ContentAchievementResolver implementation.

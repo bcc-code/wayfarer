@@ -27,7 +27,6 @@ type Project {
     myChurchTeams: [Team!]! @goField(forceResolver: true)
     myTeam: Team @goField(forceResolver: true)
     achievements: [Achievement!]! @goField(forceResolver: true)
-    streaks: [Streak!]! @goField(forceResolver: true)
     journal(
         filter: ScoreJournalFilter
         first: Int

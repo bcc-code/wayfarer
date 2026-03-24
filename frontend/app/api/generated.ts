@@ -572,19 +572,11 @@ export type CreateStreakAchievementInput = {
   hidden: Scalars['Boolean']['input'];
   imageCompleted: Scalars['String']['input'];
   imagePending: Scalars['String']['input'];
+  items: Array<ContentItemInput>;
   name: Scalars['String']['input'];
-  neededStreak: Scalars['Int']['input'];
   notificationText: Scalars['String']['input'];
   points: Scalars['Int']['input'];
   projectId: Scalars['ID']['input'];
-  streakId: Scalars['ID']['input'];
-};
-
-export type CreateStreakInput = {
-  description: Scalars['String']['input'];
-  name: Scalars['String']['input'];
-  projectId: Scalars['ID']['input'];
-  relevantDays: Array<DateRangeInput>;
 };
 
 export type CreateSuperTeamInput = {
@@ -626,17 +618,6 @@ export type CreateWebhookInput = {
   projectId: Scalars['ID']['input'];
   secret?: InputMaybe<Scalars['String']['input']>;
   url: Scalars['String']['input'];
-};
-
-export type DateRange = {
-  __typename?: 'DateRange';
-  end: Scalars['Date']['output'];
-  start: Scalars['Date']['output'];
-};
-
-export type DateRangeInput = {
-  end: Scalars['Date']['input'];
-  start: Scalars['Date']['input'];
 };
 
 export type DeviceMetadata = {
@@ -1058,7 +1039,6 @@ export type Mutation = {
   createQuizSubmission: QuizSubmission;
   createScoreAdjustment: ScoreJournal;
   createSimpleAchievement: SimpleAchievement;
-  createStreak: Streak;
   createStreakAchievement: StreakAchievement;
   createSuperTeam: SuperTeam;
   createTeam: Team;
@@ -1073,7 +1053,6 @@ export type Mutation = {
   deleteQuizQuestion: Scalars['Boolean']['output'];
   deleteQuizSession: Scalars['Boolean']['output'];
   deleteScoreJournalEntry: Scalars['Boolean']['output'];
-  deleteStreak: Scalars['Boolean']['output'];
   deleteSuperTeam: Scalars['Boolean']['output'];
   deleteTeam: Scalars['Boolean']['output'];
   deleteWebhook: Scalars['Boolean']['output'];
@@ -1094,13 +1073,14 @@ export type Mutation = {
   markAchievementCelebrated: Scalars['Boolean']['output'];
   markContentItemCompleted: Array<ContentAchievement>;
   markFeedbackHandled: UserFeedback;
+  markStreakItemCompleted: Array<StreakAchievement>;
   moveEvent: Event;
   openQuizSession: QuizSession;
   publishChallenge: Challenge;
   recalculateContentAchievements: RecalculateResult;
+  recalculateStreakAchievements: RecalculateResult;
   recordBetResult: QuizResponse;
   recordBetResults: Array<QuizResponse>;
-  recordStreakActivity: StreakAchievement;
   regenerateJoinCode: Team;
   registerPushSubscription: PushSubscription;
   rejectConsent: UserConsent;
@@ -1131,6 +1111,7 @@ export type Mutation = {
   unenrollUserFromChallenge: Scalars['Boolean']['output'];
   unlockUserChurch: User;
   unmarkContentItemCompleted: Array<ContentAchievement>;
+  unmarkStreakItemCompleted: Array<StreakAchievement>;
   unregisterPushSubscription: Scalars['Boolean']['output'];
   updateAchievement: Achievement;
   updateAvatar: User;
@@ -1146,7 +1127,6 @@ export type Mutation = {
   updateQuizAnswer: QuizResponse;
   updateQuizQuestion: QuizQuestion;
   updateQuizSession: QuizSession;
-  updateStreak: Streak;
   updateStreakAchievement: StreakAchievement;
   updateSuperTeam: SuperTeam;
   updateTeam: Team;
@@ -1385,11 +1365,6 @@ export type MutationCreateSimpleAchievementArgs = {
 };
 
 
-export type MutationCreateStreakArgs = {
-  input: CreateStreakInput;
-};
-
-
 export type MutationCreateStreakAchievementArgs = {
   input: CreateStreakAchievementInput;
 };
@@ -1458,11 +1433,6 @@ export type MutationDeleteQuizSessionArgs = {
 
 
 export type MutationDeleteScoreJournalEntryArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type MutationDeleteStreakArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -1566,6 +1536,13 @@ export type MutationMarkFeedbackHandledArgs = {
 };
 
 
+export type MutationMarkStreakItemCompletedArgs = {
+  externalContentId: Scalars['ID']['input'];
+  force?: InputMaybe<Scalars['Boolean']['input']>;
+  userId: Scalars['ID']['input'];
+};
+
+
 export type MutationMoveEventArgs = {
   id: Scalars['ID']['input'];
   newProjectId: Scalars['ID']['input'];
@@ -1589,6 +1566,12 @@ export type MutationRecalculateContentAchievementsArgs = {
 };
 
 
+export type MutationRecalculateStreakAchievementsArgs = {
+  achievementId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
+};
+
+
 export type MutationRecordBetResultArgs = {
   input: RecordBetResultInput;
 };
@@ -1596,13 +1579,6 @@ export type MutationRecordBetResultArgs = {
 
 export type MutationRecordBetResultsArgs = {
   inputs: Array<RecordBetResultInput>;
-};
-
-
-export type MutationRecordStreakActivityArgs = {
-  achievementId: Scalars['ID']['input'];
-  currentStreak: Scalars['Int']['input'];
-  userId: Scalars['ID']['input'];
 };
 
 
@@ -1772,6 +1748,12 @@ export type MutationUnmarkContentItemCompletedArgs = {
 };
 
 
+export type MutationUnmarkStreakItemCompletedArgs = {
+  externalContentId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+
 export type MutationUnregisterPushSubscriptionArgs = {
   endpoint: Scalars['String']['input'];
 };
@@ -1862,12 +1844,6 @@ export type MutationUpdateQuizQuestionArgs = {
 export type MutationUpdateQuizSessionArgs = {
   id: Scalars['ID']['input'];
   input: UpdateQuizSessionInput;
-};
-
-
-export type MutationUpdateStreakArgs = {
-  id: Scalars['ID']['input'];
-  input: UpdateStreakInput;
 };
 
 
@@ -2049,7 +2025,6 @@ export type Project = {
   name: Scalars['String']['output'];
   rules?: Maybe<MarkdownText>;
   startDate: Scalars['DateTime']['output'];
-  streaks: Array<Streak>;
   teams: Array<Team>;
   translationStatus: Array<TranslationFieldStatus>;
 };
@@ -2156,8 +2131,6 @@ export type Query = {
   quizSubmissions: QuizSubmissionConnection;
   quizzes: QuizConnection;
   scoreJournal: ScoreJournalConnection;
-  streak: Streak;
-  streaks: StreakConnection;
   superteam: SuperTeam;
   superteams: SuperTeamConnection;
   team: Team;
@@ -2371,20 +2344,6 @@ export type QueryScoreJournalArgs = {
   last?: InputMaybe<Scalars['Int']['input']>;
   projectId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
-};
-
-
-export type QueryStreakArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type QueryStreaksArgs = {
-  after?: InputMaybe<Scalars['String']['input']>;
-  before?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<StreakFilter>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  last?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -2846,29 +2805,13 @@ export type SimpleChallenge = Challenge & {
   visibleAt?: Maybe<Scalars['DateTime']['output']>;
 };
 
-export type Streak = {
-  __typename?: 'Streak';
-  description: Scalars['String']['output'];
-  id: Scalars['ID']['output'];
-  listenedDays: Array<StreakDay>;
-  name: Scalars['String']['output'];
-  project: Project;
-  relevantDays: Array<DateRange>;
-  status: Scalars['Int']['output'];
-  translationStatus: Array<TranslationFieldStatus>;
-};
-
-
-export type StreakListenedDaysArgs = {
-  last: Scalars['Int']['input'];
-};
-
 export type StreakAchievement = Achievement & {
   __typename?: 'StreakAchievement';
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
   awardableFrom?: Maybe<Scalars['DateTime']['output']>;
   celebratedAt?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
+  completedItemCount: Scalars['Int']['output'];
   descriptionCompleted: Scalars['String']['output'];
   descriptionPending: Scalars['String']['output'];
   event?: Maybe<Event>;
@@ -2880,37 +2823,15 @@ export type StreakAchievement = Achievement & {
   /** @deprecated Use imagePendingObject instead */
   imagePending: Scalars['String']['output'];
   imagePendingObject: Image;
+  items: Array<ContentItem>;
   name: Scalars['String']['output'];
-  neededStreak: Scalars['Int']['output'];
+  nextItem?: Maybe<ContentItem>;
   notificationText: Scalars['String']['output'];
   points: Scalars['Int']['output'];
   project: Project;
-  streak: Streak;
+  totalItems: Scalars['Int']['output'];
   translationStatus: Array<TranslationFieldStatus>;
-};
-
-export type StreakConnection = {
-  __typename?: 'StreakConnection';
-  edges: Array<StreakEdge>;
-  pageInfo: PageInfo;
-  totalCount: Scalars['Int']['output'];
-};
-
-export type StreakDay = {
-  __typename?: 'StreakDay';
-  active: Scalars['Boolean']['output'];
-  date: Scalars['Date']['output'];
-};
-
-export type StreakEdge = {
-  __typename?: 'StreakEdge';
-  cursor: Scalars['String']['output'];
-  node: Streak;
-};
-
-export type StreakFilter = {
-  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  projectId?: InputMaybe<Scalars['ID']['input']>;
+  userCompletedItems: Array<ContentItem>;
 };
 
 export type SubmitFeedbackInput = {
@@ -3183,17 +3104,10 @@ export type UpdateStreakAchievementInput = {
   hidden?: InputMaybe<Scalars['Boolean']['input']>;
   imageCompleted?: InputMaybe<Scalars['String']['input']>;
   imagePending?: InputMaybe<Scalars['String']['input']>;
+  items?: InputMaybe<Array<ContentItemInput>>;
   name?: InputMaybe<Scalars['String']['input']>;
-  neededStreak?: InputMaybe<Scalars['Int']['input']>;
   notificationText?: InputMaybe<Scalars['String']['input']>;
   points?: InputMaybe<Scalars['Int']['input']>;
-  streakId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type UpdateStreakInput = {
-  description?: InputMaybe<Scalars['String']['input']>;
-  name?: InputMaybe<Scalars['String']['input']>;
-  relevantDays?: InputMaybe<Array<DateRangeInput>>;
 };
 
 export type UpdateSuperTeamInput = {
@@ -3938,28 +3852,6 @@ export type RevokeRoleMutationVariables = Exact<{
 
 export type RevokeRoleMutation = { __typename?: 'Mutation', revokeRole: boolean };
 
-export type DeleteStreakMutationVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type DeleteStreakMutation = { __typename?: 'Mutation', deleteStreak: boolean };
-
-export type UpdateStreakMutationVariables = Exact<{
-  id: Scalars['ID']['input'];
-  input: UpdateStreakInput;
-}>;
-
-
-export type UpdateStreakMutation = { __typename?: 'Mutation', updateStreak: { __typename?: 'Streak', id: string } };
-
-export type CreateStreakMutationVariables = Exact<{
-  input: CreateStreakInput;
-}>;
-
-
-export type CreateStreakMutation = { __typename?: 'Mutation', createStreak: { __typename?: 'Streak', id: string } };
-
 export type CreateSuperTeamMutationVariables = Exact<{
   projectId: Scalars['ID']['input'];
   input: CreateSuperTeamInput;
@@ -4055,13 +3947,6 @@ export type AdminExternalContentsQueryVariables = Exact<{
 
 
 export type AdminExternalContentsQuery = { __typename?: 'Query', externalContents: { __typename?: 'ExternalContentConnection', edges: Array<{ __typename?: 'ExternalContentEdge', node: { __typename?: 'ExternalContent', id: string, planId: string, taskId: string, contentId?: string | null, contentType: ExternalContentType, publishedAt?: any | null, source: string, title?: string | null, translations: Array<{ __typename?: 'ExternalContentTranslation', languageCode: string, title?: string | null }> } }>, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null } } };
-
-export type AdminProjectStreaksQueryVariables = Exact<{
-  projectId: Scalars['ID']['input'];
-}>;
-
-
-export type AdminProjectStreaksQuery = { __typename?: 'Query', streaks: { __typename?: 'StreakConnection', edges: Array<{ __typename?: 'StreakEdge', node: { __typename?: 'Streak', id: string, name: string, description: string } }> } };
 
 export type AdminProjectQuizzesQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
@@ -4352,7 +4237,7 @@ export type AdminProjectAchievementPageQuery = { __typename?: 'Query', achieveme
     | { __typename: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, items: Array<{ __typename?: 'ContentItem', id: string, sortOrder: number, externalContent: { __typename?: 'ExternalContent', id: string, planId: string, taskId: string, contentId?: string | null, contentType: ExternalContentType, publishedAt?: any | null, source: string, syncedAt: any, createdAt: any, updatedAt: any, title?: string | null, translations: Array<{ __typename?: 'ExternalContentTranslation', languageCode: string, title?: string | null }> } }>, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }>, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
     | { __typename: 'QuizAchievement', minScorePercentage?: number | null, requireCompletion: boolean, id: string, name: string, descriptionPending: string, descriptionCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, quiz?: { __typename?: 'Quiz', id: string, name: string } | null, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }>, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
     | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }>, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
-    | { __typename: 'StreakAchievement', neededStreak: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, streak: { __typename?: 'Streak', id: string, name: string, description: string }, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }>, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'StreakAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, items: Array<{ __typename?: 'ContentItem', id: string, sortOrder: number, externalContent: { __typename?: 'ExternalContent', id: string, planId: string, taskId: string, contentType: ExternalContentType, title?: string | null } }>, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }>, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
    };
 
 export type AdminProjectAchievementsNewPageQueryVariables = Exact<{
@@ -4441,13 +4326,6 @@ export type AdminProjectPageQuery = { __typename?: 'Query', project: { __typenam
         | { __typename: 'QuizChallenge', id: string, name: string, description: any, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
         | { __typename: 'SimpleChallenge', id: string, name: string, description: any, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
        }> }, superteams: { __typename?: 'SuperTeamConnection', edges: Array<{ __typename?: 'SuperTeamEdge', node: { __typename?: 'SuperTeam', id: string, name: string, description: string, color?: string | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, teams: Array<{ __typename?: 'Team', id: string }> } }> } };
-
-export type AdminProjectStreakPageQueryVariables = Exact<{
-  streakId: Scalars['ID']['input'];
-}>;
-
-
-export type AdminProjectStreakPageQuery = { __typename?: 'Query', streak: { __typename?: 'Streak', id: string, name: string, description: string, status: number, relevantDays: Array<{ __typename?: 'DateRange', start: any, end: any }>, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }>, project: { __typename?: 'Project', id: string, name: string } } };
 
 export type AdminSuperTeamDetailPageQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -5565,37 +5443,6 @@ export const RevokeRoleDocument = gql`
 export function useRevokeRoleMutation() {
   return Urql.useMutation<RevokeRoleMutation, RevokeRoleMutationVariables>(RevokeRoleDocument);
 };
-export const DeleteStreakDocument = gql`
-    mutation DeleteStreak($id: ID!) {
-  deleteStreak(id: $id)
-}
-    `;
-
-export function useDeleteStreakMutation() {
-  return Urql.useMutation<DeleteStreakMutation, DeleteStreakMutationVariables>(DeleteStreakDocument);
-};
-export const UpdateStreakDocument = gql`
-    mutation UpdateStreak($id: ID!, $input: UpdateStreakInput!) {
-  updateStreak(id: $id, input: $input) {
-    id
-  }
-}
-    `;
-
-export function useUpdateStreakMutation() {
-  return Urql.useMutation<UpdateStreakMutation, UpdateStreakMutationVariables>(UpdateStreakDocument);
-};
-export const CreateStreakDocument = gql`
-    mutation CreateStreak($input: CreateStreakInput!) {
-  createStreak(input: $input) {
-    id
-  }
-}
-    `;
-
-export function useCreateStreakMutation() {
-  return Urql.useMutation<CreateStreakMutation, CreateStreakMutationVariables>(CreateStreakDocument);
-};
 export const CreateSuperTeamDocument = gql`
     mutation CreateSuperTeam($projectId: ID!, $input: CreateSuperTeamInput!) {
   createSuperTeam(projectId: $projectId, input: $input) {
@@ -5743,23 +5590,6 @@ export const AdminExternalContentsDocument = gql`
 
 export function useAdminExternalContentsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminExternalContentsQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminExternalContentsQuery, AdminExternalContentsQueryVariables | undefined>({ query: AdminExternalContentsDocument, variables: undefined, ...options });
-};
-export const AdminProjectStreaksDocument = gql`
-    query AdminProjectStreaks($projectId: ID!) {
-  streaks(filter: {projectId: $projectId}, first: 100) {
-    edges {
-      node {
-        id
-        name
-        description
-      }
-    }
-  }
-}
-    `;
-
-export function useAdminProjectStreaksQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectStreaksQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<AdminProjectStreaksQuery, AdminProjectStreaksQueryVariables | undefined>({ query: AdminProjectStreaksDocument, variables: undefined, ...options });
 };
 export const AdminProjectQuizzesDocument = gql`
     query AdminProjectQuizzes($projectId: ID!) {
@@ -6759,11 +6589,18 @@ export const AdminProjectAchievementPageDocument = gql`
       }
     }
     ... on StreakAchievement {
-      neededStreak
-      streak {
+      totalItems
+      completedItemCount
+      items {
         id
-        name
-        description
+        sortOrder
+        externalContent {
+          id
+          planId
+          taskId
+          contentType
+          title
+        }
       }
     }
     ... on QuizAchievement {
@@ -7069,31 +6906,6 @@ export const AdminProjectPageDocument = gql`
 
 export function useAdminProjectPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectPageQuery, AdminProjectPageQueryVariables | undefined>({ query: AdminProjectPageDocument, variables: undefined, ...options });
-};
-export const AdminProjectStreakPageDocument = gql`
-    query AdminProjectStreakPage($streakId: ID!) {
-  streak(id: $streakId) {
-    id
-    name
-    description
-    status
-    relevantDays {
-      start
-      end
-    }
-    translationStatus {
-      ...TranslationStatus
-    }
-    project {
-      id
-      name
-    }
-  }
-}
-    ${TranslationStatusFragmentDoc}`;
-
-export function useAdminProjectStreakPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectStreakPageQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<AdminProjectStreakPageQuery, AdminProjectStreakPageQueryVariables | undefined>({ query: AdminProjectStreakPageDocument, variables: undefined, ...options });
 };
 export const AdminSuperTeamDetailPageDocument = gql`
     query AdminSuperTeamDetailPage($id: ID!, $projectId: ID!) {

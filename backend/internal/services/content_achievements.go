@@ -64,7 +64,7 @@ func (s *ContentAchievementService) getUserByPersonUUID(ctx context.Context, per
 // ProcessContentEvent processes a content event for a user, awarding achievements if applicable.
 // It also dispatches webhooks if the webhook service is configured.
 func (s *ContentAchievementService) ProcessContentEvent(ctx context.Context, userID string, taskID string) {
-	s.processAchievements(ctx, userID, taskID)
+	s.processAchievements(ctx, userID, taskID, time.Now())
 }
 
 // StoreAndProcessContentEvent stores a content event in the database and processes achievements.
@@ -155,11 +155,11 @@ func (s *ContentAchievementService) StoreAndProcessContentEvent(
 
 	// Process achievements
 	if userID != "" {
-		s.ProcessContentEvent(ctx, userID, taskID)
+		s.processAchievements(ctx, userID, taskID, consumedAt)
 	} else {
 		// Try to find user by person_uuid for achievement processing
 		if user, err := s.getUserByPersonUUID(ctx, personUUID); err == nil {
-			s.ProcessContentEvent(ctx, user.ID, taskID)
+			s.processAchievements(ctx, user.ID, taskID, consumedAt)
 		}
 	}
 
@@ -226,13 +226,17 @@ func (s *ContentAchievementService) ProcessPendingContentEvents(ctx context.Cont
 		}
 
 		// Process achievement for this event
-		s.processAchievements(ctx, userID, event.TaskID)
+		eventConsumedAt := time.Now()
+		if event.ConsumedAt.Valid {
+			eventConsumedAt = event.ConsumedAt.Time
+		}
+		s.processAchievements(ctx, userID, event.TaskID, eventConsumedAt)
 	}
 }
 
 // processAchievements handles achievement progress and auto-award logic for a content event.
 // It silently skips processing if content is not found in the database.
-func (s *ContentAchievementService) processAchievements(ctx context.Context, userID, taskID string) {
+func (s *ContentAchievementService) processAchievements(ctx context.Context, userID, taskID string, consumedAt time.Time) {
 	// Get external content by task_id
 	content, err := s.DB.Queries.GetExternalContentByTaskID(ctx, taskID)
 	if err != nil {
@@ -241,12 +245,19 @@ func (s *ContentAchievementService) processAchievements(ctx context.Context, use
 		return
 	}
 
-	// Get all published achievements containing this content
+	// Process content achievements
+	s.processContentAchievements(ctx, userID, content)
+
+	// Process streak achievements (deadline checked against consumedAt, not now)
+	s.processStreakAchievements(ctx, userID, content, consumedAt)
+}
+
+func (s *ContentAchievementService) processContentAchievements(ctx context.Context, userID string, content *sqlc.ExternalContent) {
+	// Get all published content achievements containing this content
 	achievements, err := s.DB.Queries.GetPublishedContentAchievementsByExternalContent(ctx, content.ID)
 	if err != nil {
 		slog.Error("content_achievements: failed to get achievements",
 			"user_id", userID,
-			"task_id", taskID,
 			"content_id", content.ID,
 			"error", err)
 		return
@@ -382,6 +393,145 @@ func (s *ContentAchievementService) processAchievements(ctx context.Context, use
 			achievement := achievementsByID[id]
 			if achievement != nil {
 				s.awardAchievement(ctx, userID, achievement)
+			}
+		}
+	}
+}
+
+func (s *ContentAchievementService) processStreakAchievements(ctx context.Context, userID string, content *sqlc.ExternalContent, consumedAt time.Time) {
+	slog.Info("content_achievements: processing streak achievements",
+		"user_id", userID,
+		"content_id", content.ID,
+		"consumed_at", consumedAt)
+
+	// Check deadline against consumedAt (when the content was actually consumed), not now
+	if content.CompleteBy.Valid && consumedAt.After(content.CompleteBy.Time) {
+		slog.Info("content_achievements: skipping streak processing, consumed after deadline",
+			"user_id", userID,
+			"content_id", content.ID,
+			"consumed_at", consumedAt,
+			"complete_by", content.CompleteBy.Time)
+		return
+	}
+
+	// Get all published streak achievements containing this content
+	achievements, err := s.DB.Queries.GetPublishedStreakAchievementsByExternalContent(ctx, content.ID)
+	if err != nil {
+		slog.Error("content_achievements: failed to get streak achievements",
+			"user_id", userID,
+			"content_id", content.ID,
+			"error", err)
+		return
+	}
+
+	if len(achievements) == 0 {
+		slog.Info("content_achievements: no streak achievements found for external content",
+			"user_id", userID,
+			"content_id", content.ID)
+		return
+	}
+
+	// Mark content completed for all streak achievements
+	err = s.DB.Queries.MarkStreakItemCompletedForAllAchievements(ctx, sqlc.MarkStreakItemCompletedForAllAchievementsParams{
+		UserID:            userID,
+		ExternalContentID: content.ID,
+	})
+	if err != nil {
+		slog.Error("content_achievements: failed to mark streak item completed",
+			"user_id", userID,
+			"external_content_id", content.ID,
+			"error", err)
+		return
+	}
+
+	slog.Info("content_achievements: marked streak item completed",
+		"user_id", userID,
+		"external_content_id", content.ID,
+		"achievement_count", len(achievements))
+
+	achievementIDs := make([]string, len(achievements))
+	for i, a := range achievements {
+		achievementIDs[i] = a.ID
+	}
+
+	// Invalidate caches
+	if s.Cache != nil {
+		for _, id := range achievementIDs {
+			s.Cache.Delete(cache.UserStreakProgressKey(userID, id))
+		}
+	}
+
+	// Check which achievements user already has
+	alreadyAwarded, err := s.DB.Queries.GetUserAwardedAchievementIDs(ctx, sqlc.GetUserAwardedAchievementIDsParams{
+		UserID:         userID,
+		AchievementIds: achievementIDs,
+	})
+	if err != nil {
+		slog.Error("content_achievements: failed to check awarded streak achievements",
+			"user_id", userID,
+			"error", err)
+		return
+	}
+
+	awardedSet := make(map[string]bool, len(alreadyAwarded))
+	for _, id := range alreadyAwarded {
+		awardedSet[id] = true
+	}
+
+	pendingIDs := make([]string, 0, len(achievementIDs))
+	for _, id := range achievementIDs {
+		if !awardedSet[id] {
+			pendingIDs = append(pendingIDs, id)
+		}
+	}
+
+	if len(pendingIDs) == 0 {
+		return
+	}
+
+	// Get item counts
+	dbCounts, err := s.DB.Queries.GetStreakItemCounts(ctx, pendingIDs)
+	if err != nil {
+		slog.Error("content_achievements: failed to get streak item counts",
+			"error", err)
+		return
+	}
+	itemCounts := make(map[string]int32, len(dbCounts))
+	for _, c := range dbCounts {
+		itemCounts[c.AchievementID] = c.ItemCount
+	}
+
+	// Get progress counts
+	progressCounts, err := s.DB.Queries.GetUserStreakProgressCounts(ctx, sqlc.GetUserStreakProgressCountsParams{
+		UserID:         userID,
+		AchievementIds: pendingIDs,
+	})
+	if err != nil {
+		slog.Error("content_achievements: failed to get user streak progress counts",
+			"user_id", userID,
+			"error", err)
+		return
+	}
+
+	progressByAchievement := make(map[string]int32, len(progressCounts))
+	for _, p := range progressCounts {
+		progressByAchievement[p.AchievementID] = p.ProgressCount
+	}
+
+	// Check and award completed streak achievements
+	for _, id := range pendingIDs {
+		itemCount := itemCounts[id]
+		progressCount := progressByAchievement[id]
+
+		if progressCount == itemCount && itemCount > 0 {
+			slog.Info("content_achievements: auto-awarding streak achievement",
+				"user_id", userID, "achievement_id", id)
+			if err := s.DB.Queries.AwardUserAchievementIdempotent(ctx, sqlc.AwardUserAchievementIdempotentParams{
+				UserID:        userID,
+				AchievementID: id,
+			}); err != nil {
+				slog.Error("content_achievements: failed to award streak achievement",
+					"user_id", userID, "achievement_id", id, "error", err)
 			}
 		}
 	}

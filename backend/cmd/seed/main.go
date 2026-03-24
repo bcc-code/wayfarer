@@ -136,7 +136,6 @@ func main() {
 		"events", stats.Events,
 		"superteams", stats.SuperTeams,
 		"teams", stats.Teams,
-		"streaks", stats.Streaks,
 		"challenges", stats.Challenges,
 		"achievements", stats.Achievements,
 	)

@@ -154,25 +154,6 @@ func queryTranslations(ctx context.Context, db *database.DB, entityType string, 
 		}
 		return translations, nil
 
-	case "streak":
-		rows, err := db.Queries.GetStreakTranslationsByIDs(ctx, sqlc.GetStreakTranslationsByIDsParams{
-			EntityIds:    entityIDs,
-			LanguageCode: langCode,
-		})
-		if err != nil {
-			return nil, err
-		}
-		translations := make([]*Translation, len(rows))
-		for i, row := range rows {
-			translations[i] = &Translation{
-				EntityID:    row.StreakID,
-				LangCode:    row.LanguageCode,
-				Name:        row.Name,
-				Description: row.Description,
-			}
-		}
-		return translations, nil
-
 	case "challenge":
 		rows, err := db.Queries.GetChallengeTranslationsByIDs(ctx, sqlc.GetChallengeTranslationsByIDsParams{
 			EntityIds:    entityIDs,

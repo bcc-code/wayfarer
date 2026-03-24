@@ -12,39 +12,38 @@ import (
 
 // Entity prefixes (2 characters each)
 const (
-	PrefixChurch              = "CH" // Churches
-	PrefixUser                = "US" // Users
-	PrefixUserRole            = "UR" // User Roles
-	PrefixProject             = "PR" // Projects
-	PrefixEvent               = "EV" // Events
-	PrefixSuperTeam           = "ST" // SuperTeams
-	PrefixTeam                = "TM" // Teams
-	PrefixStreak              = "SK" // Streaks
-	PrefixStreakRelevantDay   = "SD" // Streak Relevant Days
-	PrefixChallenge           = "CL" // Challenges
-	PrefixAchievement         = "AC" // Achievements
-	PrefixContentItem         = "CI" // Content Achievement Items
-	PrefixScoreJournal        = "SJ" // Score Journal
-	PrefixContentEvent        = "CE" // External Content Events
-	PrefixConsent             = "CN" // Consents
-	PrefixUserConsent         = "UC" // User Consent Acceptances (deprecated, use PrefixUserConsentHistory)
-	PrefixUserConsentHistory  = "UH" // User Consent History
-	PrefixExternalContent     = "EC" // External Content (synced from external sources like SSF)
-	PrefixQuiz                = "QZ" // Quizzes
-	PrefixQuizQuestion        = "QQ" // Quiz Questions
-	PrefixQuizAnswer          = "QA" // Quiz Predefined Answers
-	PrefixQuizSubmission      = "QS" // Quiz Submissions
-	PrefixQuizResponse        = "QR" // Quiz Responses
-	PrefixFileUpload          = "FL" // File Uploads
-	PrefixPendingConsentEvent = "PC" // Pending Consent Events (for users not yet registered)
-	PrefixPushSubscription    = "PS" // Push Subscriptions
-	PrefixPushNotification    = "PN" // Push Notification Log
-	PrefixUserFeedback        = "FB" // User Feedback
-	PrefixWebhook             = "WH" // Webhooks
-	PrefixWebhookLog          = "WL" // Webhook Logs
-	PrefixQuizSession         = "QN" // Quiz Sessions (QS taken by submissions)
-	PrefixQuizSessionAccess   = "QX" // Quiz Session Access
-	PrefixBulkJob             = "BJ" // Bulk Jobs
+	PrefixChurch                = "CH" // Churches
+	PrefixUser                  = "US" // Users
+	PrefixUserRole              = "UR" // User Roles
+	PrefixProject               = "PR" // Projects
+	PrefixEvent                 = "EV" // Events
+	PrefixSuperTeam             = "ST" // SuperTeams
+	PrefixTeam                  = "TM" // Teams
+	PrefixStreakAchievementItem = "SI" // Streak Achievement Items
+	PrefixChallenge             = "CL" // Challenges
+	PrefixAchievement           = "AC" // Achievements
+	PrefixContentItem           = "CI" // Content Achievement Items
+	PrefixScoreJournal          = "SJ" // Score Journal
+	PrefixContentEvent          = "CE" // External Content Events
+	PrefixConsent               = "CN" // Consents
+	PrefixUserConsent           = "UC" // User Consent Acceptances (deprecated, use PrefixUserConsentHistory)
+	PrefixUserConsentHistory    = "UH" // User Consent History
+	PrefixExternalContent       = "EC" // External Content (synced from external sources like SSF)
+	PrefixQuiz                  = "QZ" // Quizzes
+	PrefixQuizQuestion          = "QQ" // Quiz Questions
+	PrefixQuizAnswer            = "QA" // Quiz Predefined Answers
+	PrefixQuizSubmission        = "QS" // Quiz Submissions
+	PrefixQuizResponse          = "QR" // Quiz Responses
+	PrefixFileUpload            = "FL" // File Uploads
+	PrefixPendingConsentEvent   = "PC" // Pending Consent Events (for users not yet registered)
+	PrefixPushSubscription      = "PS" // Push Subscriptions
+	PrefixPushNotification      = "PN" // Push Notification Log
+	PrefixUserFeedback          = "FB" // User Feedback
+	PrefixWebhook               = "WH" // Webhooks
+	PrefixWebhookLog            = "WL" // Webhook Logs
+	PrefixQuizSession           = "QN" // Quiz Sessions (QS taken by submissions)
+	PrefixQuizSessionAccess     = "QX" // Quiz Session Access
+	PrefixBulkJob               = "BJ" // Bulk Jobs
 )
 
 // Total ID length: 2 (prefix) + 26 (ULID) = 28 characters
@@ -101,14 +100,9 @@ func NewTeamID() string {
 	return newID(PrefixTeam)
 }
 
-// NewStreakID generates a new ID for a streak (SK prefix)
-func NewStreakID() string {
-	return newID(PrefixStreak)
-}
-
-// NewStreakRelevantDayID generates a new ID for a streak relevant day (SD prefix)
-func NewStreakRelevantDayID() string {
-	return newID(PrefixStreakRelevantDay)
+// NewStreakAchievementItemID generates a new ID for a streak achievement item (SI prefix)
+func NewStreakAchievementItemID() string {
+	return newID(PrefixStreakAchievementItem)
 }
 
 // NewChallengeID generates a new ID for a challenge (CL prefix)
@@ -283,14 +277,9 @@ func IsTeamID(id string) bool {
 	return IsValidID(id, PrefixTeam)
 }
 
-// IsStreakID validates a streak ID
-func IsStreakID(id string) bool {
-	return IsValidID(id, PrefixStreak)
-}
-
-// IsStreakRelevantDayID validates a streak relevant day ID
-func IsStreakRelevantDayID(id string) bool {
-	return IsValidID(id, PrefixStreakRelevantDay)
+// IsStreakAchievementItemID validates a streak achievement item ID
+func IsStreakAchievementItemID(id string) bool {
+	return IsValidID(id, PrefixStreakAchievementItem)
 }
 
 // IsChallengeID validates a challenge ID

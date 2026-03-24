@@ -22,13 +22,6 @@ SELECT language_code,
 FROM event_translations
 WHERE event_id = @event_id::text;
 
--- name: GetStreakTranslationStatus :many
-SELECT language_code,
-  (name IS NOT NULL AND name != '') AS has_name,
-  (description IS NOT NULL AND description != '') AS has_description
-FROM streak_translations
-WHERE streak_id = @streak_id::text;
-
 -- name: GetAchievementTranslationStatus :many
 SELECT language_code,
   (name IS NOT NULL AND name != '') AS has_name,

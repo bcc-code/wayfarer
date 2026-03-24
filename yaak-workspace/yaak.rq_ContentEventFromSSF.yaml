@@ -1,0 +1,41 @@
+type: http_request
+model: http_request
+id: rq_ContentEventFromSSF
+createdAt: 2026-03-24T13:30:00
+updatedAt: 2026-03-24T14:42:21.290845
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_ContentEvents
+authentication:
+  key: Bearer
+  token: example-api-key-12345
+authenticationType: bearer
+body:
+  text: |
+    {
+      "person_id": "5e7016ac-999e-4e87-b84b-13642d863d01",
+      "task_id": "5accb4d9-2033-40ed-b1db-d4de6bed5217",
+      "plan_id": "hidden-treasures-podcast",
+      "timestamp": "2026-01-09T01:00:00Z",
+      "content_progress": 1.0,
+      "force": true
+    }
+bodyType: application/json
+description: |
+  Submit a content event from SSF (Scripture Study Fellowship).
+
+  - person_id: UUID of the person in BCC Members
+  - task_id: SSF task/content ID
+  - plan_id: SSF reading plan slug (optional)
+  - timestamp: when the content was consumed
+  - content_progress: 0.0-1.0 (1.0 = fully consumed)
+  - force: bypass deadline enforcement for streak achievements
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_CT_SSF
+method: POST
+name: Content Event from SSF
+sortPriority: 1.0
+url: ${[ HOST ]}/api/v1/content-events
+urlParameters: []

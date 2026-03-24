@@ -291,34 +291,3 @@ func (q *Queries) GetQuizzesForTranslation(ctx context.Context) ([]*GetQuizzesFo
 	}
 	return items, nil
 }
-
-const GetStreaksForTranslation = `-- name: GetStreaksForTranslation :many
-SELECT id, name, description
-FROM streaks
-`
-
-type GetStreaksForTranslationRow struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
-
-func (q *Queries) GetStreaksForTranslation(ctx context.Context) ([]*GetStreaksForTranslationRow, error) {
-	rows, err := q.db.Query(ctx, GetStreaksForTranslation)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []*GetStreaksForTranslationRow{}
-	for rows.Next() {
-		var i GetStreaksForTranslationRow
-		if err := rows.Scan(&i.ID, &i.Name, &i.Description); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}

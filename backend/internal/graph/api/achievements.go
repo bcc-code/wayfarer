@@ -276,8 +276,22 @@ func convertRowToContentAchievement(row *sqlc.GetAchievementsFilteredCursorRow, 
 }
 
 func convertRowToStreakAchievement(row *sqlc.GetAchievementsFilteredCursorRow, hidden bool) (model.Achievement, error) {
-	if row.StreakID == nil || row.NeededStreak == nil {
+	if row.StreakAchievementID == nil {
 		return nil, fmt.Errorf("streak achievement missing streak data")
+	}
+
+	// Count streak items from JSON if available
+	totalItems := 0
+	if row.StreakItems != nil {
+		var itemsData []map[string]interface{}
+		jsonBytes, err := json.Marshal(row.StreakItems)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal streak items: %w", err)
+		}
+		if err := json.Unmarshal(jsonBytes, &itemsData); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal streak items: %w", err)
+		}
+		totalItems = len(itemsData)
 	}
 
 	var awardableFrom *scalars.DateTime
@@ -299,8 +313,7 @@ func convertRowToStreakAchievement(row *sqlc.GetAchievementsFilteredCursorRow, h
 		ProjectID:            row.ProjectID,
 		EventID:              row.EventID,
 		ChallengeID:          row.ChallengeID,
-		NeededStreak:         int(*row.NeededStreak),
-		StreakID:             *row.StreakID,
+		TotalItems:           totalItems,
 	}, nil
 }
 
@@ -371,6 +384,48 @@ func convertPublishedContentAchievementRow(row *sqlc.GetPublishedContentAchievem
 	}
 
 	return &model.ContentAchievement{
+		ID:                   row.ID,
+		Name:                 row.Name,
+		DescriptionPending:   row.DescriptionPending,
+		DescriptionCompleted: row.DescriptionCompleted,
+		NotificationText:     row.NotificationText,
+		ImagePending:         row.ImagePending,
+		ImageCompleted:       row.ImageCompleted,
+		Points:               int(row.Points),
+		Hidden:               hidden,
+		AwardableFrom:        awardableFrom,
+		ProjectID:            row.ProjectID,
+		EventID:              row.EventID,
+		ChallengeID:          row.ChallengeID,
+		TotalItems:           totalItems,
+	}
+}
+
+// convertPublishedStreakAchievementRow converts GetPublishedStreakAchievementsByExternalContentRow to StreakAchievement model
+func convertPublishedStreakAchievementRow(row *sqlc.GetPublishedStreakAchievementsByExternalContentRow) *model.StreakAchievement {
+	// Count streak items from JSON if available
+	totalItems := 0
+	if row.StreakItems != nil {
+		var itemsData []map[string]interface{}
+		jsonBytes, err := json.Marshal(row.StreakItems)
+		if err == nil {
+			if err := json.Unmarshal(jsonBytes, &itemsData); err == nil {
+				totalItems = len(itemsData)
+			}
+		}
+	}
+
+	hidden := false
+	if row.Hidden != nil {
+		hidden = *row.Hidden
+	}
+
+	var awardableFrom *scalars.DateTime
+	if row.AwardableFrom.Valid {
+		awardableFrom = &scalars.DateTime{Time: row.AwardableFrom.Time}
+	}
+
+	return &model.StreakAchievement{
 		ID:                   row.ID,
 		Name:                 row.Name,
 		DescriptionPending:   row.DescriptionPending,

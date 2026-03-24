@@ -99,32 +99,6 @@ func (r *Resolver) eventTranslationStatus(ctx context.Context, eventID string) (
 	return result, nil
 }
 
-// streakTranslationStatus fetches translation status for a streak by ID.
-func (r *Resolver) streakTranslationStatus(ctx context.Context, streakID string) ([]model.TranslationFieldStatus, error) {
-	rows, err := r.DB.Queries.GetStreakTranslationStatus(ctx, streakID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get streak translation status: %w", err)
-	}
-
-	result := make([]model.TranslationFieldStatus, 0, len(rows))
-	for _, row := range rows {
-		var fields []string
-		if boolTrue(row.HasName) {
-			fields = append(fields, "name")
-		}
-		if boolTrue(row.HasDescription) {
-			fields = append(fields, "description")
-		}
-		if len(fields) > 0 {
-			result = append(result, model.TranslationFieldStatus{
-				LanguageCode: row.LanguageCode,
-				Fields:       fields,
-			})
-		}
-	}
-	return result, nil
-}
-
 // achievementTranslationStatus fetches translation status for an achievement by ID.
 func (r *Resolver) achievementTranslationStatus(ctx context.Context, achievementID string) ([]model.TranslationFieldStatus, error) {
 	rows, err := r.DB.Queries.GetAchievementTranslationStatus(ctx, achievementID)

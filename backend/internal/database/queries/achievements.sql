@@ -31,8 +31,19 @@ SELECT
         '[]'::jsonb
     ) AS content_items,
     -- Streak achievement data
-    sa.streak_id,
-    sa.needed_streak,
+    sa.achievement_id AS streak_achievement_id,
+    COALESCE(
+        (SELECT jsonb_agg(
+            jsonb_build_object(
+                'id', sai.id,
+                'external_content_id', sai.external_content_id,
+                'sort_order', sai.sort_order
+            ) ORDER BY sai.sort_order
+        )
+        FROM streak_achievement_items sai
+        WHERE sai.achievement_id = a.id),
+        '[]'::jsonb
+    ) AS streak_items,
     -- Quiz achievement data
     qa.quiz_id,
     qa.min_score_percentage,
@@ -63,8 +74,7 @@ SELECT
     a.updated_at,
     -- Type-specific fields needed for model construction
     ca.achievement_id AS content_achievement_id,
-    sa.streak_id,
-    sa.needed_streak,
+    sa.achievement_id AS streak_achievement_id,
     -- Quiz achievement data
     qa.quiz_id,
     qa.min_score_percentage,
@@ -98,8 +108,7 @@ SELECT
     a.created_at,
     a.updated_at,
     ca.achievement_id AS content_achievement_id,
-    sa.streak_id,
-    sa.needed_streak,
+    sa.achievement_id AS streak_achievement_id,
     -- Quiz achievement data
     qa.quiz_id,
     qa.min_score_percentage,
@@ -145,8 +154,19 @@ SELECT
         '[]'::jsonb
     ) AS content_items,
     -- Streak achievement data
-    sa.streak_id,
-    sa.needed_streak,
+    sa.achievement_id AS streak_achievement_id,
+    COALESCE(
+        (SELECT jsonb_agg(
+            jsonb_build_object(
+                'id', sai.id,
+                'external_content_id', sai.external_content_id,
+                'sort_order', sai.sort_order
+            ) ORDER BY sai.sort_order
+        )
+        FROM streak_achievement_items sai
+        WHERE sai.achievement_id = a.id),
+        '[]'::jsonb
+    ) AS streak_items,
     -- Quiz achievement data
     qa.quiz_id,
     qa.min_score_percentage,
@@ -262,16 +282,22 @@ INSERT INTO content_achievement_items (
     @sort_order::int
 ) RETURNING *;
 
--- name: CreateStreakAchievementData :exec
-INSERT INTO streak_achievements (
+-- name: CreateStreakAchievementJunction :exec
+INSERT INTO streak_achievements (achievement_id)
+VALUES (@achievement_id::text);
+
+-- name: CreateStreakAchievementItem :one
+INSERT INTO streak_achievement_items (
+    id,
     achievement_id,
-    streak_id,
-    needed_streak
+    external_content_id,
+    sort_order
 ) VALUES (
+    @id::text,
     @achievement_id::text,
-    @streak_id::text,
-    @needed_streak::int
-);
+    @external_content_id::text,
+    @sort_order::int
+) RETURNING *;
 
 -- ==================== Update Operations ====================
 
@@ -297,11 +323,8 @@ RETURNING *;
 DELETE FROM content_achievement_items
 WHERE achievement_id = @achievement_id::text;
 
--- name: UpdateStreakAchievementData :exec
-UPDATE streak_achievements
-SET
-    streak_id = CASE WHEN sqlc.narg('streak_id')::text IS NOT NULL THEN sqlc.narg('streak_id')::text ELSE streak_id END,
-    needed_streak = CASE WHEN sqlc.narg('needed_streak')::int IS NOT NULL THEN sqlc.narg('needed_streak')::int ELSE needed_streak END
+-- name: DeleteStreakAchievementItems :exec
+DELETE FROM streak_achievement_items
 WHERE achievement_id = @achievement_id::text;
 
 -- name: UpdateAchievementSortOrder :exec
@@ -613,4 +636,176 @@ WHERE a.project_id = @project_id::text
   AND EXISTS (
     SELECT 1 FROM content_achievement_items cai
     WHERE cai.achievement_id = a.id
+  );
+
+-- ==================== Streak Progress Operations ====================
+
+-- name: GetStreakItemsByAchievementIDs :many
+SELECT id, achievement_id, external_content_id, sort_order
+FROM streak_achievement_items
+WHERE achievement_id = ANY(@achievement_ids::text[])
+ORDER BY achievement_id, sort_order;
+
+-- name: GetStreakAchievementCompletionStatus :many
+SELECT
+    sai.achievement_id,
+    COUNT(DISTINCT sai.external_content_id)::int AS item_count,
+    COUNT(DISTINCT usp.external_content_id)::int AS progress_count
+FROM streak_achievement_items sai
+LEFT JOIN user_streak_progress usp
+    ON usp.achievement_id = sai.achievement_id
+    AND usp.user_id = @user_id::text
+    AND usp.external_content_id = sai.external_content_id
+WHERE sai.achievement_id = ANY(@achievement_ids::text[])
+GROUP BY sai.achievement_id;
+
+-- name: GetStreakItemCounts :many
+-- Get streak item counts per achievement (for caching)
+SELECT achievement_id, COUNT(*)::int AS item_count
+FROM streak_achievement_items
+WHERE achievement_id = ANY(@achievement_ids::text[])
+GROUP BY achievement_id;
+
+-- name: GetUserStreakProgressCounts :many
+-- Get user progress counts per streak achievement
+SELECT achievement_id, COUNT(*)::int AS progress_count
+FROM user_streak_progress
+WHERE user_id = @user_id::text
+  AND achievement_id = ANY(@achievement_ids::text[])
+GROUP BY achievement_id;
+
+-- name: GetBulkUserStreakProgress :many
+SELECT user_id, achievement_id, external_content_id, completed_at
+FROM user_streak_progress
+WHERE (user_id, achievement_id) IN (
+    SELECT unnest(@user_ids::text[]), unnest(@achievement_ids::text[])
+);
+
+-- name: GetUserStreakProgress :many
+SELECT user_id, achievement_id, external_content_id, completed_at
+FROM user_streak_progress
+WHERE user_id = @user_id::text
+  AND achievement_id = ANY(@achievement_ids::text[]);
+
+-- name: MarkStreakItemCompleted :exec
+INSERT INTO user_streak_progress (user_id, achievement_id, external_content_id, completed_at)
+VALUES (@user_id::text, @achievement_id::text, @external_content_id::text, COALESCE(@completed_at::timestamptz, now()))
+ON CONFLICT (user_id, achievement_id, external_content_id) DO NOTHING;
+
+-- name: UnmarkStreakItemCompleted :exec
+DELETE FROM user_streak_progress
+WHERE user_id = @user_id::text
+  AND achievement_id = @achievement_id::text
+  AND external_content_id = @external_content_id::text;
+
+-- name: GetPublishedStreakAchievementsByExternalContent :many
+-- Get all streak achievements that contain a specific external content
+SELECT DISTINCT
+    a.id,
+    a.achievement_type,
+    a.project_id,
+    a.event_id,
+    a.challenge_id,
+    a.name,
+    a.description_pending,
+    a.description_completed,
+    a.notification_text,
+    a.image_pending,
+    a.image_completed,
+    a.points,
+    a.hidden,
+    a.awardable_from,
+    a.created_at,
+    a.updated_at,
+    COALESCE(
+        (SELECT jsonb_agg(
+            jsonb_build_object(
+                'id', sai2.id,
+                'external_content_id', sai2.external_content_id,
+                'sort_order', sai2.sort_order
+            ) ORDER BY sai2.sort_order
+        )
+        FROM streak_achievement_items sai2
+        WHERE sai2.achievement_id = a.id),
+        '[]'::jsonb
+    ) AS streak_items
+FROM achievements a
+INNER JOIN streak_achievements sa ON a.id = sa.achievement_id
+INNER JOIN streak_achievement_items sai ON sa.achievement_id = sai.achievement_id
+WHERE sai.external_content_id = @external_content_id::text;
+
+-- name: MarkStreakItemCompletedForAllAchievements :exec
+-- Mark content completed for a user across all streak achievements containing this content
+INSERT INTO user_streak_progress (user_id, achievement_id, external_content_id, completed_at)
+SELECT @user_id::text, sa.achievement_id, @external_content_id::text, now()
+FROM streak_achievements sa
+INNER JOIN streak_achievement_items sai ON sa.achievement_id = sai.achievement_id
+WHERE sai.external_content_id = @external_content_id::text
+ON CONFLICT (user_id, achievement_id, external_content_id) DO NOTHING;
+
+-- name: UnmarkStreakItemCompletedForAllAchievements :exec
+-- Unmark content completed for a user across all streak achievements containing this content
+DELETE FROM user_streak_progress
+WHERE user_id = @user_id::text
+  AND external_content_id = @external_content_id::text;
+
+-- name: GetStreakAchievementForAward :one
+-- Get streak achievement data for awarding
+SELECT
+    a.id,
+    a.achievement_type,
+    a.project_id,
+    a.event_id,
+    a.challenge_id,
+    a.name,
+    a.description_pending,
+    a.description_completed,
+    a.notification_text,
+    a.image_pending,
+    a.image_completed,
+    a.points,
+    a.hidden,
+    a.awardable_from,
+    a.created_at,
+    a.updated_at,
+    COALESCE(
+        (SELECT jsonb_agg(
+            jsonb_build_object(
+                'id', sai.id,
+                'external_content_id', sai.external_content_id,
+                'sort_order', sai.sort_order
+            ) ORDER BY sai.sort_order
+        )
+        FROM streak_achievement_items sai
+        WHERE sai.achievement_id = a.id),
+        '[]'::jsonb
+    ) AS streak_items
+FROM achievements a
+INNER JOIN streak_achievements sa ON sa.achievement_id = a.id
+WHERE a.id = @achievement_id::text AND a.project_id = @project_id::text;
+
+-- name: GetUsersWithUnclaimedStreakAchievement :many
+-- Find users who completed all items for a streak achievement but weren't awarded
+SELECT DISTINCT u.id AS user_id
+FROM users u
+INNER JOIN achievements a ON a.id = @achievement_id::text
+INNER JOIN streak_achievements sa ON sa.achievement_id = a.id
+WHERE a.project_id = @project_id::text
+  AND NOT EXISTS (
+    SELECT 1 FROM user_achievements ua
+    WHERE ua.user_id = u.id AND ua.achievement_id = a.id
+  )
+  AND NOT EXISTS (
+    SELECT 1 FROM streak_achievement_items sai
+    WHERE sai.achievement_id = a.id
+    AND NOT EXISTS (
+      SELECT 1 FROM user_streak_progress usp
+      WHERE usp.user_id = u.id
+      AND usp.achievement_id = a.id
+      AND usp.external_content_id = sai.external_content_id
+    )
+  )
+  AND EXISTS (
+    SELECT 1 FROM streak_achievement_items sai
+    WHERE sai.achievement_id = a.id
   );
