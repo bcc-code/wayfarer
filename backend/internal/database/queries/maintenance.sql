@@ -99,6 +99,50 @@ LEFT JOIN user_content_progress ucp ON
 WHERE ucp.user_id IS NULL
 AND u.id = ANY(@userids::text[]);
 
+-- ==================== Missing Streak Progress Queries ====================
+-- These queries find users with external_content_events that should have
+-- user_streak_progress but don't. Deadline-aware: only includes events
+-- where consumed_at <= complete_by (or complete_by IS NULL).
+
+-- name: GetMissingStreakProgress :many
+-- Get all affected (user_id, event_count) rows for missing streak progress.
+-- Used for both preview (compute totals in Go, slice for display) and
+-- extracting user IDs for batching in the fix mutation.
+SELECT
+    u.id AS user_id,
+    COUNT(DISTINCT ece.id)::int AS event_count
+FROM external_content_events ece
+INNER JOIN users u ON u.person_uuid = ece.person_id
+INNER JOIN external_content ec ON ec.task_id = ece.task_id
+INNER JOIN streak_achievement_items sai ON sai.external_content_id = ec.id
+LEFT JOIN user_streak_progress usp ON
+    usp.user_id = u.id
+    AND usp.achievement_id = sai.achievement_id
+    AND usp.external_content_id = sai.external_content_id
+WHERE usp.user_id IS NULL
+  AND (ec.complete_by IS NULL OR ece.consumed_at <= ec.complete_by)
+GROUP BY u.id
+ORDER BY event_count DESC, u.id ASC;
+
+-- name: GetMissingStreakEventsForUsers :many
+-- Get missing streak events for specific users, including consumed_at for deadline checks.
+-- Used by batched job processing.
+SELECT DISTINCT
+    u.id AS user_id,
+    ece.task_id,
+    ece.consumed_at
+FROM external_content_events ece
+INNER JOIN users u ON u.person_uuid = ece.person_id
+INNER JOIN external_content ec ON ec.task_id = ece.task_id
+INNER JOIN streak_achievement_items sai ON sai.external_content_id = ec.id
+LEFT JOIN user_streak_progress usp ON
+    usp.user_id = u.id
+    AND usp.achievement_id = sai.achievement_id
+    AND usp.external_content_id = sai.external_content_id
+WHERE usp.user_id IS NULL
+  AND (ec.complete_by IS NULL OR ece.consumed_at <= ec.complete_by)
+  AND u.id = ANY(@userids::text[]);
+
 -- ==================== Missing Score Journal Queries ====================
 -- These queries find external_content_events that are missing score_journal entries.
 -- The score_journal.source_id references external_content.id for content achievements.

@@ -178,3 +178,20 @@ func (p *Processor) ProcessFixMissingContentProgress(ctx context.Context, jobID 
 	})
 	return err
 }
+
+// ProcessFixMissingStreakProgress processes missing streak progress events
+func (p *Processor) ProcessFixMissingStreakProgress(ctx context.Context, jobID string, params pubsub.FixMissingStreakProgressParams) error {
+	successCount, failureCount, err := p.service.FixMissingStreakProgress(ctx, params)
+	if err != nil {
+		return err
+	}
+
+	// Mark job completed
+	_, err = p.service.DB.Queries.MarkBulkJobCompleted(ctx, sqlc.MarkBulkJobCompletedParams{
+		ID:             jobID,
+		Processedcount: int32(successCount + failureCount),
+		Successcount:   int32(successCount),
+		Failurecount:   int32(failureCount),
+	})
+	return err
+}

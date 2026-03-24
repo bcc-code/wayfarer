@@ -23,6 +23,7 @@ const (
 
 	// Maintenance operations
 	OperationFixMissingContentProgress OperationType = "FIX_MISSING_CONTENT_PROGRESS"
+	OperationFixMissingStreakProgress  OperationType = "FIX_MISSING_STREAK_PROGRESS"
 )
 
 // BulkOperationMessage is the message published to Pub/Sub for async processing
@@ -134,6 +135,15 @@ type FixMissingContentProgressParams struct {
 
 func (p FixMissingContentProgressParams) OperationType() OperationType {
 	return OperationFixMissingContentProgress
+}
+
+// FixMissingStreakProgressParams contains parameters for fixing missing streak progress
+type FixMissingStreakProgressParams struct {
+	UserIDs []string `json:"user_ids"`
+}
+
+func (p FixMissingStreakProgressParams) OperationType() OperationType {
+	return OperationFixMissingStreakProgress
 }
 
 // JobStatus represents the status of a bulk job

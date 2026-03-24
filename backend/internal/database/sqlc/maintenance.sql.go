@@ -7,6 +7,8 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const CountMissingContentProgressEvents = `-- name: CountMissingContentProgressEvents :one
@@ -326,6 +328,103 @@ func (q *Queries) GetMissingScoreJournalPreview(ctx context.Context, arg GetMiss
 	items := []*GetMissingScoreJournalPreviewRow{}
 	for rows.Next() {
 		var i GetMissingScoreJournalPreviewRow
+		if err := rows.Scan(&i.UserID, &i.EventCount); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetMissingStreakEventsForUsers = `-- name: GetMissingStreakEventsForUsers :many
+SELECT DISTINCT
+    u.id AS user_id,
+    ece.task_id,
+    ece.consumed_at
+FROM external_content_events ece
+INNER JOIN users u ON u.person_uuid = ece.person_id
+INNER JOIN external_content ec ON ec.task_id = ece.task_id
+INNER JOIN streak_achievement_items sai ON sai.external_content_id = ec.id
+LEFT JOIN user_streak_progress usp ON
+    usp.user_id = u.id
+    AND usp.achievement_id = sai.achievement_id
+    AND usp.external_content_id = sai.external_content_id
+WHERE usp.user_id IS NULL
+  AND (ec.complete_by IS NULL OR ece.consumed_at <= ec.complete_by)
+  AND u.id = ANY($1::text[])
+`
+
+type GetMissingStreakEventsForUsersRow struct {
+	UserID     string             `json:"user_id"`
+	TaskID     string             `json:"task_id"`
+	ConsumedAt pgtype.Timestamptz `json:"consumed_at"`
+}
+
+// Get missing streak events for specific users, including consumed_at for deadline checks.
+// Used by batched job processing.
+func (q *Queries) GetMissingStreakEventsForUsers(ctx context.Context, userids []string) ([]*GetMissingStreakEventsForUsersRow, error) {
+	rows, err := q.db.Query(ctx, GetMissingStreakEventsForUsers, userids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetMissingStreakEventsForUsersRow{}
+	for rows.Next() {
+		var i GetMissingStreakEventsForUsersRow
+		if err := rows.Scan(&i.UserID, &i.TaskID, &i.ConsumedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetMissingStreakProgress = `-- name: GetMissingStreakProgress :many
+
+SELECT
+    u.id AS user_id,
+    COUNT(DISTINCT ece.id)::int AS event_count
+FROM external_content_events ece
+INNER JOIN users u ON u.person_uuid = ece.person_id
+INNER JOIN external_content ec ON ec.task_id = ece.task_id
+INNER JOIN streak_achievement_items sai ON sai.external_content_id = ec.id
+LEFT JOIN user_streak_progress usp ON
+    usp.user_id = u.id
+    AND usp.achievement_id = sai.achievement_id
+    AND usp.external_content_id = sai.external_content_id
+WHERE usp.user_id IS NULL
+  AND (ec.complete_by IS NULL OR ece.consumed_at <= ec.complete_by)
+GROUP BY u.id
+ORDER BY event_count DESC, u.id ASC
+`
+
+type GetMissingStreakProgressRow struct {
+	UserID     string `json:"user_id"`
+	EventCount int32  `json:"event_count"`
+}
+
+// ==================== Missing Streak Progress Queries ====================
+// These queries find users with external_content_events that should have
+// user_streak_progress but don't. Deadline-aware: only includes events
+// where consumed_at <= complete_by (or complete_by IS NULL).
+// Get all affected (user_id, event_count) rows for missing streak progress.
+// Used for both preview (compute totals in Go, slice for display) and
+// extracting user IDs for batching in the fix mutation.
+func (q *Queries) GetMissingStreakProgress(ctx context.Context) ([]*GetMissingStreakProgressRow, error) {
+	rows, err := q.db.Query(ctx, GetMissingStreakProgress)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetMissingStreakProgressRow{}
+	for rows.Next() {
+		var i GetMissingStreakProgressRow
 		if err := rows.Scan(&i.UserID, &i.EventCount); err != nil {
 			return nil, err
 		}

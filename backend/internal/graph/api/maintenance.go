@@ -65,6 +65,47 @@ func (r *Resolver) previewMissingContentProgress(ctx context.Context, first *int
 	}, nil
 }
 
+// previewMissingStreakProgress retrieves a preview of users with missing streak progress records.
+// Runs a single query and computes totals in Go to avoid redundant expensive joins.
+func (r *Resolver) previewMissingStreakProgress(ctx context.Context) (*model.MissingStreakProgressPreview, error) {
+	rows, err := r.DB.Queries.GetMissingStreakProgress(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get missing streak progress: %w", err)
+	}
+
+	totalUsers := len(rows)
+	totalEvents := 0
+	for _, row := range rows {
+		totalEvents += int(row.EventCount)
+	}
+
+	// Slice first 50 for display
+	displayRows := rows
+	if len(displayRows) > 50 {
+		displayRows = displayRows[:50]
+	}
+
+	affectedUsers := make([]model.MissingStreakProgressUser, 0, len(displayRows))
+	for _, row := range displayRows {
+		userThunk := r.Loaders.UserByIDLoader.Load(ctx, row.UserID)
+		user, err := userThunk()
+		if err != nil {
+			continue
+		}
+
+		affectedUsers = append(affectedUsers, model.MissingStreakProgressUser{
+			User:       user,
+			EventCount: int(row.EventCount),
+		})
+	}
+
+	return &model.MissingStreakProgressPreview{
+		AffectedUsers: affectedUsers,
+		TotalUsers:    totalUsers,
+		TotalEvents:   totalEvents,
+	}, nil
+}
+
 // previewMissingScoreJournal retrieves a preview of users with missing score journal entries for a content achievement.
 func (r *Resolver) previewMissingScoreJournal(ctx context.Context, achievementID string, first *int, after *string) (*model.MissingScoreJournalPreview, error) {
 	limit := 50

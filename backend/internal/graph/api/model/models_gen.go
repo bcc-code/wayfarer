@@ -1019,6 +1019,17 @@ type MissingScoreJournalUser struct {
 	EventCount int   `json:"eventCount"`
 }
 
+type MissingStreakProgressPreview struct {
+	AffectedUsers []MissingStreakProgressUser `json:"affectedUsers"`
+	TotalUsers    int                         `json:"totalUsers"`
+	TotalEvents   int                         `json:"totalEvents"`
+}
+
+type MissingStreakProgressUser struct {
+	User       *User `json:"user"`
+	EventCount int   `json:"eventCount"`
+}
+
 type Mutation struct {
 }
 

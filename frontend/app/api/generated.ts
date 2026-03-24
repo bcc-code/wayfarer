@@ -997,6 +997,19 @@ export type MissingScoreJournalUser = {
   user: User;
 };
 
+export type MissingStreakProgressPreview = {
+  __typename?: 'MissingStreakProgressPreview';
+  affectedUsers: Array<MissingStreakProgressUser>;
+  totalEvents: Scalars['Int']['output'];
+  totalUsers: Scalars['Int']['output'];
+};
+
+export type MissingStreakProgressUser = {
+  __typename?: 'MissingStreakProgressUser';
+  eventCount: Scalars['Int']['output'];
+  user: User;
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   _empty?: Maybe<Scalars['Boolean']['output']>;
@@ -1061,6 +1074,7 @@ export type Mutation = {
   finalizeQuiz: QuizSubmission;
   finishQuizSession: QuizSession;
   fixMissingContentProgressAsync: Array<BulkJob>;
+  fixMissingStreakProgressAsync: Array<BulkJob>;
   forwardFeedbackToDesk: Scalars['Boolean']['output'];
   grantQuizSessionAccess: Scalars['Int']['output'];
   grantQuizSessionAccessAsync: BulkJob;
@@ -2121,6 +2135,7 @@ export type Query = {
   pendingConsents: Array<Consent>;
   previewMissingContentProgress: MissingContentProgressPreview;
   previewMissingScoreJournal: MissingScoreJournalPreview;
+  previewMissingStreakProgress: MissingStreakProgressPreview;
   project: Project;
   projects: ProjectConnection;
   pushNotificationsEnabled: Scalars['Boolean']['output'];
@@ -4198,6 +4213,16 @@ export type BulkJobStatusQueryVariables = Exact<{
 
 
 export type BulkJobStatusQuery = { __typename?: 'Query', bulkJob?: { __typename?: 'BulkJob', id: string, status: BulkJobStatus, totalCount: number, processedCount: number, successCount: number, failureCount: number, errorMessage?: string | null, completedAt?: any | null } | null };
+
+export type MaintenanceStreakProgressPreviewQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MaintenanceStreakProgressPreviewQuery = { __typename?: 'Query', previewMissingStreakProgress: { __typename?: 'MissingStreakProgressPreview', totalUsers: number, totalEvents: number, affectedUsers: Array<{ __typename?: 'MissingStreakProgressUser', eventCount: number, user: { __typename?: 'User', id: string, name: string } }> } };
+
+export type FixMissingStreakProgressAsyncMutationVariables = Exact<{ [key: string]: never; }>;
+
+
+export type FixMissingStreakProgressAsyncMutation = { __typename?: 'Mutation', fixMissingStreakProgressAsync: Array<{ __typename?: 'BulkJob', id: string, operationType: string, status: BulkJobStatus, totalCount: number, processedCount: number, successCount: number, failureCount: number, errorMessage?: string | null }> };
 
 export type ChurchAdminsPageQueryVariables = Exact<{
   churchId: Scalars['ID']['input'];
@@ -6421,6 +6446,43 @@ export const BulkJobStatusDocument = gql`
 
 export function useBulkJobStatusQuery(options?: Omit<Urql.UseQueryArgs<never, BulkJobStatusQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<BulkJobStatusQuery, BulkJobStatusQueryVariables | undefined>({ query: BulkJobStatusDocument, variables: undefined, ...options });
+};
+export const MaintenanceStreakProgressPreviewDocument = gql`
+    query MaintenanceStreakProgressPreview {
+  previewMissingStreakProgress {
+    totalUsers
+    totalEvents
+    affectedUsers {
+      user {
+        id
+        name
+      }
+      eventCount
+    }
+  }
+}
+    `;
+
+export function useMaintenanceStreakProgressPreviewQuery(options?: Omit<Urql.UseQueryArgs<never, MaintenanceStreakProgressPreviewQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<MaintenanceStreakProgressPreviewQuery, MaintenanceStreakProgressPreviewQueryVariables | undefined>({ query: MaintenanceStreakProgressPreviewDocument, variables: undefined, ...options });
+};
+export const FixMissingStreakProgressAsyncDocument = gql`
+    mutation FixMissingStreakProgressAsync {
+  fixMissingStreakProgressAsync {
+    id
+    operationType
+    status
+    totalCount
+    processedCount
+    successCount
+    failureCount
+    errorMessage
+  }
+}
+    `;
+
+export function useFixMissingStreakProgressAsyncMutation() {
+  return Urql.useMutation<FixMissingStreakProgressAsyncMutation, FixMissingStreakProgressAsyncMutationVariables>(FixMissingStreakProgressAsyncDocument);
 };
 export const ChurchAdminsPageDocument = gql`
     query ChurchAdminsPage($churchId: ID!) {

@@ -67,6 +67,19 @@ func (s *ContentAchievementService) ProcessContentEvent(ctx context.Context, use
 	s.processAchievements(ctx, userID, taskID, time.Now())
 }
 
+// ProcessStreakEvent processes a streak event for a user using the original consumed_at timestamp.
+// Unlike ProcessContentEvent (which uses time.Now()), this preserves the original timestamp
+// for correct deadline checks in streak achievements.
+func (s *ContentAchievementService) ProcessStreakEvent(ctx context.Context, userID string, taskID string, consumedAt time.Time) {
+	content, err := s.DB.Queries.GetExternalContentByTaskID(ctx, taskID)
+	if err != nil {
+		slog.Debug("content_achievements: external content not found for streak processing",
+			"task_id", taskID, "error", err)
+		return
+	}
+	s.processStreakAchievements(ctx, userID, content, consumedAt)
+}
+
 // StoreAndProcessContentEvent stores a content event in the database and processes achievements.
 // This is the shared pipeline used by both the webhook handler and the sync service.
 // It generates an event ID, stores the event, dispatches webhooks (async), and processes achievements.

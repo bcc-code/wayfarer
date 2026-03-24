@@ -1071,3 +1071,55 @@ func (s *Service) FixMissingContentProgress(ctx context.Context, params pubsub.F
 
 	return successCount, failureCount, nil
 }
+
+// FixMissingStreakProgress processes missing streak events using the ContentAchievementService.
+// Uses the original consumed_at timestamp for correct deadline enforcement.
+func (s *Service) FixMissingStreakProgress(ctx context.Context, params pubsub.FixMissingStreakProgressParams) (int, int, error) {
+	if len(params.UserIDs) == 0 {
+		return 0, 0, nil
+	}
+
+	events, err := s.DB.Queries.GetMissingStreakEventsForUsers(ctx, params.UserIDs)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to get missing streak events: %w", err)
+	}
+
+	if len(events) == 0 {
+		return 0, 0, nil
+	}
+
+	userSet := make(map[string]bool)
+	for _, event := range events {
+		userSet[event.UserID] = true
+	}
+
+	s.Logger.Info("FixMissingStreakProgress: processing missing streak events",
+		"event_count", len(events),
+		"user_count", len(userSet),
+		"batch_user_count", len(params.UserIDs))
+
+	successCount := 0
+	failureCount := 0
+
+	for _, event := range events {
+		if !event.ConsumedAt.Valid {
+			failureCount++
+			continue
+		}
+		s.ContentAchievementService.ProcessStreakEvent(ctx, event.UserID, event.TaskID, event.ConsumedAt.Time)
+		successCount++
+	}
+
+	if s.FirebaseService != nil {
+		for userID := range userSet {
+			go s.FirebaseService.NotifyUserContent(context.Background(), userID)
+		}
+	}
+
+	s.Logger.Info("FixMissingStreakProgress: completed",
+		"success_count", successCount,
+		"failure_count", failureCount,
+		"users_notified", len(userSet))
+
+	return successCount, failureCount, nil
+}

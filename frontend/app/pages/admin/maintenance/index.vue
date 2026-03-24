@@ -20,6 +20,13 @@ const tools = [
     to: '/admin/maintenance/check-points-journal',
   },
   {
+    title: 'Fix streakfremgang',
+    description:
+      'Finner og fikser brukere som har fullfort eksterne innholdsoppgaver for streak-prestasjoner, men som mangler fremgangsregistreringer.',
+    icon: 'lucide:flame',
+    to: '/admin/maintenance/fix-streak-progress',
+  },
+  {
     title: 'Massejobber',
     description:
       'Se oversikt over asynkrone massejobber og deres status.',

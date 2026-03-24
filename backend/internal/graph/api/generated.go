@@ -493,6 +493,17 @@ type ComplexityRoot struct {
 		User       func(childComplexity int) int
 	}
 
+	MissingStreakProgressPreview struct {
+		AffectedUsers func(childComplexity int) int
+		TotalEvents   func(childComplexity int) int
+		TotalUsers    func(childComplexity int) int
+	}
+
+	MissingStreakProgressUser struct {
+		EventCount func(childComplexity int) int
+		User       func(childComplexity int) int
+	}
+
 	Mutation struct {
 		AcceptConsent                               func(childComplexity int, consentID string) int
 		AddQuizQuestion                             func(childComplexity int, quizID string, input model.CreateQuizQuestionInput) int
@@ -556,6 +567,7 @@ type ComplexityRoot struct {
 		FinalizeQuiz                                func(childComplexity int, submissionID string) int
 		FinishQuizSession                           func(childComplexity int, id string) int
 		FixMissingContentProgressAsync              func(childComplexity int) int
+		FixMissingStreakProgressAsync               func(childComplexity int) int
 		ForwardFeedbackToDesk                       func(childComplexity int, feedbackID string, destination model.ForwardDestination) int
 		GrantQuizSessionAccess                      func(childComplexity int, input model.GrantQuizSessionAccessInput) int
 		GrantQuizSessionAccessAsync                 func(childComplexity int, input model.GrantQuizSessionAccessInput) int
@@ -830,6 +842,7 @@ type ComplexityRoot struct {
 		PendingConsents               func(childComplexity int) int
 		PreviewMissingContentProgress func(childComplexity int, first *int, after *string) int
 		PreviewMissingScoreJournal    func(childComplexity int, achievementID string, first *int, after *string) int
+		PreviewMissingStreakProgress  func(childComplexity int) int
 		Project                       func(childComplexity int, id string) int
 		Projects                      func(childComplexity int, filter *model.ProjectFilter, first *int, after *string, last *int, before *string) int
 		PushNotificationsEnabled      func(childComplexity int) int
@@ -1492,6 +1505,7 @@ type MutationResolver interface {
 	CreateContentAchievementFromExternalContent(ctx context.Context, input model.CreateContentAchievementFromExternalContentInput) (*model.ContentAchievement, error)
 	ClearAllCache(ctx context.Context) (bool, error)
 	FixMissingContentProgressAsync(ctx context.Context) ([]model.BulkJob, error)
+	FixMissingStreakProgressAsync(ctx context.Context) ([]model.BulkJob, error)
 	RegisterPushSubscription(ctx context.Context, input model.RegisterPushSubscriptionInput) (*model.PushSubscription, error)
 	UnregisterPushSubscription(ctx context.Context, endpoint string) (bool, error)
 	SetNotificationPreference(ctx context.Context, input model.SetNotificationPreferenceInput) (*model.PushNotificationPreference, error)
@@ -1618,6 +1632,7 @@ type QueryResolver interface {
 	ChurchAdminStatistics(ctx context.Context) (*model.ChurchAdminStatistics, error)
 	PreviewMissingContentProgress(ctx context.Context, first *int, after *string) (*model.MissingContentProgressPreview, error)
 	PreviewMissingScoreJournal(ctx context.Context, achievementID string, first *int, after *string) (*model.MissingScoreJournalPreview, error)
+	PreviewMissingStreakProgress(ctx context.Context) (*model.MissingStreakProgressPreview, error)
 	MyPushNotificationPreferences(ctx context.Context) ([]model.PushNotificationPreference, error)
 	PushNotificationsEnabled(ctx context.Context) (bool, error)
 	VapidPublicKey(ctx context.Context) (string, error)
@@ -3455,6 +3470,38 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.MissingScoreJournalUser.User(childComplexity), true
 
+	case "MissingStreakProgressPreview.affectedUsers":
+		if e.complexity.MissingStreakProgressPreview.AffectedUsers == nil {
+			break
+		}
+
+		return e.complexity.MissingStreakProgressPreview.AffectedUsers(childComplexity), true
+	case "MissingStreakProgressPreview.totalEvents":
+		if e.complexity.MissingStreakProgressPreview.TotalEvents == nil {
+			break
+		}
+
+		return e.complexity.MissingStreakProgressPreview.TotalEvents(childComplexity), true
+	case "MissingStreakProgressPreview.totalUsers":
+		if e.complexity.MissingStreakProgressPreview.TotalUsers == nil {
+			break
+		}
+
+		return e.complexity.MissingStreakProgressPreview.TotalUsers(childComplexity), true
+
+	case "MissingStreakProgressUser.eventCount":
+		if e.complexity.MissingStreakProgressUser.EventCount == nil {
+			break
+		}
+
+		return e.complexity.MissingStreakProgressUser.EventCount(childComplexity), true
+	case "MissingStreakProgressUser.user":
+		if e.complexity.MissingStreakProgressUser.User == nil {
+			break
+		}
+
+		return e.complexity.MissingStreakProgressUser.User(childComplexity), true
+
 	case "Mutation.acceptConsent":
 		if e.complexity.Mutation.AcceptConsent == nil {
 			break
@@ -4122,6 +4169,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.FixMissingContentProgressAsync(childComplexity), true
+	case "Mutation.fixMissingStreakProgressAsync":
+		if e.complexity.Mutation.FixMissingStreakProgressAsync == nil {
+			break
+		}
+
+		return e.complexity.Mutation.FixMissingStreakProgressAsync(childComplexity), true
 	case "Mutation.forwardFeedbackToDesk":
 		if e.complexity.Mutation.ForwardFeedbackToDesk == nil {
 			break
@@ -5988,6 +6041,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.PreviewMissingScoreJournal(childComplexity, args["achievementId"].(string), args["first"].(*int), args["after"].(*string)), true
+	case "Query.previewMissingStreakProgress":
+		if e.complexity.Query.PreviewMissingStreakProgress == nil {
+			break
+		}
+
+		return e.complexity.Query.PreviewMissingStreakProgress(childComplexity), true
 	case "Query.project":
 		if e.complexity.Query.Project == nil {
 			break
@@ -10647,11 +10706,13 @@ extend type Mutation {
     churchAdminStatistics: ChurchAdminStatistics! @requireRole(roles: ["church_admin", "admin", "superadmin"])
     previewMissingContentProgress(first: Int, after: String): MissingContentProgressPreview! @requireRole(roles: ["superadmin"])
     previewMissingScoreJournal(achievementId: ID!, first: Int, after: String): MissingScoreJournalPreview! @requireRole(roles: ["superadmin"])
+    previewMissingStreakProgress: MissingStreakProgressPreview! @requireRole(roles: ["superadmin"])
 }
 
 extend type Mutation {
     clearAllCache: Boolean! @requireRole(roles: ["admin", "superadmin"])
     fixMissingContentProgressAsync: [BulkJob!]! @requireRole(roles: ["superadmin"])
+    fixMissingStreakProgressAsync: [BulkJob!]! @requireRole(roles: ["superadmin"])
 }
 
 type AdminDashboardStats {
@@ -10703,6 +10764,19 @@ type FixMissingContentProgressResult {
     usersFixed: Int!
     progressRecordsCreated: Int!
     achievementsAwarded: Int!
+}
+
+# Missing streak progress maintenance types
+
+type MissingStreakProgressUser {
+    user: User!
+    eventCount: Int!
+}
+
+type MissingStreakProgressPreview {
+    affectedUsers: [MissingStreakProgressUser!]!
+    totalUsers: Int!
+    totalEvents: Int!
 }
 
 # Missing score journal maintenance types
@@ -22630,6 +22704,203 @@ func (ec *executionContext) fieldContext_MissingScoreJournalUser_eventCount(_ co
 	return fc, nil
 }
 
+func (ec *executionContext) _MissingStreakProgressPreview_affectedUsers(ctx context.Context, field graphql.CollectedField, obj *model.MissingStreakProgressPreview) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MissingStreakProgressPreview_affectedUsers,
+		func(ctx context.Context) (any, error) {
+			return obj.AffectedUsers, nil
+		},
+		nil,
+		ec.marshalNMissingStreakProgressUser2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMissingStreakProgressUserᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MissingStreakProgressPreview_affectedUsers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MissingStreakProgressPreview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "user":
+				return ec.fieldContext_MissingStreakProgressUser_user(ctx, field)
+			case "eventCount":
+				return ec.fieldContext_MissingStreakProgressUser_eventCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MissingStreakProgressUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MissingStreakProgressPreview_totalUsers(ctx context.Context, field graphql.CollectedField, obj *model.MissingStreakProgressPreview) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MissingStreakProgressPreview_totalUsers,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalUsers, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MissingStreakProgressPreview_totalUsers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MissingStreakProgressPreview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MissingStreakProgressPreview_totalEvents(ctx context.Context, field graphql.CollectedField, obj *model.MissingStreakProgressPreview) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MissingStreakProgressPreview_totalEvents,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalEvents, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MissingStreakProgressPreview_totalEvents(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MissingStreakProgressPreview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MissingStreakProgressUser_user(ctx context.Context, field graphql.CollectedField, obj *model.MissingStreakProgressUser) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MissingStreakProgressUser_user,
+		func(ctx context.Context) (any, error) {
+			return obj.User, nil
+		},
+		nil,
+		ec.marshalNUser2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUser,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MissingStreakProgressUser_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MissingStreakProgressUser",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "membersId":
+				return ec.fieldContext_User_membersId(ctx, field)
+			case "personUuid":
+				return ec.fieldContext_User_personUuid(ctx, field)
+			case "gender":
+				return ec.fieldContext_User_gender(ctx, field)
+			case "churchId":
+				return ec.fieldContext_User_churchId(ctx, field)
+			case "church":
+				return ec.fieldContext_User_church(ctx, field)
+			case "churchLockedUntil":
+				return ec.fieldContext_User_churchLockedUntil(ctx, field)
+			case "birthdate":
+				return ec.fieldContext_User_birthdate(ctx, field)
+			case "age":
+				return ec.fieldContext_User_age(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "image":
+				return ec.fieldContext_User_image(ctx, field)
+			case "imageObject":
+				return ec.fieldContext_User_imageObject(ctx, field)
+			case "projects":
+				return ec.fieldContext_User_projects(ctx, field)
+			case "events":
+				return ec.fieldContext_User_events(ctx, field)
+			case "teams":
+				return ec.fieldContext_User_teams(ctx, field)
+			case "superTeams":
+				return ec.fieldContext_User_superTeams(ctx, field)
+			case "roles":
+				return ec.fieldContext_User_roles(ctx, field)
+			case "consentStatus":
+				return ec.fieldContext_User_consentStatus(ctx, field)
+			case "language":
+				return ec.fieldContext_User_language(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_User_createdAt(ctx, field)
+			case "points":
+				return ec.fieldContext_User_points(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MissingStreakProgressUser_eventCount(ctx context.Context, field graphql.CollectedField, obj *model.MissingStreakProgressUser) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MissingStreakProgressUser_eventCount,
+		func(ctx context.Context) (any, error) {
+			return obj.EventCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MissingStreakProgressUser_eventCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MissingStreakProgressUser",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation__empty(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -31341,6 +31612,77 @@ func (ec *executionContext) fieldContext_Mutation_fixMissingContentProgressAsync
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_fixMissingStreakProgressAsync(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_fixMissingStreakProgressAsync,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Mutation().FixMissingStreakProgressAsync(ctx)
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"superadmin"})
+				if err != nil {
+					var zeroVal []model.BulkJob
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal []model.BulkJob
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNBulkJob2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐBulkJobᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_fixMissingStreakProgressAsync(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_BulkJob_id(ctx, field)
+			case "operationType":
+				return ec.fieldContext_BulkJob_operationType(ctx, field)
+			case "status":
+				return ec.fieldContext_BulkJob_status(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_BulkJob_totalCount(ctx, field)
+			case "processedCount":
+				return ec.fieldContext_BulkJob_processedCount(ctx, field)
+			case "successCount":
+				return ec.fieldContext_BulkJob_successCount(ctx, field)
+			case "failureCount":
+				return ec.fieldContext_BulkJob_failureCount(ctx, field)
+			case "errorMessage":
+				return ec.fieldContext_BulkJob_errorMessage(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_BulkJob_createdAt(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_BulkJob_startedAt(ctx, field)
+			case "completedAt":
+				return ec.fieldContext_BulkJob_completedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type BulkJob", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_registerPushSubscription(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -39359,6 +39701,61 @@ func (ec *executionContext) fieldContext_Query_previewMissingScoreJournal(ctx co
 	if fc.Args, err = ec.field_Query_previewMissingScoreJournal_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_previewMissingStreakProgress(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_previewMissingStreakProgress,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().PreviewMissingStreakProgress(ctx)
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"superadmin"})
+				if err != nil {
+					var zeroVal *model.MissingStreakProgressPreview
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.MissingStreakProgressPreview
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNMissingStreakProgressPreview2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMissingStreakProgressPreview,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_previewMissingStreakProgress(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "affectedUsers":
+				return ec.fieldContext_MissingStreakProgressPreview_affectedUsers(ctx, field)
+			case "totalUsers":
+				return ec.fieldContext_MissingStreakProgressPreview_totalUsers(ctx, field)
+			case "totalEvents":
+				return ec.fieldContext_MissingStreakProgressPreview_totalEvents(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MissingStreakProgressPreview", field.Name)
+		},
 	}
 	return fc, nil
 }
@@ -61971,6 +62368,99 @@ func (ec *executionContext) _MissingScoreJournalUser(ctx context.Context, sel as
 	return out
 }
 
+var missingStreakProgressPreviewImplementors = []string{"MissingStreakProgressPreview"}
+
+func (ec *executionContext) _MissingStreakProgressPreview(ctx context.Context, sel ast.SelectionSet, obj *model.MissingStreakProgressPreview) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, missingStreakProgressPreviewImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MissingStreakProgressPreview")
+		case "affectedUsers":
+			out.Values[i] = ec._MissingStreakProgressPreview_affectedUsers(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalUsers":
+			out.Values[i] = ec._MissingStreakProgressPreview_totalUsers(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalEvents":
+			out.Values[i] = ec._MissingStreakProgressPreview_totalEvents(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var missingStreakProgressUserImplementors = []string{"MissingStreakProgressUser"}
+
+func (ec *executionContext) _MissingStreakProgressUser(ctx context.Context, sel ast.SelectionSet, obj *model.MissingStreakProgressUser) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, missingStreakProgressUserImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MissingStreakProgressUser")
+		case "user":
+			out.Values[i] = ec._MissingStreakProgressUser_user(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "eventCount":
+			out.Values[i] = ec._MissingStreakProgressUser_eventCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -62816,6 +63306,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "fixMissingContentProgressAsync":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_fixMissingContentProgressAsync(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "fixMissingStreakProgressAsync":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_fixMissingStreakProgressAsync(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -65976,6 +66473,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_previewMissingScoreJournal(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "previewMissingStreakProgress":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_previewMissingStreakProgress(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -74400,6 +74919,68 @@ func (ec *executionContext) marshalNMissingScoreJournalUser2ᚕgithubᚗcomᚋbc
 				defer wg.Done()
 			}
 			ret[i] = ec.marshalNMissingScoreJournalUser2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMissingScoreJournalUser(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNMissingStreakProgressPreview2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMissingStreakProgressPreview(ctx context.Context, sel ast.SelectionSet, v model.MissingStreakProgressPreview) graphql.Marshaler {
+	return ec._MissingStreakProgressPreview(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNMissingStreakProgressPreview2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMissingStreakProgressPreview(ctx context.Context, sel ast.SelectionSet, v *model.MissingStreakProgressPreview) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._MissingStreakProgressPreview(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNMissingStreakProgressUser2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMissingStreakProgressUser(ctx context.Context, sel ast.SelectionSet, v model.MissingStreakProgressUser) graphql.Marshaler {
+	return ec._MissingStreakProgressUser(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNMissingStreakProgressUser2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMissingStreakProgressUserᚄ(ctx context.Context, sel ast.SelectionSet, v []model.MissingStreakProgressUser) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNMissingStreakProgressUser2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMissingStreakProgressUser(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)

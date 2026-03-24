@@ -26,6 +26,7 @@ type BulkOperationProcessor interface {
 	ProcessBulkGrantQuizSessionAccess(ctx context.Context, jobID string, params BulkGrantQuizSessionAccessParams) error
 	ProcessBulkScoreAdjustment(ctx context.Context, jobID string, params BulkScoreAdjustmentParams) error
 	ProcessFixMissingContentProgress(ctx context.Context, jobID string, params FixMissingContentProgressParams) error
+	ProcessFixMissingStreakProgress(ctx context.Context, jobID string, params FixMissingStreakProgressParams) error
 }
 
 // Processor handles processing of bulk operation messages
@@ -117,6 +118,14 @@ func (p *Processor) Process(ctx context.Context, msg BulkOperationMessage) error
 			processErr = fmt.Errorf("failed to unmarshal params: %w", err)
 		} else {
 			processErr = p.operationProcessors.ProcessFixMissingContentProgress(ctx, msg.JobID, params)
+		}
+
+	case OperationFixMissingStreakProgress:
+		var params FixMissingStreakProgressParams
+		if err := json.Unmarshal(msg.Params, &params); err != nil {
+			processErr = fmt.Errorf("failed to unmarshal params: %w", err)
+		} else {
+			processErr = p.operationProcessors.ProcessFixMissingStreakProgress(ctx, msg.JobID, params)
 		}
 
 	default:
