@@ -18,13 +18,30 @@ import (
 // Fixed superteam names for distribution
 var superteamNames = []string{"Purple", "Green", "Red", "Yellow"}
 
-// Priority churches that must each be in a different superteam.
-// Order maps to superteam order: [0]=Purple, [1]=Green, [2]=Red, [3]=Yellow.
-var priorityChurchIDs = []string{
-	"CH01KC9E89Q9K4Q1M4MNJC99CQKJ", // Oslo Follo -> Purple
-	"CH01KC9E885FZ3DXF7NDQCJJT4C9", // Exter -> Green
-	"CH01KC9E8BHK3C9VSD3ABGFPDWZF", // Sveits -> Red
-	"CH01KC9E8D1FVXY513F3K59H2D47", // København -> Yellow
+// priorityChurchAssignments maps church IDs to their forced superteam name.
+// These churches are pre-seeded into their designated buckets and cannot be moved by refinement.
+var priorityChurchAssignments = map[string]string{
+	"CH01KC9E89Q9K4Q1M4MNJC99CQKJ": "Yellow", // Oslo Follo
+
+	"CH01KC9E885FZ3DXF7NDQCJJT4C9": "Green",  // Exter
+	"CH01KC9E8BHK3C9VSD3ABGFPDWZF": "Purple", // Sveits
+	"CH01KC9E8D1FVXY513F3K59H2D47": "Red",    // København
+	"CH01KC9E88WPADBJRQGHVKD1XF68": "Red",    // Bergen
+	"CH01KC9E8CG131GAVQRFSZ0CNCZ5": "Yellow", // Eiker
+
+	"CH01KC9E8D7FKGAAPJF367A84KSS": "Red",    // Grenland
+	"CH01KC9E8A9RYZ1A9CPQAWYYTGES": "Purple", // Østfold
+	"CH01KC9E8ABSPYNF26RX8ZKZ33MW": "Green",  // Connecticut
+}
+
+// superteamIndex returns the bucket index for a superteam name, or -1 if not found.
+func superteamIndex(name string) int {
+	for i, n := range superteamNames {
+		if n == name {
+			return i
+		}
+	}
+	return -1
 }
 
 // distributionQuerier defines the database operations needed by the distribution handler.
@@ -408,9 +425,13 @@ func (h *superteamDistributionHandler) calculateDistribution(teams []*sqlc.GetTe
 	assignedChurches := make(map[string]bool)
 
 	// Pre-seed priority churches to their designated buckets
-	for i, churchID := range priorityChurchIDs {
+	for churchID, superteamName := range priorityChurchAssignments {
+		idx := superteamIndex(superteamName)
+		if idx < 0 {
+			continue
+		}
 		if cg, exists := churchGroups[churchID]; exists {
-			h.assignChurchToBucket(cg, &buckets[i])
+			h.assignChurchToBucket(cg, &buckets[idx])
 			assignedChurches[churchID] = true
 		}
 	}
@@ -546,9 +567,13 @@ func (h *superteamDistributionHandler) calculateDistributionWithAttending(teams 
 	assignedChurches := make(map[string]bool)
 
 	// Pre-seed priority churches to their designated buckets
-	for i, churchID := range priorityChurchIDs {
+	for churchID, superteamName := range priorityChurchAssignments {
+		idx := superteamIndex(superteamName)
+		if idx < 0 {
+			continue
+		}
 		if cg, exists := churchGroups[churchID]; exists {
-			h.assignChurchToBucket(cg, &buckets[i])
+			h.assignChurchToBucket(cg, &buckets[idx])
 			assignedChurches[churchID] = true
 		}
 	}
@@ -770,12 +795,11 @@ func containsString(slice []string, str string) bool {
 
 // isPriorityChurchInAssignedBucket checks if a church is a priority church in its designated bucket.
 func isPriorityChurchInAssignedBucket(churchID string, bucketIdx int) bool {
-	for i, priorityID := range priorityChurchIDs {
-		if priorityID == churchID && i == bucketIdx {
-			return true
-		}
+	assignedName, ok := priorityChurchAssignments[churchID]
+	if !ok {
+		return false
 	}
-	return false
+	return superteamIndex(assignedName) == bucketIdx
 }
 
 // abs64 returns the absolute value of an int64.

@@ -660,10 +660,15 @@ func TestSuperteamDistributionHandler_VisualizeDistribution(t *testing.T) {
 }
 
 func TestCalculateDistribution_PriorityChurches(t *testing.T) {
-	// Temporarily override priorityChurchIDs for this test
-	origPriority := priorityChurchIDs
-	priorityChurchIDs = []string{"CH_P1", "CH_P2", "CH_P3", "CH_P4"}
-	defer func() { priorityChurchIDs = origPriority }()
+	// Temporarily override priorityChurchAssignments for this test
+	origPriority := priorityChurchAssignments
+	priorityChurchAssignments = map[string]string{
+		"CH_P1": "Purple",
+		"CH_P2": "Green",
+		"CH_P3": "Red",
+		"CH_P4": "Yellow",
+	}
+	defer func() { priorityChurchAssignments = origPriority }()
 
 	handler := &superteamDistributionHandler{}
 
@@ -692,17 +697,17 @@ func TestCalculateDistribution_PriorityChurches(t *testing.T) {
 	result := handler.calculateDistribution(teams, false)
 
 	// Each priority church must have at least one team in its assigned bucket
-	// priorityChurchIDs[i] maps to bucket i (Purple=0, Green=1, Red=2, Yellow=3)
-	for i, churchID := range priorityChurchIDs {
+	for churchID, superteamName := range priorityChurchAssignments {
+		idx := superteamIndex(superteamName)
 		found := false
-		for _, team := range result.Superteams[i].Teams {
+		for _, team := range result.Superteams[idx].Teams {
 			if team.ChurchID == churchID {
 				found = true
 				break
 			}
 		}
 		assert.True(t, found, "Priority church %s should have a team in superteam %s (bucket %d)",
-			churchID, superteamNames[i], i)
+			churchID, superteamName, idx)
 	}
 
 	// All 16 teams should be distributed
@@ -719,9 +724,14 @@ func TestCalculateDistribution_PriorityChurches_WithRefinement(t *testing.T) {
 	// Test that refinement doesn't undo priority assignments.
 	// Create a scenario where a priority church has only 1 team in its bucket,
 	// and refinement might want to swap it out to consolidate another church.
-	origPriority := priorityChurchIDs
-	priorityChurchIDs = []string{"CH_P1", "CH_P2", "CH_P3", "CH_P4"}
-	defer func() { priorityChurchIDs = origPriority }()
+	origPriority := priorityChurchAssignments
+	priorityChurchAssignments = map[string]string{
+		"CH_P1": "Purple",
+		"CH_P2": "Green",
+		"CH_P3": "Red",
+		"CH_P4": "Yellow",
+	}
+	defer func() { priorityChurchAssignments = origPriority }()
 
 	handler := &superteamDistributionHandler{}
 
@@ -749,16 +759,17 @@ func TestCalculateDistribution_PriorityChurches_WithRefinement(t *testing.T) {
 	result := handler.calculateDistribution(teams, false)
 
 	// Each priority church must still have a team in its assigned bucket after refinement
-	for i, churchID := range priorityChurchIDs {
+	for churchID, superteamName := range priorityChurchAssignments {
+		idx := superteamIndex(superteamName)
 		found := false
-		for _, team := range result.Superteams[i].Teams {
+		for _, team := range result.Superteams[idx].Teams {
 			if team.ChurchID == churchID {
 				found = true
 				break
 			}
 		}
 		assert.True(t, found, "After refinement, priority church %s must still have a team in superteam %s (bucket %d)",
-			churchID, superteamNames[i], i)
+			churchID, superteamName, idx)
 	}
 
 	// All 12 teams should be distributed
