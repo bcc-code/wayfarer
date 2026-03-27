@@ -65,6 +65,25 @@ export type AchievementFilter = {
   projectId?: InputMaybe<Scalars['ID']['input']>;
 };
 
+export type AdminAchievementItemProgress = {
+  __typename?: 'AdminAchievementItemProgress';
+  completeBy?: Maybe<Scalars['DateTime']['output']>;
+  completed: Scalars['Boolean']['output'];
+  completedAt?: Maybe<Scalars['DateTime']['output']>;
+  completedWithinDeadline?: Maybe<Scalars['Boolean']['output']>;
+  contentItem: ContentItem;
+};
+
+export type AdminAchievementProgress = {
+  __typename?: 'AdminAchievementProgress';
+  achievement: Achievement;
+  alreadyAwarded: Scalars['Boolean']['output'];
+  awardedAt?: Maybe<Scalars['DateTime']['output']>;
+  completedCount: Scalars['Int']['output'];
+  items: Array<AdminAchievementItemProgress>;
+  totalCount: Scalars['Int']['output'];
+};
+
 export type AdminDashboardStats = {
   __typename?: 'AdminDashboardStats';
   activeProjectsCount: Scalars['Int']['output'];
@@ -73,6 +92,17 @@ export type AdminDashboardStats = {
   totalPointsAwarded: Scalars['Int']['output'];
   totalProjects: Scalars['Int']['output'];
   totalUsers: Scalars['Int']['output'];
+};
+
+export type AdminExternalContentEvent = {
+  __typename?: 'AdminExternalContentEvent';
+  consumedAt?: Maybe<Scalars['DateTime']['output']>;
+  contentProgress?: Maybe<Scalars['Float']['output']>;
+  id: Scalars['ID']['output'];
+  planId: Scalars['String']['output'];
+  receivedAt: Scalars['DateTime']['output'];
+  source: Scalars['String']['output'];
+  taskId: Scalars['String']['output'];
 };
 
 export type AgeGroupStats = {
@@ -2101,7 +2131,9 @@ export type Query = {
   __typename?: 'Query';
   achievement: Achievement;
   achievements: AchievementConnection;
+  adminCheckAchievementProgress: AdminAchievementProgress;
   adminDashboardStats: AdminDashboardStats;
+  adminExternalContentEvents: Array<AdminExternalContentEvent>;
   adminScoreJournal: ScoreJournalConnection;
   bulkJob?: Maybe<BulkJob>;
   bulkJobs: BulkJobConnection;
@@ -2172,6 +2204,18 @@ export type QueryAchievementsArgs = {
   filter: AchievementFilter;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QueryAdminCheckAchievementProgressArgs = {
+  achievementId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+
+export type QueryAdminExternalContentEventsArgs = {
+  externalContentId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 
@@ -3300,6 +3344,14 @@ export type WebhookLog = {
   responseStatusCode?: Maybe<Scalars['Int']['output']>;
 };
 
+export type AdminExternalContentEventsQueryVariables = Exact<{
+  userId: Scalars['ID']['input'];
+  externalContentId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminExternalContentEventsQuery = { __typename?: 'Query', adminExternalContentEvents: Array<{ __typename?: 'AdminExternalContentEvent', id: string, taskId: string, planId: string, source: string, receivedAt: any, consumedAt?: any | null, contentProgress?: number | null }> };
+
 export type ProjectRulesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -4427,6 +4479,44 @@ export type AdminTeamsPageQueryVariables = Exact<{
 
 export type AdminTeamsPageQuery = { __typename?: 'Query', teams: { __typename?: 'TeamConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'TeamEdge', cursor: string, node: { __typename?: 'Team', id: string, name: string, description: string, members: Array<{ __typename?: 'TeamMember', id: string }>, parentProject: { __typename?: 'Project', id: string, name: string }, superTeam?: { __typename?: 'SuperTeam', id: string, name: string } | null } }> } };
 
+export type AdminAchievementsForPickerQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminAchievementsForPickerQuery = { __typename?: 'Query', achievements: { __typename?: 'AchievementConnection', edges: Array<{ __typename?: 'AchievementEdge', node:
+        | { __typename: 'ContentAchievement', id: string, name: string }
+        | { __typename: 'QuizAchievement', id: string, name: string }
+        | { __typename: 'SimpleAchievement', id: string, name: string }
+        | { __typename: 'StreakAchievement', id: string, name: string }
+       }> } };
+
+export type AdminCheckAchievementProgressQueryVariables = Exact<{
+  userId: Scalars['ID']['input'];
+  achievementId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminCheckAchievementProgressQuery = { __typename?: 'Query', adminCheckAchievementProgress: { __typename?: 'AdminAchievementProgress', alreadyAwarded: boolean, awardedAt?: any | null, completedCount: number, totalCount: number, achievement:
+      | { __typename: 'ContentAchievement', id: string, name: string, points: number }
+      | { __typename: 'QuizAchievement' }
+      | { __typename: 'SimpleAchievement' }
+      | { __typename: 'StreakAchievement', id: string, name: string, points: number }
+    , items: Array<{ __typename?: 'AdminAchievementItemProgress', completed: boolean, completedAt?: any | null, completeBy?: any | null, completedWithinDeadline?: boolean | null, contentItem: { __typename?: 'ContentItem', id: string, sortOrder: number, externalContent: { __typename?: 'ExternalContent', id: string, title?: string | null, taskId: string, contentType: ExternalContentType } } }> } };
+
+export type AdminAwardAchievementMutationVariables = Exact<{
+  userId: Scalars['ID']['input'];
+  achievementId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminAwardAchievementMutation = { __typename?: 'Mutation', awardAchievement:
+    | { __typename?: 'ContentAchievement', id: string, name: string }
+    | { __typename?: 'QuizAchievement', id: string, name: string }
+    | { __typename?: 'SimpleAchievement', id: string, name: string }
+    | { __typename?: 'StreakAchievement', id: string, name: string }
+   };
+
 export type AdminUserPageCurrentProjectQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -4650,6 +4740,26 @@ export const QuizSubmissionResultFieldsFragmentDoc = gql`
   pointsAwarded
 }
     `;
+export const AdminExternalContentEventsDocument = gql`
+    query AdminExternalContentEvents($userId: ID!, $externalContentId: ID!) {
+  adminExternalContentEvents(
+    userId: $userId
+    externalContentId: $externalContentId
+  ) {
+    id
+    taskId
+    planId
+    source
+    receivedAt
+    consumedAt
+    contentProgress
+  }
+}
+    `;
+
+export function useAdminExternalContentEventsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminExternalContentEventsQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminExternalContentEventsQuery, AdminExternalContentEventsQueryVariables | undefined>({ query: AdminExternalContentEventsDocument, variables: undefined, ...options });
+};
 export const ProjectRulesDocument = gql`
     query ProjectRules {
   myCurrentProject {
@@ -7224,6 +7334,78 @@ export const AdminTeamsPageDocument = gql`
 
 export function useAdminTeamsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminTeamsPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminTeamsPageQuery, AdminTeamsPageQueryVariables | undefined>({ query: AdminTeamsPageDocument, variables: undefined, ...options });
+};
+export const AdminAchievementsForPickerDocument = gql`
+    query AdminAchievementsForPicker($projectId: ID!) {
+  achievements(first: 200, filter: {projectId: $projectId}) {
+    edges {
+      node {
+        __typename
+        id
+        name
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminAchievementsForPickerQuery(options?: Omit<Urql.UseQueryArgs<never, AdminAchievementsForPickerQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminAchievementsForPickerQuery, AdminAchievementsForPickerQueryVariables | undefined>({ query: AdminAchievementsForPickerDocument, variables: undefined, ...options });
+};
+export const AdminCheckAchievementProgressDocument = gql`
+    query AdminCheckAchievementProgress($userId: ID!, $achievementId: ID!) {
+  adminCheckAchievementProgress(userId: $userId, achievementId: $achievementId) {
+    achievement {
+      __typename
+      ... on ContentAchievement {
+        id
+        name
+        points
+      }
+      ... on StreakAchievement {
+        id
+        name
+        points
+      }
+    }
+    alreadyAwarded
+    awardedAt
+    items {
+      contentItem {
+        id
+        sortOrder
+        externalContent {
+          id
+          title
+          taskId
+          contentType
+        }
+      }
+      completed
+      completedAt
+      completeBy
+      completedWithinDeadline
+    }
+    completedCount
+    totalCount
+  }
+}
+    `;
+
+export function useAdminCheckAchievementProgressQuery(options?: Omit<Urql.UseQueryArgs<never, AdminCheckAchievementProgressQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminCheckAchievementProgressQuery, AdminCheckAchievementProgressQueryVariables | undefined>({ query: AdminCheckAchievementProgressDocument, variables: undefined, ...options });
+};
+export const AdminAwardAchievementDocument = gql`
+    mutation AdminAwardAchievement($userId: ID!, $achievementId: ID!) {
+  awardAchievement(userId: $userId, achievementId: $achievementId) {
+    id
+    name
+  }
+}
+    `;
+
+export function useAdminAwardAchievementMutation() {
+  return Urql.useMutation<AdminAwardAchievementMutation, AdminAwardAchievementMutationVariables>(AdminAwardAchievementDocument);
 };
 export const AdminUserPageCurrentProjectDocument = gql`
     query AdminUserPageCurrentProject {

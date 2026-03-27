@@ -104,6 +104,23 @@ type AchievementFilter struct {
 	Ids       []string `json:"ids,omitempty"`
 }
 
+type AdminAchievementItemProgress struct {
+	ContentItem             *ContentItem      `json:"contentItem"`
+	Completed               bool              `json:"completed"`
+	CompletedAt             *scalars.DateTime `json:"completedAt,omitempty"`
+	CompleteBy              *scalars.DateTime `json:"completeBy,omitempty"`
+	CompletedWithinDeadline *bool             `json:"completedWithinDeadline,omitempty"`
+}
+
+type AdminAchievementProgress struct {
+	Achievement    Achievement                    `json:"achievement"`
+	AlreadyAwarded bool                           `json:"alreadyAwarded"`
+	AwardedAt      *scalars.DateTime              `json:"awardedAt,omitempty"`
+	Items          []AdminAchievementItemProgress `json:"items"`
+	CompletedCount int                            `json:"completedCount"`
+	TotalCount     int                            `json:"totalCount"`
+}
+
 type AdminDashboardStats struct {
 	TotalUsers          int `json:"totalUsers"`
 	TotalProjects       int `json:"totalProjects"`
@@ -111,6 +128,16 @@ type AdminDashboardStats struct {
 	TotalPointsAwarded  int `json:"totalPointsAwarded"`
 	NewUsersLast7Days   int `json:"newUsersLast7Days"`
 	ActiveProjectsCount int `json:"activeProjectsCount"`
+}
+
+type AdminExternalContentEvent struct {
+	ID              string            `json:"id"`
+	TaskID          string            `json:"taskId"`
+	PlanID          string            `json:"planId"`
+	Source          string            `json:"source"`
+	ReceivedAt      scalars.DateTime  `json:"receivedAt"`
+	ConsumedAt      *scalars.DateTime `json:"consumedAt,omitempty"`
+	ContentProgress *float64          `json:"contentProgress,omitempty"`
 }
 
 type AgeGroupStats struct {

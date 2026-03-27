@@ -45,3 +45,10 @@ SELECT DISTINCT ON (task_id) id, person_id, task_id, plan_id, content_progress, 
 FROM external_content_events
 WHERE person_id = @personid::uuid
 ORDER BY task_id, consumed_at DESC;
+
+-- name: GetExternalContentEventsByPersonAndTaskID :many
+-- Get events for a specific person and task (for admin achievement progress detail)
+SELECT id, person_id, task_id, plan_id, source, received_at, content_progress, consumed_at
+FROM external_content_events
+WHERE person_id = @personid::uuid AND task_id = @taskid::text
+ORDER BY received_at DESC;

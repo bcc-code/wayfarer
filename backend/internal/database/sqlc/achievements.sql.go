@@ -1330,6 +1330,49 @@ func (q *Queries) GetContentItemsByAchievementIDs(ctx context.Context, achieveme
 	return items, nil
 }
 
+const GetContentItemsWithDeadlines = `-- name: GetContentItemsWithDeadlines :many
+SELECT cai.id, cai.achievement_id, cai.external_content_id, cai.sort_order, ec.complete_by
+FROM content_achievement_items cai
+INNER JOIN external_content ec ON cai.external_content_id = ec.id
+WHERE cai.achievement_id = $1::text
+ORDER BY cai.sort_order
+`
+
+type GetContentItemsWithDeadlinesRow struct {
+	ID                string             `json:"id"`
+	AchievementID     string             `json:"achievement_id"`
+	ExternalContentID string             `json:"external_content_id"`
+	SortOrder         int32              `json:"sort_order"`
+	CompleteBy        pgtype.Timestamptz `json:"complete_by"`
+}
+
+// Get content achievement items with external content details including complete_by deadline
+func (q *Queries) GetContentItemsWithDeadlines(ctx context.Context, achievementID string) ([]*GetContentItemsWithDeadlinesRow, error) {
+	rows, err := q.db.Query(ctx, GetContentItemsWithDeadlines, achievementID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetContentItemsWithDeadlinesRow{}
+	for rows.Next() {
+		var i GetContentItemsWithDeadlinesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.AchievementID,
+			&i.ExternalContentID,
+			&i.SortOrder,
+			&i.CompleteBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetContentItemsWithExternalContent = `-- name: GetContentItemsWithExternalContent :many
 SELECT
     cai.id,
@@ -1770,6 +1813,49 @@ func (q *Queries) GetStreakItemsByAchievementIDs(ctx context.Context, achievemen
 			&i.AchievementID,
 			&i.ExternalContentID,
 			&i.SortOrder,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetStreakItemsWithDeadlines = `-- name: GetStreakItemsWithDeadlines :many
+SELECT sai.id, sai.achievement_id, sai.external_content_id, sai.sort_order, ec.complete_by
+FROM streak_achievement_items sai
+INNER JOIN external_content ec ON sai.external_content_id = ec.id
+WHERE sai.achievement_id = $1::text
+ORDER BY sai.sort_order
+`
+
+type GetStreakItemsWithDeadlinesRow struct {
+	ID                string             `json:"id"`
+	AchievementID     string             `json:"achievement_id"`
+	ExternalContentID string             `json:"external_content_id"`
+	SortOrder         int32              `json:"sort_order"`
+	CompleteBy        pgtype.Timestamptz `json:"complete_by"`
+}
+
+// Get streak achievement items with external content details including complete_by deadline
+func (q *Queries) GetStreakItemsWithDeadlines(ctx context.Context, achievementID string) ([]*GetStreakItemsWithDeadlinesRow, error) {
+	rows, err := q.db.Query(ctx, GetStreakItemsWithDeadlines, achievementID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetStreakItemsWithDeadlinesRow{}
+	for rows.Next() {
+		var i GetStreakItemsWithDeadlinesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.AchievementID,
+			&i.ExternalContentID,
+			&i.SortOrder,
+			&i.CompleteBy,
 		); err != nil {
 			return nil, err
 		}

@@ -258,6 +258,13 @@ export function usePermissions() {
     return isSuperAdmin.value
   })
 
+  /**
+   * Can check achievement progress for users (superadmin only)
+   */
+  const canCheckAchievements = computed(() => {
+    return isSuperAdmin.value
+  })
+
   return {
     // Scoped helpers
     hasProjectAdminFor,
@@ -295,5 +302,6 @@ export function usePermissions() {
     canToggleLeaderboardExclusion,
     canManageChurchAdmins,
     canAccessMaintenance,
+    canCheckAchievements,
   }
 }

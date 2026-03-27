@@ -312,3 +312,13 @@ func (r *queryResolver) PreviewMissingScoreJournal(ctx context.Context, achievem
 func (r *queryResolver) PreviewMissingStreakProgress(ctx context.Context) (*model.MissingStreakProgressPreview, error) {
 	return r.Resolver.previewMissingStreakProgress(ctx)
 }
+
+// AdminCheckAchievementProgress is the resolver for the adminCheckAchievementProgress field.
+func (r *queryResolver) AdminCheckAchievementProgress(ctx context.Context, userID string, achievementID string) (*model.AdminAchievementProgress, error) {
+	return r.Resolver.adminCheckAchievementProgress(ctx, userID, achievementID)
+}
+
+// AdminExternalContentEvents is the resolver for the adminExternalContentEvents field.
+func (r *queryResolver) AdminExternalContentEvents(ctx context.Context, userID string, externalContentID string) ([]model.AdminExternalContentEvent, error) {
+	return r.Resolver.adminExternalContentEvents(ctx, userID, externalContentID)
+}

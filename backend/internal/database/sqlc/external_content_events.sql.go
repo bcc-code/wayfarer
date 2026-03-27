@@ -128,6 +128,48 @@ func (q *Queries) GetExternalContentEventByID(ctx context.Context, id string) (*
 	return &i, err
 }
 
+const GetExternalContentEventsByPersonAndTaskID = `-- name: GetExternalContentEventsByPersonAndTaskID :many
+SELECT id, person_id, task_id, plan_id, source, received_at, content_progress, consumed_at
+FROM external_content_events
+WHERE person_id = $1::uuid AND task_id = $2::text
+ORDER BY received_at DESC
+`
+
+type GetExternalContentEventsByPersonAndTaskIDParams struct {
+	Personid pgtype.UUID `json:"personid"`
+	Taskid   string      `json:"taskid"`
+}
+
+// Get events for a specific person and task (for admin achievement progress detail)
+func (q *Queries) GetExternalContentEventsByPersonAndTaskID(ctx context.Context, arg GetExternalContentEventsByPersonAndTaskIDParams) ([]*ExternalContentEvent, error) {
+	rows, err := q.db.Query(ctx, GetExternalContentEventsByPersonAndTaskID, arg.Personid, arg.Taskid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*ExternalContentEvent{}
+	for rows.Next() {
+		var i ExternalContentEvent
+		if err := rows.Scan(
+			&i.ID,
+			&i.PersonID,
+			&i.TaskID,
+			&i.PlanID,
+			&i.Source,
+			&i.ReceivedAt,
+			&i.ContentProgress,
+			&i.ConsumedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetExternalContentEventsByPersonID = `-- name: GetExternalContentEventsByPersonID :many
 SELECT id, person_id, task_id, plan_id, source, received_at, content_progress, consumed_at
 FROM external_content_events

@@ -101,6 +101,23 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
+	AdminAchievementItemProgress struct {
+		CompleteBy              func(childComplexity int) int
+		Completed               func(childComplexity int) int
+		CompletedAt             func(childComplexity int) int
+		CompletedWithinDeadline func(childComplexity int) int
+		ContentItem             func(childComplexity int) int
+	}
+
+	AdminAchievementProgress struct {
+		Achievement    func(childComplexity int) int
+		AlreadyAwarded func(childComplexity int) int
+		AwardedAt      func(childComplexity int) int
+		CompletedCount func(childComplexity int) int
+		Items          func(childComplexity int) int
+		TotalCount     func(childComplexity int) int
+	}
+
 	AdminDashboardStats struct {
 		ActiveProjectsCount func(childComplexity int) int
 		NewUsersLast7Days   func(childComplexity int) int
@@ -108,6 +125,16 @@ type ComplexityRoot struct {
 		TotalPointsAwarded  func(childComplexity int) int
 		TotalProjects       func(childComplexity int) int
 		TotalUsers          func(childComplexity int) int
+	}
+
+	AdminExternalContentEvent struct {
+		ConsumedAt      func(childComplexity int) int
+		ContentProgress func(childComplexity int) int
+		ID              func(childComplexity int) int
+		PlanID          func(childComplexity int) int
+		ReceivedAt      func(childComplexity int) int
+		Source          func(childComplexity int) int
+		TaskID          func(childComplexity int) int
 	}
 
 	AgeGroupStats struct {
@@ -808,7 +835,9 @@ type ComplexityRoot struct {
 	Query struct {
 		Achievement                   func(childComplexity int, id string) int
 		Achievements                  func(childComplexity int, filter model.AchievementFilter, first *int, after *string, last *int, before *string) int
+		AdminCheckAchievementProgress func(childComplexity int, userID string, achievementID string) int
 		AdminDashboardStats           func(childComplexity int) int
+		AdminExternalContentEvents    func(childComplexity int, userID string, externalContentID string) int
 		AdminScoreJournal             func(childComplexity int, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) int
 		BulkJob                       func(childComplexity int, id string) int
 		BulkJobs                      func(childComplexity int, filter *model.BulkJobFilter, first *int, after *string, last *int, before *string) int
@@ -1633,6 +1662,8 @@ type QueryResolver interface {
 	PreviewMissingContentProgress(ctx context.Context, first *int, after *string) (*model.MissingContentProgressPreview, error)
 	PreviewMissingScoreJournal(ctx context.Context, achievementID string, first *int, after *string) (*model.MissingScoreJournalPreview, error)
 	PreviewMissingStreakProgress(ctx context.Context) (*model.MissingStreakProgressPreview, error)
+	AdminCheckAchievementProgress(ctx context.Context, userID string, achievementID string) (*model.AdminAchievementProgress, error)
+	AdminExternalContentEvents(ctx context.Context, userID string, externalContentID string) ([]model.AdminExternalContentEvent, error)
 	MyPushNotificationPreferences(ctx context.Context) ([]model.PushNotificationPreference, error)
 	PushNotificationsEnabled(ctx context.Context) (bool, error)
 	VapidPublicKey(ctx context.Context) (string, error)
@@ -1878,6 +1909,74 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AchievementEdge.Node(childComplexity), true
 
+	case "AdminAchievementItemProgress.completeBy":
+		if e.complexity.AdminAchievementItemProgress.CompleteBy == nil {
+			break
+		}
+
+		return e.complexity.AdminAchievementItemProgress.CompleteBy(childComplexity), true
+	case "AdminAchievementItemProgress.completed":
+		if e.complexity.AdminAchievementItemProgress.Completed == nil {
+			break
+		}
+
+		return e.complexity.AdminAchievementItemProgress.Completed(childComplexity), true
+	case "AdminAchievementItemProgress.completedAt":
+		if e.complexity.AdminAchievementItemProgress.CompletedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminAchievementItemProgress.CompletedAt(childComplexity), true
+	case "AdminAchievementItemProgress.completedWithinDeadline":
+		if e.complexity.AdminAchievementItemProgress.CompletedWithinDeadline == nil {
+			break
+		}
+
+		return e.complexity.AdminAchievementItemProgress.CompletedWithinDeadline(childComplexity), true
+	case "AdminAchievementItemProgress.contentItem":
+		if e.complexity.AdminAchievementItemProgress.ContentItem == nil {
+			break
+		}
+
+		return e.complexity.AdminAchievementItemProgress.ContentItem(childComplexity), true
+
+	case "AdminAchievementProgress.achievement":
+		if e.complexity.AdminAchievementProgress.Achievement == nil {
+			break
+		}
+
+		return e.complexity.AdminAchievementProgress.Achievement(childComplexity), true
+	case "AdminAchievementProgress.alreadyAwarded":
+		if e.complexity.AdminAchievementProgress.AlreadyAwarded == nil {
+			break
+		}
+
+		return e.complexity.AdminAchievementProgress.AlreadyAwarded(childComplexity), true
+	case "AdminAchievementProgress.awardedAt":
+		if e.complexity.AdminAchievementProgress.AwardedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminAchievementProgress.AwardedAt(childComplexity), true
+	case "AdminAchievementProgress.completedCount":
+		if e.complexity.AdminAchievementProgress.CompletedCount == nil {
+			break
+		}
+
+		return e.complexity.AdminAchievementProgress.CompletedCount(childComplexity), true
+	case "AdminAchievementProgress.items":
+		if e.complexity.AdminAchievementProgress.Items == nil {
+			break
+		}
+
+		return e.complexity.AdminAchievementProgress.Items(childComplexity), true
+	case "AdminAchievementProgress.totalCount":
+		if e.complexity.AdminAchievementProgress.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.AdminAchievementProgress.TotalCount(childComplexity), true
+
 	case "AdminDashboardStats.activeProjectsCount":
 		if e.complexity.AdminDashboardStats.ActiveProjectsCount == nil {
 			break
@@ -1914,6 +2013,49 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminDashboardStats.TotalUsers(childComplexity), true
+
+	case "AdminExternalContentEvent.consumedAt":
+		if e.complexity.AdminExternalContentEvent.ConsumedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminExternalContentEvent.ConsumedAt(childComplexity), true
+	case "AdminExternalContentEvent.contentProgress":
+		if e.complexity.AdminExternalContentEvent.ContentProgress == nil {
+			break
+		}
+
+		return e.complexity.AdminExternalContentEvent.ContentProgress(childComplexity), true
+	case "AdminExternalContentEvent.id":
+		if e.complexity.AdminExternalContentEvent.ID == nil {
+			break
+		}
+
+		return e.complexity.AdminExternalContentEvent.ID(childComplexity), true
+	case "AdminExternalContentEvent.planId":
+		if e.complexity.AdminExternalContentEvent.PlanID == nil {
+			break
+		}
+
+		return e.complexity.AdminExternalContentEvent.PlanID(childComplexity), true
+	case "AdminExternalContentEvent.receivedAt":
+		if e.complexity.AdminExternalContentEvent.ReceivedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminExternalContentEvent.ReceivedAt(childComplexity), true
+	case "AdminExternalContentEvent.source":
+		if e.complexity.AdminExternalContentEvent.Source == nil {
+			break
+		}
+
+		return e.complexity.AdminExternalContentEvent.Source(childComplexity), true
+	case "AdminExternalContentEvent.taskId":
+		if e.complexity.AdminExternalContentEvent.TaskID == nil {
+			break
+		}
+
+		return e.complexity.AdminExternalContentEvent.TaskID(childComplexity), true
 
 	case "AgeGroupStats.ageGroup":
 		if e.complexity.AgeGroupStats.AgeGroup == nil {
@@ -5747,12 +5889,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Achievements(childComplexity, args["filter"].(model.AchievementFilter), args["first"].(*int), args["after"].(*string), args["last"].(*int), args["before"].(*string)), true
+	case "Query.adminCheckAchievementProgress":
+		if e.complexity.Query.AdminCheckAchievementProgress == nil {
+			break
+		}
+
+		args, err := ec.field_Query_adminCheckAchievementProgress_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.AdminCheckAchievementProgress(childComplexity, args["userId"].(string), args["achievementId"].(string)), true
 	case "Query.adminDashboardStats":
 		if e.complexity.Query.AdminDashboardStats == nil {
 			break
 		}
 
 		return e.complexity.Query.AdminDashboardStats(childComplexity), true
+	case "Query.adminExternalContentEvents":
+		if e.complexity.Query.AdminExternalContentEvents == nil {
+			break
+		}
+
+		args, err := ec.field_Query_adminExternalContentEvents_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.AdminExternalContentEvents(childComplexity, args["userId"].(string), args["externalContentId"].(string)), true
 	case "Query.adminScoreJournal":
 		if e.complexity.Query.AdminScoreJournal == nil {
 			break
@@ -10707,6 +10871,10 @@ extend type Mutation {
     previewMissingContentProgress(first: Int, after: String): MissingContentProgressPreview! @requireRole(roles: ["superadmin"])
     previewMissingScoreJournal(achievementId: ID!, first: Int, after: String): MissingScoreJournalPreview! @requireRole(roles: ["superadmin"])
     previewMissingStreakProgress: MissingStreakProgressPreview! @requireRole(roles: ["superadmin"])
+
+    # Check achievement progress for a specific user (superadmin enforced in resolver)
+    adminCheckAchievementProgress(userId: ID!, achievementId: ID!): AdminAchievementProgress!
+    adminExternalContentEvents(userId: ID!, externalContentId: ID!): [AdminExternalContentEvent!]!
 }
 
 extend type Mutation {
@@ -10790,6 +10958,35 @@ type MissingScoreJournalPreview {
     affectedUsers: [MissingScoreJournalUser!]!
     totalUsers: Int!
     totalEvents: Int!
+}
+
+# Admin achievement progress check types
+
+type AdminAchievementProgress {
+    achievement: Achievement!
+    alreadyAwarded: Boolean!
+    awardedAt: DateTime
+    items: [AdminAchievementItemProgress!]!
+    completedCount: Int!
+    totalCount: Int!
+}
+
+type AdminAchievementItemProgress {
+    contentItem: ContentItem!
+    completed: Boolean!
+    completedAt: DateTime
+    completeBy: DateTime
+    completedWithinDeadline: Boolean
+}
+
+type AdminExternalContentEvent {
+    id: ID!
+    taskId: String!
+    planId: String!
+    source: String!
+    receivedAt: DateTime!
+    consumedAt: DateTime
+    contentProgress: Float
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/push_notifications.graphqls", Input: `# ==================== Push Notification Types ====================
@@ -13158,6 +13355,38 @@ func (ec *executionContext) field_Query_achievements_args(ctx context.Context, r
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_adminCheckAchievementProgress_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["userId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "achievementId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["achievementId"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_adminExternalContentEvents_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["userId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "externalContentId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["externalContentId"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_adminScoreJournal_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -14183,6 +14412,345 @@ func (ec *executionContext) fieldContext_AchievementEdge_node(_ context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminAchievementItemProgress_contentItem(ctx context.Context, field graphql.CollectedField, obj *model.AdminAchievementItemProgress) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminAchievementItemProgress_contentItem,
+		func(ctx context.Context) (any, error) {
+			return obj.ContentItem, nil
+		},
+		nil,
+		ec.marshalNContentItem2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐContentItem,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminAchievementItemProgress_contentItem(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminAchievementItemProgress",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ContentItem_id(ctx, field)
+			case "externalContent":
+				return ec.fieldContext_ContentItem_externalContent(ctx, field)
+			case "sortOrder":
+				return ec.fieldContext_ContentItem_sortOrder(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ContentItem", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminAchievementItemProgress_completed(ctx context.Context, field graphql.CollectedField, obj *model.AdminAchievementItemProgress) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminAchievementItemProgress_completed,
+		func(ctx context.Context) (any, error) {
+			return obj.Completed, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminAchievementItemProgress_completed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminAchievementItemProgress",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminAchievementItemProgress_completedAt(ctx context.Context, field graphql.CollectedField, obj *model.AdminAchievementItemProgress) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminAchievementItemProgress_completedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CompletedAt, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminAchievementItemProgress_completedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminAchievementItemProgress",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminAchievementItemProgress_completeBy(ctx context.Context, field graphql.CollectedField, obj *model.AdminAchievementItemProgress) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminAchievementItemProgress_completeBy,
+		func(ctx context.Context) (any, error) {
+			return obj.CompleteBy, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminAchievementItemProgress_completeBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminAchievementItemProgress",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminAchievementItemProgress_completedWithinDeadline(ctx context.Context, field graphql.CollectedField, obj *model.AdminAchievementItemProgress) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminAchievementItemProgress_completedWithinDeadline,
+		func(ctx context.Context) (any, error) {
+			return obj.CompletedWithinDeadline, nil
+		},
+		nil,
+		ec.marshalOBoolean2ᚖbool,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminAchievementItemProgress_completedWithinDeadline(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminAchievementItemProgress",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminAchievementProgress_achievement(ctx context.Context, field graphql.CollectedField, obj *model.AdminAchievementProgress) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminAchievementProgress_achievement,
+		func(ctx context.Context) (any, error) {
+			return obj.Achievement, nil
+		},
+		nil,
+		ec.marshalNAchievement2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAchievement,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminAchievementProgress_achievement(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminAchievementProgress",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminAchievementProgress_alreadyAwarded(ctx context.Context, field graphql.CollectedField, obj *model.AdminAchievementProgress) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminAchievementProgress_alreadyAwarded,
+		func(ctx context.Context) (any, error) {
+			return obj.AlreadyAwarded, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminAchievementProgress_alreadyAwarded(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminAchievementProgress",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminAchievementProgress_awardedAt(ctx context.Context, field graphql.CollectedField, obj *model.AdminAchievementProgress) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminAchievementProgress_awardedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.AwardedAt, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminAchievementProgress_awardedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminAchievementProgress",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminAchievementProgress_items(ctx context.Context, field graphql.CollectedField, obj *model.AdminAchievementProgress) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminAchievementProgress_items,
+		func(ctx context.Context) (any, error) {
+			return obj.Items, nil
+		},
+		nil,
+		ec.marshalNAdminAchievementItemProgress2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAdminAchievementItemProgressᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminAchievementProgress_items(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminAchievementProgress",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "contentItem":
+				return ec.fieldContext_AdminAchievementItemProgress_contentItem(ctx, field)
+			case "completed":
+				return ec.fieldContext_AdminAchievementItemProgress_completed(ctx, field)
+			case "completedAt":
+				return ec.fieldContext_AdminAchievementItemProgress_completedAt(ctx, field)
+			case "completeBy":
+				return ec.fieldContext_AdminAchievementItemProgress_completeBy(ctx, field)
+			case "completedWithinDeadline":
+				return ec.fieldContext_AdminAchievementItemProgress_completedWithinDeadline(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminAchievementItemProgress", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminAchievementProgress_completedCount(ctx context.Context, field graphql.CollectedField, obj *model.AdminAchievementProgress) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminAchievementProgress_completedCount,
+		func(ctx context.Context) (any, error) {
+			return obj.CompletedCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminAchievementProgress_completedCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminAchievementProgress",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminAchievementProgress_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.AdminAchievementProgress) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminAchievementProgress_totalCount,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminAchievementProgress_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminAchievementProgress",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminDashboardStats_totalUsers(ctx context.Context, field graphql.CollectedField, obj *model.AdminDashboardStats) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -14352,6 +14920,209 @@ func (ec *executionContext) fieldContext_AdminDashboardStats_activeProjectsCount
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminExternalContentEvent_id(ctx context.Context, field graphql.CollectedField, obj *model.AdminExternalContentEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminExternalContentEvent_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminExternalContentEvent_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminExternalContentEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminExternalContentEvent_taskId(ctx context.Context, field graphql.CollectedField, obj *model.AdminExternalContentEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminExternalContentEvent_taskId,
+		func(ctx context.Context) (any, error) {
+			return obj.TaskID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminExternalContentEvent_taskId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminExternalContentEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminExternalContentEvent_planId(ctx context.Context, field graphql.CollectedField, obj *model.AdminExternalContentEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminExternalContentEvent_planId,
+		func(ctx context.Context) (any, error) {
+			return obj.PlanID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminExternalContentEvent_planId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminExternalContentEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminExternalContentEvent_source(ctx context.Context, field graphql.CollectedField, obj *model.AdminExternalContentEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminExternalContentEvent_source,
+		func(ctx context.Context) (any, error) {
+			return obj.Source, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminExternalContentEvent_source(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminExternalContentEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminExternalContentEvent_receivedAt(ctx context.Context, field graphql.CollectedField, obj *model.AdminExternalContentEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminExternalContentEvent_receivedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.ReceivedAt, nil
+		},
+		nil,
+		ec.marshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminExternalContentEvent_receivedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminExternalContentEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminExternalContentEvent_consumedAt(ctx context.Context, field graphql.CollectedField, obj *model.AdminExternalContentEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminExternalContentEvent_consumedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.ConsumedAt, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminExternalContentEvent_consumedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminExternalContentEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminExternalContentEvent_contentProgress(ctx context.Context, field graphql.CollectedField, obj *model.AdminExternalContentEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminExternalContentEvent_contentProgress,
+		func(ctx context.Context) (any, error) {
+			return obj.ContentProgress, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminExternalContentEvent_contentProgress(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminExternalContentEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
 		},
 	}
 	return fc, nil
@@ -39760,6 +40531,118 @@ func (ec *executionContext) fieldContext_Query_previewMissingStreakProgress(_ co
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_adminCheckAchievementProgress(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_adminCheckAchievementProgress,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().AdminCheckAchievementProgress(ctx, fc.Args["userId"].(string), fc.Args["achievementId"].(string))
+		},
+		nil,
+		ec.marshalNAdminAchievementProgress2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAdminAchievementProgress,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_adminCheckAchievementProgress(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "achievement":
+				return ec.fieldContext_AdminAchievementProgress_achievement(ctx, field)
+			case "alreadyAwarded":
+				return ec.fieldContext_AdminAchievementProgress_alreadyAwarded(ctx, field)
+			case "awardedAt":
+				return ec.fieldContext_AdminAchievementProgress_awardedAt(ctx, field)
+			case "items":
+				return ec.fieldContext_AdminAchievementProgress_items(ctx, field)
+			case "completedCount":
+				return ec.fieldContext_AdminAchievementProgress_completedCount(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_AdminAchievementProgress_totalCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminAchievementProgress", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_adminCheckAchievementProgress_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_adminExternalContentEvents(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_adminExternalContentEvents,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().AdminExternalContentEvents(ctx, fc.Args["userId"].(string), fc.Args["externalContentId"].(string))
+		},
+		nil,
+		ec.marshalNAdminExternalContentEvent2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAdminExternalContentEventᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_adminExternalContentEvents(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminExternalContentEvent_id(ctx, field)
+			case "taskId":
+				return ec.fieldContext_AdminExternalContentEvent_taskId(ctx, field)
+			case "planId":
+				return ec.fieldContext_AdminExternalContentEvent_planId(ctx, field)
+			case "source":
+				return ec.fieldContext_AdminExternalContentEvent_source(ctx, field)
+			case "receivedAt":
+				return ec.fieldContext_AdminExternalContentEvent_receivedAt(ctx, field)
+			case "consumedAt":
+				return ec.fieldContext_AdminExternalContentEvent_consumedAt(ctx, field)
+			case "contentProgress":
+				return ec.fieldContext_AdminExternalContentEvent_contentProgress(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminExternalContentEvent", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_adminExternalContentEvents_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_myPushNotificationPreferences(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -58440,6 +59323,117 @@ func (ec *executionContext) _AchievementEdge(ctx context.Context, sel ast.Select
 	return out
 }
 
+var adminAchievementItemProgressImplementors = []string{"AdminAchievementItemProgress"}
+
+func (ec *executionContext) _AdminAchievementItemProgress(ctx context.Context, sel ast.SelectionSet, obj *model.AdminAchievementItemProgress) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminAchievementItemProgressImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminAchievementItemProgress")
+		case "contentItem":
+			out.Values[i] = ec._AdminAchievementItemProgress_contentItem(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "completed":
+			out.Values[i] = ec._AdminAchievementItemProgress_completed(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "completedAt":
+			out.Values[i] = ec._AdminAchievementItemProgress_completedAt(ctx, field, obj)
+		case "completeBy":
+			out.Values[i] = ec._AdminAchievementItemProgress_completeBy(ctx, field, obj)
+		case "completedWithinDeadline":
+			out.Values[i] = ec._AdminAchievementItemProgress_completedWithinDeadline(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminAchievementProgressImplementors = []string{"AdminAchievementProgress"}
+
+func (ec *executionContext) _AdminAchievementProgress(ctx context.Context, sel ast.SelectionSet, obj *model.AdminAchievementProgress) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminAchievementProgressImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminAchievementProgress")
+		case "achievement":
+			out.Values[i] = ec._AdminAchievementProgress_achievement(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "alreadyAwarded":
+			out.Values[i] = ec._AdminAchievementProgress_alreadyAwarded(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "awardedAt":
+			out.Values[i] = ec._AdminAchievementProgress_awardedAt(ctx, field, obj)
+		case "items":
+			out.Values[i] = ec._AdminAchievementProgress_items(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "completedCount":
+			out.Values[i] = ec._AdminAchievementProgress_completedCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._AdminAchievementProgress_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var adminDashboardStatsImplementors = []string{"AdminDashboardStats"}
 
 func (ec *executionContext) _AdminDashboardStats(ctx context.Context, sel ast.SelectionSet, obj *model.AdminDashboardStats) graphql.Marshaler {
@@ -58481,6 +59475,69 @@ func (ec *executionContext) _AdminDashboardStats(ctx context.Context, sel ast.Se
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminExternalContentEventImplementors = []string{"AdminExternalContentEvent"}
+
+func (ec *executionContext) _AdminExternalContentEvent(ctx context.Context, sel ast.SelectionSet, obj *model.AdminExternalContentEvent) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminExternalContentEventImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminExternalContentEvent")
+		case "id":
+			out.Values[i] = ec._AdminExternalContentEvent_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "taskId":
+			out.Values[i] = ec._AdminExternalContentEvent_taskId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "planId":
+			out.Values[i] = ec._AdminExternalContentEvent_planId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "source":
+			out.Values[i] = ec._AdminExternalContentEvent_source(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "receivedAt":
+			out.Values[i] = ec._AdminExternalContentEvent_receivedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "consumedAt":
+			out.Values[i] = ec._AdminExternalContentEvent_consumedAt(ctx, field, obj)
+		case "contentProgress":
+			out.Values[i] = ec._AdminExternalContentEvent_contentProgress(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -66507,6 +67564,50 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "adminCheckAchievementProgress":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_adminCheckAchievementProgress(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "adminExternalContentEvents":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_adminExternalContentEvents(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "myPushNotificationPreferences":
 			field := field
 
@@ -73280,6 +74381,68 @@ func (ec *executionContext) unmarshalNAchievementFilter2githubᚗcomᚋbccᚑmed
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalNAdminAchievementItemProgress2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAdminAchievementItemProgress(ctx context.Context, sel ast.SelectionSet, v model.AdminAchievementItemProgress) graphql.Marshaler {
+	return ec._AdminAchievementItemProgress(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminAchievementItemProgress2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAdminAchievementItemProgressᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AdminAchievementItemProgress) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminAchievementItemProgress2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAdminAchievementItemProgress(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminAchievementProgress2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAdminAchievementProgress(ctx context.Context, sel ast.SelectionSet, v model.AdminAchievementProgress) graphql.Marshaler {
+	return ec._AdminAchievementProgress(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminAchievementProgress2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAdminAchievementProgress(ctx context.Context, sel ast.SelectionSet, v *model.AdminAchievementProgress) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminAchievementProgress(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdminDashboardStats2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAdminDashboardStats(ctx context.Context, sel ast.SelectionSet, v model.AdminDashboardStats) graphql.Marshaler {
 	return ec._AdminDashboardStats(ctx, sel, &v)
 }
@@ -73292,6 +74455,54 @@ func (ec *executionContext) marshalNAdminDashboardStats2ᚖgithubᚗcomᚋbccᚑ
 		return graphql.Null
 	}
 	return ec._AdminDashboardStats(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminExternalContentEvent2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAdminExternalContentEvent(ctx context.Context, sel ast.SelectionSet, v model.AdminExternalContentEvent) graphql.Marshaler {
+	return ec._AdminExternalContentEvent(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminExternalContentEvent2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAdminExternalContentEventᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AdminExternalContentEvent) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminExternalContentEvent2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAdminExternalContentEvent(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalNAgeGroupStats2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAgeGroupStats(ctx context.Context, sel ast.SelectionSet, v model.AgeGroupStats) graphql.Marshaler {
@@ -73986,6 +75197,16 @@ func (ec *executionContext) marshalNContentItem2ᚕgithubᚗcomᚋbccᚑmediaᚋ
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalNContentItem2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐContentItem(ctx context.Context, sel ast.SelectionSet, v *model.ContentItem) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ContentItem(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNContentItemInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐContentItemInput(ctx context.Context, v any) (model.ContentItemInput, error) {

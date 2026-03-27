@@ -231,7 +231,7 @@ const isChurchLocked = computed(() => {
 })
 
 // Permissions
-const { canAssignRoles } = usePermissions()
+const { canAssignRoles, canCheckAchievements } = usePermissions()
 
 const roleLabels: Record<RoleType, string> = {
   [RoleType.User]: 'Bruker',
@@ -506,14 +506,27 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
             <h1 class="text-3xl font-bold">{{ data.user.name }}</h1>
             <p class="text-dimmed text-lg">{{ data.user.email }}</p>
           </div>
-          <UButton
-            icon="i-lucide-refresh-cw"
-            variant="soft"
-            :loading="syncing"
-            @click="handleSyncUser"
-          >
-            Synkroniser
-          </UButton>
+          <div class="flex gap-2">
+            <UButton
+              v-if="canCheckAchievements"
+              icon="i-lucide-trophy"
+              variant="soft"
+              :to="{
+                name: 'admin-users-userId-achievements',
+                params: { userId: route.params.userId },
+              }"
+            >
+              Sjekk prestasjoner
+            </UButton>
+            <UButton
+              icon="i-lucide-refresh-cw"
+              variant="soft"
+              :loading="syncing"
+              @click="handleSyncUser"
+            >
+              Synkroniser
+            </UButton>
+          </div>
         </div>
 
         <!-- User Info -->

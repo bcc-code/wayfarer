@@ -4,6 +4,10 @@ extend type Query {
     previewMissingContentProgress(first: Int, after: String): MissingContentProgressPreview! @requireRole(roles: ["superadmin"])
     previewMissingScoreJournal(achievementId: ID!, first: Int, after: String): MissingScoreJournalPreview! @requireRole(roles: ["superadmin"])
     previewMissingStreakProgress: MissingStreakProgressPreview! @requireRole(roles: ["superadmin"])
+
+    # Check achievement progress for a specific user (superadmin enforced in resolver)
+    adminCheckAchievementProgress(userId: ID!, achievementId: ID!): AdminAchievementProgress!
+    adminExternalContentEvents(userId: ID!, externalContentId: ID!): [AdminExternalContentEvent!]!
 }
 
 extend type Mutation {
@@ -87,4 +91,33 @@ type MissingScoreJournalPreview {
     affectedUsers: [MissingScoreJournalUser!]!
     totalUsers: Int!
     totalEvents: Int!
+}
+
+# Admin achievement progress check types
+
+type AdminAchievementProgress {
+    achievement: Achievement!
+    alreadyAwarded: Boolean!
+    awardedAt: DateTime
+    items: [AdminAchievementItemProgress!]!
+    completedCount: Int!
+    totalCount: Int!
+}
+
+type AdminAchievementItemProgress {
+    contentItem: ContentItem!
+    completed: Boolean!
+    completedAt: DateTime
+    completeBy: DateTime
+    completedWithinDeadline: Boolean
+}
+
+type AdminExternalContentEvent {
+    id: ID!
+    taskId: String!
+    planId: String!
+    source: String!
+    receivedAt: DateTime!
+    consumedAt: DateTime
+    contentProgress: Float
 }

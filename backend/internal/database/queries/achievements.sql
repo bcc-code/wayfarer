@@ -809,3 +809,19 @@ WHERE a.project_id = @project_id::text
     SELECT 1 FROM streak_achievement_items sai
     WHERE sai.achievement_id = a.id
   );
+
+-- name: GetContentItemsWithDeadlines :many
+-- Get content achievement items with external content details including complete_by deadline
+SELECT cai.id, cai.achievement_id, cai.external_content_id, cai.sort_order, ec.complete_by
+FROM content_achievement_items cai
+INNER JOIN external_content ec ON cai.external_content_id = ec.id
+WHERE cai.achievement_id = @achievement_id::text
+ORDER BY cai.sort_order;
+
+-- name: GetStreakItemsWithDeadlines :many
+-- Get streak achievement items with external content details including complete_by deadline
+SELECT sai.id, sai.achievement_id, sai.external_content_id, sai.sort_order, ec.complete_by
+FROM streak_achievement_items sai
+INNER JOIN external_content ec ON sai.external_content_id = ec.id
+WHERE sai.achievement_id = @achievement_id::text
+ORDER BY sai.sort_order;
