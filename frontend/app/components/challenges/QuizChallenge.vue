@@ -168,30 +168,32 @@ const isNotSubmitted = computed(() => {
   return props.challenge.quiz.userSubmissions.length === 0
 })
 
-onMounted(async () => {
+onMounted(() => {
   track(AnalyticsEvent.ChallengeOpened, {
     challenge_id: props.challenge.id,
     challenge_name: props.challenge.name,
     challenge_type: 'quiz',
   })
-
-  // If there's no active submission and we have a session, start the quiz
-  if (needsToStartQuiz.value && props.challenge.quiz.userActiveSession?.id) {
-    const result = await startQuizSession({
-      sessionId: props.challenge.quiz.userActiveSession.id,
-    })
-    if (result.data?.startQuizSession) {
-      startedSubmission.value = result.data.startQuizSession
-    }
-    isLoading.value = false
-    emit('start')
-    track(AnalyticsEvent.QuizStarted, {
-      quiz_id: props.challenge.quiz.id,
-      quiz_name: props.challenge.name,
-      challenge_id: props.challenge.id,
-    })
-  }
 })
+
+// Watch for needsToStartQuiz transitions (handles both initial mount and post-enrollment refresh)
+watch(needsToStartQuiz, async (needs) => {
+  if (!needs || !props.challenge.quiz.userActiveSession?.id) return
+  isLoading.value = true
+  const result = await startQuizSession({
+    sessionId: props.challenge.quiz.userActiveSession.id,
+  })
+  if (result.data?.startQuizSession) {
+    startedSubmission.value = result.data.startQuizSession
+  }
+  isLoading.value = false
+  emit('start')
+  track(AnalyticsEvent.QuizStarted, {
+    quiz_id: props.challenge.quiz.id,
+    quiz_name: props.challenge.name,
+    challenge_id: props.challenge.id,
+  })
+}, { immediate: true })
 
 const activeSubmission = computed(() => {
   // Determine the target submission ID
