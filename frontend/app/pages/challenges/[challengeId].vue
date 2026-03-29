@@ -37,7 +37,11 @@ watch(
 
     try {
       await enrollInChallenge({ challengeId: route.params.challengeId })
-      refresh({ requestPolicy: 'network-only' })
+      const result = await refresh({ requestPolicy: 'network-only' })
+      if (result.data?.value?.challenge?.__typename === 'ExternalChallenge') {
+        navigateTo(result.data.value.challenge.url, { external: true })
+        return
+      }
     } catch {
       // Silently handle — page still loads normally
     } finally {
@@ -46,6 +50,13 @@ watch(
   },
   { immediate: true },
 )
+
+// Redirect to external URL for ExternalChallenge (e.g. direct navigation or shared link)
+watch(data, (d) => {
+  if (d?.challenge?.__typename === 'ExternalChallenge') {
+    navigateTo(d.challenge.url, { external: true })
+  }
+})
 
 const isInitialLoading = computed(
   () => (fetching.value && !data.value) || isEnrolling.value,
