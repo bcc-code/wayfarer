@@ -47,17 +47,6 @@ query ProfilePage($ageFilter: LeaderboardFilter) {
       achievedAt
       celebratedAt
       points
-      ... on ContentAchievement {
-        nextItem {
-          id
-          sortOrder
-          externalContent {
-            id
-            title
-            url
-          }
-        }
-      }
     }
     myPoints
     leaderboard(entityType: PERSONS, filter: $ageFilter) {
