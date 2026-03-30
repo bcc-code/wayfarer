@@ -1,71 +1,60 @@
 <script setup lang="ts">
-import { QuizSessionState } from '~/api/generated'
-
 const { isAuthReady } = useAuthReady()
 
 const {
-  data,
-  fetching,
-  error,
-  executeQuery: refresh,
-} = useChallengesPageQuery({
+  data: activeData,
+  fetching: activeFetching,
+  error: activeError,
+  executeQuery: refreshActive,
+} = useActiveChallengesPageQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
 // Listen for Firestore realtime updates
-useFirestoreRefresh(['ChallengesPageDocument'], () => {
-  refresh({ requestPolicy: 'network-only' })
+useFirestoreRefresh(['ActiveChallengesPageDocument'], () => {
+  refreshActive({ requestPolicy: 'network-only' })
 })
 
-const isInitialLoading = computed(() => fetching.value && !data.value)
+const tab = ref<'active' | 'completed'>('active')
 
-const activeChallenges = computed(() =>
-  data.value?.myCurrentProject.challenges.filter((challenge) => {
-    const challengePastEndTime =
-      challenge.endTime && new Date(challenge.endTime).getTime() < Date.now()
+// Lazy-load completed challenges only when the tab is selected
+const completedTabSelected = ref(false)
+watch(tab, (newTab) => {
+  if (newTab === 'completed') {
+    completedTabSelected.value = true
+  }
+})
 
-    if (challenge.__typename === 'QuizChallenge') {
-      const quizPastEndTime =
-        challenge.quiz.endTime &&
-        new Date(challenge.quiz.endTime).getTime() < Date.now()
-      const quizCompleted = challenge.quiz.userSubmissions?.some(
-        (s) => s.completedAt,
-      )
+const {
+  data: completedData,
+  fetching: completedFetching,
+  executeQuery: refreshCompleted,
+} = useCompletedChallengesPageQuery({
+  pause: computed(() => !isAuthReady.value || !completedTabSelected.value),
+})
 
-      return !quizCompleted && !challengePastEndTime && !quizPastEndTime
-    }
+useFirestoreRefresh(['CompletedChallengesPageDocument'], () => {
+  if (completedTabSelected.value) {
+    refreshCompleted({ requestPolicy: 'network-only' })
+  }
+})
 
-    return !challenge.userCompletedAt && !challengePastEndTime
-  }),
-)
+const isInitialLoading = computed(() => {
+  if (tab.value === 'active') {
+    return activeFetching.value && !activeData.value
+  }
+  return completedFetching.value && !completedData.value
+})
 
-const completedChallenges = computed(() =>
-  data.value?.myCurrentProject.challenges.filter((challenge) => {
-    const challengePastEndTime =
-      challenge.endTime && new Date(challenge.endTime).getTime() < Date.now()
-
-    if (challenge.__typename === 'QuizChallenge') {
-      const quizPastEndTime =
-        challenge.quiz.endTime &&
-        new Date(challenge.quiz.endTime).getTime() < Date.now()
-      const quizCompleted = challenge.quiz.userSubmissions?.some(
-        (s) => s.completedAt,
-      )
-
-      return quizCompleted || challengePastEndTime || quizPastEndTime
-    }
-
-    return Boolean(challenge.userCompletedAt) || challengePastEndTime
-  }),
-)
+const tabChallenges = computed(() => {
+  if (tab.value === 'active') {
+    return activeData.value?.myCurrentProject.activeChallenges
+  }
+  return completedData.value?.myCurrentProject.completedChallenges
+})
 
 const joinCode = computed(() =>
-  data.value?.myCurrentProject.myTeam?.joinCode.split(''),
-)
-
-const tab = ref<'active' | 'completed'>('active')
-const tabChallenges = computed(() =>
-  tab.value === 'active' ? activeChallenges.value : completedChallenges.value,
+  activeData.value?.myCurrentProject.myTeam?.joinCode.split(''),
 )
 </script>
 
@@ -85,7 +74,7 @@ const tabChallenges = computed(() =>
       />
     </div>
     <LoadingState v-if="isInitialLoading" />
-    <ErrorState v-else-if="error" :error />
+    <ErrorState v-else-if="activeError" :error="activeError" />
     <div v-else class="space-y-list-section-gap p-list-outside mt-3 grow">
       <template v-for="challenge in tabChallenges" :key="challenge.id">
         <!-- This is very specific for the Ladder to Heaven project, and should be more generic later on -->

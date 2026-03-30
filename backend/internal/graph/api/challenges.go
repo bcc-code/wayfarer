@@ -1,16 +1,204 @@
 package api
 
 import (
+	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
+	"github.com/bcc-media/wayfarer/internal/loaders"
+	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+// challengeFilterMode controls which challenges are returned by getFilteredChallenges.
+type challengeFilterMode int
+
+const (
+	challengeFilterAll       challengeFilterMode = iota // All visible challenges (same as current Challenges resolver)
+	challengeFilterActive                               // Not completed by user AND not past end time
+	challengeFilterCompleted                            // Completed by user OR past end time
+)
+
+// getFilteredChallenges loads visible challenges for a project, optionally filtering by completion status.
+// Uses batch queries for session access and enrollment to avoid N+1 sequential calls.
+func (r *Resolver) getFilteredChallenges(ctx context.Context, projectID string, mode challengeFilterMode) ([]model.Challenge, error) {
+	thunk := r.Loaders.ChallengesByProjectLoader.Load(ctx, projectID)
+	challenges, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load challenges: %w", err)
+	}
+
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+	now := time.Now()
+
+	// Step 1: Categorize challenges and batch-load quiz data
+	quizChallengeIDs := make([]string, 0)
+	for _, ch := range challenges {
+		if _, ok := ch.(*model.QuizChallenge); ok {
+			quizChallengeIDs = append(quizChallengeIDs, ch.GetID())
+		}
+	}
+
+	// Batch load quizzes for all quiz challenges at once
+	quizByChallenge := make(map[string]*model.Quiz)
+	if len(quizChallengeIDs) > 0 {
+		quizThunks := r.Loaders.QuizByChallengeIDLoader.LoadMany(ctx, quizChallengeIDs)
+		quizResults, _ := quizThunks()
+		for i, q := range quizResults {
+			if q != nil {
+				quizByChallenge[quizChallengeIDs[i]] = q
+			}
+		}
+	}
+
+	// Step 2: Batch check session access for all quiz challenges
+	sessionAccessQuizIDs := make(map[string]bool)
+	if len(quizByChallenge) > 0 {
+		quizIDs := make([]string, 0, len(quizByChallenge))
+		for _, q := range quizByChallenge {
+			quizIDs = append(quizIDs, q.ID)
+		}
+		accessibleQuizIDs, err := r.DB.Queries.GetBulkUserSessionAccessQuizIDs(ctx, sqlc.GetBulkUserSessionAccessQuizIDsParams{
+			Quizids: quizIDs,
+			Userid:  userID,
+		})
+		if err == nil {
+			for _, qid := range accessibleQuizIDs {
+				sessionAccessQuizIDs[qid] = true
+			}
+		}
+	}
+
+	// Step 3: Batch load enrolled challenge IDs for this user+project
+	enrolledChallengeIDs := make(map[string]bool)
+	enrolledIDs, err := r.DB.Queries.GetUserEnrolledChallengeIDsInProject(ctx, sqlc.GetUserEnrolledChallengeIDsInProjectParams{
+		Userid:    userID,
+		Projectid: projectID,
+	})
+	if err == nil {
+		for _, id := range enrolledIDs {
+			enrolledChallengeIDs[id] = true
+		}
+	}
+
+	// Step 4: Filter using pre-fetched batch data (no translations yet)
+	visible := make([]model.Challenge, 0, len(challenges))
+	for _, ch := range challenges {
+		if _, ok := ch.(*model.QuizChallenge); ok {
+			quiz := quizByChallenge[ch.GetID()]
+			if quiz != nil && sessionAccessQuizIDs[quiz.ID] {
+				visible = append(visible, ch)
+			}
+			continue
+		}
+
+		publishedAt := getChallengePublishedAt(ch)
+		if publishedAt == nil || publishedAt.After(now) {
+			continue
+		}
+
+		visibleAt := getChallengeVisibleAt(ch)
+		isVisible := visibleAt != nil && !visibleAt.After(now)
+
+		if !isVisible && !enrolledChallengeIDs[ch.GetID()] {
+			continue
+		}
+
+		visible = append(visible, ch)
+	}
+
+	// Step 5: Filter by completion status if needed
+	var finalChallenges []model.Challenge
+	if mode == challengeFilterAll {
+		finalChallenges = visible
+	} else {
+		// Load completion timestamps in batch for all visible challenges
+		completionKeys := make([]loaders.UserChallengeKey, len(visible))
+		for i, ch := range visible {
+			completionKeys[i] = loaders.UserChallengeKey{UserID: userID, ChallengeID: ch.GetID()}
+		}
+
+		completionThunk := r.Loaders.UserChallengeCompletionTimestampLoader.LoadMany(ctx, completionKeys)
+		completionTimestamps, _ := completionThunk()
+
+		finalChallenges = make([]model.Challenge, 0, len(visible))
+		for i, ch := range visible {
+			endTime := ch.GetEndTime()
+			pastEndTime := endTime != nil && endTime.Time.Before(now)
+
+			var completed bool
+			if i < len(completionTimestamps) && completionTimestamps[i] != nil {
+				completed = true
+			}
+
+			isCompleted := completed || pastEndTime
+
+			switch mode {
+			case challengeFilterActive:
+				if !isCompleted {
+					finalChallenges = append(finalChallenges, ch)
+				}
+			case challengeFilterCompleted:
+				if isCompleted {
+					finalChallenges = append(finalChallenges, ch)
+				}
+			}
+		}
+	}
+
+	// Step 6: Apply translations in batch after all filtering is done
+	r.applyTranslationsToChallenges(ctx, finalChallenges)
+
+	r.sortChallengesByEnrollment(ctx, userID, finalChallenges)
+	return finalChallenges, nil
+}
+
+// sortChallengesByEnrollment sorts challenges with enrolled first (by enrolled_at DESC),
+// then non-enrolled (by published_at DESC).
+func (r *Resolver) sortChallengesByEnrollment(ctx context.Context, userID string, challenges []model.Challenge) {
+	if len(challenges) == 0 {
+		return
+	}
+
+	keys := make([]loaders.UserChallengeKey, len(challenges))
+	for i, ch := range challenges {
+		keys[i] = loaders.UserChallengeKey{UserID: userID, ChallengeID: ch.GetID()}
+	}
+
+	thunk := r.Loaders.UserChallengeEnrollmentTimestampLoader.LoadMany(ctx, keys)
+	timestamps, _ := thunk()
+	enrollmentTimes := make(map[string]*time.Time, len(challenges))
+	for i, ts := range timestamps {
+		enrollmentTimes[challenges[i].GetID()] = ts
+	}
+
+	sort.Slice(challenges, func(i, j int) bool {
+		tsI := enrollmentTimes[challenges[i].GetID()]
+		tsJ := enrollmentTimes[challenges[j].GetID()]
+
+		if (tsI != nil) != (tsJ != nil) {
+			return tsI != nil
+		}
+		if tsI != nil && tsJ != nil {
+			return tsI.After(*tsJ)
+		}
+		pubI := challenges[i].GetPublishedAt()
+		pubJ := challenges[j].GetPublishedAt()
+		if pubI != nil && pubJ != nil {
+			return pubI.Time.After(pubJ.Time)
+		}
+		return pubI != nil
+	})
+}
 
 // ChallengeType constants
 const (

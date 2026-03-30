@@ -8,8 +8,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sort"
-	"time"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
@@ -423,102 +421,47 @@ func (r *projectResolver) InfoMessage(ctx context.Context, obj *model.Project) (
 
 // Challenges is the resolver for the challenges field.
 func (r *projectResolver) Challenges(ctx context.Context, obj *model.Project) ([]model.Challenge, error) {
-	thunk := r.Loaders.ChallengesByProjectLoader.Load(ctx, obj.ID)
-	challenges, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load challenges: %w", err)
-	}
+	return r.getFilteredChallenges(ctx, obj.ID, challengeFilterAll)
+}
 
+// ActiveChallenges is the resolver for the activeChallenges field.
+func (r *projectResolver) ActiveChallenges(ctx context.Context, obj *model.Project) ([]model.Challenge, error) {
+	return r.getFilteredChallenges(ctx, obj.ID, challengeFilterActive)
+}
+
+// CompletedChallenges is the resolver for the completedChallenges field.
+func (r *projectResolver) CompletedChallenges(ctx context.Context, obj *model.Project) ([]model.Challenge, error) {
+	return r.getFilteredChallenges(ctx, obj.ID, challengeFilterCompleted)
+}
+
+// ActiveChallengesCount is the resolver for the activeChallengesCount field.
+func (r *projectResolver) ActiveChallengesCount(ctx context.Context, obj *model.Project) (int, error) {
 	userID, _ := middleware.GetUserID(ctx)
 
-	result := make([]model.Challenge, 0, len(challenges))
-	for _, ch := range challenges {
-		// For quiz challenges, check session access first
-		if _, ok := ch.(*model.QuizChallenge); ok && userID != "" {
-			quizThunk := r.Loaders.QuizByChallengeIDLoader.Load(ctx, ch.GetID())
-			quiz, err := quizThunk()
-			if err == nil && quiz != nil {
-				hasAccess, err := r.DB.Queries.UserHasAccessToVisibleSession(ctx, sqlc.UserHasAccessToVisibleSessionParams{
-					Quizid: quiz.ID,
-					Userid: userID,
-				})
-				if err == nil && hasAccess {
-					// Session access grants visibility regardless of publishedAt
-					result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
-					continue
-				}
+	// Check cache for authenticated users
+	if userID != "" {
+		cacheKey := cache.ActiveChallengesCountKey(userID, obj.ID)
+		if cached, ok := r.Cache.Get(cacheKey); ok {
+			if count, ok := cached.(int); ok {
+				return count, nil
 			}
-			// Quiz without session access: skip this challenge entirely
-			continue
 		}
-
-		// Check publishedAt
-		publishedAt := getChallengePublishedAt(ch)
-		if publishedAt == nil || publishedAt.After(time.Now()) {
-			continue // Skip unpublished
-		}
-
-		// Check visibility (enrolled OR visible_at in past)
-		visibleAt := getChallengeVisibleAt(ch)
-		isVisible := visibleAt != nil && !visibleAt.After(time.Now())
-
-		if !isVisible && userID != "" {
-			enrolled, err := r.DB.Queries.IsUserEnrolledInChallenge(ctx, sqlc.IsUserEnrolledInChallengeParams{
-				Userid:      userID,
-				Challengeid: ch.GetID(),
-			})
-			if err != nil || !enrolled {
-				continue // Skip not enrolled
-			}
-		} else if !isVisible {
-			continue // Skip not visible
-		}
-
-		result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
 	}
 
-	// Sort by enrollment time if user is authenticated
-	if userID != "" && len(result) > 0 {
-		// Build keys for enrollment timestamp lookup
-		keys := make([]loaders.UserChallengeKey, len(result))
-		for i, ch := range result {
-			keys[i] = loaders.UserChallengeKey{UserID: userID, ChallengeID: ch.GetID()}
-		}
-
-		// Load all enrollment timestamps in batch
-		thunk := r.Loaders.UserChallengeEnrollmentTimestampLoader.LoadMany(ctx, keys)
-		timestamps, _ := thunk()
-		enrollmentTimes := make(map[string]*time.Time)
-		for i, ts := range timestamps {
-			enrollmentTimes[result[i].GetID()] = ts
-		}
-
-		// Sort: enrolled first (by enrolled_at DESC), then non-enrolled (by published_at DESC)
-		sort.Slice(result, func(i, j int) bool {
-			tsI := enrollmentTimes[result[i].GetID()]
-			tsJ := enrollmentTimes[result[j].GetID()]
-
-			// Enrolled challenges come first
-			if (tsI != nil) != (tsJ != nil) {
-				return tsI != nil
-			}
-
-			// Both enrolled: sort by enrolled_at DESC
-			if tsI != nil && tsJ != nil {
-				return tsI.After(*tsJ)
-			}
-
-			// Both not enrolled: sort by published_at DESC
-			pubI := result[i].GetPublishedAt()
-			pubJ := result[j].GetPublishedAt()
-			if pubI != nil && pubJ != nil {
-				return pubI.Time.After(pubJ.Time)
-			}
-			return pubI != nil // Non-nil published_at comes first
-		})
+	challenges, err := r.getFilteredChallenges(ctx, obj.ID, challengeFilterActive)
+	if err != nil {
+		return 0, err
 	}
 
-	return result, nil
+	count := len(challenges)
+
+	// Cache the result for authenticated users
+	if userID != "" {
+		cacheKey := cache.ActiveChallengesCountKey(userID, obj.ID)
+		r.Cache.Set(cacheKey, count)
+	}
+
+	return count, nil
 }
 
 // Leaderboard is the resolver for the leaderboard field.

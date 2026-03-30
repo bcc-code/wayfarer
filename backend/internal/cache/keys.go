@@ -102,6 +102,9 @@ const (
 
 	// User project points (myPoints field)
 	PrefixUserProjectPoints = "userprojectpoints:"
+
+	// Active challenges count per user+project
+	PrefixActiveChallengesCount = "activechallengescount:"
 )
 
 // Key builders for different entity types
@@ -321,6 +324,11 @@ func UserChallengeEnrollmentKey(userID string, challengeID string) string {
 // UserChallengeCompletionKey builds a cache key for user challenge completion timestamp
 func UserChallengeCompletionKey(userID string, challengeID string) string {
 	return fmt.Sprintf("%s%s:%s", PrefixUserChallengeCompletions, userID, challengeID)
+}
+
+// ActiveChallengesCountKey builds a cache key for the active challenges count per user+project
+func ActiveChallengesCountKey(userID string, projectID string) string {
+	return fmt.Sprintf("%s%s:%s", PrefixActiveChallengesCount, userID, projectID)
 }
 
 // TeamMembersByTeamKey builds a cache key for team members

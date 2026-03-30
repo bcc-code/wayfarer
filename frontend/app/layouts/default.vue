@@ -82,11 +82,9 @@ onMounted(() => {
   }
 })
 
-const availableChallengesBadge = computed(() => {
-  return data.value?.myCurrentProject.challenges.filter(
-    (challenge) => !challenge.userCompletedAt,
-  )?.length
-})
+const availableChallengesBadge = computed(
+  () => data.value?.myCurrentProject.activeChallengesCount,
+)
 
 const links = computed<NavigationMenuItem[]>(() => [
   {
@@ -115,11 +113,7 @@ gql(`
       branding {
         ...BrandingFields
       }
-      challenges {
-        id
-        userCompletedAt
-        endTime
-      }
+      activeChallengesCount
     }
   }
 `)

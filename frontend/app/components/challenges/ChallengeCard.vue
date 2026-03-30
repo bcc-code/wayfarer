@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const props = defineProps<{
-  challenge: ChallengesPageQuery['myCurrentProject']['challenges'][number]
+  challenge: ActiveChallengesPageQuery['myCurrentProject']['activeChallenges'][number]
 }>()
 
 const { track } = useAnalytics()

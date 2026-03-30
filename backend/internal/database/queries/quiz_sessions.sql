@@ -269,3 +269,12 @@ SELECT EXISTS (
         AND qsa.user_id = @userid::text
         AND qs.state IN ('OPEN', 'LOCKED', 'FINISHED')
 ) AS has_access;
+
+-- name: GetBulkUserSessionAccessQuizIDs :many
+-- Returns quiz_ids that the user has access to from the given list
+SELECT DISTINCT qs.quiz_id
+FROM quiz_sessions qs
+JOIN quiz_session_access qsa ON qsa.session_id = qs.id
+WHERE qs.quiz_id = ANY(@quizids::text[])
+    AND qsa.user_id = @userid::text
+    AND qs.state IN ('OPEN', 'LOCKED', 'FINISHED');

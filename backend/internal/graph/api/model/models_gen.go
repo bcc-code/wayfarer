@@ -1327,29 +1327,32 @@ func (this PredefinedResponse) GetBetAmount() *int               { return this.B
 func (this PredefinedResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
 
 type Project struct {
-	ID                string                   `json:"id"`
-	Name              string                   `json:"name"`
-	Description       string                   `json:"description"`
-	Rules             *MarkdownText            `json:"rules,omitempty"`
-	InfoMessage       *MarkdownText            `json:"infoMessage,omitempty"`
-	InfoMessageStart  *scalars.DateTime        `json:"infoMessageStart,omitempty"`
-	InfoMessageEnd    *scalars.DateTime        `json:"infoMessageEnd,omitempty"`
-	Challenges        []Challenge              `json:"challenges"`
-	Leaderboard       *LeaderboardConnection   `json:"leaderboard"`
-	Events            []Event                  `json:"events"`
-	StartDate         scalars.DateTime         `json:"startDate"`
-	EndDate           scalars.DateTime         `json:"endDate"`
-	Branding          *Branding                `json:"branding"`
-	Teams             []Team                   `json:"teams"`
-	MyChurchTeams     []Team                   `json:"myChurchTeams"`
-	MyTeam            *Team                    `json:"myTeam,omitempty"`
-	Achievements      []Achievement            `json:"achievements"`
-	Journal           *ScoreJournalConnection  `json:"journal"`
-	MyPoints          int                      `json:"myPoints"`
-	ArchivedAt        *bool                    `json:"archivedAt,omitempty"`
-	TranslationStatus []TranslationFieldStatus `json:"translationStatus"`
-	InfoMessageRaw    *string                  `json:"-"`
-	RulesRaw          *string                  `json:"-"`
+	ID                    string                   `json:"id"`
+	Name                  string                   `json:"name"`
+	Description           string                   `json:"description"`
+	Rules                 *MarkdownText            `json:"rules,omitempty"`
+	InfoMessage           *MarkdownText            `json:"infoMessage,omitempty"`
+	InfoMessageStart      *scalars.DateTime        `json:"infoMessageStart,omitempty"`
+	InfoMessageEnd        *scalars.DateTime        `json:"infoMessageEnd,omitempty"`
+	Challenges            []Challenge              `json:"challenges"`
+	ActiveChallenges      []Challenge              `json:"activeChallenges"`
+	CompletedChallenges   []Challenge              `json:"completedChallenges"`
+	ActiveChallengesCount int                      `json:"activeChallengesCount"`
+	Leaderboard           *LeaderboardConnection   `json:"leaderboard"`
+	Events                []Event                  `json:"events"`
+	StartDate             scalars.DateTime         `json:"startDate"`
+	EndDate               scalars.DateTime         `json:"endDate"`
+	Branding              *Branding                `json:"branding"`
+	Teams                 []Team                   `json:"teams"`
+	MyChurchTeams         []Team                   `json:"myChurchTeams"`
+	MyTeam                *Team                    `json:"myTeam,omitempty"`
+	Achievements          []Achievement            `json:"achievements"`
+	Journal               *ScoreJournalConnection  `json:"journal"`
+	MyPoints              int                      `json:"myPoints"`
+	ArchivedAt            *bool                    `json:"archivedAt,omitempty"`
+	TranslationStatus     []TranslationFieldStatus `json:"translationStatus"`
+	InfoMessageRaw        *string                  `json:"-"`
+	RulesRaw              *string                  `json:"-"`
 }
 
 type ProjectConnection struct {

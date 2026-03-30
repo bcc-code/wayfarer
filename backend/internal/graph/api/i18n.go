@@ -203,6 +203,37 @@ func (r *Resolver) ApplyTranslationToEvent(ctx context.Context, event *model.Eve
 	return &translated
 }
 
+// applyTranslationsToChallenges applies translations to a slice of challenges in a single batch.
+// Modifies the slice in-place by replacing elements with their translated versions.
+func (r *Resolver) applyTranslationsToChallenges(ctx context.Context, challenges []model.Challenge) {
+	if len(challenges) == 0 {
+		return
+	}
+
+	lang := middleware.GetLanguage(ctx)
+	if lang == middleware.DefaultLanguage {
+		return
+	}
+
+	keys := make([]loaders.TranslationKey, len(challenges))
+	for i, ch := range challenges {
+		keys[i] = loaders.TranslationKey{
+			EntityType: "challenge",
+			EntityID:   getChallengeID(ch),
+			LangCode:   lang,
+		}
+	}
+
+	thunk := r.Loaders.TranslationLoader.LoadMany(ctx, keys)
+	translations, _ := thunk()
+
+	for i, trans := range translations {
+		if trans != nil {
+			challenges[i] = applyChallengeTranslation(challenges[i], trans)
+		}
+	}
+}
+
 // ApplyTranslationToChallenge applies translation to an already-loaded challenge
 func (r *Resolver) ApplyTranslationToChallenge(ctx context.Context, challenge model.Challenge) model.Challenge {
 	if challenge == nil {

@@ -246,6 +246,8 @@ func (c *CacheWithRegistry) invalidateUserLocal(userID string) {
 	c.DeletePrefix(PrefixUserStreakProgress + userID)
 	// Invalidate user project points cache (myPoints field)
 	c.DeletePrefix(PrefixUserProjectPoints + userID)
+	// Invalidate active challenges count for this user
+	c.DeletePrefix(PrefixActiveChallengesCount + userID)
 	// Invalidate user filter/count queries (gender/church changes affect results)
 	c.DeletePrefix(PrefixUsersFilter)
 	c.DeletePrefix(PrefixUsersCount)
@@ -364,6 +366,9 @@ func (c *CacheWithRegistry) invalidateChallengeLocal(challengeID, projectID stri
 	// This is more aggressive but necessary since we don't track reverse index
 	c.DeletePrefix(PrefixUserChallengeEnrollments)
 	c.DeletePrefix(PrefixUserChallengeCompletions)
+
+	// Invalidate active challenges count (user-specific, keyed by project)
+	c.DeletePrefix(PrefixActiveChallengesCount)
 }
 
 // InvalidateAchievement invalidates all cache entries related to an achievement and broadcasts to other instances

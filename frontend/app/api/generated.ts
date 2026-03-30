@@ -2051,9 +2051,12 @@ export type PredefinedResponse = QuizResponse & {
 export type Project = {
   __typename?: 'Project';
   achievements: Array<Achievement>;
+  activeChallenges: Array<Challenge>;
+  activeChallengesCount: Scalars['Int']['output'];
   archivedAt?: Maybe<Scalars['Boolean']['output']>;
   branding: Branding;
   challenges: Array<Challenge>;
+  completedChallenges: Array<Challenge>;
   description: Scalars['String']['output'];
   endDate: Scalars['DateTime']['output'];
   events: Array<Event>;
@@ -3385,6 +3388,21 @@ export type BrandingColorsFieldsFragment = { __typename?: 'Colors', light: { __t
 
 export type BrandingFieldsFragment = { __typename?: 'Branding', rounding: number, logoImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, bannerImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } };
 
+type ChallengeFields_ExternalChallenge_Fragment = { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, buttonText: string, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userCompletedAt?: any | null, userEnrolledAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null };
+
+type ChallengeFields_PluginChallenge_Fragment = { __typename: 'PluginChallenge', id: string, name: string, description: any, buttonText?: string | null, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userCompletedAt?: any | null, userEnrolledAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null };
+
+type ChallengeFields_QuizChallenge_Fragment = { __typename: 'QuizChallenge', id: string, name: string, description: any, buttonText: string, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userCompletedAt?: any | null, userEnrolledAt?: any | null, quiz: { __typename?: 'Quiz', timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, endTime?: any | null, userCanStart: boolean, userActiveSubmission?: { __typename?: 'QuizSubmission', id: string, startedAt: any, completedAt?: any | null, expiresAt?: any | null, isExpired: boolean, autoSubmitted: boolean, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, pointsAwarded?: number | null } | null, userActiveSession?: { __typename?: 'QuizSession', id: string, state: QuizSessionState, openAt?: any | null, lockAt?: any | null, finishAt?: any | null, userHasAccess: boolean } | null, userSubmissions: Array<{ __typename?: 'QuizSubmission', id: string, startedAt: any, completedAt?: any | null, expiresAt?: any | null, isExpired: boolean, autoSubmitted: boolean, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, pointsAwarded?: number | null }> }, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null };
+
+type ChallengeFields_SimpleChallenge_Fragment = { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, buttonText: string, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userCompletedAt?: any | null, userEnrolledAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null };
+
+export type ChallengeFieldsFragment =
+  | ChallengeFields_ExternalChallenge_Fragment
+  | ChallengeFields_PluginChallenge_Fragment
+  | ChallengeFields_QuizChallenge_Fragment
+  | ChallengeFields_SimpleChallenge_Fragment
+;
+
 export type ImageFieldsFragment = { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null };
 
 export type LeaderboardEntryFieldsFragment = { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> };
@@ -4081,10 +4099,20 @@ export type ChallengePageQuery = { __typename?: 'Query', myCurrentProject: { __t
     | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userEnrolledAt?: any | null, userCompletedAt?: any | null }
    };
 
-export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
+export type ActiveChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', myTeam?: { __typename?: 'Team', joinCode: string } | null, challenges: Array<
+export type ActiveChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', myTeam?: { __typename?: 'Team', joinCode: string } | null, activeChallenges: Array<
+      | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, buttonText: string, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userCompletedAt?: any | null, userEnrolledAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
+      | { __typename: 'PluginChallenge', id: string, name: string, description: any, buttonText?: string | null, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userCompletedAt?: any | null, userEnrolledAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
+      | { __typename: 'QuizChallenge', id: string, name: string, description: any, buttonText: string, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userCompletedAt?: any | null, userEnrolledAt?: any | null, quiz: { __typename?: 'Quiz', timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, endTime?: any | null, userCanStart: boolean, userActiveSubmission?: { __typename?: 'QuizSubmission', id: string, startedAt: any, completedAt?: any | null, expiresAt?: any | null, isExpired: boolean, autoSubmitted: boolean, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, pointsAwarded?: number | null } | null, userActiveSession?: { __typename?: 'QuizSession', id: string, state: QuizSessionState, openAt?: any | null, lockAt?: any | null, finishAt?: any | null, userHasAccess: boolean } | null, userSubmissions: Array<{ __typename?: 'QuizSubmission', id: string, startedAt: any, completedAt?: any | null, expiresAt?: any | null, isExpired: boolean, autoSubmitted: boolean, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, pointsAwarded?: number | null }> }, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
+      | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, buttonText: string, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userCompletedAt?: any | null, userEnrolledAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
+    > } };
+
+export type CompletedChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type CompletedChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', completedChallenges: Array<
       | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, buttonText: string, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userCompletedAt?: any | null, userEnrolledAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
       | { __typename: 'PluginChallenge', id: string, name: string, description: any, buttonText?: string | null, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userCompletedAt?: any | null, userEnrolledAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
       | { __typename: 'QuizChallenge', id: string, name: string, description: any, buttonText: string, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userCompletedAt?: any | null, userEnrolledAt?: any | null, quiz: { __typename?: 'Quiz', timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, endTime?: any | null, userCanStart: boolean, userActiveSubmission?: { __typename?: 'QuizSubmission', id: string, startedAt: any, completedAt?: any | null, expiresAt?: any | null, isExpired: boolean, autoSubmitted: boolean, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, pointsAwarded?: number | null } | null, userActiveSession?: { __typename?: 'QuizSession', id: string, state: QuizSessionState, openAt?: any | null, lockAt?: any | null, finishAt?: any | null, userHasAccess: boolean } | null, userSubmissions: Array<{ __typename?: 'QuizSubmission', id: string, startedAt: any, completedAt?: any | null, expiresAt?: any | null, isExpired: boolean, autoSubmitted: boolean, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, pointsAwarded?: number | null }> }, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
@@ -4158,12 +4186,7 @@ export type QuizDetailsQuery = { __typename?: 'Query', quiz: { __typename?: 'Qui
 export type CurrentProjectQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type CurrentProjectQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, branding: { __typename?: 'Branding', rounding: number, logoImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, bannerImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } }, challenges: Array<
-      | { __typename?: 'ExternalChallenge', id: string, userCompletedAt?: any | null, endTime?: any | null }
-      | { __typename?: 'PluginChallenge', id: string, userCompletedAt?: any | null, endTime?: any | null }
-      | { __typename?: 'QuizChallenge', id: string, userCompletedAt?: any | null, endTime?: any | null }
-      | { __typename?: 'SimpleChallenge', id: string, userCompletedAt?: any | null, endTime?: any | null }
-    > } };
+export type CurrentProjectQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, activeChallengesCount: number, branding: { __typename?: 'Branding', rounding: number, logoImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, bannerImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } };
 
 export type AdminChurchPageQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -4625,6 +4648,76 @@ export const BrandingFieldsFragmentDoc = gql`
 }
     ${ImageFieldsFragmentDoc}
 ${BrandingColorsFieldsFragmentDoc}`;
+export const ChallengeFieldsFragmentDoc = gql`
+    fragment ChallengeFields on Challenge {
+  __typename
+  id
+  name
+  description
+  imageObject {
+    ...ImageFields
+  }
+  buttonText
+  notificationText
+  publishedAt
+  visibleAt
+  startedAt
+  endTime
+  requiresTeamMembership
+  requiresSuperTeamMembership
+  userCompletedAt
+  userEnrolledAt
+  ... on SimpleChallenge {
+    allowSelfCompletion
+  }
+  ... on ExternalChallenge {
+    url
+  }
+  ... on QuizChallenge {
+    quiz {
+      timeoutSeconds
+      randomizeQuestions
+      revealCorrectAnswers
+      allowRetakes
+      completionPoints
+      endTime
+      userCanStart
+      userActiveSubmission {
+        id
+        startedAt
+        completedAt
+        expiresAt
+        isExpired
+        autoSubmitted
+        score
+        maxScore
+        scorePercentage
+        pointsAwarded
+      }
+      userActiveSession {
+        id
+        state
+        openAt
+        lockAt
+        finishAt
+        userHasAccess
+      }
+      userSubmissions {
+        id
+        startedAt
+        completedAt
+        expiresAt
+        isExpired
+        autoSubmitted
+        score
+        maxScore
+        scorePercentage
+        pointsAwarded
+      }
+    }
+  }
+}
+    ${ImageFieldsFragmentDoc}`;
 export const LeaderboardEntryFieldsFragmentDoc = gql`
     fragment LeaderboardEntryFields on LeaderboardEntry {
   id
@@ -5852,86 +5945,34 @@ export const ChallengePageDocument = gql`
 export function useChallengePageQuery(options?: Omit<Urql.UseQueryArgs<never, ChallengePageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<ChallengePageQuery, ChallengePageQueryVariables | undefined>({ query: ChallengePageDocument, variables: undefined, ...options });
 };
-export const ChallengesPageDocument = gql`
-    query ChallengesPage {
+export const ActiveChallengesPageDocument = gql`
+    query ActiveChallengesPage {
   myCurrentProject {
     myTeam {
       joinCode
     }
-    challenges {
-      __typename
-      id
-      name
-      description
-      imageObject {
-        ...ImageFields
-      }
-      buttonText
-      notificationText
-      publishedAt
-      visibleAt
-      startedAt
-      endTime
-      requiresTeamMembership
-      requiresSuperTeamMembership
-      userCompletedAt
-      userEnrolledAt
-      ... on SimpleChallenge {
-        allowSelfCompletion
-      }
-      ... on ExternalChallenge {
-        url
-      }
-      ... on QuizChallenge {
-        quiz {
-          timeoutSeconds
-          randomizeQuestions
-          revealCorrectAnswers
-          allowRetakes
-          completionPoints
-          endTime
-          userCanStart
-          userActiveSubmission {
-            id
-            startedAt
-            completedAt
-            expiresAt
-            isExpired
-            autoSubmitted
-            score
-            maxScore
-            scorePercentage
-            pointsAwarded
-          }
-          userActiveSession {
-            id
-            state
-            openAt
-            lockAt
-            finishAt
-            userHasAccess
-          }
-          userSubmissions {
-            id
-            startedAt
-            completedAt
-            expiresAt
-            isExpired
-            autoSubmitted
-            score
-            maxScore
-            scorePercentage
-            pointsAwarded
-          }
-        }
-      }
+    activeChallenges {
+      ...ChallengeFields
     }
   }
 }
-    ${ImageFieldsFragmentDoc}`;
+    ${ChallengeFieldsFragmentDoc}`;
 
-export function useChallengesPageQuery(options?: Omit<Urql.UseQueryArgs<never, ChallengesPageQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<ChallengesPageQuery, ChallengesPageQueryVariables | undefined>({ query: ChallengesPageDocument, variables: undefined, ...options });
+export function useActiveChallengesPageQuery(options?: Omit<Urql.UseQueryArgs<never, ActiveChallengesPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<ActiveChallengesPageQuery, ActiveChallengesPageQueryVariables | undefined>({ query: ActiveChallengesPageDocument, variables: undefined, ...options });
+};
+export const CompletedChallengesPageDocument = gql`
+    query CompletedChallengesPage {
+  myCurrentProject {
+    completedChallenges {
+      ...ChallengeFields
+    }
+  }
+}
+    ${ChallengeFieldsFragmentDoc}`;
+
+export function useCompletedChallengesPageQuery(options?: Omit<Urql.UseQueryArgs<never, CompletedChallengesPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<CompletedChallengesPageQuery, CompletedChallengesPageQueryVariables | undefined>({ query: CompletedChallengesPageDocument, variables: undefined, ...options });
 };
 export const ProfilePageDocument = gql`
     query ProfilePage($ageFilter: LeaderboardFilter) {
@@ -6218,11 +6259,7 @@ export const CurrentProjectDocument = gql`
     branding {
       ...BrandingFields
     }
-    challenges {
-      id
-      userCompletedAt
-      endTime
-    }
+    activeChallengesCount
   }
 }
     ${BrandingFieldsFragmentDoc}`;

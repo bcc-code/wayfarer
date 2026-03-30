@@ -1,0 +1,68 @@
+fragment ChallengeFields on Challenge {
+  __typename
+  id
+  name
+  description
+  imageObject {
+    ...ImageFields
+  }
+  buttonText
+  notificationText
+  publishedAt
+  visibleAt
+  startedAt
+  endTime
+  requiresTeamMembership
+  requiresSuperTeamMembership
+  userCompletedAt
+  userEnrolledAt
+  ... on SimpleChallenge {
+    allowSelfCompletion
+  }
+  ... on ExternalChallenge {
+    url
+  }
+  ... on QuizChallenge {
+    quiz {
+      timeoutSeconds
+      randomizeQuestions
+      revealCorrectAnswers
+      allowRetakes
+      completionPoints
+      endTime
+      userCanStart
+      userActiveSubmission {
+        id
+        startedAt
+        completedAt
+        expiresAt
+        isExpired
+        autoSubmitted
+        score
+        maxScore
+        scorePercentage
+        pointsAwarded
+      }
+      userActiveSession {
+        id
+        state
+        openAt
+        lockAt
+        finishAt
+        userHasAccess
+      }
+      userSubmissions {
+        id
+        startedAt
+        completedAt
+        expiresAt
+        isExpired
+        autoSubmitted
+        score
+        maxScore
+        scorePercentage
+        pointsAwarded
+      }
+    }
+  }
+}

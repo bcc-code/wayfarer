@@ -11,6 +11,9 @@ type Project {
     infoMessageStart: DateTime
     infoMessageEnd: DateTime
     challenges: [Challenge!]! @goField(forceResolver: true)
+    activeChallenges: [Challenge!]! @goField(forceResolver: true)
+    completedChallenges: [Challenge!]! @goField(forceResolver: true)
+    activeChallengesCount: Int! @goField(forceResolver: true)
     leaderboard(
         entityType: LeaderboardEntityType!
         filter: LeaderboardFilter

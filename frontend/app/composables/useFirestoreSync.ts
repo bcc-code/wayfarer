@@ -11,12 +11,12 @@ import { useClientHandle } from '@urql/vue'
 const NOTIFICATION_QUERY_MAP = {
   achievements: ['ProfilePageDocument'],
   challenges: [
-    'ChallengesPageDocument',
+    'ActiveChallengesPageDocument',
     'ChallengePageDocument',
     'CurrentProjectDocument',
   ],
   content: ['ProfilePageDocument'],
-  quizzes: ['ChallengesPageDocument', 'ChallengePageDocument'],
+  quizzes: ['ActiveChallengesPageDocument', 'ChallengePageDocument'],
   projects: ['ProfilePageDocument', 'CurrentProjectDocument'],
 } as const
 
@@ -25,9 +25,9 @@ const ADMIN_NOTIFICATION_QUERY_MAP = {
 } as const
 
 const PROJECT_NOTIFICATION_QUERY_MAP = {
-  quiz_sessions: ['ChallengesPageDocument', 'ChallengePageDocument'],
+  quiz_sessions: ['ActiveChallengesPageDocument', 'ChallengePageDocument'],
   challenges: [
-    'ChallengesPageDocument',
+    'ActiveChallengesPageDocument',
     'ChallengePageDocument',
     'CurrentProjectDocument',
   ],

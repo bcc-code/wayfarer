@@ -289,6 +289,41 @@ func (q *Queries) GetActiveSubmissionsBySessionID(ctx context.Context, sessionid
 	return items, nil
 }
 
+const GetBulkUserSessionAccessQuizIDs = `-- name: GetBulkUserSessionAccessQuizIDs :many
+SELECT DISTINCT qs.quiz_id
+FROM quiz_sessions qs
+JOIN quiz_session_access qsa ON qsa.session_id = qs.id
+WHERE qs.quiz_id = ANY($1::text[])
+    AND qsa.user_id = $2::text
+    AND qs.state IN ('OPEN', 'LOCKED', 'FINISHED')
+`
+
+type GetBulkUserSessionAccessQuizIDsParams struct {
+	Quizids []string `json:"quizids"`
+	Userid  string   `json:"userid"`
+}
+
+// Returns quiz_ids that the user has access to from the given list
+func (q *Queries) GetBulkUserSessionAccessQuizIDs(ctx context.Context, arg GetBulkUserSessionAccessQuizIDsParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, GetBulkUserSessionAccessQuizIDs, arg.Quizids, arg.Userid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var quiz_id string
+		if err := rows.Scan(&quiz_id); err != nil {
+			return nil, err
+		}
+		items = append(items, quiz_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetQuizSession = `-- name: GetQuizSession :one
 SELECT id, quiz_id, name, state, open_at, lock_at, finish_at, created_by, created_at, updated_at
 FROM quiz_sessions
