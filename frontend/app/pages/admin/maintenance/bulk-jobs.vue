@@ -37,6 +37,9 @@ gql(`
   }
 `)
 
+const toast = useToast()
+const { executeMutation: retryBulkJob } = useRetryBulkJobMutation()
+
 const pagination = usePagination({
   defaultPageSize: 20,
   direction: 'backward',
@@ -106,6 +109,7 @@ const columns: TableColumn<BulkJobNode>[] = [
   { id: 'result', header: 'Resultat' },
   { accessorKey: 'createdAt', header: 'Opprettet' },
   { id: 'duration', header: 'Varighet' },
+  { id: 'actions', header: '' },
 ]
 
 // Helper functions
@@ -165,6 +169,16 @@ function formatDuration(startedAt: string | null | undefined, completedAt: strin
 function calculateProgress(processed: number, total: number): number {
   if (total === 0) return 0
   return Math.round((processed / total) * 100)
+}
+
+async function handleRetry(jobId: string) {
+  const { error } = await retryBulkJob({ id: jobId })
+  if (error) {
+    toast.add({ title: 'Kunne ikke kjore jobb pa nytt', description: error.message, color: 'error' })
+    return
+  }
+  toast.add({ title: 'Jobb opprettet pa nytt', color: 'success' })
+  handleRefresh()
 }
 
 function handleRefresh() {
@@ -311,6 +325,16 @@ const hasActiveFilters = computed(
           <span class="text-dimmed text-sm">
             {{ formatDuration(row.original.startedAt, row.original.completedAt) }}
           </span>
+        </template>
+
+        <template #actions-cell="{ row }">
+          <UButton
+            v-if="row.original.status === BulkJobStatus.Completed || row.original.status === BulkJobStatus.Failed"
+            variant="ghost"
+            size="xs"
+            icon="lucide:refresh-cw"
+            @click="handleRetry(row.original.id)"
+          />
         </template>
       </UTable>
 

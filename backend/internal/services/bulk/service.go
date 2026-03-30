@@ -141,6 +141,73 @@ func (s *Service) CreateBulkJobAndPublish(
 	return convertBulkJobRowToModel(row), nil
 }
 
+// RetryBulkJob creates a new bulk job with the same parameters as an existing job and publishes it.
+func (s *Service) RetryBulkJob(ctx context.Context, jobID string, createdBy string) (*model.BulkJob, error) {
+	// Fetch original job
+	originalJob, err := s.DB.Queries.GetBulkJobByID(ctx, jobID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get original bulk job: %w", err)
+	}
+
+	// Generate new job ID
+	newJobID := ulid.NewBulkJobID()
+
+	// Convert createdBy to pointer
+	var createdByPtr *string
+	if createdBy != "" {
+		createdByPtr = &createdBy
+	}
+
+	// Create new job with same params
+	row, err := s.DB.Queries.CreateBulkJob(ctx, sqlc.CreateBulkJobParams{
+		ID:            newJobID,
+		Operationtype: originalJob.OperationType,
+		Status:        string(pubsub.JobStatusPending),
+		Createdby:     createdByPtr,
+		Projectid:     originalJob.ProjectID,
+		Inputparams:   originalJob.InputParams,
+		Totalcount:    originalJob.TotalCount,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create retry bulk job: %w", err)
+	}
+
+	// Publish to Pub/Sub
+	if s.Publisher != nil && s.Publisher.IsEnabled() {
+		msg := pubsub.BulkOperationMessage{
+			JobID:         newJobID,
+			OperationType: pubsub.OperationType(originalJob.OperationType),
+			CreatedBy:     createdBy,
+			Params:        originalJob.InputParams,
+		}
+		if originalJob.ProjectID != nil {
+			msg.ProjectID = *originalJob.ProjectID
+		}
+
+		messageID, err := s.Publisher.PublishBulkOperation(ctx, msg)
+		if err != nil {
+			s.DB.Queries.MarkBulkJobFailed(ctx, sqlc.MarkBulkJobFailedParams{
+				ID:           newJobID,
+				Errormessage: fmt.Sprintf("failed to publish to pub/sub: %v", err),
+			})
+			return nil, fmt.Errorf("failed to publish to pub/sub: %w", err)
+		}
+
+		s.DB.Queries.UpdateBulkJobMessageID(ctx, sqlc.UpdateBulkJobMessageIDParams{
+			ID:        newJobID,
+			Messageid: messageID,
+		})
+	} else {
+		s.DB.Queries.MarkBulkJobFailed(ctx, sqlc.MarkBulkJobFailedParams{
+			ID:           newJobID,
+			Errormessage: "pub/sub is disabled, async processing not available",
+		})
+		return nil, fmt.Errorf("pub/sub is disabled, use synchronous mutation instead")
+	}
+
+	return convertBulkJobRowToModel(row), nil
+}
+
 // GetBulkJob retrieves a bulk job by ID
 func (s *Service) GetBulkJob(ctx context.Context, jobID string) (*model.BulkJob, error) {
 	row, err := s.DB.Queries.GetBulkJobByID(ctx, jobID)

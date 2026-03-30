@@ -1134,6 +1134,7 @@ export type Mutation = {
   reorderAchievements: Array<Achievement>;
   reorderQuizQuestions: Array<QuizQuestion>;
   resetQuizSessionSubmission: Scalars['Boolean']['output'];
+  retryBulkJob: BulkJob;
   revokeAchievement: Scalars['Boolean']['output'];
   revokeAllQuizSessionAccess: Scalars['Boolean']['output'];
   revokeQuizSessionAccess: Scalars['Boolean']['output'];
@@ -1672,6 +1673,11 @@ export type MutationReorderQuizQuestionsArgs = {
 
 export type MutationResetQuizSessionSubmissionArgs = {
   sessionId: Scalars['ID']['input'];
+};
+
+
+export type MutationRetryBulkJobArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -3536,6 +3542,13 @@ export type ReorderAchievementsMutation = { __typename?: 'Mutation', reorderAchi
     | { __typename?: 'StreakAchievement', id: string }
   > };
 
+export type RetryBulkJobMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type RetryBulkJobMutation = { __typename?: 'Mutation', retryBulkJob: { __typename?: 'BulkJob', id: string, operationType: string, status: BulkJobStatus } };
+
 export type MarkAchievementCelebratedMutationVariables = Exact<{
   achievementId: Scalars['ID']['input'];
 }>;
@@ -5065,6 +5078,19 @@ export const ReorderAchievementsDocument = gql`
 
 export function useReorderAchievementsMutation() {
   return Urql.useMutation<ReorderAchievementsMutation, ReorderAchievementsMutationVariables>(ReorderAchievementsDocument);
+};
+export const RetryBulkJobDocument = gql`
+    mutation RetryBulkJob($id: ID!) {
+  retryBulkJob(id: $id) {
+    id
+    operationType
+    status
+  }
+}
+    `;
+
+export function useRetryBulkJobMutation() {
+  return Urql.useMutation<RetryBulkJobMutation, RetryBulkJobMutationVariables>(RetryBulkJobDocument);
 };
 export const MarkAchievementCelebratedDocument = gql`
     mutation MarkAchievementCelebrated($achievementId: ID!) {

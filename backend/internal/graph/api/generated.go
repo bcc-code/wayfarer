@@ -624,6 +624,7 @@ type ComplexityRoot struct {
 		ReorderAchievements                         func(childComplexity int, projectID string, achievementIds []string) int
 		ReorderQuizQuestions                        func(childComplexity int, quizID string, questionIds []string) int
 		ResetQuizSessionSubmission                  func(childComplexity int, sessionID string) int
+		RetryBulkJob                                func(childComplexity int, id string) int
 		RevokeAchievement                           func(childComplexity int, userID string, achievementID string) int
 		RevokeAllQuizSessionAccess                  func(childComplexity int, sessionID string) int
 		RevokeQuizSessionAccess                     func(childComplexity int, sessionID string, userIds []string) int
@@ -1551,6 +1552,7 @@ type MutationResolver interface {
 	UpdateWebhook(ctx context.Context, id string, input model.UpdateWebhookInput) (*model.Webhook, error)
 	DeleteWebhook(ctx context.Context, id string) (bool, error)
 	TestWebhook(ctx context.Context, id string) (*model.WebhookLog, error)
+	RetryBulkJob(ctx context.Context, id string) (*model.BulkJob, error)
 }
 type NumberQuestionResolver interface {
 	Quiz(ctx context.Context, obj *model.NumberQuestion) (*model.Quiz, error)
@@ -4642,6 +4644,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.ResetQuizSessionSubmission(childComplexity, args["sessionId"].(string)), true
+	case "Mutation.retryBulkJob":
+		if e.complexity.Mutation.RetryBulkJob == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_retryBulkJob_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RetryBulkJob(childComplexity, args["id"].(string)), true
 	case "Mutation.revokeAchievement":
 		if e.complexity.Mutation.RevokeAchievement == nil {
 			break
@@ -11321,6 +11334,10 @@ extend type Query {
     myBulkJobs(limit: Int): [BulkJob!]!
     bulkJobs(filter: BulkJobFilter, first: Int, after: String, last: Int, before: String): BulkJobConnection! @requireRole(roles: ["admin", "superadmin"])
 }
+
+extend type Mutation {
+    retryBulkJob(id: ID!): BulkJob! @requireRole(roles: ["admin", "superadmin"])
+}
 `, BuiltIn: false},
 	{Name: "../../../../gql/translations.graphqls", Input: `# Translation status for admin edit pages
 
@@ -12633,6 +12650,17 @@ func (ec *executionContext) field_Mutation_resetQuizSessionSubmission_args(ctx c
 		return nil, err
 	}
 	args["sessionId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_retryBulkJob_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -33408,6 +33436,89 @@ func (ec *executionContext) fieldContext_Mutation_testWebhook(ctx context.Contex
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_testWebhook_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_retryBulkJob(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_retryBulkJob,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().RetryBulkJob(ctx, fc.Args["id"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				if err != nil {
+					var zeroVal *model.BulkJob
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.BulkJob
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNBulkJob2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐBulkJob,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_retryBulkJob(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_BulkJob_id(ctx, field)
+			case "operationType":
+				return ec.fieldContext_BulkJob_operationType(ctx, field)
+			case "status":
+				return ec.fieldContext_BulkJob_status(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_BulkJob_totalCount(ctx, field)
+			case "processedCount":
+				return ec.fieldContext_BulkJob_processedCount(ctx, field)
+			case "successCount":
+				return ec.fieldContext_BulkJob_successCount(ctx, field)
+			case "failureCount":
+				return ec.fieldContext_BulkJob_failureCount(ctx, field)
+			case "errorMessage":
+				return ec.fieldContext_BulkJob_errorMessage(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_BulkJob_createdAt(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_BulkJob_startedAt(ctx, field)
+			case "completedAt":
+				return ec.fieldContext_BulkJob_completedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type BulkJob", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_retryBulkJob_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -64719,6 +64830,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "testWebhook":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_testWebhook(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "retryBulkJob":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_retryBulkJob(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++

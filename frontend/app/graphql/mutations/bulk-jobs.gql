@@ -1,0 +1,7 @@
+mutation RetryBulkJob($id: ID!) {
+  retryBulkJob(id: $id) {
+    id
+    operationType
+    status
+  }
+}
