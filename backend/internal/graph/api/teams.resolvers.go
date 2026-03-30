@@ -544,6 +544,12 @@ func (r *mutationResolver) RemoveTeamMembers(ctx context.Context, teamID string,
 			return nil, fmt.Errorf("failed to remove user %s from team: %w", uid, err)
 		}
 
+		// Clean up TEAM_LEAD role if the removed user was the team leader
+		_ = r.DB.Queries.RemoveTeamLeadRole(ctx, sqlc.RemoveTeamLeadRoleParams{
+			Userid: uid,
+			Teamid: teamID,
+		})
+
 		// Invalidate user cache
 		r.Cache.InvalidateUser(uid)
 		// Invalidate user's teams cache (used by TeamsByUserLoader)
@@ -552,6 +558,7 @@ func (r *mutationResolver) RemoveTeamMembers(ctx context.Context, teamID string,
 
 	// Invalidate team cache
 	r.Cache.InvalidateTeam(teamID)
+	r.Cache.InvalidateTeamMemberLeaderboardTags()
 
 	// Invalidate superteam cache if team belongs to a superteam (member count changes)
 	if team.SuperTeamID != nil {

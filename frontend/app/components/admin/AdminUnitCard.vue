@@ -274,7 +274,7 @@ function handleDrop(event: SortableEvent) {
               v-else
               :text="$t('admin.unit.makeLead')"
               :delay-duration="200"
-              class="invisible group-hover:visible"
+              :class="hasLeader ? 'invisible group-hover:visible' : ''"
             >
               <UButton
                 icon="lucide:crown"
