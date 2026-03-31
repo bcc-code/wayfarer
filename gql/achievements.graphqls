@@ -298,9 +298,9 @@ extend type Mutation {
     reorderAchievements(projectId: ID!, achievementIds: [ID!]!): [Achievement!]! @requireRole(roles: ["admin", "superadmin"])
 
     # Award/revoke (M2M)
-    awardAchievement(userId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    awardAchievement(userId: ID!, achievementId: ID!, force: Boolean): Achievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
     revokeAchievement(userId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
-    bulkAwardAchievements(userIds: [ID!], teamId: ID, achievementId: ID!): [Achievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    bulkAwardAchievements(userIds: [ID!], teamId: ID, achievementId: ID!, force: Boolean): [Achievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
     # Content progress (M2M) - marks content completed across ALL published achievements containing this content
     markContentItemCompleted(userId: ID!, externalContentId: ID!): [ContentAchievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
@@ -315,11 +315,11 @@ extend type Mutation {
     markAchievementCelebrated(achievementId: ID!): Boolean!
 
     # Force recalculate content achievements - awards achievements to users who completed all items but weren't awarded
-    recalculateContentAchievements(projectId: ID!, achievementId: ID!): RecalculateResult! @requireRole(roles: ["admin", "superadmin"])
+    recalculateContentAchievements(projectId: ID!, achievementId: ID!, force: Boolean): RecalculateResult! @requireRole(roles: ["admin", "superadmin"])
 
     # Force recalculate streak achievements - awards achievements to users who completed all items before deadlines but weren't awarded
-    recalculateStreakAchievements(projectId: ID!, achievementId: ID!): RecalculateResult! @requireRole(roles: ["admin", "superadmin"])
+    recalculateStreakAchievements(projectId: ID!, achievementId: ID!, force: Boolean): RecalculateResult! @requireRole(roles: ["admin", "superadmin"])
 
     # Async bulk operations - returns BulkJob for tracking progress
-    bulkAwardAchievementsAsync(userIds: [ID!], teamId: ID, achievementId: ID!): BulkJob! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    bulkAwardAchievementsAsync(userIds: [ID!], teamId: ID, achievementId: ID!, force: Boolean): BulkJob! @requireRole(roles: ["m2m", "admin", "superadmin"])
 }

@@ -545,10 +545,10 @@ type ComplexityRoot struct {
 		AssignUserToProject                         func(childComplexity int, userID string, projectID string) int
 		AsyncBulkScoreAdjustment                    func(childComplexity int, input model.AsyncBulkScoreAdjustmentInput) int
 		AsyncBulkScoreAdjustmentByTarget            func(childComplexity int, input model.AsyncBulkScoreAdjustmentByTargetInput) int
-		AwardAchievement                            func(childComplexity int, userID string, achievementID string) int
+		AwardAchievement                            func(childComplexity int, userID string, achievementID string, force *bool) int
 		AwardSuperTeamAchievement                   func(childComplexity int, superTeamID string, achievementID string) int
-		BulkAwardAchievements                       func(childComplexity int, userIds []string, teamID *string, achievementID string) int
-		BulkAwardAchievementsAsync                  func(childComplexity int, userIds []string, teamID *string, achievementID string) int
+		BulkAwardAchievements                       func(childComplexity int, userIds []string, teamID *string, achievementID string, force *bool) int
+		BulkAwardAchievementsAsync                  func(childComplexity int, userIds []string, teamID *string, achievementID string, force *bool) int
 		BulkCompleteChallenges                      func(childComplexity int, target model.EnrollmentTargetInput, challengeID string, completedAt *scalars.DateTime) int
 		BulkCompleteChallengesAsync                 func(childComplexity int, target model.EnrollmentTargetInput, challengeID string, completedAt *scalars.DateTime) int
 		BulkEnrollUsersInChallenge                  func(childComplexity int, target model.EnrollmentTargetInput, challengeID string) int
@@ -611,8 +611,8 @@ type ComplexityRoot struct {
 		MoveEvent                                   func(childComplexity int, id string, newProjectID string) int
 		OpenQuizSession                             func(childComplexity int, id string) int
 		PublishChallenge                            func(childComplexity int, id string, publishedAt scalars.DateTime) int
-		RecalculateContentAchievements              func(childComplexity int, projectID string, achievementID string) int
-		RecalculateStreakAchievements               func(childComplexity int, projectID string, achievementID string) int
+		RecalculateContentAchievements              func(childComplexity int, projectID string, achievementID string, force *bool) int
+		RecalculateStreakAchievements               func(childComplexity int, projectID string, achievementID string, force *bool) int
 		RecordBetResult                             func(childComplexity int, input model.RecordBetResultInput) int
 		RecordBetResults                            func(childComplexity int, inputs []model.RecordBetResultInput) int
 		RegenerateJoinCode                          func(childComplexity int, teamID string) int
@@ -1455,17 +1455,17 @@ type MutationResolver interface {
 	DeleteAchievement(ctx context.Context, id string) (bool, error)
 	LinkAchievementToChallenge(ctx context.Context, achievementID string, challengeID string) (model.Achievement, error)
 	ReorderAchievements(ctx context.Context, projectID string, achievementIds []string) ([]model.Achievement, error)
-	AwardAchievement(ctx context.Context, userID string, achievementID string) (model.Achievement, error)
+	AwardAchievement(ctx context.Context, userID string, achievementID string, force *bool) (model.Achievement, error)
 	RevokeAchievement(ctx context.Context, userID string, achievementID string) (bool, error)
-	BulkAwardAchievements(ctx context.Context, userIds []string, teamID *string, achievementID string) ([]model.Achievement, error)
+	BulkAwardAchievements(ctx context.Context, userIds []string, teamID *string, achievementID string, force *bool) ([]model.Achievement, error)
 	MarkContentItemCompleted(ctx context.Context, userID string, externalContentID string) ([]model.ContentAchievement, error)
 	UnmarkContentItemCompleted(ctx context.Context, userID string, externalContentID string) ([]model.ContentAchievement, error)
 	MarkStreakItemCompleted(ctx context.Context, userID string, externalContentID string, force *bool) ([]model.StreakAchievement, error)
 	UnmarkStreakItemCompleted(ctx context.Context, userID string, externalContentID string) ([]model.StreakAchievement, error)
 	MarkAchievementCelebrated(ctx context.Context, achievementID string) (bool, error)
-	RecalculateContentAchievements(ctx context.Context, projectID string, achievementID string) (*model.RecalculateResult, error)
-	RecalculateStreakAchievements(ctx context.Context, projectID string, achievementID string) (*model.RecalculateResult, error)
-	BulkAwardAchievementsAsync(ctx context.Context, userIds []string, teamID *string, achievementID string) (*model.BulkJob, error)
+	RecalculateContentAchievements(ctx context.Context, projectID string, achievementID string, force *bool) (*model.RecalculateResult, error)
+	RecalculateStreakAchievements(ctx context.Context, projectID string, achievementID string, force *bool) (*model.RecalculateResult, error)
+	BulkAwardAchievementsAsync(ctx context.Context, userIds []string, teamID *string, achievementID string, force *bool) (*model.BulkJob, error)
 	CreateChallenge(ctx context.Context, projectID string, eventID *string, input model.CreateChallengeInput) (model.Challenge, error)
 	UpdateChallenge(ctx context.Context, id string, input model.UpdateChallengeInput) (model.Challenge, error)
 	DeleteChallenge(ctx context.Context, id string) (bool, error)
@@ -3805,7 +3805,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.AwardAchievement(childComplexity, args["userId"].(string), args["achievementId"].(string)), true
+		return e.complexity.Mutation.AwardAchievement(childComplexity, args["userId"].(string), args["achievementId"].(string), args["force"].(*bool)), true
 	case "Mutation.awardSuperTeamAchievement":
 		if e.complexity.Mutation.AwardSuperTeamAchievement == nil {
 			break
@@ -3827,7 +3827,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.BulkAwardAchievements(childComplexity, args["userIds"].([]string), args["teamId"].(*string), args["achievementId"].(string)), true
+		return e.complexity.Mutation.BulkAwardAchievements(childComplexity, args["userIds"].([]string), args["teamId"].(*string), args["achievementId"].(string), args["force"].(*bool)), true
 	case "Mutation.bulkAwardAchievementsAsync":
 		if e.complexity.Mutation.BulkAwardAchievementsAsync == nil {
 			break
@@ -3838,7 +3838,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.BulkAwardAchievementsAsync(childComplexity, args["userIds"].([]string), args["teamId"].(*string), args["achievementId"].(string)), true
+		return e.complexity.Mutation.BulkAwardAchievementsAsync(childComplexity, args["userIds"].([]string), args["teamId"].(*string), args["achievementId"].(string), args["force"].(*bool)), true
 	case "Mutation.bulkCompleteChallenges":
 		if e.complexity.Mutation.BulkCompleteChallenges == nil {
 			break
@@ -4511,7 +4511,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.RecalculateContentAchievements(childComplexity, args["projectId"].(string), args["achievementId"].(string)), true
+		return e.complexity.Mutation.RecalculateContentAchievements(childComplexity, args["projectId"].(string), args["achievementId"].(string), args["force"].(*bool)), true
 	case "Mutation.recalculateStreakAchievements":
 		if e.complexity.Mutation.RecalculateStreakAchievements == nil {
 			break
@@ -4522,7 +4522,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.RecalculateStreakAchievements(childComplexity, args["projectId"].(string), args["achievementId"].(string)), true
+		return e.complexity.Mutation.RecalculateStreakAchievements(childComplexity, args["projectId"].(string), args["achievementId"].(string), args["force"].(*bool)), true
 	case "Mutation.recordBetResult":
 		if e.complexity.Mutation.RecordBetResult == nil {
 			break
@@ -9542,9 +9542,9 @@ extend type Mutation {
     reorderAchievements(projectId: ID!, achievementIds: [ID!]!): [Achievement!]! @requireRole(roles: ["admin", "superadmin"])
 
     # Award/revoke (M2M)
-    awardAchievement(userId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    awardAchievement(userId: ID!, achievementId: ID!, force: Boolean): Achievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
     revokeAchievement(userId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
-    bulkAwardAchievements(userIds: [ID!], teamId: ID, achievementId: ID!): [Achievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    bulkAwardAchievements(userIds: [ID!], teamId: ID, achievementId: ID!, force: Boolean): [Achievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
     # Content progress (M2M) - marks content completed across ALL published achievements containing this content
     markContentItemCompleted(userId: ID!, externalContentId: ID!): [ContentAchievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
@@ -9559,13 +9559,13 @@ extend type Mutation {
     markAchievementCelebrated(achievementId: ID!): Boolean!
 
     # Force recalculate content achievements - awards achievements to users who completed all items but weren't awarded
-    recalculateContentAchievements(projectId: ID!, achievementId: ID!): RecalculateResult! @requireRole(roles: ["admin", "superadmin"])
+    recalculateContentAchievements(projectId: ID!, achievementId: ID!, force: Boolean): RecalculateResult! @requireRole(roles: ["admin", "superadmin"])
 
     # Force recalculate streak achievements - awards achievements to users who completed all items before deadlines but weren't awarded
-    recalculateStreakAchievements(projectId: ID!, achievementId: ID!): RecalculateResult! @requireRole(roles: ["admin", "superadmin"])
+    recalculateStreakAchievements(projectId: ID!, achievementId: ID!, force: Boolean): RecalculateResult! @requireRole(roles: ["admin", "superadmin"])
 
     # Async bulk operations - returns BulkJob for tracking progress
-    bulkAwardAchievementsAsync(userIds: [ID!], teamId: ID, achievementId: ID!): BulkJob! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    bulkAwardAchievementsAsync(userIds: [ID!], teamId: ID, achievementId: ID!, force: Boolean): BulkJob! @requireRole(roles: ["m2m", "admin", "superadmin"])
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/challenges.graphqls", Input: `# Challenge queries and mutations
@@ -11606,6 +11606,11 @@ func (ec *executionContext) field_Mutation_awardAchievement_args(ctx context.Con
 		return nil, err
 	}
 	args["achievementId"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "force", ec.unmarshalOBoolean2ᚖbool)
+	if err != nil {
+		return nil, err
+	}
+	args["force"] = arg2
 	return args, nil
 }
 
@@ -11643,6 +11648,11 @@ func (ec *executionContext) field_Mutation_bulkAwardAchievementsAsync_args(ctx c
 		return nil, err
 	}
 	args["achievementId"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "force", ec.unmarshalOBoolean2ᚖbool)
+	if err != nil {
+		return nil, err
+	}
+	args["force"] = arg3
 	return args, nil
 }
 
@@ -11664,6 +11674,11 @@ func (ec *executionContext) field_Mutation_bulkAwardAchievements_args(ctx contex
 		return nil, err
 	}
 	args["achievementId"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "force", ec.unmarshalOBoolean2ᚖbool)
+	if err != nil {
+		return nil, err
+	}
+	args["force"] = arg3
 	return args, nil
 }
 
@@ -12493,6 +12508,11 @@ func (ec *executionContext) field_Mutation_recalculateContentAchievements_args(c
 		return nil, err
 	}
 	args["achievementId"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "force", ec.unmarshalOBoolean2ᚖbool)
+	if err != nil {
+		return nil, err
+	}
+	args["force"] = arg2
 	return args, nil
 }
 
@@ -12509,6 +12529,11 @@ func (ec *executionContext) field_Mutation_recalculateStreakAchievements_args(ct
 		return nil, err
 	}
 	args["achievementId"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "force", ec.unmarshalOBoolean2ᚖbool)
+	if err != nil {
+		return nil, err
+	}
+	args["force"] = arg2
 	return args, nil
 }
 
@@ -26505,7 +26530,7 @@ func (ec *executionContext) _Mutation_awardAchievement(ctx context.Context, fiel
 		ec.fieldContext_Mutation_awardAchievement,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().AwardAchievement(ctx, fc.Args["userId"].(string), fc.Args["achievementId"].(string))
+			return ec.resolvers.Mutation().AwardAchievement(ctx, fc.Args["userId"].(string), fc.Args["achievementId"].(string), fc.Args["force"].(*bool))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -26623,7 +26648,7 @@ func (ec *executionContext) _Mutation_bulkAwardAchievements(ctx context.Context,
 		ec.fieldContext_Mutation_bulkAwardAchievements,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().BulkAwardAchievements(ctx, fc.Args["userIds"].([]string), fc.Args["teamId"].(*string), fc.Args["achievementId"].(string))
+			return ec.resolvers.Mutation().BulkAwardAchievements(ctx, fc.Args["userIds"].([]string), fc.Args["teamId"].(*string), fc.Args["achievementId"].(string), fc.Args["force"].(*bool))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -27151,7 +27176,7 @@ func (ec *executionContext) _Mutation_recalculateContentAchievements(ctx context
 		ec.fieldContext_Mutation_recalculateContentAchievements,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().RecalculateContentAchievements(ctx, fc.Args["projectId"].(string), fc.Args["achievementId"].(string))
+			return ec.resolvers.Mutation().RecalculateContentAchievements(ctx, fc.Args["projectId"].(string), fc.Args["achievementId"].(string), fc.Args["force"].(*bool))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -27216,7 +27241,7 @@ func (ec *executionContext) _Mutation_recalculateStreakAchievements(ctx context.
 		ec.fieldContext_Mutation_recalculateStreakAchievements,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().RecalculateStreakAchievements(ctx, fc.Args["projectId"].(string), fc.Args["achievementId"].(string))
+			return ec.resolvers.Mutation().RecalculateStreakAchievements(ctx, fc.Args["projectId"].(string), fc.Args["achievementId"].(string), fc.Args["force"].(*bool))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -27281,7 +27306,7 @@ func (ec *executionContext) _Mutation_bulkAwardAchievementsAsync(ctx context.Con
 		ec.fieldContext_Mutation_bulkAwardAchievementsAsync,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().BulkAwardAchievementsAsync(ctx, fc.Args["userIds"].([]string), fc.Args["teamId"].(*string), fc.Args["achievementId"].(string))
+			return ec.resolvers.Mutation().BulkAwardAchievementsAsync(ctx, fc.Args["userIds"].([]string), fc.Args["teamId"].(*string), fc.Args["achievementId"].(string), fc.Args["force"].(*bool))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next

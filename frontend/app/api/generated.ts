@@ -1256,6 +1256,7 @@ export type MutationAsyncBulkScoreAdjustmentByTargetArgs = {
 
 export type MutationAwardAchievementArgs = {
   achievementId: Scalars['ID']['input'];
+  force?: InputMaybe<Scalars['Boolean']['input']>;
   userId: Scalars['ID']['input'];
 };
 
@@ -1268,6 +1269,7 @@ export type MutationAwardSuperTeamAchievementArgs = {
 
 export type MutationBulkAwardAchievementsArgs = {
   achievementId: Scalars['ID']['input'];
+  force?: InputMaybe<Scalars['Boolean']['input']>;
   teamId?: InputMaybe<Scalars['ID']['input']>;
   userIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
@@ -1275,6 +1277,7 @@ export type MutationBulkAwardAchievementsArgs = {
 
 export type MutationBulkAwardAchievementsAsyncArgs = {
   achievementId: Scalars['ID']['input'];
+  force?: InputMaybe<Scalars['Boolean']['input']>;
   teamId?: InputMaybe<Scalars['ID']['input']>;
   userIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
@@ -1607,12 +1610,14 @@ export type MutationPublishChallengeArgs = {
 
 export type MutationRecalculateContentAchievementsArgs = {
   achievementId: Scalars['ID']['input'];
+  force?: InputMaybe<Scalars['Boolean']['input']>;
   projectId: Scalars['ID']['input'];
 };
 
 
 export type MutationRecalculateStreakAchievementsArgs = {
   achievementId: Scalars['ID']['input'];
+  force?: InputMaybe<Scalars['Boolean']['input']>;
   projectId: Scalars['ID']['input'];
 };
 

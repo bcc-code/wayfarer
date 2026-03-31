@@ -1,13 +1,30 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
+	"github.com/bcc-media/wayfarer/internal/loaders"
+	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/services/push"
 )
+
+// checkProjectFinished loads the project by ID and returns an error if it is finished
+// (archived or past end_date). Skips the check when force is true.
+func checkProjectFinished(ctx context.Context, loadersInstance *loaders.Loaders, projectID string, force bool) error {
+	if force {
+		return nil
+	}
+	projectThunk := loadersInstance.ProjectByIDLoader.Load(ctx, projectID)
+	project, err := projectThunk()
+	if err != nil {
+		return fmt.Errorf("failed to load project: %w", err)
+	}
+	return services.IsProjectFinished(project)
+}
 
 // isAchievementAwardable checks if an achievement can be awarded based on awardable_from timestamp.
 func isAchievementAwardable(awardableFrom *scalars.DateTime) error {

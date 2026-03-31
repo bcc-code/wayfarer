@@ -1108,7 +1108,7 @@ func (r *mutationResolver) ReorderAchievements(ctx context.Context, projectID st
 }
 
 // AwardAchievement is the resolver for the awardAchievement field.
-func (r *mutationResolver) AwardAchievement(ctx context.Context, userID string, achievementID string) (model.Achievement, error) {
+func (r *mutationResolver) AwardAchievement(ctx context.Context, userID string, achievementID string, force *bool) (model.Achievement, error) {
 	// Load achievement via caching loader
 	achievementThunk := r.Loaders.AchievementByIDLoader.Load(ctx, achievementID)
 	achievement, err := achievementThunk()
@@ -1123,6 +1123,11 @@ func (r *mutationResolver) AwardAchievement(ctx context.Context, userID string, 
 
 	projectID := getAchievementProjectID(achievement)
 	eventID := getAchievementEventID(achievement)
+
+	// Check if project is finished (unless force=true)
+	if err := checkProjectFinished(ctx, r.Loaders, projectID, force != nil && *force); err != nil {
+		return nil, err
+	}
 
 	// Award achievement to user (will return error if already awarded)
 	if err := r.DB.Queries.AwardUserAchievement(ctx, sqlc.AwardUserAchievementParams{
@@ -1209,9 +1214,10 @@ func (r *mutationResolver) RevokeAchievement(ctx context.Context, userID string,
 }
 
 // BulkAwardAchievements is the resolver for the bulkAwardAchievements field.
-func (r *mutationResolver) BulkAwardAchievements(ctx context.Context, userIds []string, teamID *string, achievementID string) ([]model.Achievement, error) {
-	// Resolve target users and achievement (also checks if achievement is awardable)
-	target, err := resolveBulkAwardTarget(ctx, r.DB.Queries, r.Loaders, userIds, teamID, achievementID)
+func (r *mutationResolver) BulkAwardAchievements(ctx context.Context, userIds []string, teamID *string, achievementID string, force *bool) ([]model.Achievement, error) {
+	// Resolve target users and achievement (also checks if achievement is awardable and project is not finished)
+	forceFlag := force != nil && *force
+	target, err := resolveBulkAwardTarget(ctx, r.DB.Queries, r.Loaders, userIds, teamID, achievementID, forceFlag)
 	if err != nil {
 		return nil, err
 	}
@@ -1404,7 +1410,7 @@ func (r *mutationResolver) MarkContentItemCompleted(ctx context.Context, userID 
 
 		if progressCount == itemCount && itemCount > 0 {
 			// Award the achievement
-			if _, err := r.AwardAchievement(ctx, userID, row.ID); err != nil {
+			if _, err := r.AwardAchievement(ctx, userID, row.ID, nil); err != nil {
 				// Log error but don't fail - the progress was still recorded
 				slog.Error("failed to auto-award achievement", "error", err, "user_id", userID, "achievement_id", row.ID)
 			}
@@ -1572,7 +1578,7 @@ func (r *mutationResolver) MarkStreakItemCompleted(ctx context.Context, userID s
 		progressCount := progressByAchievement[row.ID]
 
 		if progressCount == itemCount && itemCount > 0 {
-			if _, err := r.AwardAchievement(ctx, userID, row.ID); err != nil {
+			if _, err := r.AwardAchievement(ctx, userID, row.ID, nil); err != nil {
 				slog.Error("failed to auto-award streak achievement", "error", err, "user_id", userID, "achievement_id", row.ID)
 			}
 		}
@@ -1641,7 +1647,12 @@ func (r *mutationResolver) MarkAchievementCelebrated(ctx context.Context, achiev
 }
 
 // RecalculateContentAchievements is the resolver for the recalculateContentAchievements field.
-func (r *mutationResolver) RecalculateContentAchievements(ctx context.Context, projectID string, achievementID string) (*model.RecalculateResult, error) {
+func (r *mutationResolver) RecalculateContentAchievements(ctx context.Context, projectID string, achievementID string, force *bool) (*model.RecalculateResult, error) {
+	// Check if project is finished (unless force=true)
+	if err := checkProjectFinished(ctx, r.Loaders, projectID, force != nil && *force); err != nil {
+		return nil, err
+	}
+
 	// Create ContentAchievementService to handle the recalculation
 	contentAchievementService := &services.ContentAchievementService{
 		DB:             r.DB,
@@ -1669,10 +1680,15 @@ func (r *mutationResolver) RecalculateContentAchievements(ctx context.Context, p
 }
 
 // RecalculateStreakAchievements is the resolver for the recalculateStreakAchievements field.
-func (r *mutationResolver) RecalculateStreakAchievements(ctx context.Context, projectID string, achievementID string) (*model.RecalculateResult, error) {
+func (r *mutationResolver) RecalculateStreakAchievements(ctx context.Context, projectID string, achievementID string, force *bool) (*model.RecalculateResult, error) {
 	userID, ok := middleware.GetUserID(ctx)
 	if !ok || userID == "" {
 		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check if project is finished (unless force=true)
+	if err := checkProjectFinished(ctx, r.Loaders, projectID, force != nil && *force); err != nil {
+		return nil, err
 	}
 
 	// Verify the achievement exists and belongs to the project
@@ -1695,7 +1711,7 @@ func (r *mutationResolver) RecalculateStreakAchievements(ctx context.Context, pr
 
 	awardedUserIDs := make([]string, 0, len(userRows))
 	for _, uid := range userRows {
-		if _, err := r.AwardAchievement(ctx, uid, achievementID); err != nil {
+		if _, err := r.AwardAchievement(ctx, uid, achievementID, force); err != nil {
 			slog.Error("failed to award streak achievement during recalculation", "error", err, "user_id", uid, "achievement_id", achievementID)
 			continue
 		}
@@ -1713,7 +1729,7 @@ func (r *mutationResolver) RecalculateStreakAchievements(ctx context.Context, pr
 }
 
 // BulkAwardAchievementsAsync is the resolver for the bulkAwardAchievementsAsync field.
-func (r *mutationResolver) BulkAwardAchievementsAsync(ctx context.Context, userIds []string, teamID *string, achievementID string) (*model.BulkJob, error) {
+func (r *mutationResolver) BulkAwardAchievementsAsync(ctx context.Context, userIds []string, teamID *string, achievementID string, force *bool) (*model.BulkJob, error) {
 	currentUserID, ok := middleware.GetUserID(ctx)
 	if !ok || currentUserID == "" {
 		return nil, fmt.Errorf("user not authenticated")
@@ -1723,8 +1739,9 @@ func (r *mutationResolver) BulkAwardAchievementsAsync(ctx context.Context, userI
 		return nil, fmt.Errorf("bulk service not initialized")
 	}
 
-	// Resolve target users and achievement
-	target, err := resolveBulkAwardTarget(ctx, r.DB.Queries, r.Loaders, userIds, teamID, achievementID)
+	// Resolve target users and achievement (also checks if achievement is awardable and project is not finished)
+	forceFlag := force != nil && *force
+	target, err := resolveBulkAwardTarget(ctx, r.DB.Queries, r.Loaders, userIds, teamID, achievementID, forceFlag)
 	if err != nil {
 		return nil, err
 	}

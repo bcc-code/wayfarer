@@ -29,6 +29,7 @@ func resolveBulkAwardTarget(
 	userIds []string,
 	teamID *string,
 	achievementID string,
+	force bool,
 ) (*BulkAwardTarget, error) {
 	// Validate input
 	hasUserIds := len(userIds) > 0
@@ -46,6 +47,11 @@ func resolveBulkAwardTarget(
 
 	// Check if achievement is awardable based on awardable_from timestamp
 	if err := isAchievementAwardable(getAchievementAwardableFrom(achievement)); err != nil {
+		return nil, err
+	}
+
+	// Check if project is finished (unless force=true)
+	if err := checkProjectFinished(ctx, loadersInstance, getAchievementProjectID(achievement), force); err != nil {
 		return nil, err
 	}
 

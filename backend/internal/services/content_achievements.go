@@ -622,6 +622,20 @@ func (s *ContentAchievementService) awardAchievement(ctx context.Context, userID
 		return
 	}
 
+	// Check if project is finished - silently skip if so
+	projectThunk := s.Loaders.ProjectByIDLoader.Load(ctx, achievement.ProjectID)
+	project, projErr := projectThunk()
+	if projErr != nil {
+		slog.Error("content_achievements: failed to load project for finished check",
+			"user_id", userID, "achievement_id", achievement.ID, "project_id", achievement.ProjectID, "error", projErr)
+		return
+	}
+	if err := IsProjectFinished(project); err != nil {
+		slog.Debug("content_achievements: project is finished, skipping award",
+			"user_id", userID, "achievement_id", achievement.ID, "project_id", achievement.ProjectID, "reason", err.Error())
+		return
+	}
+
 	// Check if user already has this achievement
 	hasAchievement, err := s.DB.Queries.CheckUserHasAchievement(ctx, sqlc.CheckUserHasAchievementParams{
 		UserID:        userID,
