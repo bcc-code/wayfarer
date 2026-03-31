@@ -559,7 +559,7 @@ const UpdateBetResults = `-- name: UpdateBetResults :many
 UPDATE quiz_responses
 SET points_earned = data.points_earned
 FROM (
-    SELECT unnest($1::text[]) AS id, unnest($2::int[]) AS points_earned
+    SELECT unnest($1::char(28)[]) AS id, unnest($2::int[]) AS points_earned
 ) AS data
 WHERE quiz_responses.id = data.id
 RETURNING quiz_responses.id, quiz_responses.submission_id, quiz_responses.question_id, quiz_responses.selected_answer_ids, quiz_responses.text_response, quiz_responses.number_response, quiz_responses.json_response, quiz_responses.is_correct, quiz_responses.points_earned, quiz_responses.answered_at, quiz_responses.time_spent_seconds, quiz_responses.bet_amount
@@ -624,9 +624,9 @@ SET points_earned = data.points_earned,
     score_journal_id = data.score_journal_id
 FROM (
     SELECT
-        unnest($1::text[]) AS id,
+        unnest($1::char(28)[]) AS id,
         unnest($2::int[]) AS points_earned,
-        unnest($3::text[]) AS score_journal_id
+        unnest($3::char(28)[]) AS score_journal_id
 ) AS data
 WHERE quiz_responses.id = data.id
 RETURNING quiz_responses.id, quiz_responses.submission_id, quiz_responses.question_id, quiz_responses.selected_answer_ids, quiz_responses.text_response, quiz_responses.number_response, quiz_responses.json_response, quiz_responses.is_correct, quiz_responses.points_earned, quiz_responses.answered_at, quiz_responses.time_spent_seconds, quiz_responses.bet_amount, quiz_responses.score_journal_id

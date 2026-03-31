@@ -37,5 +37,5 @@ ON CONFLICT (user_id, challenge_id) DO NOTHING;
 SELECT user_id, challenge_id, completed_at
 FROM user_challenge_completions
 WHERE (user_id, challenge_id) IN (
-    SELECT unnest(@userids::text[]), unnest(@challengeids::text[])
+    SELECT unnest(@userids::char(28)[]), unnest(@challengeids::char(28)[])
 );

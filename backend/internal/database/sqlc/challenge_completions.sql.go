@@ -54,7 +54,7 @@ const GetBulkUserCompletionTimestamps = `-- name: GetBulkUserCompletionTimestamp
 SELECT user_id, challenge_id, completed_at
 FROM user_challenge_completions
 WHERE (user_id, challenge_id) IN (
-    SELECT unnest($1::text[]), unnest($2::text[])
+    SELECT unnest($1::char(28)[]), unnest($2::char(28)[])
 )
 `
 

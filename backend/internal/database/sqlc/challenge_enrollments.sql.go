@@ -70,7 +70,7 @@ const GetBulkUserEnrollmentTimestamps = `-- name: GetBulkUserEnrollmentTimestamp
 SELECT user_id, challenge_id, enrolled_at
 FROM user_challenge_enrollments
 WHERE (user_id, challenge_id) IN (
-    SELECT unnest($1::text[]), unnest($2::text[])
+    SELECT unnest($1::char(28)[]), unnest($2::char(28)[])
 )
 `
 

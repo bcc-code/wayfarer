@@ -434,14 +434,14 @@ WHERE user_id = @userid::text
 SELECT user_id, achievement_id, achieved_at
 FROM user_achievements
 WHERE (user_id, achievement_id) IN (
-    SELECT unnest(@user_ids::text[]), unnest(@achievement_ids::text[])
+    SELECT unnest(@user_ids::char(28)[]), unnest(@achievement_ids::char(28)[])
 );
 
 -- name: GetBulkUserAchievementCelebratedTimestamps :many
 SELECT user_id, achievement_id, celebrated_at
 FROM user_achievements
 WHERE (user_id, achievement_id) IN (
-    SELECT unnest(@user_ids::text[]), unnest(@achievement_ids::text[])
+    SELECT unnest(@user_ids::char(28)[]), unnest(@achievement_ids::char(28)[])
 );
 
 -- name: MarkAchievementCelebrated :exec
@@ -457,7 +457,7 @@ WHERE user_id = @user_id::text
 SELECT user_id, achievement_id, external_content_id, completed_at
 FROM user_content_progress
 WHERE (user_id, achievement_id) IN (
-    SELECT unnest(@user_ids::text[]), unnest(@achievement_ids::text[])
+    SELECT unnest(@user_ids::char(28)[]), unnest(@achievement_ids::char(28)[])
 );
 
 -- name: GetUserContentProgress :many
@@ -678,7 +678,7 @@ GROUP BY achievement_id;
 SELECT user_id, achievement_id, external_content_id, completed_at
 FROM user_streak_progress
 WHERE (user_id, achievement_id) IN (
-    SELECT unnest(@user_ids::text[]), unnest(@achievement_ids::text[])
+    SELECT unnest(@user_ids::char(28)[]), unnest(@achievement_ids::char(28)[])
 );
 
 -- name: GetUserStreakProgress :many

@@ -40,7 +40,7 @@ WHERE user_id = @userid::text
 SELECT user_id, challenge_id, enrolled_at
 FROM user_challenge_enrollments
 WHERE (user_id, challenge_id) IN (
-    SELECT unnest(@userids::text[]), unnest(@challengeids::text[])
+    SELECT unnest(@userids::char(28)[]), unnest(@challengeids::char(28)[])
 );
 
 -- Bulk enrollment for admin/M2M

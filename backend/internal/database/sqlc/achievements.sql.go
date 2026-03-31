@@ -1027,7 +1027,7 @@ const GetBulkUserAchievementCelebratedTimestamps = `-- name: GetBulkUserAchievem
 SELECT user_id, achievement_id, celebrated_at
 FROM user_achievements
 WHERE (user_id, achievement_id) IN (
-    SELECT unnest($1::text[]), unnest($2::text[])
+    SELECT unnest($1::char(28)[]), unnest($2::char(28)[])
 )
 `
 
@@ -1066,7 +1066,7 @@ const GetBulkUserAchievementTimestamps = `-- name: GetBulkUserAchievementTimesta
 SELECT user_id, achievement_id, achieved_at
 FROM user_achievements
 WHERE (user_id, achievement_id) IN (
-    SELECT unnest($1::text[]), unnest($2::text[])
+    SELECT unnest($1::char(28)[]), unnest($2::char(28)[])
 )
 `
 
@@ -1106,7 +1106,7 @@ const GetBulkUserContentProgress = `-- name: GetBulkUserContentProgress :many
 SELECT user_id, achievement_id, external_content_id, completed_at
 FROM user_content_progress
 WHERE (user_id, achievement_id) IN (
-    SELECT unnest($1::text[]), unnest($2::text[])
+    SELECT unnest($1::char(28)[]), unnest($2::char(28)[])
 )
 `
 
@@ -1145,7 +1145,7 @@ const GetBulkUserStreakProgress = `-- name: GetBulkUserStreakProgress :many
 SELECT user_id, achievement_id, external_content_id, completed_at
 FROM user_streak_progress
 WHERE (user_id, achievement_id) IN (
-    SELECT unnest($1::text[]), unnest($2::text[])
+    SELECT unnest($1::char(28)[]), unnest($2::char(28)[])
 )
 `
 
