@@ -18,9 +18,7 @@ func buildProjectFilterParamsCursor(filter *model.ProjectFilter, first *int, aft
 			params.Ids = filter.Ids
 		}
 
-		if filter.Archived != nil {
-			params.Archived = *filter.Archived
-		}
+		params.Archived = filter.Archived
 
 		if filter.StartDateAfter != nil {
 			params.Startdateafter = pgtype.Timestamptz{
@@ -95,9 +93,7 @@ func buildCountProjectsFilterParams(filter *model.ProjectFilter) sqlc.CountProje
 			params.Ids = filter.Ids
 		}
 
-		if filter.Archived != nil {
-			params.Archived = *filter.Archived
-		}
+		params.Archived = filter.Archived
 
 		if filter.StartDateAfter != nil {
 			params.Startdateafter = pgtype.Timestamptz{

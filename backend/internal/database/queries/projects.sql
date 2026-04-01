@@ -99,7 +99,7 @@ SELECT id, name, description, rules, info_message, info_message_start, info_mess
 FROM projects
 WHERE
     (@ids::text[] IS NULL OR id = ANY(@ids::text[]))
-    AND (@archived::boolean IS NULL OR archived = @archived::boolean)
+    AND (sqlc.narg('archived')::boolean IS NULL OR archived = sqlc.narg('archived')::boolean)
     AND (@startdateafter::timestamptz IS NULL OR start_date >= @startdateafter::timestamptz)
     AND (@startdatebefore::timestamptz IS NULL OR start_date <= @startdatebefore::timestamptz)
     AND (@enddateafter::timestamptz IS NULL OR end_date >= @enddateafter::timestamptz)
@@ -116,7 +116,7 @@ SELECT COUNT(id)
 FROM projects
 WHERE
     (@ids::text[] IS NULL OR id = ANY(@ids::text[]))
-    AND (@archived::boolean IS NULL OR archived = @archived::boolean)
+    AND (sqlc.narg('archived')::boolean IS NULL OR archived = sqlc.narg('archived')::boolean)
     AND (@startdateafter::timestamptz IS NULL OR start_date >= @startdateafter::timestamptz)
     AND (@startdatebefore::timestamptz IS NULL OR start_date <= @startdatebefore::timestamptz)
     AND (@enddateafter::timestamptz IS NULL OR end_date >= @enddateafter::timestamptz)

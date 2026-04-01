@@ -128,7 +128,7 @@ WHERE
 
 type CountProjectsFilteredParams struct {
 	Ids             []string           `json:"ids"`
-	Archived        bool               `json:"archived"`
+	Archived        *bool              `json:"archived"`
 	Startdateafter  pgtype.Timestamptz `json:"startdateafter"`
 	Startdatebefore pgtype.Timestamptz `json:"startdatebefore"`
 	Enddateafter    pgtype.Timestamptz `json:"enddateafter"`
@@ -910,7 +910,7 @@ LIMIT CASE WHEN $10::int IS NULL THEN NULL ELSE $10::int END
 
 type GetProjectsFilteredCursorParams struct {
 	Ids             []string           `json:"ids"`
-	Archived        bool               `json:"archived"`
+	Archived        *bool              `json:"archived"`
 	Startdateafter  pgtype.Timestamptz `json:"startdateafter"`
 	Startdatebefore pgtype.Timestamptz `json:"startdatebefore"`
 	Enddateafter    pgtype.Timestamptz `json:"enddateafter"`
