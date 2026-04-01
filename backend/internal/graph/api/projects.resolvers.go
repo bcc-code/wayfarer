@@ -676,11 +676,9 @@ func (r *projectResolver) MyPoints(ctx context.Context, obj *model.Project) (int
 		}
 	}
 
-	// Query database using existing GetUserScore
-	score, err := r.DB.Queries.GetUserScore(ctx, sqlc.GetUserScoreParams{
+	score, err := r.DB.Queries.GetUserProjectScore(ctx, sqlc.GetUserProjectScoreParams{
 		UserID:    userID,
 		ProjectID: obj.ID,
-		EventID:   "", // Empty = all events in project
 	})
 	if err != nil {
 		return 0, fmt.Errorf("failed to get user score: %w", err)

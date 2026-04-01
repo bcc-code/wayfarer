@@ -143,10 +143,9 @@ func (r *mutationResolver) ForwardFeedbackToDesk(ctx context.Context, feedbackID
 		project, err := projectThunk()
 		if err == nil && project != nil {
 			projectName = project.Name
-			score, err := r.DB.Queries.GetUserScore(ctx, sqlc.GetUserScoreParams{
+			score, err := r.DB.Queries.GetUserProjectScore(ctx, sqlc.GetUserProjectScoreParams{
 				UserID:    feedback.UserID,
 				ProjectID: *feedback.ProjectID,
-				EventID:   "",
 			})
 			if err == nil {
 				totalPoints = score

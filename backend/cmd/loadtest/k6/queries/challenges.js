@@ -1,30 +1,178 @@
 import { graphqlRequest, checkGraphQLResponse } from '../lib/graphql.js';
 
-const CHALLENGES_PAGE_QUERY = `
-query ChallengesPage {
+const ACTIVE_CHALLENGES_PAGE_QUERY = `
+query ActiveChallengesPage {
   myCurrentProject {
-    challenges {
+    myTeam {
+      joinCode
+    }
+    activeChallenges {
+      __typename
       id
       name
       description
-      image
+      imageObject {
+        url
+        width
+        height
+        blurhash
+      }
       buttonText
+      notificationText
       publishedAt
-      endTime
       visibleAt
+      startedAt
+      endTime
+      requiresTeamMembership
+      requiresSuperTeamMembership
+      userCompletedAt
+      userEnrolledAt
+      ... on SimpleChallenge {
+        allowSelfCompletion
+      }
+      ... on ExternalChallenge {
+        url
+      }
+      ... on QuizChallenge {
+        quiz {
+          timeoutSeconds
+          randomizeQuestions
+          revealCorrectAnswers
+          allowRetakes
+          completionPoints
+          endTime
+          userCanStart
+          userActiveSubmission {
+            id
+            startedAt
+            completedAt
+            expiresAt
+            isExpired
+            autoSubmitted
+            score
+            maxScore
+            scorePercentage
+            pointsAwarded
+          }
+          userActiveSession {
+            id
+            state
+            openAt
+            lockAt
+            finishAt
+            userHasAccess
+          }
+          userSubmissions {
+            id
+            startedAt
+            completedAt
+            expiresAt
+            isExpired
+            autoSubmitted
+            score
+            maxScore
+            scorePercentage
+            pointsAwarded
+          }
+        }
+      }
+    }
+  }
+}
+`;
+
+const COMPLETED_CHALLENGES_PAGE_QUERY = `
+query CompletedChallengesPage {
+  myCurrentProject {
+    completedChallenges {
+      __typename
+      id
+      name
+      description
+      imageObject {
+        url
+        width
+        height
+        blurhash
+      }
+      buttonText
+      notificationText
+      publishedAt
+      visibleAt
+      startedAt
+      endTime
+      requiresTeamMembership
+      requiresSuperTeamMembership
+      userCompletedAt
+      userEnrolledAt
+      ... on SimpleChallenge {
+        allowSelfCompletion
+      }
+      ... on ExternalChallenge {
+        url
+      }
+      ... on QuizChallenge {
+        quiz {
+          timeoutSeconds
+          randomizeQuestions
+          revealCorrectAnswers
+          allowRetakes
+          completionPoints
+          endTime
+          userCanStart
+          userActiveSubmission {
+            id
+            startedAt
+            completedAt
+            expiresAt
+            isExpired
+            autoSubmitted
+            score
+            maxScore
+            scorePercentage
+            pointsAwarded
+          }
+          userActiveSession {
+            id
+            state
+            openAt
+            lockAt
+            finishAt
+            userHasAccess
+          }
+          userSubmissions {
+            id
+            startedAt
+            completedAt
+            expiresAt
+            isExpired
+            autoSubmitted
+            score
+            maxScore
+            scorePercentage
+            pointsAwarded
+          }
+        }
+      }
     }
   }
 }
 `;
 
 /**
- * Execute the ChallengesPage query
- * @param {string} baseUrl - Base URL of the GraphQL API
- * @param {string} token - JWT token for authorization
- * @returns {object} HTTP response
+ * Execute the ActiveChallengesPage query
  */
-export function challengesPage(baseUrl, token) {
-    const response = graphqlRequest(baseUrl, CHALLENGES_PAGE_QUERY, {}, token, 'ChallengesPage');
-    checkGraphQLResponse(response, 'ChallengesPage');
+export function activeChallengesPage(baseUrl, token) {
+    const response = graphqlRequest(baseUrl, ACTIVE_CHALLENGES_PAGE_QUERY, {}, token, 'ActiveChallengesPage');
+    checkGraphQLResponse(response, 'ActiveChallengesPage');
+    return response;
+}
+
+/**
+ * Execute the CompletedChallengesPage query
+ */
+export function completedChallengesPage(baseUrl, token) {
+    const response = graphqlRequest(baseUrl, COMPLETED_CHALLENGES_PAGE_QUERY, {}, token, 'CompletedChallengesPage');
+    checkGraphQLResponse(response, 'CompletedChallengesPage');
     return response;
 }

@@ -79,12 +79,18 @@ FROM score_journal
 WHERE id = ANY(@ids::text[])
 ORDER BY created_at DESC;
 
--- name: GetUserScore :one
+-- name: GetUserProjectScore :one
+SELECT COALESCE(SUM(points), 0)::bigint AS total_score
+FROM score_journal
+WHERE user_id = @user_id::text
+    AND project_id = @project_id::text;
+
+-- name: GetUserEventScore :one
 SELECT COALESCE(SUM(points), 0)::bigint AS total_score
 FROM score_journal
 WHERE user_id = @user_id::text
     AND project_id = @project_id::text
-    AND (@event_id::text = '' OR event_id = @event_id::text);
+    AND event_id = @event_id::text;
 
 -- name: DeleteScoreJournalEntry :exec
 DELETE FROM score_journal

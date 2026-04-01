@@ -474,22 +474,41 @@ func (q *Queries) GetScoreJournalFiltered(ctx context.Context, arg GetScoreJourn
 	return items, nil
 }
 
-const GetUserScore = `-- name: GetUserScore :one
+const GetUserEventScore = `-- name: GetUserEventScore :one
 SELECT COALESCE(SUM(points), 0)::bigint AS total_score
 FROM score_journal
 WHERE user_id = $1::text
     AND project_id = $2::text
-    AND ($3::text = '' OR event_id = $3::text)
+    AND event_id = $3::text
 `
 
-type GetUserScoreParams struct {
+type GetUserEventScoreParams struct {
 	UserID    string `json:"user_id"`
 	ProjectID string `json:"project_id"`
 	EventID   string `json:"event_id"`
 }
 
-func (q *Queries) GetUserScore(ctx context.Context, arg GetUserScoreParams) (int64, error) {
-	row := q.db.QueryRow(ctx, GetUserScore, arg.UserID, arg.ProjectID, arg.EventID)
+func (q *Queries) GetUserEventScore(ctx context.Context, arg GetUserEventScoreParams) (int64, error) {
+	row := q.db.QueryRow(ctx, GetUserEventScore, arg.UserID, arg.ProjectID, arg.EventID)
+	var total_score int64
+	err := row.Scan(&total_score)
+	return total_score, err
+}
+
+const GetUserProjectScore = `-- name: GetUserProjectScore :one
+SELECT COALESCE(SUM(points), 0)::bigint AS total_score
+FROM score_journal
+WHERE user_id = $1::text
+    AND project_id = $2::text
+`
+
+type GetUserProjectScoreParams struct {
+	UserID    string `json:"user_id"`
+	ProjectID string `json:"project_id"`
+}
+
+func (q *Queries) GetUserProjectScore(ctx context.Context, arg GetUserProjectScoreParams) (int64, error) {
+	row := q.db.QueryRow(ctx, GetUserProjectScore, arg.UserID, arg.ProjectID)
 	var total_score int64
 	err := row.Scan(&total_score)
 	return total_score, err

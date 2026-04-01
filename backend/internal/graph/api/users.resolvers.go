@@ -455,10 +455,9 @@ func (r *userResolver) Roles(ctx context.Context, obj *model.User) ([]model.User
 
 // Points is the resolver for the points field.
 func (r *userResolver) Points(ctx context.Context, obj *model.User, projectID string) (int, error) {
-	score, err := r.DB.Queries.GetUserScore(ctx, sqlc.GetUserScoreParams{
+	score, err := r.DB.Queries.GetUserProjectScore(ctx, sqlc.GetUserProjectScoreParams{
 		UserID:    obj.ID,
 		ProjectID: projectID,
-		EventID:   "",
 	})
 	if err != nil {
 		return 0, fmt.Errorf("failed to get user score: %w", err)

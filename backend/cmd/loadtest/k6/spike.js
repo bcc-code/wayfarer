@@ -1,11 +1,6 @@
 import { SharedArray } from 'k6/data';
-import { sleep } from 'k6';
 
-import { challengesPage } from './queries/challenges.js';
-import { profilePage } from './queries/profile.js';
-import { standingsGlobalPage } from './queries/standings-global.js';
-import { standingsLocalPage } from './queries/standings-local.js';
-import { standingsUnitPage } from './queries/standings-unit.js';
+import { userJourney } from './lib/journey.js';
 
 const config = JSON.parse(open('../config.json'));
 const tokens = new SharedArray('tokens', function () {
@@ -39,21 +34,7 @@ function getRandomToken() {
 
 export default function () {
     const { token } = getRandomToken();
-    const rand = Math.random();
-
-    if (rand < 0.30) {
-        challengesPage(baseUrl, token);
-    } else if (rand < 0.50) {
-        profilePage(baseUrl, token);
-    } else if (rand < 0.70) {
-        standingsGlobalPage(baseUrl, token);
-    } else if (rand < 0.85) {
-        standingsLocalPage(baseUrl, token);
-    } else {
-        standingsUnitPage(baseUrl, token);
-    }
-
-    sleep(Math.random() * 0.5 + 0.1);
+    userJourney(baseUrl, token);
 }
 
 export function setup() {

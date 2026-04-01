@@ -1,7 +1,7 @@
 import { graphqlRequest, checkGraphQLResponse } from '../lib/graphql.js';
 
 const PROFILE_PAGE_QUERY = `
-query ProfilePage {
+query ProfilePage($ageFilter: LeaderboardFilter) {
   me {
     id
     name
@@ -15,6 +15,7 @@ query ProfilePage {
         body {
           html
         }
+        shortText
         url
         managementType
         managedBy
@@ -24,21 +25,95 @@ query ProfilePage {
   myCurrentProject {
     id
     name
+    infoMessage {
+      markdown
+      html
+    }
+    infoMessageStart
+    infoMessageEnd
+    branding {
+      logoImage {
+        url
+        width
+        height
+        blurhash
+      }
+      bannerImage {
+        url
+        width
+        height
+        blurhash
+      }
+      rounding
+      colors {
+        light {
+          accent
+          accentContrast
+          onAccent
+          backgroundDefault
+          backgroundRaised
+          backgroundIndent
+          textDefault
+          textMuted
+          textHint
+          shadowDefault
+          shadowBlank
+          borderDefault
+        }
+        dark {
+          accent
+          accentContrast
+          onAccent
+          backgroundDefault
+          backgroundRaised
+          backgroundIndent
+          textDefault
+          textMuted
+          textHint
+          shadowDefault
+          shadowBlank
+          borderDefault
+        }
+      }
+    }
     achievements {
+      __typename
       id
       name
       descriptionPending
       descriptionCompleted
-      imagePending
-      imageCompleted
+      imagePendingObject {
+        url
+        width
+        height
+        blurhash
+      }
+      imageCompletedObject {
+        url
+        width
+        height
+        blurhash
+      }
       hidden
       achievedAt
+      celebratedAt
       points
     }
-    leaderboard(entityType: PERSONS) {
+    myPoints
+    leaderboard(entityType: PERSONS, filter: $ageFilter) {
       me {
-        score
         rank
+      }
+    }
+    myTeam {
+      superTeam {
+        id
+        name
+        color
+        imageObject {
+          url
+          blurhash
+        }
       }
     }
   }
@@ -46,10 +121,7 @@ query ProfilePage {
 `;
 
 /**
- * Execute the ProfilePage query
- * @param {string} baseUrl - Base URL of the GraphQL API
- * @param {string} token - JWT token for authorization
- * @returns {object} HTTP response
+ * Execute the ProfilePage query (home page)
  */
 export function profilePage(baseUrl, token) {
     const response = graphqlRequest(baseUrl, PROFILE_PAGE_QUERY, {}, token, 'ProfilePage');

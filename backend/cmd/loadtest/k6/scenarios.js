@@ -1,8 +1,6 @@
 import { SharedArray } from 'k6/data';
-import { sleep } from 'k6';
 
-import { challengesPage } from './queries/challenges.js';
-import { profilePage } from './queries/profile.js';
+import { userJourney } from './lib/journey.js';
 import { standingsGlobalPage } from './queries/standings-global.js';
 import { standingsLocalPage } from './queries/standings-local.js';
 import { standingsUnitPage } from './queries/standings-unit.js';
@@ -21,7 +19,7 @@ const baseUrl = config.baseUrl;
 // Test configuration with customizable parameters via environment variables
 export const options = {
     scenarios: {
-        // Scenario 1: Steady-state load (typical usage pattern)
+        // Scenario 1: Steady-state load (realistic user journeys)
         // Ramps to target VUs in 5 seconds
         steady_load: {
             executor: 'ramping-vus',
@@ -70,8 +68,6 @@ export const options = {
 
 /**
  * Get a random token from the pool
- * Each VU gets assigned tokens based on its ID for some consistency,
- * but we also add randomness for realistic distribution
  */
 function getRandomToken() {
     const index = Math.floor(Math.random() * tokens.length);
@@ -79,38 +75,16 @@ function getRandomToken() {
 }
 
 /**
- * Steady-state load: weighted distribution of all page queries
- * This simulates typical user behavior patterns
+ * Steady-state load: simulate realistic user journeys
+ * Each VU navigates home -> standings + challenges in random order
  */
 export function steadyLoad() {
     const { token } = getRandomToken();
-
-    // Weighted distribution matching expected user behavior:
-    // - Challenges page: 30% (main entry point)
-    // - Profile page: 20% (checking progress)
-    // - Global standings: 20% (competitive users)
-    // - Local standings: 15% (checking church ranking)
-    // - Unit standings: 15% (checking team ranking)
-    const rand = Math.random();
-
-    if (rand < 0.30) {
-        challengesPage(baseUrl, token);
-    } else if (rand < 0.50) {
-        profilePage(baseUrl, token);
-    } else if (rand < 0.70) {
-        standingsGlobalPage(baseUrl, token);
-    } else if (rand < 0.85) {
-        standingsLocalPage(baseUrl, token);
-    } else {
-        standingsUnitPage(baseUrl, token);
-    }
-
-    // Small random sleep to simulate realistic user think time
-    sleep(Math.random() * 0.5 + 0.1);
+    userJourney(baseUrl, token);
 }
 
 /**
- * Spike test: same query distribution but under ramping load
+ * Spike test: same user journey under ramping load
  */
 export function spikeTest() {
     steadyLoad();
@@ -123,12 +97,7 @@ export function spikeTest() {
 export function leaderboardStress() {
     const { token } = getRandomToken();
 
-    // Distribution focused on leaderboard queries:
-    // - Global standings: 50% (most common)
-    // - Local standings: 30% (church-filtered)
-    // - Unit standings: 20% (team-specific)
     const rand = Math.random();
-
     if (rand < 0.50) {
         standingsGlobalPage(baseUrl, token);
     } else if (rand < 0.80) {
