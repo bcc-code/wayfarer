@@ -95,7 +95,7 @@ export function usePermissions() {
    * - Church admins can see users from their church
    */
   const canAccessUsers = computed(() => {
-    return isSuperAdmin.value || isAdmin.value || isChurchAdmin.value
+    return isSuperAdmin.value
   })
 
   /**
@@ -104,14 +104,14 @@ export function usePermissions() {
    * - Project admins can see teams in their projects
    */
   const canAccessTeams = computed(() => {
-    return isSuperAdmin.value || isAdmin.value || isProjectAdmin.value
+    return isSuperAdmin.value || isProjectAdmin.value
   })
 
   /**
    * Can access the consents page
    */
   const canAccessConsents = computed(() => {
-    return isSuperAdmin.value || isAdmin.value
+    return isSuperAdmin.value
   })
 
   /**

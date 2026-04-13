@@ -8,7 +8,7 @@ import {
 
 definePageMeta({
   layout: 'admin',
-  middleware: 'admin',
+  middleware: 'superadmin',
 })
 
 gql(`
@@ -26,10 +26,7 @@ gql(`
       personUuid
       createdAt
 			name
-			email
 			membersId
-			gender
-			birthdate
 			age
 			image
 			language
@@ -141,7 +138,6 @@ gql(`
 			user {
 				id
 				name
-				gender
 				personUuid
 				churchLockedUntil
 				church {
@@ -150,7 +146,6 @@ gql(`
 				}
 			}
 			contentEventsProcessed
-			genderUpdated
 			churchUpdated
 			churchLockSkipped
 			personUuidUpdated
@@ -391,7 +386,6 @@ async function handleSyncUser() {
   if (syncResult) {
     if (syncResult.contentEventsProcessed > 0)
       details.push(`${syncResult.contentEventsProcessed} innholdseventer`)
-    if (syncResult.genderUpdated) details.push('kjønn oppdatert')
     if (syncResult.churchUpdated) details.push('menighet oppdatert')
     if (syncResult.churchLockSkipped)
       details.push('menighet hoppet over (last)')
@@ -504,7 +498,6 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
         <div class="flex items-start justify-between">
           <div>
             <h1 class="text-3xl font-bold">{{ data.user.name }}</h1>
-            <p class="text-dimmed text-lg">{{ data.user.email }}</p>
           </div>
           <div class="flex gap-2">
             <UButton
@@ -569,20 +562,8 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
               class="text-sm grid grid-cols-[auto_1fr] gap-x-6 divide-y divide-default"
             >
               <div class="py-2 grid grid-cols-subgrid col-span-full">
-                <dt class="text-muted w-36 shrink-0">Kjønn</dt>
-                <dd class="font-medium">
-                  {{ capitalizeFirst(data.user.gender) }}
-                </dd>
-              </div>
-              <div class="py-2 grid grid-cols-subgrid col-span-full">
                 <dt class="text-muted w-36 shrink-0">Alder</dt>
                 <dd class="font-medium">{{ data.user.age }} år</dd>
-              </div>
-              <div class="py-2 grid grid-cols-subgrid col-span-full">
-                <dt class="text-muted w-36 shrink-0">Fødselsdato</dt>
-                <dd class="font-medium">
-                  {{ formatDate(data.user.birthdate) }}
-                </dd>
               </div>
               <div class="py-2 grid grid-cols-subgrid col-span-full">
                 <dt class="text-muted w-36 shrink-0">Språk</dt>
@@ -603,7 +584,10 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
                 <dt class="text-muted w-36 shrink-0">Navn</dt>
                 <dd>
                   <NuxtLink
-                    :to="{ name: 'admin-churches-churchId', params: { churchId: data.user.church.id } }"
+                    :to="{
+                      name: 'admin-churches-churchId',
+                      params: { churchId: data.user.church.id },
+                    }"
                     class="font-medium hover:underline"
                   >
                     {{ data.user.church.name }}

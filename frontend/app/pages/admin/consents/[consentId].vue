@@ -1,7 +1,7 @@
 <script setup lang="ts">
 definePageMeta({
   layout: 'admin',
-  middleware: 'admin',
+  middleware: 'superadmin',
 })
 
 gql(`
@@ -152,9 +152,7 @@ async function publishConsent() {
           <div>
             <div class="mb-2 flex items-center gap-3">
               <h1 class="text-3xl font-bold">{{ data.consent.title }}</h1>
-              <UBadge variant="soft">
-                v{{ data.consent.version }}
-              </UBadge>
+              <UBadge variant="soft"> v{{ data.consent.version }} </UBadge>
               <UBadge
                 v-if="!data.consent.publishedAt"
                 variant="soft"
@@ -186,10 +184,18 @@ async function publishConsent() {
             <h2 class="text-xl font-semibold">Rediger samtykke</h2>
           </template>
           <div class="space-y-4">
-            <AdminTranslatableFormField label="Tittel" :translation-status="data?.consent.translationStatus" name="title">
+            <AdminTranslatableFormField
+              label="Tittel"
+              :translation-status="data?.consent.translationStatus"
+              name="title"
+            >
               <UInput v-model="editState.title" class="w-full" />
             </AdminTranslatableFormField>
-            <AdminTranslatableFormField label="Kort tekst" :translation-status="data?.consent.translationStatus" name="shortText">
+            <AdminTranslatableFormField
+              label="Kort tekst"
+              :translation-status="data?.consent.translationStatus"
+              name="shortText"
+            >
               <UTextarea
                 v-model="editState.shortText"
                 class="w-full"
@@ -197,7 +203,11 @@ async function publishConsent() {
                 placeholder="En kort beskrivelse som vises før brukere leser hele samtykket"
               />
             </AdminTranslatableFormField>
-            <AdminTranslatableFormField label="Innhold (Markdown)" :translation-status="data?.consent.translationStatus" name="body">
+            <AdminTranslatableFormField
+              label="Innhold (Markdown)"
+              :translation-status="data?.consent.translationStatus"
+              name="body"
+            >
               <UTextarea
                 v-model="editState.body"
                 class="w-full font-mono"
@@ -258,14 +268,21 @@ async function publishConsent() {
             <dt class="text-muted w-24 shrink-0">Type</dt>
             <dd>
               <UBadge
-                :color="data.consent.managementType === 'LOCAL' ? 'primary' : 'neutral'"
+                :color="
+                  data.consent.managementType === 'LOCAL'
+                    ? 'primary'
+                    : 'neutral'
+                "
                 variant="soft"
               >
                 {{ data.consent.managementType }}
               </UBadge>
             </dd>
           </div>
-          <div v-if="data.consent.managedBy" class="border-default flex gap-6 border-b py-2">
+          <div
+            v-if="data.consent.managedBy"
+            class="border-default flex gap-6 border-b py-2"
+          >
             <dt class="text-muted w-24 shrink-0">Administrert av</dt>
             <dd class="font-medium">{{ data.consent.managedBy }}</dd>
           </div>
@@ -294,7 +311,6 @@ async function publishConsent() {
             v-html="data.consent.body.html"
           />
         </UCard>
-
       </div>
     </UContainer>
   </div>

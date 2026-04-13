@@ -4,7 +4,7 @@ import { z } from 'zod'
 
 definePageMeta({
   layout: 'admin',
-  middleware: 'admin',
+  middleware: 'superadmin',
 })
 
 const schema = z.object({
@@ -124,10 +124,7 @@ async function handleSubmit(event: FormSubmitEvent<Schema>) {
               />
             </AdminTranslatableFormField>
 
-            <AdminTranslatableFormField
-              name="body"
-              label="Innhold (Markdown)"
-            >
+            <AdminTranslatableFormField name="body" label="Innhold (Markdown)">
               <UTextarea
                 v-model="state.body"
                 class="w-full font-mono"
@@ -150,9 +147,13 @@ async function handleSubmit(event: FormSubmitEvent<Schema>) {
 
             <div class="space-y-4">
               <UFormField name="isRemote">
-                <UCheckbox v-model="state.isRemote" label="Ekstern administrasjon" />
+                <UCheckbox
+                  v-model="state.isRemote"
+                  label="Ekstern administrasjon"
+                />
                 <template #description>
-                  Aktiver hvis dette samtykket administreres av et eksternt system
+                  Aktiver hvis dette samtykket administreres av et eksternt
+                  system
                 </template>
               </UFormField>
 

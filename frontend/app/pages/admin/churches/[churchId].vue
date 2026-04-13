@@ -3,7 +3,7 @@ import { ChurchCategory } from '~/api/generated'
 
 definePageMeta({
   layout: 'admin',
-  middleware: 'admin',
+  middleware: 'superadmin',
 })
 
 gql(`

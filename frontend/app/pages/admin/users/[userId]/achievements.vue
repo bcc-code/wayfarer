@@ -1,7 +1,7 @@
 <script setup lang="ts">
 definePageMeta({
   layout: 'admin',
-  middleware: 'admin',
+  middleware: 'superadmin',
 })
 
 gql(`
@@ -151,8 +151,7 @@ function toggleExpand(externalContentId: string) {
 }
 
 // Award
-const { executeMutation: awardAchievement } =
-  useAdminAwardAchievementMutation()
+const { executeMutation: awardAchievement } = useAdminAwardAchievementMutation()
 const showAwardConfirm = ref(false)
 const awarding = ref(false)
 
@@ -222,9 +221,7 @@ function statusLabel(
     </div>
 
     <UContainer class="py-12">
-      <div v-if="!canCheckAchievements" class="text-dimmed">
-        Ingen tilgang
-      </div>
+      <div v-if="!canCheckAchievements" class="text-dimmed">Ingen tilgang</div>
       <div v-else class="space-y-6">
         <h1 class="text-3xl font-bold">Sjekk prestasjoner</h1>
         <p class="text-muted">
@@ -290,9 +287,7 @@ function statusLabel(
                 <!-- Item row -->
                 <div
                   class="flex cursor-pointer items-center gap-3 p-3 transition-colors hover:bg-elevated"
-                  @click="
-                    toggleExpand(item.contentItem.externalContent.id)
-                  "
+                  @click="toggleExpand(item.contentItem.externalContent.id)"
                 >
                   <span class="text-muted w-8 text-right text-xs">
                     {{ item.contentItem.sortOrder }}
@@ -308,11 +303,7 @@ function statusLabel(
                       {{ item.contentItem.externalContent.contentType }}
                     </span>
                   </div>
-                  <UBadge
-                    :color="statusColor(item)"
-                    variant="soft"
-                    size="sm"
-                  >
+                  <UBadge :color="statusColor(item)" variant="soft" size="sm">
                     {{ statusLabel(item) }}
                   </UBadge>
                   <div
@@ -342,17 +333,13 @@ function statusLabel(
                 <!-- Expanded event details -->
                 <div
                   v-if="
-                    expandedContentIds.has(
-                      item.contentItem.externalContent.id,
-                    )
+                    expandedContentIds.has(item.contentItem.externalContent.id)
                   "
                   class="border-t border-default bg-elevated px-3 py-2"
                 >
                   <AdminContentEventDetails
                     :user-id="route.params.userId"
-                    :external-content-id="
-                      item.contentItem.externalContent.id
-                    "
+                    :external-content-id="item.contentItem.externalContent.id"
                   />
                 </div>
               </div>
@@ -360,10 +347,7 @@ function statusLabel(
           </UCard>
 
           <!-- Award button -->
-          <div
-            v-if="!progress.alreadyAwarded"
-            class="flex justify-end"
-          >
+          <div v-if="!progress.alreadyAwarded" class="flex justify-end">
             <UButton size="lg" @click="showAwardConfirm = true">
               Tildel prestasjon
             </UButton>
@@ -391,9 +375,7 @@ function statusLabel(
           >
             Avbryt
           </UButton>
-          <UButton :loading="awarding" @click="handleAward">
-            Tildel
-          </UButton>
+          <UButton :loading="awarding" @click="handleAward"> Tildel </UButton>
         </div>
       </template>
     </UModal>

@@ -3,7 +3,7 @@ import type { TableColumn } from '@nuxt/ui'
 
 definePageMeta({
   layout: 'admin',
-  middleware: 'admin',
+  middleware: 'superadmin',
 })
 
 gql(`

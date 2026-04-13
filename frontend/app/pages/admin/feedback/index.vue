@@ -50,7 +50,6 @@ gql(`
           user {
             id
             name
-            email
           }
         }
       }
@@ -351,9 +350,6 @@ async function handleUpdateTags(feedbackId: string, tags: string[]) {
           >
             <span class="group-hover:underline">
               {{ row.original.user.name }}
-            </span>
-            <span class="text-dimmed text-xs">
-              {{ row.original.user.email }}
             </span>
           </NuxtLink>
         </template>
