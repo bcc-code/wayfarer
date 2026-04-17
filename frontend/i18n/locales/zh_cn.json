@@ -34,18 +34,25 @@
     "finishReview": "结束测验",
     "yourNumber": "你的得分",
     "writeYourAnswer": "请写下你的答案……",
-    "close": "关闭测验",
+    "close": "关闭",
     "betting": {
       "remainingPoints": "剩余积分",
       "yourBet": "你的投入",
       "maxBetMessage": "你可以下注最高金额。 {percentage}你的积分百分比",
       "sessionLocked": "答案已锁定。",
-      "potentialWinnings": "{amount} 潜在奖金积分",
-      "bettingClosed": "下注结束了。你可以关闭测验",
+      "registeredBet": "投注已登记",
+      "bettingClosed": "下注结束了",
+      "yourBetIs": "你已投注{bet}积分",
       "results": "结果",
       "yourPoints": "你的积分",
       "winnings": "奖励",
-      "losses": "失分"
+      "pointsLost": "失分",
+      "pointsEarned": "得分",
+      "resultYourBet": "你的投注",
+      "correctCount": "选择{count}正确",
+      "correctCountAll": "全部选择正确",
+      "correctCountNone": "全部没有选对",
+      "bettingResult": "投注结果"
     },
     "result": {
       "receivedNoPoints": "你没有获得任何积分。",
@@ -55,6 +62,10 @@
       "perfect": "完美！",
       "thanksForAnswers": "谢谢你们的回答！",
       "resultsRevealedLater": "结果稍后公布。"
+    },
+    "notSubmitted": {
+      "title": "你尚未提交",
+      "message": "你没有参与此次投注"
     }
   },
   "challenges": {
@@ -164,8 +175,8 @@
   },
   "goToHiddenTreasures": "参加圣经学习",
   "gameNights": {
-    "yourCode": "游戏之夜所在小队代码",
-    "yourCodeHint": "在电脑上打开页面并输入代码"
+    "yourCode": "请输入密码：",
+    "yourCodeHint": "请在电脑上访问此网站："
   },
   "admin": {
     "common": {
@@ -285,6 +296,66 @@
       "excludeFromLeaderboard": "排除出排行榜",
       "excludeFromLeaderboardTooltip": "启用后，该小队将不会显示在排行榜中。",
       "excludedFromLeaderboard": "已从排行榜中隐藏"
+    },
+    "gamenight": {
+      "importantResources": "重要资源",
+      "importantResourcesDescription": "请准备好这些文件，或者将它们发送给大屏幕操作员。它们将在整个晚上使用。",
+      "linkToAllFilms": "所有电影链接",
+      "findFilmsHere": "复制视频链接",
+      "bigScreen": "大屏播放",
+      "usedInStep5": "这将在步骤 1 和步骤 5 中使用。",
+      "findBigScreenHere": "复制大屏播放链接",
+      "step1Title": "提示：你可以使用 ",
+      "step1Description": "当年轻人进入大厅时，可以在大屏幕上播放这段视频",
+      "tip": "提示：",
+      "fullscreenTip": "在大屏播放中，点击右下角的“全屏”。",
+      "openBigScreenNewTab": "复制大屏播放链接",
+      "goToNextStep": "进入下一步",
+      "step2Title": "播放影片 1",
+      "step2Description": "在青少年入座、活动开始后进行",
+      "goToFilm": "复制视频链接",
+      "filmFinishedNextStep": "电影已结束，请进入下一步",
+      "step3Title": "完成竞猜",
+      "step3Description": "当你开始竞猜时，Interact 中的每个人都会收到下注挑战。在真正要进行竞猜之前，请不要执行此操作。",
+      "startBetting": "开始投注",
+      "bettingStartingIn": "投注开始{seconds}秒……",
+      "cancelBettingCountdown": "取消",
+      "lockBetting": "冻结竞猜",
+      "lockBettingDescription": "当所有人都下注完毕后，就可以冻结竞猜了。",
+      "bettingLockedNotice": "随后，参与者将收到竞猜已截止的通知。",
+      "reopenBettingHint": "如果有人错过了下注机会，你可以重新开放下注。",
+      "reopenBetting": "重新开放投注（竞猜）",
+      "makeSureEverybodyBet": "确保所有人都下完注后再结束。",
+      "allBetNextStep": "结束投注",
+      "cannotReopenAfterContinue": "<b>重要：</b>如果你关闭了投注，就无法再重新打开了。",
+      "step4Title": "播放影片 1",
+      "step4Description": "这是在投注结束后进行的。",
+      "step5TitleBigScreen": "在大屏上显示 小队任务",
+      "step5Title": "发送 小队任务代码",
+      "step5Description": "小队长必须前往 Interact 中的“挑战”页面。在那里，他们可以看到代码，以及应该使用该代码的网站（pc26.bcc.media）。",
+      "unitLeaderMustGoTo": "小队长必须进入",
+      "onAPC": "在电脑上",
+      "ifUnitLeaderMissing": "如果设备缺少代码，你可以在设备名称的右侧找到它。",
+      "unitAdminPage": "小队管理页面",
+      "giveUnitLeadersAccess": "将代码发送给小队长",
+      "unitLeaderAccessSent": "代码已发送到小队长",
+      "step6Title": "前往管理页面开始小队任务",
+      "step6Description": "小队任务属于独立系统，因此应具备单独的管理页面。请在该页面继续操作，稍后将引导返回此页面。",
+      "goToUnitTaskAdmin": "前往管理页面开始小队任务",
+      "completeStepsOnOtherPage": "完成步骤{from}到{to}另一边",
+      "step12Title": "播放影片 1",
+      "step13Title": "根据参与者的投注情况给予积分",
+      "step13Description": "每个人都必须前往 Interact 中的“挑战”页面，打开已完成的挑战才能查看结果。",
+      "releasePointsNow": "发放积分",
+      "youAreDone": "你完成了！🎉",
+      "canClosePageSafely": "游戏活动之夜{number}可以安全终止，你可以关闭此页面。",
+      "errors": {
+        "couldNotStartBetting": "无法开始投注",
+        "couldNotLockBetting": "无法锁定投注",
+        "couldNotReopenBetting": "无法重新开放投注",
+        "couldNotFinishBetting": "无法完成投注",
+        "couldNotSendUnitLeaderAccess": "无法将代码发送给小队长"
+      }
     },
     "statistics": {
       "totalUsersInTeams": "小队成员",
