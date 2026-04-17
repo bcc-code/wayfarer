@@ -327,7 +327,7 @@
       "reopenBetting": "重新开放投注（竞猜）",
       "makeSureEverybodyBet": "确保所有人都下完注后再结束。",
       "allBetNextStep": "结束投注",
-      "cannotReopenAfterContinue": "<b>重要：</b>如果你关闭了投注，就无法再重新打开了。",
+      "cannotReopenAfterContinue": "重要：如果你关闭了投注，就无法再重新打开了。",
       "step4Title": "播放影片 1",
       "step4Description": "这是在投注结束后进行的。",
       "step5TitleBigScreen": "在大屏上显示 小队任务",
