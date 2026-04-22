@@ -89,6 +89,24 @@ watch(
     // Restrict church-admin-only users to /admin/my-church
     if (isChurchAdminOnly.value && !path.startsWith('/admin/my-church')) {
       navigateTo('/admin/my-church')
+      return
+    }
+
+    // Redirect users away from routes they don't have permission for
+    const routePermissions: [string, boolean][] = [
+      ['/admin/users', !!canAccessUsers.value],
+      ['/admin/consents', !!canAccessConsents.value],
+      ['/admin/maintenance', !!canAccessMaintenance.value],
+      ['/admin/teams', !!canAccessTeams.value],
+      ['/admin/projects', !!canAccessProjects.value],
+      ['/admin/scores', !!canAccessScores.value],
+      ['/admin/feedback', !!canAccessFeedback.value],
+    ]
+    for (const [route, allowed] of routePermissions) {
+      if (path.startsWith(route) && !allowed) {
+        navigateTo('/admin')
+        return
+      }
     }
   },
   { immediate: true },

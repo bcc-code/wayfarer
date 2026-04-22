@@ -2,10 +2,13 @@
  * Middleware that restricts access to superadmins only.
  * Use this for sensitive pages like role management.
  *
+ * Note: When user data hasn't loaded yet (direct URL navigation),
+ * the admin layout watcher handles the redirect after auth completes.
+ *
  * Usage in page:
  * ```ts
  * definePageMeta({
- *   middleware: ['admin', 'superadmin'],
+ *   middleware: 'superadmin',
  * })
  * ```
  */
@@ -19,15 +22,10 @@ export default defineNuxtRouteMiddleware(async () => {
     )
 
     if (!isSuperAdmin) {
-      throw createError({
-        statusCode: 403,
-        statusMessage: 'Forbidden',
-        message: 'This page requires superadmin permissions',
-      })
+      return navigateTo('/admin')
     }
   }
 
   // If we don't have user data yet, let it through
-  // The admin middleware runs first and handles auth,
-  // then the page will check permissions after data loads
+  // The admin layout watcher handles the redirect after auth loads
 })
