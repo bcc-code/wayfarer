@@ -25,7 +25,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/uuid v1.6.0
 	github.com/graph-gophers/dataloader/v7 v7.1.2
-	github.com/jackc/pgx/v5 v5.9.0
+	github.com/jackc/pgx/v5 v5.9.2
 	github.com/jaswdr/faker v1.19.1
 	github.com/joho/godotenv v1.5.1
 	github.com/oklog/ulid/v2 v2.1.1
