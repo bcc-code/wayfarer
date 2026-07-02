@@ -86,24 +86,36 @@ const availableChallengesBadge = computed(
   () => data.value?.myCurrentProject.activeChallengesCount,
 )
 
-const links = computed<NavigationMenuItem[]>(() => [
-  {
-    label: t('navigation.profile'),
-    icon: 'IconProfile',
-    to: { name: 'index' },
-  },
-  {
-    label: t('navigation.standings'),
-    icon: 'IconStandings',
-    to: { name: 'standings' },
-  },
-  {
-    label: t('navigation.challenges'),
-    icon: 'IconChallenges',
-    to: { name: 'challenges' },
-    badge: availableChallengesBadge.value,
-  },
-])
+// Hide the standings tab when no one has any points yet, so there is no
+// leaderboard to show. The persons leaderboard only counts scores >= 1, and
+// team scores are sums of member scores, so an empty persons leaderboard means
+// there are no standings at all.
+const hasLeaderboard = computed(
+  () => (data.value?.myCurrentProject.leaderboard.totalCount ?? 0) > 0,
+)
+
+const links = computed<NavigationMenuItem[]>(() =>
+  [
+    {
+      label: t('navigation.profile'),
+      icon: 'IconProfile',
+      to: { name: 'index' },
+    },
+    hasLeaderboard.value
+      ? {
+          label: t('navigation.standings'),
+          icon: 'IconStandings',
+          to: { name: 'standings' },
+        }
+      : null,
+    {
+      label: t('navigation.challenges'),
+      icon: 'IconChallenges',
+      to: { name: 'challenges' },
+      badge: availableChallengesBadge.value,
+    },
+  ].filter((link): link is NavigationMenuItem => link !== null),
+)
 
 // Current project config
 gql(`
@@ -114,6 +126,9 @@ gql(`
         ...BrandingFields
       }
       activeChallengesCount
+      leaderboard(entityType: PERSONS, first: 1) {
+        totalCount
+      }
     }
   }
 `)
@@ -207,15 +222,12 @@ function updateIndicator() {
   }
 }
 
-watch(
-  () => route.path,
-  () => {
-    nextTick(() => {
-      // Small delay to ensure aria-current is set
-      setTimeout(updateIndicator, 10)
-    })
-  },
-)
+watch([() => route.path, () => links.value.length], () => {
+  nextTick(() => {
+    // Small delay to ensure aria-current is set
+    setTimeout(updateIndicator, 10)
+  })
+})
 
 onMounted(() => {
   setTimeout(updateIndicator, 50)
@@ -249,7 +261,10 @@ const { $pwa } = useNuxtApp()
       >
         <ul
           ref="navRef"
-          class="bg-background-raised shadow-large rounded-navigation p-navigation-inset relative mx-auto grid w-full max-w-xl grid-cols-3 gradient-border"
+          class="bg-background-raised shadow-large rounded-navigation p-navigation-inset relative mx-auto grid w-full max-w-xl gradient-border"
+          :style="{
+            gridTemplateColumns: `repeat(${links.length}, minmax(0, 1fr))`,
+          }"
         >
           <li v-for="link in links" :key="link.label" class="grow z-10">
             <NuxtLink
