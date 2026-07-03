@@ -162,6 +162,105 @@ func (r *Resolver) getFilteredChallenges(ctx context.Context, projectID string, 
 	return finalChallenges, nil
 }
 
+// getVisibleEventChallenges loads the visible challenges for an event using batch queries
+// for quiz session access and enrollment, avoiding the per-challenge N+1 the naive resolver
+// would issue. It mirrors the visibility rules of the original Event.challenges resolver,
+// including support for unauthenticated viewers (userID == "").
+func (r *Resolver) getVisibleEventChallenges(ctx context.Context, obj *model.Event) ([]model.Challenge, error) {
+	thunk := r.Loaders.ChallengesByEventLoader.Load(ctx, obj.ID)
+	challenges, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+
+	userID, _ := middleware.GetUserID(ctx)
+	now := time.Now()
+
+	// Batch-load quiz session access for quiz challenges (authenticated viewers only).
+	quizByChallenge := make(map[string]*model.Quiz)
+	sessionAccessQuizIDs := make(map[string]bool)
+	if userID != "" {
+		quizChallengeIDs := make([]string, 0)
+		for _, ch := range challenges {
+			if _, ok := ch.(*model.QuizChallenge); ok {
+				quizChallengeIDs = append(quizChallengeIDs, ch.GetID())
+			}
+		}
+		if len(quizChallengeIDs) > 0 {
+			quizThunk := r.Loaders.QuizByChallengeIDLoader.LoadMany(ctx, quizChallengeIDs)
+			quizResults, _ := quizThunk()
+			quizIDs := make([]string, 0, len(quizChallengeIDs))
+			for i, q := range quizResults {
+				if q != nil {
+					quizByChallenge[quizChallengeIDs[i]] = q
+					quizIDs = append(quizIDs, q.ID)
+				}
+			}
+			if len(quizIDs) > 0 {
+				accessibleQuizIDs, err := r.DB.Queries.GetBulkUserSessionAccessQuizIDs(ctx, sqlc.GetBulkUserSessionAccessQuizIDsParams{
+					Quizids: quizIDs,
+					Userid:  userID,
+				})
+				if err == nil {
+					for _, qid := range accessibleQuizIDs {
+						sessionAccessQuizIDs[qid] = true
+					}
+				}
+			}
+		}
+	}
+
+	// Batch-load which of this event's challenges the viewer is enrolled in (authenticated only).
+	enrolledChallengeIDs := make(map[string]bool)
+	if userID != "" && len(challenges) > 0 {
+		challengeIDs := make([]string, len(challenges))
+		for i, ch := range challenges {
+			challengeIDs[i] = ch.GetID()
+		}
+		enrolled, err := r.DB.Queries.GetUserEnrollmentTimestamps(ctx, sqlc.GetUserEnrollmentTimestampsParams{
+			Userid:       userID,
+			Challengeids: challengeIDs,
+		})
+		if err == nil {
+			for _, row := range enrolled {
+				enrolledChallengeIDs[row.ChallengeID] = true
+			}
+		}
+	}
+
+	result := make([]model.Challenge, 0, len(challenges))
+	for _, ch := range challenges {
+		// Quiz challenges (authenticated): visible only when session access is granted,
+		// regardless of publishedAt/visibleAt.
+		if _, ok := ch.(*model.QuizChallenge); ok && userID != "" {
+			if quiz := quizByChallenge[ch.GetID()]; quiz != nil && sessionAccessQuizIDs[quiz.ID] {
+				result = append(result, ch)
+			}
+			continue
+		}
+
+		publishedAt := getChallengePublishedAt(ch)
+		if publishedAt == nil || publishedAt.After(now) {
+			continue // Skip unpublished
+		}
+
+		visibleAt := getChallengeVisibleAt(ch)
+		isVisible := visibleAt != nil && !visibleAt.After(now)
+		if !isVisible {
+			// Not publicly visible yet: only enrolled (authenticated) users may see it.
+			if userID == "" || !enrolledChallengeIDs[ch.GetID()] {
+				continue
+			}
+		}
+
+		result = append(result, ch)
+	}
+
+	// Apply translations in batch after filtering.
+	r.applyTranslationsToChallenges(ctx, result)
+	return result, nil
+}
+
 // sortChallengesByEnrollment sorts challenges with enrolled first (by enrolled_at DESC),
 // then non-enrolled (by published_at DESC).
 func (r *Resolver) sortChallengesByEnrollment(ctx context.Context, userID string, challenges []model.Challenge) {

@@ -6,11 +6,24 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net/http"
+	"strings"
+	"sync"
+	"time"
 
 	webpush "github.com/SherClockHolmes/webpush-go"
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/ulid"
+)
+
+const (
+	// pushHTTPTimeout bounds each individual webpush HTTP request so a single stalled
+	// push endpoint cannot hang a broadcast indefinitely.
+	pushHTTPTimeout = 10 * time.Second
+	// pushSendConcurrency bounds how many push endpoints are contacted at once during a
+	// broadcast, so large fan-outs don't exhaust file descriptors or the DB pool.
+	pushSendConcurrency = 16
 )
 
 // NotificationType represents the type of push notification
@@ -85,6 +98,7 @@ type Service struct {
 	queries     Querier
 	vapidConfig config.VAPIDConfig
 	logger      *slog.Logger
+	httpClient  *http.Client
 }
 
 // NewService creates a new push notification service
@@ -93,6 +107,9 @@ func NewService(queries Querier, vapidConfig config.VAPIDConfig, logger *slog.Lo
 		queries:     queries,
 		vapidConfig: vapidConfig,
 		logger:      logger,
+		// Shared client (connection reuse) with a per-request timeout so a stalled
+		// push endpoint can't block a send indefinitely.
+		httpClient: &http.Client{Timeout: pushHTTPTimeout},
 	}
 }
 
@@ -411,36 +428,55 @@ func (s *Service) sendToSubscriptions(ctx context.Context, subscriptions []*sqlc
 		InvalidSubscriptionIDs: make([]string, 0),
 	}
 
-	for _, sub := range subscriptions {
-		err := s.sendToSubscription(sub, payloadBytes)
-		if err != nil {
-			result.FailedDeliveries++
-			s.logger.Warn("failed to send push notification",
-				"subscriptionID", sub.ID,
-				"userID", sub.UserID,
-				"error", err,
-			)
+	// Fan out sends across a bounded pool so a large broadcast doesn't run fully
+	// serial (one slow endpoint blocking the rest) or unbounded (FD/pool exhaustion).
+	var (
+		mu  sync.Mutex
+		wg  sync.WaitGroup
+		sem = make(chan struct{}, pushSendConcurrency)
+	)
 
-			// Check if subscription is invalid and should be removed
-			if isInvalidSubscription(err) {
-				result.InvalidSubscriptionIDs = append(result.InvalidSubscriptionIDs, sub.ID)
-				// Remove invalid subscription
-				if delErr := s.queries.DeletePushSubscriptionByID(ctx, sub.ID); delErr != nil {
-					s.logger.Error("failed to delete invalid subscription", "id", sub.ID, "error", delErr)
-				} else {
-					s.logger.Info("deleted invalid subscription", "id", sub.ID)
+	for _, sub := range subscriptions {
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(sub *sqlc.PushSubscription) {
+			defer wg.Done()
+			defer func() { <-sem }()
+
+			err := s.sendToSubscription(ctx, sub, payloadBytes)
+
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				result.FailedDeliveries++
+				s.logger.Warn("failed to send push notification",
+					"subscriptionID", sub.ID,
+					"userID", sub.UserID,
+					"error", err,
+				)
+
+				// Check if subscription is invalid and should be removed
+				if isInvalidSubscription(err) {
+					result.InvalidSubscriptionIDs = append(result.InvalidSubscriptionIDs, sub.ID)
+					// Remove invalid subscription
+					if delErr := s.queries.DeletePushSubscriptionByID(ctx, sub.ID); delErr != nil {
+						s.logger.Error("failed to delete invalid subscription", "id", sub.ID, "error", delErr)
+					} else {
+						s.logger.Info("deleted invalid subscription", "id", sub.ID)
+					}
 				}
+			} else {
+				result.SuccessfulDeliveries++
 			}
-		} else {
-			result.SuccessfulDeliveries++
-		}
+		}(sub)
 	}
 
+	wg.Wait()
 	return result
 }
 
 // sendToSubscription sends the payload to a single subscription
-func (s *Service) sendToSubscription(sub *sqlc.PushSubscription, payloadBytes []byte) error {
+func (s *Service) sendToSubscription(ctx context.Context, sub *sqlc.PushSubscription, payloadBytes []byte) error {
 	subscription := &webpush.Subscription{
 		Endpoint: sub.Endpoint,
 		Keys: webpush.Keys{
@@ -449,7 +485,8 @@ func (s *Service) sendToSubscription(sub *sqlc.PushSubscription, payloadBytes []
 		},
 	}
 
-	resp, err := webpush.SendNotification(payloadBytes, subscription, &webpush.Options{
+	resp, err := webpush.SendNotificationWithContext(ctx, payloadBytes, subscription, &webpush.Options{
+		HTTPClient:      s.httpClient,
 		Subscriber:      s.vapidConfig.Subject,
 		VAPIDPublicKey:  s.vapidConfig.PublicKey,
 		VAPIDPrivateKey: s.vapidConfig.PrivateKey,
@@ -473,20 +510,7 @@ func isInvalidSubscription(err error) bool {
 	// Check for common invalid subscription indicators
 	// 404 Not Found or 410 Gone typically mean the subscription is expired
 	errStr := err.Error()
-	return contains(errStr, "404") || contains(errStr, "410") || contains(errStr, "status 404") || contains(errStr, "status 410")
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsHelper(s, substr))
-}
-
-func containsHelper(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
+	return strings.Contains(errStr, "404") || strings.Contains(errStr, "410")
 }
 
 // SubscribeRequest represents a push subscription request from the frontend

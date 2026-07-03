@@ -160,6 +160,13 @@ type CacheWithRegistry struct {
 
 // NewCacheWithRegistry creates a cache with key registry support
 func NewCacheWithRegistry(cfg Config) (*CacheWithRegistry, error) {
+	registry := NewKeyRegistry()
+
+	// Prune keys from the registry when ristretto evicts them on its own (TTL
+	// expiry / cost eviction / admission rejection). Without this the registry
+	// grows unbounded and DeletePrefix slows down over time.
+	cfg.onEvictKey = registry.Unregister
+
 	cache, err := New(cfg)
 	if err != nil {
 		return nil, err
@@ -167,7 +174,7 @@ func NewCacheWithRegistry(cfg Config) (*CacheWithRegistry, error) {
 
 	return &CacheWithRegistry{
 		Cache:    cache,
-		registry: NewKeyRegistry(),
+		registry: registry,
 	}, nil
 }
 
