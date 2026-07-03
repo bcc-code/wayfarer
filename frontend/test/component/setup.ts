@@ -20,6 +20,25 @@ vi.mock('@sentry/nuxt', () => ({
   addBreadcrumb: vi.fn(),
 }))
 
+// The firebase client plugin (app/plugins/5.firebase.client.ts) statically
+// imports firebase/firestore, which pulls in the Node Firestore SDK (grpc +
+// protobufjs) — irrelevant to component rendering and prone to CJS/ESM interop
+// crashes in the test env. Stub the firebase entry points so nothing loads it.
+vi.mock('firebase/app', () => ({
+  initializeApp: vi.fn(() => ({})),
+  getApps: vi.fn(() => []),
+}))
+vi.mock('firebase/auth', () => ({
+  getAuth: vi.fn(() => ({})),
+  signInWithCustomToken: vi.fn(),
+  signOut: vi.fn(),
+}))
+vi.mock('firebase/firestore', () => ({
+  getFirestore: vi.fn(() => ({})),
+  doc: vi.fn(),
+  onSnapshot: vi.fn(() => vi.fn()),
+}))
+
 vi.mock('@auth0/auth0-vue', () => ({
   // The auth0 plugin (app/plugins/1.auth0.ts) installs this as a Vue plugin.
   createAuth0: () => ({ install: () => {} }),

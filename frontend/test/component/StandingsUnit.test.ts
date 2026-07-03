@@ -14,8 +14,6 @@ const {
   authReadyMock,
   updateTeamMock,
   assignLeadMock,
-  routeMock,
-  routerMock,
   nowMock,
 } = vi.hoisted(() => ({
   queryMock: vi.fn(),
@@ -23,8 +21,6 @@ const {
   authReadyMock: vi.fn(),
   updateTeamMock: vi.fn(),
   assignLeadMock: vi.fn(),
-  routeMock: vi.fn(),
-  routerMock: vi.fn(),
   nowMock: vi.fn(),
 }))
 mockNuxtImport('useStandingsUnitPageQuery', () => queryMock)
@@ -32,8 +28,6 @@ mockNuxtImport('useAuth', () => authMock)
 mockNuxtImport('useAuthReady', () => authReadyMock)
 mockNuxtImport('useUpdateTeamMutation', () => updateTeamMock)
 mockNuxtImport('useAssignTeamLeadMutation', () => assignLeadMock)
-mockNuxtImport('useRoute', () => routeMock)
-mockNuxtImport('useRouter', () => routerMock)
 mockNuxtImport('useNow', () => nowMock)
 
 type Member = { id: string; name: string; rank?: number; tags?: string[] }
@@ -74,8 +68,6 @@ function mountWith(state: QueryState) {
   })
   updateTeamMock.mockReturnValue({ executeMutation: vi.fn() })
   assignLeadMock.mockReturnValue({ executeMutation: vi.fn() })
-  routeMock.mockReturnValue({ query: {} })
-  routerMock.mockReturnValue({ replace: vi.fn() })
   nowMock.mockReturnValue(ref(new Date('2020-01-01T00:00:00Z')))
   // All child components render for real; only the data composables are mocked.
   return mountSuspended(StandingsUnit)
