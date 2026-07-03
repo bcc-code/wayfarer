@@ -29,6 +29,8 @@ ARG NUXT_PUBLIC_FIREBASE_PROJECT_ID
 ARG APP_VERSION
 
 ENV APP_VERSION=${APP_VERSION}
+# Nuxt/Vite "rendering chunks" exceeds Node's default ~2GB old-space heap; raise it.
+ENV NODE_OPTIONS=--max-old-space-size=4096
 RUN pnpm run build
 
 # Stage 2: Build Go backend
