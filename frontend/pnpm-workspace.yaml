@@ -1,14 +1,14 @@
 minimumReleaseAge: 1440
 allowBuilds:
-  '@firebase/util': set this to true or false
-  '@parcel/watcher': set this to true or false
-  '@posthog/cli': set this to true or false
-  '@sentry/cli': set this to true or false
-  browser-tabs-lock: set this to true or false
-  core-js: set this to true or false
-  esbuild: set this to true or false
-  maplibre-gl: set this to true or false
-  protobufjs: set this to true or false
-  sharp: set this to true or false
-  unrs-resolver: set this to true or false
-  vue-demi: set this to true or false
+  '@firebase/util': true
+  '@parcel/watcher': true
+  '@posthog/cli': true
+  '@sentry/cli': true
+  browser-tabs-lock: true
+  core-js: false
+  esbuild: true
+  maplibre-gl: true
+  protobufjs: true
+  sharp: true
+  unrs-resolver: true
+  vue-demi: true
