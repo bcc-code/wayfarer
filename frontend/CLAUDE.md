@@ -11,7 +11,7 @@
 - **Auth**: Auth0 → exchanged for Wayfarer JWT
 - **Analytics**: PostHog + RudderStack
 - **Error Tracking**: Sentry
-- **Testing**: Vitest + happy-dom (unit), Playwright (e2e)
+- **Testing**: Vitest — two projects: `unit` (pure logic, node env) and `component` (rendered via `@nuxt/test-utils` in a Nuxt runtime env). No e2e suite yet.
 - **PWA**: @vite-pwa/nuxt with service worker
 
 ## Directory Layout
@@ -52,8 +52,9 @@ frontend/
 ```bash
 pnpm dev            # Start dev server
 pnpm codegen        # Generate GraphQL types from gql/ schemas + local operations
-pnpm test           # Run all tests
-pnpm test:unit      # Run unit tests only
+pnpm test           # Run all tests (watch mode)
+pnpm test:unit      # Run unit tests only (pure logic, node env)
+pnpm test:component # Run component tests only (rendered, Nuxt env)
 pnpm lint           # ESLint
 pnpm format         # Prettier
 pnpm build          # Production build
@@ -127,3 +128,27 @@ describe('Feature', () => {
 
 - Mock utilities in `test/utils/auth-mocks.ts`
 - Use noon times in date tests to avoid timezone boundary issues
+
+#### Component tests
+
+Component tests live in `test/component/` and render real components. They run
+in a Nuxt runtime environment (via `@nuxt/test-utils`) so auto-imports
+(`computed`, composables, global `Design*`/`NuxtLink` components, `$t`) resolve.
+
+- Start each file with `// @vitest-environment nuxt`
+- Mount with `mountSuspended` from `@nuxt/test-utils/runtime`
+- Mock Nuxt auto-imports (composables) with `mockNuxtImport`
+- `test/component/setup.ts` globally stubs Auth0 and Sentry so app init doesn't
+  throw during mount — no per-test boilerplate needed
+- Stub heavy child components with `stubs: { Foo: true }` (auto-stub preserves
+  props + component name); use a custom template stub only when you need real
+  DOM (e.g. an `<a>` to click)
+
+```typescript
+// @vitest-environment nuxt
+import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
+```
+
+See `test/component/EmptyState.test.ts` (simplest) and
+`ChallengeCard.test.ts` (computed logic + mocked composable + stubs) as
+worked examples.

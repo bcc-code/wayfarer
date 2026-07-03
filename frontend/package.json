@@ -10,6 +10,7 @@
     "codegen": "graphql-codegen --config codegen.ts",
     "test": "vitest",
     "test:unit": "vitest run --project=unit",
+    "test:component": "vitest run --project=component",
     "test:watch": "vitest --project=unit",
     "format": "prettier --write .",
     "lint": "eslint . --fix",
