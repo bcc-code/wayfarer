@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import ChallengeCard from '~/components/challenges/ChallengeCard.vue'
+import DesignButton from '~/components/design/DesignButton.vue'
 
 // useAnalytics is a Nuxt auto-import; mockNuxtImport replaces it globally.
 const track = vi.fn()
@@ -28,17 +29,9 @@ function makeChallenge(overrides: Partial<Challenge> = {}): Challenge {
   } as Challenge
 }
 
-// Stub heavy/global child components so we test ChallengeCard in isolation.
-const global = {
-  stubs: {
-    // `true` = auto-stub: renders a placeholder but preserves props and the
-    // component name, so findComponent(...).props('variant') still works.
-    DesignImage: true,
-    DesignButton: true,
-    // Custom stub renders a real <a> so we can trigger a click event.
-    NuxtLink: { template: '<a><slot /></a>' },
-  },
-}
+// All children render for real (DesignImage, DesignButton, NuxtLink). Only the
+// useAnalytics composable is mocked, above.
+const global = {}
 
 describe('ChallengeCard', () => {
   beforeEach(() => {
@@ -61,7 +54,7 @@ describe('ChallengeCard', () => {
       global,
     })
 
-    const button = wrapper.findComponent({ name: 'DesignButton' })
+    const button = wrapper.findComponent(DesignButton)
     expect(button.props('variant')).toBe('primary')
   })
 
@@ -73,7 +66,7 @@ describe('ChallengeCard', () => {
       global,
     })
 
-    const button = wrapper.findComponent({ name: 'DesignButton' })
+    const button = wrapper.findComponent(DesignButton)
     expect(button.props('variant')).toBe('secondary')
   })
 

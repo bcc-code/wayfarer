@@ -140,15 +140,36 @@ in a Nuxt runtime environment (via `@nuxt/test-utils`) so auto-imports
 - Mock Nuxt auto-imports (composables) with `mockNuxtImport`
 - `test/component/setup.ts` globally stubs Auth0 and Sentry so app init doesn't
   throw during mount — no per-test boilerplate needed
-- Stub heavy child components with `stubs: { Foo: true }` (auto-stub preserves
-  props + component name); use a custom template stub only when you need real
-  DOM (e.g. an `<a>` to click)
+
+**Mock composables, render real components.** The boundary of a component test
+is data, not UI:
+
+- **Always mock** composables/queries — `useAuth`, the generated
+  `use*PageQuery`/`use*Mutation` composables, `useRoute`/`useRouter`, `useNow`.
+  There is no backend, auth, or router history in a component test.
+- **Prefer real child components** — `DesignButton`, `DesignInput`,
+  `DesignPanel`, icons, `NuxtLink`, etc. all render fine and give higher
+  fidelity (a broken slot or prop binding actually fails the test). Select them
+  with `findComponent(RealComponent)` and read `.props(...)`.
+- **Only stub a child when it actively resists the test:**
+  - _Teleporting UI_ — `DesignDrawer`/modals wrap `@nuxt/ui` components that
+    teleport content out of the wrapper and only render it while open. Stub with
+    a template that renders `<slot />` + `<slot name="content" />` and declares
+    `emits: ['update:open']` so you can query the form and drive open/close.
+  - _Heavy list/data children you assert props on_ — e.g. `LeaderboardList`
+    (entrance animations, needs full entry data for its item children). Stub
+    with `{ Foo: true }` (auto-stub preserves props + name) and assert on the
+    props passed to it.
 
 ```typescript
 // @vitest-environment nuxt
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 ```
 
-See `test/component/EmptyState.test.ts` (simplest) and
-`ChallengeCard.test.ts` (computed logic + mocked composable + stubs) as
-worked examples.
+Worked examples:
+
+- `EmptyState.test.ts` — simplest render test
+- `ChallengeCard.test.ts` — real children, mocked `useAnalytics`
+- `StandingsGlobal.test.ts` — driving query state (loading/error/empty/data)
+- `StandingsUnitEdit.test.ts` — interactive form flow with a stubbed
+  `DesignDrawer` (the only place a stub is required)
