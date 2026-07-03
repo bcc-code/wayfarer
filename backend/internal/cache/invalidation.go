@@ -120,7 +120,7 @@ func extractPrefixes(key string) []string {
 		PrefixUserProjects, PrefixUserEvents, PrefixTeamMembers, PrefixUserRoles,
 		PrefixUserChallengeEnrollments, PrefixUserChallengeCompletions,
 		PrefixUserContentProgress, PrefixUserAchievements, PrefixUserStreakProgress,
-		PrefixUserConsents, PrefixUserProjectPoints,
+		PrefixUserConsents, PrefixUserProjectPoints, PrefixActiveChallengesCount,
 		PrefixUsersFilter, PrefixUsersCount,
 		PrefixProjectsFilter, PrefixProjectsCount,
 		PrefixEventsFilter, PrefixEventsCount,

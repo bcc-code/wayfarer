@@ -428,7 +428,7 @@ func ExtractUserTag(key string) (string, bool) {
 		PrefixUserContentProgress, PrefixUserAchievements,
 		PrefixUserStreakProgress, PrefixUserChallengeEnrollments,
 		PrefixUserChallengeCompletions, PrefixUserConsents,
-		PrefixUserProjectPoints,
+		PrefixUserProjectPoints, PrefixActiveChallengesCount,
 	}
 	for _, prefix := range prefixes {
 		if strings.HasPrefix(key, prefix) {
