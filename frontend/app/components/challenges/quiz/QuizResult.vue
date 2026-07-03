@@ -94,9 +94,6 @@ onMounted(() => {
         <h1 class="text-heading text-text-default">
           {{ $t('quiz.result.thanksForAnswers') }}
         </h1>
-        <p class="text-body text-text-secondary">
-          {{ $t('quiz.result.resultsRevealedLater') }}
-        </p>
       </div>
 
       <div class="flex flex-col gap-small">
@@ -130,7 +127,7 @@ onMounted(() => {
 
         <h1 class="text-heading text-text-default tabular-nums">
           {{ resultText }}
-          <br >
+          <br />
           {{ pointsText }}
         </h1>
       </div>

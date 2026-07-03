@@ -177,23 +177,27 @@ onMounted(() => {
 })
 
 // Watch for needsToStartQuiz transitions (handles both initial mount and post-enrollment refresh)
-watch(needsToStartQuiz, async (needs) => {
-  if (!needs || !props.challenge.quiz.userActiveSession?.id) return
-  isLoading.value = true
-  const result = await startQuizSession({
-    sessionId: props.challenge.quiz.userActiveSession.id,
-  })
-  if (result.data?.startQuizSession) {
-    startedSubmission.value = result.data.startQuizSession
-  }
-  isLoading.value = false
-  emit('start')
-  track(AnalyticsEvent.QuizStarted, {
-    quiz_id: props.challenge.quiz.id,
-    quiz_name: props.challenge.name,
-    challenge_id: props.challenge.id,
-  })
-}, { immediate: true })
+watch(
+  needsToStartQuiz,
+  async (needs) => {
+    if (!needs || !props.challenge.quiz.userActiveSession?.id) return
+    isLoading.value = true
+    const result = await startQuizSession({
+      sessionId: props.challenge.quiz.userActiveSession.id,
+    })
+    if (result.data?.startQuizSession) {
+      startedSubmission.value = result.data.startQuizSession
+    }
+    isLoading.value = false
+    emit('start')
+    track(AnalyticsEvent.QuizStarted, {
+      quiz_id: props.challenge.quiz.id,
+      quiz_name: props.challenge.name,
+      challenge_id: props.challenge.id,
+    })
+  },
+  { immediate: true },
+)
 
 const activeSubmission = computed(() => {
   // Determine the target submission ID
@@ -453,6 +457,22 @@ const activeRef = computed(() =>
 const actionState = computed(() => activeRef.value?.actionState)
 const handlers = computed(() => activeRef.value?.handlers)
 
+// When correct answers are hidden (e.g. the quiz is used as a survey), locking
+// an answer reveals nothing, so the separate "continue" tap is just friction.
+// Submit and advance in one step. Reveal-enabled quizzes keep the two-step flow
+// so users can see the correct/wrong result before continuing.
+async function onLockAnswer() {
+  await handlers.value?.submit()
+  // Only auto-advance if the answer actually locked — submit() no-ops on empty
+  // input (e.g. blank free text), and we must not skip an unanswered question.
+  if (
+    props.challenge.quiz.revealCorrectAnswers === false &&
+    actionState.value?.isAnswerLocked
+  ) {
+    handlers.value?.continue()
+  }
+}
+
 const footerState = computed(() => {
   const state = actionState.value
   if (!state) return null
@@ -471,6 +491,14 @@ const continueButtonText = computed(() => {
   }
   return t('quiz.nextQuestion')
 })
+
+// When results are hidden the lock button just advances, so label it as such
+// rather than "Lock answer".
+const lockButtonText = computed(() =>
+  props.challenge.quiz.revealCorrectAnswers === false
+    ? continueButtonText.value
+    : t('quiz.lockAnswer'),
+)
 
 // Determine button text for next action in review mode
 const nextButtonText = computed(() => {
@@ -839,9 +867,9 @@ const progressResults = computed(() => {
           size="large"
           :disabled="footerState.button.disabled"
           :loading="actionState?.isSubmitting"
-          @click="handlers?.submit"
+          @click="onLockAnswer"
         >
-          {{ $t('quiz.lockAnswer') }}
+          {{ lockButtonText }}
         </DesignButton>
 
         <DesignButton

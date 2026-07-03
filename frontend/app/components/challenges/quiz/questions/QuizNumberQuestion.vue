@@ -46,7 +46,8 @@ const submittedResult = ref<{ isCorrect: boolean | null } | null>(
 )
 
 async function handleLockAnswer() {
-  if (!currentValue.value || isSubmitting.value) return
+  // 0 is a valid answer (minValue can be 0), so guard on nullish, not falsy.
+  if (currentValue.value == null || isSubmitting.value) return
 
   isSubmitting.value = true
 
