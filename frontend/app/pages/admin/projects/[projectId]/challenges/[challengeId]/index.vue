@@ -211,11 +211,9 @@ async function handleDelete() {
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error />
       <div v-else-if="initialData" class="space-y-6">
-        <div
-          v-if="data?.challenge.__typename === 'QuizChallenge'"
-          class="flex gap-2"
-        >
+        <div class="flex gap-2">
           <UButton
+            v-if="data?.challenge.__typename === 'QuizChallenge'"
             variant="soft"
             :to="{
               name: 'admin-projects-projectId-challenges-challengeId-sessions',
@@ -227,6 +225,10 @@ async function handleDelete() {
           >
             Sesjoner
           </UButton>
+          <AdminChallengeQrModal
+            :challenge-id="route.params.challengeId"
+            :challenge-name="data?.challenge.name ?? ''"
+          />
         </div>
         <AdminChallengeForm
           :initial-data="initialData"
