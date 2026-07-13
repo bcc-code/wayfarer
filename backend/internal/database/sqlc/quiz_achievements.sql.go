@@ -51,7 +51,7 @@ func (q *Queries) CreateQuizAchievement(ctx context.Context, arg CreateQuizAchie
 
 const DeleteQuizAchievement = `-- name: DeleteQuizAchievement :exec
 DELETE FROM quiz_achievements
-WHERE achievement_id = $1::text
+WHERE achievement_id = $1::char(28)
 `
 
 func (q *Queries) DeleteQuizAchievement(ctx context.Context, achievementid string) error {
@@ -62,7 +62,7 @@ func (q *Queries) DeleteQuizAchievement(ctx context.Context, achievementid strin
 const GetQuizAchievementByAchievementID = `-- name: GetQuizAchievementByAchievementID :one
 SELECT achievement_id, quiz_id, min_score_percentage, require_completion
 FROM quiz_achievements
-WHERE achievement_id = $1::text
+WHERE achievement_id = $1::char(28)
 `
 
 func (q *Queries) GetQuizAchievementByAchievementID(ctx context.Context, achievementid string) (*QuizAchievement, error) {
@@ -80,7 +80,7 @@ func (q *Queries) GetQuizAchievementByAchievementID(ctx context.Context, achieve
 const GetQuizAchievementsByQuizID = `-- name: GetQuizAchievementsByQuizID :many
 SELECT achievement_id, quiz_id, min_score_percentage, require_completion
 FROM quiz_achievements
-WHERE quiz_id = $1::text
+WHERE quiz_id = $1::char(28)
 `
 
 func (q *Queries) GetQuizAchievementsByQuizID(ctx context.Context, quizid string) ([]*QuizAchievement, error) {
@@ -111,7 +111,7 @@ func (q *Queries) GetQuizAchievementsByQuizID(ctx context.Context, quizid string
 const GetQuizAchievementsByQuizIDs = `-- name: GetQuizAchievementsByQuizIDs :many
 SELECT achievement_id, quiz_id, min_score_percentage, require_completion
 FROM quiz_achievements
-WHERE quiz_id = ANY($1::text[])
+WHERE quiz_id = ANY($1::char(28)[])
 `
 
 func (q *Queries) GetQuizAchievementsByQuizIDs(ctx context.Context, quizIds []string) ([]*QuizAchievement, error) {

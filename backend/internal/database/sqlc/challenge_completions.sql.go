@@ -86,7 +86,7 @@ func (q *Queries) GetBulkUserCompletionTimestamps(ctx context.Context, arg GetBu
 const GetCompletedUsersForChallenge = `-- name: GetCompletedUsersForChallenge :many
 SELECT user_id, completed_at
 FROM user_challenge_completions
-WHERE challenge_id = $1::text
+WHERE challenge_id = $1::char(28)
 ORDER BY completed_at ASC
 `
 
@@ -118,7 +118,7 @@ func (q *Queries) GetCompletedUsersForChallenge(ctx context.Context, challengeid
 const GetUserCompletionTimestamp = `-- name: GetUserCompletionTimestamp :one
 SELECT completed_at
 FROM user_challenge_completions
-WHERE user_id = $1::text AND challenge_id = $2::text
+WHERE user_id = $1::char(28) AND challenge_id = $2::char(28)
 `
 
 type GetUserCompletionTimestampParams struct {
@@ -137,7 +137,7 @@ const IsUserChallengeCompleted = `-- name: IsUserChallengeCompleted :one
 SELECT EXISTS(
     SELECT 1
     FROM user_challenge_completions
-    WHERE user_id = $1::text AND challenge_id = $2::text
+    WHERE user_id = $1::char(28) AND challenge_id = $2::char(28)
 ) AS is_completed
 `
 
@@ -155,7 +155,7 @@ func (q *Queries) IsUserChallengeCompleted(ctx context.Context, arg IsUserChalle
 
 const UncompleteUserFromChallenge = `-- name: UncompleteUserFromChallenge :exec
 DELETE FROM user_challenge_completions
-WHERE user_id = $1::text AND challenge_id = $2::text
+WHERE user_id = $1::char(28) AND challenge_id = $2::char(28)
 `
 
 type UncompleteUserFromChallengeParams struct {

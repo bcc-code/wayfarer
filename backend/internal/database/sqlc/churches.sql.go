@@ -13,7 +13,7 @@ const CountChurchesFiltered = `-- name: CountChurchesFiltered :one
 SELECT COUNT(*)
 FROM churches
 WHERE
-    ($1::text[] IS NULL OR id = ANY($1::text[]))
+    ($1::char(28)[] IS NULL OR id = ANY($1::char(28)[]))
     AND ($2::text = '' OR country = $2::text)
     AND ($3::text = '' OR category = $3::text)
 `
@@ -129,7 +129,7 @@ func (q *Queries) GetChurchByID(ctx context.Context, id string) (*GetChurchByIDR
 const GetChurchesByIDs = `-- name: GetChurchesByIDs :many
 SELECT id, external_id, name, country, category
 FROM churches
-WHERE id = ANY($1::text[])
+WHERE id = ANY($1::char(28)[])
 `
 
 type GetChurchesByIDsRow struct {
@@ -170,11 +170,11 @@ const GetChurchesFilteredCursor = `-- name: GetChurchesFilteredCursor :many
 SELECT id, external_id, name, country, category
 FROM churches
 WHERE
-    ($1::text[] IS NULL OR id = ANY($1::text[]))
+    ($1::char(28)[] IS NULL OR id = ANY($1::char(28)[]))
     AND ($2::text = '' OR country = $2::text)
     AND ($3::text = '' OR category = $3::text)
-    AND ($4::text = '' OR id > $4::text)
-    AND ($5::text = '' OR id < $5::text)
+    AND ($4::char(28) = '' OR id > $4::char(28))
+    AND ($5::char(28) = '' OR id < $5::char(28))
 ORDER BY
     CASE WHEN $6::bool = true THEN id END DESC,
     CASE WHEN $6::bool = false OR $6::bool IS NULL THEN id END ASC

@@ -14,9 +14,9 @@ import (
 const AssignChallengeToEvent = `-- name: AssignChallengeToEvent :one
 UPDATE challenges
 SET
-    event_id = $1::text,
+    event_id = $1::char(28),
     updated_at = now()
-WHERE id = $2::text
+WHERE id = $2::char(28)
 RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 `
 
@@ -224,7 +224,7 @@ UPDATE challenges
 SET
     published_at = $1::timestamptz,
     updated_at = now()
-WHERE id = ANY($2::text[])
+WHERE id = ANY($2::char(28)[])
 RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 `
 
@@ -301,9 +301,9 @@ const CountChallengesFiltered = `-- name: CountChallengesFiltered :one
 SELECT COUNT(DISTINCT id)
 FROM challenges
 WHERE
-    ($1::text[] IS NULL OR id = ANY($1::text[]))
-    AND ($2::text = '' OR project_id = $2::text)
-    AND ($3::text = '' OR event_id = $3::text)
+    ($1::char(28)[] IS NULL OR id = ANY($1::char(28)[]))
+    AND ($2::char(28) = '' OR project_id = $2::char(28))
+    AND ($3::char(28) = '' OR event_id = $3::char(28))
     AND ($4::text = '' OR challenge_type = $4::text)
     AND ($5::timestamptz IS NULL OR published_at >= $5::timestamptz)
     AND ($6::timestamptz IS NULL OR published_at <= $6::timestamptz)
@@ -465,7 +465,7 @@ func (q *Queries) CreateChallenge(ctx context.Context, arg CreateChallengeParams
 
 const DeleteChallenge = `-- name: DeleteChallenge :exec
 DELETE FROM challenges
-WHERE id = $1::text
+WHERE id = $1::char(28)
 `
 
 func (q *Queries) DeleteChallenge(ctx context.Context, id string) error {
@@ -476,7 +476,7 @@ func (q *Queries) DeleteChallenge(ctx context.Context, id string) error {
 const GetAllChallengesByEventIDs = `-- name: GetAllChallengesByEventIDs :many
 SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 FROM challenges
-WHERE event_id = ANY($1::text[])
+WHERE event_id = ANY($1::char(28)[])
 ORDER BY event_id, COALESCE(published_at, created_at) DESC
 `
 
@@ -549,7 +549,7 @@ func (q *Queries) GetAllChallengesByEventIDs(ctx context.Context, eventIds []str
 const GetAllChallengesByProjectIDs = `-- name: GetAllChallengesByProjectIDs :many
 SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 FROM challenges
-WHERE project_id = ANY($1::text[])
+WHERE project_id = ANY($1::char(28)[])
 ORDER BY project_id, COALESCE(published_at, created_at) DESC
 `
 
@@ -679,7 +679,7 @@ func (q *Queries) GetChallengeByPluginChallengeID(ctx context.Context, plugincha
 const GetChallengesByEventIDs = `-- name: GetChallengesByEventIDs :many
 SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 FROM challenges
-WHERE event_id = ANY($1::text[])
+WHERE event_id = ANY($1::char(28)[])
     AND published_at IS NOT NULL
     AND published_at <= NOW()
 ORDER BY event_id, published_at DESC
@@ -752,7 +752,7 @@ func (q *Queries) GetChallengesByEventIDs(ctx context.Context, eventIds []string
 const GetChallengesByIDs = `-- name: GetChallengesByIDs :many
 SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 FROM challenges
-WHERE id = ANY($1::text[])
+WHERE id = ANY($1::char(28)[])
 `
 
 type GetChallengesByIDsRow struct {
@@ -822,7 +822,7 @@ func (q *Queries) GetChallengesByIDs(ctx context.Context, ids []string) ([]*GetC
 const GetChallengesByProjectIDs = `-- name: GetChallengesByProjectIDs :many
 SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 FROM challenges
-WHERE project_id = ANY($1::text[])
+WHERE project_id = ANY($1::char(28)[])
     AND published_at IS NOT NULL
     AND published_at <= NOW()
 ORDER BY project_id, published_at DESC
@@ -896,9 +896,9 @@ const GetChallengesFilteredCursor = `-- name: GetChallengesFilteredCursor :many
 SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 FROM challenges
 WHERE
-    ($1::text[] IS NULL OR id = ANY($1::text[]))
-    AND ($2::text = '' OR project_id = $2::text)
-    AND ($3::text = '' OR event_id = $3::text)
+    ($1::char(28)[] IS NULL OR id = ANY($1::char(28)[]))
+    AND ($2::char(28) = '' OR project_id = $2::char(28))
+    AND ($3::char(28) = '' OR event_id = $3::char(28))
     AND ($4::text = '' OR challenge_type = $4::text)
     AND ($5::timestamptz IS NULL OR published_at >= $5::timestamptz)
     AND ($6::timestamptz IS NULL OR published_at <= $6::timestamptz)
@@ -1012,7 +1012,7 @@ func (q *Queries) GetChallengesFilteredCursor(ctx context.Context, arg GetChalle
 }
 
 const GetQuizByChallengeID = `-- name: GetQuizByChallengeID :one
-SELECT id, project_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, end_time, created_at, updated_at, challenge_id FROM quizzes WHERE challenge_id = $1::text
+SELECT id, project_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, end_time, created_at, updated_at, challenge_id FROM quizzes WHERE challenge_id = $1::char(28)
 `
 
 func (q *Queries) GetQuizByChallengeID(ctx context.Context, challengeid string) (*Quiz, error) {
@@ -1042,7 +1042,7 @@ UPDATE challenges
 SET
     published_at = $1::timestamptz,
     updated_at = now()
-WHERE id = $2::text
+WHERE id = $2::char(28)
 RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 `
 
@@ -1121,7 +1121,7 @@ SET
     requires_super_team_membership = COALESCE($14::bool, requires_super_team_membership),
     plugin_challenge_id = COALESCE($15::text, plugin_challenge_id),
     updated_at = now()
-WHERE id = $16::text
+WHERE id = $16::char(28)
 RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 `
 
@@ -1218,7 +1218,7 @@ SET
     requires_team_membership = COALESCE($1::bool, requires_team_membership),
     requires_super_team_membership = COALESCE($2::bool, requires_super_team_membership),
     updated_at = now()
-WHERE id = $3::text
+WHERE id = $3::char(28)
 RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 `
 
@@ -1285,7 +1285,7 @@ SET
     visible_at = COALESCE($1::timestamptz, visible_at),
     started_at = COALESCE($2::timestamptz, started_at),
     updated_at = now()
-WHERE id = $3::text
+WHERE id = $3::char(28)
 RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 `
 

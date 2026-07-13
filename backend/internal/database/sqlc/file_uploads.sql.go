@@ -80,7 +80,7 @@ func (q *Queries) CreateFileUpload(ctx context.Context, arg CreateFileUploadPara
 
 const GetFileUpload = `-- name: GetFileUpload :one
 SELECT id, filename, stored_filename, file_size, mime_type, public_url, uploaded_by, created_at, width, height, blurhash FROM file_uploads
-WHERE id = $1::text
+WHERE id = $1::char(28)
 `
 
 func (q *Queries) GetFileUpload(ctx context.Context, id string) (*FileUpload, error) {
@@ -169,7 +169,7 @@ func (q *Queries) GetFileUploadsByURLs(ctx context.Context, urls []string) ([]*G
 
 const GetFileUploadsByUser = `-- name: GetFileUploadsByUser :many
 SELECT id, filename, stored_filename, file_size, mime_type, public_url, uploaded_by, created_at, width, height, blurhash FROM file_uploads
-WHERE uploaded_by = $1::text
+WHERE uploaded_by = $1::char(28)
 ORDER BY created_at DESC
 LIMIT $3::int
 OFFSET $2::int

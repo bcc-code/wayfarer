@@ -60,6 +60,7 @@ type Loaders struct {
 	ExternalContentTranslationsLoader        *dataloader.Loader[string, []model.ExternalContentTranslation]
 	ImageMetadataByURLLoader                 *dataloader.Loader[string, *model.Image]
 	ScoreJournalByIDLoader                   *dataloader.Loader[string, *model.ScoreJournal]
+	UserProjectScoreLoader                   *dataloader.Loader[UserProjectKey, int64]
 }
 
 // newBatchedLoader creates a new batched dataloader with standard configuration:
@@ -126,5 +127,6 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		ExternalContentTranslationsLoader:        newBatchedLoader(externalContentTranslationsBatchFunc(db, cache)),
 		ImageMetadataByURLLoader:                 newBatchedLoader(imageMetadataByURLBatchFunc(db, cache)),
 		ScoreJournalByIDLoader:                   newBatchedLoader(scoreJournalByIDBatchFunc(db, cache)),
+		UserProjectScoreLoader:                   newBatchedLoader(userProjectScoreBatchFunc(db)),
 	}
 }

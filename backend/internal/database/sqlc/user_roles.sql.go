@@ -56,7 +56,7 @@ func (q *Queries) AssignRole(ctx context.Context, arg AssignRoleParams) (*UserRo
 const GetAllRolesForUsers = `-- name: GetAllRolesForUsers :many
 SELECT ur.user_id, ur.id, ur.role, ur.church_id, ur.project_id, ur.team_id, ur.assigned_by, ur.assigned_at
 FROM user_roles ur
-WHERE ur.user_id = ANY($1::text[])
+WHERE ur.user_id = ANY($1::char(28)[])
 `
 
 type GetAllRolesForUsersRow struct {

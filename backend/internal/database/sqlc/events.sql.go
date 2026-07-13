@@ -15,8 +15,8 @@ const CountEventsFiltered = `-- name: CountEventsFiltered :one
 SELECT COUNT(id)
 FROM events
 WHERE
-    ($1::text[] IS NULL OR id = ANY($1::text[]))
-    AND ($2::text = '' OR project_id = $2::text)
+    ($1::char(28)[] IS NULL OR id = ANY($1::char(28)[]))
+    AND ($2::char(28) = '' OR project_id = $2::char(28))
     AND ($3::timestamptz IS NULL OR start_date >= $3::timestamptz)
     AND ($4::timestamptz IS NULL OR start_date <= $4::timestamptz)
     AND ($5::timestamptz IS NULL OR end_date >= $5::timestamptz)
@@ -100,7 +100,7 @@ func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) (*Even
 
 const DeleteEvent = `-- name: DeleteEvent :exec
 DELETE FROM events
-WHERE id = $1::text
+WHERE id = $1::char(28)
 `
 
 func (q *Queries) DeleteEvent(ctx context.Context, id string) error {
@@ -133,7 +133,7 @@ func (q *Queries) GetEventByID(ctx context.Context, id string) (*Event, error) {
 const GetEventsByIDs = `-- name: GetEventsByIDs :many
 SELECT id, project_id, name, description, start_date, end_date, created_at, updated_at
 FROM events
-WHERE id = ANY($1::text[])
+WHERE id = ANY($1::char(28)[])
 `
 
 func (q *Queries) GetEventsByIDs(ctx context.Context, ids []string) ([]*Event, error) {
@@ -204,7 +204,7 @@ func (q *Queries) GetEventsByProjectID(ctx context.Context, projectID string) ([
 const GetEventsByProjectIDs = `-- name: GetEventsByProjectIDs :many
 SELECT id, project_id, name, description, start_date, end_date, created_at, updated_at
 FROM events
-WHERE project_id = ANY($1::text[])
+WHERE project_id = ANY($1::char(28)[])
 ORDER BY project_id, start_date DESC
 `
 
@@ -241,7 +241,7 @@ const GetEventsByUserIDs = `-- name: GetEventsByUserIDs :many
 SELECT e.id, e.project_id, e.name, e.description, e.start_date, e.end_date, e.created_at, e.updated_at, ue.user_id
 FROM events e
 INNER JOIN user_events ue ON e.id = ue.event_id
-WHERE ue.user_id = ANY($1::text[])
+WHERE ue.user_id = ANY($1::char(28)[])
 ORDER BY e.start_date DESC
 `
 
@@ -291,14 +291,14 @@ const GetEventsFilteredCursor = `-- name: GetEventsFilteredCursor :many
 SELECT id, project_id, name, description, start_date, end_date, created_at, updated_at
 FROM events
 WHERE
-    ($1::text[] IS NULL OR id = ANY($1::text[]))
-    AND ($2::text = '' OR project_id = $2::text)
+    ($1::char(28)[] IS NULL OR id = ANY($1::char(28)[]))
+    AND ($2::char(28) = '' OR project_id = $2::char(28))
     AND ($3::timestamptz IS NULL OR start_date >= $3::timestamptz)
     AND ($4::timestamptz IS NULL OR start_date <= $4::timestamptz)
     AND ($5::timestamptz IS NULL OR end_date >= $5::timestamptz)
     AND ($6::timestamptz IS NULL OR end_date <= $6::timestamptz)
-    AND ($7::text = '' OR id > $7::text)
-    AND ($8::text = '' OR id < $8::text)
+    AND ($7::char(28) = '' OR id > $7::char(28))
+    AND ($8::char(28) = '' OR id < $8::char(28))
 ORDER BY
     CASE WHEN $9::bool = true THEN id END DESC,
     CASE WHEN $9::bool = false OR $9::bool IS NULL THEN id END ASC
@@ -361,9 +361,9 @@ func (q *Queries) GetEventsFilteredCursor(ctx context.Context, arg GetEventsFilt
 const MoveEvent = `-- name: MoveEvent :one
 UPDATE events
 SET
-    project_id = $1::text,
+    project_id = $1::char(28),
     updated_at = now()
-WHERE id = $2::text
+WHERE id = $2::char(28)
 RETURNING id, project_id, name, description, start_date, end_date, created_at, updated_at
 `
 
@@ -396,7 +396,7 @@ SET
     start_date = COALESCE($3::timestamptz, start_date),
     end_date = COALESCE($4::timestamptz, end_date),
     updated_at = now()
-WHERE id = $5::text
+WHERE id = $5::char(28)
 RETURNING id, project_id, name, description, start_date, end_date, created_at, updated_at
 `
 

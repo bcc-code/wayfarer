@@ -8,24 +8,24 @@ RETURNING completed_at;
 
 -- name: UncompleteUserFromChallenge :exec
 DELETE FROM user_challenge_completions
-WHERE user_id = @userid::text AND challenge_id = @challengeid::text;
+WHERE user_id = @userid::char(28) AND challenge_id = @challengeid::char(28);
 
 -- name: IsUserChallengeCompleted :one
 SELECT EXISTS(
     SELECT 1
     FROM user_challenge_completions
-    WHERE user_id = @userid::text AND challenge_id = @challengeid::text
+    WHERE user_id = @userid::char(28) AND challenge_id = @challengeid::char(28)
 ) AS is_completed;
 
 -- name: GetUserCompletionTimestamp :one
 SELECT completed_at
 FROM user_challenge_completions
-WHERE user_id = @userid::text AND challenge_id = @challengeid::text;
+WHERE user_id = @userid::char(28) AND challenge_id = @challengeid::char(28);
 
 -- name: GetCompletedUsersForChallenge :many
 SELECT user_id, completed_at
 FROM user_challenge_completions
-WHERE challenge_id = @challengeid::text
+WHERE challenge_id = @challengeid::char(28)
 ORDER BY completed_at ASC;
 
 -- name: BulkCompleteChallenges :exec

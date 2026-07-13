@@ -14,7 +14,7 @@ import (
 const CountAllFeedback = `-- name: CountAllFeedback :one
 SELECT COUNT(*) FROM user_feedback
 WHERE
-    ($1::text = '' OR user_id = $1::text)
+    ($1::char(28) = '' OR user_id = $1::char(28))
     AND (cardinality($2::text[]) = 0 OR tags && $2::text[])
     AND ($3::text = '' OR ($3::text = 'true' AND handled_at IS NOT NULL) OR ($3::text = 'false' AND handled_at IS NULL))
     AND ($4::text = '' OR platform = $4::text)
@@ -132,7 +132,7 @@ func (q *Queries) CreateUserFeedback(ctx context.Context, arg CreateUserFeedback
 }
 
 const DeleteFeedback = `-- name: DeleteFeedback :exec
-DELETE FROM user_feedback WHERE id = $1::text
+DELETE FROM user_feedback WHERE id = $1::char(28)
 `
 
 func (q *Queries) DeleteFeedback(ctx context.Context, id string) error {
@@ -238,7 +238,7 @@ func (q *Queries) GetDistinctFeedbackTags(ctx context.Context) ([]string, error)
 }
 
 const GetFeedbackByID = `-- name: GetFeedbackByID :one
-SELECT id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone, handled_at, context_url, tags FROM user_feedback WHERE id = $1::text
+SELECT id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone, handled_at, context_url, tags FROM user_feedback WHERE id = $1::char(28)
 `
 
 func (q *Queries) GetFeedbackByID(ctx context.Context, id string) (*UserFeedback, error) {
@@ -268,9 +268,9 @@ func (q *Queries) GetFeedbackByID(ctx context.Context, id string) (*UserFeedback
 const GetFeedbackCursor = `-- name: GetFeedbackCursor :many
 SELECT id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone, handled_at, context_url, tags FROM user_feedback
 WHERE
-    ($1::text = '' OR id < $1::text)
-    AND ($2::text = '' OR id > $2::text)
-    AND ($3::text = '' OR user_id = $3::text)
+    ($1::char(28) = '' OR id < $1::char(28))
+    AND ($2::char(28) = '' OR id > $2::char(28))
+    AND ($3::char(28) = '' OR user_id = $3::char(28))
     AND (cardinality($4::text[]) = 0 OR tags && $4::text[])
     AND ($5::text = '' OR ($5::text = 'true' AND handled_at IS NOT NULL) OR ($5::text = 'false' AND handled_at IS NULL))
     AND ($6::text = '' OR platform = $6::text)
@@ -339,7 +339,7 @@ func (q *Queries) GetFeedbackCursor(ctx context.Context, arg GetFeedbackCursorPa
 
 const GetRecentFeedbackCount = `-- name: GetRecentFeedbackCount :one
 SELECT COUNT(*) FROM user_feedback
-WHERE user_id = $1::text
+WHERE user_id = $1::char(28)
   AND created_at > $2::timestamptz
 `
 
@@ -357,7 +357,7 @@ func (q *Queries) GetRecentFeedbackCount(ctx context.Context, arg GetRecentFeedb
 
 const GetUserFeedback = `-- name: GetUserFeedback :many
 SELECT id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone, handled_at, context_url, tags FROM user_feedback
-WHERE user_id = $1::text
+WHERE user_id = $1::char(28)
 ORDER BY created_at DESC
 `
 
@@ -401,7 +401,7 @@ func (q *Queries) GetUserFeedback(ctx context.Context, userid string) ([]*UserFe
 const SetFeedbackHandledAt = `-- name: SetFeedbackHandledAt :one
 UPDATE user_feedback
 SET handled_at = $1::timestamptz
-WHERE id = $2::text
+WHERE id = $2::char(28)
 RETURNING id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone, handled_at, context_url, tags
 `
 
@@ -437,7 +437,7 @@ func (q *Queries) SetFeedbackHandledAt(ctx context.Context, arg SetFeedbackHandl
 const UpdateFeedbackTags = `-- name: UpdateFeedbackTags :one
 UPDATE user_feedback
 SET tags = $1::text[]
-WHERE id = $2::text
+WHERE id = $2::char(28)
 RETURNING id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone, handled_at, context_url, tags
 `
 

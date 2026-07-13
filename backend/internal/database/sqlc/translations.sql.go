@@ -10,7 +10,7 @@ import (
 )
 
 const DeleteAchievementTranslations = `-- name: DeleteAchievementTranslations :exec
-DELETE FROM achievement_translations WHERE achievement_id = $1::text
+DELETE FROM achievement_translations WHERE achievement_id = $1::char(28)
 `
 
 func (q *Queries) DeleteAchievementTranslations(ctx context.Context, achievementID string) error {
@@ -19,7 +19,7 @@ func (q *Queries) DeleteAchievementTranslations(ctx context.Context, achievement
 }
 
 const DeleteChallengeTranslations = `-- name: DeleteChallengeTranslations :exec
-DELETE FROM challenge_translations WHERE challenge_id = $1::text
+DELETE FROM challenge_translations WHERE challenge_id = $1::char(28)
 `
 
 func (q *Queries) DeleteChallengeTranslations(ctx context.Context, challengeID string) error {
@@ -28,7 +28,7 @@ func (q *Queries) DeleteChallengeTranslations(ctx context.Context, challengeID s
 }
 
 const DeleteEventTranslations = `-- name: DeleteEventTranslations :exec
-DELETE FROM event_translations WHERE event_id = $1::text
+DELETE FROM event_translations WHERE event_id = $1::char(28)
 `
 
 func (q *Queries) DeleteEventTranslations(ctx context.Context, eventID string) error {
@@ -38,7 +38,7 @@ func (q *Queries) DeleteEventTranslations(ctx context.Context, eventID string) e
 
 const DeleteProjectTranslations = `-- name: DeleteProjectTranslations :exec
 
-DELETE FROM project_translations WHERE project_id = $1::text
+DELETE FROM project_translations WHERE project_id = $1::char(28)
 `
 
 // Delete queries for translation invalidation when base content changes
@@ -50,7 +50,7 @@ func (q *Queries) DeleteProjectTranslations(ctx context.Context, projectID strin
 const GetAchievementTranslationsByIDs = `-- name: GetAchievementTranslationsByIDs :many
 SELECT achievement_id, language_code, name, description_pending, description_completed, notification_text
 FROM achievement_translations
-WHERE achievement_id = ANY($1::text[])
+WHERE achievement_id = ANY($1::char(28)[])
   AND language_code = $2::text
 `
 
@@ -98,7 +98,7 @@ func (q *Queries) GetAchievementTranslationsByIDs(ctx context.Context, arg GetAc
 const GetChallengeTranslationsByIDs = `-- name: GetChallengeTranslationsByIDs :many
 SELECT challenge_id, language_code, name, description, button_text, notification_text
 FROM challenge_translations
-WHERE challenge_id = ANY($1::text[])
+WHERE challenge_id = ANY($1::char(28)[])
   AND language_code = $2::text
 `
 
@@ -146,7 +146,7 @@ func (q *Queries) GetChallengeTranslationsByIDs(ctx context.Context, arg GetChal
 const GetEventTranslationsByIDs = `-- name: GetEventTranslationsByIDs :many
 SELECT event_id, language_code, name, description
 FROM event_translations
-WHERE event_id = ANY($1::text[])
+WHERE event_id = ANY($1::char(28)[])
   AND language_code = $2::text
 `
 
@@ -191,7 +191,7 @@ const GetProjectTranslationsByIDs = `-- name: GetProjectTranslationsByIDs :many
 
 SELECT project_id, language_code, name, description, rules
 FROM project_translations
-WHERE project_id = ANY($1::text[])
+WHERE project_id = ANY($1::char(28)[])
   AND language_code = $2::text
 `
 
@@ -239,7 +239,7 @@ func (q *Queries) GetProjectTranslationsByIDs(ctx context.Context, arg GetProjec
 const GetQuizAnswerTranslationsByIDs = `-- name: GetQuizAnswerTranslationsByIDs :many
 SELECT answer_id, language_code, answer_text
 FROM quiz_answer_translations
-WHERE answer_id = ANY($1::text[])
+WHERE answer_id = ANY($1::char(28)[])
   AND language_code = $2::text
 `
 
@@ -277,7 +277,7 @@ func (q *Queries) GetQuizAnswerTranslationsByIDs(ctx context.Context, arg GetQui
 const GetQuizQuestionTranslationsByIDs = `-- name: GetQuizQuestionTranslationsByIDs :many
 SELECT question_id, language_code, question_text
 FROM quiz_question_translations
-WHERE question_id = ANY($1::text[])
+WHERE question_id = ANY($1::char(28)[])
   AND language_code = $2::text
 `
 
@@ -315,7 +315,7 @@ func (q *Queries) GetQuizQuestionTranslationsByIDs(ctx context.Context, arg GetQ
 const GetQuizTranslationsByIDs = `-- name: GetQuizTranslationsByIDs :many
 SELECT quiz_id, language_code, name, description
 FROM quiz_translations
-WHERE quiz_id = ANY($1::text[])
+WHERE quiz_id = ANY($1::char(28)[])
   AND language_code = $2::text
 `
 

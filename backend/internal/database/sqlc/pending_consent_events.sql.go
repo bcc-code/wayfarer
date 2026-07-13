@@ -52,7 +52,7 @@ func (q *Queries) CreatePendingConsentEvent(ctx context.Context, arg CreatePendi
 
 const DeletePendingConsentEvent = `-- name: DeletePendingConsentEvent :exec
 DELETE FROM pending_consent_events
-WHERE id = $1::text
+WHERE id = $1::char(28)
 `
 
 func (q *Queries) DeletePendingConsentEvent(ctx context.Context, id string) error {

@@ -16,7 +16,7 @@ SELECT COUNT(DISTINCT u.id)
 FROM users u
 INNER JOIN team_members tm ON u.id = tm.user_id
 INNER JOIN teams t ON tm.team_id = t.id
-WHERE t.super_team_id = $1::text
+WHERE t.super_team_id = $1::char(28)
 `
 
 func (q *Queries) CountUsersBySuperTeamID(ctx context.Context, superteamid string) (int64, error) {
@@ -31,20 +31,20 @@ SELECT COUNT(u.id)
 FROM users u
 WHERE
     ($1::text = '' OR (u.name ILIKE '%' || $1::text || '%' OR u.email ILIKE '%' || $1::text || '%'))
-    AND ($2::text = '' OR u.church_id = $2::text)
+    AND ($2::char(28) = '' OR u.church_id = $2::char(28))
     AND ($3::text = '' OR u.gender = $3::text)
     AND ($4::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= $4::int)
     AND ($5::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= $5::int)
-    AND ($6::text = '' OR EXISTS (
-        SELECT 1 FROM user_projects up WHERE up.user_id = u.id AND up.project_id = $6::text
+    AND ($6::char(28) = '' OR EXISTS (
+        SELECT 1 FROM user_projects up WHERE up.user_id = u.id AND up.project_id = $6::char(28)
     ))
-    AND ($7::text = '' OR EXISTS (
-        SELECT 1 FROM user_events ue WHERE ue.user_id = u.id AND ue.event_id = $7::text
+    AND ($7::char(28) = '' OR EXISTS (
+        SELECT 1 FROM user_events ue WHERE ue.user_id = u.id AND ue.event_id = $7::char(28)
     ))
-    AND ($8::text = '' OR EXISTS (
-        SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = $8::text
+    AND ($8::char(28) = '' OR EXISTS (
+        SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = $8::char(28)
     ))
-    AND ($9::text[] IS NULL OR u.id = ANY($9::text[]))
+    AND ($9::char(28)[] IS NULL OR u.id = ANY($9::char(28)[]))
 `
 
 type CountUsersFilteredParams struct {
@@ -307,7 +307,7 @@ func (q *Queries) GetUserByPersonUUID(ctx context.Context, personUuid pgtype.UUI
 const GetUsersByIDs = `-- name: GetUsersByIDs :many
 SELECT id, members_id, person_uuid, gender, church_id, church_locked_until, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url, language, created_at
 FROM users
-WHERE id = ANY($1::text[])
+WHERE id = ANY($1::char(28)[])
 `
 
 type GetUsersByIDsRow struct {
@@ -436,13 +436,13 @@ WITH distinct_user_ids AS (
     FROM users u
     INNER JOIN team_members tm ON u.id = tm.user_id
     INNER JOIN teams t ON tm.team_id = t.id
-    WHERE t.super_team_id = $5::text
+    WHERE t.super_team_id = $5::char(28)
 )
 SELECT u.id, u.members_id, u.person_uuid, u.gender, u.church_id, u.church_locked_until, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url, u.language, u.created_at
 FROM distinct_user_ids du
 INNER JOIN users u ON du.id = u.id
-WHERE ($1::text = '' OR u.id > $1::text)
-    AND ($2::text = '' OR u.id < $2::text)
+WHERE ($1::char(28) = '' OR u.id > $1::char(28))
+    AND ($2::char(28) = '' OR u.id < $2::char(28))
 ORDER BY
     CASE WHEN $3::bool = true THEN u.id END DESC,
     CASE WHEN $3::bool = false OR $3::bool IS NULL THEN u.id END ASC
@@ -524,7 +524,7 @@ SELECT DISTINCT u.id, u.members_id, u.person_uuid, u.gender, u.church_id, u.chur
 FROM users u
 INNER JOIN team_members tm ON u.id = tm.user_id
 INNER JOIN teams t ON tm.team_id = t.id
-WHERE t.super_team_id = ANY($1::text[])
+WHERE t.super_team_id = ANY($1::char(28)[])
 ORDER BY u.id
 `
 
@@ -613,7 +613,7 @@ SELECT
     ) as is_team_lead
 FROM users u
 INNER JOIN team_members tm ON u.id = tm.user_id
-WHERE tm.team_id = ANY($1::text[])
+WHERE tm.team_id = ANY($1::char(28)[])
 ORDER BY tm.team_id, tm.joined_at
 `
 
@@ -682,18 +682,18 @@ func (q *Queries) GetUsersByTeamIDs(ctx context.Context, teamids []string) ([]*G
 const GetUsersFiltered = `-- name: GetUsersFiltered :many
 SELECT DISTINCT u.id, u.members_id, u.person_uuid, u.gender, u.church_id, u.church_locked_until, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url, u.language, u.created_at
 FROM users u
-LEFT JOIN user_projects up ON u.id = up.user_id AND $1::text IS NOT NULL
-LEFT JOIN user_events ue ON u.id = ue.user_id AND $2::text IS NOT NULL
-LEFT JOIN team_members tm ON u.id = tm.user_id AND $3::text IS NOT NULL
+LEFT JOIN user_projects up ON u.id = up.user_id AND $1::char(28) IS NOT NULL
+LEFT JOIN user_events ue ON u.id = ue.user_id AND $2::char(28) IS NOT NULL
+LEFT JOIN team_members tm ON u.id = tm.user_id AND $3::char(28) IS NOT NULL
 WHERE
-    ($4::text IS NULL OR u.church_id = $4::text)
+    ($4::char(28) IS NULL OR u.church_id = $4::char(28))
     AND ($5::text IS NULL OR u.gender = $5::text)
     AND ($6::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= $6::int)
     AND ($7::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= $7::int)
-    AND ($1::text IS NULL OR up.project_id = $1::text)
-    AND ($2::text IS NULL OR ue.event_id = $2::text)
-    AND ($3::text IS NULL OR tm.team_id = $3::text)
-    AND ($8::text[] IS NULL OR u.id = ANY($8::text[]))
+    AND ($1::char(28) IS NULL OR up.project_id = $1::char(28))
+    AND ($2::char(28) IS NULL OR ue.event_id = $2::char(28))
+    AND ($3::char(28) IS NULL OR tm.team_id = $3::char(28))
+    AND ($8::char(28)[] IS NULL OR u.id = ANY($8::char(28)[]))
 ORDER BY u.id
 LIMIT CASE WHEN $10::int IS NULL THEN NULL ELSE $10::int END
 OFFSET CASE WHEN $9::int IS NULL THEN 0 ELSE $9::int END
@@ -784,22 +784,22 @@ SELECT u.id, u.members_id, u.person_uuid, u.gender, u.church_id, u.church_locked
 FROM users u
 WHERE
     ($1::text = '' OR (u.name ILIKE '%' || $1::text || '%' OR u.email ILIKE '%' || $1::text || '%'))
-    AND ($2::text = '' OR u.church_id = $2::text)
+    AND ($2::char(28) = '' OR u.church_id = $2::char(28))
     AND ($3::text = '' OR u.gender = $3::text)
     AND ($4::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= $4::int)
     AND ($5::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= $5::int)
-    AND ($6::text = '' OR EXISTS (
-        SELECT 1 FROM user_projects up WHERE up.user_id = u.id AND up.project_id = $6::text
+    AND ($6::char(28) = '' OR EXISTS (
+        SELECT 1 FROM user_projects up WHERE up.user_id = u.id AND up.project_id = $6::char(28)
     ))
-    AND ($7::text = '' OR EXISTS (
-        SELECT 1 FROM user_events ue WHERE ue.user_id = u.id AND ue.event_id = $7::text
+    AND ($7::char(28) = '' OR EXISTS (
+        SELECT 1 FROM user_events ue WHERE ue.user_id = u.id AND ue.event_id = $7::char(28)
     ))
-    AND ($8::text = '' OR EXISTS (
-        SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = $8::text
+    AND ($8::char(28) = '' OR EXISTS (
+        SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = $8::char(28)
     ))
-    AND ($9::text[] IS NULL OR u.id = ANY($9::text[]))
-    AND ($10::text = '' OR u.id > $10::text)
-    AND ($11::text = '' OR u.id < $11::text)
+    AND ($9::char(28)[] IS NULL OR u.id = ANY($9::char(28)[]))
+    AND ($10::char(28) = '' OR u.id > $10::char(28))
+    AND ($11::char(28) = '' OR u.id < $11::char(28))
 ORDER BY
     CASE WHEN $12::bool = true THEN u.id END DESC,
     CASE WHEN $12::bool = false OR $12::bool IS NULL THEN u.id END ASC
@@ -973,7 +973,7 @@ func (q *Queries) GetUsersWithoutPersonUUID(ctx context.Context, querylimit int3
 const LockUserChurch = `-- name: LockUserChurch :exec
 UPDATE users
 SET church_locked_until = $1::timestamptz, updated_at = now()
-WHERE id = $2::text
+WHERE id = $2::char(28)
 `
 
 type LockUserChurchParams struct {
@@ -989,7 +989,7 @@ func (q *Queries) LockUserChurch(ctx context.Context, arg LockUserChurchParams) 
 const UnlockUserChurch = `-- name: UnlockUserChurch :exec
 UPDATE users
 SET church_locked_until = NULL, updated_at = now()
-WHERE id = $1::text
+WHERE id = $1::char(28)
 `
 
 func (q *Queries) UnlockUserChurch(ctx context.Context, id string) error {
@@ -1003,7 +1003,7 @@ SET
     gender = COALESCE(NULLIF($1::text, ''), gender),
     church_id = COALESCE(NULLIF($2::text, ''), church_id),
     updated_at = now()
-WHERE id = $3::text
+WHERE id = $3::char(28)
 `
 
 type UpdateUserGenderAndChurchParams struct {
@@ -1020,7 +1020,7 @@ func (q *Queries) UpdateUserGenderAndChurch(ctx context.Context, arg UpdateUserG
 const UpdateUserLanguage = `-- name: UpdateUserLanguage :exec
 UPDATE users
 SET language = $1::text, updated_at = now()
-WHERE id = $2::text
+WHERE id = $2::char(28)
 `
 
 type UpdateUserLanguageParams struct {
@@ -1036,7 +1036,7 @@ func (q *Queries) UpdateUserLanguage(ctx context.Context, arg UpdateUserLanguage
 const UpdateUserPersonUUID = `-- name: UpdateUserPersonUUID :exec
 UPDATE users
 SET person_uuid = $1::uuid, updated_at = now()
-WHERE id = $2::text
+WHERE id = $2::char(28)
 `
 
 type UpdateUserPersonUUIDParams struct {

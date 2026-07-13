@@ -182,7 +182,7 @@ func (q *Queries) CreateQuizQuestion(ctx context.Context, arg CreateQuizQuestion
 
 const DeletePredefinedAnswerTranslations = `-- name: DeletePredefinedAnswerTranslations :exec
 DELETE FROM quiz_answer_translations
-WHERE answer_id = $1::text
+WHERE answer_id = $1::char(28)
 `
 
 func (q *Queries) DeletePredefinedAnswerTranslations(ctx context.Context, answerid string) error {
@@ -192,7 +192,7 @@ func (q *Queries) DeletePredefinedAnswerTranslations(ctx context.Context, answer
 
 const DeletePredefinedAnswersByQuestion = `-- name: DeletePredefinedAnswersByQuestion :exec
 DELETE FROM quiz_predefined_answers
-WHERE question_id = $1::text
+WHERE question_id = $1::char(28)
 `
 
 func (q *Queries) DeletePredefinedAnswersByQuestion(ctx context.Context, questionid string) error {
@@ -202,7 +202,7 @@ func (q *Queries) DeletePredefinedAnswersByQuestion(ctx context.Context, questio
 
 const DeleteQuizQuestion = `-- name: DeleteQuizQuestion :exec
 DELETE FROM quiz_questions
-WHERE id = $1::text
+WHERE id = $1::char(28)
 `
 
 func (q *Queries) DeleteQuizQuestion(ctx context.Context, id string) error {
@@ -212,7 +212,7 @@ func (q *Queries) DeleteQuizQuestion(ctx context.Context, id string) error {
 
 const DeleteQuizQuestionTranslations = `-- name: DeleteQuizQuestionTranslations :exec
 DELETE FROM quiz_question_translations
-WHERE question_id = $1::text
+WHERE question_id = $1::char(28)
 `
 
 func (q *Queries) DeleteQuizQuestionTranslations(ctx context.Context, questionid string) error {
@@ -223,7 +223,7 @@ func (q *Queries) DeleteQuizQuestionTranslations(ctx context.Context, questionid
 const GetPredefinedAnswersByIDs = `-- name: GetPredefinedAnswersByIDs :many
 SELECT id, question_id, answer_text, is_correct, answer_order, created_at
 FROM quiz_predefined_answers
-WHERE id = ANY($1::text[])
+WHERE id = ANY($1::char(28)[])
 `
 
 func (q *Queries) GetPredefinedAnswersByIDs(ctx context.Context, ids []string) ([]*QuizPredefinedAnswer, error) {
@@ -256,7 +256,7 @@ func (q *Queries) GetPredefinedAnswersByIDs(ctx context.Context, ids []string) (
 const GetPredefinedAnswersByQuestionID = `-- name: GetPredefinedAnswersByQuestionID :many
 SELECT id, question_id, answer_text, is_correct, answer_order, created_at
 FROM quiz_predefined_answers
-WHERE question_id = $1::text
+WHERE question_id = $1::char(28)
 ORDER BY answer_order ASC
 `
 
@@ -290,7 +290,7 @@ func (q *Queries) GetPredefinedAnswersByQuestionID(ctx context.Context, question
 const GetPredefinedAnswersByQuestionIDs = `-- name: GetPredefinedAnswersByQuestionIDs :many
 SELECT id, question_id, answer_text, is_correct, answer_order, created_at
 FROM quiz_predefined_answers
-WHERE question_id = ANY($1::text[])
+WHERE question_id = ANY($1::char(28)[])
 ORDER BY question_id, answer_order ASC
 `
 
@@ -324,7 +324,7 @@ func (q *Queries) GetPredefinedAnswersByQuestionIDs(ctx context.Context, questio
 const GetQuizQuestionByID = `-- name: GetQuizQuestionByID :one
 SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, created_at, updated_at
 FROM quiz_questions
-WHERE id = $1::text
+WHERE id = $1::char(28)
 `
 
 type GetQuizQuestionByIDRow struct {
@@ -377,7 +377,7 @@ func (q *Queries) GetQuizQuestionByID(ctx context.Context, id string) (*GetQuizQ
 const GetQuizQuestionsByIDs = `-- name: GetQuizQuestionsByIDs :many
 SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, created_at, updated_at
 FROM quiz_questions
-WHERE id = ANY($1::text[])
+WHERE id = ANY($1::char(28)[])
 `
 
 type GetQuizQuestionsByIDsRow struct {
@@ -443,7 +443,7 @@ func (q *Queries) GetQuizQuestionsByIDs(ctx context.Context, ids []string) ([]*G
 const GetQuizQuestionsByQuizID = `-- name: GetQuizQuestionsByQuizID :many
 SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, created_at, updated_at
 FROM quiz_questions
-WHERE quiz_id = $1::text
+WHERE quiz_id = $1::char(28)
 ORDER BY question_order ASC
 `
 
@@ -510,7 +510,7 @@ func (q *Queries) GetQuizQuestionsByQuizID(ctx context.Context, quizid string) (
 const GetQuizQuestionsByQuizIDs = `-- name: GetQuizQuestionsByQuizIDs :many
 SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, created_at, updated_at
 FROM quiz_questions
-WHERE quiz_id = ANY($1::text[])
+WHERE quiz_id = ANY($1::char(28)[])
 ORDER BY quiz_id, question_order ASC
 `
 
@@ -591,7 +591,7 @@ SET
     betting_min_absolute = COALESCE($12::int, betting_min_absolute),
     betting_max_absolute = COALESCE($13::int, betting_max_absolute),
     updated_at = now()
-WHERE id = $14::text
+WHERE id = $14::char(28)
 RETURNING id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, created_at, updated_at
 `
 
@@ -679,7 +679,7 @@ UPDATE quiz_questions
 SET
     question_order = $1::int,
     updated_at = now()
-WHERE id = $2::text
+WHERE id = $2::char(28)
 `
 
 type UpdateQuizQuestionOrderParams struct {

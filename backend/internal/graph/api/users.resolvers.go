@@ -15,6 +15,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
+	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -455,10 +456,11 @@ func (r *userResolver) Roles(ctx context.Context, obj *model.User) ([]model.User
 
 // Points is the resolver for the points field.
 func (r *userResolver) Points(ctx context.Context, obj *model.User, projectID string) (int, error) {
-	score, err := r.DB.Queries.GetUserProjectScore(ctx, sqlc.GetUserProjectScoreParams{
+	thunk := r.Loaders.UserProjectScoreLoader.Load(ctx, loaders.UserProjectKey{
 		UserID:    obj.ID,
 		ProjectID: projectID,
 	})
+	score, err := thunk()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get user score: %w", err)
 	}

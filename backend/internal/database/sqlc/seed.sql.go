@@ -15,7 +15,7 @@ const DeleteTeamLeadsForProject = `-- name: DeleteTeamLeadsForProject :exec
 DELETE FROM user_roles
 WHERE role = 'TEAM_LEAD'
   AND team_id IN (
-    SELECT id FROM teams WHERE project_id = $1::text
+    SELECT id FROM teams WHERE project_id = $1::char(28)
   )
 `
 
@@ -90,7 +90,7 @@ func (q *Queries) GetRandomChurchIDs(ctx context.Context, limitCount int32) ([]s
 const GetRandomMemberForTeams = `-- name: GetRandomMemberForTeams :many
 SELECT DISTINCT ON (tm.team_id) tm.team_id, tm.user_id
 FROM team_members tm
-WHERE tm.team_id = ANY($1::text[])
+WHERE tm.team_id = ANY($1::char(28)[])
 ORDER BY tm.team_id, random()
 `
 
@@ -144,7 +144,7 @@ func (q *Queries) GetRandomUserIDs(ctx context.Context, limitCount int32) ([]str
 }
 
 const GetTeamIDsForProject = `-- name: GetTeamIDsForProject :many
-SELECT id FROM teams WHERE project_id = $1::text ORDER BY id
+SELECT id FROM teams WHERE project_id = $1::char(28) ORDER BY id
 `
 
 func (q *Queries) GetTeamIDsForProject(ctx context.Context, projectID string) ([]string, error) {
@@ -170,7 +170,7 @@ func (q *Queries) GetTeamIDsForProject(ctx context.Context, projectID string) ([
 const GetTeamsWithoutLeadForProject = `-- name: GetTeamsWithoutLeadForProject :many
 SELECT t.id
 FROM teams t
-WHERE t.project_id = $1::text
+WHERE t.project_id = $1::char(28)
   AND NOT EXISTS (
     SELECT 1 FROM user_roles ur
     WHERE ur.team_id = t.id AND ur.role = 'TEAM_LEAD'
@@ -226,7 +226,7 @@ FROM users u
 WHERE NOT EXISTS (
     SELECT 1 FROM team_members tm
     JOIN teams t ON tm.team_id = t.id
-    WHERE tm.user_id = u.id AND t.project_id = $1::text
+    WHERE tm.user_id = u.id AND t.project_id = $1::char(28)
 )
 `
 
@@ -243,7 +243,7 @@ FROM users u
 WHERE NOT EXISTS (
     SELECT 1 FROM team_members tm
     JOIN teams t ON tm.team_id = t.id
-    WHERE tm.user_id = u.id AND t.project_id = $1::text
+    WHERE tm.user_id = u.id AND t.project_id = $1::char(28)
 )
 ORDER BY u.id
 `

@@ -91,7 +91,7 @@ Put **helper and conversion functions** in separate `.go` files (e.g., `challeng
 - **Named parameters only**: `@paramName::type` — never use `$1`, `$2`
 - Result type annotations: `:many`, `:one`, `:exec`, `:execresult`
 - Naming: `Get[Entity]ByXYZ`, `Count[Entity]`, `Create[Entity]`, `Update[Entity]`, `Delete[Entity]`
-- Array parameters: `WHERE id = ANY(@ids::text[])`
+- **ID comparisons must cast to `::char(28)`**, never `::text`: `WHERE id = @id::char(28)`, `WHERE id = ANY(@ids::char(28)[])`. ID columns are `char(28)`; comparing them to a `::text` param makes Postgres cast the *column*, which defeats every index (see `notes/unnest-type-mismatch-audit.md`). `::text` is only for genuinely text/varchar columns and INSERT/UPDATE values.
 
 ### DataLoaders
 

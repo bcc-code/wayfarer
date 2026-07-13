@@ -15,8 +15,8 @@ const CountQuizSubmissionsFiltered = `-- name: CountQuizSubmissionsFiltered :one
 SELECT COUNT(DISTINCT id)
 FROM quiz_submissions
 WHERE
-    ($1::text = '' OR quiz_id = $1::text)
-    AND ($2::text = '' OR user_id = $2::text)
+    ($1::char(28) = '' OR quiz_id = $1::char(28))
+    AND ($2::char(28) = '' OR user_id = $2::char(28))
 `
 
 type CountQuizSubmissionsFilteredParams struct {
@@ -111,8 +111,8 @@ func (q *Queries) CreateQuizSubmission(ctx context.Context, arg CreateQuizSubmis
 const GetActiveSubmissionByUserAndQuiz = `-- name: GetActiveSubmissionByUserAndQuiz :one
 SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
-WHERE user_id = $1::text
-    AND quiz_id = $2::text
+WHERE user_id = $1::char(28)
+    AND quiz_id = $2::char(28)
     AND completed_at IS NULL
     AND (expires_at IS NULL OR expires_at > NOW())
 ORDER BY started_at DESC
@@ -164,8 +164,8 @@ func (q *Queries) GetActiveSubmissionByUserAndQuiz(ctx context.Context, arg GetA
 const GetCompletedSubmissionsByUserAndQuiz = `-- name: GetCompletedSubmissionsByUserAndQuiz :many
 SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
-WHERE user_id = $1::text
-    AND quiz_id = $2::text
+WHERE user_id = $1::char(28)
+    AND quiz_id = $2::char(28)
     AND completed_at IS NOT NULL
 ORDER BY completed_at DESC
 `
@@ -228,7 +228,7 @@ func (q *Queries) GetCompletedSubmissionsByUserAndQuiz(ctx context.Context, arg 
 const GetQuizSubmissionByID = `-- name: GetQuizSubmissionByID :one
 SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
-WHERE id = $1::text
+WHERE id = $1::char(28)
 `
 
 type GetQuizSubmissionByIDRow struct {
@@ -271,7 +271,7 @@ func (q *Queries) GetQuizSubmissionByID(ctx context.Context, id string) (*GetQui
 const GetQuizSubmissionByIDForUpdate = `-- name: GetQuizSubmissionByIDForUpdate :one
 SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
-WHERE id = $1::text
+WHERE id = $1::char(28)
 FOR UPDATE
 `
 
@@ -316,7 +316,7 @@ func (q *Queries) GetQuizSubmissionByIDForUpdate(ctx context.Context, id string)
 const GetQuizSubmissionCountBySessionID = `-- name: GetQuizSubmissionCountBySessionID :one
 SELECT COUNT(*)::int
 FROM quiz_submissions
-WHERE session_id = $1::text
+WHERE session_id = $1::char(28)
 `
 
 func (q *Queries) GetQuizSubmissionCountBySessionID(ctx context.Context, sessionid string) (int32, error) {
@@ -329,7 +329,7 @@ func (q *Queries) GetQuizSubmissionCountBySessionID(ctx context.Context, session
 const GetQuizSubmissionsByIDs = `-- name: GetQuizSubmissionsByIDs :many
 SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
-WHERE id = ANY($1::text[])
+WHERE id = ANY($1::char(28)[])
 `
 
 type GetQuizSubmissionsByIDsRow struct {
@@ -385,7 +385,7 @@ func (q *Queries) GetQuizSubmissionsByIDs(ctx context.Context, ids []string) ([]
 const GetQuizSubmissionsByQuizID = `-- name: GetQuizSubmissionsByQuizID :many
 SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
-WHERE quiz_id = $1::text
+WHERE quiz_id = $1::char(28)
 ORDER BY started_at DESC
 `
 
@@ -442,8 +442,8 @@ func (q *Queries) GetQuizSubmissionsByQuizID(ctx context.Context, quizid string)
 const GetQuizSubmissionsByUserAndQuiz = `-- name: GetQuizSubmissionsByUserAndQuiz :many
 SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
-WHERE user_id = $1::text
-    AND quiz_id = $2::text
+WHERE user_id = $1::char(28)
+    AND quiz_id = $2::char(28)
 ORDER BY started_at DESC
 `
 
@@ -505,7 +505,7 @@ func (q *Queries) GetQuizSubmissionsByUserAndQuiz(ctx context.Context, arg GetQu
 const GetQuizSubmissionsByUserID = `-- name: GetQuizSubmissionsByUserID :many
 SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
-WHERE user_id = $1::text
+WHERE user_id = $1::char(28)
 ORDER BY started_at DESC
 `
 
@@ -562,7 +562,7 @@ func (q *Queries) GetQuizSubmissionsByUserID(ctx context.Context, userid string)
 const GetQuizSubmissionsByUserIDs = `-- name: GetQuizSubmissionsByUserIDs :many
 SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
-WHERE user_id = ANY($1::text[])
+WHERE user_id = ANY($1::char(28)[])
 ORDER BY user_id, started_at DESC
 `
 
@@ -620,10 +620,10 @@ const GetQuizSubmissionsFilteredCursor = `-- name: GetQuizSubmissionsFilteredCur
 SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
 WHERE
-    ($1::text = '' OR quiz_id = $1::text)
-    AND ($2::text = '' OR user_id = $2::text)
-    AND ($3::text = '' OR id > $3::text)
-    AND ($4::text = '' OR id < $4::text)
+    ($1::char(28) = '' OR quiz_id = $1::char(28))
+    AND ($2::char(28) = '' OR user_id = $2::char(28))
+    AND ($3::char(28) = '' OR id > $3::char(28))
+    AND ($4::char(28) = '' OR id < $4::char(28))
 ORDER BY
     CASE WHEN $5::bool = true THEN id END DESC,
     CASE WHEN $5::bool = false OR $5::bool IS NULL THEN id END ASC
@@ -702,7 +702,7 @@ SET
     completed_at = COALESCE($1::timestamptz, completed_at),
     score = COALESCE($2::int, score),
     points_awarded = COALESCE($3::int, points_awarded)
-WHERE id = $4::text
+WHERE id = $4::char(28)
 RETURNING id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 `
 

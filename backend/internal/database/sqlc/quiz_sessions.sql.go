@@ -16,7 +16,7 @@ UPDATE quiz_submissions
 SET
     completed_at = NOW(),
     auto_submitted = true
-WHERE session_id = $1::text
+WHERE session_id = $1::char(28)
     AND completed_at IS NULL
 `
 
@@ -179,7 +179,7 @@ func (q *Queries) CreateQuizSessionAccess(ctx context.Context, arg CreateQuizSes
 
 const DeleteAllQuizSessionAccess = `-- name: DeleteAllQuizSessionAccess :exec
 DELETE FROM quiz_session_access
-WHERE session_id = $1::text
+WHERE session_id = $1::char(28)
 `
 
 func (q *Queries) DeleteAllQuizSessionAccess(ctx context.Context, sessionid string) error {
@@ -189,7 +189,7 @@ func (q *Queries) DeleteAllQuizSessionAccess(ctx context.Context, sessionid stri
 
 const DeleteQuizSession = `-- name: DeleteQuizSession :exec
 DELETE FROM quiz_sessions
-WHERE id = $1::text
+WHERE id = $1::char(28)
 `
 
 func (q *Queries) DeleteQuizSession(ctx context.Context, id string) error {
@@ -199,8 +199,8 @@ func (q *Queries) DeleteQuizSession(ctx context.Context, id string) error {
 
 const DeleteQuizSessionAccess = `-- name: DeleteQuizSessionAccess :exec
 DELETE FROM quiz_session_access
-WHERE session_id = $1::text
-    AND user_id = ANY($2::text[])
+WHERE session_id = $1::char(28)
+    AND user_id = ANY($2::char(28)[])
 `
 
 type DeleteQuizSessionAccessParams struct {
@@ -215,8 +215,8 @@ func (q *Queries) DeleteQuizSessionAccess(ctx context.Context, arg DeleteQuizSes
 
 const DeleteSubmissionByUserAndSession = `-- name: DeleteSubmissionByUserAndSession :exec
 DELETE FROM quiz_submissions
-WHERE session_id = $1::text
-    AND user_id = $2::text
+WHERE session_id = $1::char(28)
+    AND user_id = $2::char(28)
 `
 
 type DeleteSubmissionByUserAndSessionParams struct {
@@ -234,7 +234,7 @@ const GetActiveSubmissionsBySessionID = `-- name: GetActiveSubmissionsBySessionI
 SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at,
        question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
-WHERE session_id = $1::text
+WHERE session_id = $1::char(28)
     AND completed_at IS NULL
 `
 
@@ -293,8 +293,8 @@ const GetBulkUserSessionAccessQuizIDs = `-- name: GetBulkUserSessionAccessQuizID
 SELECT DISTINCT qs.quiz_id
 FROM quiz_sessions qs
 JOIN quiz_session_access qsa ON qsa.session_id = qs.id
-WHERE qs.quiz_id = ANY($1::text[])
-    AND qsa.user_id = $2::text
+WHERE qs.quiz_id = ANY($1::char(28)[])
+    AND qsa.user_id = $2::char(28)
     AND qs.state IN ('OPEN', 'LOCKED', 'FINISHED')
 `
 
@@ -327,7 +327,7 @@ func (q *Queries) GetBulkUserSessionAccessQuizIDs(ctx context.Context, arg GetBu
 const GetQuizSession = `-- name: GetQuizSession :one
 SELECT id, quiz_id, name, state, open_at, lock_at, finish_at, created_by, created_at, updated_at
 FROM quiz_sessions
-WHERE id = $1::text
+WHERE id = $1::char(28)
 `
 
 func (q *Queries) GetQuizSession(ctx context.Context, id string) (*QuizSession, error) {
@@ -351,7 +351,7 @@ func (q *Queries) GetQuizSession(ctx context.Context, id string) (*QuizSession, 
 const GetQuizSessionAccessCount = `-- name: GetQuizSessionAccessCount :one
 SELECT COUNT(*)::int
 FROM quiz_session_access
-WHERE session_id = $1::text
+WHERE session_id = $1::char(28)
 `
 
 func (q *Queries) GetQuizSessionAccessCount(ctx context.Context, sessionid string) (int32, error) {
@@ -364,7 +364,7 @@ func (q *Queries) GetQuizSessionAccessCount(ctx context.Context, sessionid strin
 const GetQuizSessionAccessUserIDs = `-- name: GetQuizSessionAccessUserIDs :many
 SELECT user_id
 FROM quiz_session_access
-WHERE session_id = $1::text
+WHERE session_id = $1::char(28)
 `
 
 func (q *Queries) GetQuizSessionAccessUserIDs(ctx context.Context, sessionid string) ([]string, error) {
@@ -390,7 +390,7 @@ func (q *Queries) GetQuizSessionAccessUserIDs(ctx context.Context, sessionid str
 const GetQuizSessionForUpdate = `-- name: GetQuizSessionForUpdate :one
 SELECT id, quiz_id, name, state, open_at, lock_at, finish_at, created_by, created_at, updated_at
 FROM quiz_sessions
-WHERE id = $1::text
+WHERE id = $1::char(28)
 FOR UPDATE
 `
 
@@ -415,7 +415,7 @@ func (q *Queries) GetQuizSessionForUpdate(ctx context.Context, id string) (*Quiz
 const GetQuizSessionsByIDs = `-- name: GetQuizSessionsByIDs :many
 SELECT id, quiz_id, name, state, open_at, lock_at, finish_at, created_by, created_at, updated_at
 FROM quiz_sessions
-WHERE id = ANY($1::text[])
+WHERE id = ANY($1::char(28)[])
 `
 
 func (q *Queries) GetQuizSessionsByIDs(ctx context.Context, ids []string) ([]*QuizSession, error) {
@@ -452,7 +452,7 @@ func (q *Queries) GetQuizSessionsByIDs(ctx context.Context, ids []string) ([]*Qu
 const GetQuizSessionsByQuiz = `-- name: GetQuizSessionsByQuiz :many
 SELECT id, quiz_id, name, state, open_at, lock_at, finish_at, created_by, created_at, updated_at
 FROM quiz_sessions
-WHERE quiz_id = $1::text
+WHERE quiz_id = $1::char(28)
     AND ($2::text = '' OR state = $2::text)
 ORDER BY created_at DESC
 `
@@ -505,7 +505,7 @@ SELECT
     u.church_id
 FROM quiz_submissions qs
 JOIN users u ON u.id = qs.user_id
-WHERE qs.session_id = $1::text
+WHERE qs.session_id = $1::char(28)
 ORDER BY qs.started_at
 `
 
@@ -672,8 +672,8 @@ const GetSubmissionByUserAndSession = `-- name: GetSubmissionByUserAndSession :o
 SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at,
        question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
-WHERE session_id = $1::text
-    AND user_id = $2::text
+WHERE session_id = $1::char(28)
+    AND user_id = $2::char(28)
 ORDER BY started_at DESC
 LIMIT 1
 `
@@ -724,7 +724,7 @@ const GetSubmissionsBySessionID = `-- name: GetSubmissionsBySessionID :many
 SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at,
        question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
-WHERE session_id = $1::text
+WHERE session_id = $1::char(28)
 ORDER BY started_at DESC
 `
 
@@ -782,7 +782,7 @@ const GetUserAccessibleOpenSessions = `-- name: GetUserAccessibleOpenSessions :m
 SELECT qs.id, qs.quiz_id, qs.name, qs.state, qs.open_at, qs.lock_at, qs.finish_at, qs.created_by, qs.created_at, qs.updated_at
 FROM quiz_sessions qs
 JOIN quiz_session_access qsa ON qsa.session_id = qs.id
-WHERE qsa.user_id = $1::text
+WHERE qsa.user_id = $1::char(28)
     AND qs.state = 'OPEN'
 ORDER BY qs.created_at DESC
 `
@@ -823,8 +823,8 @@ const GetUserAccessibleSessions = `-- name: GetUserAccessibleSessions :many
 SELECT qs.id, qs.quiz_id, qs.name, qs.state, qs.open_at, qs.lock_at, qs.finish_at, qs.created_by, qs.created_at, qs.updated_at
 FROM quiz_sessions qs
 JOIN quiz_session_access qsa ON qsa.session_id = qs.id
-WHERE qsa.user_id = $1::text
-    AND qs.quiz_id = $2::text
+WHERE qsa.user_id = $1::char(28)
+    AND qs.quiz_id = $2::char(28)
 ORDER BY qs.created_at DESC
 `
 
@@ -870,8 +870,8 @@ const GetUserActiveSessionForQuiz = `-- name: GetUserActiveSessionForQuiz :one
 SELECT qs.id, qs.quiz_id, qs.name, qs.state, qs.open_at, qs.lock_at, qs.finish_at, qs.created_by, qs.created_at, qs.updated_at
 FROM quiz_sessions qs
 JOIN quiz_session_access qsa ON qsa.session_id = qs.id
-WHERE qs.quiz_id = $1::text
-    AND qsa.user_id = $2::text
+WHERE qs.quiz_id = $1::char(28)
+    AND qsa.user_id = $2::char(28)
     AND qs.state IN ('OPEN', 'LOCKED', 'FINISHED')
 ORDER BY qs.created_at DESC
 LIMIT 1
@@ -905,8 +905,8 @@ const GetUserIDsByChurchAndProject = `-- name: GetUserIDsByChurchAndProject :man
 SELECT u.church_id, up.user_id
 FROM user_projects up
 JOIN users u ON u.id = up.user_id
-WHERE u.church_id = ANY($1::text[])
-    AND up.project_id = $2::text
+WHERE u.church_id = ANY($1::char(28)[])
+    AND up.project_id = $2::char(28)
 `
 
 type GetUserIDsByChurchAndProjectParams struct {
@@ -944,7 +944,7 @@ const GetUserIDsByChurchIDs = `-- name: GetUserIDsByChurchIDs :many
 
 SELECT DISTINCT id AS user_id
 FROM users
-WHERE church_id = ANY($1::text[])
+WHERE church_id = ANY($1::char(28)[])
 `
 
 // ==================== User Resolution Helpers ====================
@@ -972,8 +972,8 @@ const GetUserIDsByChurchIDsInProject = `-- name: GetUserIDsByChurchIDsInProject 
 SELECT DISTINCT up.user_id
 FROM user_projects up
 JOIN users u ON u.id = up.user_id
-WHERE u.church_id = ANY($1::text[])
-    AND up.project_id = $2::text
+WHERE u.church_id = ANY($1::char(28)[])
+    AND up.project_id = $2::char(28)
 `
 
 type GetUserIDsByChurchIDsInProjectParams struct {
@@ -1005,8 +1005,8 @@ const HasQuizSessionAccess = `-- name: HasQuizSessionAccess :one
 SELECT EXISTS(
     SELECT 1
     FROM quiz_session_access
-    WHERE session_id = $1::text
-        AND user_id = $2::text
+    WHERE session_id = $1::char(28)
+        AND user_id = $2::char(28)
 ) AS has_access
 `
 
@@ -1030,7 +1030,7 @@ SET
     lock_at = $3::timestamptz,
     finish_at = $4::timestamptz,
     updated_at = now()
-WHERE id = $5::text
+WHERE id = $5::char(28)
 RETURNING id, quiz_id, name, state, open_at, lock_at, finish_at, created_by, created_at, updated_at
 `
 
@@ -1074,7 +1074,7 @@ SET
     lock_at = CASE WHEN $1::text = 'LOCKED' AND lock_at IS NULL THEN now() ELSE lock_at END,
     finish_at = CASE WHEN $1::text = 'FINISHED' AND finish_at IS NULL THEN now() ELSE finish_at END,
     updated_at = now()
-WHERE id = $2::text
+WHERE id = $2::char(28)
 RETURNING id, quiz_id, name, state, open_at, lock_at, finish_at, created_by, created_at, updated_at
 `
 
@@ -1106,8 +1106,8 @@ SELECT EXISTS (
     SELECT 1
     FROM quiz_sessions qs
     JOIN quiz_session_access qsa ON qsa.session_id = qs.id
-    WHERE qs.quiz_id = $1::text
-        AND qsa.user_id = $2::text
+    WHERE qs.quiz_id = $1::char(28)
+        AND qsa.user_id = $2::char(28)
         AND qs.state IN ('OPEN', 'LOCKED', 'FINISHED')
 ) AS has_access
 `

@@ -2,11 +2,11 @@
 
 -- name: GetConsentByID :one
 SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, created_at, updated_at
-FROM consents WHERE id = @id::text;
+FROM consents WHERE id = @id::char(28);
 
 -- name: GetConsentsByIDs :many
 SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, created_at, updated_at
-FROM consents WHERE id = ANY(@ids::text[]);
+FROM consents WHERE id = ANY(@ids::char(28)[]);
 
 -- name: GetLatestPublishedConsentByKey :one
 SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, created_at, updated_at
@@ -41,7 +41,7 @@ UPDATE consents SET
     managed_by = CASE WHEN @managed_by::text = '' THEN managed_by ELSE @managed_by END,
     published_at = @published_at,
     updated_at = now()
-WHERE id = @id::text
+WHERE id = @id::char(28)
 RETURNING id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, created_at, updated_at;
 
 -- name: GetNextVersionForConsentKey :one
@@ -65,7 +65,7 @@ RETURNING id, user_id, consent_id, consent_key, action, occurred_at,
 SELECT id, user_id, consent_id, consent_key, action, occurred_at,
        source, external_consent_id, external_timestamp
 FROM user_consent_history
-WHERE user_id = @user_id::text AND consent_key = @consent_key::text
+WHERE user_id = @user_id::char(28) AND consent_key = @consent_key::text
 ORDER BY occurred_at DESC
 LIMIT 1;
 
@@ -74,21 +74,21 @@ LIMIT 1;
 SELECT DISTINCT ON (user_id, consent_key)
     id, user_id, consent_id, consent_key, action, occurred_at, source
 FROM user_consent_history
-WHERE user_id = ANY(@user_ids::text[])
+WHERE user_id = ANY(@user_ids::char(28)[])
 ORDER BY user_id, consent_key, occurred_at DESC;
 
 -- name: GetUserConsentHistoryByUserAndKey :many
 SELECT id, user_id, consent_id, consent_key, action, occurred_at,
        source, external_consent_id, external_timestamp
 FROM user_consent_history
-WHERE user_id = @user_id::text AND consent_key = @consent_key::text
+WHERE user_id = @user_id::char(28) AND consent_key = @consent_key::text
 ORDER BY occurred_at DESC;
 
 -- name: GetUserConsentHistoryByUser :many
 SELECT id, user_id, consent_id, consent_key, action, occurred_at,
        source, external_consent_id, external_timestamp
 FROM user_consent_history
-WHERE user_id = @user_id::text
+WHERE user_id = @user_id::char(28)
 ORDER BY occurred_at DESC;
 
 -- name: GetUserConsentHistoryWithTitles :many
@@ -97,14 +97,14 @@ SELECT uch.id, uch.user_id, uch.consent_id, uch.consent_key, uch.action, uch.occ
        c.title as consent_title
 FROM user_consent_history uch
 LEFT JOIN consents c ON c.id = uch.consent_id
-WHERE uch.user_id = @user_id::text
+WHERE uch.user_id = @user_id::char(28)
 ORDER BY uch.occurred_at DESC;
 
 -- name: GetUserConsentHistoryByUsers :many
 SELECT id, user_id, consent_id, consent_key, action, occurred_at,
        source, external_consent_id, external_timestamp
 FROM user_consent_history
-WHERE user_id = ANY(@user_ids::text[])
+WHERE user_id = ANY(@user_ids::char(28)[])
 ORDER BY user_id, occurred_at DESC;
 
 -- name: GetMissingConsentsForUserWithRejections :many
@@ -120,7 +120,7 @@ FROM (
 ) c
 WHERE NOT EXISTS (
     SELECT 1 FROM user_consent_history uch
-    WHERE uch.user_id = @user_id::text
+    WHERE uch.user_id = @user_id::char(28)
     AND uch.consent_key = c.key
 );
 
@@ -129,11 +129,11 @@ WHERE NOT EXISTS (
 -- name: GetConsentTranslationsByIDs :many
 SELECT consent_id, language_code, title, short_text, body
 FROM consent_translations
-WHERE consent_id = ANY(@entity_ids::text[])
+WHERE consent_id = ANY(@entity_ids::char(28)[])
   AND language_code = @language_code::text;
 
 -- name: DeleteConsentTranslations :exec
-DELETE FROM consent_translations WHERE consent_id = @consent_id::text;
+DELETE FROM consent_translations WHERE consent_id = @consent_id::char(28);
 
 -- name: UpsertConsentTranslation :one
 INSERT INTO consent_translations (consent_id, language_code, title, short_text, body)

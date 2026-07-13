@@ -23,17 +23,17 @@ INSERT INTO bulk_jobs (
 
 -- name: GetBulkJobByID :one
 SELECT * FROM bulk_jobs
-WHERE id = @id::text;
+WHERE id = @id::char(28);
 
 -- name: GetBulkJobsByCreator :many
 SELECT * FROM bulk_jobs
-WHERE created_by = @createdby::text
+WHERE created_by = @createdby::char(28)
 ORDER BY created_at DESC
 LIMIT @limitcount::int;
 
 -- name: GetBulkJobsByProject :many
 SELECT * FROM bulk_jobs
-WHERE project_id = @projectid::text
+WHERE project_id = @projectid::char(28)
 ORDER BY created_at DESC
 LIMIT @limitcount::int;
 
@@ -51,7 +51,7 @@ SET
     completed_at = CASE WHEN @status::text IN ('COMPLETED', 'FAILED') THEN now() ELSE completed_at END,
     error_message = sqlc.narg('errormessage')::text,
     error_details = sqlc.narg('errordetails')::jsonb
-WHERE id = @id::text
+WHERE id = @id::char(28)
 RETURNING *;
 
 -- name: UpdateBulkJobProgress :one
@@ -60,20 +60,20 @@ SET
     processed_count = @processedcount::int,
     success_count = @successcount::int,
     failure_count = @failurecount::int
-WHERE id = @id::text
+WHERE id = @id::char(28)
 RETURNING *;
 
 -- name: UpdateBulkJobMessageID :exec
 UPDATE bulk_jobs
 SET message_id = @messageid::text
-WHERE id = @id::text;
+WHERE id = @id::char(28);
 
 -- name: MarkBulkJobProcessing :one
 UPDATE bulk_jobs
 SET
     status = 'PROCESSING',
     started_at = now()
-WHERE id = @id::text
+WHERE id = @id::char(28)
 RETURNING *;
 
 -- name: MarkBulkJobCompleted :one
@@ -84,7 +84,7 @@ SET
     processed_count = @processedcount::int,
     success_count = @successcount::int,
     failure_count = @failurecount::int
-WHERE id = @id::text
+WHERE id = @id::char(28)
 RETURNING *;
 
 -- name: MarkBulkJobFailed :one
@@ -94,7 +94,7 @@ SET
     completed_at = now(),
     error_message = @errormessage::text,
     error_details = sqlc.narg('errordetails')::jsonb
-WHERE id = @id::text
+WHERE id = @id::char(28)
 RETURNING *;
 
 -- name: GetRecentBulkJobsByStatus :many
@@ -114,9 +114,9 @@ WHERE status IN ('COMPLETED', 'FAILED')
 SELECT * FROM bulk_jobs
 WHERE (sqlc.narg('status')::text IS NULL OR status = sqlc.narg('status')::text)
   AND (sqlc.narg('operationtype')::text IS NULL OR operation_type = sqlc.narg('operationtype')::text)
-  AND (sqlc.narg('projectid')::text IS NULL OR project_id = sqlc.narg('projectid')::text)
-  AND (sqlc.narg('createdby')::text IS NULL OR created_by = sqlc.narg('createdby')::text)
-  AND (sqlc.narg('afterid')::text IS NULL OR id < sqlc.narg('afterid')::text)
+  AND (sqlc.narg('projectid')::char(28) IS NULL OR project_id = sqlc.narg('projectid')::char(28))
+  AND (sqlc.narg('createdby')::char(28) IS NULL OR created_by = sqlc.narg('createdby')::char(28))
+  AND (sqlc.narg('afterid')::char(28) IS NULL OR id < sqlc.narg('afterid')::char(28))
 ORDER BY created_at DESC, id DESC
 LIMIT @limitcount::int;
 
@@ -126,9 +126,9 @@ SELECT * FROM (
     SELECT * FROM bulk_jobs
     WHERE (sqlc.narg('status')::text IS NULL OR status = sqlc.narg('status')::text)
       AND (sqlc.narg('operationtype')::text IS NULL OR operation_type = sqlc.narg('operationtype')::text)
-      AND (sqlc.narg('projectid')::text IS NULL OR project_id = sqlc.narg('projectid')::text)
-      AND (sqlc.narg('createdby')::text IS NULL OR created_by = sqlc.narg('createdby')::text)
-      AND (sqlc.narg('beforeid')::text IS NULL OR id > sqlc.narg('beforeid')::text)
+      AND (sqlc.narg('projectid')::char(28) IS NULL OR project_id = sqlc.narg('projectid')::char(28))
+      AND (sqlc.narg('createdby')::char(28) IS NULL OR created_by = sqlc.narg('createdby')::char(28))
+      AND (sqlc.narg('beforeid')::char(28) IS NULL OR id > sqlc.narg('beforeid')::char(28))
     ORDER BY created_at ASC, id ASC
     LIMIT @limitcount::int
 ) AS subquery
@@ -139,11 +139,11 @@ ORDER BY created_at DESC, id DESC;
 SELECT COUNT(*) FROM bulk_jobs
 WHERE (sqlc.narg('status')::text IS NULL OR status = sqlc.narg('status')::text)
   AND (sqlc.narg('operationtype')::text IS NULL OR operation_type = sqlc.narg('operationtype')::text)
-  AND (sqlc.narg('projectid')::text IS NULL OR project_id = sqlc.narg('projectid')::text)
-  AND (sqlc.narg('createdby')::text IS NULL OR created_by = sqlc.narg('createdby')::text);
+  AND (sqlc.narg('projectid')::char(28) IS NULL OR project_id = sqlc.narg('projectid')::char(28))
+  AND (sqlc.narg('createdby')::char(28) IS NULL OR created_by = sqlc.narg('createdby')::char(28));
 
 -- name: AppendBulkJobLogs :exec
 -- Append new log entries to existing logs (or initialize if null)
 UPDATE bulk_jobs
 SET logs = COALESCE(logs, '[]'::jsonb) || @newlogs::jsonb
-WHERE id = @id::text;
+WHERE id = @id::char(28);
