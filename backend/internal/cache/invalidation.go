@@ -121,6 +121,7 @@ func extractPrefixes(key string) []string {
 		PrefixUserChallengeEnrollments, PrefixUserChallengeCompletions,
 		PrefixUserContentProgress, PrefixUserAchievements, PrefixUserStreakProgress,
 		PrefixUserConsents, PrefixUserProjectPoints, PrefixActiveChallengesCount,
+		PrefixUserTeamInProject, PrefixUserEnrolledChallenges, PrefixUserQuizSessionAccess,
 		PrefixUsersFilter, PrefixUsersCount,
 		PrefixProjectsFilter, PrefixProjectsCount,
 		PrefixEventsFilter, PrefixEventsCount,
@@ -255,6 +256,9 @@ func (c *CacheWithRegistry) invalidateUserLocal(userID string) {
 	c.DeletePrefix(PrefixUserProjectPoints + userID)
 	// Invalidate active challenges count for this user
 	c.DeletePrefix(PrefixActiveChallengesCount + userID)
+	// Invalidate per-user lookup caches (myTeam, enrolled challenges, quiz session access)
+	// These keys are registered under the "user:{userID}" tag, which the
+	// DeletePrefix("user:"+userID) call above already covers.
 	// Invalidate user filter/count queries (gender/church changes affect results)
 	c.DeletePrefix(PrefixUsersFilter)
 	c.DeletePrefix(PrefixUsersCount)
@@ -373,6 +377,11 @@ func (c *CacheWithRegistry) invalidateChallengeLocal(challengeID, projectID stri
 	// This is more aggressive but necessary since we don't track reverse index
 	c.DeletePrefix(PrefixUserChallengeEnrollments)
 	c.DeletePrefix(PrefixUserChallengeCompletions)
+	c.DeletePrefix(PrefixUserEnrolledChallenges)
+
+	// Challenge changes can alter the project's quiz set, which the per-user
+	// quiz session access cache is scoped to
+	c.DeletePrefix(PrefixUserQuizSessionAccess)
 
 	// Invalidate active challenges count (user-specific, keyed by project)
 	c.DeletePrefix(PrefixActiveChallengesCount)
@@ -419,11 +428,27 @@ func (c *CacheWithRegistry) invalidateQuizLocal(quizID, challengeID string) {
 	c.DeletePrefix(PrefixQuizzesFilter)
 	c.DeletePrefix(PrefixQuizzesCount)
 
+	// Per-user quiz session access caches may include this quiz
+	c.DeletePrefix(PrefixUserQuizSessionAccess)
+
 	// Invalidate quiz questions and answers for this quiz
 	c.Delete(QuizQuestionsByQuizKey(quizID))
 
 	// Invalidate submissions for this quiz
 	c.Delete(QuizSubmissionsByQuizKey(quizID))
+}
+
+// InvalidateQuizSessionAccess invalidates all per-user quiz session access caches
+// and broadcasts to other instances. Call this when session state changes
+// (open/lock/finish/reopen/delete) or access is granted/revoked.
+func (c *CacheWithRegistry) InvalidateQuizSessionAccess() {
+	c.invalidateQuizSessionAccessLocal()
+	c.broadcast(InvalidationMessage{Type: InvalidationTypeQuizSessionAccess})
+}
+
+// invalidateQuizSessionAccessLocal invalidates quiz session access caches on this instance only
+func (c *CacheWithRegistry) invalidateQuizSessionAccessLocal() {
+	c.DeletePrefix(PrefixUserQuizSessionAccess)
 }
 
 // InvalidateQuizAnswers invalidates cached answers/ordering items for a question

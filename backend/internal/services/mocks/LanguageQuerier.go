@@ -63,7 +63,7 @@ type MockLanguageQuerier_UpdateUserLanguage_Call struct {
 // UpdateUserLanguage is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg sqlc.UpdateUserLanguageParams
-func (_e *MockLanguageQuerier_Expecter) UpdateUserLanguage(ctx interface{}, arg interface{}) *MockLanguageQuerier_UpdateUserLanguage_Call {
+func (_e *MockLanguageQuerier_Expecter) UpdateUserLanguage(ctx any, arg any) *MockLanguageQuerier_UpdateUserLanguage_Call {
 	return &MockLanguageQuerier_UpdateUserLanguage_Call{Call: _e.mock.On("UpdateUserLanguage", ctx, arg)}
 }
 

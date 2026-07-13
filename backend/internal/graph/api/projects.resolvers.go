@@ -6,7 +6,6 @@ package api
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
@@ -18,7 +17,6 @@ import (
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/ulid"
-	pgx "github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -593,37 +591,7 @@ func (r *projectResolver) MyTeam(ctx context.Context, obj *model.Project) (*mode
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
-	// Query user's team in this project
-	row, err := r.DB.Queries.GetUserTeamByProjectID(ctx, sqlc.GetUserTeamByProjectIDParams{
-		Userid:    currentUserID,
-		Projectid: obj.ID,
-	})
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil // User not in any team in this project
-		}
-		return nil, fmt.Errorf("failed to fetch user's team: %w", err)
-	}
-
-	// Convert to GraphQL model
-	description := ""
-	if row.Description != nil {
-		description = *row.Description
-	}
-
-	var superTeamID *string
-	if row.SuperTeamID != nil {
-		superTeamID = row.SuperTeamID
-	}
-
-	return &model.Team{
-		ID:          row.ID,
-		ProjectID:   row.ProjectID,
-		Name:        row.Name,
-		Description: description,
-		SuperTeamID: superTeamID,
-		JoinCode:    row.JoinCode,
-	}, nil
+	return r.getUserTeamInProject(ctx, currentUserID, obj.ID)
 }
 
 // Achievements is the resolver for the achievements field.

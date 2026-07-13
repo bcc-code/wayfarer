@@ -246,6 +246,9 @@ func (r *mutationResolver) OpenQuizSession(ctx context.Context, id string) (*mod
 		return nil, fmt.Errorf("failed to open quiz session: %w", err)
 	}
 
+	// Opening makes the session visible to the bulk access check
+	r.Cache.InvalidateQuizSessionAccess()
+
 	// Notify clients via Firestore
 	if r.FirebaseService != nil {
 		go r.FirebaseService.NotifyProjectQuizSessions(context.Background(), quiz.ProjectID)
@@ -605,6 +608,8 @@ func (r *mutationResolver) RevokeQuizSessionAccess(ctx context.Context, sessionI
 		return false, fmt.Errorf("failed to revoke session access: %w", err)
 	}
 
+	r.Cache.InvalidateQuizSessionAccess()
+
 	return true, nil
 }
 
@@ -648,6 +653,8 @@ func (r *mutationResolver) RevokeAllQuizSessionAccess(ctx context.Context, sessi
 		otel.RecordError(span, err)
 		return false, fmt.Errorf("failed to revoke all session access: %w", err)
 	}
+
+	r.Cache.InvalidateQuizSessionAccess()
 
 	return true, nil
 }

@@ -105,6 +105,11 @@ const (
 
 	// Active challenges count per user+project
 	PrefixActiveChallengesCount = "activechallengescount:"
+
+	// Per-user lookup caches for hot per-request queries
+	PrefixUserTeamInProject      = "userteam:"
+	PrefixUserEnrolledChallenges = "userenrolledchallenges:"
+	PrefixUserQuizSessionAccess  = "userquizaccess:"
 )
 
 // Key builders for different entity types
@@ -331,6 +336,22 @@ func ActiveChallengesCountKey(userID string, projectID string) string {
 	return fmt.Sprintf("%s%s:%s", PrefixActiveChallengesCount, userID, projectID)
 }
 
+// UserTeamInProjectKey builds a cache key for the user's team ID in a project (myTeam field).
+// The value is the team ID only; team details are cached separately under TeamKey.
+func UserTeamInProjectKey(userID string, projectID string) string {
+	return fmt.Sprintf("%s%s:%s", PrefixUserTeamInProject, userID, projectID)
+}
+
+// UserEnrolledChallengesKey builds a cache key for the user's enrolled challenge IDs in a project
+func UserEnrolledChallengesKey(userID string, projectID string) string {
+	return fmt.Sprintf("%s%s:%s", PrefixUserEnrolledChallenges, userID, projectID)
+}
+
+// UserQuizSessionAccessKey builds a cache key for the quiz IDs a user has session access to in a project
+func UserQuizSessionAccessKey(userID string, projectID string) string {
+	return fmt.Sprintf("%s%s:%s", PrefixUserQuizSessionAccess, userID, projectID)
+}
+
 // TeamMembersByTeamKey builds a cache key for team members
 func TeamMembersByTeamKey(teamID string) string {
 	return PrefixTeamMembers + teamID
@@ -429,6 +450,8 @@ func ExtractUserTag(key string) (string, bool) {
 		PrefixUserStreakProgress, PrefixUserChallengeEnrollments,
 		PrefixUserChallengeCompletions, PrefixUserConsents,
 		PrefixUserProjectPoints, PrefixActiveChallengesCount,
+		PrefixUserTeamInProject, PrefixUserEnrolledChallenges,
+		PrefixUserQuizSessionAccess,
 	}
 	for _, prefix := range prefixes {
 		if strings.HasPrefix(key, prefix) {

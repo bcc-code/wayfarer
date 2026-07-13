@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
@@ -13,6 +12,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/utils"
+	"golang.org/x/sync/singleflight"
 )
 
 // LeaderboardQuerier defines the database operations needed for leaderboards
@@ -65,6 +65,7 @@ type LeaderboardService struct {
 	queries LeaderboardQuerier
 	cache   *cache.CacheWithRegistry
 	loaders *loaders.Loaders
+	flight  singleflight.Group
 }
 
 // NewLeaderboardService creates a new leaderboard service
@@ -97,6 +98,119 @@ type LeaderboardEntry struct {
 	Score       int
 	Rank        int64
 	LastScoreAt *time.Time
+}
+
+// cachedLeaderboard is a decoded full leaderboard as stored in Ristretto.
+// Entries and IndexByEntityID are shared across requests — treat as read-only.
+type cachedLeaderboard struct {
+	Entries         []LeaderboardEntry
+	IndexByEntityID map[string]int
+}
+
+// findMe returns a copy of the entry for entityID, or nil if absent.
+func (c *cachedLeaderboard) findMe(entityID string) *LeaderboardEntry {
+	if entityID == "" {
+		return nil
+	}
+	if i, ok := c.IndexByEntityID[entityID]; ok {
+		entry := c.Entries[i]
+		return &entry
+	}
+	return nil
+}
+
+// getFullLeaderboardCached returns the full leaderboard for cacheKey, serving
+// the decoded form from cache when possible. Concurrent misses for the same
+// key share a single fetch via singleflight, so an expired hot key does not
+// stampede the database.
+func (s *LeaderboardService) getFullLeaderboardCached(
+	ctx context.Context,
+	cacheKey string,
+	fetch func(context.Context) ([]LeaderboardEntry, error),
+) (*cachedLeaderboard, error) {
+	if cachedData, found := s.cache.Get(cacheKey); found {
+		if board, ok := cachedData.(*cachedLeaderboard); ok {
+			return board, nil
+		}
+	}
+
+	v, err, _ := s.flight.Do(cacheKey, func() (interface{}, error) {
+		// Another flight may have populated the cache while we queued
+		if cachedData, found := s.cache.Get(cacheKey); found {
+			if board, ok := cachedData.(*cachedLeaderboard); ok {
+				return board, nil
+			}
+		}
+
+		// Detach from the leading request's cancellation: the result is
+		// shared by every request waiting on this key.
+		entries, err := fetch(context.WithoutCancel(ctx))
+		if err != nil {
+			return nil, err
+		}
+
+		board := &cachedLeaderboard{
+			Entries:         entries,
+			IndexByEntityID: make(map[string]int, len(entries)),
+		}
+		for i, e := range entries {
+			board.IndexByEntityID[e.EntityID] = i
+		}
+
+		// Cache the full leaderboard with 5 minute TTL
+		s.cache.SetWithTTL(cacheKey, board, 5*time.Minute)
+		return board, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return v.(*cachedLeaderboard), nil
+}
+
+// meTeamIDInProject resolves the user's team ID within a project ("" if none)
+func (s *LeaderboardService) meTeamIDInProject(ctx context.Context, userID, projectID string) string {
+	teams, err := s.loaders.TeamsByUserLoader.Load(ctx, userID)()
+	if err != nil {
+		return ""
+	}
+	for _, team := range teams {
+		if team.ProjectID == projectID {
+			return team.ID
+		}
+	}
+	return ""
+}
+
+// meSuperTeamIDInProject resolves the user's superteam ID within a project ("" if none)
+func (s *LeaderboardService) meSuperTeamIDInProject(ctx context.Context, userID, projectID string) string {
+	superTeams, err := s.loaders.SuperTeamsByUserLoader.Load(ctx, userID)()
+	if err != nil {
+		return ""
+	}
+	for _, superTeam := range superTeams {
+		if superTeam.ProjectID == projectID {
+			return superTeam.ID
+		}
+	}
+	return ""
+}
+
+// meChurchID resolves the user's church ID ("" if the user cannot be loaded)
+func (s *LeaderboardService) meChurchID(ctx context.Context, userID string) string {
+	user, err := s.loaders.UserByIDLoader.Load(ctx, userID)()
+	if err != nil || user == nil {
+		return ""
+	}
+	return user.ChurchID
+}
+
+// eventProjectID resolves the project an event belongs to ("" if the event cannot be loaded)
+func (s *LeaderboardService) eventProjectID(ctx context.Context, eventID string) string {
+	event, err := s.loaders.EventByIDLoader.Load(ctx, eventID)()
+	if err != nil || event == nil {
+		return ""
+	}
+	return event.ProjectID
 }
 
 // GetProjectLeaderboard retrieves leaderboard for a project
@@ -134,691 +248,293 @@ func (s *LeaderboardService) GetEventLeaderboard(ctx context.Context, params Lea
 // Helper functions for project leaderboards
 
 func (s *LeaderboardService) getProjectPersonLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, error) {
-	// Build cache key
 	filterParams := buildFilterParamsMap(params.Filter)
 	cacheKey := cache.FullLeaderboardKey("project", params.ContextID, "persons", filterParams)
 
-	// Try to get from cache
-	var fullLeaderboard []LeaderboardEntry
-	cachedData, found := s.cache.Get(cacheKey)
-	if found {
-		// Unmarshal from cache
-		if cachedBytes, ok := cachedData.([]byte); ok {
-			if err := json.Unmarshal(cachedBytes, &fullLeaderboard); err == nil {
-				// Successfully got from cache
-				total := len(fullLeaderboard)
-
-				// Find "me" in cached results
-				var meEntry *LeaderboardEntry
-				if params.UserID != "" {
-					meEntry = findMeInLeaderboard(fullLeaderboard, params.UserID)
-				}
-
-				// Paginate in-memory
-				paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
-
-				return paginated, meEntry, total, nil
+	board, err := s.getFullLeaderboardCached(ctx, cacheKey, func(ctx context.Context) ([]LeaderboardEntry, error) {
+		rows, err := s.queries.GetFullProjectPersonLeaderboard(ctx, s.buildFullProjectPersonParams(params))
+		if err != nil {
+			return nil, fmt.Errorf("failed to get full project person leaderboard: %w", err)
+		}
+		entries := make([]LeaderboardEntry, 0, len(rows))
+		for _, row := range rows {
+			if row != nil {
+				entries = append(entries, LeaderboardEntry{
+					EntityID:    row.EntityID,
+					Name:        row.Name,
+					Description: row.ChurchName,
+					Image:       row.Image,
+					Score:       int(row.Score),
+					Rank:        row.Rank,
+					LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
+				})
 			}
 		}
-	}
-
-	// Cache miss or unmarshal error - query database
-	queryParams := s.buildFullProjectPersonParams(params)
-	rows, err := s.queries.GetFullProjectPersonLeaderboard(ctx, queryParams)
+		return entries, nil
+	})
 	if err != nil {
-		return nil, nil, 0, fmt.Errorf("failed to get full project person leaderboard: %w", err)
+		return nil, nil, 0, err
 	}
 
-	// Convert to entries
-	fullLeaderboard = make([]LeaderboardEntry, 0, len(rows))
-	for _, row := range rows {
-		if row != nil {
-			fullLeaderboard = append(fullLeaderboard, LeaderboardEntry{
-				EntityID:    row.EntityID,
-				Name:        row.Name,
-				Description: row.ChurchName,
-				Image:       row.Image,
-				Score:       int(row.Score),
-				Rank:        row.Rank,
-				LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
-			})
-		}
-	}
-
-	// Cache the full leaderboard with 5 minute TTL
-	if marshaledData, err := json.Marshal(fullLeaderboard); err == nil {
-		s.cache.SetWithTTL(cacheKey, marshaledData, 5*time.Minute)
-	}
-
-	total := len(fullLeaderboard)
-
-	// Find "me" in results
-	var meEntry *LeaderboardEntry
-	if params.UserID != "" {
-		meEntry = findMeInLeaderboard(fullLeaderboard, params.UserID)
-	}
-
-	// Paginate in-memory
-	paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
-
-	return paginated, meEntry, total, nil
+	meEntry := board.findMe(params.UserID)
+	paginated := paginateLeaderboard(board.Entries, params.First, params.After, params.Last, params.Before)
+	return paginated, meEntry, len(board.Entries), nil
 }
 
 func (s *LeaderboardService) getProjectTeamLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, error) {
-	// Build cache key
 	filterParams := buildFilterParamsMap(params.Filter)
 	cacheKey := cache.FullLeaderboardKey("project", params.ContextID, "teams", filterParams)
 
-	// Try to get from cache
-	var fullLeaderboard []LeaderboardEntry
-	cachedData, found := s.cache.Get(cacheKey)
-	if found {
-		// Unmarshal from cache
-		if cachedBytes, ok := cachedData.([]byte); ok {
-			if err := json.Unmarshal(cachedBytes, &fullLeaderboard); err == nil {
-				// Successfully got from cache
-				total := len(fullLeaderboard)
-
-				// Find "me" in cached results
-				var meEntry *LeaderboardEntry
-				if params.UserID != "" {
-					// Use loader to get user's teams
-					thunk := s.loaders.TeamsByUserLoader.Load(ctx, params.UserID)
-					teams, err := thunk()
-					if err == nil && teams != nil {
-						// Find team in this project
-						for _, team := range teams {
-							if team.ProjectID == params.ContextID {
-								meEntry = findMeInLeaderboard(fullLeaderboard, team.ID)
-								break
-							}
-						}
-					}
-				}
-
-				// Paginate in-memory
-				paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
-
-				return paginated, meEntry, total, nil
+	board, err := s.getFullLeaderboardCached(ctx, cacheKey, func(ctx context.Context) ([]LeaderboardEntry, error) {
+		rows, err := s.queries.GetFullProjectTeamLeaderboard(ctx, s.buildFullProjectTeamParams(params))
+		if err != nil {
+			return nil, fmt.Errorf("failed to get full project team leaderboard: %w", err)
+		}
+		entries := make([]LeaderboardEntry, 0, len(rows))
+		for _, row := range rows {
+			if row != nil {
+				entries = append(entries, LeaderboardEntry{
+					EntityID:    row.EntityID,
+					Name:        row.Name,
+					Image:       row.Image,
+					Score:       int(row.Score),
+					Rank:        row.Rank,
+					LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
+				})
 			}
 		}
-	}
-
-	// Cache miss or unmarshal error - query database
-	queryParams := s.buildFullProjectTeamParams(params)
-	rows, err := s.queries.GetFullProjectTeamLeaderboard(ctx, queryParams)
+		return entries, nil
+	})
 	if err != nil {
-		return nil, nil, 0, fmt.Errorf("failed to get full project team leaderboard: %w", err)
+		return nil, nil, 0, err
 	}
 
-	// Convert to entries
-	fullLeaderboard = make([]LeaderboardEntry, 0, len(rows))
-	for _, row := range rows {
-		if row != nil {
-			fullLeaderboard = append(fullLeaderboard, LeaderboardEntry{
-				EntityID:    row.EntityID,
-				Name:        row.Name,
-				Image:       row.Image,
-				Score:       int(row.Score),
-				Rank:        row.Rank,
-				LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
-			})
-		}
-	}
-
-	// Cache the full leaderboard with 5 minute TTL
-	if marshaledData, err := json.Marshal(fullLeaderboard); err == nil {
-		s.cache.SetWithTTL(cacheKey, marshaledData, 5*time.Minute)
-	}
-
-	total := len(fullLeaderboard)
-
-	// Find "me" in results
 	var meEntry *LeaderboardEntry
 	if params.UserID != "" {
-		// Use loader to get user's teams
-		thunk := s.loaders.TeamsByUserLoader.Load(ctx, params.UserID)
-		teams, err := thunk()
-		if err == nil && teams != nil {
-			// Find team in this project
-			for _, team := range teams {
-				if team.ProjectID == params.ContextID {
-					meEntry = findMeInLeaderboard(fullLeaderboard, team.ID)
-					break
-				}
-			}
-		}
+		meEntry = board.findMe(s.meTeamIDInProject(ctx, params.UserID, params.ContextID))
 	}
-
-	// Paginate in-memory
-	paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
-
-	return paginated, meEntry, total, nil
+	paginated := paginateLeaderboard(board.Entries, params.First, params.After, params.Last, params.Before)
+	return paginated, meEntry, len(board.Entries), nil
 }
 
 func (s *LeaderboardService) getProjectSuperTeamLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, error) {
-	// Build cache key
 	filterParams := buildFilterParamsMap(params.Filter)
 	cacheKey := cache.FullLeaderboardKey("project", params.ContextID, "superteams", filterParams)
 
-	// Try to get from cache
-	var fullLeaderboard []LeaderboardEntry
-	cachedData, found := s.cache.Get(cacheKey)
-	if found {
-		// Unmarshal from cache
-		if cachedBytes, ok := cachedData.([]byte); ok {
-			if err := json.Unmarshal(cachedBytes, &fullLeaderboard); err == nil {
-				// Successfully got from cache
-				total := len(fullLeaderboard)
-
-				// Find "me" in cached results
-				var meEntry *LeaderboardEntry
-				if params.UserID != "" {
-					// Use loader to get user's superteams
-					thunk := s.loaders.SuperTeamsByUserLoader.Load(ctx, params.UserID)
-					superTeams, err := thunk()
-					if err == nil && superTeams != nil {
-						// Find superteam in this project
-						for _, superTeam := range superTeams {
-							if superTeam.ProjectID == params.ContextID {
-								meEntry = findMeInLeaderboard(fullLeaderboard, superTeam.ID)
-								break
-							}
-						}
-					}
-				}
-
-				// Paginate in-memory
-				paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
-
-				return paginated, meEntry, total, nil
+	board, err := s.getFullLeaderboardCached(ctx, cacheKey, func(ctx context.Context) ([]LeaderboardEntry, error) {
+		rows, err := s.queries.GetFullProjectSuperTeamLeaderboard(ctx, s.buildFullProjectSuperTeamParams(params))
+		if err != nil {
+			return nil, fmt.Errorf("failed to get full project superteam leaderboard: %w", err)
+		}
+		entries := make([]LeaderboardEntry, 0, len(rows))
+		for _, row := range rows {
+			if row != nil {
+				entries = append(entries, LeaderboardEntry{
+					EntityID:    row.EntityID,
+					Name:        row.Name,
+					Image:       row.Image,
+					Score:       int(row.Score),
+					Rank:        row.Rank,
+					LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
+				})
 			}
 		}
-	}
-
-	// Cache miss or unmarshal error - query database
-	queryParams := s.buildFullProjectSuperTeamParams(params)
-	rows, err := s.queries.GetFullProjectSuperTeamLeaderboard(ctx, queryParams)
+		return entries, nil
+	})
 	if err != nil {
-		return nil, nil, 0, fmt.Errorf("failed to get full project superteam leaderboard: %w", err)
+		return nil, nil, 0, err
 	}
 
-	// Convert to entries
-	fullLeaderboard = make([]LeaderboardEntry, 0, len(rows))
-	for _, row := range rows {
-		if row != nil {
-			fullLeaderboard = append(fullLeaderboard, LeaderboardEntry{
-				EntityID:    row.EntityID,
-				Name:        row.Name,
-				Image:       row.Image,
-				Score:       int(row.Score),
-				Rank:        row.Rank,
-				LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
-			})
-		}
-	}
-
-	// Cache the full leaderboard with 5 minute TTL
-	if marshaledData, err := json.Marshal(fullLeaderboard); err == nil {
-		s.cache.SetWithTTL(cacheKey, marshaledData, 5*time.Minute)
-	}
-
-	total := len(fullLeaderboard)
-
-	// Find "me" in results
 	var meEntry *LeaderboardEntry
 	if params.UserID != "" {
-		// Use loader to get user's superteams
-		thunk := s.loaders.SuperTeamsByUserLoader.Load(ctx, params.UserID)
-		superTeams, err := thunk()
-		if err == nil && superTeams != nil {
-			// Find superteam in this project
-			for _, superTeam := range superTeams {
-				if superTeam.ProjectID == params.ContextID {
-					meEntry = findMeInLeaderboard(fullLeaderboard, superTeam.ID)
-					break
-				}
-			}
-		}
+		meEntry = board.findMe(s.meSuperTeamIDInProject(ctx, params.UserID, params.ContextID))
 	}
-
-	// Paginate in-memory
-	paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
-
-	return paginated, meEntry, total, nil
+	paginated := paginateLeaderboard(board.Entries, params.First, params.After, params.Last, params.Before)
+	return paginated, meEntry, len(board.Entries), nil
 }
 
 func (s *LeaderboardService) getProjectChurchLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, error) {
-	// Build cache key
 	filterParams := buildFilterParamsMap(params.Filter)
 	cacheKey := cache.FullLeaderboardKey("project", params.ContextID, "churches", filterParams)
 
-	// Try to get from cache
-	var fullLeaderboard []LeaderboardEntry
-	cachedData, found := s.cache.Get(cacheKey)
-	if found {
-		// Unmarshal from cache
-		if cachedBytes, ok := cachedData.([]byte); ok {
-			if err := json.Unmarshal(cachedBytes, &fullLeaderboard); err == nil {
-				// Successfully got from cache
-				total := len(fullLeaderboard)
-
-				// Find "me" in cached results
-				var meEntry *LeaderboardEntry
-				if params.UserID != "" {
-					// Use loader to get user (includes ChurchID)
-					thunk := s.loaders.UserByIDLoader.Load(ctx, params.UserID)
-					user, err := thunk()
-					if err == nil && user != nil {
-						meEntry = findMeInLeaderboard(fullLeaderboard, user.ChurchID)
-					}
-				}
-
-				// Paginate in-memory
-				paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
-
-				return paginated, meEntry, total, nil
+	board, err := s.getFullLeaderboardCached(ctx, cacheKey, func(ctx context.Context) ([]LeaderboardEntry, error) {
+		rows, err := s.queries.GetFullProjectChurchLeaderboard(ctx, s.buildFullProjectChurchParams(params))
+		if err != nil {
+			return nil, fmt.Errorf("failed to get full project church leaderboard: %w", err)
+		}
+		entries := make([]LeaderboardEntry, 0, len(rows))
+		for _, row := range rows {
+			if row != nil {
+				entries = append(entries, LeaderboardEntry{
+					EntityID:    row.EntityID,
+					Name:        row.Name,
+					Image:       row.Image,
+					Score:       int(row.Score),
+					Rank:        row.Rank,
+					LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
+				})
 			}
 		}
-	}
-
-	// Cache miss or unmarshal error - query database
-	queryParams := s.buildFullProjectChurchParams(params)
-	rows, err := s.queries.GetFullProjectChurchLeaderboard(ctx, queryParams)
+		return entries, nil
+	})
 	if err != nil {
-		return nil, nil, 0, fmt.Errorf("failed to get full project church leaderboard: %w", err)
+		return nil, nil, 0, err
 	}
 
-	// Convert to entries
-	fullLeaderboard = make([]LeaderboardEntry, 0, len(rows))
-	for _, row := range rows {
-		if row != nil {
-			fullLeaderboard = append(fullLeaderboard, LeaderboardEntry{
-				EntityID:    row.EntityID,
-				Name:        row.Name,
-				Image:       row.Image,
-				Score:       int(row.Score),
-				Rank:        row.Rank,
-				LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
-			})
-		}
-	}
-
-	// Cache the full leaderboard with 5 minute TTL
-	if marshaledData, err := json.Marshal(fullLeaderboard); err == nil {
-		s.cache.SetWithTTL(cacheKey, marshaledData, 5*time.Minute)
-	}
-
-	total := len(fullLeaderboard)
-
-	// Find "me" in results
 	var meEntry *LeaderboardEntry
 	if params.UserID != "" {
-		// Use loader to get user (includes ChurchID)
-		thunk := s.loaders.UserByIDLoader.Load(ctx, params.UserID)
-		user, err := thunk()
-		if err == nil && user != nil {
-			meEntry = findMeInLeaderboard(fullLeaderboard, user.ChurchID)
-		}
+		meEntry = board.findMe(s.meChurchID(ctx, params.UserID))
 	}
-
-	// Paginate in-memory
-	paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
-
-	return paginated, meEntry, total, nil
+	paginated := paginateLeaderboard(board.Entries, params.First, params.After, params.Last, params.Before)
+	return paginated, meEntry, len(board.Entries), nil
 }
 
 // Helper functions for event leaderboards
 
 func (s *LeaderboardService) getEventPersonLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, error) {
-	// Build cache key
 	filterParams := buildFilterParamsMap(params.Filter)
 	cacheKey := cache.FullLeaderboardKey("event", params.ContextID, "persons", filterParams)
 
-	// Try to get from cache
-	var fullLeaderboard []LeaderboardEntry
-	cachedData, found := s.cache.Get(cacheKey)
-	if found {
-		// Unmarshal from cache
-		if cachedBytes, ok := cachedData.([]byte); ok {
-			if err := json.Unmarshal(cachedBytes, &fullLeaderboard); err == nil {
-				// Successfully got from cache
-				total := len(fullLeaderboard)
-
-				// Find "me" in cached results
-				var meEntry *LeaderboardEntry
-				if params.UserID != "" {
-					meEntry = findMeInLeaderboard(fullLeaderboard, params.UserID)
-				}
-
-				// Paginate in-memory
-				paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
-
-				return paginated, meEntry, total, nil
+	board, err := s.getFullLeaderboardCached(ctx, cacheKey, func(ctx context.Context) ([]LeaderboardEntry, error) {
+		rows, err := s.queries.GetFullEventPersonLeaderboard(ctx, s.buildFullEventPersonParams(params))
+		if err != nil {
+			return nil, fmt.Errorf("failed to get full event person leaderboard: %w", err)
+		}
+		entries := make([]LeaderboardEntry, 0, len(rows))
+		for _, row := range rows {
+			if row != nil {
+				entries = append(entries, LeaderboardEntry{
+					EntityID:    row.EntityID,
+					Name:        row.Name,
+					Description: row.ChurchName,
+					Image:       row.Image,
+					Score:       int(row.Score),
+					Rank:        row.Rank,
+					LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
+				})
 			}
 		}
-	}
-
-	// Cache miss or unmarshal error - query database
-	queryParams := s.buildFullEventPersonParams(params)
-	rows, err := s.queries.GetFullEventPersonLeaderboard(ctx, queryParams)
+		return entries, nil
+	})
 	if err != nil {
-		return nil, nil, 0, fmt.Errorf("failed to get full event person leaderboard: %w", err)
+		return nil, nil, 0, err
 	}
 
-	// Convert to entries
-	fullLeaderboard = make([]LeaderboardEntry, 0, len(rows))
-	for _, row := range rows {
-		if row != nil {
-			fullLeaderboard = append(fullLeaderboard, LeaderboardEntry{
-				EntityID:    row.EntityID,
-				Name:        row.Name,
-				Description: row.ChurchName,
-				Image:       row.Image,
-				Score:       int(row.Score),
-				Rank:        row.Rank,
-				LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
-			})
-		}
-	}
-
-	// Cache the full leaderboard with 5 minute TTL
-	if marshaledData, err := json.Marshal(fullLeaderboard); err == nil {
-		s.cache.SetWithTTL(cacheKey, marshaledData, 5*time.Minute)
-	}
-
-	total := len(fullLeaderboard)
-
-	// Find "me" in results
-	var meEntry *LeaderboardEntry
-	if params.UserID != "" {
-		meEntry = findMeInLeaderboard(fullLeaderboard, params.UserID)
-	}
-
-	// Paginate in-memory
-	paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
-
-	return paginated, meEntry, total, nil
+	meEntry := board.findMe(params.UserID)
+	paginated := paginateLeaderboard(board.Entries, params.First, params.After, params.Last, params.Before)
+	return paginated, meEntry, len(board.Entries), nil
 }
 
 func (s *LeaderboardService) getEventTeamLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, error) {
-	// Build cache key
 	filterParams := buildFilterParamsMap(params.Filter)
 	cacheKey := cache.FullLeaderboardKey("event", params.ContextID, "teams", filterParams)
 
-	// Try to get from cache
-	var fullLeaderboard []LeaderboardEntry
-	cachedData, found := s.cache.Get(cacheKey)
-	if found {
-		// Unmarshal from cache
-		if cachedBytes, ok := cachedData.([]byte); ok {
-			if err := json.Unmarshal(cachedBytes, &fullLeaderboard); err == nil {
-				// Successfully got from cache
-				total := len(fullLeaderboard)
-
-				// Find "me" in cached results
-				var meEntry *LeaderboardEntry
-				if params.UserID != "" {
-					// Get event to find its project, then get user's teams
-					eventThunk := s.loaders.EventByIDLoader.Load(ctx, params.ContextID)
-					event, err := eventThunk()
-					if err == nil && event != nil {
-						teamsThunk := s.loaders.TeamsByUserLoader.Load(ctx, params.UserID)
-						teams, err := teamsThunk()
-						if err == nil && teams != nil {
-							// Find team in this event's project
-							for _, team := range teams {
-								if team.ProjectID == event.ProjectID {
-									meEntry = findMeInLeaderboard(fullLeaderboard, team.ID)
-									break
-								}
-							}
-						}
-					}
-				}
-
-				// Paginate in-memory
-				paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
-
-				return paginated, meEntry, total, nil
+	board, err := s.getFullLeaderboardCached(ctx, cacheKey, func(ctx context.Context) ([]LeaderboardEntry, error) {
+		rows, err := s.queries.GetFullEventTeamLeaderboard(ctx, s.buildFullEventTeamParams(params))
+		if err != nil {
+			return nil, fmt.Errorf("failed to get full event team leaderboard: %w", err)
+		}
+		entries := make([]LeaderboardEntry, 0, len(rows))
+		for _, row := range rows {
+			if row != nil {
+				entries = append(entries, LeaderboardEntry{
+					EntityID:    row.EntityID,
+					Name:        row.Name,
+					Image:       row.Image,
+					Score:       int(row.Score),
+					Rank:        row.Rank,
+					LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
+				})
 			}
 		}
-	}
-
-	// Cache miss or unmarshal error - query database
-	queryParams := s.buildFullEventTeamParams(params)
-	rows, err := s.queries.GetFullEventTeamLeaderboard(ctx, queryParams)
+		return entries, nil
+	})
 	if err != nil {
-		return nil, nil, 0, fmt.Errorf("failed to get full event team leaderboard: %w", err)
+		return nil, nil, 0, err
 	}
 
-	// Convert to entries
-	fullLeaderboard = make([]LeaderboardEntry, 0, len(rows))
-	for _, row := range rows {
-		if row != nil {
-			fullLeaderboard = append(fullLeaderboard, LeaderboardEntry{
-				EntityID:    row.EntityID,
-				Name:        row.Name,
-				Image:       row.Image,
-				Score:       int(row.Score),
-				Rank:        row.Rank,
-				LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
-			})
-		}
-	}
-
-	// Cache the full leaderboard with 5 minute TTL
-	if marshaledData, err := json.Marshal(fullLeaderboard); err == nil {
-		s.cache.SetWithTTL(cacheKey, marshaledData, 5*time.Minute)
-	}
-
-	total := len(fullLeaderboard)
-
-	// Find "me" in results
 	var meEntry *LeaderboardEntry
 	if params.UserID != "" {
-		// Get event to find its project, then get user's teams
-		eventThunk := s.loaders.EventByIDLoader.Load(ctx, params.ContextID)
-		event, err := eventThunk()
-		if err == nil && event != nil {
-			teamsThunk := s.loaders.TeamsByUserLoader.Load(ctx, params.UserID)
-			teams, err := teamsThunk()
-			if err == nil && teams != nil {
-				// Find team in this event's project
-				for _, team := range teams {
-					if team.ProjectID == event.ProjectID {
-						meEntry = findMeInLeaderboard(fullLeaderboard, team.ID)
-						break
-					}
-				}
-			}
+		if projectID := s.eventProjectID(ctx, params.ContextID); projectID != "" {
+			meEntry = board.findMe(s.meTeamIDInProject(ctx, params.UserID, projectID))
 		}
 	}
-
-	// Paginate in-memory
-	paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
-
-	return paginated, meEntry, total, nil
+	paginated := paginateLeaderboard(board.Entries, params.First, params.After, params.Last, params.Before)
+	return paginated, meEntry, len(board.Entries), nil
 }
 
 func (s *LeaderboardService) getEventSuperTeamLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, error) {
-	// Build cache key
 	filterParams := buildFilterParamsMap(params.Filter)
 	cacheKey := cache.FullLeaderboardKey("event", params.ContextID, "superteams", filterParams)
 
-	// Try to get from cache
-	var fullLeaderboard []LeaderboardEntry
-	cachedData, found := s.cache.Get(cacheKey)
-	if found {
-		// Unmarshal from cache
-		if cachedBytes, ok := cachedData.([]byte); ok {
-			if err := json.Unmarshal(cachedBytes, &fullLeaderboard); err == nil {
-				// Successfully got from cache
-				total := len(fullLeaderboard)
-
-				// Find "me" in cached results
-				var meEntry *LeaderboardEntry
-				if params.UserID != "" {
-					// Get event to find its project, then get user's superteams
-					eventThunk := s.loaders.EventByIDLoader.Load(ctx, params.ContextID)
-					event, err := eventThunk()
-					if err == nil && event != nil {
-						superTeamsThunk := s.loaders.SuperTeamsByUserLoader.Load(ctx, params.UserID)
-						superTeams, err := superTeamsThunk()
-						if err == nil && superTeams != nil {
-							// Find superteam in this event's project
-							for _, superTeam := range superTeams {
-								if superTeam.ProjectID == event.ProjectID {
-									meEntry = findMeInLeaderboard(fullLeaderboard, superTeam.ID)
-									break
-								}
-							}
-						}
-					}
-				}
-
-				// Paginate in-memory
-				paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
-
-				return paginated, meEntry, total, nil
+	board, err := s.getFullLeaderboardCached(ctx, cacheKey, func(ctx context.Context) ([]LeaderboardEntry, error) {
+		rows, err := s.queries.GetFullEventSuperTeamLeaderboard(ctx, s.buildFullEventSuperTeamParams(params))
+		if err != nil {
+			return nil, fmt.Errorf("failed to get full event superteam leaderboard: %w", err)
+		}
+		entries := make([]LeaderboardEntry, 0, len(rows))
+		for _, row := range rows {
+			if row != nil {
+				entries = append(entries, LeaderboardEntry{
+					EntityID:    row.EntityID,
+					Name:        row.Name,
+					Image:       row.Image,
+					Score:       int(row.Score),
+					Rank:        row.Rank,
+					LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
+				})
 			}
 		}
-	}
-
-	// Cache miss or unmarshal error - query database
-	queryParams := s.buildFullEventSuperTeamParams(params)
-	rows, err := s.queries.GetFullEventSuperTeamLeaderboard(ctx, queryParams)
+		return entries, nil
+	})
 	if err != nil {
-		return nil, nil, 0, fmt.Errorf("failed to get full event superteam leaderboard: %w", err)
+		return nil, nil, 0, err
 	}
 
-	// Convert to entries
-	fullLeaderboard = make([]LeaderboardEntry, 0, len(rows))
-	for _, row := range rows {
-		if row != nil {
-			fullLeaderboard = append(fullLeaderboard, LeaderboardEntry{
-				EntityID:    row.EntityID,
-				Name:        row.Name,
-				Image:       row.Image,
-				Score:       int(row.Score),
-				Rank:        row.Rank,
-				LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
-			})
-		}
-	}
-
-	// Cache the full leaderboard with 5 minute TTL
-	if marshaledData, err := json.Marshal(fullLeaderboard); err == nil {
-		s.cache.SetWithTTL(cacheKey, marshaledData, 5*time.Minute)
-	}
-
-	total := len(fullLeaderboard)
-
-	// Find "me" in results
 	var meEntry *LeaderboardEntry
 	if params.UserID != "" {
-		// Get event to find its project, then get user's superteams
-		eventThunk := s.loaders.EventByIDLoader.Load(ctx, params.ContextID)
-		event, err := eventThunk()
-		if err == nil && event != nil {
-			superTeamsThunk := s.loaders.SuperTeamsByUserLoader.Load(ctx, params.UserID)
-			superTeams, err := superTeamsThunk()
-			if err == nil && superTeams != nil {
-				// Find superteam in this event's project
-				for _, superTeam := range superTeams {
-					if superTeam.ProjectID == event.ProjectID {
-						meEntry = findMeInLeaderboard(fullLeaderboard, superTeam.ID)
-						break
-					}
-				}
-			}
+		if projectID := s.eventProjectID(ctx, params.ContextID); projectID != "" {
+			meEntry = board.findMe(s.meSuperTeamIDInProject(ctx, params.UserID, projectID))
 		}
 	}
-
-	// Paginate in-memory
-	paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
-
-	return paginated, meEntry, total, nil
+	paginated := paginateLeaderboard(board.Entries, params.First, params.After, params.Last, params.Before)
+	return paginated, meEntry, len(board.Entries), nil
 }
 
 func (s *LeaderboardService) getEventChurchLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, error) {
-	// Build cache key
 	filterParams := buildFilterParamsMap(params.Filter)
 	cacheKey := cache.FullLeaderboardKey("event", params.ContextID, "churches", filterParams)
 
-	// Try to get from cache
-	var fullLeaderboard []LeaderboardEntry
-	cachedData, found := s.cache.Get(cacheKey)
-	if found {
-		// Unmarshal from cache
-		if cachedBytes, ok := cachedData.([]byte); ok {
-			if err := json.Unmarshal(cachedBytes, &fullLeaderboard); err == nil {
-				// Successfully got from cache
-				total := len(fullLeaderboard)
-
-				// Find "me" in cached results
-				var meEntry *LeaderboardEntry
-				if params.UserID != "" {
-					// Use loader to get user (includes ChurchID)
-					thunk := s.loaders.UserByIDLoader.Load(ctx, params.UserID)
-					user, err := thunk()
-					if err == nil && user != nil {
-						meEntry = findMeInLeaderboard(fullLeaderboard, user.ChurchID)
-					}
-				}
-
-				// Paginate in-memory
-				paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
-
-				return paginated, meEntry, total, nil
+	board, err := s.getFullLeaderboardCached(ctx, cacheKey, func(ctx context.Context) ([]LeaderboardEntry, error) {
+		rows, err := s.queries.GetFullEventChurchLeaderboard(ctx, s.buildFullEventChurchParams(params))
+		if err != nil {
+			return nil, fmt.Errorf("failed to get full event church leaderboard: %w", err)
+		}
+		entries := make([]LeaderboardEntry, 0, len(rows))
+		for _, row := range rows {
+			if row != nil {
+				entries = append(entries, LeaderboardEntry{
+					EntityID:    row.EntityID,
+					Name:        row.Name,
+					Image:       row.Image,
+					Score:       int(row.Score),
+					Rank:        row.Rank,
+					LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
+				})
 			}
 		}
-	}
-
-	// Cache miss or unmarshal error - query database
-	queryParams := s.buildFullEventChurchParams(params)
-	rows, err := s.queries.GetFullEventChurchLeaderboard(ctx, queryParams)
+		return entries, nil
+	})
 	if err != nil {
-		return nil, nil, 0, fmt.Errorf("failed to get full event church leaderboard: %w", err)
+		return nil, nil, 0, err
 	}
 
-	// Convert to entries
-	fullLeaderboard = make([]LeaderboardEntry, 0, len(rows))
-	for _, row := range rows {
-		if row != nil {
-			fullLeaderboard = append(fullLeaderboard, LeaderboardEntry{
-				EntityID:    row.EntityID,
-				Name:        row.Name,
-				Image:       row.Image,
-				Score:       int(row.Score),
-				Rank:        row.Rank,
-				LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
-			})
-		}
-	}
-
-	// Cache the full leaderboard with 5 minute TTL
-	if marshaledData, err := json.Marshal(fullLeaderboard); err == nil {
-		s.cache.SetWithTTL(cacheKey, marshaledData, 5*time.Minute)
-	}
-
-	total := len(fullLeaderboard)
-
-	// Find "me" in results
 	var meEntry *LeaderboardEntry
 	if params.UserID != "" {
-		// Use loader to get user (includes ChurchID)
-		thunk := s.loaders.UserByIDLoader.Load(ctx, params.UserID)
-		user, err := thunk()
-		if err == nil && user != nil {
-			meEntry = findMeInLeaderboard(fullLeaderboard, user.ChurchID)
-		}
+		meEntry = board.findMe(s.meChurchID(ctx, params.UserID))
 	}
-
-	// Paginate in-memory
-	paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
-
-	return paginated, meEntry, total, nil
+	paginated := paginateLeaderboard(board.Entries, params.First, params.After, params.Last, params.Before)
+	return paginated, meEntry, len(board.Entries), nil
 }
 
 // Parameter builders for project queries
@@ -1073,16 +789,4 @@ func paginateLeaderboard(entries []LeaderboardEntry, first *int, after *string, 
 		return entries[:10]
 	}
 	return entries
-}
-
-// findMeInLeaderboard finds the current user's entry in the leaderboard
-// For persons: matches by entity_id == userID
-// For teams/superteams/churches: needs to check membership (handled by caller)
-func findMeInLeaderboard(entries []LeaderboardEntry, entityID string) *LeaderboardEntry {
-	for _, entry := range entries {
-		if entry.EntityID == entityID {
-			return &entry
-		}
-	}
-	return nil
 }

@@ -66,7 +66,7 @@ type MockUserLoader_Load_Call struct {
 // Load is a helper method to define mock.On call
 //   - ctx context.Context
 //   - key string
-func (_e *MockUserLoader_Expecter) Load(ctx interface{}, key interface{}) *MockUserLoader_Load_Call {
+func (_e *MockUserLoader_Expecter) Load(ctx any, key any) *MockUserLoader_Load_Call {
 	return &MockUserLoader_Load_Call{Call: _e.mock.On("Load", ctx, key)}
 }
 

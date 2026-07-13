@@ -195,3 +195,14 @@ Currently `QuizSubmissionsByUserLoader` loads all submissions for a user regardl
 | **Total challenges page** | **~65ms** | **~15ms** | **4x faster** |
 
 The challenges page goes from ~65ms to ~15ms total DB time, with the remaining cost being the quiz session access check (5.6ms) and enrollment ID lookup (3.9ms).
+
+---
+
+## 9. Round 2 (2026-07-13)
+
+Load testing after the R1 fixes showed the remaining challenges-page DB cost is the
+two per-user lookups (`GetUserEnrolledChallengeIDsInProject`,
+`GetBulkUserSessionAccessQuizIDs`) plus `GetUserTeamByProjectID` — together ~99% of
+all DB traffic under load. These are now cached per (user, project) with negative
+caching, and the two challenge-pipeline lookups run concurrently. See
+`loadtest-performance-round2.md` for the full analysis and invalidation design.

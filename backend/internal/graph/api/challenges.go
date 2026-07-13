@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
@@ -48,47 +49,45 @@ func (r *Resolver) getFilteredChallenges(ctx context.Context, projectID string, 
 		}
 	}
 
-	// Batch load quizzes for all quiz challenges at once
+	// Steps 2+3 are independent per-user lookups (both cached) — run them
+	// concurrently. Failures degrade to empty sets, matching the previous
+	// behavior of ignoring these query errors.
 	quizByChallenge := make(map[string]*model.Quiz)
-	if len(quizChallengeIDs) > 0 {
+	sessionAccessQuizIDs := map[string]bool{}
+	enrolledChallengeIDs := map[string]bool{}
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	// Step 2: Load quizzes and batch check session access for all quiz challenges
+	go func() {
+		defer wg.Done()
+		if len(quizChallengeIDs) == 0 {
+			return
+		}
 		quizThunks := r.Loaders.QuizByChallengeIDLoader.LoadMany(ctx, quizChallengeIDs)
 		quizResults, _ := quizThunks()
+		quizIDs := make([]string, 0, len(quizChallengeIDs))
 		for i, q := range quizResults {
 			if q != nil {
 				quizByChallenge[quizChallengeIDs[i]] = q
+				quizIDs = append(quizIDs, q.ID)
 			}
 		}
-	}
+		if accessible, err := r.getUserAccessibleQuizIDs(ctx, userID, projectID, quizIDs); err == nil {
+			sessionAccessQuizIDs = accessible
+		}
+	}()
 
-	// Step 2: Batch check session access for all quiz challenges
-	sessionAccessQuizIDs := make(map[string]bool)
-	if len(quizByChallenge) > 0 {
-		quizIDs := make([]string, 0, len(quizByChallenge))
-		for _, q := range quizByChallenge {
-			quizIDs = append(quizIDs, q.ID)
+	// Step 3: Load enrolled challenge IDs for this user+project
+	go func() {
+		defer wg.Done()
+		if enrolled, err := r.getUserEnrolledChallengeIDs(ctx, userID, projectID); err == nil {
+			enrolledChallengeIDs = enrolled
 		}
-		accessibleQuizIDs, err := r.DB.Queries.GetBulkUserSessionAccessQuizIDs(ctx, sqlc.GetBulkUserSessionAccessQuizIDsParams{
-			Quizids: quizIDs,
-			Userid:  userID,
-		})
-		if err == nil {
-			for _, qid := range accessibleQuizIDs {
-				sessionAccessQuizIDs[qid] = true
-			}
-		}
-	}
+	}()
 
-	// Step 3: Batch load enrolled challenge IDs for this user+project
-	enrolledChallengeIDs := make(map[string]bool)
-	enrolledIDs, err := r.DB.Queries.GetUserEnrolledChallengeIDsInProject(ctx, sqlc.GetUserEnrolledChallengeIDsInProjectParams{
-		Userid:    userID,
-		Projectid: projectID,
-	})
-	if err == nil {
-		for _, id := range enrolledIDs {
-			enrolledChallengeIDs[id] = true
-		}
-	}
+	wg.Wait()
 
 	// Step 4: Filter using pre-fetched batch data (no translations yet)
 	visible := make([]model.Challenge, 0, len(challenges))
@@ -196,35 +195,19 @@ func (r *Resolver) getVisibleEventChallenges(ctx context.Context, obj *model.Eve
 					quizIDs = append(quizIDs, q.ID)
 				}
 			}
-			if len(quizIDs) > 0 {
-				accessibleQuizIDs, err := r.DB.Queries.GetBulkUserSessionAccessQuizIDs(ctx, sqlc.GetBulkUserSessionAccessQuizIDsParams{
-					Quizids: quizIDs,
-					Userid:  userID,
-				})
-				if err == nil {
-					for _, qid := range accessibleQuizIDs {
-						sessionAccessQuizIDs[qid] = true
-					}
-				}
+			if accessible, err := r.getUserAccessibleQuizIDs(ctx, userID, obj.ProjectID, quizIDs); err == nil {
+				sessionAccessQuizIDs = accessible
 			}
 		}
 	}
 
-	// Batch-load which of this event's challenges the viewer is enrolled in (authenticated only).
-	enrolledChallengeIDs := make(map[string]bool)
+	// Which of this event's challenges the viewer is enrolled in (authenticated
+	// only). Enrollment is project-wide, so the per-user project cache covers
+	// this event's challenges too.
+	enrolledChallengeIDs := map[string]bool{}
 	if userID != "" && len(challenges) > 0 {
-		challengeIDs := make([]string, len(challenges))
-		for i, ch := range challenges {
-			challengeIDs[i] = ch.GetID()
-		}
-		enrolled, err := r.DB.Queries.GetUserEnrollmentTimestamps(ctx, sqlc.GetUserEnrollmentTimestampsParams{
-			Userid:       userID,
-			Challengeids: challengeIDs,
-		})
-		if err == nil {
-			for _, row := range enrolled {
-				enrolledChallengeIDs[row.ChallengeID] = true
-			}
+		if enrolled, err := r.getUserEnrolledChallengeIDs(ctx, userID, obj.ProjectID); err == nil {
+			enrolledChallengeIDs = enrolled
 		}
 	}
 

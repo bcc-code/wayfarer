@@ -16,6 +16,7 @@ packages:
       RoleQuerier:
       LanguageQuerier:
       UserLoader:
+      LeaderboardQuerier:
   github.com/bcc-media/wayfarer/internal/services/push:
     interfaces:
       Querier:
