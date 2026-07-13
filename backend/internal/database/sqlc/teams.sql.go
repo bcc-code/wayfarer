@@ -74,13 +74,13 @@ LEFT JOIN (
 LEFT JOIN user_roles ur ON ur.team_id = t.id AND ur.role = 'TEAM_LEAD'
 LEFT JOIN users lead_user ON ur.user_id = lead_user.id
 WHERE
-    ($1::text[] IS NULL OR t.id = ANY($1::text[]))
-    AND ($2::text = '' OR t.project_id = $2::text)
-    AND ($3::text = '' OR t.super_team_id = $3::text)
+    ($1::char(28)[] IS NULL OR t.id = ANY($1::char(28)[]))
+    AND ($2::char(28) = '' OR t.project_id = $2::char(28))
+    AND ($3::char(28) = '' OR t.super_team_id = $3::char(28))
     AND ($4::bool = false OR ($4::bool = true AND t.super_team_id IS NULL))
     AND ($5::int <= 0 OR COALESCE(tm.member_count, 0) >= $5::int)
     AND ($6::int <= 0 OR COALESCE(tm.member_count, 0) <= $6::int)
-    AND ($7::text = '' OR lead_user.church_id = $7::text)
+    AND ($7::char(28) = '' OR lead_user.church_id = $7::char(28))
 `
 
 type CountTeamsFilteredParams struct {
@@ -161,7 +161,7 @@ func (q *Queries) CreateTeam(ctx context.Context, arg CreateTeamParams) (*Create
 
 const DeleteTeam = `-- name: DeleteTeam :exec
 DELETE FROM teams
-WHERE id = $1::text
+WHERE id = $1::char(28)
 `
 
 func (q *Queries) DeleteTeam(ctx context.Context, id string) error {
@@ -176,7 +176,7 @@ SELECT COALESCE(
 )::float AS average_age
 FROM team_members tm
 INNER JOIN users u ON tm.user_id = u.id
-WHERE tm.team_id = $1::text
+WHERE tm.team_id = $1::char(28)
   AND u.birthdate IS NOT NULL
 `
 
@@ -226,7 +226,7 @@ const GetTeamByJoinCodeAndProject = `-- name: GetTeamByJoinCodeAndProject :one
 SELECT id, project_id, name, description, join_code, super_team_id, leaderboard_excluded, created_at, updated_at
 FROM teams
 WHERE join_code = $1::text
-  AND project_id = $2::text
+  AND project_id = $2::char(28)
 `
 
 type GetTeamByJoinCodeAndProjectParams struct {
@@ -267,7 +267,7 @@ const GetTeamCreatorChurchID = `-- name: GetTeamCreatorChurchID :one
 SELECT u.church_id
 FROM teams t
 INNER JOIN users u ON t.created_by_user_id = u.id
-WHERE t.id = $1::text
+WHERE t.id = $1::char(28)
 `
 
 func (q *Queries) GetTeamCreatorChurchID(ctx context.Context, teamid string) (string, error) {
@@ -280,7 +280,7 @@ func (q *Queries) GetTeamCreatorChurchID(ctx context.Context, teamid string) (st
 const GetTeamLeadUserID = `-- name: GetTeamLeadUserID :one
 SELECT user_id
 FROM user_roles
-WHERE team_id = $1::text
+WHERE team_id = $1::char(28)
   AND role = 'TEAM_LEAD'
 LIMIT 1
 `
@@ -311,7 +311,7 @@ INNER JOIN teams t ON tm.team_id = t.id
 INNER JOIN churches c ON u.church_id = c.id
 LEFT JOIN score_journal sj ON sj.user_id = u.id
     AND sj.project_id = t.project_id
-WHERE tm.team_id = $1::text
+WHERE tm.team_id = $1::char(28)
 GROUP BY
     u.id,
     u.name,
@@ -374,7 +374,7 @@ func (q *Queries) GetTeamMemberLeaderboard(ctx context.Context, teamID string) (
 const GetTeamProjectID = `-- name: GetTeamProjectID :one
 SELECT project_id
 FROM teams
-WHERE id = $1::text
+WHERE id = $1::char(28)
 `
 
 func (q *Queries) GetTeamProjectID(ctx context.Context, teamid string) (string, error) {
@@ -387,7 +387,7 @@ func (q *Queries) GetTeamProjectID(ctx context.Context, teamid string) (string, 
 const GetTeamsByIDs = `-- name: GetTeamsByIDs :many
 SELECT id, project_id, name, description, join_code, super_team_id, leaderboard_excluded, created_at, updated_at
 FROM teams
-WHERE id = ANY($1::text[])
+WHERE id = ANY($1::char(28)[])
 `
 
 type GetTeamsByIDsRow struct {
@@ -438,13 +438,13 @@ FROM teams t
 LEFT JOIN team_members tm ON t.id = tm.team_id
 LEFT JOIN users member_user ON tm.user_id = member_user.id
 LEFT JOIN users creator_user ON t.created_by_user_id = creator_user.id
-WHERE t.project_id = $1::text
+WHERE t.project_id = $1::char(28)
   AND (
     -- If team has members: match by member's church
-    member_user.church_id = $2::text
+    member_user.church_id = $2::char(28)
     OR
     -- If team is empty: fall back to creator's church
-    (NOT EXISTS (SELECT 1 FROM team_members WHERE team_id = t.id) AND creator_user.church_id = $2::text)
+    (NOT EXISTS (SELECT 1 FROM team_members WHERE team_id = t.id) AND creator_user.church_id = $2::char(28))
   )
 ORDER BY t.created_at DESC
 `
@@ -499,7 +499,7 @@ func (q *Queries) GetTeamsByProjectIDAndChurchID(ctx context.Context, arg GetTea
 const GetTeamsByProjectIDs = `-- name: GetTeamsByProjectIDs :many
 SELECT id, project_id, name, description, join_code, super_team_id, leaderboard_excluded, created_at, updated_at
 FROM teams
-WHERE project_id = ANY($1::text[])
+WHERE project_id = ANY($1::char(28)[])
 ORDER BY project_id, created_at DESC
 `
 
@@ -548,7 +548,7 @@ func (q *Queries) GetTeamsByProjectIDs(ctx context.Context, projectIds []string)
 const GetTeamsBySuperTeamIDs = `-- name: GetTeamsBySuperTeamIDs :many
 SELECT id, project_id, name, description, join_code, super_team_id, leaderboard_excluded, created_at, updated_at
 FROM teams
-WHERE super_team_id = ANY($1::text[])
+WHERE super_team_id = ANY($1::char(28)[])
 ORDER BY name ASC
 `
 
@@ -598,7 +598,7 @@ const GetTeamsByUserIDs = `-- name: GetTeamsByUserIDs :many
 SELECT t.id, t.project_id, t.name, t.description, t.join_code, t.super_team_id, t.leaderboard_excluded, t.created_at, t.updated_at, tm.user_id
 FROM teams t
 INNER JOIN team_members tm ON t.id = tm.team_id
-WHERE tm.user_id = ANY($1::text[])
+WHERE tm.user_id = ANY($1::char(28)[])
 ORDER BY t.name ASC
 `
 
@@ -657,15 +657,15 @@ LEFT JOIN (
 LEFT JOIN user_roles ur ON ur.team_id = t.id AND ur.role = 'TEAM_LEAD'
 LEFT JOIN users lead_user ON ur.user_id = lead_user.id
 WHERE
-    ($1::text[] IS NULL OR t.id = ANY($1::text[]))
-    AND ($2::text = '' OR t.project_id = $2::text)
-    AND ($3::text = '' OR t.super_team_id = $3::text)
+    ($1::char(28)[] IS NULL OR t.id = ANY($1::char(28)[]))
+    AND ($2::char(28) = '' OR t.project_id = $2::char(28))
+    AND ($3::char(28) = '' OR t.super_team_id = $3::char(28))
     AND ($4::bool = false OR ($4::bool = true AND t.super_team_id IS NULL))
     AND ($5::int <= 0 OR COALESCE(tm.member_count, 0) >= $5::int)
     AND ($6::int <= 0 OR COALESCE(tm.member_count, 0) <= $6::int)
-    AND ($7::text = '' OR lead_user.church_id = $7::text)
-    AND ($8::text = '' OR t.id > $8::text)
-    AND ($9::text = '' OR t.id < $9::text)
+    AND ($7::char(28) = '' OR lead_user.church_id = $7::char(28))
+    AND ($8::char(28) = '' OR t.id > $8::char(28))
+    AND ($9::char(28) = '' OR t.id < $9::char(28))
 ORDER BY
     CASE WHEN $10::bool = true THEN t.id END DESC,
     CASE WHEN $10::bool = false OR $10::bool IS NULL THEN t.id END ASC
@@ -744,7 +744,7 @@ const GetUserIDsBySuperTeamIDs = `-- name: GetUserIDsBySuperTeamIDs :many
 SELECT t.super_team_id, tm.user_id
 FROM team_members tm
 JOIN teams t ON t.id = tm.team_id
-WHERE t.super_team_id = ANY($1::text[])
+WHERE t.super_team_id = ANY($1::char(28)[])
 `
 
 type GetUserIDsBySuperTeamIDsRow struct {
@@ -776,7 +776,7 @@ func (q *Queries) GetUserIDsBySuperTeamIDs(ctx context.Context, superteamids []s
 const GetUserIDsByTeamIDs = `-- name: GetUserIDsByTeamIDs :many
 SELECT team_id, user_id
 FROM team_members
-WHERE team_id = ANY($1::text[])
+WHERE team_id = ANY($1::char(28)[])
 `
 
 type GetUserIDsByTeamIDsRow struct {
@@ -809,7 +809,7 @@ const GetUserIDsInSuperTeams = `-- name: GetUserIDsInSuperTeams :many
 SELECT DISTINCT tm.user_id
 FROM team_members tm
 JOIN teams t ON t.id = tm.team_id
-WHERE t.super_team_id = ANY($1::text[])
+WHERE t.super_team_id = ANY($1::char(28)[])
 `
 
 func (q *Queries) GetUserIDsInSuperTeams(ctx context.Context, superteamids []string) ([]string, error) {
@@ -835,7 +835,7 @@ func (q *Queries) GetUserIDsInSuperTeams(ctx context.Context, superteamids []str
 const GetUserIDsInTeams = `-- name: GetUserIDsInTeams :many
 SELECT DISTINCT user_id
 FROM team_members
-WHERE team_id = ANY($1::text[])
+WHERE team_id = ANY($1::char(28)[])
 `
 
 func (q *Queries) GetUserIDsInTeams(ctx context.Context, teamids []string) ([]string, error) {
@@ -862,8 +862,8 @@ const GetUserTeamByProjectID = `-- name: GetUserTeamByProjectID :one
 SELECT t.id, t.project_id, t.name, t.description, t.join_code, t.super_team_id, t.leaderboard_excluded, t.created_at, t.updated_at
 FROM teams t
 INNER JOIN team_members tm ON t.id = tm.team_id
-WHERE tm.user_id = $1::text
-  AND t.project_id = $2::text
+WHERE tm.user_id = $1::char(28)
+  AND t.project_id = $2::char(28)
 LIMIT 1
 `
 
@@ -906,8 +906,8 @@ SELECT EXISTS(
     SELECT 1
     FROM team_members tm
     INNER JOIN users u ON tm.user_id = u.id
-    WHERE tm.team_id = $1::text
-      AND u.church_id = $2::text
+    WHERE tm.team_id = $1::char(28)
+      AND u.church_id = $2::char(28)
 )
 `
 
@@ -929,8 +929,8 @@ SELECT EXISTS(
     FROM team_members tm
     INNER JOIN teams t ON tm.team_id = t.id
     INNER JOIN super_teams st ON t.super_team_id = st.id
-    WHERE tm.user_id = $1::text
-      AND st.project_id = $2::text
+    WHERE tm.user_id = $1::char(28)
+      AND st.project_id = $2::char(28)
 ) AS is_member
 `
 
@@ -951,8 +951,8 @@ SELECT EXISTS(
     SELECT 1
     FROM team_members tm
     INNER JOIN teams t ON tm.team_id = t.id
-    WHERE tm.user_id = $1::text
-      AND t.project_id = $2::text
+    WHERE tm.user_id = $1::char(28)
+      AND t.project_id = $2::char(28)
 ) AS is_member
 `
 
@@ -972,8 +972,8 @@ const IsUserTeamMember = `-- name: IsUserTeamMember :one
 SELECT EXISTS(
     SELECT 1
     FROM team_members
-    WHERE team_id = $1::text
-      AND user_id = $2::text
+    WHERE team_id = $1::char(28)
+      AND user_id = $2::char(28)
 )
 `
 
@@ -1007,7 +1007,7 @@ func (q *Queries) JoinCodeExists(ctx context.Context, joincode string) (bool, er
 const RegenerateJoinCode = `-- name: RegenerateJoinCode :one
 UPDATE teams
 SET join_code = $1::text, updated_at = now()
-WHERE id = $2::text
+WHERE id = $2::char(28)
 RETURNING id, project_id, name, description, join_code, super_team_id, leaderboard_excluded, created_at, updated_at
 `
 
@@ -1047,8 +1047,8 @@ func (q *Queries) RegenerateJoinCode(ctx context.Context, arg RegenerateJoinCode
 
 const RemoveTeamLeadRole = `-- name: RemoveTeamLeadRole :exec
 DELETE FROM user_roles
-WHERE user_id = $1::text
-  AND team_id = $2::text
+WHERE user_id = $1::char(28)
+  AND team_id = $2::char(28)
   AND role = 'TEAM_LEAD'
 `
 
@@ -1064,7 +1064,7 @@ func (q *Queries) RemoveTeamLeadRole(ctx context.Context, arg RemoveTeamLeadRole
 
 const RemoveTeamMember = `-- name: RemoveTeamMember :exec
 DELETE FROM team_members
-WHERE team_id = $1::text AND user_id = $2::text
+WHERE team_id = $1::char(28) AND user_id = $2::char(28)
 `
 
 type RemoveTeamMemberParams struct {
@@ -1079,9 +1079,9 @@ func (q *Queries) RemoveTeamMember(ctx context.Context, arg RemoveTeamMemberPara
 
 const RemoveUserFromTeamsInProject = `-- name: RemoveUserFromTeamsInProject :exec
 DELETE FROM team_members
-WHERE user_id = $1::text
+WHERE user_id = $1::char(28)
   AND team_id IN (
-    SELECT id FROM teams WHERE project_id = $2::text
+    SELECT id FROM teams WHERE project_id = $2::char(28)
   )
 `
 
@@ -1101,7 +1101,7 @@ SET
     name = COALESCE($1::text, name),
     description = COALESCE($2::text, description),
     updated_at = now()
-WHERE id = $3::text
+WHERE id = $3::char(28)
 RETURNING id, project_id, name, description, join_code, super_team_id, leaderboard_excluded, created_at, updated_at
 `
 
@@ -1145,7 +1145,7 @@ UPDATE teams
 SET
     leaderboard_excluded = $1::bool,
     updated_at = now()
-WHERE id = $2::text
+WHERE id = $2::char(28)
 RETURNING id, project_id, name, description, join_code, super_team_id, leaderboard_excluded, created_at, updated_at
 `
 

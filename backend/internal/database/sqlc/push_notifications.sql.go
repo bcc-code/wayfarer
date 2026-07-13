@@ -33,7 +33,7 @@ func (q *Queries) CountPushSubscriptions(ctx context.Context) (int64, error) {
 
 const CountPushSubscriptionsByUser = `-- name: CountPushSubscriptionsByUser :one
 SELECT COUNT(*) FROM push_subscriptions
-WHERE user_id = $1::text
+WHERE user_id = $1::char(28)
 `
 
 func (q *Queries) CountPushSubscriptionsByUser(ctx context.Context, userid string) (int64, error) {
@@ -173,7 +173,7 @@ func (q *Queries) CreatePushSubscription(ctx context.Context, arg CreatePushSubs
 
 const DeleteNotificationPreference = `-- name: DeleteNotificationPreference :exec
 DELETE FROM push_notification_preferences
-WHERE user_id = $1::text
+WHERE user_id = $1::char(28)
   AND notification_type = $2::text
 `
 
@@ -199,7 +199,7 @@ func (q *Queries) DeletePushSubscriptionByEndpoint(ctx context.Context, endpoint
 
 const DeletePushSubscriptionByID = `-- name: DeletePushSubscriptionByID :exec
 DELETE FROM push_subscriptions
-WHERE id = $1::text
+WHERE id = $1::char(28)
 `
 
 func (q *Queries) DeletePushSubscriptionByID(ctx context.Context, id string) error {
@@ -270,7 +270,7 @@ func (q *Queries) GetAllSubscribedUserIDs(ctx context.Context) ([]string, error)
 const GetEnabledSubscriptionsForUsers = `-- name: GetEnabledSubscriptionsForUsers :many
 SELECT ps.id, ps.user_id, ps.endpoint, ps.p256dh_key, ps.auth_key, ps.user_agent, ps.created_at, ps.updated_at
 FROM push_subscriptions ps
-WHERE ps.user_id = ANY($1::text[])
+WHERE ps.user_id = ANY($1::char(28)[])
   AND NOT EXISTS (
     SELECT 1 FROM push_notification_preferences pnp
     WHERE pnp.user_id = ps.user_id
@@ -317,7 +317,7 @@ func (q *Queries) GetEnabledSubscriptionsForUsers(ctx context.Context, arg GetEn
 
 const GetNotificationPreference = `-- name: GetNotificationPreference :one
 SELECT user_id, notification_type, enabled, updated_at FROM push_notification_preferences
-WHERE user_id = $1::text
+WHERE user_id = $1::char(28)
   AND notification_type = $2::text
 `
 
@@ -340,7 +340,7 @@ func (q *Queries) GetNotificationPreference(ctx context.Context, arg GetNotifica
 
 const GetPushNotificationLog = `-- name: GetPushNotificationLog :one
 SELECT id, notification_type, title, body, url, data, target_criteria, sent_by, sent_at, total_recipients, successful_deliveries, failed_deliveries FROM push_notification_log
-WHERE id = $1::text
+WHERE id = $1::char(28)
 `
 
 func (q *Queries) GetPushNotificationLog(ctx context.Context, id string) (*PushNotificationLog, error) {
@@ -431,7 +431,7 @@ func (q *Queries) GetPushSubscriptionByEndpoint(ctx context.Context, endpoint st
 
 const GetPushSubscriptionsByUserID = `-- name: GetPushSubscriptionsByUserID :many
 SELECT id, user_id, endpoint, p256dh_key, auth_key, user_agent, created_at, updated_at FROM push_subscriptions
-WHERE user_id = $1::text
+WHERE user_id = $1::char(28)
 ORDER BY created_at DESC
 `
 
@@ -466,7 +466,7 @@ func (q *Queries) GetPushSubscriptionsByUserID(ctx context.Context, userid strin
 
 const GetPushSubscriptionsByUserIDs = `-- name: GetPushSubscriptionsByUserIDs :many
 SELECT id, user_id, endpoint, p256dh_key, auth_key, user_agent, created_at, updated_at FROM push_subscriptions
-WHERE user_id = ANY($1::text[])
+WHERE user_id = ANY($1::char(28)[])
 ORDER BY user_id, created_at DESC
 `
 
@@ -503,7 +503,7 @@ const GetUserIDsInEvents = `-- name: GetUserIDsInEvents :many
 
 SELECT DISTINCT user_id
 FROM user_events
-WHERE event_id = ANY($1::text[])
+WHERE event_id = ANY($1::char(28)[])
 `
 
 // User Targeting Queries (for building notification recipient lists)
@@ -530,7 +530,7 @@ func (q *Queries) GetUserIDsInEvents(ctx context.Context, eventids []string) ([]
 const GetUserIDsInProjects = `-- name: GetUserIDsInProjects :many
 SELECT DISTINCT user_id
 FROM user_projects
-WHERE project_id = ANY($1::text[])
+WHERE project_id = ANY($1::char(28)[])
 `
 
 func (q *Queries) GetUserIDsInProjects(ctx context.Context, projectids []string) ([]string, error) {
@@ -556,7 +556,7 @@ func (q *Queries) GetUserIDsInProjects(ctx context.Context, projectids []string)
 const GetUserNotificationPreferences = `-- name: GetUserNotificationPreferences :many
 
 SELECT user_id, notification_type, enabled, updated_at FROM push_notification_preferences
-WHERE user_id = $1::text
+WHERE user_id = $1::char(28)
 ORDER BY notification_type
 `
 
@@ -589,7 +589,7 @@ func (q *Queries) GetUserNotificationPreferences(ctx context.Context, userid str
 const IsNotificationTypeEnabled = `-- name: IsNotificationTypeEnabled :one
 SELECT COALESCE(
     (SELECT enabled FROM push_notification_preferences
-     WHERE user_id = $1::text AND notification_type = $2::text),
+     WHERE user_id = $1::char(28) AND notification_type = $2::text),
     true
 )::bool AS enabled
 `
@@ -612,7 +612,7 @@ SET
     total_recipients = $1::int,
     successful_deliveries = $2::int,
     failed_deliveries = $3::int
-WHERE id = $4::text
+WHERE id = $4::char(28)
 `
 
 type UpdatePushNotificationLogStatsParams struct {

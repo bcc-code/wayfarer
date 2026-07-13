@@ -14,7 +14,7 @@ import (
 const GetUserEvents = `-- name: GetUserEvents :many
 SELECT event_id, joined_at
 FROM user_events
-WHERE user_id = $1::text
+WHERE user_id = $1::char(28)
 ORDER BY joined_at DESC
 `
 
@@ -71,7 +71,7 @@ const IsUserInEvent = `-- name: IsUserInEvent :one
 SELECT EXISTS(
     SELECT 1
     FROM user_events
-    WHERE user_id = $1::text AND event_id = $2::text
+    WHERE user_id = $1::char(28) AND event_id = $2::char(28)
 ) AS is_member
 `
 
@@ -105,7 +105,7 @@ func (q *Queries) JoinEvent(ctx context.Context, arg JoinEventParams) error {
 
 const LeaveEvent = `-- name: LeaveEvent :exec
 DELETE FROM user_events
-WHERE user_id = $1::text AND event_id = $2::text
+WHERE user_id = $1::char(28) AND event_id = $2::char(28)
 `
 
 type LeaveEventParams struct {

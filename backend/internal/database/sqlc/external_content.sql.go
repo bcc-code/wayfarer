@@ -267,7 +267,7 @@ func (q *Queries) GetExternalContentByID(ctx context.Context, id string) (*Exter
 }
 
 const GetExternalContentByIDs = `-- name: GetExternalContentByIDs :many
-SELECT id, plan_id, task_id, content_id, content_type, published_at, synced_at, created_at, updated_at, source, url, complete_by FROM external_content WHERE id = ANY($1::text[])
+SELECT id, plan_id, task_id, content_id, content_type, published_at, synced_at, created_at, updated_at, source, url, complete_by FROM external_content WHERE id = ANY($1::char(28)[])
 `
 
 func (q *Queries) GetExternalContentByIDs(ctx context.Context, ids []string) ([]*ExternalContent, error) {
@@ -469,7 +469,7 @@ func (q *Queries) GetExternalContentTranslations(ctx context.Context, externalco
 
 const GetExternalContentTranslationsByContentIDs = `-- name: GetExternalContentTranslationsByContentIDs :many
 SELECT external_content_id, language_code, title, created_at, updated_at FROM external_content_translations
-WHERE external_content_id = ANY($1::text[])
+WHERE external_content_id = ANY($1::char(28)[])
 `
 
 func (q *Queries) GetExternalContentTranslationsByContentIDs(ctx context.Context, externalcontentids []string) ([]*ExternalContentTranslation, error) {

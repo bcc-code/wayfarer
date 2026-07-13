@@ -13,17 +13,18 @@ import (
 // This is necessary because ristretto doesn't natively support prefix-based deletion
 type KeyRegistry struct {
 	mu   sync.RWMutex
-	keys map[string][]string // prefix -> list of keys with that prefix
+	keys map[string]map[string]struct{} // prefix -> set of keys with that prefix
 }
 
 // NewKeyRegistry creates a new key registry
 func NewKeyRegistry() *KeyRegistry {
 	return &KeyRegistry{
-		keys: make(map[string][]string),
+		keys: make(map[string]map[string]struct{}),
 	}
 }
 
-// Register adds a key to the registry under its prefixes
+// Register adds a key to the registry under its prefixes. Registering the
+// same key multiple times (e.g. concurrent cache misses) is idempotent.
 func (kr *KeyRegistry) Register(key string) {
 	kr.mu.Lock()
 	defer kr.mu.Unlock()
@@ -31,7 +32,12 @@ func (kr *KeyRegistry) Register(key string) {
 	// Extract all relevant prefixes/tags from the key
 	prefixes := extractPrefixes(key)
 	for _, prefix := range prefixes {
-		kr.keys[prefix] = append(kr.keys[prefix], key)
+		set := kr.keys[prefix]
+		if set == nil {
+			set = make(map[string]struct{})
+			kr.keys[prefix] = set
+		}
+		set[key] = struct{}{}
 	}
 }
 
@@ -42,13 +48,10 @@ func (kr *KeyRegistry) Unregister(key string) {
 
 	prefixes := extractPrefixes(key)
 	for _, prefix := range prefixes {
-		keys := kr.keys[prefix]
-		for i, k := range keys {
-			if k == key {
-				// Remove key from slice
-				kr.keys[prefix] = append(keys[:i], keys[i+1:]...)
-				break
-			}
+		set := kr.keys[prefix]
+		delete(set, key)
+		if len(set) == 0 {
+			delete(kr.keys, prefix)
 		}
 	}
 }
@@ -58,9 +61,11 @@ func (kr *KeyRegistry) GetKeys(prefix string) []string {
 	kr.mu.RLock()
 	defer kr.mu.RUnlock()
 
-	keys := kr.keys[prefix]
-	result := make([]string, len(keys))
-	copy(result, keys)
+	set := kr.keys[prefix]
+	result := make([]string, 0, len(set))
+	for key := range set {
+		result = append(result, key)
+	}
 	return result
 }
 
@@ -68,7 +73,7 @@ func (kr *KeyRegistry) GetKeys(prefix string) []string {
 func (kr *KeyRegistry) Clear() {
 	kr.mu.Lock()
 	defer kr.mu.Unlock()
-	kr.keys = make(map[string][]string)
+	kr.keys = make(map[string]map[string]struct{})
 }
 
 // extractPrefixes extracts all relevant prefixes from a cache key
@@ -120,7 +125,8 @@ func extractPrefixes(key string) []string {
 		PrefixUserProjects, PrefixUserEvents, PrefixTeamMembers, PrefixUserRoles,
 		PrefixUserChallengeEnrollments, PrefixUserChallengeCompletions,
 		PrefixUserContentProgress, PrefixUserAchievements, PrefixUserStreakProgress,
-		PrefixUserConsents, PrefixUserProjectPoints,
+		PrefixUserConsents, PrefixUserProjectPoints, PrefixActiveChallengesCount,
+		PrefixUserTeamInProject, PrefixUserEnrolledChallenges, PrefixUserQuizSessionAccess,
 		PrefixUsersFilter, PrefixUsersCount,
 		PrefixProjectsFilter, PrefixProjectsCount,
 		PrefixEventsFilter, PrefixEventsCount,
@@ -160,6 +166,13 @@ type CacheWithRegistry struct {
 
 // NewCacheWithRegistry creates a cache with key registry support
 func NewCacheWithRegistry(cfg Config) (*CacheWithRegistry, error) {
+	registry := NewKeyRegistry()
+
+	// Prune keys from the registry when ristretto evicts them on its own (TTL
+	// expiry / cost eviction / admission rejection). Without this the registry
+	// grows unbounded and DeletePrefix slows down over time.
+	cfg.onEvictKey = registry.Unregister
+
 	cache, err := New(cfg)
 	if err != nil {
 		return nil, err
@@ -167,7 +180,7 @@ func NewCacheWithRegistry(cfg Config) (*CacheWithRegistry, error) {
 
 	return &CacheWithRegistry{
 		Cache:    cache,
-		registry: NewKeyRegistry(),
+		registry: registry,
 	}, nil
 }
 
@@ -248,6 +261,9 @@ func (c *CacheWithRegistry) invalidateUserLocal(userID string) {
 	c.DeletePrefix(PrefixUserProjectPoints + userID)
 	// Invalidate active challenges count for this user
 	c.DeletePrefix(PrefixActiveChallengesCount + userID)
+	// Invalidate per-user lookup caches (myTeam, enrolled challenges, quiz session access)
+	// These keys are registered under the "user:{userID}" tag, which the
+	// DeletePrefix("user:"+userID) call above already covers.
 	// Invalidate user filter/count queries (gender/church changes affect results)
 	c.DeletePrefix(PrefixUsersFilter)
 	c.DeletePrefix(PrefixUsersCount)
@@ -366,6 +382,11 @@ func (c *CacheWithRegistry) invalidateChallengeLocal(challengeID, projectID stri
 	// This is more aggressive but necessary since we don't track reverse index
 	c.DeletePrefix(PrefixUserChallengeEnrollments)
 	c.DeletePrefix(PrefixUserChallengeCompletions)
+	c.DeletePrefix(PrefixUserEnrolledChallenges)
+
+	// Challenge changes can alter the project's quiz set, which the per-user
+	// quiz session access cache is scoped to
+	c.DeletePrefix(PrefixUserQuizSessionAccess)
 
 	// Invalidate active challenges count (user-specific, keyed by project)
 	c.DeletePrefix(PrefixActiveChallengesCount)
@@ -412,11 +433,27 @@ func (c *CacheWithRegistry) invalidateQuizLocal(quizID, challengeID string) {
 	c.DeletePrefix(PrefixQuizzesFilter)
 	c.DeletePrefix(PrefixQuizzesCount)
 
+	// Per-user quiz session access caches may include this quiz
+	c.DeletePrefix(PrefixUserQuizSessionAccess)
+
 	// Invalidate quiz questions and answers for this quiz
 	c.Delete(QuizQuestionsByQuizKey(quizID))
 
 	// Invalidate submissions for this quiz
 	c.Delete(QuizSubmissionsByQuizKey(quizID))
+}
+
+// InvalidateQuizSessionAccess invalidates all per-user quiz session access caches
+// and broadcasts to other instances. Call this when session state changes
+// (open/lock/finish/reopen/delete) or access is granted/revoked.
+func (c *CacheWithRegistry) InvalidateQuizSessionAccess() {
+	c.invalidateQuizSessionAccessLocal()
+	c.broadcast(InvalidationMessage{Type: InvalidationTypeQuizSessionAccess})
+}
+
+// invalidateQuizSessionAccessLocal invalidates quiz session access caches on this instance only
+func (c *CacheWithRegistry) invalidateQuizSessionAccessLocal() {
+	c.DeletePrefix(PrefixUserQuizSessionAccess)
 }
 
 // InvalidateQuizAnswers invalidates cached answers/ordering items for a question

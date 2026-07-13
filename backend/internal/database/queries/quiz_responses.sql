@@ -1,12 +1,12 @@
 -- name: GetQuizResponseByID :one
 SELECT id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds
 FROM quiz_responses
-WHERE id = @id::text;
+WHERE id = @id::char(28);
 
 -- name: GetQuizResponsesBySubmissionID :many
 SELECT id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds, bet_amount
 FROM quiz_responses
-WHERE submission_id = @submissionid::text;
+WHERE submission_id = @submissionid::char(28);
 
 -- name: GetQuizResponsesBySubmissionIDs :many
 SELECT
@@ -16,14 +16,14 @@ SELECT
     r.bet_amount, r.score_journal_id, q.question_type, q.betting_enabled
 FROM quiz_responses r
 JOIN quiz_questions q ON r.question_id = q.id
-WHERE r.submission_id = ANY(@submission_ids::text[])
+WHERE r.submission_id = ANY(@submission_ids::char(28)[])
 ORDER BY r.submission_id;
 
 -- name: GetQuizResponseBySubmissionAndQuestion :one
 SELECT id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds, bet_amount
 FROM quiz_responses
-WHERE submission_id = @submissionid::text
-    AND question_id = @questionid::text;
+WHERE submission_id = @submissionid::char(28)
+    AND question_id = @questionid::char(28);
 
 -- name: CreateQuizResponse :one
 INSERT INTO quiz_responses (
@@ -66,24 +66,24 @@ SET
     time_spent_seconds = COALESCE(sqlc.narg('timespentseconds')::int, time_spent_seconds),
     bet_amount = COALESCE(sqlc.narg('betamount')::int, bet_amount),
     answered_at = now()
-WHERE id = @id::text
+WHERE id = @id::char(28)
 RETURNING id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds, bet_amount;
 
 -- name: CalculateSubmissionScore :one
 SELECT
     COALESCE(SUM(points_earned), 0)::int AS score
 FROM quiz_responses
-WHERE submission_id = @submissionid::text;
+WHERE submission_id = @submissionid::char(28);
 
 -- name: CalculateSubmissionPointsFromResponses :one
 SELECT COALESCE(SUM(points_earned), 0)::int AS total_points
 FROM quiz_responses
-WHERE submission_id = @submissionid::text;
+WHERE submission_id = @submissionid::char(28);
 
 -- name: UpdateBetResult :one
 UPDATE quiz_responses
 SET points_earned = @pointsearned::int
-WHERE id = @id::text
+WHERE id = @id::char(28)
 RETURNING id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds, bet_amount;
 
 -- name: UpdateBetResults :many
@@ -105,7 +105,7 @@ FROM quiz_responses r
 JOIN quiz_submissions s ON r.submission_id = s.id
 JOIN quizzes q ON s.quiz_id = q.id
 LEFT JOIN challenges c ON q.challenge_id = c.id
-WHERE r.id = @id::text;
+WHERE r.id = @id::char(28);
 
 -- name: GetQuizResponsesWithContext :many
 SELECT
@@ -117,13 +117,13 @@ FROM quiz_responses r
 JOIN quiz_submissions s ON r.submission_id = s.id
 JOIN quizzes q ON s.quiz_id = q.id
 LEFT JOIN challenges c ON q.challenge_id = c.id
-WHERE r.id = ANY(@ids::text[]);
+WHERE r.id = ANY(@ids::char(28)[]);
 
 -- name: UpdateBetResultWithJournal :one
 UPDATE quiz_responses
 SET points_earned = @pointsearned::int,
-    score_journal_id = @scorejournalid::text
-WHERE id = @id::text
+    score_journal_id = @scorejournalid::char(28)
+WHERE id = @id::char(28)
 RETURNING id, submission_id, question_id, selected_answer_ids, text_response,
           number_response, json_response, is_correct, points_earned, answered_at,
           time_spent_seconds, bet_amount, score_journal_id;
@@ -142,4 +142,4 @@ WHERE quiz_responses.id = data.id
 RETURNING quiz_responses.id, quiz_responses.submission_id, quiz_responses.question_id, quiz_responses.selected_answer_ids, quiz_responses.text_response, quiz_responses.number_response, quiz_responses.json_response, quiz_responses.is_correct, quiz_responses.points_earned, quiz_responses.answered_at, quiz_responses.time_spent_seconds, quiz_responses.bet_amount, quiz_responses.score_journal_id;
 
 -- name: GetQuizResponseScoreJournalID :one
-SELECT score_journal_id FROM quiz_responses WHERE id = @id::text;
+SELECT score_journal_id FROM quiz_responses WHERE id = @id::char(28);

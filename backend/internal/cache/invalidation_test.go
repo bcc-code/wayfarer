@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -84,6 +85,16 @@ func TestExtractPrefixes_ProjectKey(t *testing.T) {
 
 	assert.Contains(t, prefixes, PrefixChallenge)
 	assert.Contains(t, prefixes, "project:PROJ123")
+}
+
+func TestExtractPrefixes_ActiveChallengesCountKey(t *testing.T) {
+	userID := "US123"
+	projectID := "PR123"
+	key := ActiveChallengesCountKey(userID, projectID)
+	prefixes := extractPrefixes(key)
+
+	assert.Contains(t, prefixes, PrefixActiveChallengesCount)
+	assert.Contains(t, prefixes, "user:"+userID)
 }
 
 func TestExtractPrefixes_EventKey(t *testing.T) {
@@ -257,6 +268,7 @@ func TestCacheWithRegistry_UserInvalidation(t *testing.T) {
 	defer c.Close()
 
 	userID := "US123"
+	projectID := "PR123"
 
 	// Set various user-related cache entries
 	c.Set(UserKey(userID), "user-data")
@@ -269,10 +281,12 @@ func TestCacheWithRegistry_UserInvalidation(t *testing.T) {
 	c.Set(UserStreakProgressKey(userID, "AC001"), "streak")
 	c.Set(UserChallengeEnrollmentKey(userID, "CL001"), "enrolled")
 	c.Set(UserChallengeCompletionKey(userID, "CL001"), "completed")
+	c.Set(ActiveChallengesCountKey(userID, projectID), 3)
 
 	// Set a different user's data (should not be affected)
 	c.Set(UserKey("US999"), "other-user")
 	c.Set(UserContentProgressKey("US999", "AC001"), "other-progress")
+	c.Set(ActiveChallengesCountKey("US999", projectID), 7)
 
 	c.cache.Wait()
 
@@ -309,12 +323,34 @@ func TestCacheWithRegistry_UserInvalidation(t *testing.T) {
 	assert.False(t, found, "challenge enrollment should be deleted")
 	_, found = c.Get(UserChallengeCompletionKey(userID, "CL001"))
 	assert.False(t, found, "challenge completion should be deleted")
+	_, found = c.Get(ActiveChallengesCountKey(userID, projectID))
+	assert.False(t, found, "active challenges count should be deleted")
 
 	// Verify other user's data is NOT deleted
 	_, found = c.Get(UserKey("US999"))
 	assert.True(t, found, "other user's key should still exist")
 	_, found = c.Get(UserContentProgressKey("US999", "AC001"))
 	assert.True(t, found, "other user's content progress should still exist")
+	_, found = c.Get(ActiveChallengesCountKey("US999", projectID))
+	assert.True(t, found, "other user's active challenges count should still exist")
+}
+
+func TestCacheWithRegistry_ChallengeInvalidationClearsActiveChallengeCounts(t *testing.T) {
+	c, err := NewCacheWithRegistry(DefaultConfig())
+	assert.NoError(t, err)
+	defer c.Close()
+
+	c.Set(ActiveChallengesCountKey("US123", "PR123"), 3)
+	c.Set(ActiveChallengesCountKey("US999", "PR456"), 7)
+	c.cache.Wait()
+
+	c.invalidateChallengeLocal("CH123", "PR123", nil)
+	c.cache.Wait()
+
+	_, found := c.Get(ActiveChallengesCountKey("US123", "PR123"))
+	assert.False(t, found, "challenge invalidation should clear all active challenge counts")
+	_, found = c.Get(ActiveChallengesCountKey("US999", "PR456"))
+	assert.False(t, found, "challenge invalidation should clear all active challenge counts")
 }
 
 func TestCacheWithRegistry_TeamMemberLeaderboardInvalidationViaProject(t *testing.T) {
@@ -408,4 +444,56 @@ func TestCacheWithRegistry_LeaderboardInvalidation(t *testing.T) {
 	assert.False(t, found1, "key1 should be deleted")
 	assert.False(t, found2, "key2 should be deleted")
 	assert.True(t, found3, "key3 should still exist")
+}
+
+func TestKeyRegistry_RegisterIsIdempotent(t *testing.T) {
+	registry := NewKeyRegistry()
+	key := UserEnrolledChallengesKey("US123", "PR123")
+
+	// Concurrent cache misses can Register the same key multiple times
+	registry.Register(key)
+	registry.Register(key)
+	registry.Register(key)
+
+	for _, prefix := range extractPrefixes(key) {
+		keys := registry.GetKeys(prefix)
+		assert.Equal(t, []string{key}, keys, "prefix %q should track the key exactly once", prefix)
+	}
+}
+
+func TestKeyRegistry_SingleUnregisterRemovesRepeatedRegistrations(t *testing.T) {
+	registry := NewKeyRegistry()
+	key := UserEnrolledChallengesKey("US123", "PR123")
+
+	registry.Register(key)
+	registry.Register(key)
+	// One eviction callback must fully clean up the key
+	registry.Unregister(key)
+
+	for _, prefix := range extractPrefixes(key) {
+		assert.Empty(t, registry.GetKeys(prefix), "prefix %q should be empty after a single unregister", prefix)
+	}
+}
+
+func TestKeyRegistry_ConcurrentRegisterNoDuplicates(t *testing.T) {
+	registry := NewKeyRegistry()
+	key := UserEnrolledChallengesKey("US123", "PR123")
+	otherKey := UserEnrolledChallengesKey("US999", "PR123")
+	registry.Register(otherKey)
+
+	const goroutines = 20
+	var wg sync.WaitGroup
+	for i := 0; i < goroutines; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			registry.Register(key)
+			registry.Unregister(key)
+			registry.Register(key)
+		}()
+	}
+	wg.Wait()
+
+	keys := registry.GetKeys(PrefixUserEnrolledChallenges)
+	assert.ElementsMatch(t, []string{key, otherKey}, keys)
 }

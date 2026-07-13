@@ -35,7 +35,7 @@ func (q *Queries) ClearSuperTeamAssignmentsForProject(ctx context.Context, proje
 }
 
 const ClearTeamsFromSuperTeam = `-- name: ClearTeamsFromSuperTeam :exec
-UPDATE teams SET super_team_id = NULL WHERE super_team_id = $1::text
+UPDATE teams SET super_team_id = NULL WHERE super_team_id = $1::char(28)
 `
 
 func (q *Queries) ClearTeamsFromSuperTeam(ctx context.Context, superTeamID string) error {
@@ -60,8 +60,8 @@ LEFT JOIN (
     GROUP BY t.super_team_id
 ) m ON st.id = m.super_team_id
 WHERE
-    ($1::text[] IS NULL OR st.id = ANY($1::text[]))
-    AND ($2::text = '' OR st.project_id = $2::text)
+    ($1::char(28)[] IS NULL OR st.id = ANY($1::char(28)[]))
+    AND ($2::char(28) = '' OR st.project_id = $2::char(28))
     AND ($3::int <= 0 OR COALESCE(t.team_count, 0) >= $3::int)
     AND ($4::int <= 0 OR COALESCE(t.team_count, 0) <= $4::int)
     AND ($5::int <= 0 OR COALESCE(m.member_count, 0) >= $5::int)
@@ -130,7 +130,7 @@ func (q *Queries) CreateSuperTeam(ctx context.Context, arg CreateSuperTeamParams
 }
 
 const DeleteSuperTeam = `-- name: DeleteSuperTeam :exec
-DELETE FROM super_teams WHERE id = $1::text
+DELETE FROM super_teams WHERE id = $1::char(28)
 `
 
 func (q *Queries) DeleteSuperTeam(ctx context.Context, id string) error {
@@ -150,7 +150,7 @@ func (q *Queries) DeleteSuperTeamsByProjectID(ctx context.Context, projectID str
 const GetSuperTeamsByIDs = `-- name: GetSuperTeamsByIDs :many
 SELECT id, project_id, name, description, image_url, color, created_at, updated_at
 FROM super_teams
-WHERE id = ANY($1::text[])
+WHERE id = ANY($1::char(28)[])
 `
 
 type GetSuperTeamsByIDsRow struct {
@@ -198,7 +198,7 @@ SELECT DISTINCT st.id, st.project_id, st.name, st.description, st.image_url, st.
 FROM super_teams st
 INNER JOIN teams t ON st.id = t.super_team_id
 INNER JOIN team_members tm ON t.id = tm.team_id
-WHERE tm.user_id = ANY($1::text[])
+WHERE tm.user_id = ANY($1::char(28)[])
 ORDER BY st.name ASC
 `
 
@@ -261,14 +261,14 @@ LEFT JOIN (
     GROUP BY t.super_team_id
 ) m ON st.id = m.super_team_id
 WHERE
-    ($1::text[] IS NULL OR st.id = ANY($1::text[]))
-    AND ($2::text = '' OR st.project_id = $2::text)
+    ($1::char(28)[] IS NULL OR st.id = ANY($1::char(28)[]))
+    AND ($2::char(28) = '' OR st.project_id = $2::char(28))
     AND ($3::int <= 0 OR COALESCE(t.team_count, 0) >= $3::int)
     AND ($4::int <= 0 OR COALESCE(t.team_count, 0) <= $4::int)
     AND ($5::int <= 0 OR COALESCE(m.member_count, 0) >= $5::int)
     AND ($6::int <= 0 OR COALESCE(m.member_count, 0) <= $6::int)
-    AND ($7::text = '' OR st.id > $7::text)
-    AND ($8::text = '' OR st.id < $8::text)
+    AND ($7::char(28) = '' OR st.id > $7::char(28))
+    AND ($8::char(28) = '' OR st.id < $8::char(28))
 ORDER BY
     CASE WHEN $9::bool = true THEN st.id END DESC,
     CASE WHEN $9::bool = false OR $9::bool IS NULL THEN st.id END ASC
@@ -347,7 +347,7 @@ SELECT
     COALESCE(c.name, '') AS church_name,
     COALESCE(SUM(sj.points), 0)::bigint AS total_score,
     COUNT(DISTINCT tm.user_id)::int AS member_count,
-    COUNT(DISTINCT CASE WHEN tm.user_id = ANY($1::text[]) THEN tm.user_id END)::int AS attending_count
+    COUNT(DISTINCT CASE WHEN tm.user_id = ANY($1::char(28)[]) THEN tm.user_id END)::int AS attending_count
 FROM teams t
 LEFT JOIN user_roles ur ON ur.team_id = t.id AND ur.role = 'TEAM_LEAD'
 LEFT JOIN users lead_user ON ur.user_id = lead_user.id
@@ -469,7 +469,7 @@ SET
     image_url = COALESCE($3::text, image_url),
     color = COALESCE($4::text, color),
     updated_at = now()
-WHERE id = $5::text
+WHERE id = $5::char(28)
 RETURNING id, project_id, name, description, created_at, updated_at, image_url, color
 `
 

@@ -15,9 +15,9 @@ const CountQuizzesFiltered = `-- name: CountQuizzesFiltered :one
 SELECT COUNT(DISTINCT id)
 FROM quizzes
 WHERE
-    ($1::text[] IS NULL OR id = ANY($1::text[]))
-    AND ($2::text = '' OR project_id = $2::text)
-    AND ($3::text = '' OR challenge_id = $3::text)
+    ($1::char(28)[] IS NULL OR id = ANY($1::char(28)[]))
+    AND ($2::char(28) = '' OR project_id = $2::char(28))
+    AND ($3::char(28) = '' OR challenge_id = $3::char(28))
 `
 
 type CountQuizzesFilteredParams struct {
@@ -134,7 +134,7 @@ func (q *Queries) CreateQuiz(ctx context.Context, arg CreateQuizParams) (*Create
 
 const DeleteQuiz = `-- name: DeleteQuiz :exec
 DELETE FROM quizzes
-WHERE id = $1::text
+WHERE id = $1::char(28)
 `
 
 func (q *Queries) DeleteQuiz(ctx context.Context, id string) error {
@@ -144,7 +144,7 @@ func (q *Queries) DeleteQuiz(ctx context.Context, id string) error {
 
 const DeleteQuizTranslations = `-- name: DeleteQuizTranslations :exec
 DELETE FROM quiz_translations
-WHERE quiz_id = $1::text
+WHERE quiz_id = $1::char(28)
 `
 
 func (q *Queries) DeleteQuizTranslations(ctx context.Context, quizid string) error {
@@ -155,7 +155,7 @@ func (q *Queries) DeleteQuizTranslations(ctx context.Context, quizid string) err
 const GetQuizByID = `-- name: GetQuizByID :one
 SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, end_time, created_at, updated_at
 FROM quizzes
-WHERE id = $1::text
+WHERE id = $1::char(28)
 `
 
 type GetQuizByIDRow struct {
@@ -200,7 +200,7 @@ func (q *Queries) GetQuizByID(ctx context.Context, id string) (*GetQuizByIDRow, 
 const GetQuizzesByChallengeIDs = `-- name: GetQuizzesByChallengeIDs :many
 SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, end_time, created_at, updated_at
 FROM quizzes
-WHERE challenge_id = ANY($1::text[])
+WHERE challenge_id = ANY($1::char(28)[])
 ORDER BY challenge_id
 `
 
@@ -260,7 +260,7 @@ func (q *Queries) GetQuizzesByChallengeIDs(ctx context.Context, challengeIds []s
 const GetQuizzesByIDs = `-- name: GetQuizzesByIDs :many
 SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, end_time, created_at, updated_at
 FROM quizzes
-WHERE id = ANY($1::text[])
+WHERE id = ANY($1::char(28)[])
 `
 
 type GetQuizzesByIDsRow struct {
@@ -318,7 +318,7 @@ func (q *Queries) GetQuizzesByIDs(ctx context.Context, ids []string) ([]*GetQuiz
 const GetQuizzesByProjectIDs = `-- name: GetQuizzesByProjectIDs :many
 SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, end_time, created_at, updated_at
 FROM quizzes
-WHERE project_id = ANY($1::text[])
+WHERE project_id = ANY($1::char(28)[])
 ORDER BY project_id, created_at DESC
 `
 
@@ -378,11 +378,11 @@ const GetQuizzesFilteredCursor = `-- name: GetQuizzesFilteredCursor :many
 SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, end_time, created_at, updated_at
 FROM quizzes
 WHERE
-    ($1::text[] IS NULL OR id = ANY($1::text[]))
-    AND ($2::text = '' OR project_id = $2::text)
-    AND ($3::text = '' OR challenge_id = $3::text)
-    AND ($4::text = '' OR id > $4::text)
-    AND ($5::text = '' OR id < $5::text)
+    ($1::char(28)[] IS NULL OR id = ANY($1::char(28)[]))
+    AND ($2::char(28) = '' OR project_id = $2::char(28))
+    AND ($3::char(28) = '' OR challenge_id = $3::char(28))
+    AND ($4::char(28) = '' OR id > $4::char(28))
+    AND ($5::char(28) = '' OR id < $5::char(28))
 ORDER BY
     CASE WHEN $6::bool = true THEN id END DESC,
     CASE WHEN $6::bool = false OR $6::bool IS NULL THEN id END ASC
@@ -472,7 +472,7 @@ SET
     completion_points = COALESCE($8::int, completion_points),
     end_time = COALESCE($9::timestamptz, end_time),
     updated_at = now()
-WHERE id = $10::text
+WHERE id = $10::char(28)
 RETURNING id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, end_time, created_at, updated_at
 `
 

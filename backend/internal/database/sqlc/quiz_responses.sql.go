@@ -14,7 +14,7 @@ import (
 const CalculateSubmissionPointsFromResponses = `-- name: CalculateSubmissionPointsFromResponses :one
 SELECT COALESCE(SUM(points_earned), 0)::int AS total_points
 FROM quiz_responses
-WHERE submission_id = $1::text
+WHERE submission_id = $1::char(28)
 `
 
 func (q *Queries) CalculateSubmissionPointsFromResponses(ctx context.Context, submissionid string) (int32, error) {
@@ -28,7 +28,7 @@ const CalculateSubmissionScore = `-- name: CalculateSubmissionScore :one
 SELECT
     COALESCE(SUM(points_earned), 0)::int AS score
 FROM quiz_responses
-WHERE submission_id = $1::text
+WHERE submission_id = $1::char(28)
 `
 
 func (q *Queries) CalculateSubmissionScore(ctx context.Context, submissionid string) (int32, error) {
@@ -132,7 +132,7 @@ func (q *Queries) CreateQuizResponse(ctx context.Context, arg CreateQuizResponse
 const GetQuizResponseByID = `-- name: GetQuizResponseByID :one
 SELECT id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds
 FROM quiz_responses
-WHERE id = $1::text
+WHERE id = $1::char(28)
 `
 
 type GetQuizResponseByIDRow struct {
@@ -171,8 +171,8 @@ func (q *Queries) GetQuizResponseByID(ctx context.Context, id string) (*GetQuizR
 const GetQuizResponseBySubmissionAndQuestion = `-- name: GetQuizResponseBySubmissionAndQuestion :one
 SELECT id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds, bet_amount
 FROM quiz_responses
-WHERE submission_id = $1::text
-    AND question_id = $2::text
+WHERE submission_id = $1::char(28)
+    AND question_id = $2::char(28)
 `
 
 type GetQuizResponseBySubmissionAndQuestionParams struct {
@@ -216,7 +216,7 @@ func (q *Queries) GetQuizResponseBySubmissionAndQuestion(ctx context.Context, ar
 }
 
 const GetQuizResponseScoreJournalID = `-- name: GetQuizResponseScoreJournalID :one
-SELECT score_journal_id FROM quiz_responses WHERE id = $1::text
+SELECT score_journal_id FROM quiz_responses WHERE id = $1::char(28)
 `
 
 func (q *Queries) GetQuizResponseScoreJournalID(ctx context.Context, id string) (*string, error) {
@@ -236,7 +236,7 @@ FROM quiz_responses r
 JOIN quiz_submissions s ON r.submission_id = s.id
 JOIN quizzes q ON s.quiz_id = q.id
 LEFT JOIN challenges c ON q.challenge_id = c.id
-WHERE r.id = $1::text
+WHERE r.id = $1::char(28)
 `
 
 type GetQuizResponseWithContextRow struct {
@@ -277,7 +277,7 @@ func (q *Queries) GetQuizResponseWithContext(ctx context.Context, id string) (*G
 const GetQuizResponsesBySubmissionID = `-- name: GetQuizResponsesBySubmissionID :many
 SELECT id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds, bet_amount
 FROM quiz_responses
-WHERE submission_id = $1::text
+WHERE submission_id = $1::char(28)
 `
 
 type GetQuizResponsesBySubmissionIDRow struct {
@@ -336,7 +336,7 @@ SELECT
     r.bet_amount, r.score_journal_id, q.question_type, q.betting_enabled
 FROM quiz_responses r
 JOIN quiz_questions q ON r.question_id = q.id
-WHERE r.submission_id = ANY($1::text[])
+WHERE r.submission_id = ANY($1::char(28)[])
 ORDER BY r.submission_id
 `
 
@@ -404,7 +404,7 @@ FROM quiz_responses r
 JOIN quiz_submissions s ON r.submission_id = s.id
 JOIN quizzes q ON s.quiz_id = q.id
 LEFT JOIN challenges c ON q.challenge_id = c.id
-WHERE r.id = ANY($1::text[])
+WHERE r.id = ANY($1::char(28)[])
 `
 
 type GetQuizResponsesWithContextRow struct {
@@ -458,7 +458,7 @@ func (q *Queries) GetQuizResponsesWithContext(ctx context.Context, ids []string)
 const UpdateBetResult = `-- name: UpdateBetResult :one
 UPDATE quiz_responses
 SET points_earned = $1::int
-WHERE id = $2::text
+WHERE id = $2::char(28)
 RETURNING id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds, bet_amount
 `
 
@@ -505,8 +505,8 @@ func (q *Queries) UpdateBetResult(ctx context.Context, arg UpdateBetResultParams
 const UpdateBetResultWithJournal = `-- name: UpdateBetResultWithJournal :one
 UPDATE quiz_responses
 SET points_earned = $1::int,
-    score_journal_id = $2::text
-WHERE id = $3::text
+    score_journal_id = $2::char(28)
+WHERE id = $3::char(28)
 RETURNING id, submission_id, question_id, selected_answer_ids, text_response,
           number_response, json_response, is_correct, points_earned, answered_at,
           time_spent_seconds, bet_amount, score_journal_id
@@ -700,7 +700,7 @@ SET
     time_spent_seconds = COALESCE($7::int, time_spent_seconds),
     bet_amount = COALESCE($8::int, bet_amount),
     answered_at = now()
-WHERE id = $9::text
+WHERE id = $9::char(28)
 RETURNING id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds, bet_amount
 `
 

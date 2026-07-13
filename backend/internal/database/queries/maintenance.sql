@@ -97,7 +97,7 @@ LEFT JOIN user_content_progress ucp ON
     AND ucp.achievement_id = cai.achievement_id
     AND ucp.external_content_id = cai.external_content_id
 WHERE ucp.user_id IS NULL
-AND u.id = ANY(@userids::text[]);
+AND u.id = ANY(@userids::char(28)[]);
 
 -- ==================== Missing Streak Progress Queries ====================
 -- These queries find users with external_content_events that should have
@@ -141,7 +141,7 @@ LEFT JOIN user_streak_progress usp ON
     AND usp.external_content_id = sai.external_content_id
 WHERE usp.user_id IS NULL
   AND (ec.complete_by IS NULL OR ece.consumed_at <= ec.complete_by)
-  AND u.id = ANY(@userids::text[]);
+  AND u.id = ANY(@userids::char(28)[]);
 
 -- ==================== Missing Score Journal Queries ====================
 -- These queries find external_content_events that are missing score_journal entries.
@@ -157,7 +157,7 @@ FROM external_content_events ece
 INNER JOIN users u ON u.person_uuid = ece.person_id
 INNER JOIN external_content ec ON ec.task_id = ece.task_id
 INNER JOIN content_achievement_items cai ON cai.external_content_id = ec.id
-WHERE cai.achievement_id = @achievementid::text
+WHERE cai.achievement_id = @achievementid::char(28)
 AND NOT EXISTS (
     SELECT 1
     FROM score_journal sj
@@ -176,7 +176,7 @@ FROM external_content_events ece
 INNER JOIN users u ON u.person_uuid = ece.person_id
 INNER JOIN external_content ec ON ec.task_id = ece.task_id
 INNER JOIN content_achievement_items cai ON cai.external_content_id = ec.id
-WHERE cai.achievement_id = @achievementid::text
+WHERE cai.achievement_id = @achievementid::char(28)
 AND NOT EXISTS (
     SELECT 1
     FROM score_journal sj
@@ -193,7 +193,7 @@ FROM (
     INNER JOIN users u ON u.person_uuid = ece.person_id
     INNER JOIN external_content ec ON ec.task_id = ece.task_id
     INNER JOIN content_achievement_items cai ON cai.external_content_id = ec.id
-    WHERE cai.achievement_id = @achievementid::text
+    WHERE cai.achievement_id = @achievementid::char(28)
     AND NOT EXISTS (
         SELECT 1
         FROM score_journal sj

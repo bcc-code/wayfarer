@@ -15,8 +15,8 @@ const GetUserIDsInChurchAndProject = `-- name: GetUserIDsInChurchAndProject :man
 SELECT DISTINCT up.user_id
 FROM user_projects up
 JOIN users u ON u.id = up.user_id
-WHERE u.church_id = $1::text
-  AND up.project_id = $2::text
+WHERE u.church_id = $1::char(28)
+  AND up.project_id = $2::char(28)
 `
 
 type GetUserIDsInChurchAndProjectParams struct {
@@ -47,7 +47,7 @@ func (q *Queries) GetUserIDsInChurchAndProject(ctx context.Context, arg GetUserI
 const GetUserIDsInProject = `-- name: GetUserIDsInProject :many
 SELECT DISTINCT user_id
 FROM user_projects
-WHERE project_id = $1::text
+WHERE project_id = $1::char(28)
 `
 
 func (q *Queries) GetUserIDsInProject(ctx context.Context, projectid string) ([]string, error) {
@@ -73,7 +73,7 @@ func (q *Queries) GetUserIDsInProject(ctx context.Context, projectid string) ([]
 const GetUserProjects = `-- name: GetUserProjects :many
 SELECT project_id, joined_at
 FROM user_projects
-WHERE user_id = $1::text
+WHERE user_id = $1::char(28)
 ORDER BY joined_at DESC
 `
 
@@ -106,7 +106,7 @@ const IsUserInProject = `-- name: IsUserInProject :one
 SELECT EXISTS(
     SELECT 1
     FROM user_projects
-    WHERE user_id = $1::text AND project_id = $2::text
+    WHERE user_id = $1::char(28) AND project_id = $2::char(28)
 ) AS is_member
 `
 
@@ -140,7 +140,7 @@ func (q *Queries) JoinProject(ctx context.Context, arg JoinProjectParams) error 
 
 const LeaveProject = `-- name: LeaveProject :exec
 DELETE FROM user_projects
-WHERE user_id = $1::text AND project_id = $2::text
+WHERE user_id = $1::char(28) AND project_id = $2::char(28)
 `
 
 type LeaveProjectParams struct {

@@ -60,17 +60,21 @@ type Loaders struct {
 	ExternalContentTranslationsLoader        *dataloader.Loader[string, []model.ExternalContentTranslation]
 	ImageMetadataByURLLoader                 *dataloader.Loader[string, *model.Image]
 	ScoreJournalByIDLoader                   *dataloader.Loader[string, *model.ScoreJournal]
+	UserProjectScoreLoader                   *dataloader.Loader[UserProjectKey, int64]
 }
 
 // newBatchedLoader creates a new batched dataloader with standard configuration:
-// - Batch capacity of 100
-// - Cache disabled (we rely on Ristretto cache in batch functions instead)
+//   - Batch capacity of 100
+//   - Cache disabled (we rely on Ristretto cache in batch functions instead)
+//   - 2ms batch window (library default is 16ms; resolvers await several loaders
+//     sequentially, so the default adds tens of ms of pure wait per request)
 func newBatchedLoader[K comparable, V any](
 	batchFunc func(context.Context, []K) []*dataloader.Result[V],
 ) *dataloader.Loader[K, V] {
 	return dataloader.NewBatchedLoader(
 		batchFunc,
 		dataloader.WithBatchCapacity[K, V](100),
+		dataloader.WithWait[K, V](2*time.Millisecond),
 		dataloader.WithCache[K, V](&dataloader.NoCache[K, V]{}), // Disable internal cache, use Ristretto instead
 	)
 }
@@ -126,5 +130,6 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		ExternalContentTranslationsLoader:        newBatchedLoader(externalContentTranslationsBatchFunc(db, cache)),
 		ImageMetadataByURLLoader:                 newBatchedLoader(imageMetadataByURLBatchFunc(db, cache)),
 		ScoreJournalByIDLoader:                   newBatchedLoader(scoreJournalByIDBatchFunc(db, cache)),
+		UserProjectScoreLoader:                   newBatchedLoader(userProjectScoreBatchFunc(db)),
 	}
 }

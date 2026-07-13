@@ -40,7 +40,7 @@ SELECT
     up.user_id
 FROM projects p
 JOIN user_projects up ON p.id = up.project_id
-WHERE up.user_id = ANY(@user_ids::text[])
+WHERE up.user_id = ANY(@user_ids::char(28)[])
 ORDER BY up.user_id, p.start_date DESC;
 
 -- name: GetProjectByID :one
@@ -69,7 +69,7 @@ SELECT id, name, description, rules, info_message, info_message_start, info_mess
     color_dark_shadow_default, color_dark_shadow_blank, color_dark_border_default,
     rounding, archived
 FROM projects
-WHERE id = ANY(@ids::text[]);
+WHERE id = ANY(@ids::char(28)[]);
 
 -- name: GetAllProjects :many
 SELECT id, name, description, rules, info_message, info_message_start, info_message_end, start_date, end_date, logo_url, banner_url,
@@ -98,14 +98,14 @@ SELECT id, name, description, rules, info_message, info_message_start, info_mess
     rounding, archived
 FROM projects
 WHERE
-    (@ids::text[] IS NULL OR id = ANY(@ids::text[]))
+    (@ids::char(28)[] IS NULL OR id = ANY(@ids::char(28)[]))
     AND (sqlc.narg('archived')::boolean IS NULL OR archived = sqlc.narg('archived')::boolean)
     AND (@startdateafter::timestamptz IS NULL OR start_date >= @startdateafter::timestamptz)
     AND (@startdatebefore::timestamptz IS NULL OR start_date <= @startdatebefore::timestamptz)
     AND (@enddateafter::timestamptz IS NULL OR end_date >= @enddateafter::timestamptz)
     AND (@enddatebefore::timestamptz IS NULL OR end_date <= @enddatebefore::timestamptz)
-    AND (@aftercursor::text = '' OR id > @aftercursor::text)
-    AND (@beforecursor::text = '' OR id < @beforecursor::text)
+    AND (@aftercursor::char(28) = '' OR id > @aftercursor::char(28))
+    AND (@beforecursor::char(28) = '' OR id < @beforecursor::char(28))
 ORDER BY
     CASE WHEN @isbackward::bool = true THEN id END DESC,
     CASE WHEN @isbackward::bool = false OR @isbackward::bool IS NULL THEN id END ASC
@@ -115,7 +115,7 @@ LIMIT CASE WHEN @querylimit::int IS NULL THEN NULL ELSE @querylimit::int END;
 SELECT COUNT(id)
 FROM projects
 WHERE
-    (@ids::text[] IS NULL OR id = ANY(@ids::text[]))
+    (@ids::char(28)[] IS NULL OR id = ANY(@ids::char(28)[]))
     AND (sqlc.narg('archived')::boolean IS NULL OR archived = sqlc.narg('archived')::boolean)
     AND (@startdateafter::timestamptz IS NULL OR start_date >= @startdateafter::timestamptz)
     AND (@startdatebefore::timestamptz IS NULL OR start_date <= @startdatebefore::timestamptz)
@@ -255,7 +255,7 @@ SET
     color_dark_border_default = COALESCE(sqlc.narg('colordarkborderdefault')::text, color_dark_border_default),
     rounding = COALESCE(sqlc.narg('rounding')::int, rounding),
     updated_at = now()
-WHERE id = @id::text
+WHERE id = @id::char(28)
 RETURNING id, name, description, rules, info_message, info_message_start, info_message_end, start_date, end_date, logo_url, banner_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,
     color_light_background_default, color_light_background_raised, color_light_background_indent,
@@ -269,14 +269,14 @@ RETURNING id, name, description, rules, info_message, info_message_start, info_m
 
 -- name: DeleteProject :exec
 DELETE FROM projects
-WHERE id = @id::text;
+WHERE id = @id::char(28);
 
 -- name: ArchiveProject :one
 UPDATE projects
 SET
     archived = true,
     updated_at = now()
-WHERE id = @id::text
+WHERE id = @id::char(28)
 RETURNING id, name, description, rules, info_message, info_message_start, info_message_end, start_date, end_date, logo_url, banner_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,
     color_light_background_default, color_light_background_raised, color_light_background_indent,
@@ -289,4 +289,4 @@ RETURNING id, name, description, rules, info_message, info_message_start, info_m
     rounding, archived;
 
 -- name: ProjectExists :one
-SELECT EXISTS(SELECT 1 FROM projects WHERE id = @projectid::text);
+SELECT EXISTS(SELECT 1 FROM projects WHERE id = @projectid::char(28));

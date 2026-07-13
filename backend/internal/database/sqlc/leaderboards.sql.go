@@ -17,7 +17,7 @@ FROM churches c
 INNER JOIN users u ON c.id = u.church_id
 INNER JOIN user_events ue ON u.id = ue.user_id
 WHERE
-    ue.event_id = $1::text
+    ue.event_id = $1::char(28)
     AND ($2::text = '' OR c.country = $2::text)
     AND ($3::text = '' OR c.category = $3::text)
 `
@@ -40,8 +40,8 @@ SELECT COUNT(DISTINCT u.id)::bigint AS total
 FROM users u
 INNER JOIN user_events ue ON u.id = ue.user_id
 WHERE
-    ue.event_id = $1::text
-    AND ($2::text = '' OR u.church_id = $2::text)
+    ue.event_id = $1::char(28)
+    AND ($2::char(28) = '' OR u.church_id = $2::char(28))
     AND ($3::text = '' OR EXISTS (
         SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.country = $3::text
     ))
@@ -80,7 +80,7 @@ func (q *Queries) CountEventPersonLeaderboard(ctx context.Context, arg CountEven
 
 const CountEventSuperTeamLeaderboard = `-- name: CountEventSuperTeamLeaderboard :one
 WITH event_project AS (
-    SELECT project_id FROM events WHERE id = $1::text
+    SELECT project_id FROM events WHERE id = $1::char(28)
 )
 SELECT COUNT(DISTINCT st.id)::bigint AS total
 FROM super_teams st
@@ -97,7 +97,7 @@ func (q *Queries) CountEventSuperTeamLeaderboard(ctx context.Context, eventid st
 
 const CountEventTeamLeaderboard = `-- name: CountEventTeamLeaderboard :one
 WITH event_project AS (
-    SELECT project_id FROM events WHERE id = $2::text
+    SELECT project_id FROM events WHERE id = $2::char(28)
 )
 SELECT COUNT(DISTINCT t.id)::bigint AS total
 FROM teams t
@@ -105,10 +105,10 @@ CROSS JOIN event_project ep
 WHERE t.project_id = ep.project_id
   AND t.leaderboard_excluded = false
   -- Church filter: team has ANY member from specified church
-  AND ($1::text = '' OR EXISTS (
+  AND ($1::char(28) = '' OR EXISTS (
       SELECT 1 FROM team_members tm
       INNER JOIN users u ON tm.user_id = u.id
-      WHERE tm.team_id = t.id AND u.church_id = $1::text
+      WHERE tm.team_id = t.id AND u.church_id = $1::char(28)
   ))
 `
 
@@ -130,7 +130,7 @@ FROM churches c
 INNER JOIN users u ON c.id = u.church_id
 INNER JOIN user_projects up ON u.id = up.user_id
 WHERE
-    up.project_id = $1::text
+    up.project_id = $1::char(28)
     AND ($2::text = '' OR c.country = $2::text)
     AND ($3::text = '' OR c.category = $3::text)
 `
@@ -154,17 +154,17 @@ WITH project_users AS MATERIALIZED (
     SELECT DISTINCT u.id, u.birthdate, u.church_id, u.gender
     FROM user_projects up
     INNER JOIN users u ON up.user_id = u.id
-    WHERE up.project_id = $5::text
-      AND ($6::text = '' OR u.church_id = $6::text)
+    WHERE up.project_id = $5::char(28)
+      AND ($6::char(28) = '' OR u.church_id = $6::char(28))
       AND ($7::text = '' OR u.gender = $7::text)
-      AND ($8::text = '' OR EXISTS (
+      AND ($8::char(28) = '' OR EXISTS (
           SELECT 1 FROM team_members tm
-          WHERE tm.user_id = u.id AND tm.team_id = $8::text
+          WHERE tm.user_id = u.id AND tm.team_id = $8::char(28)
       ))
-      AND ($9::text = '' OR EXISTS (
+      AND ($9::char(28) = '' OR EXISTS (
           SELECT 1 FROM team_members tm
           INNER JOIN teams t ON tm.team_id = t.id
-          WHERE tm.user_id = u.id AND t.super_team_id = $9::text
+          WHERE tm.user_id = u.id AND t.super_team_id = $9::char(28)
       ))
 )
 SELECT COUNT(*)::bigint AS total
@@ -213,7 +213,7 @@ func (q *Queries) CountProjectPersonLeaderboard(ctx context.Context, arg CountPr
 const CountProjectSuperTeamLeaderboard = `-- name: CountProjectSuperTeamLeaderboard :one
 SELECT COUNT(DISTINCT st.id)::bigint AS total
 FROM super_teams st
-WHERE st.project_id = $1::text
+WHERE st.project_id = $1::char(28)
 `
 
 func (q *Queries) CountProjectSuperTeamLeaderboard(ctx context.Context, projectid string) (int64, error) {
@@ -227,14 +227,14 @@ const CountProjectTeamLeaderboard = `-- name: CountProjectTeamLeaderboard :one
 SELECT COUNT(DISTINCT t.id)::bigint AS total
 FROM teams t
 WHERE
-    t.project_id = $1::text
+    t.project_id = $1::char(28)
     AND t.leaderboard_excluded = false
-    AND ($2::text = '' OR t.super_team_id = $2::text)
+    AND ($2::char(28) = '' OR t.super_team_id = $2::char(28))
     -- Church filter: team has ANY member from specified church
-    AND ($3::text = '' OR EXISTS (
+    AND ($3::char(28) = '' OR EXISTS (
         SELECT 1 FROM team_members tm
         INNER JOIN users u ON tm.user_id = u.id
-        WHERE tm.team_id = t.id AND u.church_id = $3::text
+        WHERE tm.team_id = t.id AND u.church_id = $3::char(28)
     ))
 `
 
@@ -262,14 +262,14 @@ WITH ranked_scores AS (
         DENSE_RANK() OVER (ORDER BY lec.score DESC) AS rank
     FROM leaderboard_event_churches lec
     INNER JOIN churches c ON lec.church_id = c.id
-    WHERE lec.event_id = $1::text
+    WHERE lec.event_id = $1::char(28)
       AND lec.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lec.score <= $3::int)
 ),
 user_church AS (
     SELECT church_id
     FROM users
-    WHERE id = $4::text
+    WHERE id = $4::char(28)
 )
 SELECT rs.entity_id, rs.name, rs.image, rs.score, rs.rank, rs.last_score_at
 FROM ranked_scores rs
@@ -324,14 +324,14 @@ WITH ranked_scores AS (
     FROM leaderboard_event_persons lep
     INNER JOIN users u ON lep.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
-    WHERE lep.event_id = $2::text
+    WHERE lep.event_id = $2::char(28)
       AND lep.score >= COALESCE($3::int, 1)
       AND ($4::int IS NULL OR lep.score <= $4::int)
-      AND ($5::text = '' OR u.church_id = $5::text)
+      AND ($5::char(28) = '' OR u.church_id = $5::char(28))
 )
 SELECT entity_id, name, church_name, image, score, rank, last_score_at
 FROM ranked_scores
-WHERE entity_id = $1::text
+WHERE entity_id = $1::char(28)
 `
 
 type FindMyEventPersonPositionParams struct {
@@ -384,7 +384,7 @@ WITH ranked_scores AS (
         DENSE_RANK() OVER (ORDER BY les.score DESC) AS rank
     FROM leaderboard_event_superteams les
     INNER JOIN super_teams st ON les.super_team_id = st.id
-    WHERE les.event_id = $1::text
+    WHERE les.event_id = $1::char(28)
       AND les.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR les.score <= $3::int)
 ),
@@ -392,8 +392,8 @@ user_superteam AS (
     SELECT t.super_team_id
     FROM team_members tm
     INNER JOIN teams t ON tm.team_id = t.id
-    INNER JOIN events e ON t.project_id = e.project_id AND e.id = $1::text
-    WHERE tm.user_id = $4::text
+    INNER JOIN events e ON t.project_id = e.project_id AND e.id = $1::char(28)
+    WHERE tm.user_id = $4::char(28)
       AND t.super_team_id IS NOT NULL
     LIMIT 1
 )
@@ -448,23 +448,23 @@ WITH ranked_scores AS (
         DENSE_RANK() OVER (ORDER BY let.score DESC) AS rank
     FROM leaderboard_event_teams let
     INNER JOIN teams t ON let.team_id = t.id
-    WHERE let.event_id = $1::text
+    WHERE let.event_id = $1::char(28)
       AND t.leaderboard_excluded = false
       AND let.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR let.score <= $3::int)
       -- Church filter: team has ANY member from specified church
-      AND ($4::text = '' OR EXISTS (
+      AND ($4::char(28) = '' OR EXISTS (
           SELECT 1 FROM team_members tm
           INNER JOIN users u ON tm.user_id = u.id
-          WHERE tm.team_id = t.id AND u.church_id = $4::text
+          WHERE tm.team_id = t.id AND u.church_id = $4::char(28)
       ))
 ),
 user_team AS (
     SELECT tm.team_id
     FROM team_members tm
     INNER JOIN teams t ON tm.team_id = t.id
-    INNER JOIN events e ON t.project_id = e.project_id AND e.id = $1::text
-    WHERE tm.user_id = $5::text
+    INNER JOIN events e ON t.project_id = e.project_id AND e.id = $1::char(28)
+    WHERE tm.user_id = $5::char(28)
     LIMIT 1
 )
 SELECT rs.entity_id, rs.name, rs.image, rs.score, rs.rank, rs.last_score_at
@@ -520,14 +520,14 @@ WITH ranked_scores AS (
         DENSE_RANK() OVER (ORDER BY lpc.score DESC) AS rank
     FROM leaderboard_project_churches lpc
     INNER JOIN churches c ON lpc.church_id = c.id
-    WHERE lpc.project_id = $1::text
+    WHERE lpc.project_id = $1::char(28)
       AND lpc.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lpc.score <= $3::int)
 ),
 user_church AS (
     SELECT church_id
     FROM users
-    WHERE id = $4::text
+    WHERE id = $4::char(28)
 )
 SELECT rs.entity_id, rs.name, rs.image, rs.score, rs.rank, rs.last_score_at
 FROM ranked_scores rs
@@ -582,14 +582,14 @@ WITH ranked_scores AS (
     FROM leaderboard_project_persons lpp
     INNER JOIN users u ON lpp.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
-    WHERE lpp.project_id = $2::text
+    WHERE lpp.project_id = $2::char(28)
       AND lpp.score >= COALESCE($3::int, 1)
       AND ($4::int IS NULL OR lpp.score <= $4::int)
-      AND ($5::text = '' OR u.church_id = $5::text)
+      AND ($5::char(28) = '' OR u.church_id = $5::char(28))
 )
 SELECT entity_id, name, church_name, image, score, rank, last_score_at
 FROM ranked_scores
-WHERE entity_id = $1::text
+WHERE entity_id = $1::char(28)
 `
 
 type FindMyProjectPersonPositionParams struct {
@@ -642,7 +642,7 @@ WITH ranked_scores AS (
         DENSE_RANK() OVER (ORDER BY lps.score DESC) AS rank
     FROM leaderboard_project_superteams lps
     INNER JOIN super_teams st ON lps.super_team_id = st.id
-    WHERE lps.project_id = $1::text
+    WHERE lps.project_id = $1::char(28)
       AND lps.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lps.score <= $3::int)
 ),
@@ -650,9 +650,9 @@ user_superteam AS (
     SELECT t.super_team_id
     FROM team_members tm
     INNER JOIN teams t ON tm.team_id = t.id
-    WHERE tm.user_id = $4::text
+    WHERE tm.user_id = $4::char(28)
       AND t.super_team_id IS NOT NULL
-      AND t.project_id = $1::text
+      AND t.project_id = $1::char(28)
     LIMIT 1
 )
 SELECT rs.entity_id, rs.name, rs.image, rs.score, rs.rank, rs.last_score_at
@@ -706,22 +706,22 @@ WITH ranked_scores AS (
         DENSE_RANK() OVER (ORDER BY lpt.score DESC) AS rank
     FROM leaderboard_project_teams lpt
     INNER JOIN teams t ON lpt.team_id = t.id
-    WHERE lpt.project_id = $1::text
+    WHERE lpt.project_id = $1::char(28)
       AND t.leaderboard_excluded = false
       AND lpt.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lpt.score <= $3::int)
       -- Church filter: team has ANY member from specified church
-      AND ($4::text = '' OR EXISTS (
+      AND ($4::char(28) = '' OR EXISTS (
           SELECT 1 FROM team_members tm
           INNER JOIN users u ON tm.user_id = u.id
-          WHERE tm.team_id = t.id AND u.church_id = $4::text
+          WHERE tm.team_id = t.id AND u.church_id = $4::char(28)
       ))
 ),
 user_team AS (
     SELECT team_id
     FROM team_members
-    WHERE user_id = $5::text
-      AND team_id IN (SELECT id FROM teams WHERE project_id = $1::text)
+    WHERE user_id = $5::char(28)
+      AND team_id IN (SELECT id FROM teams WHERE project_id = $1::char(28))
     LIMIT 1
 )
 SELECT rs.entity_id, rs.name, rs.image, rs.score, rs.rank, rs.last_score_at
@@ -778,9 +778,9 @@ WITH church_scores AS (
     FROM churches c
     INNER JOIN users u ON c.id = u.church_id
     INNER JOIN user_events ue ON u.id = ue.user_id
-    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.event_id = $6::text
+    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.event_id = $6::char(28)
     WHERE
-        ue.event_id = $6::text
+        ue.event_id = $6::char(28)
         AND ($7::text = '' OR c.country = $7::text)
         AND ($8::text = '' OR c.category = $8::text)
     GROUP BY c.id, c.name
@@ -877,10 +877,10 @@ WITH person_scores AS (
     FROM users u
     INNER JOIN user_events ue ON u.id = ue.user_id
     INNER JOIN churches c ON u.church_id = c.id
-    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.event_id = $6::text
+    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.event_id = $6::char(28)
     WHERE
-        ue.event_id = $6::text
-        AND ($7::text = '' OR u.church_id = $7::text)
+        ue.event_id = $6::char(28)
+        AND ($7::char(28) = '' OR u.church_id = $7::char(28))
         AND ($8::text = '' OR EXISTS (
             SELECT 1 FROM churches ch WHERE ch.id = u.church_id AND ch.country = $8::text
         ))
@@ -985,7 +985,7 @@ func (q *Queries) GetEventPersonLeaderboard(ctx context.Context, arg GetEventPer
 const GetEventSuperTeamLeaderboard = `-- name: GetEventSuperTeamLeaderboard :many
 
 WITH event_project AS (
-    SELECT project_id FROM events WHERE id = $6::text
+    SELECT project_id FROM events WHERE id = $6::char(28)
 ),
 superteam_scores AS (
     SELECT
@@ -999,8 +999,8 @@ superteam_scores AS (
     INNER JOIN teams t ON t.super_team_id = st.id
     INNER JOIN team_members tm ON t.id = tm.team_id
     INNER JOIN users u ON tm.user_id = u.id
-    INNER JOIN user_events ue ON u.id = ue.user_id AND ue.event_id = $6::text
-    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.event_id = $6::text
+    INNER JOIN user_events ue ON u.id = ue.user_id AND ue.event_id = $6::char(28)
+    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.event_id = $6::char(28)
     WHERE
         st.project_id = ep.project_id
     GROUP BY st.id, st.name
@@ -1083,7 +1083,7 @@ func (q *Queries) GetEventSuperTeamLeaderboard(ctx context.Context, arg GetEvent
 const GetEventTeamLeaderboard = `-- name: GetEventTeamLeaderboard :many
 
 WITH event_project AS (
-    SELECT project_id FROM events WHERE id = $6::text
+    SELECT project_id FROM events WHERE id = $6::char(28)
 ),
 team_scores AS (
     SELECT
@@ -1096,16 +1096,16 @@ team_scores AS (
     CROSS JOIN event_project ep
     INNER JOIN team_members tm ON t.id = tm.team_id
     INNER JOIN users u ON tm.user_id = u.id
-    INNER JOIN user_events ue ON u.id = ue.user_id AND ue.event_id = $6::text
-    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.event_id = $6::text
+    INNER JOIN user_events ue ON u.id = ue.user_id AND ue.event_id = $6::char(28)
+    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.event_id = $6::char(28)
     WHERE
         t.project_id = ep.project_id
         AND t.leaderboard_excluded = false
         -- Church filter: team has ANY member from specified church
-        AND ($7::text = '' OR EXISTS (
+        AND ($7::char(28) = '' OR EXISTS (
             SELECT 1 FROM team_members tm2
             INNER JOIN users u2 ON tm2.user_id = u2.id
-            WHERE tm2.team_id = t.id AND u2.church_id = $7::text
+            WHERE tm2.team_id = t.id AND u2.church_id = $7::char(28)
         ))
     GROUP BY t.id, t.name
 ),
@@ -1197,7 +1197,7 @@ WITH ranked_scores AS (
         DENSE_RANK() OVER (ORDER BY lec.score DESC) AS rank
     FROM leaderboard_event_churches lec
     INNER JOIN churches c ON lec.church_id = c.id
-    WHERE lec.event_id = $1::text
+    WHERE lec.event_id = $1::char(28)
       AND lec.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lec.score <= $3::int)
 )
@@ -1261,25 +1261,25 @@ WITH ranked_scores AS (
     FROM leaderboard_event_persons lep
     INNER JOIN users u ON lep.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
-    WHERE lep.event_id = $1::text
+    WHERE lep.event_id = $1::char(28)
       AND lep.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lep.score <= $3::int)
-      AND ($4::text = '' OR u.church_id = $4::text)
+      AND ($4::char(28) = '' OR u.church_id = $4::char(28))
       AND ($5::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= $5::int)
       AND ($6::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= $6::int)
       -- Team filtering
-      AND ($7::text = '' OR EXISTS (
+      AND ($7::char(28) = '' OR EXISTS (
           SELECT 1 FROM team_members tm
-          WHERE tm.user_id = u.id AND tm.team_id = $7::text
+          WHERE tm.user_id = u.id AND tm.team_id = $7::char(28)
       ))
-      AND ($8::text = '' OR EXISTS (
+      AND ($8::char(28) = '' OR EXISTS (
           SELECT 1 FROM team_members tm
           INNER JOIN teams t ON tm.team_id = t.id
-          WHERE tm.user_id = u.id AND t.super_team_id = $8::text
+          WHERE tm.user_id = u.id AND t.super_team_id = $8::char(28)
       ))
       -- Consent filter: skip if team-filtered, otherwise require leaderboard_consent
       AND (
-          $7::text != '' OR $8::text != ''
+          $7::char(28) != '' OR $8::char(28) != ''
           OR EXISTS (
               SELECT 1 FROM user_consent_history uch
               WHERE uch.user_id = u.id
@@ -1368,7 +1368,7 @@ WITH ranked_scores AS (
         DENSE_RANK() OVER (ORDER BY lest.score DESC) AS rank
     FROM leaderboard_event_superteams lest
     INNER JOIN super_teams st ON lest.super_team_id = st.id
-    WHERE lest.event_id = $1::text
+    WHERE lest.event_id = $1::char(28)
       AND lest.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lest.score <= $3::int)
 )
@@ -1430,15 +1430,15 @@ WITH ranked_scores AS (
         DENSE_RANK() OVER (ORDER BY let.score DESC) AS rank
     FROM leaderboard_event_teams let
     INNER JOIN teams t ON let.team_id = t.id
-    WHERE let.event_id = $1::text
+    WHERE let.event_id = $1::char(28)
       AND t.leaderboard_excluded = false
       AND let.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR let.score <= $3::int)
       -- Church filter: team has ANY member from specified church
-      AND ($4::text = '' OR EXISTS (
+      AND ($4::char(28) = '' OR EXISTS (
           SELECT 1 FROM team_members tm
           INNER JOIN users u ON tm.user_id = u.id
-          WHERE tm.team_id = t.id AND u.church_id = $4::text
+          WHERE tm.team_id = t.id AND u.church_id = $4::char(28)
       ))
 )
 SELECT entity_id, name, image, score, rank, last_score_at
@@ -1505,7 +1505,7 @@ WITH ranked_scores AS (
         DENSE_RANK() OVER (ORDER BY lpc.score DESC) AS rank
     FROM leaderboard_project_churches lpc
     INNER JOIN churches c ON lpc.church_id = c.id
-    WHERE lpc.project_id = $1::text
+    WHERE lpc.project_id = $1::char(28)
       AND lpc.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lpc.score <= $3::int)
 )
@@ -1569,25 +1569,25 @@ WITH ranked_scores AS (
     FROM leaderboard_project_persons lpp
     INNER JOIN users u ON lpp.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
-    WHERE lpp.project_id = $1::text
+    WHERE lpp.project_id = $1::char(28)
       AND lpp.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lpp.score <= $3::int)
-      AND ($4::text = '' OR u.church_id = $4::text)
+      AND ($4::char(28) = '' OR u.church_id = $4::char(28))
       AND ($5::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= $5::int)
       AND ($6::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= $6::int)
       -- Team filtering
-      AND ($7::text = '' OR EXISTS (
+      AND ($7::char(28) = '' OR EXISTS (
           SELECT 1 FROM team_members tm
-          WHERE tm.user_id = u.id AND tm.team_id = $7::text
+          WHERE tm.user_id = u.id AND tm.team_id = $7::char(28)
       ))
-      AND ($8::text = '' OR EXISTS (
+      AND ($8::char(28) = '' OR EXISTS (
           SELECT 1 FROM team_members tm
           INNER JOIN teams t ON tm.team_id = t.id
-          WHERE tm.user_id = u.id AND t.super_team_id = $8::text
+          WHERE tm.user_id = u.id AND t.super_team_id = $8::char(28)
       ))
       -- Consent filter: skip if team-filtered, otherwise require leaderboard_consent
       AND (
-          $7::text != '' OR $8::text != ''
+          $7::char(28) != '' OR $8::char(28) != ''
           OR EXISTS (
               SELECT 1 FROM user_consent_history uch
               WHERE uch.user_id = u.id
@@ -1676,7 +1676,7 @@ WITH ranked_scores AS (
         DENSE_RANK() OVER (ORDER BY lpst.score DESC) AS rank
     FROM leaderboard_project_superteams lpst
     INNER JOIN super_teams st ON lpst.super_team_id = st.id
-    WHERE lpst.project_id = $1::text
+    WHERE lpst.project_id = $1::char(28)
       AND lpst.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lpst.score <= $3::int)
 )
@@ -1738,15 +1738,15 @@ WITH ranked_scores AS (
         DENSE_RANK() OVER (ORDER BY lpt.score DESC) AS rank
     FROM leaderboard_project_teams lpt
     INNER JOIN teams t ON lpt.team_id = t.id
-    WHERE lpt.project_id = $1::text
+    WHERE lpt.project_id = $1::char(28)
       AND t.leaderboard_excluded = false
       AND lpt.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lpt.score <= $3::int)
       -- Church filter: team has ANY member from specified church
-      AND ($4::text = '' OR EXISTS (
+      AND ($4::char(28) = '' OR EXISTS (
           SELECT 1 FROM team_members tm
           INNER JOIN users u ON tm.user_id = u.id
-          WHERE tm.team_id = t.id AND u.church_id = $4::text
+          WHERE tm.team_id = t.id AND u.church_id = $4::char(28)
       ))
 )
 SELECT entity_id, name, image, score, rank, last_score_at
@@ -1814,9 +1814,9 @@ WITH church_scores AS (
     FROM churches c
     INNER JOIN users u ON c.id = u.church_id
     INNER JOIN user_projects up ON u.id = up.user_id
-    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.project_id = $6::text
+    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.project_id = $6::char(28)
     WHERE
-        up.project_id = $6::text
+        up.project_id = $6::char(28)
         AND ($7::text = '' OR c.country = $7::text)
         AND ($8::text = '' OR c.category = $8::text)
     GROUP BY c.id, c.name
@@ -1916,17 +1916,17 @@ WITH project_users AS MATERIALIZED (
     FROM user_projects up
     INNER JOIN users u ON up.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
-    WHERE up.project_id = $6::text
-      AND ($7::text = '' OR u.church_id = $7::text)
+    WHERE up.project_id = $6::char(28)
+      AND ($7::char(28) = '' OR u.church_id = $7::char(28))
       AND ($8::text = '' OR u.gender = $8::text)
-      AND ($9::text = '' OR EXISTS (
+      AND ($9::char(28) = '' OR EXISTS (
           SELECT 1 FROM team_members tm
-          WHERE tm.user_id = u.id AND tm.team_id = $9::text
+          WHERE tm.user_id = u.id AND tm.team_id = $9::char(28)
       ))
-      AND ($10::text = '' OR EXISTS (
+      AND ($10::char(28) = '' OR EXISTS (
           SELECT 1 FROM team_members tm
           INNER JOIN teams t ON tm.team_id = t.id
-          WHERE tm.user_id = u.id AND t.super_team_id = $10::text
+          WHERE tm.user_id = u.id AND t.super_team_id = $10::char(28)
       ))
 ),
 filtered_users AS MATERIALIZED (
@@ -1953,7 +1953,7 @@ person_scores AS (
         COALESCE(SUM(sj.points), 0)::bigint AS score,
         MAX(sj.created_at) AS last_score_at
     FROM filtered_users fu
-    LEFT JOIN score_journal sj ON sj.user_id = fu.id AND sj.project_id = $6::text
+    LEFT JOIN score_journal sj ON sj.user_id = fu.id AND sj.project_id = $6::char(28)
     GROUP BY fu.id, fu.name, fu.church_name, fu.avatar_url
     HAVING COALESCE(SUM(sj.points), 0) >= 1
 ),
@@ -2063,9 +2063,9 @@ WITH superteam_scores AS (
     INNER JOIN teams t ON t.super_team_id = st.id
     INNER JOIN team_members tm ON t.id = tm.team_id
     INNER JOIN users u ON tm.user_id = u.id
-    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.project_id = $6::text
+    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.project_id = $6::char(28)
     WHERE
-        st.project_id = $6::text
+        st.project_id = $6::char(28)
     GROUP BY st.id, st.name
 ),
 ranked_scores AS (
@@ -2155,16 +2155,16 @@ WITH team_scores AS (
     FROM teams t
     INNER JOIN team_members tm ON t.id = tm.team_id
     INNER JOIN users u ON tm.user_id = u.id
-    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.project_id = $6::text
+    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.project_id = $6::char(28)
     WHERE
-        t.project_id = $6::text
+        t.project_id = $6::char(28)
         AND t.leaderboard_excluded = false
-        AND ($7::text = '' OR t.super_team_id = $7::text)
+        AND ($7::char(28) = '' OR t.super_team_id = $7::char(28))
         -- Church filter: team has ANY member from specified church
-        AND ($8::text = '' OR EXISTS (
+        AND ($8::char(28) = '' OR EXISTS (
             SELECT 1 FROM team_members tm2
             INNER JOIN users u2 ON tm2.user_id = u2.id
-            WHERE tm2.team_id = t.id AND u2.church_id = $8::text
+            WHERE tm2.team_id = t.id AND u2.church_id = $8::char(28)
         ))
     GROUP BY t.id, t.name
 ),

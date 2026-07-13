@@ -143,7 +143,7 @@ func (q *Queries) CreateUserConsentHistory(ctx context.Context, arg CreateUserCo
 }
 
 const DeleteConsentTranslations = `-- name: DeleteConsentTranslations :exec
-DELETE FROM consent_translations WHERE consent_id = $1::text
+DELETE FROM consent_translations WHERE consent_id = $1::char(28)
 `
 
 func (q *Queries) DeleteConsentTranslations(ctx context.Context, consentID string) error {
@@ -209,7 +209,7 @@ func (q *Queries) GetAllLatestPublishedConsents(ctx context.Context) ([]*GetAllL
 const GetConsentByID = `-- name: GetConsentByID :one
 
 SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, created_at, updated_at
-FROM consents WHERE id = $1::text
+FROM consents WHERE id = $1::char(28)
 `
 
 type GetConsentByIDRow struct {
@@ -252,7 +252,7 @@ const GetConsentTranslationsByIDs = `-- name: GetConsentTranslationsByIDs :many
 
 SELECT consent_id, language_code, title, short_text, body
 FROM consent_translations
-WHERE consent_id = ANY($1::text[])
+WHERE consent_id = ANY($1::char(28)[])
   AND language_code = $2::text
 `
 
@@ -298,7 +298,7 @@ func (q *Queries) GetConsentTranslationsByIDs(ctx context.Context, arg GetConsen
 
 const GetConsentsByIDs = `-- name: GetConsentsByIDs :many
 SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, created_at, updated_at
-FROM consents WHERE id = ANY($1::text[])
+FROM consents WHERE id = ANY($1::char(28)[])
 `
 
 type GetConsentsByIDsRow struct {
@@ -353,7 +353,7 @@ const GetCurrentUserConsentStatusesByUsers = `-- name: GetCurrentUserConsentStat
 SELECT DISTINCT ON (user_id, consent_key)
     id, user_id, consent_id, consent_key, action, occurred_at, source
 FROM user_consent_history
-WHERE user_id = ANY($1::text[])
+WHERE user_id = ANY($1::char(28)[])
 ORDER BY user_id, consent_key, occurred_at DESC
 `
 
@@ -485,7 +485,7 @@ const GetLatestUserConsentActionByKey = `-- name: GetLatestUserConsentActionByKe
 SELECT id, user_id, consent_id, consent_key, action, occurred_at,
        source, external_consent_id, external_timestamp
 FROM user_consent_history
-WHERE user_id = $1::text AND consent_key = $2::text
+WHERE user_id = $1::char(28) AND consent_key = $2::text
 ORDER BY occurred_at DESC
 LIMIT 1
 `
@@ -536,7 +536,7 @@ FROM (
 ) c
 WHERE NOT EXISTS (
     SELECT 1 FROM user_consent_history uch
-    WHERE uch.user_id = $1::text
+    WHERE uch.user_id = $1::char(28)
     AND uch.consent_key = c.key
 )
 `
@@ -605,7 +605,7 @@ const GetUserConsentHistoryByUser = `-- name: GetUserConsentHistoryByUser :many
 SELECT id, user_id, consent_id, consent_key, action, occurred_at,
        source, external_consent_id, external_timestamp
 FROM user_consent_history
-WHERE user_id = $1::text
+WHERE user_id = $1::char(28)
 ORDER BY occurred_at DESC
 `
 
@@ -655,7 +655,7 @@ const GetUserConsentHistoryByUserAndKey = `-- name: GetUserConsentHistoryByUserA
 SELECT id, user_id, consent_id, consent_key, action, occurred_at,
        source, external_consent_id, external_timestamp
 FROM user_consent_history
-WHERE user_id = $1::text AND consent_key = $2::text
+WHERE user_id = $1::char(28) AND consent_key = $2::text
 ORDER BY occurred_at DESC
 `
 
@@ -710,7 +710,7 @@ const GetUserConsentHistoryByUsers = `-- name: GetUserConsentHistoryByUsers :man
 SELECT id, user_id, consent_id, consent_key, action, occurred_at,
        source, external_consent_id, external_timestamp
 FROM user_consent_history
-WHERE user_id = ANY($1::text[])
+WHERE user_id = ANY($1::char(28)[])
 ORDER BY user_id, occurred_at DESC
 `
 
@@ -761,7 +761,7 @@ SELECT uch.id, uch.user_id, uch.consent_id, uch.consent_key, uch.action, uch.occ
        c.title as consent_title
 FROM user_consent_history uch
 LEFT JOIN consents c ON c.id = uch.consent_id
-WHERE uch.user_id = $1::text
+WHERE uch.user_id = $1::char(28)
 ORDER BY uch.occurred_at DESC
 `
 
@@ -813,7 +813,7 @@ UPDATE consents SET
     managed_by = CASE WHEN $5::text = '' THEN managed_by ELSE $5 END,
     published_at = $6,
     updated_at = now()
-WHERE id = $7::text
+WHERE id = $7::char(28)
 RETURNING id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, created_at, updated_at
 `
 

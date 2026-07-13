@@ -39,6 +39,8 @@ make loadtest-quick
 | `make loadtest-stress` | Stress test: 200 VUs for 10 minutes |
 | `make loadtest-spike` | Spike test only: ramp 0 -> 500 -> 0 VUs |
 | `make loadtest-leaderboard` | Leaderboard stress: 100 requests/second |
+| `make loadtest-challenges` | Challenges page test: 50 VUs for 5 minutes |
+| `make loadtest-challenges-quick` | Quick challenges page test: 10 VUs for 1 minute |
 | `make loadtest-quiz` | Quiz load test: 20 VUs for 5 minutes |
 | `make loadtest-quiz-quick` | Quick quiz test: 5 VUs for 1 minute |
 | `make loadtest-quiz-stress` | Quiz stress test: 10 RPS for 5 minutes |
@@ -48,15 +50,23 @@ make loadtest-quick
 ## Test Scenarios
 
 ### 1. Steady Load (`steady_load`)
-Simulates typical user traffic with weighted distribution:
-- 30% ChallengesPage
-- 20% ProfilePage
-- 20% StandingsGlobalPage
-- 15% StandingsLocalPage
-- 15% StandingsUnitPage
+Each iteration simulates one realistic user session, mirroring the queries the
+SPA actually fires (see `k6/lib/journey.js`):
+
+1. **Cold app load** on the home page — the bootstrap queries every session
+   fires once (`GetMe`, `CurrentProject`, `GetFirebaseToken`) plus
+   `ProfilePage`.
+2. **Challenges and standings pages** visited in random order (SPA navigation,
+   so only page queries fire):
+   - Challenges: `ActiveChallengesPage`; ~40% of users open the completed tab
+     (`CompletedChallengesPage`); ~50% click a random challenge — external
+     challenges link straight out of the app (no request), all other types
+     fire `ChallengePage`.
+   - Standings: `StandingsPage` wrapper + a random tab (40% global, 30% local,
+     30% unit).
 
 ### 2. Spike Test (`spike_test`)
-Simulates sudden traffic surges:
+Simulates sudden traffic surges using the same user journey:
 - Ramps from 0 to 100 VUs in 30s
 - Peaks at 500 VUs for 1 minute
 - Ramps down to 0 over 1 minute
@@ -66,7 +76,15 @@ Focused testing of database-intensive leaderboard queries:
 - Constant 100 requests/second
 - 50% global standings, 30% local, 20% team
 
-### 4. Quiz Load Test (`quiz-scenario.js`)
+### 4. Challenges Page (`challenges-scenario.js`)
+Focused test of the challenges page flow. Each iteration:
+1. Cold load of `/challenges`: `GetMe`, `CurrentProject`,
+   `ActiveChallengesPage`, `GetFirebaseToken`
+2. User scans the list (2–5s), then clicks one random challenge:
+   - `ExternalChallenge` → leaves the app, no further requests
+   - any other type → `ChallengePage`, then leaves the app
+
+### 5. Quiz Load Test (`quiz-scenario.js`)
 Tests the complete quiz flow: get quiz details, start quiz, answer all questions, finalize.
 - `quiz_completion`: Steady load of users completing quizzes
 - `quiz_spike`: Spike test with many concurrent quiz takers
@@ -94,6 +112,8 @@ Tests the complete quiz flow: get quiz details, start quiz, answer all questions
 | `LEADERBOARD_START` | 0s | When leaderboard test starts |
 | `LEADERBOARD_DURATION` | 5m | Duration of leaderboard test |
 | `LEADERBOARD_RPS` | 100 | Requests per second |
+| `CHALLENGES_VUS` | 50 | Virtual users for challenges page test |
+| `SKIP_FIREBASE_TOKEN` | _(unset)_ | Set to skip the `GetFirebaseToken` bootstrap query (for environments without Firebase credentials) |
 | `QUIZ_ID` | QZ01LOADTESTQUIZ000000000000 | Quiz ID to test |
 | `QUIZ_VUS` | 20 | Virtual users for quiz test |
 | `QUIZ_RPS` | 10 | Requests per second for quiz stress test |
@@ -148,13 +168,20 @@ cmd/loadtest/
     tokengen/
         main.go          # Go tool to generate JWT tokens
     k6/
-        scenarios.js     # Main test script
+        scenarios.js     # Combined test script (steady + spike + leaderboard)
+        steady.js        # Steady load scenario
+        spike.js         # Spike scenario
+        leaderboard.js   # Leaderboard stress scenario
+        challenges-scenario.js # Challenges page scenario
         quiz-scenario.js # Quiz-specific test scenarios
         lib/
             graphql.js   # GraphQL HTTP helpers
+            journey.js   # Realistic user session journey
         queries/
+            bootstrap.js # Cold-load queries (GetMe, CurrentProject, GetFirebaseToken)
             challenges.js
             profile.js
+            standings-page.js
             standings-global.js
             standings-local.js
             standings-unit.js

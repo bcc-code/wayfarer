@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
@@ -48,47 +49,45 @@ func (r *Resolver) getFilteredChallenges(ctx context.Context, projectID string, 
 		}
 	}
 
-	// Batch load quizzes for all quiz challenges at once
+	// Steps 2+3 are independent per-user lookups (both cached) — run them
+	// concurrently. Failures degrade to empty sets, matching the previous
+	// behavior of ignoring these query errors.
 	quizByChallenge := make(map[string]*model.Quiz)
-	if len(quizChallengeIDs) > 0 {
+	sessionAccessQuizIDs := map[string]bool{}
+	enrolledChallengeIDs := map[string]bool{}
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	// Step 2: Load quizzes and batch check session access for all quiz challenges
+	go func() {
+		defer wg.Done()
+		if len(quizChallengeIDs) == 0 {
+			return
+		}
 		quizThunks := r.Loaders.QuizByChallengeIDLoader.LoadMany(ctx, quizChallengeIDs)
 		quizResults, _ := quizThunks()
+		quizIDs := make([]string, 0, len(quizChallengeIDs))
 		for i, q := range quizResults {
 			if q != nil {
 				quizByChallenge[quizChallengeIDs[i]] = q
+				quizIDs = append(quizIDs, q.ID)
 			}
 		}
-	}
+		if accessible, err := r.getUserAccessibleQuizIDs(ctx, userID, projectID, quizIDs); err == nil {
+			sessionAccessQuizIDs = accessible
+		}
+	}()
 
-	// Step 2: Batch check session access for all quiz challenges
-	sessionAccessQuizIDs := make(map[string]bool)
-	if len(quizByChallenge) > 0 {
-		quizIDs := make([]string, 0, len(quizByChallenge))
-		for _, q := range quizByChallenge {
-			quizIDs = append(quizIDs, q.ID)
+	// Step 3: Load enrolled challenge IDs for this user+project
+	go func() {
+		defer wg.Done()
+		if enrolled, err := r.getUserEnrolledChallengeIDs(ctx, userID, projectID); err == nil {
+			enrolledChallengeIDs = enrolled
 		}
-		accessibleQuizIDs, err := r.DB.Queries.GetBulkUserSessionAccessQuizIDs(ctx, sqlc.GetBulkUserSessionAccessQuizIDsParams{
-			Quizids: quizIDs,
-			Userid:  userID,
-		})
-		if err == nil {
-			for _, qid := range accessibleQuizIDs {
-				sessionAccessQuizIDs[qid] = true
-			}
-		}
-	}
+	}()
 
-	// Step 3: Batch load enrolled challenge IDs for this user+project
-	enrolledChallengeIDs := make(map[string]bool)
-	enrolledIDs, err := r.DB.Queries.GetUserEnrolledChallengeIDsInProject(ctx, sqlc.GetUserEnrolledChallengeIDsInProjectParams{
-		Userid:    userID,
-		Projectid: projectID,
-	})
-	if err == nil {
-		for _, id := range enrolledIDs {
-			enrolledChallengeIDs[id] = true
-		}
-	}
+	wg.Wait()
 
 	// Step 4: Filter using pre-fetched batch data (no translations yet)
 	visible := make([]model.Challenge, 0, len(challenges))
@@ -160,6 +159,89 @@ func (r *Resolver) getFilteredChallenges(ctx context.Context, projectID string, 
 
 	r.sortChallengesByEnrollment(ctx, userID, finalChallenges)
 	return finalChallenges, nil
+}
+
+// getVisibleEventChallenges loads the visible challenges for an event using batch queries
+// for quiz session access and enrollment, avoiding the per-challenge N+1 the naive resolver
+// would issue. It mirrors the visibility rules of the original Event.challenges resolver,
+// including support for unauthenticated viewers (userID == "").
+func (r *Resolver) getVisibleEventChallenges(ctx context.Context, obj *model.Event) ([]model.Challenge, error) {
+	thunk := r.Loaders.ChallengesByEventLoader.Load(ctx, obj.ID)
+	challenges, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+
+	userID, _ := middleware.GetUserID(ctx)
+	now := time.Now()
+
+	// Batch-load quiz session access for quiz challenges (authenticated viewers only).
+	quizByChallenge := make(map[string]*model.Quiz)
+	sessionAccessQuizIDs := make(map[string]bool)
+	if userID != "" {
+		quizChallengeIDs := make([]string, 0)
+		for _, ch := range challenges {
+			if _, ok := ch.(*model.QuizChallenge); ok {
+				quizChallengeIDs = append(quizChallengeIDs, ch.GetID())
+			}
+		}
+		if len(quizChallengeIDs) > 0 {
+			quizThunk := r.Loaders.QuizByChallengeIDLoader.LoadMany(ctx, quizChallengeIDs)
+			quizResults, _ := quizThunk()
+			quizIDs := make([]string, 0, len(quizChallengeIDs))
+			for i, q := range quizResults {
+				if q != nil {
+					quizByChallenge[quizChallengeIDs[i]] = q
+					quizIDs = append(quizIDs, q.ID)
+				}
+			}
+			if accessible, err := r.getUserAccessibleQuizIDs(ctx, userID, obj.ProjectID, quizIDs); err == nil {
+				sessionAccessQuizIDs = accessible
+			}
+		}
+	}
+
+	// Which of this event's challenges the viewer is enrolled in (authenticated
+	// only). Enrollment is project-wide, so the per-user project cache covers
+	// this event's challenges too.
+	enrolledChallengeIDs := map[string]bool{}
+	if userID != "" && len(challenges) > 0 {
+		if enrolled, err := r.getUserEnrolledChallengeIDs(ctx, userID, obj.ProjectID); err == nil {
+			enrolledChallengeIDs = enrolled
+		}
+	}
+
+	result := make([]model.Challenge, 0, len(challenges))
+	for _, ch := range challenges {
+		// Quiz challenges (authenticated): visible only when session access is granted,
+		// regardless of publishedAt/visibleAt.
+		if _, ok := ch.(*model.QuizChallenge); ok && userID != "" {
+			if quiz := quizByChallenge[ch.GetID()]; quiz != nil && sessionAccessQuizIDs[quiz.ID] {
+				result = append(result, ch)
+			}
+			continue
+		}
+
+		publishedAt := getChallengePublishedAt(ch)
+		if publishedAt == nil || publishedAt.After(now) {
+			continue // Skip unpublished
+		}
+
+		visibleAt := getChallengeVisibleAt(ch)
+		isVisible := visibleAt != nil && !visibleAt.After(now)
+		if !isVisible {
+			// Not publicly visible yet: only enrolled (authenticated) users may see it.
+			if userID == "" || !enrolledChallengeIDs[ch.GetID()] {
+				continue
+			}
+		}
+
+		result = append(result, ch)
+	}
+
+	// Apply translations in batch after filtering.
+	r.applyTranslationsToChallenges(ctx, result)
+	return result, nil
 }
 
 // sortChallengesByEnrollment sorts challenges with enrolled first (by enrolled_at DESC),

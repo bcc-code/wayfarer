@@ -14,7 +14,7 @@ import (
 const AppendBulkJobLogs = `-- name: AppendBulkJobLogs :exec
 UPDATE bulk_jobs
 SET logs = COALESCE(logs, '[]'::jsonb) || $1::jsonb
-WHERE id = $2::text
+WHERE id = $2::char(28)
 `
 
 type AppendBulkJobLogsParams struct {
@@ -43,8 +43,8 @@ const CountBulkJobs = `-- name: CountBulkJobs :one
 SELECT COUNT(*) FROM bulk_jobs
 WHERE ($1::text IS NULL OR status = $1::text)
   AND ($2::text IS NULL OR operation_type = $2::text)
-  AND ($3::text IS NULL OR project_id = $3::text)
-  AND ($4::text IS NULL OR created_by = $4::text)
+  AND ($3::char(28) IS NULL OR project_id = $3::char(28))
+  AND ($4::char(28) IS NULL OR created_by = $4::char(28))
 `
 
 type CountBulkJobsParams struct {
@@ -138,7 +138,7 @@ func (q *Queries) CreateBulkJob(ctx context.Context, arg CreateBulkJobParams) (*
 
 const GetBulkJobByID = `-- name: GetBulkJobByID :one
 SELECT id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id, logs FROM bulk_jobs
-WHERE id = $1::text
+WHERE id = $1::char(28)
 `
 
 func (q *Queries) GetBulkJobByID(ctx context.Context, id string) (*BulkJob, error) {
@@ -168,7 +168,7 @@ func (q *Queries) GetBulkJobByID(ctx context.Context, id string) (*BulkJob, erro
 
 const GetBulkJobsByCreator = `-- name: GetBulkJobsByCreator :many
 SELECT id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id, logs FROM bulk_jobs
-WHERE created_by = $1::text
+WHERE created_by = $1::char(28)
 ORDER BY created_at DESC
 LIMIT $2::int
 `
@@ -218,7 +218,7 @@ func (q *Queries) GetBulkJobsByCreator(ctx context.Context, arg GetBulkJobsByCre
 
 const GetBulkJobsByProject = `-- name: GetBulkJobsByProject :many
 SELECT id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id, logs FROM bulk_jobs
-WHERE project_id = $1::text
+WHERE project_id = $1::char(28)
 ORDER BY created_at DESC
 LIMIT $2::int
 `
@@ -368,9 +368,9 @@ SELECT id, operation_type, status, created_by, project_id, input_params, total_c
     SELECT id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id, logs FROM bulk_jobs
     WHERE ($1::text IS NULL OR status = $1::text)
       AND ($2::text IS NULL OR operation_type = $2::text)
-      AND ($3::text IS NULL OR project_id = $3::text)
-      AND ($4::text IS NULL OR created_by = $4::text)
-      AND ($5::text IS NULL OR id > $5::text)
+      AND ($3::char(28) IS NULL OR project_id = $3::char(28))
+      AND ($4::char(28) IS NULL OR created_by = $4::char(28))
+      AND ($5::char(28) IS NULL OR id > $5::char(28))
     ORDER BY created_at ASC, id ASC
     LIMIT $6::int
 ) AS subquery
@@ -436,9 +436,9 @@ const ListBulkJobsForward = `-- name: ListBulkJobsForward :many
 SELECT id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id, logs FROM bulk_jobs
 WHERE ($1::text IS NULL OR status = $1::text)
   AND ($2::text IS NULL OR operation_type = $2::text)
-  AND ($3::text IS NULL OR project_id = $3::text)
-  AND ($4::text IS NULL OR created_by = $4::text)
-  AND ($5::text IS NULL OR id < $5::text)
+  AND ($3::char(28) IS NULL OR project_id = $3::char(28))
+  AND ($4::char(28) IS NULL OR created_by = $4::char(28))
+  AND ($5::char(28) IS NULL OR id < $5::char(28))
 ORDER BY created_at DESC, id DESC
 LIMIT $6::int
 `
@@ -506,7 +506,7 @@ SET
     processed_count = $1::int,
     success_count = $2::int,
     failure_count = $3::int
-WHERE id = $4::text
+WHERE id = $4::char(28)
 RETURNING id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id, logs
 `
 
@@ -554,7 +554,7 @@ SET
     completed_at = now(),
     error_message = $1::text,
     error_details = $2::jsonb
-WHERE id = $3::text
+WHERE id = $3::char(28)
 RETURNING id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id, logs
 `
 
@@ -594,7 +594,7 @@ UPDATE bulk_jobs
 SET
     status = 'PROCESSING',
     started_at = now()
-WHERE id = $1::text
+WHERE id = $1::char(28)
 RETURNING id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id, logs
 `
 
@@ -626,7 +626,7 @@ func (q *Queries) MarkBulkJobProcessing(ctx context.Context, id string) (*BulkJo
 const UpdateBulkJobMessageID = `-- name: UpdateBulkJobMessageID :exec
 UPDATE bulk_jobs
 SET message_id = $1::text
-WHERE id = $2::text
+WHERE id = $2::char(28)
 `
 
 type UpdateBulkJobMessageIDParams struct {
@@ -645,7 +645,7 @@ SET
     processed_count = $1::int,
     success_count = $2::int,
     failure_count = $3::int
-WHERE id = $4::text
+WHERE id = $4::char(28)
 RETURNING id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id, logs
 `
 
@@ -694,7 +694,7 @@ SET
     completed_at = CASE WHEN $1::text IN ('COMPLETED', 'FAILED') THEN now() ELSE completed_at END,
     error_message = $2::text,
     error_details = $3::jsonb
-WHERE id = $4::text
+WHERE id = $4::char(28)
 RETURNING id, operation_type, status, created_by, project_id, input_params, total_count, processed_count, success_count, failure_count, error_message, error_details, created_at, started_at, completed_at, message_id, logs
 `
 

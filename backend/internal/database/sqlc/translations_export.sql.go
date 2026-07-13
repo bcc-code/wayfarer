@@ -200,7 +200,7 @@ func (q *Queries) GetProjectsForTranslation(ctx context.Context) ([]*GetProjects
 const GetQuizAnswersForTranslation = `-- name: GetQuizAnswersForTranslation :many
 SELECT id, answer_text
 FROM quiz_predefined_answers
-WHERE question_id = $1::text
+WHERE question_id = $1::char(28)
 ORDER BY answer_order
 `
 
@@ -232,7 +232,7 @@ func (q *Queries) GetQuizAnswersForTranslation(ctx context.Context, questionID s
 const GetQuizQuestionsForTranslation = `-- name: GetQuizQuestionsForTranslation :many
 SELECT id, question_text
 FROM quiz_questions
-WHERE quiz_id = $1::text
+WHERE quiz_id = $1::char(28)
 ORDER BY question_order
 `
 

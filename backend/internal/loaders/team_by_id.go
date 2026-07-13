@@ -53,6 +53,7 @@ func teamByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context
 					Description:         description,
 					ProjectID:           row.ProjectID,
 					JoinCode:            row.JoinCode,
+					SuperTeamID:         row.SuperTeamID,
 					LeaderboardExcluded: row.LeaderboardExcluded,
 				}
 

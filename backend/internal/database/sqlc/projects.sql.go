@@ -16,7 +16,7 @@ UPDATE projects
 SET
     archived = true,
     updated_at = now()
-WHERE id = $1::text
+WHERE id = $1::char(28)
 RETURNING id, name, description, rules, info_message, info_message_start, info_message_end, start_date, end_date, logo_url, banner_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,
     color_light_background_default, color_light_background_raised, color_light_background_indent,
@@ -118,7 +118,7 @@ const CountProjectsFiltered = `-- name: CountProjectsFiltered :one
 SELECT COUNT(id)
 FROM projects
 WHERE
-    ($1::text[] IS NULL OR id = ANY($1::text[]))
+    ($1::char(28)[] IS NULL OR id = ANY($1::char(28)[]))
     AND ($2::boolean IS NULL OR archived = $2::boolean)
     AND ($3::timestamptz IS NULL OR start_date >= $3::timestamptz)
     AND ($4::timestamptz IS NULL OR start_date <= $4::timestamptz)
@@ -401,7 +401,7 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (*
 
 const DeleteProject = `-- name: DeleteProject :exec
 DELETE FROM projects
-WHERE id = $1::text
+WHERE id = $1::char(28)
 `
 
 func (q *Queries) DeleteProject(ctx context.Context, id string) error {
@@ -634,7 +634,7 @@ SELECT id, name, description, rules, info_message, info_message_start, info_mess
     color_dark_shadow_default, color_dark_shadow_blank, color_dark_border_default,
     rounding, archived
 FROM projects
-WHERE id = ANY($1::text[])
+WHERE id = ANY($1::char(28)[])
 `
 
 type GetProjectsByIDsRow struct {
@@ -777,7 +777,7 @@ SELECT
     up.user_id
 FROM projects p
 JOIN user_projects up ON p.id = up.project_id
-WHERE up.user_id = ANY($1::text[])
+WHERE up.user_id = ANY($1::char(28)[])
 ORDER BY up.user_id, p.start_date DESC
 `
 
@@ -894,14 +894,14 @@ SELECT id, name, description, rules, info_message, info_message_start, info_mess
     rounding, archived
 FROM projects
 WHERE
-    ($1::text[] IS NULL OR id = ANY($1::text[]))
+    ($1::char(28)[] IS NULL OR id = ANY($1::char(28)[]))
     AND ($2::boolean IS NULL OR archived = $2::boolean)
     AND ($3::timestamptz IS NULL OR start_date >= $3::timestamptz)
     AND ($4::timestamptz IS NULL OR start_date <= $4::timestamptz)
     AND ($5::timestamptz IS NULL OR end_date >= $5::timestamptz)
     AND ($6::timestamptz IS NULL OR end_date <= $6::timestamptz)
-    AND ($7::text = '' OR id > $7::text)
-    AND ($8::text = '' OR id < $8::text)
+    AND ($7::char(28) = '' OR id > $7::char(28))
+    AND ($8::char(28) = '' OR id < $8::char(28))
 ORDER BY
     CASE WHEN $9::bool = true THEN id END DESC,
     CASE WHEN $9::bool = false OR $9::bool IS NULL THEN id END ASC
@@ -1031,7 +1031,7 @@ func (q *Queries) GetProjectsFilteredCursor(ctx context.Context, arg GetProjects
 }
 
 const ProjectExists = `-- name: ProjectExists :one
-SELECT EXISTS(SELECT 1 FROM projects WHERE id = $1::text)
+SELECT EXISTS(SELECT 1 FROM projects WHERE id = $1::char(28))
 `
 
 func (q *Queries) ProjectExists(ctx context.Context, projectid string) (bool, error) {
@@ -1086,7 +1086,7 @@ SET
     color_dark_border_default = COALESCE($34::text, color_dark_border_default),
     rounding = COALESCE($35::int, rounding),
     updated_at = now()
-WHERE id = $36::text
+WHERE id = $36::char(28)
 RETURNING id, name, description, rules, info_message, info_message_start, info_message_end, start_date, end_date, logo_url, banner_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,
     color_light_background_default, color_light_background_raised, color_light_background_indent,

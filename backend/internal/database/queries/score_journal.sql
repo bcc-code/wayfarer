@@ -40,13 +40,13 @@ SELECT
     created_at
 FROM score_journal
 WHERE
-    (@project_id::text = '' OR project_id = @project_id::text)
-    AND (@user_id::text = '' OR user_id = @user_id::text)
-    AND (@event_id::text = '' OR event_id = @event_id::text)
-    AND (@challenge_id::text = '' OR challenge_id = @challenge_id::text)
+    (@project_id::char(28) = '' OR project_id = @project_id::char(28))
+    AND (@user_id::char(28) = '' OR user_id = @user_id::char(28))
+    AND (@event_id::char(28) = '' OR event_id = @event_id::char(28))
+    AND (@challenge_id::char(28) = '' OR challenge_id = @challenge_id::char(28))
     AND (@source_type::text = '' OR source_type = @source_type::text)
-    AND (@aftercursor::text = '' OR id > @aftercursor::text)
-    AND (@beforecursor::text = '' OR id < @beforecursor::text)
+    AND (@aftercursor::char(28) = '' OR id > @aftercursor::char(28))
+    AND (@beforecursor::char(28) = '' OR id < @beforecursor::char(28))
 ORDER BY
     CASE WHEN @isbackward::bool = true THEN created_at END DESC,
     CASE WHEN @isbackward::bool = false OR @isbackward::bool IS NULL THEN created_at END ASC
@@ -56,10 +56,10 @@ LIMIT CASE WHEN @querylimit::int IS NULL THEN NULL ELSE @querylimit::int END;
 SELECT COUNT(*)
 FROM score_journal
 WHERE
-    (@project_id::text = '' OR project_id = @project_id::text)
-    AND (@user_id::text = '' OR user_id = @user_id::text)
-    AND (@event_id::text = '' OR event_id = @event_id::text)
-    AND (@challenge_id::text = '' OR challenge_id = @challenge_id::text)
+    (@project_id::char(28) = '' OR project_id = @project_id::char(28))
+    AND (@user_id::char(28) = '' OR user_id = @user_id::char(28))
+    AND (@event_id::char(28) = '' OR event_id = @event_id::char(28))
+    AND (@challenge_id::char(28) = '' OR challenge_id = @challenge_id::char(28))
     AND (@source_type::text = '' OR source_type = @source_type::text);
 
 -- name: GetScoreJournalByIDs :many
@@ -76,39 +76,48 @@ SELECT
     awarded_by,
     created_at
 FROM score_journal
-WHERE id = ANY(@ids::text[])
+WHERE id = ANY(@ids::char(28)[])
 ORDER BY created_at DESC;
 
 -- name: GetUserProjectScore :one
 SELECT COALESCE(SUM(points), 0)::bigint AS total_score
 FROM score_journal
-WHERE user_id = @user_id::text
-    AND project_id = @project_id::text;
+WHERE user_id = @user_id::char(28)
+    AND project_id = @project_id::char(28);
+
+-- name: GetBulkUserProjectScores :many
+-- Batch variant of GetUserProjectScore for the dataloader; pairs are matched by index
+SELECT user_id, project_id, COALESCE(SUM(points), 0)::bigint AS total_score
+FROM score_journal
+WHERE (user_id, project_id) IN (
+    SELECT unnest(@user_ids::char(28)[]), unnest(@project_ids::char(28)[])
+)
+GROUP BY user_id, project_id;
 
 -- name: GetUserEventScore :one
 SELECT COALESCE(SUM(points), 0)::bigint AS total_score
 FROM score_journal
-WHERE user_id = @user_id::text
-    AND project_id = @project_id::text
-    AND event_id = @event_id::text;
+WHERE user_id = @user_id::char(28)
+    AND project_id = @project_id::char(28)
+    AND event_id = @event_id::char(28);
 
 -- name: DeleteScoreJournalEntry :exec
 DELETE FROM score_journal
-WHERE id = @id::text;
+WHERE id = @id::char(28);
 
 -- name: DeleteScoreJournalByAchievement :exec
 DELETE FROM score_journal
-WHERE user_id = @user_id::text
+WHERE user_id = @user_id::char(28)
     AND source_type = 'ACHIEVEMENT'
-    AND source_id = @achievement_id::text;
+    AND source_id = @achievement_id::char(28);
 
 -- name: CheckScoreJournalEntryExists :one
 -- Check if a score journal entry already exists for a specific source (e.g., achievement)
 SELECT EXISTS(
     SELECT 1 FROM score_journal
-    WHERE user_id = @user_id::text
+    WHERE user_id = @user_id::char(28)
       AND source_type = @source_type::text
-      AND source_id = @source_id::text
+      AND source_id = @source_id::char(28)
 ) AS exists;
 
 -- name: CheckScoreJournalEntryExistsBySource :one
@@ -116,7 +125,7 @@ SELECT EXISTS(
 SELECT EXISTS(
     SELECT 1 FROM score_journal
     WHERE source_type = @source_type::text
-      AND source_id = @source_id::text
+      AND source_id = @source_id::char(28)
 ) AS exists;
 
 -- name: CreateTeamScoreAdjustmentBatch :many

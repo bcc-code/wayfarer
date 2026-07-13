@@ -11,7 +11,7 @@ import (
 
 const CountWebhookLogsByWebhookID = `-- name: CountWebhookLogsByWebhookID :one
 SELECT COUNT(*) FROM webhook_logs
-WHERE webhook_id = $1::text
+WHERE webhook_id = $1::char(28)
 `
 
 func (q *Queries) CountWebhookLogsByWebhookID(ctx context.Context, webhookid string) (int64, error) {
@@ -151,7 +151,7 @@ func (q *Queries) CreateWebhookLog(ctx context.Context, arg CreateWebhookLogPara
 
 const DeleteWebhook = `-- name: DeleteWebhook :exec
 DELETE FROM webhooks
-WHERE id = $1::text
+WHERE id = $1::char(28)
 `
 
 func (q *Queries) DeleteWebhook(ctx context.Context, id string) error {
@@ -204,7 +204,7 @@ func (q *Queries) GetActiveWebhooksByEventType(ctx context.Context, eventtype st
 
 const GetActiveWebhooksByProjectAndEvent = `-- name: GetActiveWebhooksByProjectAndEvent :many
 SELECT id, project_id, name, url, event_type, include_user_data, include_event_data, active, secret, created_at, updated_at FROM webhooks
-WHERE project_id = $1::text
+WHERE project_id = $1::char(28)
   AND event_type = $2::text
   AND active = true
 ORDER BY created_at DESC
@@ -249,7 +249,7 @@ func (q *Queries) GetActiveWebhooksByProjectAndEvent(ctx context.Context, arg Ge
 
 const GetWebhookByID = `-- name: GetWebhookByID :one
 SELECT id, project_id, name, url, event_type, include_user_data, include_event_data, active, secret, created_at, updated_at FROM webhooks
-WHERE id = $1::text
+WHERE id = $1::char(28)
 `
 
 func (q *Queries) GetWebhookByID(ctx context.Context, id string) (*Webhook, error) {
@@ -273,7 +273,7 @@ func (q *Queries) GetWebhookByID(ctx context.Context, id string) (*Webhook, erro
 
 const GetWebhookLogsByWebhookID = `-- name: GetWebhookLogsByWebhookID :many
 SELECT id, webhook_id, event_type, request_payload, response_status_code, response_body, duration_ms, error_message, created_at FROM webhook_logs
-WHERE webhook_id = $1::text
+WHERE webhook_id = $1::char(28)
 ORDER BY created_at DESC
 LIMIT $2::int
 `
@@ -315,7 +315,7 @@ func (q *Queries) GetWebhookLogsByWebhookID(ctx context.Context, arg GetWebhookL
 
 const GetWebhooksByProjectID = `-- name: GetWebhooksByProjectID :many
 SELECT id, project_id, name, url, event_type, include_user_data, include_event_data, active, secret, created_at, updated_at FROM webhooks
-WHERE project_id = $1::text
+WHERE project_id = $1::char(28)
 ORDER BY created_at DESC
 `
 
@@ -361,7 +361,7 @@ SET
     active = COALESCE($5::bool, active),
     secret = CASE WHEN $6::bool = true THEN $7::text ELSE secret END,
     updated_at = now()
-WHERE id = $8::text
+WHERE id = $8::char(28)
 RETURNING id, project_id, name, url, event_type, include_user_data, include_event_data, active, secret, created_at, updated_at
 `
 

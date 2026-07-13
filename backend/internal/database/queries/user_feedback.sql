@@ -35,12 +35,12 @@ INSERT INTO user_feedback (
 
 -- name: GetRecentFeedbackCount :one
 SELECT COUNT(*) FROM user_feedback
-WHERE user_id = @userid::text
+WHERE user_id = @userid::char(28)
   AND created_at > @since::timestamptz;
 
 -- name: GetUserFeedback :many
 SELECT * FROM user_feedback
-WHERE user_id = @userid::text
+WHERE user_id = @userid::char(28)
 ORDER BY created_at DESC;
 
 -- name: GetAllFeedback :many
@@ -52,7 +52,7 @@ OFFSET @offsetcount::int;
 -- name: CountAllFeedback :one
 SELECT COUNT(*) FROM user_feedback
 WHERE
-    (@filteruserid::text = '' OR user_id = @filteruserid::text)
+    (@filteruserid::char(28) = '' OR user_id = @filteruserid::char(28))
     AND (cardinality(@filtertags::text[]) = 0 OR tags && @filtertags::text[])
     AND (@filterhandled::text = '' OR (@filterhandled::text = 'true' AND handled_at IS NOT NULL) OR (@filterhandled::text = 'false' AND handled_at IS NULL))
     AND (@filterplatform::text = '' OR platform = @filterplatform::text);
@@ -60,9 +60,9 @@ WHERE
 -- name: GetFeedbackCursor :many
 SELECT * FROM user_feedback
 WHERE
-    (@aftercursor::text = '' OR id < @aftercursor::text)
-    AND (@beforecursor::text = '' OR id > @beforecursor::text)
-    AND (@filteruserid::text = '' OR user_id = @filteruserid::text)
+    (@aftercursor::char(28) = '' OR id < @aftercursor::char(28))
+    AND (@beforecursor::char(28) = '' OR id > @beforecursor::char(28))
+    AND (@filteruserid::char(28) = '' OR user_id = @filteruserid::char(28))
     AND (cardinality(@filtertags::text[]) = 0 OR tags && @filtertags::text[])
     AND (@filterhandled::text = '' OR (@filterhandled::text = 'true' AND handled_at IS NOT NULL) OR (@filterhandled::text = 'false' AND handled_at IS NULL))
     AND (@filterplatform::text = '' OR platform = @filterplatform::text)
@@ -72,21 +72,21 @@ ORDER BY
 LIMIT @querylimit::int;
 
 -- name: GetFeedbackByID :one
-SELECT * FROM user_feedback WHERE id = @id::text;
+SELECT * FROM user_feedback WHERE id = @id::char(28);
 
 -- name: SetFeedbackHandledAt :one
 UPDATE user_feedback
 SET handled_at = @handled_at::timestamptz
-WHERE id = @id::text
+WHERE id = @id::char(28)
 RETURNING *;
 
 -- name: DeleteFeedback :exec
-DELETE FROM user_feedback WHERE id = @id::text;
+DELETE FROM user_feedback WHERE id = @id::char(28);
 
 -- name: UpdateFeedbackTags :one
 UPDATE user_feedback
 SET tags = @tags::text[]
-WHERE id = @id::text
+WHERE id = @id::char(28)
 RETURNING *;
 
 -- name: GetDistinctFeedbackTags :many

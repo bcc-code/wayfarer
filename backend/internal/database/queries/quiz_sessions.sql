@@ -26,25 +26,25 @@ RETURNING *;
 -- name: GetQuizSession :one
 SELECT *
 FROM quiz_sessions
-WHERE id = @id::text;
+WHERE id = @id::char(28);
 
 -- name: GetQuizSessionForUpdate :one
 SELECT *
 FROM quiz_sessions
-WHERE id = @id::text
+WHERE id = @id::char(28)
 FOR UPDATE;
 
 -- name: GetQuizSessionsByQuiz :many
 SELECT *
 FROM quiz_sessions
-WHERE quiz_id = @quizid::text
+WHERE quiz_id = @quizid::char(28)
     AND (@state::text = '' OR state = @state::text)
 ORDER BY created_at DESC;
 
 -- name: GetQuizSessionsByIDs :many
 SELECT *
 FROM quiz_sessions
-WHERE id = ANY(@ids::text[]);
+WHERE id = ANY(@ids::char(28)[]);
 
 -- name: UpdateQuizSession :one
 UPDATE quiz_sessions
@@ -54,7 +54,7 @@ SET
     lock_at = sqlc.narg('lockat')::timestamptz,
     finish_at = sqlc.narg('finishat')::timestamptz,
     updated_at = now()
-WHERE id = @id::text
+WHERE id = @id::char(28)
 RETURNING *;
 
 -- name: UpdateQuizSessionState :one
@@ -65,12 +65,12 @@ SET
     lock_at = CASE WHEN @state::text = 'LOCKED' AND lock_at IS NULL THEN now() ELSE lock_at END,
     finish_at = CASE WHEN @state::text = 'FINISHED' AND finish_at IS NULL THEN now() ELSE finish_at END,
     updated_at = now()
-WHERE id = @id::text
+WHERE id = @id::char(28)
 RETURNING *;
 
 -- name: DeleteQuizSession :exec
 DELETE FROM quiz_sessions
-WHERE id = @id::text;
+WHERE id = @id::char(28);
 
 -- ==================== Scheduled Transitions ====================
 
@@ -132,50 +132,50 @@ ON CONFLICT (session_id, user_id) DO NOTHING;
 SELECT EXISTS(
     SELECT 1
     FROM quiz_session_access
-    WHERE session_id = @sessionid::text
-        AND user_id = @userid::text
+    WHERE session_id = @sessionid::char(28)
+        AND user_id = @userid::char(28)
 ) AS has_access;
 
 -- name: GetQuizSessionAccessCount :one
 SELECT COUNT(*)::int
 FROM quiz_session_access
-WHERE session_id = @sessionid::text;
+WHERE session_id = @sessionid::char(28);
 
 -- name: GetQuizSessionAccessUserIDs :many
 SELECT user_id
 FROM quiz_session_access
-WHERE session_id = @sessionid::text;
+WHERE session_id = @sessionid::char(28);
 
 -- name: DeleteQuizSessionAccess :exec
 DELETE FROM quiz_session_access
-WHERE session_id = @sessionid::text
-    AND user_id = ANY(@userids::text[]);
+WHERE session_id = @sessionid::char(28)
+    AND user_id = ANY(@userids::char(28)[]);
 
 -- name: DeleteAllQuizSessionAccess :exec
 DELETE FROM quiz_session_access
-WHERE session_id = @sessionid::text;
+WHERE session_id = @sessionid::char(28);
 
 -- ==================== User Resolution Helpers ====================
 
 -- name: GetUserIDsByChurchIDs :many
 SELECT DISTINCT id AS user_id
 FROM users
-WHERE church_id = ANY(@churchids::text[]);
+WHERE church_id = ANY(@churchids::char(28)[]);
 
 -- name: GetUserIDsByChurchIDsInProject :many
 SELECT DISTINCT up.user_id
 FROM user_projects up
 JOIN users u ON u.id = up.user_id
-WHERE u.church_id = ANY(@churchids::text[])
-    AND up.project_id = @projectid::text;
+WHERE u.church_id = ANY(@churchids::char(28)[])
+    AND up.project_id = @projectid::char(28);
 
 -- name: GetUserIDsByChurchAndProject :many
 -- Returns church_id and user_id for dataloader grouping
 SELECT u.church_id, up.user_id
 FROM user_projects up
 JOIN users u ON u.id = up.user_id
-WHERE u.church_id = ANY(@churchids::text[])
-    AND up.project_id = @projectid::text;
+WHERE u.church_id = ANY(@churchids::char(28)[])
+    AND up.project_id = @projectid::char(28);
 
 -- ==================== Session Submissions ====================
 
@@ -183,15 +183,15 @@ WHERE u.church_id = ANY(@churchids::text[])
 SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at,
        question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
-WHERE session_id = @sessionid::text
+WHERE session_id = @sessionid::char(28)
     AND completed_at IS NULL;
 
 -- name: GetSubmissionByUserAndSession :one
 SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at,
        question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
-WHERE session_id = @sessionid::text
-    AND user_id = @userid::text
+WHERE session_id = @sessionid::char(28)
+    AND user_id = @userid::char(28)
 ORDER BY started_at DESC
 LIMIT 1;
 
@@ -199,7 +199,7 @@ LIMIT 1;
 SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at,
        question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
-WHERE session_id = @sessionid::text
+WHERE session_id = @sessionid::char(28)
 ORDER BY started_at DESC;
 
 -- name: AutoSubmitSessionSubmissions :exec
@@ -207,13 +207,13 @@ UPDATE quiz_submissions
 SET
     completed_at = NOW(),
     auto_submitted = true
-WHERE session_id = @sessionid::text
+WHERE session_id = @sessionid::char(28)
     AND completed_at IS NULL;
 
 -- name: DeleteSubmissionByUserAndSession :exec
 DELETE FROM quiz_submissions
-WHERE session_id = @sessionid::text
-    AND user_id = @userid::text;
+WHERE session_id = @sessionid::char(28)
+    AND user_id = @userid::char(28);
 
 -- ==================== User Session Access ====================
 
@@ -221,15 +221,15 @@ WHERE session_id = @sessionid::text
 SELECT qs.*
 FROM quiz_sessions qs
 JOIN quiz_session_access qsa ON qsa.session_id = qs.id
-WHERE qsa.user_id = @userid::text
-    AND qs.quiz_id = @quizid::text
+WHERE qsa.user_id = @userid::char(28)
+    AND qs.quiz_id = @quizid::char(28)
 ORDER BY qs.created_at DESC;
 
 -- name: GetUserAccessibleOpenSessions :many
 SELECT qs.*
 FROM quiz_sessions qs
 JOIN quiz_session_access qsa ON qsa.session_id = qs.id
-WHERE qsa.user_id = @userid::text
+WHERE qsa.user_id = @userid::char(28)
     AND qs.state = 'OPEN'
 ORDER BY qs.created_at DESC;
 
@@ -245,7 +245,7 @@ SELECT
     u.church_id
 FROM quiz_submissions qs
 JOIN users u ON u.id = qs.user_id
-WHERE qs.session_id = @sessionid::text
+WHERE qs.session_id = @sessionid::char(28)
 ORDER BY qs.started_at;
 
 -- ==================== User Active Session ====================
@@ -254,8 +254,8 @@ ORDER BY qs.started_at;
 SELECT qs.*
 FROM quiz_sessions qs
 JOIN quiz_session_access qsa ON qsa.session_id = qs.id
-WHERE qs.quiz_id = @quizid::text
-    AND qsa.user_id = @userid::text
+WHERE qs.quiz_id = @quizid::char(28)
+    AND qsa.user_id = @userid::char(28)
     AND qs.state IN ('OPEN', 'LOCKED', 'FINISHED')
 ORDER BY qs.created_at DESC
 LIMIT 1;
@@ -265,8 +265,8 @@ SELECT EXISTS (
     SELECT 1
     FROM quiz_sessions qs
     JOIN quiz_session_access qsa ON qsa.session_id = qs.id
-    WHERE qs.quiz_id = @quizid::text
-        AND qsa.user_id = @userid::text
+    WHERE qs.quiz_id = @quizid::char(28)
+        AND qsa.user_id = @userid::char(28)
         AND qs.state IN ('OPEN', 'LOCKED', 'FINISHED')
 ) AS has_access;
 
@@ -275,6 +275,6 @@ SELECT EXISTS (
 SELECT DISTINCT qs.quiz_id
 FROM quiz_sessions qs
 JOIN quiz_session_access qsa ON qsa.session_id = qs.id
-WHERE qs.quiz_id = ANY(@quizids::text[])
-    AND qsa.user_id = @userid::text
+WHERE qs.quiz_id = ANY(@quizids::char(28)[])
+    AND qsa.user_id = @userid::char(28)
     AND qs.state IN ('OPEN', 'LOCKED', 'FINISHED');

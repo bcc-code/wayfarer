@@ -1,5 +1,10 @@
 # Audit: `unnest(::text[])` Type Mismatch on `char(28)` Columns
 
+> **UPDATE 2026-07-13:** The same root cause applies to **scalar** parameter comparisons
+> (`col = @param::text`) and **ANY** comparisons (`col = ANY(@param::text[])`), not just
+> `unnest()`. All ~545 such sites across `queries/*.sql` were fixed by changing the casts
+> to `::char(28)` / `::char(28)[]`. See the "Scalar/ANY variant" section at the bottom.
+
 **Date:** 2026-03-31
 **Database:** Neon PostgreSQL (wayfarer)
 **Root Cause:** All ID columns use `char(28)` (ULID format), but bulk queries pass `text[]` arrays to `unnest()`. PostgreSQL cannot use indexes when comparing `text` to `char(28)`, falling back to sequential scans.
@@ -190,3 +195,45 @@ These use `unnest(::text[])` in INSERT...SELECT where the text is cast to char(2
 PostgreSQL's query planner cannot use a `btree` index on a `char(28)` column when the comparison value is `text`. The types are compatible for equality comparison (the result is correct), but the planner cannot prove that the index ordering matches, so it falls back to a sequential scan.
 
 This is a well-known PostgreSQL behavior: implicit type coercion between `char(n)` and `text` works for equality but prevents index usage. The fix is to ensure the unnest output type matches the column type exactly.
+
+---
+
+## Scalar/ANY variant (fixed 2026-07-13)
+
+The original audit only covered `unnest()`. The exact same defect existed in every **scalar**
+comparison and every **ANY** comparison against a `char(28)` column:
+
+```sql
+WHERE user_id = @user_id::text           -- Postgres casts the COLUMN: (user_id)::text = $1 → seq scan
+WHERE id = ANY(@ids::text[])             -- same problem
+```
+
+`GetUserProjectScore` surfaced this under k6 load (2,322 calls, seconds each on Neon):
+
+| Version | Plan | Time | Buffers |
+|---------|------|------|---------|
+| `::text` | Seq Scan (86,182 rows) | 20ms warm, seconds under load | 1,838 |
+| `::char(28)` | Index Only Scan on `idx_score_journal_user_project_event` | 2.7ms cold | 6 |
+
+**Fix applied:** ~545 comparison sites across all `queries/*.sql` changed to `::char(28)` /
+`::char(28)[]`. Optional-filter guards were changed together with their comparison to keep a
+single cast per parameter (sqlc cannot parse a `::text::char(28)` double cast):
+
+```sql
+-- before
+(@project_id::text = '' OR project_id = @project_id::text)
+-- after ('' = '' comparison is unchanged under bpchar semantics)
+(@project_id::char(28) = '' OR project_id = @project_id::char(28))
+```
+
+Comparisons against genuinely text/varchar columns (`source_type`, `country`, `join_code`,
+`key`, external string IDs like `task_id`/`plan_id`, etc.) correctly keep `::text`.
+
+INSERT/UPDATE **value** positions keep `::text` — assignment casts don't involve indexes.
+
+**Rule for new queries:** any parameter compared to an ID column must be cast `::char(28)`
+(or `::char(28)[]` for arrays), never `::text`.
+
+Additionally, `User.points` now batches through `UserProjectScoreLoader`
+(`internal/loaders/user_project_score.go`) using `GetBulkUserProjectScores` instead of one
+`GetUserProjectScore` query per user.

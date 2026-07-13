@@ -8,8 +8,8 @@ WITH church_team_users AS (
     FROM users u
     INNER JOIN team_members tm ON u.id = tm.user_id
     INNER JOIN teams t ON tm.team_id = t.id
-    WHERE u.church_id = @churchid::text
-      AND t.project_id = @projectid::text
+    WHERE u.church_id = @churchid::char(28)
+      AND t.project_id = @projectid::char(28)
       AND u.birthdate IS NOT NULL
 ),
 user_scores AS (
@@ -18,7 +18,7 @@ user_scores AS (
         ctu.age,
         COALESCE(SUM(sj.points), 0)::bigint AS total_score
     FROM church_team_users ctu
-    LEFT JOIN score_journal sj ON sj.user_id = ctu.user_id AND sj.project_id = @projectid::text
+    LEFT JOIN score_journal sj ON sj.user_id = ctu.user_id AND sj.project_id = @projectid::char(28)
     GROUP BY ctu.user_id, ctu.age
 ),
 age_groups AS (
@@ -57,8 +57,8 @@ SELECT COUNT(DISTINCT u.id)::int AS total_users
 FROM users u
 INNER JOIN team_members tm ON u.id = tm.user_id
 INNER JOIN teams t ON tm.team_id = t.id
-WHERE u.church_id = @churchid::text
-  AND t.project_id = @projectid::text;
+WHERE u.church_id = @churchid::char(28)
+  AND t.project_id = @projectid::char(28);
 
 -- name: GetChurchUserScores :many
 -- Get scores for all users from a church who are in teams for a specific project
@@ -69,8 +69,8 @@ SELECT
 FROM users u
 INNER JOIN team_members tm ON u.id = tm.user_id
 INNER JOIN teams t ON tm.team_id = t.id
-LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.project_id = @projectid::text
-WHERE u.church_id = @churchid::text
-  AND t.project_id = @projectid::text
+LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.project_id = @projectid::char(28)
+WHERE u.church_id = @churchid::char(28)
+  AND t.project_id = @projectid::char(28)
 GROUP BY u.id, u.display_name, u.name
 ORDER BY total_score ASC;

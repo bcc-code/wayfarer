@@ -31,8 +31,8 @@ func (q *Queries) BulkEnrollUsersInChallenge(ctx context.Context, arg BulkEnroll
 
 const BulkUnenrollUsersFromChallenge = `-- name: BulkUnenrollUsersFromChallenge :exec
 DELETE FROM user_challenge_enrollments
-WHERE challenge_id = $1::text
-  AND user_id = ANY($2::text[])
+WHERE challenge_id = $1::char(28)
+  AND user_id = ANY($2::char(28)[])
 `
 
 type BulkUnenrollUsersFromChallengeParams struct {
@@ -102,7 +102,7 @@ func (q *Queries) GetBulkUserEnrollmentTimestamps(ctx context.Context, arg GetBu
 const GetEnrolledUsersForChallenge = `-- name: GetEnrolledUsersForChallenge :many
 SELECT user_id, enrolled_at
 FROM user_challenge_enrollments
-WHERE challenge_id = $1::text
+WHERE challenge_id = $1::char(28)
 ORDER BY enrolled_at ASC
 `
 
@@ -135,8 +135,8 @@ const GetUserEnrolledChallengeIDsInProject = `-- name: GetUserEnrolledChallengeI
 SELECT uce.challenge_id
 FROM user_challenge_enrollments uce
 JOIN challenges c ON c.id = uce.challenge_id
-WHERE uce.user_id = $1::text
-  AND c.project_id = $2::text
+WHERE uce.user_id = $1::char(28)
+  AND c.project_id = $2::char(28)
 `
 
 type GetUserEnrolledChallengeIDsInProjectParams struct {
@@ -167,7 +167,7 @@ func (q *Queries) GetUserEnrolledChallengeIDsInProject(ctx context.Context, arg 
 const GetUserEnrollmentTimestamp = `-- name: GetUserEnrollmentTimestamp :one
 SELECT enrolled_at
 FROM user_challenge_enrollments
-WHERE user_id = $1::text AND challenge_id = $2::text
+WHERE user_id = $1::char(28) AND challenge_id = $2::char(28)
 `
 
 type GetUserEnrollmentTimestampParams struct {
@@ -186,8 +186,8 @@ const GetUserEnrollmentTimestamps = `-- name: GetUserEnrollmentTimestamps :many
 
 SELECT challenge_id, enrolled_at
 FROM user_challenge_enrollments
-WHERE user_id = $1::text
-  AND challenge_id = ANY($2::text[])
+WHERE user_id = $1::char(28)
+  AND challenge_id = ANY($2::char(28)[])
 `
 
 type GetUserEnrollmentTimestampsParams struct {
@@ -225,7 +225,7 @@ const IsUserEnrolledInChallenge = `-- name: IsUserEnrolledInChallenge :one
 SELECT EXISTS(
     SELECT 1
     FROM user_challenge_enrollments
-    WHERE user_id = $1::text AND challenge_id = $2::text
+    WHERE user_id = $1::char(28) AND challenge_id = $2::char(28)
 ) AS is_enrolled
 `
 
@@ -243,7 +243,7 @@ func (q *Queries) IsUserEnrolledInChallenge(ctx context.Context, arg IsUserEnrol
 
 const UnenrollUserFromChallenge = `-- name: UnenrollUserFromChallenge :exec
 DELETE FROM user_challenge_enrollments
-WHERE user_id = $1::text AND challenge_id = $2::text
+WHERE user_id = $1::char(28) AND challenge_id = $2::char(28)
 `
 
 type UnenrollUserFromChallengeParams struct {

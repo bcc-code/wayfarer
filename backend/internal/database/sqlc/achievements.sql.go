@@ -19,7 +19,7 @@ SELECT
     COALESCE($2::timestamptz, now())
 FROM teams t
 INNER JOIN team_members tm ON tm.team_id = t.id
-WHERE t.super_team_id = $3::text
+WHERE t.super_team_id = $3::char(28)
 ON CONFLICT (user_id, achievement_id) DO NOTHING
 `
 
@@ -42,7 +42,7 @@ SELECT
     $1::text,
     COALESCE($2::timestamptz, now())
 FROM team_members tm
-WHERE tm.team_id = $3::text
+WHERE tm.team_id = $3::char(28)
 ON CONFLICT (user_id, achievement_id) DO NOTHING
 `
 
@@ -140,8 +140,8 @@ func (q *Queries) AwardUserAchievementsBatch(ctx context.Context, arg AwardUserA
 const CheckContentItemInAchievement = `-- name: CheckContentItemInAchievement :one
 SELECT EXISTS(
     SELECT 1 FROM content_achievement_items
-    WHERE achievement_id = $1::text
-      AND external_content_id = $2::text
+    WHERE achievement_id = $1::char(28)
+      AND external_content_id = $2::char(28)
 ) AS exists
 `
 
@@ -161,7 +161,7 @@ func (q *Queries) CheckContentItemInAchievement(ctx context.Context, arg CheckCo
 const CheckUserHasAchievement = `-- name: CheckUserHasAchievement :one
 SELECT EXISTS(
     SELECT 1 FROM user_achievements
-    WHERE user_id = $1::text AND achievement_id = $2::text
+    WHERE user_id = $1::char(28) AND achievement_id = $2::char(28)
 ) AS has_achievement
 `
 
@@ -182,9 +182,9 @@ const CountAchievementsFiltered = `-- name: CountAchievementsFiltered :one
 SELECT COUNT(DISTINCT a.id)
 FROM achievements a
 WHERE
-    ($1::text[] IS NULL OR a.id = ANY($1::text[]))
-    AND ($2::text = '' OR a.project_id = $2::text)
-    AND ($3::text = '' OR a.event_id = $3::text)
+    ($1::char(28)[] IS NULL OR a.id = ANY($1::char(28)[]))
+    AND ($2::char(28) = '' OR a.project_id = $2::char(28))
+    AND ($3::char(28) = '' OR a.event_id = $3::char(28))
 `
 
 type CountAchievementsFilteredParams struct {
@@ -392,7 +392,7 @@ func (q *Queries) CreateStreakAchievementJunction(ctx context.Context, achieveme
 const DeleteAchievement = `-- name: DeleteAchievement :exec
 
 DELETE FROM achievements
-WHERE id = $1::text
+WHERE id = $1::char(28)
 `
 
 // ==================== Delete Operations ====================
@@ -403,7 +403,7 @@ func (q *Queries) DeleteAchievement(ctx context.Context, id string) error {
 
 const DeleteContentAchievementItems = `-- name: DeleteContentAchievementItems :exec
 DELETE FROM content_achievement_items
-WHERE achievement_id = $1::text
+WHERE achievement_id = $1::char(28)
 `
 
 func (q *Queries) DeleteContentAchievementItems(ctx context.Context, achievementID string) error {
@@ -413,7 +413,7 @@ func (q *Queries) DeleteContentAchievementItems(ctx context.Context, achievement
 
 const DeleteStreakAchievementItems = `-- name: DeleteStreakAchievementItems :exec
 DELETE FROM streak_achievement_items
-WHERE achievement_id = $1::text
+WHERE achievement_id = $1::char(28)
 `
 
 func (q *Queries) DeleteStreakAchievementItems(ctx context.Context, achievementID string) error {
@@ -441,7 +441,7 @@ SELECT
     a.created_at,
     a.updated_at
 FROM achievements a
-WHERE a.id = $1::text
+WHERE a.id = $1::char(28)
 `
 
 type GetAchievementByIDRow struct {
@@ -498,9 +498,9 @@ SELECT
 FROM content_achievement_items cai
 LEFT JOIN user_content_progress ucp
     ON ucp.achievement_id = cai.achievement_id
-    AND ucp.user_id = $1::text
+    AND ucp.user_id = $1::char(28)
     AND ucp.external_content_id = cai.external_content_id
-WHERE cai.achievement_id = ANY($2::text[])
+WHERE cai.achievement_id = ANY($2::char(28)[])
 GROUP BY cai.achievement_id
 `
 
@@ -589,7 +589,7 @@ FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
 LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
-WHERE a.id = ANY($1::text[])
+WHERE a.id = ANY($1::char(28)[])
 `
 
 type GetAchievementsByIDsRow struct {
@@ -691,7 +691,7 @@ FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
 LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
-WHERE a.project_id = ANY($1::text[])
+WHERE a.project_id = ANY($1::char(28)[])
     AND a.hidden = false
 ORDER BY a.project_id, a.sort_order, a.created_at DESC
 `
@@ -818,11 +818,11 @@ LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
 LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
 WHERE
-    ($1::text[] IS NULL OR a.id = ANY($1::text[]))
-    AND ($2::text = '' OR a.project_id = $2::text)
-    AND ($3::text = '' OR a.event_id = $3::text)
-    AND ($4::text = '' OR (a.sort_order, a.id) > (SELECT sort_order, id FROM achievements WHERE id = $4::text))
-    AND ($5::text = '' OR (a.sort_order, a.id) < (SELECT sort_order, id FROM achievements WHERE id = $5::text))
+    ($1::char(28)[] IS NULL OR a.id = ANY($1::char(28)[]))
+    AND ($2::char(28) = '' OR a.project_id = $2::char(28))
+    AND ($3::char(28) = '' OR a.event_id = $3::char(28))
+    AND ($4::char(28) = '' OR (a.sort_order, a.id) > (SELECT sort_order, id FROM achievements WHERE id = $4::char(28)))
+    AND ($5::char(28) = '' OR (a.sort_order, a.id) < (SELECT sort_order, id FROM achievements WHERE id = $5::char(28)))
 ORDER BY
     CASE WHEN $6::bool = true THEN a.sort_order END DESC,
     CASE WHEN $6::bool = false OR $6::bool IS NULL THEN a.sort_order END ASC,
@@ -950,7 +950,7 @@ FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
 LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
-WHERE a.project_id = $1::text
+WHERE a.project_id = $1::char(28)
 ORDER BY a.sort_order, a.created_at DESC
 `
 
@@ -1211,7 +1211,7 @@ SELECT
     ) AS content_items
 FROM achievements a
 INNER JOIN content_achievements ca ON ca.achievement_id = a.id
-WHERE a.id = $1::text AND a.project_id = $2::text
+WHERE a.id = $1::char(28) AND a.project_id = $2::char(28)
 `
 
 type GetContentAchievementForAwardParams struct {
@@ -1268,7 +1268,7 @@ func (q *Queries) GetContentAchievementForAward(ctx context.Context, arg GetCont
 const GetContentItemCounts = `-- name: GetContentItemCounts :many
 SELECT achievement_id, COUNT(*)::int AS item_count
 FROM content_achievement_items
-WHERE achievement_id = ANY($1::text[])
+WHERE achievement_id = ANY($1::char(28)[])
 GROUP BY achievement_id
 `
 
@@ -1301,7 +1301,7 @@ func (q *Queries) GetContentItemCounts(ctx context.Context, achievementIds []str
 const GetContentItemsByAchievementIDs = `-- name: GetContentItemsByAchievementIDs :many
 SELECT id, achievement_id, external_content_id, sort_order
 FROM content_achievement_items
-WHERE achievement_id = ANY($1::text[])
+WHERE achievement_id = ANY($1::char(28)[])
 ORDER BY achievement_id, sort_order
 `
 
@@ -1334,7 +1334,7 @@ const GetContentItemsWithDeadlines = `-- name: GetContentItemsWithDeadlines :man
 SELECT cai.id, cai.achievement_id, cai.external_content_id, cai.sort_order, ec.complete_by
 FROM content_achievement_items cai
 INNER JOIN external_content ec ON cai.external_content_id = ec.id
-WHERE cai.achievement_id = $1::text
+WHERE cai.achievement_id = $1::char(28)
 ORDER BY cai.sort_order
 `
 
@@ -1387,7 +1387,7 @@ SELECT
     ec.source AS external_source
 FROM content_achievement_items cai
 INNER JOIN external_content ec ON cai.external_content_id = ec.id
-WHERE cai.achievement_id = ANY($1::text[])
+WHERE cai.achievement_id = ANY($1::char(28)[])
 ORDER BY cai.achievement_id, cai.sort_order
 `
 
@@ -1469,7 +1469,7 @@ SELECT DISTINCT
 FROM achievements a
 INNER JOIN content_achievements ca ON a.id = ca.achievement_id
 INNER JOIN content_achievement_items cai ON ca.achievement_id = cai.achievement_id
-WHERE cai.external_content_id = $1::text
+WHERE cai.external_content_id = $1::char(28)
 `
 
 type GetPublishedContentAchievementsByExternalContentRow struct {
@@ -1564,7 +1564,7 @@ SELECT DISTINCT
 FROM achievements a
 INNER JOIN streak_achievements sa ON a.id = sa.achievement_id
 INNER JOIN streak_achievement_items sai ON sa.achievement_id = sai.achievement_id
-WHERE sai.external_content_id = $1::text
+WHERE sai.external_content_id = $1::char(28)
 `
 
 type GetPublishedStreakAchievementsByExternalContentRow struct {
@@ -1634,9 +1634,9 @@ SELECT
 FROM streak_achievement_items sai
 LEFT JOIN user_streak_progress usp
     ON usp.achievement_id = sai.achievement_id
-    AND usp.user_id = $1::text
+    AND usp.user_id = $1::char(28)
     AND usp.external_content_id = sai.external_content_id
-WHERE sai.achievement_id = ANY($2::text[])
+WHERE sai.achievement_id = ANY($2::char(28)[])
 GROUP BY sai.achievement_id
 `
 
@@ -1703,7 +1703,7 @@ SELECT
     ) AS streak_items
 FROM achievements a
 INNER JOIN streak_achievements sa ON sa.achievement_id = a.id
-WHERE a.id = $1::text AND a.project_id = $2::text
+WHERE a.id = $1::char(28) AND a.project_id = $2::char(28)
 `
 
 type GetStreakAchievementForAwardParams struct {
@@ -1760,7 +1760,7 @@ func (q *Queries) GetStreakAchievementForAward(ctx context.Context, arg GetStrea
 const GetStreakItemCounts = `-- name: GetStreakItemCounts :many
 SELECT achievement_id, COUNT(*)::int AS item_count
 FROM streak_achievement_items
-WHERE achievement_id = ANY($1::text[])
+WHERE achievement_id = ANY($1::char(28)[])
 GROUP BY achievement_id
 `
 
@@ -1794,7 +1794,7 @@ const GetStreakItemsByAchievementIDs = `-- name: GetStreakItemsByAchievementIDs 
 
 SELECT id, achievement_id, external_content_id, sort_order
 FROM streak_achievement_items
-WHERE achievement_id = ANY($1::text[])
+WHERE achievement_id = ANY($1::char(28)[])
 ORDER BY achievement_id, sort_order
 `
 
@@ -1828,7 +1828,7 @@ const GetStreakItemsWithDeadlines = `-- name: GetStreakItemsWithDeadlines :many
 SELECT sai.id, sai.achievement_id, sai.external_content_id, sai.sort_order, ec.complete_by
 FROM streak_achievement_items sai
 INNER JOIN external_content ec ON sai.external_content_id = ec.id
-WHERE sai.achievement_id = $1::text
+WHERE sai.achievement_id = $1::char(28)
 ORDER BY sai.sort_order
 `
 
@@ -1870,8 +1870,8 @@ func (q *Queries) GetStreakItemsWithDeadlines(ctx context.Context, achievementID
 const GetUserAchievementTimestamps = `-- name: GetUserAchievementTimestamps :many
 SELECT achievement_id, achieved_at
 FROM user_achievements
-WHERE user_id = $1::text
-  AND achievement_id = ANY($2::text[])
+WHERE user_id = $1::char(28)
+  AND achievement_id = ANY($2::char(28)[])
 `
 
 type GetUserAchievementTimestampsParams struct {
@@ -1908,8 +1908,8 @@ func (q *Queries) GetUserAchievementTimestamps(ctx context.Context, arg GetUserA
 const GetUserAwardedAchievementIDs = `-- name: GetUserAwardedAchievementIDs :many
 SELECT achievement_id
 FROM user_achievements
-WHERE user_id = $1::text
-  AND achievement_id = ANY($2::text[])
+WHERE user_id = $1::char(28)
+  AND achievement_id = ANY($2::char(28)[])
 `
 
 type GetUserAwardedAchievementIDsParams struct {
@@ -1941,8 +1941,8 @@ func (q *Queries) GetUserAwardedAchievementIDs(ctx context.Context, arg GetUserA
 const GetUserContentProgress = `-- name: GetUserContentProgress :many
 SELECT user_id, achievement_id, external_content_id, completed_at
 FROM user_content_progress
-WHERE user_id = $1::text
-  AND achievement_id = ANY($2::text[])
+WHERE user_id = $1::char(28)
+  AND achievement_id = ANY($2::char(28)[])
 `
 
 type GetUserContentProgressParams struct {
@@ -1978,8 +1978,8 @@ func (q *Queries) GetUserContentProgress(ctx context.Context, arg GetUserContent
 const GetUserProgressCounts = `-- name: GetUserProgressCounts :many
 SELECT achievement_id, COUNT(*)::int AS progress_count
 FROM user_content_progress
-WHERE user_id = $1::text
-  AND achievement_id = ANY($2::text[])
+WHERE user_id = $1::char(28)
+  AND achievement_id = ANY($2::char(28)[])
 GROUP BY achievement_id
 `
 
@@ -2017,8 +2017,8 @@ func (q *Queries) GetUserProgressCounts(ctx context.Context, arg GetUserProgress
 const GetUserStreakProgress = `-- name: GetUserStreakProgress :many
 SELECT user_id, achievement_id, external_content_id, completed_at
 FROM user_streak_progress
-WHERE user_id = $1::text
-  AND achievement_id = ANY($2::text[])
+WHERE user_id = $1::char(28)
+  AND achievement_id = ANY($2::char(28)[])
 `
 
 type GetUserStreakProgressParams struct {
@@ -2054,8 +2054,8 @@ func (q *Queries) GetUserStreakProgress(ctx context.Context, arg GetUserStreakPr
 const GetUserStreakProgressCounts = `-- name: GetUserStreakProgressCounts :many
 SELECT achievement_id, COUNT(*)::int AS progress_count
 FROM user_streak_progress
-WHERE user_id = $1::text
-  AND achievement_id = ANY($2::text[])
+WHERE user_id = $1::char(28)
+  AND achievement_id = ANY($2::char(28)[])
 GROUP BY achievement_id
 `
 
@@ -2093,9 +2093,9 @@ func (q *Queries) GetUserStreakProgressCounts(ctx context.Context, arg GetUserSt
 const GetUsersWithUnclaimedContentAchievement = `-- name: GetUsersWithUnclaimedContentAchievement :many
 SELECT DISTINCT u.id AS user_id
 FROM users u
-INNER JOIN achievements a ON a.id = $1::text
+INNER JOIN achievements a ON a.id = $1::char(28)
 INNER JOIN content_achievements ca ON ca.achievement_id = a.id
-WHERE a.project_id = $2::text
+WHERE a.project_id = $2::char(28)
   AND NOT EXISTS (
     SELECT 1 FROM user_achievements ua
     WHERE ua.user_id = u.id AND ua.achievement_id = a.id
@@ -2145,9 +2145,9 @@ func (q *Queries) GetUsersWithUnclaimedContentAchievement(ctx context.Context, a
 const GetUsersWithUnclaimedStreakAchievement = `-- name: GetUsersWithUnclaimedStreakAchievement :many
 SELECT DISTINCT u.id AS user_id
 FROM users u
-INNER JOIN achievements a ON a.id = $1::text
+INNER JOIN achievements a ON a.id = $1::char(28)
 INNER JOIN streak_achievements sa ON sa.achievement_id = a.id
-WHERE a.project_id = $2::text
+WHERE a.project_id = $2::char(28)
   AND NOT EXISTS (
     SELECT 1 FROM user_achievements ua
     WHERE ua.user_id = u.id AND ua.achievement_id = a.id
@@ -2197,8 +2197,8 @@ func (q *Queries) GetUsersWithUnclaimedStreakAchievement(ctx context.Context, ar
 const MarkAchievementCelebrated = `-- name: MarkAchievementCelebrated :exec
 UPDATE user_achievements
 SET celebrated_at = now()
-WHERE user_id = $1::text
-  AND achievement_id = $2::text
+WHERE user_id = $1::char(28)
+  AND achievement_id = $2::char(28)
   AND celebrated_at IS NULL
 `
 
@@ -2237,10 +2237,10 @@ func (q *Queries) MarkContentItemCompleted(ctx context.Context, arg MarkContentI
 
 const MarkContentItemCompletedForAllAchievements = `-- name: MarkContentItemCompletedForAllAchievements :exec
 INSERT INTO user_content_progress (user_id, achievement_id, external_content_id, completed_at)
-SELECT $1::text, ca.achievement_id, $2::text, now()
+SELECT $1::text, ca.achievement_id, $2::char(28), now()
 FROM content_achievements ca
 INNER JOIN content_achievement_items cai ON ca.achievement_id = cai.achievement_id
-WHERE cai.external_content_id = $2::text
+WHERE cai.external_content_id = $2::char(28)
 ON CONFLICT (user_id, achievement_id, external_content_id) DO NOTHING
 `
 
@@ -2280,10 +2280,10 @@ func (q *Queries) MarkStreakItemCompleted(ctx context.Context, arg MarkStreakIte
 
 const MarkStreakItemCompletedForAllAchievements = `-- name: MarkStreakItemCompletedForAllAchievements :exec
 INSERT INTO user_streak_progress (user_id, achievement_id, external_content_id, completed_at)
-SELECT $1::text, sa.achievement_id, $2::text, now()
+SELECT $1::text, sa.achievement_id, $2::char(28), now()
 FROM streak_achievements sa
 INNER JOIN streak_achievement_items sai ON sa.achievement_id = sai.achievement_id
-WHERE sai.external_content_id = $2::text
+WHERE sai.external_content_id = $2::char(28)
 ON CONFLICT (user_id, achievement_id, external_content_id) DO NOTHING
 `
 
@@ -2300,12 +2300,12 @@ func (q *Queries) MarkStreakItemCompletedForAllAchievements(ctx context.Context,
 
 const RevokeSuperTeamAchievementBatch = `-- name: RevokeSuperTeamAchievementBatch :exec
 DELETE FROM user_achievements
-WHERE achievement_id = $1::text
+WHERE achievement_id = $1::char(28)
   AND user_id IN (
     SELECT tm.user_id
     FROM teams t
     INNER JOIN team_members tm ON tm.team_id = t.id
-    WHERE t.super_team_id = $2::text
+    WHERE t.super_team_id = $2::char(28)
   )
 `
 
@@ -2322,11 +2322,11 @@ func (q *Queries) RevokeSuperTeamAchievementBatch(ctx context.Context, arg Revok
 
 const RevokeTeamAchievementBatch = `-- name: RevokeTeamAchievementBatch :exec
 DELETE FROM user_achievements
-WHERE achievement_id = $1::text
+WHERE achievement_id = $1::char(28)
   AND user_id IN (
     SELECT tm.user_id
     FROM team_members tm
-    WHERE tm.team_id = $2::text
+    WHERE tm.team_id = $2::char(28)
   )
 `
 
@@ -2343,8 +2343,8 @@ func (q *Queries) RevokeTeamAchievementBatch(ctx context.Context, arg RevokeTeam
 
 const RevokeUserAchievement = `-- name: RevokeUserAchievement :exec
 DELETE FROM user_achievements
-WHERE user_id = $1::text
-    AND achievement_id = $2::text
+WHERE user_id = $1::char(28)
+    AND achievement_id = $2::char(28)
 `
 
 type RevokeUserAchievementParams struct {
@@ -2359,9 +2359,9 @@ func (q *Queries) RevokeUserAchievement(ctx context.Context, arg RevokeUserAchie
 
 const UnmarkContentItemCompleted = `-- name: UnmarkContentItemCompleted :exec
 DELETE FROM user_content_progress
-WHERE user_id = $1::text
-  AND achievement_id = $2::text
-  AND external_content_id = $3::text
+WHERE user_id = $1::char(28)
+  AND achievement_id = $2::char(28)
+  AND external_content_id = $3::char(28)
 `
 
 type UnmarkContentItemCompletedParams struct {
@@ -2377,8 +2377,8 @@ func (q *Queries) UnmarkContentItemCompleted(ctx context.Context, arg UnmarkCont
 
 const UnmarkContentItemCompletedForAllAchievements = `-- name: UnmarkContentItemCompletedForAllAchievements :exec
 DELETE FROM user_content_progress
-WHERE user_id = $1::text
-  AND external_content_id = $2::text
+WHERE user_id = $1::char(28)
+  AND external_content_id = $2::char(28)
 `
 
 type UnmarkContentItemCompletedForAllAchievementsParams struct {
@@ -2394,9 +2394,9 @@ func (q *Queries) UnmarkContentItemCompletedForAllAchievements(ctx context.Conte
 
 const UnmarkStreakItemCompleted = `-- name: UnmarkStreakItemCompleted :exec
 DELETE FROM user_streak_progress
-WHERE user_id = $1::text
-  AND achievement_id = $2::text
-  AND external_content_id = $3::text
+WHERE user_id = $1::char(28)
+  AND achievement_id = $2::char(28)
+  AND external_content_id = $3::char(28)
 `
 
 type UnmarkStreakItemCompletedParams struct {
@@ -2412,8 +2412,8 @@ func (q *Queries) UnmarkStreakItemCompleted(ctx context.Context, arg UnmarkStrea
 
 const UnmarkStreakItemCompletedForAllAchievements = `-- name: UnmarkStreakItemCompletedForAllAchievements :exec
 DELETE FROM user_streak_progress
-WHERE user_id = $1::text
-  AND external_content_id = $2::text
+WHERE user_id = $1::char(28)
+  AND external_content_id = $2::char(28)
 `
 
 type UnmarkStreakItemCompletedForAllAchievementsParams struct {
@@ -2443,7 +2443,7 @@ SET
     hidden = CASE WHEN $10::bool IS NOT NULL THEN $10::bool ELSE hidden END,
     awardable_from = CASE WHEN $11::timestamptz IS NOT NULL THEN $11::timestamptz ELSE awardable_from END,
     updated_at = now()
-WHERE id = $12::text
+WHERE id = $12::char(28)
 RETURNING id, achievement_type, project_id, event_id, challenge_id, name, points, hidden, created_at, updated_at, description_pending, description_completed, image_pending, image_completed, notification_text, sort_order, awardable_from
 `
 
@@ -2504,7 +2504,7 @@ func (q *Queries) UpdateAchievement(ctx context.Context, arg UpdateAchievementPa
 const UpdateAchievementSortOrder = `-- name: UpdateAchievementSortOrder :exec
 UPDATE achievements
 SET sort_order = $1::int, updated_at = now()
-WHERE id = $2::text
+WHERE id = $2::char(28)
 `
 
 type UpdateAchievementSortOrderParams struct {

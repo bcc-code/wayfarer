@@ -14,9 +14,9 @@ import (
 const CheckScoreJournalEntryExists = `-- name: CheckScoreJournalEntryExists :one
 SELECT EXISTS(
     SELECT 1 FROM score_journal
-    WHERE user_id = $1::text
+    WHERE user_id = $1::char(28)
       AND source_type = $2::text
-      AND source_id = $3::text
+      AND source_id = $3::char(28)
 ) AS exists
 `
 
@@ -38,7 +38,7 @@ const CheckScoreJournalEntryExistsBySource = `-- name: CheckScoreJournalEntryExi
 SELECT EXISTS(
     SELECT 1 FROM score_journal
     WHERE source_type = $1::text
-      AND source_id = $2::text
+      AND source_id = $2::char(28)
 ) AS exists
 `
 
@@ -59,10 +59,10 @@ const CountScoreJournalFiltered = `-- name: CountScoreJournalFiltered :one
 SELECT COUNT(*)
 FROM score_journal
 WHERE
-    ($1::text = '' OR project_id = $1::text)
-    AND ($2::text = '' OR user_id = $2::text)
-    AND ($3::text = '' OR event_id = $3::text)
-    AND ($4::text = '' OR challenge_id = $4::text)
+    ($1::char(28) = '' OR project_id = $1::char(28))
+    AND ($2::char(28) = '' OR user_id = $2::char(28))
+    AND ($3::char(28) = '' OR event_id = $3::char(28))
+    AND ($4::char(28) = '' OR challenge_id = $4::char(28))
     AND ($5::text = '' OR source_type = $5::text)
 `
 
@@ -317,9 +317,9 @@ func (q *Queries) CreateTeamScoreAdjustmentBatch(ctx context.Context, arg Create
 
 const DeleteScoreJournalByAchievement = `-- name: DeleteScoreJournalByAchievement :exec
 DELETE FROM score_journal
-WHERE user_id = $1::text
+WHERE user_id = $1::char(28)
     AND source_type = 'ACHIEVEMENT'
-    AND source_id = $2::text
+    AND source_id = $2::char(28)
 `
 
 type DeleteScoreJournalByAchievementParams struct {
@@ -334,12 +334,53 @@ func (q *Queries) DeleteScoreJournalByAchievement(ctx context.Context, arg Delet
 
 const DeleteScoreJournalEntry = `-- name: DeleteScoreJournalEntry :exec
 DELETE FROM score_journal
-WHERE id = $1::text
+WHERE id = $1::char(28)
 `
 
 func (q *Queries) DeleteScoreJournalEntry(ctx context.Context, id string) error {
 	_, err := q.db.Exec(ctx, DeleteScoreJournalEntry, id)
 	return err
+}
+
+const GetBulkUserProjectScores = `-- name: GetBulkUserProjectScores :many
+SELECT user_id, project_id, COALESCE(SUM(points), 0)::bigint AS total_score
+FROM score_journal
+WHERE (user_id, project_id) IN (
+    SELECT unnest($1::char(28)[]), unnest($2::char(28)[])
+)
+GROUP BY user_id, project_id
+`
+
+type GetBulkUserProjectScoresParams struct {
+	UserIds    []string `json:"user_ids"`
+	ProjectIds []string `json:"project_ids"`
+}
+
+type GetBulkUserProjectScoresRow struct {
+	UserID     string `json:"user_id"`
+	ProjectID  string `json:"project_id"`
+	TotalScore int64  `json:"total_score"`
+}
+
+// Batch variant of GetUserProjectScore for the dataloader; pairs are matched by index
+func (q *Queries) GetBulkUserProjectScores(ctx context.Context, arg GetBulkUserProjectScoresParams) ([]*GetBulkUserProjectScoresRow, error) {
+	rows, err := q.db.Query(ctx, GetBulkUserProjectScores, arg.UserIds, arg.ProjectIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetBulkUserProjectScoresRow{}
+	for rows.Next() {
+		var i GetBulkUserProjectScoresRow
+		if err := rows.Scan(&i.UserID, &i.ProjectID, &i.TotalScore); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const GetScoreJournalByIDs = `-- name: GetScoreJournalByIDs :many
@@ -356,7 +397,7 @@ SELECT
     awarded_by,
     created_at
 FROM score_journal
-WHERE id = ANY($1::text[])
+WHERE id = ANY($1::char(28)[])
 ORDER BY created_at DESC
 `
 
@@ -407,13 +448,13 @@ SELECT
     created_at
 FROM score_journal
 WHERE
-    ($1::text = '' OR project_id = $1::text)
-    AND ($2::text = '' OR user_id = $2::text)
-    AND ($3::text = '' OR event_id = $3::text)
-    AND ($4::text = '' OR challenge_id = $4::text)
+    ($1::char(28) = '' OR project_id = $1::char(28))
+    AND ($2::char(28) = '' OR user_id = $2::char(28))
+    AND ($3::char(28) = '' OR event_id = $3::char(28))
+    AND ($4::char(28) = '' OR challenge_id = $4::char(28))
     AND ($5::text = '' OR source_type = $5::text)
-    AND ($6::text = '' OR id > $6::text)
-    AND ($7::text = '' OR id < $7::text)
+    AND ($6::char(28) = '' OR id > $6::char(28))
+    AND ($7::char(28) = '' OR id < $7::char(28))
 ORDER BY
     CASE WHEN $8::bool = true THEN created_at END DESC,
     CASE WHEN $8::bool = false OR $8::bool IS NULL THEN created_at END ASC
@@ -477,9 +518,9 @@ func (q *Queries) GetScoreJournalFiltered(ctx context.Context, arg GetScoreJourn
 const GetUserEventScore = `-- name: GetUserEventScore :one
 SELECT COALESCE(SUM(points), 0)::bigint AS total_score
 FROM score_journal
-WHERE user_id = $1::text
-    AND project_id = $2::text
-    AND event_id = $3::text
+WHERE user_id = $1::char(28)
+    AND project_id = $2::char(28)
+    AND event_id = $3::char(28)
 `
 
 type GetUserEventScoreParams struct {
@@ -498,8 +539,8 @@ func (q *Queries) GetUserEventScore(ctx context.Context, arg GetUserEventScorePa
 const GetUserProjectScore = `-- name: GetUserProjectScore :one
 SELECT COALESCE(SUM(points), 0)::bigint AS total_score
 FROM score_journal
-WHERE user_id = $1::text
-    AND project_id = $2::text
+WHERE user_id = $1::char(28)
+    AND project_id = $2::char(28)
 `
 
 type GetUserProjectScoreParams struct {

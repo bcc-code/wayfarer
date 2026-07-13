@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
@@ -17,6 +18,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+// maintenanceSyncConcurrency bounds how many users are synced against the Members API
+// at once. Each Members lookup can take up to its client timeout; processing them
+// sequentially would let a single sync request run for minutes. Bounded concurrency
+// keeps wall-clock low while staying well within the DB connection pool.
+const maintenanceSyncConcurrency = 10
 
 // MaintenanceHandler handles maintenance tasks like syncing user data
 type MaintenanceHandler struct {
@@ -76,90 +83,115 @@ func (h *MaintenanceHandler) SyncUserData(c *gin.Context) {
 		Errors:    []string{},
 	}
 
+	// Process users concurrently with a bounded pool so the Members API lookups
+	// don't run fully serial (a single stalled lookup would otherwise block the rest).
+	var (
+		mu  sync.Mutex
+		wg  sync.WaitGroup
+		sem = make(chan struct{}, maintenanceSyncConcurrency)
+	)
+
 	for _, user := range users {
-		// Get person ID from members_id
-		personID, err := strconv.Atoi(user.MembersID)
-		if err != nil {
-			slog.Warn("maintenance: invalid members_id", "user_id", user.ID, "members_id", user.MembersID)
-			response.Failed++
-			response.Errors = append(response.Errors, "invalid members_id for user "+user.ID)
-			continue
-		}
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(user *sqlc.GetUsersWithIncompleteDataRow) {
+			defer wg.Done()
+			defer func() { <-sem }()
 
-		// Fetch member data from Members API
-		member, err := h.MembersClient.Lookup(ctx, personID)
-		if err != nil {
-			slog.Warn("maintenance: failed to fetch member data",
-				"user_id", user.ID,
-				"person_id", personID,
-				"error", err,
-			)
-			response.Failed++
-			response.Errors = append(response.Errors, "failed to fetch member "+user.ID+": "+err.Error())
-			continue
-		}
-
-		// Determine updates
-		var newGender string
-		var newChurchID string
-
-		// Update gender if currently UNKNOWN and member has gender
-		if user.Gender == "UNKNOWN" && member.Gender != "" {
-			newGender = members.NormalizeGender(member.Gender)
-		}
-
-		// Update church if using default church and member has affiliation (skip if locked)
-		if user.ChurchLockedUntil.Valid && user.ChurchLockedUntil.Time.After(time.Now()) {
-			slog.Debug("maintenance: church update skipped due to lock",
-				"user_id", user.ID,
-				"locked_until", user.ChurchLockedUntil.Time,
-			)
-		} else if h.isDefaultChurch(ctx, user.ChurchID) {
-			church, err := h.ChurchResolver.FindChurchFromAffiliations(ctx, member.Affiliations)
+			// Get person ID from members_id
+			personID, err := strconv.Atoi(user.MembersID)
 			if err != nil {
-				slog.Debug("maintenance: no valid church from affiliations",
+				slog.Warn("maintenance: invalid members_id", "user_id", user.ID, "members_id", user.MembersID)
+				mu.Lock()
+				response.Failed++
+				response.Errors = append(response.Errors, "invalid members_id for user "+user.ID)
+				mu.Unlock()
+				return
+			}
+
+			// Fetch member data from Members API
+			member, err := h.MembersClient.Lookup(ctx, personID)
+			if err != nil {
+				slog.Warn("maintenance: failed to fetch member data",
+					"user_id", user.ID,
+					"person_id", personID,
+					"error", err,
+				)
+				mu.Lock()
+				response.Failed++
+				response.Errors = append(response.Errors, "failed to fetch member "+user.ID+": "+err.Error())
+				mu.Unlock()
+				return
+			}
+
+			// Determine updates
+			var newGender string
+			var newChurchID string
+
+			// Update gender if currently UNKNOWN and member has gender
+			if user.Gender == "UNKNOWN" && member.Gender != "" {
+				newGender = members.NormalizeGender(member.Gender)
+			}
+
+			// Update church if using default church and member has affiliation (skip if locked)
+			if user.ChurchLockedUntil.Valid && user.ChurchLockedUntil.Time.After(time.Now()) {
+				slog.Debug("maintenance: church update skipped due to lock",
+					"user_id", user.ID,
+					"locked_until", user.ChurchLockedUntil.Time,
+				)
+			} else if h.isDefaultChurch(ctx, user.ChurchID) {
+				church, err := h.ChurchResolver.FindChurchFromAffiliations(ctx, member.Affiliations)
+				if err != nil {
+					slog.Debug("maintenance: no valid church from affiliations",
+						"user_id", user.ID,
+						"error", err,
+					)
+				} else {
+					newChurchID = church.ID
+				}
+			}
+
+			// Skip if nothing to update
+			if newGender == "" && newChurchID == "" {
+				slog.Debug("maintenance: no updates needed for user", "user_id", user.ID)
+				return
+			}
+
+			// Update user
+			err = h.DB.Queries.UpdateUserGenderAndChurch(ctx, sqlc.UpdateUserGenderAndChurchParams{
+				ID:       user.ID,
+				Gender:   newGender,
+				ChurchID: newChurchID,
+			})
+			if err != nil {
+				slog.Error("maintenance: failed to update user",
 					"user_id", user.ID,
 					"error", err,
 				)
-			} else {
-				newChurchID = church.ID
+				mu.Lock()
+				response.Failed++
+				response.Errors = append(response.Errors, "failed to update user "+user.ID+": "+err.Error())
+				mu.Unlock()
+				return
 			}
-		}
 
-		// Skip if nothing to update
-		if newGender == "" && newChurchID == "" {
-			slog.Debug("maintenance: no updates needed for user", "user_id", user.ID)
-			continue
-		}
+			// Invalidate all user-related cache entries
+			if h.Cache != nil {
+				h.Cache.InvalidateUser(user.ID)
+			}
 
-		// Update user
-		err = h.DB.Queries.UpdateUserGenderAndChurch(ctx, sqlc.UpdateUserGenderAndChurchParams{
-			ID:       user.ID,
-			Gender:   newGender,
-			ChurchID: newChurchID,
-		})
-		if err != nil {
-			slog.Error("maintenance: failed to update user",
+			slog.Info("maintenance: updated user data",
 				"user_id", user.ID,
-				"error", err,
+				"new_gender", newGender,
+				"new_church_id", newChurchID,
 			)
-			response.Failed++
-			response.Errors = append(response.Errors, "failed to update user "+user.ID+": "+err.Error())
-			continue
-		}
-
-		// Invalidate all user-related cache entries
-		if h.Cache != nil {
-			h.Cache.InvalidateUser(user.ID)
-		}
-
-		slog.Info("maintenance: updated user data",
-			"user_id", user.ID,
-			"new_gender", newGender,
-			"new_church_id", newChurchID,
-		)
-		response.Updated++
+			mu.Lock()
+			response.Updated++
+			mu.Unlock()
+		}(user)
 	}
+
+	wg.Wait()
 
 	slog.Info("maintenance: user data sync complete",
 		"processed", response.Processed,

@@ -52,7 +52,7 @@ FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
 LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
-WHERE a.id = ANY(@ids::text[]);
+WHERE a.id = ANY(@ids::char(28)[]);
 
 -- name: GetAchievementsByProjectIDs :many
 SELECT
@@ -83,7 +83,7 @@ FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
 LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
-WHERE a.project_id = ANY(@project_ids::text[])
+WHERE a.project_id = ANY(@project_ids::char(28)[])
     AND a.hidden = false
 ORDER BY a.project_id, a.sort_order, a.created_at DESC;
 
@@ -117,7 +117,7 @@ FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
 LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
-WHERE a.project_id = @project_id::text
+WHERE a.project_id = @project_id::char(28)
 ORDER BY a.sort_order, a.created_at DESC;
 
 -- name: GetAchievementsFilteredCursor :many
@@ -176,11 +176,11 @@ LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
 LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
 WHERE
-    (@ids::text[] IS NULL OR a.id = ANY(@ids::text[]))
-    AND (@projectid::text = '' OR a.project_id = @projectid::text)
-    AND (@eventid::text = '' OR a.event_id = @eventid::text)
-    AND (@aftercursor::text = '' OR (a.sort_order, a.id) > (SELECT sort_order, id FROM achievements WHERE id = @aftercursor::text))
-    AND (@beforecursor::text = '' OR (a.sort_order, a.id) < (SELECT sort_order, id FROM achievements WHERE id = @beforecursor::text))
+    (@ids::char(28)[] IS NULL OR a.id = ANY(@ids::char(28)[]))
+    AND (@projectid::char(28) = '' OR a.project_id = @projectid::char(28))
+    AND (@eventid::char(28) = '' OR a.event_id = @eventid::char(28))
+    AND (@aftercursor::char(28) = '' OR (a.sort_order, a.id) > (SELECT sort_order, id FROM achievements WHERE id = @aftercursor::char(28)))
+    AND (@beforecursor::char(28) = '' OR (a.sort_order, a.id) < (SELECT sort_order, id FROM achievements WHERE id = @beforecursor::char(28)))
 ORDER BY
     CASE WHEN @isbackward::bool = true THEN a.sort_order END DESC,
     CASE WHEN @isbackward::bool = false OR @isbackward::bool IS NULL THEN a.sort_order END ASC,
@@ -192,14 +192,14 @@ LIMIT CASE WHEN @querylimit::int IS NULL THEN NULL ELSE @querylimit::int END;
 SELECT COUNT(DISTINCT a.id)
 FROM achievements a
 WHERE
-    (@ids::text[] IS NULL OR a.id = ANY(@ids::text[]))
-    AND (@projectid::text = '' OR a.project_id = @projectid::text)
-    AND (@eventid::text = '' OR a.event_id = @eventid::text);
+    (@ids::char(28)[] IS NULL OR a.id = ANY(@ids::char(28)[]))
+    AND (@projectid::char(28) = '' OR a.project_id = @projectid::char(28))
+    AND (@eventid::char(28) = '' OR a.event_id = @eventid::char(28));
 
 -- name: GetContentItemsByAchievementIDs :many
 SELECT id, achievement_id, external_content_id, sort_order
 FROM content_achievement_items
-WHERE achievement_id = ANY(@achievement_ids::text[])
+WHERE achievement_id = ANY(@achievement_ids::char(28)[])
 ORDER BY achievement_id, sort_order;
 
 -- name: GetAchievementCompletionStatus :many
@@ -210,24 +210,24 @@ SELECT
 FROM content_achievement_items cai
 LEFT JOIN user_content_progress ucp
     ON ucp.achievement_id = cai.achievement_id
-    AND ucp.user_id = @user_id::text
+    AND ucp.user_id = @user_id::char(28)
     AND ucp.external_content_id = cai.external_content_id
-WHERE cai.achievement_id = ANY(@achievement_ids::text[])
+WHERE cai.achievement_id = ANY(@achievement_ids::char(28)[])
 GROUP BY cai.achievement_id;
 
 -- name: GetContentItemCounts :many
 -- Get content item counts per achievement (for caching)
 SELECT achievement_id, COUNT(*)::int AS item_count
 FROM content_achievement_items
-WHERE achievement_id = ANY(@achievement_ids::text[])
+WHERE achievement_id = ANY(@achievement_ids::char(28)[])
 GROUP BY achievement_id;
 
 -- name: GetUserProgressCounts :many
 -- Get user progress counts per achievement
 SELECT achievement_id, COUNT(*)::int AS progress_count
 FROM user_content_progress
-WHERE user_id = @user_id::text
-  AND achievement_id = ANY(@achievement_ids::text[])
+WHERE user_id = @user_id::char(28)
+  AND achievement_id = ANY(@achievement_ids::char(28)[])
 GROUP BY achievement_id;
 
 -- ==================== Create Operations ====================
@@ -316,27 +316,27 @@ SET
     hidden = CASE WHEN sqlc.narg('hidden')::bool IS NOT NULL THEN sqlc.narg('hidden')::bool ELSE hidden END,
     awardable_from = CASE WHEN sqlc.narg('awardable_from')::timestamptz IS NOT NULL THEN sqlc.narg('awardable_from')::timestamptz ELSE awardable_from END,
     updated_at = now()
-WHERE id = @id::text
+WHERE id = @id::char(28)
 RETURNING *;
 
 -- name: DeleteContentAchievementItems :exec
 DELETE FROM content_achievement_items
-WHERE achievement_id = @achievement_id::text;
+WHERE achievement_id = @achievement_id::char(28);
 
 -- name: DeleteStreakAchievementItems :exec
 DELETE FROM streak_achievement_items
-WHERE achievement_id = @achievement_id::text;
+WHERE achievement_id = @achievement_id::char(28);
 
 -- name: UpdateAchievementSortOrder :exec
 UPDATE achievements
 SET sort_order = @sort_order::int, updated_at = now()
-WHERE id = @id::text;
+WHERE id = @id::char(28);
 
 -- ==================== Delete Operations ====================
 
 -- name: DeleteAchievement :exec
 DELETE FROM achievements
-WHERE id = @id::text;
+WHERE id = @id::char(28);
 
 -- ==================== Award/Revoke Operations ====================
 
@@ -354,15 +354,15 @@ ON CONFLICT (user_id, achievement_id) DO NOTHING;
 -- Check if a user already has an achievement
 SELECT EXISTS(
     SELECT 1 FROM user_achievements
-    WHERE user_id = @user_id::text AND achievement_id = @achievement_id::text
+    WHERE user_id = @user_id::char(28) AND achievement_id = @achievement_id::char(28)
 ) AS has_achievement;
 
 -- name: GetUserAwardedAchievementIDs :many
 -- Get which achievements from a list the user already has
 SELECT achievement_id
 FROM user_achievements
-WHERE user_id = @user_id::text
-  AND achievement_id = ANY(@achievement_ids::text[]);
+WHERE user_id = @user_id::char(28)
+  AND achievement_id = ANY(@achievement_ids::char(28)[]);
 
 -- name: AwardTeamAchievementBatch :exec
 -- Award achievement to all members of a team in a single query
@@ -372,7 +372,7 @@ SELECT
     @achievement_id::text,
     COALESCE(@achieved_at::timestamptz, now())
 FROM team_members tm
-WHERE tm.team_id = @team_id::text
+WHERE tm.team_id = @team_id::char(28)
 ON CONFLICT (user_id, achievement_id) DO NOTHING;
 
 -- name: AwardUserAchievementsBatch :many
@@ -394,41 +394,41 @@ SELECT
     COALESCE(@achieved_at::timestamptz, now())
 FROM teams t
 INNER JOIN team_members tm ON tm.team_id = t.id
-WHERE t.super_team_id = @super_team_id::text
+WHERE t.super_team_id = @super_team_id::char(28)
 ON CONFLICT (user_id, achievement_id) DO NOTHING;
 
 -- name: RevokeUserAchievement :exec
 DELETE FROM user_achievements
-WHERE user_id = @user_id::text
-    AND achievement_id = @achievement_id::text;
+WHERE user_id = @user_id::char(28)
+    AND achievement_id = @achievement_id::char(28);
 
 -- name: RevokeTeamAchievementBatch :exec
 -- Revoke achievement from all members of a team in a single query
 DELETE FROM user_achievements
-WHERE achievement_id = @achievement_id::text
+WHERE achievement_id = @achievement_id::char(28)
   AND user_id IN (
     SELECT tm.user_id
     FROM team_members tm
-    WHERE tm.team_id = @team_id::text
+    WHERE tm.team_id = @team_id::char(28)
   );
 
 -- name: RevokeSuperTeamAchievementBatch :exec
 -- Revoke achievement from all members of a superteam in a single query
 DELETE FROM user_achievements
-WHERE achievement_id = @achievement_id::text
+WHERE achievement_id = @achievement_id::char(28)
   AND user_id IN (
     SELECT tm.user_id
     FROM teams t
     INNER JOIN team_members tm ON tm.team_id = t.id
-    WHERE t.super_team_id = @super_team_id::text
+    WHERE t.super_team_id = @super_team_id::char(28)
   );
 
 -- name: GetUserAchievementTimestamps :many
 -- Get achieved_at timestamps for a user's achievements (for achievedAt field resolution)
 SELECT achievement_id, achieved_at
 FROM user_achievements
-WHERE user_id = @userid::text
-  AND achievement_id = ANY(@achievement_ids::text[]);
+WHERE user_id = @userid::char(28)
+  AND achievement_id = ANY(@achievement_ids::char(28)[]);
 
 -- name: GetBulkUserAchievementTimestamps :many
 SELECT user_id, achievement_id, achieved_at
@@ -447,8 +447,8 @@ WHERE (user_id, achievement_id) IN (
 -- name: MarkAchievementCelebrated :exec
 UPDATE user_achievements
 SET celebrated_at = now()
-WHERE user_id = @user_id::text
-  AND achievement_id = @achievement_id::text
+WHERE user_id = @user_id::char(28)
+  AND achievement_id = @achievement_id::char(28)
   AND celebrated_at IS NULL;
 
 -- ==================== Content Progress Operations ====================
@@ -463,8 +463,8 @@ WHERE (user_id, achievement_id) IN (
 -- name: GetUserContentProgress :many
 SELECT user_id, achievement_id, external_content_id, completed_at
 FROM user_content_progress
-WHERE user_id = @user_id::text
-  AND achievement_id = ANY(@achievement_ids::text[]);
+WHERE user_id = @user_id::char(28)
+  AND achievement_id = ANY(@achievement_ids::char(28)[]);
 
 -- name: MarkContentItemCompleted :exec
 INSERT INTO user_content_progress (user_id, achievement_id, external_content_id, completed_at)
@@ -473,9 +473,9 @@ ON CONFLICT (user_id, achievement_id, external_content_id) DO NOTHING;
 
 -- name: UnmarkContentItemCompleted :exec
 DELETE FROM user_content_progress
-WHERE user_id = @user_id::text
-  AND achievement_id = @achievement_id::text
-  AND external_content_id = @external_content_id::text;
+WHERE user_id = @user_id::char(28)
+  AND achievement_id = @achievement_id::char(28)
+  AND external_content_id = @external_content_id::char(28);
 
 -- name: GetPublishedContentAchievementsByExternalContent :many
 -- Get all content achievements that contain a specific external content
@@ -511,22 +511,22 @@ SELECT DISTINCT
 FROM achievements a
 INNER JOIN content_achievements ca ON a.id = ca.achievement_id
 INNER JOIN content_achievement_items cai ON ca.achievement_id = cai.achievement_id
-WHERE cai.external_content_id = @external_content_id::text;
+WHERE cai.external_content_id = @external_content_id::char(28);
 
 -- name: MarkContentItemCompletedForAllAchievements :exec
 -- Mark content completed for a user across all achievements containing this content
 INSERT INTO user_content_progress (user_id, achievement_id, external_content_id, completed_at)
-SELECT @user_id::text, ca.achievement_id, @external_content_id::text, now()
+SELECT @user_id::text, ca.achievement_id, @external_content_id::char(28), now()
 FROM content_achievements ca
 INNER JOIN content_achievement_items cai ON ca.achievement_id = cai.achievement_id
-WHERE cai.external_content_id = @external_content_id::text
+WHERE cai.external_content_id = @external_content_id::char(28)
 ON CONFLICT (user_id, achievement_id, external_content_id) DO NOTHING;
 
 -- name: UnmarkContentItemCompletedForAllAchievements :exec
 -- Unmark content completed for a user across all achievements containing this content
 DELETE FROM user_content_progress
-WHERE user_id = @user_id::text
-  AND external_content_id = @external_content_id::text;
+WHERE user_id = @user_id::char(28)
+  AND external_content_id = @external_content_id::char(28);
 
 -- name: GetContentItemsWithExternalContent :many
 -- Get content items with external content joined
@@ -543,15 +543,15 @@ SELECT
     ec.source AS external_source
 FROM content_achievement_items cai
 INNER JOIN external_content ec ON cai.external_content_id = ec.id
-WHERE cai.achievement_id = ANY(@achievementids::text[])
+WHERE cai.achievement_id = ANY(@achievementids::char(28)[])
 ORDER BY cai.achievement_id, cai.sort_order;
 
 -- name: CheckContentItemInAchievement :one
 -- Check if a content item exists in a specific achievement
 SELECT EXISTS(
     SELECT 1 FROM content_achievement_items
-    WHERE achievement_id = @achievement_id::text
-      AND external_content_id = @external_content_id::text
+    WHERE achievement_id = @achievement_id::char(28)
+      AND external_content_id = @external_content_id::char(28)
 ) AS exists;
 
 -- name: GetAchievementByID :one
@@ -575,7 +575,7 @@ SELECT
     a.created_at,
     a.updated_at
 FROM achievements a
-WHERE a.id = @id::text;
+WHERE a.id = @id::char(28);
 
 -- name: GetContentAchievementForAward :one
 -- Get content achievement data for awarding (same fields as GetPublishedContentAchievementsByExternalContent)
@@ -610,15 +610,15 @@ SELECT
     ) AS content_items
 FROM achievements a
 INNER JOIN content_achievements ca ON ca.achievement_id = a.id
-WHERE a.id = @achievement_id::text AND a.project_id = @project_id::text;
+WHERE a.id = @achievement_id::char(28) AND a.project_id = @project_id::char(28);
 
 -- name: GetUsersWithUnclaimedContentAchievement :many
 -- Find users who completed all items for a content achievement but weren't awarded
 SELECT DISTINCT u.id AS user_id
 FROM users u
-INNER JOIN achievements a ON a.id = @achievement_id::text
+INNER JOIN achievements a ON a.id = @achievement_id::char(28)
 INNER JOIN content_achievements ca ON ca.achievement_id = a.id
-WHERE a.project_id = @project_id::text
+WHERE a.project_id = @project_id::char(28)
   AND NOT EXISTS (
     SELECT 1 FROM user_achievements ua
     WHERE ua.user_id = u.id AND ua.achievement_id = a.id
@@ -643,7 +643,7 @@ WHERE a.project_id = @project_id::text
 -- name: GetStreakItemsByAchievementIDs :many
 SELECT id, achievement_id, external_content_id, sort_order
 FROM streak_achievement_items
-WHERE achievement_id = ANY(@achievement_ids::text[])
+WHERE achievement_id = ANY(@achievement_ids::char(28)[])
 ORDER BY achievement_id, sort_order;
 
 -- name: GetStreakAchievementCompletionStatus :many
@@ -654,24 +654,24 @@ SELECT
 FROM streak_achievement_items sai
 LEFT JOIN user_streak_progress usp
     ON usp.achievement_id = sai.achievement_id
-    AND usp.user_id = @user_id::text
+    AND usp.user_id = @user_id::char(28)
     AND usp.external_content_id = sai.external_content_id
-WHERE sai.achievement_id = ANY(@achievement_ids::text[])
+WHERE sai.achievement_id = ANY(@achievement_ids::char(28)[])
 GROUP BY sai.achievement_id;
 
 -- name: GetStreakItemCounts :many
 -- Get streak item counts per achievement (for caching)
 SELECT achievement_id, COUNT(*)::int AS item_count
 FROM streak_achievement_items
-WHERE achievement_id = ANY(@achievement_ids::text[])
+WHERE achievement_id = ANY(@achievement_ids::char(28)[])
 GROUP BY achievement_id;
 
 -- name: GetUserStreakProgressCounts :many
 -- Get user progress counts per streak achievement
 SELECT achievement_id, COUNT(*)::int AS progress_count
 FROM user_streak_progress
-WHERE user_id = @user_id::text
-  AND achievement_id = ANY(@achievement_ids::text[])
+WHERE user_id = @user_id::char(28)
+  AND achievement_id = ANY(@achievement_ids::char(28)[])
 GROUP BY achievement_id;
 
 -- name: GetBulkUserStreakProgress :many
@@ -684,8 +684,8 @@ WHERE (user_id, achievement_id) IN (
 -- name: GetUserStreakProgress :many
 SELECT user_id, achievement_id, external_content_id, completed_at
 FROM user_streak_progress
-WHERE user_id = @user_id::text
-  AND achievement_id = ANY(@achievement_ids::text[]);
+WHERE user_id = @user_id::char(28)
+  AND achievement_id = ANY(@achievement_ids::char(28)[]);
 
 -- name: MarkStreakItemCompleted :exec
 INSERT INTO user_streak_progress (user_id, achievement_id, external_content_id, completed_at)
@@ -694,9 +694,9 @@ ON CONFLICT (user_id, achievement_id, external_content_id) DO NOTHING;
 
 -- name: UnmarkStreakItemCompleted :exec
 DELETE FROM user_streak_progress
-WHERE user_id = @user_id::text
-  AND achievement_id = @achievement_id::text
-  AND external_content_id = @external_content_id::text;
+WHERE user_id = @user_id::char(28)
+  AND achievement_id = @achievement_id::char(28)
+  AND external_content_id = @external_content_id::char(28);
 
 -- name: GetPublishedStreakAchievementsByExternalContent :many
 -- Get all streak achievements that contain a specific external content
@@ -732,22 +732,22 @@ SELECT DISTINCT
 FROM achievements a
 INNER JOIN streak_achievements sa ON a.id = sa.achievement_id
 INNER JOIN streak_achievement_items sai ON sa.achievement_id = sai.achievement_id
-WHERE sai.external_content_id = @external_content_id::text;
+WHERE sai.external_content_id = @external_content_id::char(28);
 
 -- name: MarkStreakItemCompletedForAllAchievements :exec
 -- Mark content completed for a user across all streak achievements containing this content
 INSERT INTO user_streak_progress (user_id, achievement_id, external_content_id, completed_at)
-SELECT @user_id::text, sa.achievement_id, @external_content_id::text, now()
+SELECT @user_id::text, sa.achievement_id, @external_content_id::char(28), now()
 FROM streak_achievements sa
 INNER JOIN streak_achievement_items sai ON sa.achievement_id = sai.achievement_id
-WHERE sai.external_content_id = @external_content_id::text
+WHERE sai.external_content_id = @external_content_id::char(28)
 ON CONFLICT (user_id, achievement_id, external_content_id) DO NOTHING;
 
 -- name: UnmarkStreakItemCompletedForAllAchievements :exec
 -- Unmark content completed for a user across all streak achievements containing this content
 DELETE FROM user_streak_progress
-WHERE user_id = @user_id::text
-  AND external_content_id = @external_content_id::text;
+WHERE user_id = @user_id::char(28)
+  AND external_content_id = @external_content_id::char(28);
 
 -- name: GetStreakAchievementForAward :one
 -- Get streak achievement data for awarding
@@ -782,15 +782,15 @@ SELECT
     ) AS streak_items
 FROM achievements a
 INNER JOIN streak_achievements sa ON sa.achievement_id = a.id
-WHERE a.id = @achievement_id::text AND a.project_id = @project_id::text;
+WHERE a.id = @achievement_id::char(28) AND a.project_id = @project_id::char(28);
 
 -- name: GetUsersWithUnclaimedStreakAchievement :many
 -- Find users who completed all items for a streak achievement but weren't awarded
 SELECT DISTINCT u.id AS user_id
 FROM users u
-INNER JOIN achievements a ON a.id = @achievement_id::text
+INNER JOIN achievements a ON a.id = @achievement_id::char(28)
 INNER JOIN streak_achievements sa ON sa.achievement_id = a.id
-WHERE a.project_id = @project_id::text
+WHERE a.project_id = @project_id::char(28)
   AND NOT EXISTS (
     SELECT 1 FROM user_achievements ua
     WHERE ua.user_id = u.id AND ua.achievement_id = a.id
@@ -815,7 +815,7 @@ WHERE a.project_id = @project_id::text
 SELECT cai.id, cai.achievement_id, cai.external_content_id, cai.sort_order, ec.complete_by
 FROM content_achievement_items cai
 INNER JOIN external_content ec ON cai.external_content_id = ec.id
-WHERE cai.achievement_id = @achievement_id::text
+WHERE cai.achievement_id = @achievement_id::char(28)
 ORDER BY cai.sort_order;
 
 -- name: GetStreakItemsWithDeadlines :many
@@ -823,5 +823,5 @@ ORDER BY cai.sort_order;
 SELECT sai.id, sai.achievement_id, sai.external_content_id, sai.sort_order, ec.complete_by
 FROM streak_achievement_items sai
 INNER JOIN external_content ec ON sai.external_content_id = ec.id
-WHERE sai.achievement_id = @achievement_id::text
+WHERE sai.achievement_id = @achievement_id::char(28)
 ORDER BY sai.sort_order;

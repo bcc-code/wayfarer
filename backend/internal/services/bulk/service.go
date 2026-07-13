@@ -971,6 +971,10 @@ func (s *Service) GrantQuizSessionAccess(ctx context.Context, params pubsub.Bulk
 		}
 	}
 
+	if successCount > 0 {
+		s.Cache.InvalidateQuizSessionAccess()
+	}
+
 	// 3. Firebase notification
 	if s.FirebaseService != nil && successCount > 0 {
 		go s.FirebaseService.NotifyProjectQuizSessions(context.Background(), params.ProjectID)
