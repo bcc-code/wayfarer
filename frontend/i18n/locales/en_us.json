@@ -11,7 +11,8 @@
     "standings": "No leaderboard yet",
     "unit": "No leaderboard for your unit yet",
     "challenges": "No challenges yet",
-    "pointHistory": "No points yet"
+    "pointHistory": "No points yet",
+    "rules": "No rules added yet"
   },
   "auth": {
     "loginButton": "Log in",

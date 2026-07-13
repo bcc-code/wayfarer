@@ -11,7 +11,8 @@
     "standings": "Ingen toppliste ennå",
     "unit": "Ingen toppliste for din unit ennå",
     "challenges": "Ingen utfordringer ennå",
-    "pointHistory": "Ingen poeng ennå"
+    "pointHistory": "Ingen poeng ennå",
+    "rules": "Ingen regler lagt til ennå"
   },
   "auth": {
     "loginButton": "Logg inn",

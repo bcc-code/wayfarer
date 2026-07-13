@@ -40,6 +40,7 @@ const isInitialLoading = computed(() => fetching.value && !data.value)
         class="p-medium"
         v-html="data.myCurrentProject.rules.html"
       />
+      <EmptyState v-else :title="$t('emptyStates.rules')" />
     </template>
   </DesignDrawer>
 </template>

@@ -83,11 +83,11 @@ onMounted(() => {
             {{ $t('pointHistory.pointHistoryButton') }}
           </DesignButton>
         </ProfilePointHistory>
-        <ProfileGetPoints>
+        <ProjectRules>
           <DesignButton variant="secondary">
             {{ $t('standings.rules') }}
           </DesignButton>
-        </ProfileGetPoints>
+        </ProjectRules>
       </div>
     </div>
     <slot />
