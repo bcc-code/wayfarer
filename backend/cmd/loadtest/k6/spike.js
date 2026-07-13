@@ -15,8 +15,8 @@ export const options = {
             executor: 'ramping-vus',
             startVUs: 0,
             stages: [
-                { duration: '5s', target: parseInt(__ENV.SPIKE_PEAK) || 500 },
-                { duration: __ENV.SPIKE_HOLD || '2m', target: parseInt(__ENV.SPIKE_PEAK) || 500 },
+                { duration: '5s', target: 5000 },
+                { duration: __ENV.SPIKE_HOLD || '2m', target: 5000 },
                 { duration: '5s', target: 0 },
             ],
         },

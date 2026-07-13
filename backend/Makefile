@@ -103,7 +103,7 @@ dev: ## Run development server with Neon branch
 update-db-url: ## Update DATABASE_URL in .env with current Neon branch
 	@echo "Getting connection string for current branch..."
 	@CONNECTION=$$(./scripts/neon-branch.sh) && \
-		sed -i "s|^DATABASE_URL=.*|DATABASE_URL=$$CONNECTION|" .env && \
+		CONNECTION="$$CONNECTION" perl -pi -e 's{^DATABASE_URL=.*}{DATABASE_URL="$$ENV{CONNECTION}"}' .env && \
 		echo "Updated DATABASE_URL in .env"
 
 debug: ## Run debug TUI tool
@@ -149,11 +149,13 @@ jaeger-ps: ## Show Jaeger container status
 
 loadtest-gen: ## Generate JWT tokens for load testing (run after seed-large)
 	@echo "Generating load test tokens..."
-	@go run ./cmd/loadtest/tokengen -limit 1000 -output ./cmd/loadtest/config.json
+	@export DATABASE_URL=$$(./scripts/neon-branch.sh) && \
+		go run ./cmd/loadtest/tokengen -limit 1000 -output ./cmd/loadtest/config.json
 
 loadtest-gen-all: ## Generate tokens for all seeded users (up to 10k)
 	@echo "Generating load test tokens for all users..."
-	@go run ./cmd/loadtest/tokengen -limit 10000 -output ./cmd/loadtest/config.json
+	@export DATABASE_URL=$$(./scripts/neon-branch.sh) && \
+		go run ./cmd/loadtest/tokengen -limit 10000 -output ./cmd/loadtest/config.json
 
 loadtest: loadtest-gen ## Run default load test (50 VUs, 5 minutes)
 	@echo "Running load test..."
@@ -174,6 +176,14 @@ loadtest-spike: loadtest-gen ## Run spike test only (500 VUs)
 loadtest-leaderboard: loadtest-gen ## Run leaderboard stress test only (100 RPS)
 	@echo "Running leaderboard stress test..."
 	@k6 run --env LEADERBOARD_RPS=100 --env LEADERBOARD_DURATION=5m ./cmd/loadtest/k6/leaderboard.js
+
+loadtest-challenges: loadtest-gen ## Run challenges page load test (50 VUs, 5 minutes)
+	@echo "Running challenges page load test..."
+	@k6 run ./cmd/loadtest/k6/challenges-scenario.js
+
+loadtest-challenges-quick: loadtest-gen ## Run quick challenges page load test (10 VUs, 1 minute)
+	@echo "Running quick challenges page load test..."
+	@k6 run --env CHALLENGES_VUS=10 --env DURATION=1m ./cmd/loadtest/k6/challenges-scenario.js
 
 loadtest-quiz: loadtest-gen ## Run quiz load test (20 VUs, 5 minutes)
 	@echo "Running quiz load test..."

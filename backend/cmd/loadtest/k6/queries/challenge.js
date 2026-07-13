@@ -1,16 +1,26 @@
 import { graphqlRequest, checkGraphQLResponse } from '../lib/graphql.js';
 
+// Mirrors frontend/app/graphql/queries/pages/challenge.gql with the
+// QuizQuestionUserFields fragment inlined.
 const CHALLENGE_PAGE_QUERY = `
 query ChallengePage($challengeId: ID!) {
+  myCurrentProject {
+    myPoints
+  }
   challenge(id: $challengeId) {
     __typename
     id
     name
     description
+    requiresTeamMembership
+    requiresSuperTeamMembership
     userEnrolledAt
     userCompletedAt
     ... on SimpleChallenge {
       allowSelfCompletion
+    }
+    ... on PluginChallenge {
+      pluginChallengeId
     }
     ... on ExternalChallenge {
       url
@@ -25,11 +35,14 @@ query ChallengePage($challengeId: ID!) {
         revealCorrectAnswers
         allowRetakes
         completionPoints
-        publishedAt
         endTime
         userCanStart
         userActiveSubmission {
           id
+        }
+        userActiveSession {
+          id
+          state
         }
         userSubmissions {
           id
@@ -40,17 +53,18 @@ query ChallengePage($challengeId: ID!) {
           score
           maxScore
           scorePercentage
+          pointsAwarded
           orderedQuestions {
             __typename
             id
             questionText
             questionOrder
             timeoutSeconds
-            ... on NumberQuestion {
-              minValue
-              maxValue
-              stepValue
-            }
+            bettingEnabled
+            bettingMinAbsolute
+            bettingMaxAbsolute
+            bettingMinPercentage
+            bettingMaxPercentage
             ... on PredefinedQuestion {
               allowMultipleSelection
               predefinedAnswers {
@@ -58,6 +72,22 @@ query ChallengePage($challengeId: ID!) {
                 answerText
                 answerOrder
                 isCorrect
+                translationStatus {
+                  languageCode
+                  fields
+                }
+              }
+            }
+            ... on NumberQuestion {
+              minValue
+              maxValue
+              stepValue
+            }
+            ... on OrderingQuestion {
+              orderingItems {
+                id
+                itemText
+                correctOrder
               }
             }
           }
@@ -66,6 +96,11 @@ query ChallengePage($challengeId: ID!) {
             id
             answeredAt
             timeSpentSeconds
+            betAmount
+            pointsEarned
+            question {
+              id
+            }
             ... on FreeTextResponse {
               textResponse
             }
@@ -83,6 +118,10 @@ query ChallengePage($challengeId: ID!) {
                 answerOrder
                 isCorrect
               }
+            }
+            ... on OrderingResponse {
+              isCorrect
+              submittedOrder
             }
           }
         }
