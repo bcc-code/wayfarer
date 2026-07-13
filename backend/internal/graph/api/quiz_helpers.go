@@ -737,3 +737,22 @@ func convertQuizSessionToModel(row *sqlc.QuizSession) *model.QuizSession {
 		CreatedAt:   scalars.DateTime{Time: row.CreatedAt.Time},
 	}
 }
+
+// quizQuestionTypeString maps a question model to its question_type column
+// value (the concrete model type encodes the type).
+func quizQuestionTypeString(q model.QuizQuestion) string {
+	switch q.(type) {
+	case *model.PredefinedQuestion:
+		return "PREDEFINED"
+	case *model.FreeTextQuestion:
+		return "FREE_TEXT"
+	case *model.NumberQuestion:
+		return "NUMBER"
+	case *model.JSONQuestion:
+		return "JSON"
+	case *model.OrderingQuestion:
+		return "ORDERING"
+	default:
+		return ""
+	}
+}

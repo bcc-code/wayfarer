@@ -61,3 +61,10 @@ FROM user_challenge_enrollments uce
 JOIN challenges c ON c.id = uce.challenge_id
 WHERE uce.user_id = @userid::char(28)
   AND c.project_id = @projectid::char(28);
+
+-- name: GetUsersEnrolledChallengeIDsInProject :many
+SELECT uce.user_id, uce.challenge_id
+FROM user_challenge_enrollments uce
+JOIN challenges c ON c.id = uce.challenge_id
+WHERE uce.user_id = ANY(@userids::char(28)[])
+  AND c.project_id = @projectid::char(28);

@@ -2,64 +2,51 @@ package api
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/services"
-	"github.com/jackc/pgx/v5"
 )
 
 // getUserTeamInProject returns the user's team in a project, or nil if the user
-// is not in any team. The user→team membership is cached per (user, project),
-// including the negative result; team details come from TeamByIDLoader so team
-// edits stay visible without touching the membership cache. Membership changes
-// invalidate via InvalidateUser (all team mutations call it for affected users).
+// is not in any team. The user→team membership is batched per project through
+// UserTeamIDInProjectLoader and cached per (user, project), including the
+// negative result; team details come from TeamByIDLoader so team edits stay
+// visible without touching the membership cache. Membership changes invalidate
+// via InvalidateUser (all team mutations call it for affected users).
 func (r *Resolver) getUserTeamInProject(ctx context.Context, userID, projectID string) (*model.Team, error) {
-	cacheKey := cache.UserTeamInProjectKey(userID, projectID)
-	if cached, ok := r.Cache.Get(cacheKey); ok {
-		if teamID, ok := cached.(string); ok {
-			if teamID == "" {
-				return nil, nil // user not in any team in this project
-			}
-			team, err := r.Loaders.TeamByIDLoader.Load(ctx, teamID)()
-			if err == nil && team != nil {
-				return team, nil
-			}
-			// Cached team ID no longer resolves; fall through to the DB
-		}
-	}
-
-	row, err := r.DB.Queries.GetUserTeamByProjectID(ctx, sqlc.GetUserTeamByProjectIDParams{
-		Userid:    userID,
-		Projectid: projectID,
-	})
+	key := loaders.UserProjectKey{UserID: userID, ProjectID: projectID}
+	teamID, err := r.Loaders.UserTeamIDInProjectLoader.Load(ctx, key)()
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			r.Cache.Set(cacheKey, "")
-			return nil, nil
-		}
 		return nil, fmt.Errorf("failed to fetch user's team: %w", err)
 	}
-
-	r.Cache.Set(cacheKey, row.ID)
-
-	description := ""
-	if row.Description != nil {
-		description = *row.Description
+	if teamID == "" {
+		return nil, nil // user not in any team in this project
 	}
 
-	return &model.Team{
-		ID:                  row.ID,
-		ProjectID:           row.ProjectID,
-		Name:                row.Name,
-		Description:         description,
-		SuperTeamID:         row.SuperTeamID,
-		JoinCode:            row.JoinCode,
-		LeaderboardExcluded: row.LeaderboardExcluded,
-	}, nil
+	team, err := r.Loaders.TeamByIDLoader.Load(ctx, teamID)()
+	if err == nil && team != nil {
+		return team, nil
+	}
+
+	// Cached team ID no longer resolves (e.g. team deleted without membership
+	// invalidation); drop the stale entry and retry once from the DB.
+	r.Cache.Delete(cache.UserTeamInProjectKey(userID, projectID))
+	teamID, err = r.Loaders.UserTeamIDInProjectLoader.Load(ctx, key)()
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch user's team: %w", err)
+	}
+	if teamID == "" {
+		return nil, nil
+	}
+	team, err = r.Loaders.TeamByIDLoader.Load(ctx, teamID)()
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch user's team: %w", err)
+	}
+	return team, nil
 }
 
 // teamUpdateRoleChecker is an interface for checking roles during team updates.

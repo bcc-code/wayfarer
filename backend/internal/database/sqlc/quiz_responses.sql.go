@@ -11,19 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const CalculateSubmissionPointsFromResponses = `-- name: CalculateSubmissionPointsFromResponses :one
-SELECT COALESCE(SUM(points_earned), 0)::int AS total_points
-FROM quiz_responses
-WHERE submission_id = $1::char(28)
-`
-
-func (q *Queries) CalculateSubmissionPointsFromResponses(ctx context.Context, submissionid string) (int32, error) {
-	row := q.db.QueryRow(ctx, CalculateSubmissionPointsFromResponses, submissionid)
-	var total_points int32
-	err := row.Scan(&total_points)
-	return total_points, err
-}
-
 const CalculateSubmissionScore = `-- name: CalculateSubmissionScore :one
 SELECT
     COALESCE(SUM(points_earned), 0)::int AS score

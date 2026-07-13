@@ -980,6 +980,12 @@ func (r *mutationResolver) UpdateQuizAchievement(ctx context.Context, id string,
 	// Invalidate caches
 	r.Cache.InvalidateProject(quizAch.ProjectID)
 	r.Cache.InvalidateAchievement(id)
+	// Drop the cached quiz achievement criteria used by finalizeQuiz — for
+	// both the old and (if reassigned) new quiz
+	r.Cache.InvalidateQuiz(quizAch.QuizID)
+	if input.QuizID != nil && *input.QuizID != quizAch.QuizID {
+		r.Cache.InvalidateQuiz(*input.QuizID)
+	}
 	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
 
 	// If eventID is being changed, invalidate both old and new events
@@ -1025,6 +1031,7 @@ func (r *mutationResolver) DeleteAchievement(ctx context.Context, id string) (bo
 
 	// Extract project ID from the concrete type
 	var projectID string
+	var quizID string
 	switch ach := existingAchievement.(type) {
 	case *model.SimpleAchievement:
 		projectID = ach.ProjectID
@@ -1034,6 +1041,7 @@ func (r *mutationResolver) DeleteAchievement(ctx context.Context, id string) (bo
 		projectID = ach.ProjectID
 	case *model.QuizAchievement:
 		projectID = ach.ProjectID
+		quizID = ach.QuizID
 	default:
 		return false, fmt.Errorf("unknown achievement type")
 	}
@@ -1053,6 +1061,10 @@ func (r *mutationResolver) DeleteAchievement(ctx context.Context, id string) (bo
 	r.Cache.InvalidateAchievement(id)
 	r.Cache.Delete(cache.ContentItemsByAchievementKey(id))
 	r.Cache.Delete(cache.ContentItemCountKey(id))
+	if quizID != "" {
+		// Drop the cached quiz achievement criteria used by finalizeQuiz
+		r.Cache.InvalidateQuiz(quizID)
+	}
 	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
 	r.Loaders.ContentItemsByAchievementLoader.Clear(ctx, id)
 

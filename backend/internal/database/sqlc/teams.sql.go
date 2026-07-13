@@ -901,6 +901,47 @@ func (q *Queries) GetUserTeamByProjectID(ctx context.Context, arg GetUserTeamByP
 	return &i, err
 }
 
+const GetUserTeamsByProjectIDBulk = `-- name: GetUserTeamsByProjectIDBulk :many
+SELECT DISTINCT ON (tm.user_id) tm.user_id, t.id AS team_id
+FROM teams t
+INNER JOIN team_members tm ON t.id = tm.team_id
+WHERE tm.user_id = ANY($1::char(28)[])
+  AND t.project_id = $2::char(28)
+ORDER BY tm.user_id
+`
+
+type GetUserTeamsByProjectIDBulkParams struct {
+	Userids   []string `json:"userids"`
+	Projectid string   `json:"projectid"`
+}
+
+type GetUserTeamsByProjectIDBulkRow struct {
+	UserID string `json:"user_id"`
+	TeamID string `json:"team_id"`
+}
+
+// One (arbitrary) team per user in the project, bulk variant of
+// GetUserTeamByProjectID
+func (q *Queries) GetUserTeamsByProjectIDBulk(ctx context.Context, arg GetUserTeamsByProjectIDBulkParams) ([]*GetUserTeamsByProjectIDBulkRow, error) {
+	rows, err := q.db.Query(ctx, GetUserTeamsByProjectIDBulk, arg.Userids, arg.Projectid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUserTeamsByProjectIDBulkRow{}
+	for rows.Next() {
+		var i GetUserTeamsByProjectIDBulkRow
+		if err := rows.Scan(&i.UserID, &i.TeamID); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const HasTeamMemberFromChurch = `-- name: HasTeamMemberFromChurch :one
 SELECT EXISTS(
     SELECT 1

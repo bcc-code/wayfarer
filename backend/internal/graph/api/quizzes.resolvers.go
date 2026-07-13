@@ -16,6 +16,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
+	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/otel"
 	"github.com/bcc-media/wayfarer/internal/services/push"
@@ -736,6 +737,8 @@ func (r *mutationResolver) CreateQuizAchievement(ctx context.Context, input mode
 	// Invalidate achievements list caches so new achievement appears in queries
 	r.Cache.DeletePrefix(cache.PrefixAchievementsFilter)
 	r.Cache.DeletePrefix(cache.PrefixAchievementsCount)
+	// Drop the cached quiz achievement criteria used by finalizeQuiz
+	r.Cache.InvalidateQuiz(input.QuizID)
 
 	// Convert to GraphQL model
 	var minScorePercentage *int
@@ -804,21 +807,28 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 		return nil, fmt.Errorf("submission expired")
 	}
 
-	// Load question to validate
-	question, err := r.DB.Queries.GetQuizQuestionByID(ctx, input.QuestionID)
+	// Load the quiz's questions (Ristretto-cached static data) and find the
+	// one being answered; this also validates it belongs to the quiz
+	questions, err := r.Loaders.QuizQuestionsByQuizLoader.Load(ctx, submission.QuizID)()
 	if err != nil {
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
-	span.SetAttributes(attribute.String("question.type", question.QuestionType))
-
-	// Check question belongs to quiz
-	if question.QuizID != submission.QuizID {
+	var question model.QuizQuestion
+	for _, q := range questions {
+		if q.GetID() == input.QuestionID {
+			question = q
+			break
+		}
+	}
+	if question == nil {
 		return nil, fmt.Errorf("question does not belong to this quiz")
 	}
+	questionType := quizQuestionTypeString(question)
+	span.SetAttributes(attribute.String("question.type", questionType))
 
 	// Validate bet - always validate when betting is enabled to enforce required bets
-	if question.BettingEnabled || (input.BetAmount != nil && *input.BetAmount > 0) {
+	if question.GetBettingEnabled() || (input.BetAmount != nil && *input.BetAmount > 0) {
 		// Load quiz to get project ID for score lookup
 		quizThunk := r.Loaders.QuizByIDLoader.Load(ctx, submission.QuizID)
 		quiz, quizErr := quizThunk()
@@ -827,12 +837,20 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 			return nil, fmt.Errorf("failed to load quiz for bet validation: %w", quizErr)
 		}
 
+		// The bet limits use exact DB types (numeric); fetch the row directly
+		// on this rare path instead of converting from the cached model
+		questionRow, rowErr := r.DB.Queries.GetQuizQuestionByID(ctx, input.QuestionID)
+		if rowErr != nil {
+			otel.RecordError(span, rowErr)
+			return nil, fmt.Errorf("failed to load question: %w", rowErr)
+		}
+
 		betConfig := BetValidationConfig{
-			BettingEnabled:       question.BettingEnabled,
-			BettingMinPercentage: question.BettingMinPercentage,
-			BettingMaxPercentage: question.BettingMaxPercentage,
-			BettingMinAbsolute:   question.BettingMinAbsolute,
-			BettingMaxAbsolute:   question.BettingMaxAbsolute,
+			BettingEnabled:       questionRow.BettingEnabled,
+			BettingMinPercentage: questionRow.BettingMinPercentage,
+			BettingMaxPercentage: questionRow.BettingMaxPercentage,
+			BettingMinAbsolute:   questionRow.BettingMinAbsolute,
+			BettingMaxAbsolute:   questionRow.BettingMaxAbsolute,
 		}
 
 		if err := ValidateBet(ctx, r.DB.Queries, userID, quiz.ProjectID, betConfig, input.BetAmount); err != nil {
@@ -850,17 +868,17 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 	}
 
 	// Set type-specific response and calculate correctness
-	switch question.QuestionType {
+	switch questionType {
 	case "PREDEFINED":
 		if input.SelectedAnswerIds != nil {
 			selectedJSON, _ := json.Marshal(input.SelectedAnswerIds)
 			params.Selectedanswerids = selectedJSON
 
-			// Calculate correctness
-			correctAnswers, _ := r.DB.Queries.GetPredefinedAnswersByQuestionID(ctx, input.QuestionID)
+			// Calculate correctness (answers are Ristretto-cached static data)
+			correctAnswers, _ := r.Loaders.QuizAnswersByQuestionLoader.Load(ctx, input.QuestionID)()
 			correctIDs := make(map[string]bool)
 			for _, ans := range correctAnswers {
-				if ans.IsCorrect {
+				if ans.IsCorrectValue {
 					correctIDs[ans.ID] = true
 				}
 			}
@@ -902,7 +920,8 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 			params.Jsonresponse = orderJSON
 
 			// Calculate correctness by comparing against correct order
-			correctAnswers, _ := r.DB.Queries.GetPredefinedAnswersByQuestionID(ctx, input.QuestionID)
+			// (answers are Ristretto-cached static data)
+			correctAnswers, _ := r.Loaders.QuizAnswersByQuestionLoader.Load(ctx, input.QuestionID)()
 
 			// correctAnswers are returned sorted by answer_order (correct position)
 			isCorrect := len(input.SubmittedOrder) == len(correctAnswers)
@@ -919,8 +938,9 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 	}
 
 	// Calculate points_earned for correct answers
-	if params.Iscorrect != nil && *params.Iscorrect && question.Points != nil {
-		params.Pointsearned = question.Points
+	if params.Iscorrect != nil && *params.Iscorrect && question.GetPoints() != nil {
+		pts := int32(*question.GetPoints())
+		params.Pointsearned = &pts
 	}
 
 	if input.TimeSpentSeconds != nil {
@@ -966,7 +986,7 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 				TimeSpentSeconds:  existing.TimeSpentSeconds,
 				BetAmount:         existing.BetAmount,
 			}
-			return convertResponseRowToInterface(existingAsModel, question.QuestionType), nil
+			return convertResponseRowToInterface(existingAsModel, questionType), nil
 		}
 		return nil, fmt.Errorf("failed to save response: %w", err)
 	}
@@ -989,7 +1009,7 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 		TimeSpentSeconds:  response.TimeSpentSeconds,
 		BetAmount:         response.BetAmount,
 	}
-	return convertResponseRowToInterface(responseAsModel, question.QuestionType), nil
+	return convertResponseRowToInterface(responseAsModel, questionType), nil
 }
 
 // UpdateQuizAnswer is the resolver for the updateQuizAnswer field.
@@ -1146,7 +1166,48 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 	}
 	otel.SetUserID(span, userID)
 
-	// Begin transaction first - we need to acquire the lock before validation
+	// Fail-fast validation on a non-locking read, and load all static data
+	// (quiz, challenge, achievement criteria) BEFORE the transaction so the
+	// FOR UPDATE lock is held across as few round-trips as possible.
+	ctx, preloadSpan := otel.StartSpan(ctx, "quiz.finalize.preload")
+	preRead, err := r.DB.Queries.GetQuizSubmissionByID(ctx, submissionID)
+	if err != nil {
+		preloadSpan.End()
+		otel.RecordError(span, err)
+		return nil, fmt.Errorf("failed to load submission: %w", err)
+	}
+	otel.SetQuizID(span, preRead.QuizID)
+	if preRead.UserID != userID {
+		preloadSpan.End()
+		return nil, fmt.Errorf("unauthorized")
+	}
+	if preRead.CompletedAt.Valid {
+		preloadSpan.End()
+		return nil, fmt.Errorf("submission already completed")
+	}
+	if preRead.ExpiresAt.Valid && time.Now().After(preRead.ExpiresAt.Time) {
+		preloadSpan.End()
+		return nil, fmt.Errorf("submission expired")
+	}
+
+	// Load quiz for completion points (Ristretto-cached)
+	quiz, err := r.Loaders.QuizByIDLoader.Load(ctx, preRead.QuizID)()
+	if err != nil {
+		preloadSpan.End()
+		otel.RecordError(span, err)
+		return nil, fmt.Errorf("failed to load quiz: %w", err)
+	}
+	otel.SetProjectID(span, quiz.ProjectID)
+
+	// Load challenge (needed for the journal event ID, invalidation and the
+	// webhook); a load failure only matters if points must be journaled.
+	challenge, challengeErr := r.Loaders.ChallengeByIDLoader.Load(ctx, quiz.ChallengeID)()
+
+	// Achievement criteria are static admin data; errors are non-fatal (no
+	// achievements are checked then), matching the previous behavior.
+	achievements, _ := r.getQuizAchievements(ctx, quiz.ID)
+	preloadSpan.End()
+
 	ctx, txSpan := otel.StartSpan(ctx, "quiz.finalize.transaction")
 	tx, err := r.DB.Pool.Begin(ctx)
 	if err != nil {
@@ -1162,7 +1223,8 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 	}()
 	qtx := r.DB.Queries.WithTx(tx)
 
-	// Load submission with FOR UPDATE lock to prevent concurrent finalization
+	// Load submission with FOR UPDATE lock to prevent concurrent finalization,
+	// and re-validate under the lock (the pre-read is fail-fast only)
 	ctx, loadSpan := otel.StartSpan(ctx, "quiz.finalize.load_submission")
 	submission, err := qtx.GetQuizSubmissionByIDForUpdate(ctx, submissionID)
 	loadSpan.End()
@@ -1170,7 +1232,6 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load submission: %w", err)
 	}
-	otel.SetQuizID(span, submission.QuizID)
 
 	// Verify ownership
 	if submission.UserID != userID {
@@ -1202,36 +1263,16 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 	if submission.MaxScore != nil {
 		maxScore = int(*submission.MaxScore)
 	}
+	// Per-answer points are the same SUM(points_earned) aggregate as the
+	// score, so total points derive from the score without a second query
+	totalPoints := int32(quiz.CompletionPoints) + scoreResult
 	scoreSpan.SetAttributes(
 		attribute.Int("score.value", score),
 		attribute.Int("score.max", maxScore),
-	)
-	scoreSpan.End()
-
-	// Load quiz for completion points
-	thunk := r.Loaders.QuizByIDLoader.Load(ctx, submission.QuizID)
-	quiz, err := thunk()
-	if err != nil {
-		otel.RecordError(span, err)
-		return nil, fmt.Errorf("failed to load quiz: %w", err)
-	}
-	otel.SetProjectID(span, quiz.ProjectID)
-
-	// Calculate total points: completion points + per-answer points
-	ctx, pointsSpan := otel.StartSpan(ctx, "quiz.finalize.calculate_points")
-	perAnswerPoints, err := qtx.CalculateSubmissionPointsFromResponses(ctx, submissionID)
-	if err != nil {
-		pointsSpan.End()
-		otel.RecordError(span, err)
-		return nil, fmt.Errorf("failed to calculate per-answer points: %w", err)
-	}
-	totalPoints := int32(quiz.CompletionPoints) + perAnswerPoints
-	pointsSpan.SetAttributes(
 		attribute.Int("points.completion", quiz.CompletionPoints),
-		attribute.Int("points.per_answer", int(perAnswerPoints)),
 		attribute.Int("points.total", int(totalPoints)),
 	)
-	pointsSpan.End()
+	scoreSpan.End()
 
 	// Update submission
 	ctx, updateSpan := otel.StartSpan(ctx, "quiz.finalize.update_submission")
@@ -1253,14 +1294,10 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 	// Create score journal entry if points > 0
 	if totalPoints > 0 {
 		ctx, journalSpan := otel.StartSpan(ctx, "quiz.finalize.create_score_journal")
-
-		// Load challenge to get event ID
-		challengeThunk := r.Loaders.ChallengeByIDLoader.Load(ctx, quiz.ChallengeID)
-		challenge, err := challengeThunk()
-		if err != nil {
+		if challengeErr != nil {
 			journalSpan.End()
-			otel.RecordError(span, err)
-			return nil, fmt.Errorf("failed to load challenge: %w", err)
+			otel.RecordError(span, challengeErr)
+			return nil, fmt.Errorf("failed to load challenge: %w", challengeErr)
 		}
 
 		journalID := ulid.NewScoreJournalID()
@@ -1284,59 +1321,43 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 		}
 	}
 
-	// Check quiz achievements and auto-award
-	ctx, achSpan := otel.StartSpan(ctx, "quiz.finalize.check_achievements")
-	achievements, _ := qtx.GetQuizAchievementsByQuizID(ctx, quiz.ID)
+	// Award quiz achievements inside the transaction so finalization and
+	// awards are atomic: an award failure rolls everything back and the
+	// (retryable) finalize will award again. Criteria are evaluated from the
+	// pre-loaded static rows, and the idempotent insert both avoids duplicate
+	// key errors (which would abort the transaction) and reports whether the
+	// award is new, so notifications only fire for new awards.
+	ctx, achSpan := otel.StartSpan(ctx, "quiz.finalize.award_achievements")
 	achSpan.SetAttributes(attribute.Int("achievements.count", len(achievements)))
-	achievementsAwarded := 0
-	awardedAchievementIDs := make([]string, 0)
+	awardedAchievementIDs := make([]string, 0, len(achievements))
 	for _, ach := range achievements {
-		shouldAward := true
-
 		// Check completion requirement
 		if ach.RequireCompletion && !updatedSubmission.CompletedAt.Valid {
-			shouldAward = false
+			continue
 		}
 
 		// Check score percentage requirement
 		if ach.MinScorePercentage != nil && maxScore > 0 {
 			scorePercentage := (float64(score) / float64(maxScore)) * 100
 			if scorePercentage < float64(*ach.MinScorePercentage) {
-				shouldAward = false
+				continue
 			}
 		}
 
-		// Award achievement if criteria met
-		if shouldAward {
-			// Check if user already has this achievement to avoid duplicate key errors
-			// which would abort the entire transaction
-			alreadyHas, checkErr := qtx.CheckUserHasAchievement(ctx, sqlc.CheckUserHasAchievementParams{
-				UserID:        userID,
-				AchievementID: ach.AchievementID,
-			})
-			if checkErr != nil {
-				fmt.Printf("warning: failed to check achievement %s for user %s: %v\n", ach.AchievementID, userID, checkErr)
-				continue
-			}
-			if alreadyHas {
-				continue
-			}
-
-			err = qtx.AwardUserAchievement(ctx, sqlc.AwardUserAchievementParams{
-				UserID:        userID,
-				AchievementID: ach.AchievementID,
-			})
-			if err != nil {
-				// Log error but don't fail the entire quiz finalization
-				// User still completed the quiz successfully
-				fmt.Printf("warning: failed to award achievement %s to user %s: %v\n", ach.AchievementID, userID, err)
-			} else {
-				achievementsAwarded++
-				awardedAchievementIDs = append(awardedAchievementIDs, ach.AchievementID)
-			}
+		tag, awardErr := qtx.AwardUserAchievementIdempotent(ctx, sqlc.AwardUserAchievementIdempotentParams{
+			UserID:        userID,
+			AchievementID: ach.AchievementID,
+		})
+		if awardErr != nil {
+			achSpan.End()
+			otel.RecordError(span, awardErr)
+			return nil, fmt.Errorf("failed to award achievement: %w", awardErr)
+		}
+		if tag.RowsAffected() > 0 {
+			awardedAchievementIDs = append(awardedAchievementIDs, ach.AchievementID)
 		}
 	}
-	achSpan.SetAttributes(attribute.Int("achievements.awarded", achievementsAwarded))
+	achSpan.SetAttributes(attribute.Int("achievements.awarded", len(awardedAchievementIDs)))
 	achSpan.End()
 
 	// Commit transaction
@@ -1385,9 +1406,7 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 	r.Cache.InvalidateUserQuizSubmissions(userID)
 	r.Cache.InvalidateProject(quiz.ProjectID)
 
-	// Load challenge to get eventID for cache invalidation
-	challengeThunk := r.Loaders.ChallengeByIDLoader.Load(ctx, quiz.ChallengeID)
-	challenge, challengeErr := challengeThunk()
+	// The challenge was already loaded before the transaction
 	if challengeErr != nil {
 		fmt.Printf("warning: failed to load challenge %s for cache invalidation: %v\n", quiz.ChallengeID, challengeErr)
 		r.Cache.InvalidateChallenge(quiz.ChallengeID, quiz.ProjectID, nil)
@@ -1676,12 +1695,10 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 			Completedat: pgtype.Timestamptz{Time: completedAt.Time, Valid: true},
 		}
 
-		// Calculate total points: completion points + per-answer points
-		perAnswerPoints, err := qtx.CalculateSubmissionPointsFromResponses(ctx, submissionID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to calculate per-answer points: %w", err)
-		}
-		totalPoints := int32(quiz.CompletionPoints) + perAnswerPoints
+		// Calculate total points: completion points + per-answer points (the
+		// per-answer points equal the score just accumulated from the
+		// responses created above, so no extra aggregate query is needed)
+		totalPoints := int32(quiz.CompletionPoints) + scoreVal
 
 		if totalPoints > 0 {
 			updateParams.Pointsawarded = &totalPoints
@@ -2651,16 +2668,16 @@ func (r *quizResolver) UserActiveSession(ctx context.Context, obj *model.Quiz) (
 		return nil, nil
 	}
 
-	row, err := r.DB.Queries.GetUserActiveSessionForQuiz(ctx, sqlc.GetUserActiveSessionForQuizParams{
-		Quizid: obj.ID,
-		Userid: userID,
-	})
-	if err != nil {
+	session, err := r.Loaders.UserActiveQuizSessionLoader.Load(ctx, loaders.UserQuizKey{
+		UserID: userID,
+		QuizID: obj.ID,
+	})()
+	if err != nil || session == nil {
 		// No active session found is not an error - return nil
 		return nil, nil
 	}
 
-	return convertQuizSessionToModel(row), nil
+	return convertQuizSessionToModel(session), nil
 }
 
 // TranslationStatus is the resolver for the translationStatus field.
