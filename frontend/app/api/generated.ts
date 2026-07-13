@@ -3366,11 +3366,6 @@ export type AdminExternalContentEventsQueryVariables = Exact<{
 
 export type AdminExternalContentEventsQuery = { __typename?: 'Query', adminExternalContentEvents: Array<{ __typename?: 'AdminExternalContentEvent', id: string, taskId: string, planId: string, source: string, receivedAt: any, consumedAt?: any | null, contentProgress?: number | null }> };
 
-export type ProjectRulesQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type ProjectRulesQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', rules?: { __typename?: 'MarkdownText', markdown: string, html: string } | null } };
-
 export type PointHistoryQueryVariables = Exact<{
   last?: InputMaybe<Scalars['Int']['input']>;
 }>;
@@ -3387,6 +3382,11 @@ export type PointHistoryQuery = { __typename?: 'Query', myCurrentProject: { __ty
             | { __typename: 'SimpleChallenge', id: string, name: string }
             | { __typename: 'StreakAchievement', id: string, name: string }
            | null } }> } } };
+
+export type ProjectRulesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ProjectRulesQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', rules?: { __typename?: 'MarkdownText', markdown: string, html: string } | null } };
 
 export type GetMeQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4871,20 +4871,6 @@ export const AdminExternalContentEventsDocument = gql`
 export function useAdminExternalContentEventsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminExternalContentEventsQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminExternalContentEventsQuery, AdminExternalContentEventsQueryVariables | undefined>({ query: AdminExternalContentEventsDocument, variables: undefined, ...options });
 };
-export const ProjectRulesDocument = gql`
-    query ProjectRules {
-  myCurrentProject {
-    rules {
-      markdown
-      html
-    }
-  }
-}
-    `;
-
-export function useProjectRulesQuery(options?: Omit<Urql.UseQueryArgs<never, ProjectRulesQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<ProjectRulesQuery, ProjectRulesQueryVariables | undefined>({ query: ProjectRulesDocument, variables: undefined, ...options });
-};
 export const PointHistoryDocument = gql`
     query PointHistory($last: Int) {
   myCurrentProject {
@@ -4932,6 +4918,20 @@ export const PointHistoryDocument = gql`
 
 export function usePointHistoryQuery(options?: Omit<Urql.UseQueryArgs<never, PointHistoryQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<PointHistoryQuery, PointHistoryQueryVariables | undefined>({ query: PointHistoryDocument, variables: undefined, ...options });
+};
+export const ProjectRulesDocument = gql`
+    query ProjectRules {
+  myCurrentProject {
+    rules {
+      markdown
+      html
+    }
+  }
+}
+    `;
+
+export function useProjectRulesQuery(options?: Omit<Urql.UseQueryArgs<never, ProjectRulesQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<ProjectRulesQuery, ProjectRulesQueryVariables | undefined>({ query: ProjectRulesDocument, variables: undefined, ...options });
 };
 export const GetMeDocument = gql`
     query GetMe {
