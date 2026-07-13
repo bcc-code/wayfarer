@@ -26,6 +26,9 @@ export default defineConfig({
           include: ['test/component/**/*.{test,spec}.ts'],
           environment: 'nuxt',
           setupFiles: ['test/component/setup.ts'],
+          // The Nuxt test env (setupNuxt) builds on first run; 10s is too short.
+          hookTimeout: 120000,
+          testTimeout: 30000,
         },
       }),
     ],

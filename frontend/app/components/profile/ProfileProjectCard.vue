@@ -91,7 +91,10 @@ onMounted(() => {
       </div>
     </div>
     <slot />
-    <div class="p-medium gap-medium grid grid-cols-4">
+    <div
+      v-if="achievements?.length"
+      class="p-medium gap-medium grid grid-cols-4"
+    >
       <AchievementBadge
         v-for="achievement in achievements"
         :key="achievement.id"

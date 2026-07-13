@@ -16,33 +16,37 @@ const {
   authReadyMock,
   updateTeamMock,
   assignLeadMock,
-  routeMock,
-  routerMock,
   nowMock,
+  routerReplace,
 } = vi.hoisted(() => ({
   queryMock: vi.fn(),
   authMock: vi.fn(),
   authReadyMock: vi.fn(),
   updateTeamMock: vi.fn(),
   assignLeadMock: vi.fn(),
-  routeMock: vi.fn(),
-  routerMock: vi.fn(),
   nowMock: vi.fn(),
+  routerReplace: vi.fn(),
 }))
 mockNuxtImport('useStandingsUnitPageQuery', () => queryMock)
 mockNuxtImport('useAuth', () => authMock)
 mockNuxtImport('useAuthReady', () => authReadyMock)
 mockNuxtImport('useUpdateTeamMutation', () => updateTeamMock)
 mockNuxtImport('useAssignTeamLeadMutation', () => assignLeadMock)
-mockNuxtImport('useRoute', () => routeMock)
-mockNuxtImport('useRouter', () => routerMock)
 mockNuxtImport('useNow', () => nowMock)
+// v4 (@nuxt/test-utils 4) inits Nuxt in beforeAll, so its router plugin calls
+// beforeEach/options on useRouter() during setup. Wrap the *real* router (via
+// the original passed to the factory) and only override replace with our spy,
+// rather than replacing the whole router with a bare stub.
+mockNuxtImport('useRouter', (original) => () => {
+  const router = original()
+  router.replace = routerReplace
+  return router
+})
 
 // Spies we assert against.
 const updateTeam = vi.fn()
 const assignLead = vi.fn()
 const refetch = vi.fn()
-const routerReplace = vi.fn()
 
 // --- Stubs -------------------------------------------------------------------
 // Only two child components are stubbed, and both for a concrete reason:
@@ -96,8 +100,6 @@ async function mountEdit(opts: { now?: Date } = {}) {
   })
   updateTeamMock.mockReturnValue({ executeMutation: updateTeam })
   assignLeadMock.mockReturnValue({ executeMutation: assignLead })
-  routeMock.mockReturnValue({ query: {} })
-  routerMock.mockReturnValue({ replace: routerReplace })
   nowMock.mockReturnValue(ref(opts.now ?? new Date('2030-01-01T00:00:00Z')))
 
   const wrapper = await mountSuspended(StandingsUnit, { global: { stubs } })
