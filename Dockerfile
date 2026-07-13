@@ -6,7 +6,9 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /build
 
 # Copy package files first for better caching
-COPY frontend/package.json frontend/pnpm-lock.yaml ./
+# pnpm-workspace.yaml carries the allowBuilds/minimumReleaseAge config; without it
+# pnpm ignores all dependency build scripts and fails with ERR_PNPM_IGNORED_BUILDS.
+COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # Copy frontend source
