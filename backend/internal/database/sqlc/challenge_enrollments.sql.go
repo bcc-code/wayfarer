@@ -221,6 +221,44 @@ func (q *Queries) GetUserEnrollmentTimestamps(ctx context.Context, arg GetUserEn
 	return items, nil
 }
 
+const GetUsersEnrolledChallengeIDsInProject = `-- name: GetUsersEnrolledChallengeIDsInProject :many
+SELECT uce.user_id, uce.challenge_id
+FROM user_challenge_enrollments uce
+JOIN challenges c ON c.id = uce.challenge_id
+WHERE uce.user_id = ANY($1::char(28)[])
+  AND c.project_id = $2::char(28)
+`
+
+type GetUsersEnrolledChallengeIDsInProjectParams struct {
+	Userids   []string `json:"userids"`
+	Projectid string   `json:"projectid"`
+}
+
+type GetUsersEnrolledChallengeIDsInProjectRow struct {
+	UserID      string `json:"user_id"`
+	ChallengeID string `json:"challenge_id"`
+}
+
+func (q *Queries) GetUsersEnrolledChallengeIDsInProject(ctx context.Context, arg GetUsersEnrolledChallengeIDsInProjectParams) ([]*GetUsersEnrolledChallengeIDsInProjectRow, error) {
+	rows, err := q.db.Query(ctx, GetUsersEnrolledChallengeIDsInProject, arg.Userids, arg.Projectid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUsersEnrolledChallengeIDsInProjectRow{}
+	for rows.Next() {
+		var i GetUsersEnrolledChallengeIDsInProjectRow
+		if err := rows.Scan(&i.UserID, &i.ChallengeID); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const IsUserEnrolledInChallenge = `-- name: IsUserEnrolledInChallenge :one
 SELECT EXISTS(
     SELECT 1

@@ -90,6 +90,16 @@ WHERE tm.user_id = @userid::char(28)
   AND t.project_id = @projectid::char(28)
 LIMIT 1;
 
+-- name: GetUserTeamsByProjectIDBulk :many
+-- One (arbitrary) team per user in the project, bulk variant of
+-- GetUserTeamByProjectID
+SELECT DISTINCT ON (tm.user_id) tm.user_id, t.id AS team_id
+FROM teams t
+INNER JOIN team_members tm ON t.id = tm.team_id
+WHERE tm.user_id = ANY(@userids::char(28)[])
+  AND t.project_id = @projectid::char(28)
+ORDER BY tm.user_id;
+
 -- name: CreateTeam :one
 INSERT INTO teams (id, project_id, name, description, join_code, created_by_user_id)
 VALUES (@id::text, @projectid::text, @name::text, @description::text, @joincode::text, @createdbyuserid::text)

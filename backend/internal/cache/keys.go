@@ -110,6 +110,7 @@ const (
 	PrefixUserTeamInProject      = "userteam:"
 	PrefixUserEnrolledChallenges = "userenrolledchallenges:"
 	PrefixUserQuizSessionAccess  = "userquizaccess:"
+	PrefixUserActiveQuizSession  = "useractivesession:"
 )
 
 // Key builders for different entity types
@@ -281,6 +282,12 @@ func QuizSessionKey(sessionID string) string {
 	return PrefixQuizSession + sessionID
 }
 
+// UserActiveQuizSessionKey builds a cache key for the user's active (visible)
+// session for a quiz
+func UserActiveQuizSessionKey(userID, quizID string) string {
+	return fmt.Sprintf("%s%s:%s", PrefixUserActiveQuizSession, userID, quizID)
+}
+
 // QuizSubmissionKey builds a cache key for a quiz submission by ID
 func QuizSubmissionKey(submissionID string) string {
 	return PrefixQuizSubmission + submissionID
@@ -304,6 +311,11 @@ func QuizQuestionsByQuizKey(quizID string) string {
 // QuizAnswersByQuestionKey builds a cache key for predefined answers by question
 func QuizAnswersByQuestionKey(questionID string) string {
 	return fmt.Sprintf("%sanswers:%s", PrefixQuiz, questionID)
+}
+
+// QuizAchievementsByQuizKey builds a cache key for the quiz achievement criteria of a quiz
+func QuizAchievementsByQuizKey(quizID string) string {
+	return fmt.Sprintf("%squizachievements:%s", PrefixQuiz, quizID)
 }
 
 // QuizResponsesBySubmissionKey builds a cache key for responses by submission
@@ -451,7 +463,7 @@ func ExtractUserTag(key string) (string, bool) {
 		PrefixUserChallengeCompletions, PrefixUserConsents,
 		PrefixUserProjectPoints, PrefixActiveChallengesCount,
 		PrefixUserTeamInProject, PrefixUserEnrolledChallenges,
-		PrefixUserQuizSessionAccess,
+		PrefixUserQuizSessionAccess, PrefixUserActiveQuizSession,
 	}
 	for _, prefix := range prefixes {
 		if strings.HasPrefix(key, prefix) {

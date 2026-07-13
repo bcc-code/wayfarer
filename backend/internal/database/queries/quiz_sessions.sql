@@ -278,3 +278,25 @@ JOIN quiz_session_access qsa ON qsa.session_id = qs.id
 WHERE qs.quiz_id = ANY(@quizids::char(28)[])
     AND qsa.user_id = @userid::char(28)
     AND qs.state IN ('OPEN', 'LOCKED', 'FINISHED');
+
+-- name: GetBulkUsersSessionAccessQuizIDsByProject :many
+-- Returns (user_id, quiz_id) pairs for quizzes in the project each user has
+-- session access to (sessions in a visible state)
+SELECT DISTINCT qsa.user_id, qs.quiz_id
+FROM quiz_sessions qs
+JOIN quiz_session_access qsa ON qsa.session_id = qs.id
+JOIN quizzes q ON q.id = qs.quiz_id
+WHERE q.project_id = @projectid::char(28)
+    AND qsa.user_id = ANY(@userids::char(28)[])
+    AND qs.state IN ('OPEN', 'LOCKED', 'FINISHED');
+
+-- name: GetUsersActiveSessionForQuiz :many
+-- Latest visible session per user for a quiz (bulk variant of
+-- GetUserActiveSessionForQuiz)
+SELECT DISTINCT ON (qsa.user_id) qsa.user_id AS access_user_id, qs.*
+FROM quiz_sessions qs
+JOIN quiz_session_access qsa ON qsa.session_id = qs.id
+WHERE qs.quiz_id = @quizid::char(28)
+    AND qsa.user_id = ANY(@userids::char(28)[])
+    AND qs.state IN ('OPEN', 'LOCKED', 'FINISHED')
+ORDER BY qsa.user_id, qs.created_at DESC;

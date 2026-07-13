@@ -75,11 +75,6 @@ SELECT
 FROM quiz_responses
 WHERE submission_id = @submissionid::char(28);
 
--- name: CalculateSubmissionPointsFromResponses :one
-SELECT COALESCE(SUM(points_earned), 0)::int AS total_points
-FROM quiz_responses
-WHERE submission_id = @submissionid::char(28);
-
 -- name: UpdateBetResult :one
 UPDATE quiz_responses
 SET points_earned = @pointsearned::int

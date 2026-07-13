@@ -344,8 +344,9 @@ WHERE id = @id::char(28);
 INSERT INTO user_achievements (user_id, achievement_id, achieved_at)
 VALUES (@user_id::text, @achievement_id::text, COALESCE(@achieved_at::timestamptz, now()));
 
--- name: AwardUserAchievementIdempotent :exec
+-- name: AwardUserAchievementIdempotent :execresult
 -- Awards achievement to user, silently ignores if already awarded
+-- (RowsAffected() == 0 means the user already had it)
 INSERT INTO user_achievements (user_id, achievement_id, achieved_at)
 VALUES (@user_id::text, @achievement_id::text, COALESCE(@achieved_at::timestamptz, now()))
 ON CONFLICT (user_id, achievement_id) DO NOTHING;

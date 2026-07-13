@@ -19,8 +19,9 @@ const (
 )
 
 // newCacheOnlyResolver builds a resolver with a live cache and loaders but no
-// database. Any code path that reaches the database panics, so these tests
-// prove the cache-hit paths never touch it.
+// database. Any code path that reaches the database panics inside the loader
+// batch function (surfaced as a thunk error), so these tests prove the
+// cache-hit paths never touch it.
 func newCacheOnlyResolver(t *testing.T) *Resolver {
 	t.Helper()
 	c, err := cache.NewCacheWithRegistry(cache.DefaultConfig())
@@ -62,6 +63,15 @@ func TestGetUserTeamInProjectNegativeCacheHit(t *testing.T) {
 	assert.Nil(t, team)
 }
 
+func TestGetUserTeamInProjectCacheMissReachesDB(t *testing.T) {
+	r := newCacheOnlyResolver(t)
+
+	// Nothing cached → the loader batch function must query, which errors
+	// here because this resolver has no database.
+	_, err := r.getUserTeamInProject(context.Background(), cacheTestUserID, cacheTestProjectID)
+	assert.Error(t, err)
+}
+
 func TestGetUserEnrolledChallengeIDsCacheHit(t *testing.T) {
 	r := newCacheOnlyResolver(t)
 
@@ -87,22 +97,20 @@ func TestGetUserEnrolledChallengeIDsEmptyCacheHit(t *testing.T) {
 	assert.Empty(t, ids)
 }
 
-func TestGetUserAccessibleQuizIDsCoveredCacheHit(t *testing.T) {
+func TestGetUserAccessibleQuizIDsCacheHit(t *testing.T) {
 	r := newCacheOnlyResolver(t)
 
-	r.Cache.SetWithTTL(cache.UserQuizSessionAccessKey(cacheTestUserID, cacheTestProjectID), &cachedQuizAccess{
-		Covered:    map[string]bool{"QZA": true, "QZB": true},
-		Accessible: map[string]bool{"QZA": true},
-	}, quizSessionAccessTTL)
+	// The cached set is project-wide, so it answers any requested quiz subset
+	r.Cache.SetWithTTL(cache.UserQuizSessionAccessKey(cacheTestUserID, cacheTestProjectID),
+		map[string]bool{"QZA": true}, loaders.QuizSessionAccessTTL)
 	r.Cache.Wait()
 
-	// Requesting a subset of the covered quiz IDs is answered from cache
 	access, err := r.getUserAccessibleQuizIDs(context.Background(), cacheTestUserID, cacheTestProjectID, []string{"QZA"})
 	require.NoError(t, err)
 	assert.True(t, access["QZA"])
 	assert.False(t, access["QZB"])
 
-	access, err = r.getUserAccessibleQuizIDs(context.Background(), cacheTestUserID, cacheTestProjectID, []string{"QZA", "QZB"})
+	access, err = r.getUserAccessibleQuizIDs(context.Background(), cacheTestUserID, cacheTestProjectID, []string{"QZA", "QZB", "QZC"})
 	require.NoError(t, err)
 	assert.True(t, access["QZA"])
 	assert.False(t, access["QZB"])
@@ -117,18 +125,23 @@ func TestGetUserAccessibleQuizIDsEmptyRequest(t *testing.T) {
 	assert.Empty(t, access)
 }
 
-func TestGetUserAccessibleQuizIDsUncoveredQuizBypassesCache(t *testing.T) {
+func TestGetUserAccessibleQuizIDsStaleShapeBypassesCache(t *testing.T) {
 	r := newCacheOnlyResolver(t)
 
-	r.Cache.SetWithTTL(cache.UserQuizSessionAccessKey(cacheTestUserID, cacheTestProjectID), &cachedQuizAccess{
-		Covered:    map[string]bool{"QZA": true},
-		Accessible: map[string]bool{"QZA": true},
-	}, quizSessionAccessTTL)
+	// A cached value with the pre-loader shape fails the type assertion and
+	// is treated as a miss — the batch function must re-query, which errors
+	// here because this resolver has no database.
+	type legacyCachedQuizAccess struct {
+		Covered    map[string]bool
+		Accessible map[string]bool
+	}
+	r.Cache.SetWithTTL(cache.UserQuizSessionAccessKey(cacheTestUserID, cacheTestProjectID),
+		&legacyCachedQuizAccess{
+			Covered:    map[string]bool{"QZA": true},
+			Accessible: map[string]bool{"QZA": true},
+		}, loaders.QuizSessionAccessTTL)
 	r.Cache.Wait()
 
-	// QZC is not covered by the cached check, so the helper must re-query —
-	// which panics here because this resolver has no database.
-	assert.Panics(t, func() {
-		_, _ = r.getUserAccessibleQuizIDs(context.Background(), cacheTestUserID, cacheTestProjectID, []string{"QZA", "QZC"})
-	})
+	_, err := r.getUserAccessibleQuizIDs(context.Background(), cacheTestUserID, cacheTestProjectID, []string{"QZA"})
+	assert.Error(t, err)
 }

@@ -127,6 +127,7 @@ func extractPrefixes(key string) []string {
 		PrefixUserContentProgress, PrefixUserAchievements, PrefixUserStreakProgress,
 		PrefixUserConsents, PrefixUserProjectPoints, PrefixActiveChallengesCount,
 		PrefixUserTeamInProject, PrefixUserEnrolledChallenges, PrefixUserQuizSessionAccess,
+		PrefixUserActiveQuizSession,
 		PrefixUsersFilter, PrefixUsersCount,
 		PrefixProjectsFilter, PrefixProjectsCount,
 		PrefixEventsFilter, PrefixEventsCount,
@@ -433,11 +434,15 @@ func (c *CacheWithRegistry) invalidateQuizLocal(quizID, challengeID string) {
 	c.DeletePrefix(PrefixQuizzesFilter)
 	c.DeletePrefix(PrefixQuizzesCount)
 
-	// Per-user quiz session access caches may include this quiz
+	// Per-user quiz session access and active-session caches may include this quiz
 	c.DeletePrefix(PrefixUserQuizSessionAccess)
+	c.DeletePrefix(PrefixUserActiveQuizSession)
 
 	// Invalidate quiz questions and answers for this quiz
 	c.Delete(QuizQuestionsByQuizKey(quizID))
+
+	// Invalidate quiz achievement criteria for this quiz
+	c.Delete(QuizAchievementsByQuizKey(quizID))
 
 	// Invalidate submissions for this quiz
 	c.Delete(QuizSubmissionsByQuizKey(quizID))
@@ -454,6 +459,20 @@ func (c *CacheWithRegistry) InvalidateQuizSessionAccess() {
 // invalidateQuizSessionAccessLocal invalidates quiz session access caches on this instance only
 func (c *CacheWithRegistry) invalidateQuizSessionAccessLocal() {
 	c.DeletePrefix(PrefixUserQuizSessionAccess)
+	c.DeletePrefix(PrefixUserActiveQuizSession)
+}
+
+// InvalidateQuizSession invalidates the cached session row and broadcasts to
+// other instances. Call this whenever session state changes (open/lock/finish/
+// reopen/update/delete), alongside InvalidateQuizSessionAccess for the
+// per-user visibility caches.
+func (c *CacheWithRegistry) InvalidateQuizSession(sessionID string) {
+	c.invalidateQuizSessionLocal(sessionID)
+	c.broadcast(InvalidationMessage{Type: InvalidationTypeQuizSession, ID: sessionID})
+}
+
+func (c *CacheWithRegistry) invalidateQuizSessionLocal(sessionID string) {
+	c.Delete(QuizSessionKey(sessionID))
 }
 
 // InvalidateQuizAnswers invalidates cached answers/ordering items for a question

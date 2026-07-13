@@ -61,6 +61,10 @@ type Loaders struct {
 	ImageMetadataByURLLoader                 *dataloader.Loader[string, *model.Image]
 	ScoreJournalByIDLoader                   *dataloader.Loader[string, *model.ScoreJournal]
 	UserProjectScoreLoader                   *dataloader.Loader[UserProjectKey, int64]
+	UserTeamIDInProjectLoader                *dataloader.Loader[UserProjectKey, string]
+	UserEnrolledChallengeIDsLoader           *dataloader.Loader[UserProjectKey, map[string]bool]
+	UserAccessibleQuizIDsLoader              *dataloader.Loader[UserProjectKey, map[string]bool]
+	UserActiveQuizSessionLoader              *dataloader.Loader[UserQuizKey, *sqlc.QuizSession]
 }
 
 // newBatchedLoader creates a new batched dataloader with standard configuration:
@@ -131,5 +135,9 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		ImageMetadataByURLLoader:                 newBatchedLoader(imageMetadataByURLBatchFunc(db, cache)),
 		ScoreJournalByIDLoader:                   newBatchedLoader(scoreJournalByIDBatchFunc(db, cache)),
 		UserProjectScoreLoader:                   newBatchedLoader(userProjectScoreBatchFunc(db)),
+		UserTeamIDInProjectLoader:                newBatchedLoader(userTeamIDInProjectBatchFunc(db, cache)),
+		UserEnrolledChallengeIDsLoader:           newBatchedLoader(userEnrolledChallengeIDsBatchFunc(db, cache)),
+		UserAccessibleQuizIDsLoader:              newBatchedLoader(userAccessibleQuizIDsBatchFunc(db, cache)),
+		UserActiveQuizSessionLoader:              newBatchedLoader(userActiveQuizSessionBatchFunc(db, cache)),
 	}
 }

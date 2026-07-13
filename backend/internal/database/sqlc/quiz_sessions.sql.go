@@ -324,6 +324,48 @@ func (q *Queries) GetBulkUserSessionAccessQuizIDs(ctx context.Context, arg GetBu
 	return items, nil
 }
 
+const GetBulkUsersSessionAccessQuizIDsByProject = `-- name: GetBulkUsersSessionAccessQuizIDsByProject :many
+SELECT DISTINCT qsa.user_id, qs.quiz_id
+FROM quiz_sessions qs
+JOIN quiz_session_access qsa ON qsa.session_id = qs.id
+JOIN quizzes q ON q.id = qs.quiz_id
+WHERE q.project_id = $1::char(28)
+    AND qsa.user_id = ANY($2::char(28)[])
+    AND qs.state IN ('OPEN', 'LOCKED', 'FINISHED')
+`
+
+type GetBulkUsersSessionAccessQuizIDsByProjectParams struct {
+	Projectid string   `json:"projectid"`
+	Userids   []string `json:"userids"`
+}
+
+type GetBulkUsersSessionAccessQuizIDsByProjectRow struct {
+	UserID string `json:"user_id"`
+	QuizID string `json:"quiz_id"`
+}
+
+// Returns (user_id, quiz_id) pairs for quizzes in the project each user has
+// session access to (sessions in a visible state)
+func (q *Queries) GetBulkUsersSessionAccessQuizIDsByProject(ctx context.Context, arg GetBulkUsersSessionAccessQuizIDsByProjectParams) ([]*GetBulkUsersSessionAccessQuizIDsByProjectRow, error) {
+	rows, err := q.db.Query(ctx, GetBulkUsersSessionAccessQuizIDsByProject, arg.Projectid, arg.Userids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetBulkUsersSessionAccessQuizIDsByProjectRow{}
+	for rows.Next() {
+		var i GetBulkUsersSessionAccessQuizIDsByProjectRow
+		if err := rows.Scan(&i.UserID, &i.QuizID); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetQuizSession = `-- name: GetQuizSession :one
 SELECT id, quiz_id, name, state, open_at, lock_at, finish_at, created_by, created_at, updated_at
 FROM quiz_sessions
@@ -994,6 +1036,69 @@ func (q *Queries) GetUserIDsByChurchIDsInProject(ctx context.Context, arg GetUse
 			return nil, err
 		}
 		items = append(items, user_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetUsersActiveSessionForQuiz = `-- name: GetUsersActiveSessionForQuiz :many
+SELECT DISTINCT ON (qsa.user_id) qsa.user_id AS access_user_id, qs.id, qs.quiz_id, qs.name, qs.state, qs.open_at, qs.lock_at, qs.finish_at, qs.created_by, qs.created_at, qs.updated_at
+FROM quiz_sessions qs
+JOIN quiz_session_access qsa ON qsa.session_id = qs.id
+WHERE qs.quiz_id = $1::char(28)
+    AND qsa.user_id = ANY($2::char(28)[])
+    AND qs.state IN ('OPEN', 'LOCKED', 'FINISHED')
+ORDER BY qsa.user_id, qs.created_at DESC
+`
+
+type GetUsersActiveSessionForQuizParams struct {
+	Quizid  string   `json:"quizid"`
+	Userids []string `json:"userids"`
+}
+
+type GetUsersActiveSessionForQuizRow struct {
+	AccessUserID string             `json:"access_user_id"`
+	ID           string             `json:"id"`
+	QuizID       string             `json:"quiz_id"`
+	Name         *string            `json:"name"`
+	State        string             `json:"state"`
+	OpenAt       pgtype.Timestamptz `json:"open_at"`
+	LockAt       pgtype.Timestamptz `json:"lock_at"`
+	FinishAt     pgtype.Timestamptz `json:"finish_at"`
+	CreatedBy    string             `json:"created_by"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+// Latest visible session per user for a quiz (bulk variant of
+// GetUserActiveSessionForQuiz)
+func (q *Queries) GetUsersActiveSessionForQuiz(ctx context.Context, arg GetUsersActiveSessionForQuizParams) ([]*GetUsersActiveSessionForQuizRow, error) {
+	rows, err := q.db.Query(ctx, GetUsersActiveSessionForQuiz, arg.Quizid, arg.Userids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUsersActiveSessionForQuizRow{}
+	for rows.Next() {
+		var i GetUsersActiveSessionForQuizRow
+		if err := rows.Scan(
+			&i.AccessUserID,
+			&i.ID,
+			&i.QuizID,
+			&i.Name,
+			&i.State,
+			&i.OpenAt,
+			&i.LockAt,
+			&i.FinishAt,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

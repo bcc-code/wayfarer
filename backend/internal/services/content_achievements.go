@@ -539,7 +539,7 @@ func (s *ContentAchievementService) processStreakAchievements(ctx context.Contex
 		if progressCount == itemCount && itemCount > 0 {
 			slog.Info("content_achievements: auto-awarding streak achievement",
 				"user_id", userID, "achievement_id", id)
-			if err := s.DB.Queries.AwardUserAchievementIdempotent(ctx, sqlc.AwardUserAchievementIdempotentParams{
+			if _, err := s.DB.Queries.AwardUserAchievementIdempotent(ctx, sqlc.AwardUserAchievementIdempotentParams{
 				UserID:        userID,
 				AchievementID: id,
 			}); err != nil {
@@ -665,7 +665,7 @@ func (s *ContentAchievementService) awardAchievement(ctx context.Context, userID
 	}
 
 	// Award the achievement
-	err = s.DB.Queries.AwardUserAchievementIdempotent(ctx, sqlc.AwardUserAchievementIdempotentParams{
+	_, err = s.DB.Queries.AwardUserAchievementIdempotent(ctx, sqlc.AwardUserAchievementIdempotentParams{
 		UserID:        userID,
 		AchievementID: achievement.ID,
 	})

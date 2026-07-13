@@ -38,11 +38,12 @@ func quizSessionByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(
 				return results
 			}
 
-			// Index by ID and cache
+			// Index by ID and cache. The short TTL bounds staleness for any
+			// state-transition path that misses InvalidateQuizSession.
 			for _, row := range rows {
 				session := row // Copy to avoid pointer issues
 				sessions[row.ID] = session
-				c.Set(cache.QuizSessionKey(row.ID), session)
+				c.SetWithTTL(cache.QuizSessionKey(row.ID), session, QuizSessionAccessTTL)
 			}
 		}
 

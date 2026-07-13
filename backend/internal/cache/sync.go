@@ -35,6 +35,7 @@ const (
 	InvalidationTypeClear       InvalidationType = "clear"
 
 	InvalidationTypeQuizSessionAccess InvalidationType = "quizsessionaccess"
+	InvalidationTypeQuizSession       InvalidationType = "quizsession"
 )
 
 // InvalidationMessage is the payload sent via NOTIFY
@@ -219,6 +220,8 @@ func (s *CacheSync) applyInvalidation(msg InvalidationMessage) {
 		s.cache.invalidateQuizLocal(msg.ID, msg.ChallengeID)
 	case InvalidationTypeQuizSessionAccess:
 		s.cache.invalidateQuizSessionAccessLocal()
+	case InvalidationTypeQuizSession:
+		s.cache.invalidateQuizSessionLocal(msg.ID)
 	case InvalidationTypeClear:
 		s.cache.Clear()
 	default:

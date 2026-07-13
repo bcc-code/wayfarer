@@ -8,6 +8,7 @@ package sqlc
 import (
 	"context"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -76,7 +77,7 @@ func (q *Queries) AwardUserAchievement(ctx context.Context, arg AwardUserAchieve
 	return err
 }
 
-const AwardUserAchievementIdempotent = `-- name: AwardUserAchievementIdempotent :exec
+const AwardUserAchievementIdempotent = `-- name: AwardUserAchievementIdempotent :execresult
 INSERT INTO user_achievements (user_id, achievement_id, achieved_at)
 VALUES ($1::text, $2::text, COALESCE($3::timestamptz, now()))
 ON CONFLICT (user_id, achievement_id) DO NOTHING
@@ -89,9 +90,9 @@ type AwardUserAchievementIdempotentParams struct {
 }
 
 // Awards achievement to user, silently ignores if already awarded
-func (q *Queries) AwardUserAchievementIdempotent(ctx context.Context, arg AwardUserAchievementIdempotentParams) error {
-	_, err := q.db.Exec(ctx, AwardUserAchievementIdempotent, arg.UserID, arg.AchievementID, arg.AchievedAt)
-	return err
+// (RowsAffected() == 0 means the user already had it)
+func (q *Queries) AwardUserAchievementIdempotent(ctx context.Context, arg AwardUserAchievementIdempotentParams) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, AwardUserAchievementIdempotent, arg.UserID, arg.AchievementID, arg.AchievedAt)
 }
 
 const AwardUserAchievementsBatch = `-- name: AwardUserAchievementsBatch :many
