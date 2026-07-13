@@ -172,11 +172,15 @@ func TestGetProjectLeaderboardCancelledCallerDoesNotPoisonFlight(t *testing.T) {
 		personRow("US01ARZ3NDEKTSV4RRFFQ69G5FA1", 1, 300),
 	}
 	// The fetch runs with context.WithoutCancel, so the query context must not
-	// be cancelled even though the caller's context already is.
+	// be cancelled even though the caller's context already is. It must still
+	// carry the service-owned fetch timeout.
 	mockQueries.On("GetFullProjectPersonLeaderboard", mock.Anything, mock.Anything).
 		Run(func(args mock.Arguments) {
 			queryCtx := args.Get(0).(context.Context)
 			assert.NoError(t, queryCtx.Err(), "query context should not inherit caller cancellation")
+			deadline, ok := queryCtx.Deadline()
+			assert.True(t, ok, "query context should have the service-owned fetch timeout")
+			assert.LessOrEqual(t, time.Until(deadline), leaderboardFetchTimeout)
 		}).
 		Return(rows, nil).Once()
 

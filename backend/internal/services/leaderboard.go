@@ -15,6 +15,10 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
+// leaderboardFetchTimeout bounds the detached singleflight fetch so an
+// abandoned request can't hold a DB connection indefinitely.
+const leaderboardFetchTimeout = 30 * time.Second
+
 // LeaderboardQuerier defines the database operations needed for leaderboards
 type LeaderboardQuerier interface {
 	// Project leaderboards
@@ -143,8 +147,12 @@ func (s *LeaderboardService) getFullLeaderboardCached(
 		}
 
 		// Detach from the leading request's cancellation: the result is
-		// shared by every request waiting on this key.
-		entries, err := fetch(context.WithoutCancel(ctx))
+		// shared by every request waiting on this key. Still bound by a
+		// service-owned timeout so an abandoned fetch can't hold a DB
+		// connection indefinitely.
+		fetchCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), leaderboardFetchTimeout)
+		defer cancel()
+		entries, err := fetch(fetchCtx)
 		if err != nil {
 			return nil, err
 		}

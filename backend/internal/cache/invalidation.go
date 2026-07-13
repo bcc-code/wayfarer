@@ -13,17 +13,18 @@ import (
 // This is necessary because ristretto doesn't natively support prefix-based deletion
 type KeyRegistry struct {
 	mu   sync.RWMutex
-	keys map[string][]string // prefix -> list of keys with that prefix
+	keys map[string]map[string]struct{} // prefix -> set of keys with that prefix
 }
 
 // NewKeyRegistry creates a new key registry
 func NewKeyRegistry() *KeyRegistry {
 	return &KeyRegistry{
-		keys: make(map[string][]string),
+		keys: make(map[string]map[string]struct{}),
 	}
 }
 
-// Register adds a key to the registry under its prefixes
+// Register adds a key to the registry under its prefixes. Registering the
+// same key multiple times (e.g. concurrent cache misses) is idempotent.
 func (kr *KeyRegistry) Register(key string) {
 	kr.mu.Lock()
 	defer kr.mu.Unlock()
@@ -31,7 +32,12 @@ func (kr *KeyRegistry) Register(key string) {
 	// Extract all relevant prefixes/tags from the key
 	prefixes := extractPrefixes(key)
 	for _, prefix := range prefixes {
-		kr.keys[prefix] = append(kr.keys[prefix], key)
+		set := kr.keys[prefix]
+		if set == nil {
+			set = make(map[string]struct{})
+			kr.keys[prefix] = set
+		}
+		set[key] = struct{}{}
 	}
 }
 
@@ -42,13 +48,10 @@ func (kr *KeyRegistry) Unregister(key string) {
 
 	prefixes := extractPrefixes(key)
 	for _, prefix := range prefixes {
-		keys := kr.keys[prefix]
-		for i, k := range keys {
-			if k == key {
-				// Remove key from slice
-				kr.keys[prefix] = append(keys[:i], keys[i+1:]...)
-				break
-			}
+		set := kr.keys[prefix]
+		delete(set, key)
+		if len(set) == 0 {
+			delete(kr.keys, prefix)
 		}
 	}
 }
@@ -58,9 +61,11 @@ func (kr *KeyRegistry) GetKeys(prefix string) []string {
 	kr.mu.RLock()
 	defer kr.mu.RUnlock()
 
-	keys := kr.keys[prefix]
-	result := make([]string, len(keys))
-	copy(result, keys)
+	set := kr.keys[prefix]
+	result := make([]string, 0, len(set))
+	for key := range set {
+		result = append(result, key)
+	}
 	return result
 }
 
@@ -68,7 +73,7 @@ func (kr *KeyRegistry) GetKeys(prefix string) []string {
 func (kr *KeyRegistry) Clear() {
 	kr.mu.Lock()
 	defer kr.mu.Unlock()
-	kr.keys = make(map[string][]string)
+	kr.keys = make(map[string]map[string]struct{})
 }
 
 // extractPrefixes extracts all relevant prefixes from a cache key

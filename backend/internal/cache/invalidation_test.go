@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -443,4 +444,56 @@ func TestCacheWithRegistry_LeaderboardInvalidation(t *testing.T) {
 	assert.False(t, found1, "key1 should be deleted")
 	assert.False(t, found2, "key2 should be deleted")
 	assert.True(t, found3, "key3 should still exist")
+}
+
+func TestKeyRegistry_RegisterIsIdempotent(t *testing.T) {
+	registry := NewKeyRegistry()
+	key := UserEnrolledChallengesKey("US123", "PR123")
+
+	// Concurrent cache misses can Register the same key multiple times
+	registry.Register(key)
+	registry.Register(key)
+	registry.Register(key)
+
+	for _, prefix := range extractPrefixes(key) {
+		keys := registry.GetKeys(prefix)
+		assert.Equal(t, []string{key}, keys, "prefix %q should track the key exactly once", prefix)
+	}
+}
+
+func TestKeyRegistry_SingleUnregisterRemovesRepeatedRegistrations(t *testing.T) {
+	registry := NewKeyRegistry()
+	key := UserEnrolledChallengesKey("US123", "PR123")
+
+	registry.Register(key)
+	registry.Register(key)
+	// One eviction callback must fully clean up the key
+	registry.Unregister(key)
+
+	for _, prefix := range extractPrefixes(key) {
+		assert.Empty(t, registry.GetKeys(prefix), "prefix %q should be empty after a single unregister", prefix)
+	}
+}
+
+func TestKeyRegistry_ConcurrentRegisterNoDuplicates(t *testing.T) {
+	registry := NewKeyRegistry()
+	key := UserEnrolledChallengesKey("US123", "PR123")
+	otherKey := UserEnrolledChallengesKey("US999", "PR123")
+	registry.Register(otherKey)
+
+	const goroutines = 20
+	var wg sync.WaitGroup
+	for i := 0; i < goroutines; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			registry.Register(key)
+			registry.Unregister(key)
+			registry.Register(key)
+		}()
+	}
+	wg.Wait()
+
+	keys := registry.GetKeys(PrefixUserEnrolledChallenges)
+	assert.ElementsMatch(t, []string{key, otherKey}, keys)
 }
