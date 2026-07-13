@@ -57,6 +57,37 @@ mutation StartQuiz($quizId: ID!) {
 }
 `;
 
+// Mutation to start a quiz session (the current, session-based flow:
+// Quiz.userActiveSession -> startQuizSession -> submitQuizAnswer -> finalizeQuiz)
+const START_QUIZ_SESSION_MUTATION = `
+mutation StartQuizSession($sessionId: ID!) {
+    startQuizSession(sessionId: $sessionId) {
+        id
+        startedAt
+        expiresAt
+        completedAt
+        orderedQuestions {
+            id
+            questionText
+            questionOrder
+        }
+    }
+}
+`;
+
+// Mutation to submit a free-text answer
+const SUBMIT_TEXT_ANSWER_MUTATION = `
+mutation SubmitQuizAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
+    submitQuizAnswer(submissionId: $submissionId, input: $input) {
+        id
+        answeredAt
+        ... on FreeTextResponse {
+            textResponse
+        }
+    }
+}
+`;
+
 // Mutation to submit an answer
 const SUBMIT_ANSWER_MUTATION = `
 mutation SubmitQuizAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
@@ -113,6 +144,52 @@ export function startQuiz(baseUrl, token, quizId) {
     if (checkGraphQLResponse(response, 'StartQuiz')) {
         const data = parseResponse(response);
         return data ? data.startQuiz : null;
+    }
+    return null;
+}
+
+/**
+ * Start a quiz session, creating (or returning) the user's submission
+ * @param {string} baseUrl - Base URL of the GraphQL API
+ * @param {string} token - JWT token for authorization
+ * @param {string} sessionId - Quiz session ID (from Quiz.userActiveSession)
+ * @returns {object|null} Submission data or null on error
+ */
+export function startQuizSession(baseUrl, token, sessionId) {
+    const response = graphqlRequest(baseUrl, START_QUIZ_SESSION_MUTATION, { sessionId }, token, 'StartQuizSession');
+    if (checkGraphQLResponse(response, 'StartQuizSession')) {
+        const data = parseResponse(response);
+        return data ? data.startQuizSession : null;
+    }
+    return null;
+}
+
+/**
+ * Submit a free-text answer for a question
+ * @param {string} baseUrl - Base URL of the GraphQL API
+ * @param {string} token - JWT token for authorization
+ * @param {string} submissionId - Submission ID
+ * @param {string} questionId - Question ID
+ * @param {string} text - Free-text answer
+ * @param {number} timeSpentSeconds - Time spent on the question
+ * @returns {object|null} Response data or null on error
+ */
+export function submitTextAnswer(baseUrl, token, submissionId, questionId, text, timeSpentSeconds) {
+    const input = {
+        questionId,
+        textResponse: text,
+        timeSpentSeconds,
+    };
+    const response = graphqlRequest(
+        baseUrl,
+        SUBMIT_TEXT_ANSWER_MUTATION,
+        { submissionId, input },
+        token,
+        'SubmitQuizAnswer'
+    );
+    if (checkGraphQLResponse(response, 'SubmitQuizAnswer')) {
+        const data = parseResponse(response);
+        return data ? data.submitQuizAnswer : null;
     }
     return null;
 }

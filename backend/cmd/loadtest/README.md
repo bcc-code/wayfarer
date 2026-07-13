@@ -44,6 +44,7 @@ make loadtest-quick
 | `make loadtest-quiz` | Quiz load test: 20 VUs for 5 minutes |
 | `make loadtest-quiz-quick` | Quick quiz test: 5 VUs for 1 minute |
 | `make loadtest-quiz-stress` | Quiz stress test: 10 RPS for 5 minutes |
+| `make loadtest-quiz-freetext-spike` | Free-text quiz spike: 10k users enter within 10s |
 | `make loadtest-gen` | Generate tokens only (1000 users) |
 | `make loadtest-gen-all` | Generate tokens for all users (up to 10k) |
 
@@ -99,6 +100,40 @@ Tests the complete quiz flow: get quiz details, start quiz, answer all questions
    ```
 2. The quiz ID defaults to `QZ01ARQN6LOADTEST00000QUIZ`, or set via `QUIZ_ID` env var
 
+### 6. Free-Text Quiz Spike (`freetext-quiz-spike.js`)
+Simulates a camp moment: `SPIKE_USERS` (default 10,000) **distinct** users
+enter the app within `SPIKE_WINDOW` seconds (default 10), each exactly once
+(`constant-arrival-rate`, token indexed by iteration). Each user:
+1. Cold load landing on `/challenges`: `GetMe`, `CurrentProject`,
+   `ActiveChallengesPage`, `GetFirebaseToken`
+2. Opens the quiz challenge (`ChallengePage`) and reads
+   `quiz.userActiveSession`
+3. `StartQuizSession` → types for 2–8s → `SubmitQuizAnswer` (free text) →
+   `FinalizeQuiz`
+
+The quiz awards **no points and no achievements** (`completion_points = 0`,
+ungraded free-text question, no quiz achievement), which the test asserts via
+checks on `pointsAwarded`/`score`. This isolates the quiz write path from the
+scoring/leaderboard machinery.
+
+**Prerequisites:**
+1. Seed 10k users (`make seed-large`) and generate all tokens
+   (`make loadtest-gen-all`, done automatically by the make target).
+2. Insert the quiz challenge, quiz, OPEN session and per-user access grants:
+   ```bash
+   psql $DATABASE_URL -v project_id="'YOUR_PROJECT_ID'" \
+     -f ./cmd/loadtest/scripts/insert_freetext_quiz.sql
+   ```
+   Re-run the script to reset submissions between test runs. Users who
+   already completed the quiz are counted as `quiz_skipped`, not failures;
+   alternatively set `TOKEN_OFFSET` to run with fresh users without
+   reseeding.
+
+Smoke run at small scale:
+```bash
+k6 run --env SPIKE_USERS=25 --env SPIKE_WINDOW=5 ./cmd/loadtest/k6/freetext-quiz-spike.js
+```
+
 ## Configuration
 
 ### Environment Variables
@@ -118,6 +153,10 @@ Tests the complete quiz flow: get quiz details, start quiz, answer all questions
 | `QUIZ_VUS` | 20 | Virtual users for quiz test |
 | `QUIZ_RPS` | 10 | Requests per second for quiz stress test |
 | `STRESS_DURATION` | 5m | Duration of quiz stress test |
+| `SPIKE_USERS` | 10000 | Distinct users entering during the free-text quiz spike |
+| `SPIKE_WINDOW` | 10 | Seconds over which spike users arrive |
+| `CHALLENGE_ID` | CL01LOADTESTFREETEXT00000000 | Quiz challenge ID for the free-text spike |
+| `TOKEN_OFFSET` | 0 | Skip the first N tokens (rerun the spike with fresh users) |
 
 ### Token Generator Flags
 
@@ -174,6 +213,7 @@ cmd/loadtest/
         leaderboard.js   # Leaderboard stress scenario
         challenges-scenario.js # Challenges page scenario
         quiz-scenario.js # Quiz-specific test scenarios
+        freetext-quiz-spike.js # 10k users answer a free-text quiz within 10s
         lib/
             graphql.js   # GraphQL HTTP helpers
             journey.js   # Realistic user session journey
@@ -189,6 +229,7 @@ cmd/loadtest/
             quiz.js      # Quiz query/mutation helpers
     scripts/
         insert_quiz.sql  # SQL script to insert test quiz
+        insert_freetext_quiz.sql # Free-text quiz + open session + access grants
     config.json          # Generated tokens (gitignored)
     README.md
 ```

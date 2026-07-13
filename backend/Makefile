@@ -196,3 +196,7 @@ loadtest-quiz-quick: loadtest-gen ## Run quick quiz load test (5 VUs, 1 minute)
 loadtest-quiz-stress: loadtest-gen-all ## Run quiz stress test (10 RPS, 5 minutes)
 	@echo "Running quiz stress test..."
 	@k6 run --env QUIZ_RPS=10 --env STRESS_DURATION=5m ./cmd/loadtest/k6/quiz-scenario.js
+
+loadtest-quiz-freetext-spike: loadtest-gen-all ## Run free-text quiz spike (10k users enter within 10s)
+	@echo "Running free-text quiz spike test..."
+	@k6 run --env SPIKE_USERS=10000 --env SPIKE_WINDOW=10 ./cmd/loadtest/k6/freetext-quiz-spike.js
