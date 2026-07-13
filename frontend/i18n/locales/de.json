@@ -11,7 +11,8 @@
     "standings": "Noch keine Bestenliste",
     "unit": "Noch keine Bestenliste für deine Unit",
     "challenges": "Noch keine Herausforderungen",
-    "pointHistory": "Noch keine Punkte"
+    "pointHistory": "Noch keine Punkte",
+    "rules": "Noch keine Regeln hinzugefügt"
   },
   "auth": {
     "loginButton": "Anmelden",
