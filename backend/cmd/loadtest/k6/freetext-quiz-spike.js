@@ -17,11 +17,16 @@ import { startQuizSession, submitTextAnswer, finalizeQuiz } from './queries/quiz
 // Each iteration is one distinct user (token indexed by iteration number),
 // so every user runs the journey exactly once.
 
-const config = JSON.parse(open('../config.json'));
+// open()+JSON.parse() must happen inside the SharedArray callback: k6 runs
+// this whole file's init code once per VU, so parsing outside the callback
+// makes every VU hold its own full copy of the token array instead of the
+// single shared one (with tens of thousands of VUs, that's gigabytes of RAM).
 const tokens = new SharedArray('tokens', function () {
-    return config.tokens;
+    return JSON.parse(open('../config.json')).tokens;
 });
-const baseUrl = config.baseUrl;
+const baseUrl = new SharedArray('baseUrl', function () {
+    return [JSON.parse(open('../config.json')).baseUrl];
+})[0];
 
 const challengeId = __ENV.CHALLENGE_ID || 'CL01LOADTESTFREETEXT00000000';
 const spikeUsers = parseInt(__ENV.SPIKE_USERS) || 10000;

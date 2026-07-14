@@ -5,11 +5,14 @@ import { coldLoad } from './queries/bootstrap.js';
 import { activeChallengesPage } from './queries/challenges.js';
 import { clickRandomChallenge } from './lib/journey.js';
 
-const config = JSON.parse(open('../config.json'));
+// open()+JSON.parse() must happen inside the SharedArray callback — see
+// freetext-quiz-spike.js for why parsing outside it blows up per-VU RAM.
 const tokens = new SharedArray('tokens', function () {
-    return config.tokens;
+    return JSON.parse(open('../config.json')).tokens;
 });
-const baseUrl = config.baseUrl;
+const baseUrl = new SharedArray('baseUrl', function () {
+    return [JSON.parse(open('../config.json')).baseUrl];
+})[0];
 
 // Challenges page focus: users cold-load /challenges, scan the list,
 // click one challenge and leave the app.

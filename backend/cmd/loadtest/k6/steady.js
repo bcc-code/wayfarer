@@ -2,11 +2,14 @@ import { SharedArray } from 'k6/data';
 
 import { userJourney } from './lib/journey.js';
 
-const config = JSON.parse(open('../config.json'));
+// open()+JSON.parse() must happen inside the SharedArray callback — see
+// freetext-quiz-spike.js for why parsing outside it blows up per-VU RAM.
 const tokens = new SharedArray('tokens', function () {
-    return config.tokens;
+    return JSON.parse(open('../config.json')).tokens;
 });
-const baseUrl = config.baseUrl;
+const baseUrl = new SharedArray('baseUrl', function () {
+    return [JSON.parse(open('../config.json')).baseUrl];
+})[0];
 
 // Steady load: fast ramp then hold
 export const options = {

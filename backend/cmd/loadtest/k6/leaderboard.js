@@ -4,11 +4,14 @@ import { standingsGlobalPage } from './queries/standings-global.js';
 import { standingsLocalPage } from './queries/standings-local.js';
 import { standingsUnitPage } from './queries/standings-unit.js';
 
-const config = JSON.parse(open('../config.json'));
+// open()+JSON.parse() must happen inside the SharedArray callback — see
+// freetext-quiz-spike.js for why parsing outside it blows up per-VU RAM.
 const tokens = new SharedArray('tokens', function () {
-    return config.tokens;
+    return JSON.parse(open('../config.json')).tokens;
 });
-const baseUrl = config.baseUrl;
+const baseUrl = new SharedArray('baseUrl', function () {
+    return [JSON.parse(open('../config.json')).baseUrl];
+})[0];
 
 // Leaderboard stress: constant arrival rate
 export const options = {
