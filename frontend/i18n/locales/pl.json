@@ -11,7 +11,8 @@
     "standings": "Nie ma jeszcze żadnej listy rankingowej",
     "unit": "Nie ma jeszcze żadnej listy rankingowej dla twojego unitu",
     "challenges": "Nie ma jeszcze żadnych wyzwań",
-    "pointHistory": "Nie ma jeszcze żadnych punktów"
+    "pointHistory": "Nie ma jeszcze żadnych punktów",
+    "rules": "Nie ma jeszcze dodanych zasad"
   },
   "auth": {
     "loginButton": "Zaloguj się",
