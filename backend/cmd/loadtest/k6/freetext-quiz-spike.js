@@ -63,6 +63,17 @@ export const options = {
         http_req_failed: ['rate<0.01'],
         graphql_errors: ['rate<0.01'],
         quiz_failures: ['count<1'],
+        // Per-operation sub-metrics so the summary reports each request's
+        // latency separately (requests are tagged by operation name in
+        // lib/graphql.js)
+        'http_req_duration{name:GetMe}': ['p(95)<500'],
+        'http_req_duration{name:CurrentProject}': ['p(95)<500'],
+        'http_req_duration{name:GetFirebaseToken}': ['p(95)<500'],
+        'http_req_duration{name:ChallengePage}': ['p(95)<500'],
+        'http_req_duration{name:EnrollInChallenge}': ['p(95)<500'],
+        'http_req_duration{name:StartQuizSession}': ['p(95)<500'],
+        'http_req_duration{name:SubmitQuizAnswer}': ['p(95)<500'],
+        'http_req_duration{name:FinalizeQuiz}': ['p(95)<1000'],
     },
 };
 
