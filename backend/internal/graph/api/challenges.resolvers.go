@@ -596,8 +596,6 @@ func (r *mutationResolver) EnrollInChallenge(ctx context.Context, challengeID st
 		return nil, fmt.Errorf("failed to enroll in challenge: %w", err)
 	}
 
-	fmt.Printf("DEBUG: enrolledAt.Valid=%v, enrolledAt.Time=%v\n", enrolledAt.Valid, enrolledAt.Time)
-
 	// Cache invalidation
 	r.Cache.InvalidateUser(userID)
 	projectID := getChallengeProjectID(challenge)

@@ -5,14 +5,16 @@ import { Counter } from 'k6/metrics';
 
 import { parseResponse } from './lib/graphql.js';
 import { coldLoad } from './queries/bootstrap.js';
-import { activeChallengesPage } from './queries/challenges.js';
-import { challengePage } from './queries/challenge.js';
-import { startQuizSession, submitTextAnswer, finalizeQuiz } from './queries/quiz.js';
+import { challengePage, enrollInChallenge } from './queries/challenge.js';
+import { startQuizSession, submitTextAnswer, submitAnswer, submitNumberAnswer, finalizeQuiz } from './queries/quiz.js';
 
-// Free-text quiz spike: SPIKE_USERS distinct users enter the app within
-// SPIKE_WINDOW seconds, land on the challenges page, open the free-text quiz
-// challenge, answer its single question and finalize. The quiz awards no
-// points and no achievements (see scripts/insert_freetext_quiz.sql).
+// Free-text quiz spike: SPIKE_USERS distinct users scan a QR code within
+// SPIKE_WINDOW seconds, landing directly on the quiz challenge URL
+// (/challenges/{id}?enroll=true — see AdminChallengeQrModal.vue). Each user
+// cold-loads the app on the challenge page, self-enrolls, answers the four
+// questions (2x free text, 1x multiple choice, 1x number) and finalizes. The
+// quiz awards no points and no achievements (see
+// scripts/insert_freetext_quiz.sql).
 //
 // Each iteration is one distinct user (token indexed by iteration number),
 // so every user runs the journey exactly once.
@@ -51,8 +53,9 @@ export const options = {
             // avoids dropped iterations at the tail (on-demand VU init lags)
             preAllocatedVUs: Math.ceil(spikeUsers * 1.1) + 5,
             maxVUs: Math.ceil(spikeUsers * 1.1) + 5,
-            // Journeys include think time; let in-flight users finish
-            gracefulStop: '2m',
+            // Journeys include up to ~150s of think time across the four
+            // questions; let in-flight users finish
+            gracefulStop: '4m',
         },
     },
     thresholds: {
@@ -83,11 +86,11 @@ export default function () {
     const iteration = exec.scenario.iterationInTest;
     const { token } = tokens[(iteration + tokenOffset) % tokens.length];
 
-    // App entry: cold load landing on the challenges page
-    coldLoad(baseUrl, token, () => activeChallengesPage(baseUrl, token));
+    // QR code entry: cold load landing directly on the challenge page
+    coldLoad(baseUrl, token, () => challengePage(baseUrl, token, challengeId));
 
-    // Scan the challenge list, then open the quiz challenge
-    sleep(Math.random() * 2 + 1);
+    // ?enroll=true fires the enroll mutation, then the page refetches
+    enrollInChallenge(baseUrl, token, challengeId);
     const pageData = parseResponse(challengePage(baseUrl, token, challengeId));
     const quiz = pageData && pageData.challenge && pageData.challenge.quiz;
     if (!quiz || !quiz.userActiveSession) {
@@ -107,16 +110,49 @@ export default function () {
         return;
     }
 
-    // Type the free-text answer
-    const typingSeconds = Math.random() * 6 + 2;
-    sleep(typingSeconds);
+    // Answer every question in order, with per-type think time
+    for (let i = 0; i < submission.orderedQuestions.length; i++) {
+        const question = submission.orderedQuestions[i];
+        let answer = null;
 
-    const answerText = `${ANSWERS[iteration % ANSWERS.length]} (#${iteration})`;
-    const question = submission.orderedQuestions[0];
-    const answer = submitTextAnswer(baseUrl, token, submission.id, question.id, answerText, Math.round(typingSeconds));
-    if (!answer) {
-        fail(iteration, 'failed to submit free-text answer');
-        return;
+        switch (question.__typename) {
+            case 'FreeTextQuestion': {
+                // Reading the question + typing the answer
+                const thinkSeconds = Math.random() * 30 + 20;
+                sleep(thinkSeconds);
+                const answerText = `${ANSWERS[(iteration + i) % ANSWERS.length]} (#${iteration})`;
+                answer = submitTextAnswer(baseUrl, token, submission.id, question.id, answerText, Math.round(thinkSeconds));
+                break;
+            }
+            case 'PredefinedQuestion': {
+                const thinkSeconds = Math.random() * 20 + 10;
+                sleep(thinkSeconds);
+                // Every seeded answer is correct, so select all of them
+                const selectedIds = question.predefinedAnswers.map((a) => a.id);
+                answer = submitAnswer(baseUrl, token, submission.id, question.id, selectedIds, Math.round(thinkSeconds));
+                if (answer) {
+                    check(answer, { 'multiple choice graded correct': (a) => a.isCorrect === true });
+                }
+                break;
+            }
+            case 'NumberQuestion': {
+                const thinkSeconds = Math.random() * 10 + 5;
+                sleep(thinkSeconds);
+                const min = question.minValue == null ? 1 : question.minValue;
+                const max = question.maxValue == null ? 100 : question.maxValue;
+                const value = Math.floor(Math.random() * (max - min + 1)) + min;
+                answer = submitNumberAnswer(baseUrl, token, submission.id, question.id, value, Math.round(thinkSeconds));
+                break;
+            }
+            default:
+                fail(iteration, `unexpected question type ${question.__typename} on question ${question.id}`);
+                return;
+        }
+
+        if (!answer) {
+            fail(iteration, `failed to submit ${question.__typename} answer for question ${question.id}`);
+            return;
+        }
     }
 
     const finalized = finalizeQuiz(baseUrl, token, submission.id);

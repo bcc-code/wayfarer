@@ -67,9 +67,22 @@ mutation StartQuizSession($sessionId: ID!) {
         expiresAt
         completedAt
         orderedQuestions {
+            __typename
             id
             questionText
             questionOrder
+            ... on PredefinedQuestion {
+                allowMultipleSelection
+                predefinedAnswers {
+                    id
+                    answerOrder
+                }
+            }
+            ... on NumberQuestion {
+                minValue
+                maxValue
+                stepValue
+            }
         }
     }
 }
@@ -83,6 +96,19 @@ mutation SubmitQuizAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
         answeredAt
         ... on FreeTextResponse {
             textResponse
+        }
+    }
+}
+`;
+
+// Mutation to submit a number answer
+const SUBMIT_NUMBER_ANSWER_MUTATION = `
+mutation SubmitQuizAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
+    submitQuizAnswer(submissionId: $submissionId, input: $input) {
+        id
+        answeredAt
+        ... on NumberResponse {
+            numberResponse
         }
     }
 }
@@ -183,6 +209,36 @@ export function submitTextAnswer(baseUrl, token, submissionId, questionId, text,
     const response = graphqlRequest(
         baseUrl,
         SUBMIT_TEXT_ANSWER_MUTATION,
+        { submissionId, input },
+        token,
+        'SubmitQuizAnswer'
+    );
+    if (checkGraphQLResponse(response, 'SubmitQuizAnswer')) {
+        const data = parseResponse(response);
+        return data ? data.submitQuizAnswer : null;
+    }
+    return null;
+}
+
+/**
+ * Submit a number answer for a question
+ * @param {string} baseUrl - Base URL of the GraphQL API
+ * @param {string} token - JWT token for authorization
+ * @param {string} submissionId - Submission ID
+ * @param {string} questionId - Question ID
+ * @param {number} value - Numeric answer
+ * @param {number} timeSpentSeconds - Time spent on the question
+ * @returns {object|null} Response data or null on error
+ */
+export function submitNumberAnswer(baseUrl, token, submissionId, questionId, value, timeSpentSeconds) {
+    const input = {
+        questionId,
+        numberResponse: value,
+        timeSpentSeconds,
+    };
+    const response = graphqlRequest(
+        baseUrl,
+        SUBMIT_NUMBER_ANSWER_MUTATION,
         { submissionId, input },
         token,
         'SubmitQuizAnswer'
