@@ -11,7 +11,8 @@
     "standings": "Még nincs top lista",
     "unit": "Még nincs top lista a Unitod számára",
     "challenges": "Még nincs kihívás",
-    "pointHistory": "Még nincs pont"
+    "pointHistory": "Még nincs pont",
+    "rules": "Még nincs hozzá rendelve szabály"
   },
   "auth": {
     "loginButton": "Bejelentkezés",
