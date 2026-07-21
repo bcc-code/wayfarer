@@ -109,59 +109,30 @@ func (s *Service) Close() error {
 }
 
 // CreateCustomToken generates a Firebase custom token for the given user.
-// Custom claims (userId, churchId) are set on the user record itself.
-// Custom tokens are valid for 1 hour and should be exchanged client-side
-// for Firebase ID tokens which auto-refresh.
-// If the user doesn't exist in Firebase Auth, they will be created first.
+// The custom claims (userId, churchId) are embedded directly in the token as
+// developer claims; Firebase copies them into the ID token minted when the
+// client calls signInWithCustomToken, so they are available in Firestore
+// security rules via request.auth.token.
+//
+// Token generation is a local signing operation using the service account's
+// private key — it makes no Firebase Admin API network calls and is not subject
+// to Firebase rate limits. The Firebase Auth user record is auto-provisioned by
+// signInWithCustomToken, so no GetUser/CreateUser round-trip is needed here.
+//
+// Custom tokens are valid for 1 hour and should be exchanged client-side for
+// Firebase ID tokens which auto-refresh.
 func (s *Service) CreateCustomToken(ctx context.Context, userID, churchID string) (string, error) {
-	// Ensure user exists in Firebase Auth
-	if err := s.ensureUserExists(ctx, userID); err != nil {
-		return "", fmt.Errorf("failed to ensure user exists: %w", err)
-	}
-
-	// Set custom claims on the user record
-	claims := map[string]interface{}{
+	claims := map[string]any{
 		"userId":   userID,
 		"churchId": churchID,
 	}
-	if err := s.authClient.SetCustomUserClaims(ctx, userID, claims); err != nil {
-		return "", fmt.Errorf("failed to set custom claims: %w", err)
-	}
 
-	token, err := s.authClient.CustomToken(ctx, userID)
+	token, err := s.authClient.CustomTokenWithClaims(ctx, userID, claims)
 	if err != nil {
 		return "", fmt.Errorf("failed to create custom token: %w", err)
 	}
 
 	return token, nil
-}
-
-// ensureUserExists checks if a user exists in Firebase Auth and creates them if not.
-func (s *Service) ensureUserExists(ctx context.Context, userID string) error {
-	// Try to get the user
-	_, err := s.authClient.GetUser(ctx, userID)
-	if err == nil {
-		// User exists
-		return nil
-	}
-
-	// Check if it's a "user not found" error
-	if !auth.IsUserNotFound(err) {
-		return fmt.Errorf("failed to get user: %w", err)
-	}
-
-	// User doesn't exist, create them
-	email := fmt.Sprintf("%s@fake-firestore-email.bcc.media", userID)
-	params := (&auth.UserToCreate{}).
-		UID(userID).
-		Email(email)
-
-	_, err = s.authClient.CreateUser(ctx, params)
-	if err != nil {
-		return fmt.Errorf("failed to create user: %w", err)
-	}
-
-	return nil
 }
 
 // extractProjectIDFromFile reads a service account JSON file and extracts the project_id.
