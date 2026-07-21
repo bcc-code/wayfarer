@@ -489,6 +489,145 @@ func TestMembershipTriggerConsistencyWithRegenerate(t *testing.T) {
 	})
 }
 
+// ==================== Member Count Tests ====================
+
+// TestChurchLeaderboardMemberCount tests that church leaderboard member_count is
+// maintained incrementally by the membership triggers (migration 00101) and stays
+// consistent with regenerate_leaderboards().
+func TestChurchLeaderboardMemberCount(t *testing.T) {
+	ctx := context.Background()
+	dbMgr, _ := GetTestEnv()
+
+	t.Run("first join creates church row with member_count 1 and 0 points", func(t *testing.T) {
+		require.NoError(t, dbMgr.Clean(ctx))
+		require.NoError(t, dbMgr.CreateTestChurch(ctx, membershipChurchID, "Test Church", "NO", "S"))
+		require.NoError(t, dbMgr.CreateTestProject(ctx, membershipProjectID, "Test Project"))
+
+		birthdate := time.Now().AddDate(-25, 0, 0)
+		require.NoError(t, dbMgr.CreateTestUser(ctx, membershipUser1ID, "User1", "MALE", birthdate, membershipChurchID))
+
+		countBefore, err := dbMgr.GetLeaderboardProjectChurchMemberCount(ctx, membershipProjectID, membershipChurchID)
+		require.NoError(t, err)
+		assert.Equal(t, -1, countBefore, "no leaderboard row should exist before first join")
+
+		require.NoError(t, dbMgr.EnrollUserInProject(ctx, membershipUser1ID, membershipProjectID))
+
+		count, err := dbMgr.GetLeaderboardProjectChurchMemberCount(ctx, membershipProjectID, membershipChurchID)
+		require.NoError(t, err)
+		assert.Equal(t, 1, count, "member_count should be 1 after first join")
+
+		points, err := dbMgr.GetLeaderboardProjectChurchPoints(ctx, membershipProjectID, membershipChurchID)
+		require.NoError(t, err)
+		assert.Equal(t, int64(0), points, "a 0-point member should not add points")
+	})
+
+	t.Run("joins increment and leaves decrement member_count", func(t *testing.T) {
+		require.NoError(t, dbMgr.Clean(ctx))
+		require.NoError(t, dbMgr.CreateTestChurch(ctx, membershipChurchID, "Test Church", "NO", "S"))
+		require.NoError(t, dbMgr.CreateTestProject(ctx, membershipProjectID, "Test Project"))
+
+		birthdate := time.Now().AddDate(-25, 0, 0)
+		require.NoError(t, dbMgr.CreateTestUser(ctx, membershipUser1ID, "User1", "MALE", birthdate, membershipChurchID))
+		require.NoError(t, dbMgr.CreateTestUser(ctx, membershipUser2ID, "User2", "FEMALE", birthdate, membershipChurchID))
+
+		require.NoError(t, dbMgr.EnrollUserInProject(ctx, membershipUser1ID, membershipProjectID))
+		require.NoError(t, dbMgr.EnrollUserInProject(ctx, membershipUser2ID, membershipProjectID))
+
+		count, err := dbMgr.GetLeaderboardProjectChurchMemberCount(ctx, membershipProjectID, membershipChurchID)
+		require.NoError(t, err)
+		assert.Equal(t, 2, count, "member_count should be 2 after two joins")
+
+		require.NoError(t, dbMgr.RemoveUserFromProject(ctx, membershipUser2ID, membershipProjectID))
+
+		count, err = dbMgr.GetLeaderboardProjectChurchMemberCount(ctx, membershipProjectID, membershipChurchID)
+		require.NoError(t, err)
+		assert.Equal(t, 1, count, "member_count should be 1 after one member leaves")
+	})
+
+	t.Run("score award keeps member_count and updates points", func(t *testing.T) {
+		require.NoError(t, dbMgr.Clean(ctx))
+		require.NoError(t, dbMgr.CreateTestChurch(ctx, membershipChurchID, "Test Church", "NO", "S"))
+		require.NoError(t, dbMgr.CreateTestProject(ctx, membershipProjectID, "Test Project"))
+
+		birthdate := time.Now().AddDate(-25, 0, 0)
+		require.NoError(t, dbMgr.CreateTestUser(ctx, membershipUser1ID, "User1", "MALE", birthdate, membershipChurchID))
+		require.NoError(t, dbMgr.CreateTestUser(ctx, membershipUser2ID, "User2", "FEMALE", birthdate, membershipChurchID))
+		require.NoError(t, dbMgr.EnrollUserInProject(ctx, membershipUser1ID, membershipProjectID))
+		require.NoError(t, dbMgr.EnrollUserInProject(ctx, membershipUser2ID, membershipProjectID))
+
+		require.NoError(t, dbMgr.AddScoreForUser(ctx, membershipUser1ID, membershipProjectID, 100))
+
+		count, err := dbMgr.GetLeaderboardProjectChurchMemberCount(ctx, membershipProjectID, membershipChurchID)
+		require.NoError(t, err)
+		assert.Equal(t, 2, count, "score award must not change member_count")
+
+		points, err := dbMgr.GetLeaderboardProjectChurchPoints(ctx, membershipProjectID, membershipChurchID)
+		require.NoError(t, err)
+		assert.Equal(t, int64(100), points, "church should have the awarded 100 points")
+	})
+
+	t.Run("event join and leave maintain event church member_count", func(t *testing.T) {
+		require.NoError(t, dbMgr.Clean(ctx))
+		setupMembershipBaseDataWithEvent(t, ctx, dbMgr)
+
+		birthdate := time.Now().AddDate(-25, 0, 0)
+		require.NoError(t, dbMgr.CreateTestUser(ctx, membershipUser1ID, "User1", "MALE", birthdate, membershipChurchID))
+		require.NoError(t, dbMgr.CreateTestUser(ctx, membershipUser2ID, "User2", "FEMALE", birthdate, membershipChurchID))
+		require.NoError(t, dbMgr.EnrollUserInProject(ctx, membershipUser1ID, membershipProjectID))
+		require.NoError(t, dbMgr.EnrollUserInProject(ctx, membershipUser2ID, membershipProjectID))
+
+		require.NoError(t, dbMgr.EnrollUserInEvent(ctx, membershipUser1ID, membershipEventID))
+		require.NoError(t, dbMgr.EnrollUserInEvent(ctx, membershipUser2ID, membershipEventID))
+
+		count, err := dbMgr.GetLeaderboardEventChurchMemberCount(ctx, membershipEventID, membershipChurchID)
+		require.NoError(t, err)
+		assert.Equal(t, 2, count, "event church member_count should be 2 after two joins")
+
+		require.NoError(t, dbMgr.RemoveUserFromEvent(ctx, membershipUser2ID, membershipEventID))
+
+		count, err = dbMgr.GetLeaderboardEventChurchMemberCount(ctx, membershipEventID, membershipChurchID)
+		require.NoError(t, err)
+		assert.Equal(t, 1, count, "event church member_count should be 1 after a leave")
+	})
+
+	t.Run("incremental member_count matches regenerate_leaderboards", func(t *testing.T) {
+		require.NoError(t, dbMgr.Clean(ctx))
+		require.NoError(t, dbMgr.CreateTestChurch(ctx, membershipChurchID, "Test Church", "NO", "S"))
+		require.NoError(t, dbMgr.CreateTestProject(ctx, membershipProjectID, "Test Project"))
+
+		birthdate := time.Now().AddDate(-25, 0, 0)
+		require.NoError(t, dbMgr.CreateTestUser(ctx, membershipUser1ID, "User1", "MALE", birthdate, membershipChurchID))
+		require.NoError(t, dbMgr.CreateTestUser(ctx, membershipUser2ID, "User2", "FEMALE", birthdate, membershipChurchID))
+		require.NoError(t, dbMgr.CreateTestUser(ctx, membershipUser3ID, "User3", "MALE", birthdate, membershipChurchID))
+
+		// Mixed operations: joins, scoring, and a leave
+		require.NoError(t, dbMgr.EnrollUserInProject(ctx, membershipUser1ID, membershipProjectID))
+		require.NoError(t, dbMgr.AddScoreForUser(ctx, membershipUser1ID, membershipProjectID, 100))
+		require.NoError(t, dbMgr.EnrollUserInProject(ctx, membershipUser2ID, membershipProjectID))
+		require.NoError(t, dbMgr.AddScoreForUser(ctx, membershipUser2ID, membershipProjectID, 50))
+		require.NoError(t, dbMgr.EnrollUserInProject(ctx, membershipUser3ID, membershipProjectID))
+		require.NoError(t, dbMgr.RemoveUserFromProject(ctx, membershipUser2ID, membershipProjectID))
+
+		countTrigger, err := dbMgr.GetLeaderboardProjectChurchMemberCount(ctx, membershipProjectID, membershipChurchID)
+		require.NoError(t, err)
+		pointsTrigger, err := dbMgr.GetLeaderboardProjectChurchPoints(ctx, membershipProjectID, membershipChurchID)
+		require.NoError(t, err)
+
+		_, err = dbMgr.DB.Pool.Exec(ctx, `SELECT * FROM regenerate_leaderboards()`)
+		require.NoError(t, err)
+
+		countRegen, err := dbMgr.GetLeaderboardProjectChurchMemberCount(ctx, membershipProjectID, membershipChurchID)
+		require.NoError(t, err)
+		pointsRegen, err := dbMgr.GetLeaderboardProjectChurchPoints(ctx, membershipProjectID, membershipChurchID)
+		require.NoError(t, err)
+
+		assert.Equal(t, countTrigger, countRegen, "incremental member_count should match regenerate")
+		assert.Equal(t, pointsTrigger, pointsRegen, "incremental points should match regenerate")
+		assert.Equal(t, 2, countRegen, "two members remain after user2 left")
+		assert.Equal(t, int64(100), pointsRegen, "only user1's points remain after user2 left")
+	})
+}
+
 // ==================== Helper Functions ====================
 
 // setupMembershipBaseData creates base entities for membership tests

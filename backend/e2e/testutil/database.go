@@ -739,6 +739,36 @@ func (m *TestDBManager) GetLeaderboardProjectChurchPoints(ctx context.Context, p
 	return points, nil
 }
 
+// GetLeaderboardProjectChurchMemberCount returns member_count for a church in the project
+// leaderboard, or -1 if no leaderboard row exists.
+func (m *TestDBManager) GetLeaderboardProjectChurchMemberCount(ctx context.Context, projectID, churchID string) (int, error) {
+	var count int
+	query := `SELECT member_count FROM leaderboard_project_churches WHERE project_id = $1 AND church_id = $2`
+	err := m.DB.Pool.QueryRow(ctx, query, projectID, churchID).Scan(&count)
+	if err != nil {
+		if err.Error() == "no rows in result set" {
+			return -1, nil
+		}
+		return 0, fmt.Errorf("failed to get leaderboard project church member count: %w", err)
+	}
+	return count, nil
+}
+
+// GetLeaderboardEventChurchMemberCount returns member_count for a church in the event
+// leaderboard, or -1 if no leaderboard row exists.
+func (m *TestDBManager) GetLeaderboardEventChurchMemberCount(ctx context.Context, eventID, churchID string) (int, error) {
+	var count int
+	query := `SELECT member_count FROM leaderboard_event_churches WHERE event_id = $1 AND church_id = $2`
+	err := m.DB.Pool.QueryRow(ctx, query, eventID, churchID).Scan(&count)
+	if err != nil {
+		if err.Error() == "no rows in result set" {
+			return -1, nil
+		}
+		return 0, fmt.Errorf("failed to get leaderboard event church member count: %w", err)
+	}
+	return count, nil
+}
+
 // GetLeaderboardEventTeamPoints returns total_points for a team in event leaderboard
 func (m *TestDBManager) GetLeaderboardEventTeamPoints(ctx context.Context, eventID, teamID string) (int64, error) {
 	var points int64
