@@ -51,7 +51,8 @@ func main() {
 		jwtSecret = os.Getenv("JWT_SECRET")
 	}
 	if jwtSecret == "" {
-		jwtSecret = "your-secret-key-for-signing-wayfarer-jwts" // default from gentoken
+		fmt.Fprintln(os.Stderr, "Error: JWT secret is required (set --secret or JWT_SECRET)")
+		os.Exit(1)
 	}
 
 	// Load configuration

@@ -406,3 +406,50 @@ func TestValidateToken(t *testing.T) {
 		assert.Equal(t, "US01ARZ3NDEKTSV4RRFFQ69G5FAV", claims.UserID)
 	})
 }
+
+// TestValidateToken_Security covers the authentication-bypass classes that a
+// missing/weak secret or a permissive algorithm check would otherwise allow.
+func TestValidateToken_Security(t *testing.T) {
+	// signToken signs claims with the given method and key so we can craft
+	// attacker-controlled tokens.
+	signToken := func(method jwt.SigningMethod, key any) string {
+		claims := WayfarerClaims{
+			UserID:    "US01ARZ3NDEKTSV4RRFFQ69G5FAV",
+			UserRoles: []string{"superadmin"},
+			RegisteredClaims: jwt.RegisteredClaims{
+				Issuer:    testJWTConfig.Issuer,
+				IssuedAt:  jwt.NewNumericDate(time.Now()),
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
+			},
+		}
+		tokenString, err := jwt.NewWithClaims(method, claims).SignedString(key)
+		require.NoError(t, err)
+		return tokenString
+	}
+
+	t.Run("rejects empty configured secret (fail-open bypass)", func(t *testing.T) {
+		// An attacker forges a token signed with the empty key, matching a
+		// server whose JWT_SECRET was never set.
+		emptySecretCfg := config.JWTConfig{Secret: "", Issuer: testJWTConfig.Issuer}
+		token := signToken(jwt.SigningMethodHS256, []byte(""))
+
+		_, err := validateToken(token, emptySecretCfg)
+		assert.Error(t, err, "empty secret must never validate a token")
+	})
+
+	t.Run("rejects HS384 algorithm downgrade", func(t *testing.T) {
+		// Same secret, different HMAC variant. Must be rejected because only
+		// HS256 is pinned.
+		token := signToken(jwt.SigningMethodHS384, []byte(testJWTConfig.Secret))
+
+		_, err := validateToken(token, testJWTConfig)
+		assert.Error(t, err, "non-HS256 HMAC variants must be rejected")
+	})
+
+	t.Run("rejects none algorithm", func(t *testing.T) {
+		token := signToken(jwt.SigningMethodNone, jwt.UnsafeAllowNoneSignatureType)
+
+		_, err := validateToken(token, testJWTConfig)
+		assert.Error(t, err, "unsigned (alg=none) tokens must be rejected")
+	})
+}

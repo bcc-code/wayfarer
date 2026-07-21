@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -110,7 +111,10 @@ func (m model) searchUsers() tea.Cmd {
 func (m model) generateToken() tea.Cmd {
 	return func() tea.Msg {
 		form := m.tokenForm
-		secret := "your-secret-key-for-signing-wayfarer-jwts"
+		secret := os.Getenv("JWT_SECRET")
+		if secret == "" {
+			return errorMsg("JWT_SECRET environment variable is required to generate a token")
+		}
 
 		now := time.Now()
 		claims := WayfarerClaims{

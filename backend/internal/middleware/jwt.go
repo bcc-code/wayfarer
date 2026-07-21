@@ -94,14 +94,18 @@ func JWTAuth(cfg config.JWTConfig) gin.HandlerFunc {
 
 // validateToken parses and validates a JWT token
 func validateToken(tokenString string, cfg config.JWTConfig) (*WayfarerClaims, error) {
-	// Parse the token
-	token, err := jwt.ParseWithClaims(tokenString, &WayfarerClaims{}, func(token *jwt.Token) (interface{}, error) {
-		// Verify signing method is HS256
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("unexpected signing method")
-		}
+	// Defense in depth: never validate against an empty signing key. Config
+	// validation should already reject this, but an empty key would let an
+	// attacker forge tokens signed with the empty string.
+	if cfg.Secret == "" {
+		return nil, errors.New("JWT secret is not configured")
+	}
+
+	// Parse the token, pinning the accepted algorithm to HS256 so an attacker
+	// cannot downgrade to another HMAC variant (or "none").
+	token, err := jwt.ParseWithClaims(tokenString, &WayfarerClaims{}, func(token *jwt.Token) (any, error) {
 		return []byte(cfg.Secret), nil
-	})
+	}, jwt.WithValidMethods([]string{"HS256"}))
 
 	if err != nil {
 		return nil, err

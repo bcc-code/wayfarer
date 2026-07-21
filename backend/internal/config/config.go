@@ -279,7 +279,29 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("DATABASE_URL is required")
 	}
 
+	if err := validateJWTSecret(cfg.JWT.Secret); err != nil {
+		return nil, err
+	}
+
 	return cfg, nil
+}
+
+// minJWTSecretBytes is the minimum acceptable length for the HMAC signing secret.
+// 32 bytes matches the HS256 output size and provides adequate entropy.
+const minJWTSecretBytes = 32
+
+// validateJWTSecret ensures the configured JWT secret is present and long enough
+// to resist brute-force. A missing or weak secret would let an attacker forge
+// tokens with arbitrary user IDs and roles, so startup must fail rather than
+// fall open.
+func validateJWTSecret(secret string) error {
+	if secret == "" {
+		return fmt.Errorf("JWT_SECRET is required")
+	}
+	if len(secret) < minJWTSecretBytes {
+		return fmt.Errorf("JWT_SECRET must be at least %d bytes", minJWTSecretBytes)
+	}
+	return nil
 }
 
 // Helper functions to read environment variables with defaults

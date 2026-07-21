@@ -22,7 +22,11 @@ func main() {
 	}
 
 	userID := os.Args[1]
-	secret := "your-secret-key-for-signing-wayfarer-jwts"
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		fmt.Fprintln(os.Stderr, "Error: JWT_SECRET environment variable is required")
+		os.Exit(1)
+	}
 
 	validDays := 5
 	if len(os.Args) >= 3 {

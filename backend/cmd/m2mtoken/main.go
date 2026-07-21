@@ -10,7 +10,6 @@ import (
 )
 
 const (
-	defaultSecret = "your-secret-key-for-signing-wayfarer-jwts"
 	defaultYears  = 1
 	m2mUserID     = "M2M_SERVICE"
 	defaultIssuer = "wayfarer"
@@ -25,7 +24,8 @@ type WayfarerClaims struct {
 func main() {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
-		secret = defaultSecret
+		fmt.Fprintln(os.Stderr, "Error: JWT_SECRET environment variable is required")
+		os.Exit(1)
 	}
 
 	issuer := os.Getenv("JWT_ISSUER")
