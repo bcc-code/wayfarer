@@ -1,6 +1,8 @@
 package ladder_to_heaven
 
 import (
+	"log/slog"
+
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/plugins"
 	"github.com/gin-gonic/gin"
@@ -22,9 +24,6 @@ type Config struct {
 	// CryptexBaseURL is the base URL for Cryptex admin login.
 	// Example: https://cryptex.example.com
 	CryptexBaseURL string
-	// ExcaliburBaseURL is the base URL for Excalibur user login.
-	// Example: https://dev.excalibur.bcc.media
-	ExcaliburBaseURL string
 }
 
 // LadderToHeavenPlugin implements the plugins.Plugin interface.
@@ -51,37 +50,41 @@ func (p *LadderToHeavenPlugin) Enabled() bool {
 
 // Register sets up the plugin's routes.
 func (p *LadderToHeavenPlugin) Register(router gin.IRouter, deps plugins.Dependencies, apiKeyAuth gin.HandlerFunc) error {
-	contentHandler := &contentEventHandler{
-		db:            deps.DB,
-		cache:         deps.Cache,
-		achievementID: p.config.AchievementID,
-		secretKey:     p.config.SecretKey,
-		firebase:      deps.Firebase,
+	// The webhook endpoints mutate state (award points, finalize betting), so they
+	// must fail closed: only register them when a signing secret is configured, and
+	// require a valid HMAC signature on every request. Without a secret the routes
+	// are not registered at all (requests get 404).
+	if p.config.SecretKey != "" {
+		hmacAuth := middleware.WebhookHMACAuth(p.config.SecretKey)
+
+		contentHandler := &contentEventHandler{
+			db:            deps.DB,
+			cache:         deps.Cache,
+			achievementID: p.config.AchievementID,
+			firebase:      deps.Firebase,
+		}
+		router.POST("/plugins/ladder-to-heaven/content-event", hmacAuth, contentHandler.handle)
+
+		teamRenameHandler := &teamNameChangedHandler{
+			db:          deps.DB,
+			cache:       deps.Cache,
+			challengeID: p.config.TeamRenameChallengeID,
+			firebase:    deps.Firebase,
+		}
+		router.POST("/plugins/ladder-to-heaven/team-name-changed", hmacAuth, teamRenameHandler.handle)
+
+		// Quiz finalized handler for ordering question betting
+		quizFinalizedHandler := &quizFinalizedHandler{
+			db:          deps.DB,
+			cache:       deps.Cache,
+			loaders:     deps.Loaders,
+			pushService: deps.PushService,
+			firebase:    deps.Firebase,
+		}
+		router.POST("/plugins/ladder-to-heaven/quiz-finalized", hmacAuth, quizFinalizedHandler.handle)
+	} else {
+		slog.Warn("ladder_to_heaven: webhook endpoints disabled, PLUGIN_LADDER_TO_HEAVEN_SECRET_KEY not set")
 	}
-
-	router.POST("/plugins/ladder-to-heaven/content-event", contentHandler.handle)
-
-	teamRenameHandler := &teamNameChangedHandler{
-		db:          deps.DB,
-		cache:       deps.Cache,
-		challengeID: p.config.TeamRenameChallengeID,
-		secretKey:   p.config.SecretKey,
-		firebase:    deps.Firebase,
-	}
-
-	router.POST("/plugins/ladder-to-heaven/team-name-changed", teamRenameHandler.handle)
-
-	// Quiz finalized handler for ordering question betting
-	quizFinalizedHandler := &quizFinalizedHandler{
-		db:          deps.DB,
-		cache:       deps.Cache,
-		loaders:     deps.Loaders,
-		pushService: deps.PushService,
-		secretKey:   p.config.SecretKey,
-		firebase:    deps.Firebase,
-	}
-
-	router.POST("/plugins/ladder-to-heaven/quiz-finalized", quizFinalizedHandler.handle)
 
 	// Cryptex admin URL endpoint (requires JWT authentication)
 	cryptexHandler := &cryptexAdminURLHandler{
@@ -93,17 +96,6 @@ func (p *LadderToHeavenPlugin) Register(router gin.IRouter, deps plugins.Depende
 	}
 
 	router.GET("/plugins/ladder-to-heaven/cryptex-admin-url", middleware.JWTAuth(deps.JWTConfig), cryptexHandler.handle)
-
-	// Excalibur user URL endpoint (requires JWT authentication)
-	excaliburHandler := &excaliburUserURLHandler{
-		db:              deps.DB,
-		settingsService: deps.SettingsService,
-		secretKey:       p.config.CryptexSecretKey,
-		baseURL:         p.config.ExcaliburBaseURL,
-		jwtConfig:       deps.JWTConfig,
-	}
-
-	router.GET("/plugins/ladder-to-heaven/excalibur-user-url", middleware.JWTAuth(deps.JWTConfig), excaliburHandler.handle)
 
 	// Superteam distribution endpoints (requires JWT authentication)
 	distHandler := &superteamDistributionHandler{

@@ -1,10 +1,8 @@
 package ladder_to_heaven
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"io"
 	"log/slog"
 	"net/http"
 	"time"
@@ -18,7 +16,6 @@ import (
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/ulid"
-	"github.com/bcc-media/wayfarer/internal/webhook"
 	"github.com/gin-gonic/gin"
 )
 
@@ -30,7 +27,6 @@ type quizFinalizedHandler struct {
 	cache       *cache.CacheWithRegistry
 	loaders     *loaders.Loaders
 	pushService *push.Service
-	secretKey   string
 	firebase    *firebase.Service
 }
 
@@ -88,28 +84,7 @@ const (
 func (h *quizFinalizedHandler) handle(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	// Read raw body for signature verification
-	body, err := io.ReadAll(c.Request.Body)
-	if err != nil {
-		slog.Warn("ladder_to_heaven: session_finished: failed to read request body", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read request body"})
-		return
-	}
-
-	// Verify webhook signature if secret key is configured
-	if h.secretKey != "" {
-		signature := c.GetHeader("X-Webhook-Signature")
-		if !webhook.VerifySignature(body, signature, h.secretKey) {
-			slog.Warn("ladder_to_heaven: session_finished: invalid webhook signature")
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid signature"})
-			return
-		}
-	}
-
-	// Restore body for JSON binding
-	c.Request.Body = io.NopCloser(bytes.NewReader(body))
-
-	// Parse request body
+	// Parse request body (signature already verified by middleware)
 	var req sessionFinishedRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Warn("ladder_to_heaven: session_finished: invalid request body", "error", err)

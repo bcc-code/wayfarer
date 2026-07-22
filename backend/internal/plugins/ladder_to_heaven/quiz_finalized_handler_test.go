@@ -10,6 +10,7 @@ import (
 
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -282,15 +283,20 @@ func TestParseOrderingResponse(t *testing.T) {
 	}
 }
 
+// TestSessionFinishedHandler_InvalidSignature verifies that a request with a bad
+// signature is rejected by the WebhookHMACAuth middleware before reaching the handler.
 func TestSessionFinishedHandler_InvalidSignature(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	cacheInstance, _ := cache.NewCacheWithRegistry(cache.DefaultConfig())
 	handler := &quizFinalizedHandler{
-		db:        nil,
-		cache:     cacheInstance,
-		secretKey: "secret-key",
+		db:    nil,
+		cache: cacheInstance,
 	}
+
+	router := gin.New()
+	router.POST("/plugins/ladder-to-heaven/quiz-finalized",
+		middleware.WebhookHMACAuth("secret-key"), handler.handle)
 
 	payload := sessionFinishedRequest{
 		EventType: "quiz_session_finished",
@@ -308,10 +314,7 @@ func TestSessionFinishedHandler_InvalidSignature(t *testing.T) {
 	req.Header.Set("X-Webhook-Signature", "invalid-signature")
 
 	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	c.Request = req
-
-	handler.handle(c)
+	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	var response map[string]interface{}
@@ -380,9 +383,8 @@ func TestSessionFinishedRequest_ValidationErrors(t *testing.T) {
 
 			cacheInstance, _ := cache.NewCacheWithRegistry(cache.DefaultConfig())
 			handler := &quizFinalizedHandler{
-				db:        nil,
-				cache:     cacheInstance,
-				secretKey: "",
+				db:    nil,
+				cache: cacheInstance,
 			}
 
 			body, err := json.Marshal(tt.payload)

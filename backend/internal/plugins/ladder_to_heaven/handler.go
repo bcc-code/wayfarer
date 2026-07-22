@@ -1,9 +1,7 @@
 package ladder_to_heaven
 
 import (
-	"bytes"
 	"context"
-	"io"
 	"log/slog"
 	"net/http"
 	"time"
@@ -13,16 +11,16 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/firebase"
 	"github.com/bcc-media/wayfarer/internal/ulid"
-	"github.com/bcc-media/wayfarer/internal/webhook"
 	"github.com/gin-gonic/gin"
 )
 
 // contentEventHandler handles webhook requests for the Ladder to Heaven plugin.
+// Signature verification and body-size limiting are handled by the
+// middleware.WebhookHMACAuth middleware attached to the route.
 type contentEventHandler struct {
 	db            *database.DB
 	cache         *cache.CacheWithRegistry
 	achievementID string
-	secretKey     string
 	firebase      *firebase.Service
 }
 
@@ -71,28 +69,7 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 		return
 	}
 
-	// Read raw body for signature verification
-	body, err := io.ReadAll(c.Request.Body)
-	if err != nil {
-		slog.Warn("ladder_to_heaven: failed to read request body", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read request body"})
-		return
-	}
-
-	// Verify webhook signature if secret key is configured
-	if h.secretKey != "" {
-		signature := c.GetHeader("X-Webhook-Signature")
-		if !webhook.VerifySignature(body, signature, h.secretKey) {
-			slog.Warn("ladder_to_heaven: invalid webhook signature")
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid signature"})
-			return
-		}
-	}
-
-	// Restore body for JSON binding
-	c.Request.Body = io.NopCloser(bytes.NewReader(body))
-
-	// Parse request body
+	// Parse request body (signature already verified by middleware)
 	var req contentEventRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Warn("ladder_to_heaven: invalid request body", "error", err)
