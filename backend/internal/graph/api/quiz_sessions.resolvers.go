@@ -895,9 +895,13 @@ func (r *quizSessionResolver) Quiz(ctx context.Context, obj *model.QuizSession) 
 }
 
 // CreatedBy is the resolver for the createdBy field.
-func (r *quizSessionResolver) CreatedBy(ctx context.Context, obj *model.QuizSession) (*model.User, error) {
+func (r *quizSessionResolver) CreatedBy(ctx context.Context, obj *model.QuizSession) (*model.PublicUser, error) {
 	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.CreatedByID)
-	return thunk()
+	user, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+	return toPublicUser(user), nil
 }
 
 // AccessCount is the resolver for the accessCount field.

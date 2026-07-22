@@ -1577,14 +1577,14 @@ func (r *teamMemberResolver) Church(ctx context.Context, obj *model.TeamMember) 
 // Note: Authorization is handled by the parent Team.Members resolver (CanManageTeam check).
 // No additional per-member check is needed here — if you can access the team's members,
 // you can view the User details of each member (including cross-church members).
-func (r *teamMemberResolver) User(ctx context.Context, obj *model.TeamMember) (*model.User, error) {
+func (r *teamMemberResolver) User(ctx context.Context, obj *model.TeamMember) (*model.PublicUser, error) {
 	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.UserID)
 	user, err := thunk()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load user: %w", err)
 	}
 
-	return user, nil
+	return toPublicUser(user), nil
 }
 
 // SuperTeam returns SuperTeamResolver implementation.

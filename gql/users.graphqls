@@ -27,6 +27,17 @@ type User {
     points(projectId: ID!): Int! @goField(forceResolver: true)
 }
 
+# PublicUser is the non-sensitive projection of a User, safe to expose through
+# nested, non-privileged paths (team rosters, quiz session authors, etc.). It
+# deliberately omits all PII (email, birthdate, membersId, personUuid, church,
+# roles). Full User is only returned by explicitly authorized top-level fields.
+type PublicUser {
+    id: ID!
+    name: String!
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
+}
+
 # ==================== User Input Types ====================
 
 input CreateUserInput {

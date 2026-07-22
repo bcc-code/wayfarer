@@ -21,7 +21,7 @@ type TeamMember {
     church: Church! @goField(forceResolver: true)
     isTeamLead: Boolean!
     joinedAt: String!
-    user: User! @goField(forceResolver: true)
+    user: PublicUser! @goField(forceResolver: true)
 }
 
 type SuperTeam {

@@ -3,8 +3,10 @@ package e2e
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/bcc-media/wayfarer/e2e/testutil"
+	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -444,6 +446,103 @@ func TestRoles(t *testing.T) {
 		require.NoError(t, resp.UnmarshalData(&result))
 		// Should have at least the target user we assigned project admin to
 		assert.GreaterOrEqual(t, len(result.UsersWithRole), 1)
+	})
+}
+
+// TestRoles_TeamLeadAssignmentScope verifies that a church admin may only assign
+// TEAM_LEAD on teams belonging to a church they administer. It builds a controlled
+// fixture so team/church ownership is deterministic.
+//
+//   - LOCK:   global admin unaffected; church admin can assign on an owned team.
+//   - TARGET(Fix3): church admin CANNOT assign on a cross-church team (currently allowed).
+func TestRoles_TeamLeadAssignmentScope(t *testing.T) {
+	ctx := context.Background()
+	dbMgr, _ := GetTestEnv()
+
+	require.NoError(t, dbMgr.Clean(ctx))
+	_, err := dbMgr.Seed(ctx, 42, testutil.DefaultSeedConfig())
+	require.NoError(t, err)
+
+	churchA := ulid.NewChurchID()
+	churchB := ulid.NewChurchID()
+	require.NoError(t, dbMgr.CreateTestChurch(ctx, churchA, "Church A", "NO", "S"))
+	require.NoError(t, dbMgr.CreateTestChurch(ctx, churchB, "Church B", "NO", "S"))
+
+	projectA := ulid.NewProjectID()
+	require.NoError(t, dbMgr.CreateTestProject(ctx, projectA, "Project A"))
+
+	birth := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	// teamA has a member from church A; teamB has a member from church B.
+	teamA := ulid.NewTeamID()
+	teamB := ulid.NewTeamID()
+	require.NoError(t, dbMgr.CreateTestTeam(ctx, teamA, "Team A", projectA))
+	require.NoError(t, dbMgr.CreateTestTeam(ctx, teamB, "Team B", projectA))
+
+	memberA := ulid.NewUserID()
+	memberB := ulid.NewUserID()
+	require.NoError(t, dbMgr.CreateTestUser(ctx, memberA, "Member A", "MALE", birth, churchA))
+	require.NoError(t, dbMgr.CreateTestUser(ctx, memberB, "Member B", "MALE", birth, churchB))
+	require.NoError(t, dbMgr.AddUserToTeam(ctx, memberA, teamA))
+	require.NoError(t, dbMgr.AddUserToTeam(ctx, memberB, teamB))
+
+	// churchAdminA administers church A.
+	churchAdminA := ulid.NewUserID()
+	require.NoError(t, dbMgr.CreateTestUser(ctx, churchAdminA, "Church Admin A", "MALE", birth, churchA))
+	require.NoError(t, dbMgr.AssignRoleWithScope(ctx, churchAdminA, testutil.RoleChurchAdmin, &churchA, nil, nil))
+
+	// A global admin actor and the user who receives the TEAM_LEAD role.
+	adminUser := ulid.NewUserID()
+	require.NoError(t, dbMgr.CreateTestUser(ctx, adminUser, "Admin", "MALE", birth, churchA))
+	require.NoError(t, dbMgr.AssignRole(ctx, adminUser, testutil.RoleAdmin))
+
+	target := ulid.NewUserID()
+	require.NoError(t, dbMgr.CreateTestUser(ctx, target, "Target", "MALE", birth, churchA))
+
+	router, cleanup, err := testutil.SetupTestServer(ctx, dbMgr)
+	require.NoError(t, err)
+	defer cleanup()
+
+	client := testutil.NewGraphQLClient(router)
+	defer client.Close()
+
+	const assignMutation = `
+		mutation AssignRole($input: AssignRoleInput!) {
+			assignRole(input: $input) { id role scope { type id } }
+		}`
+
+	assignTeamLead := func(t *testing.T, token, teamID string) *testutil.GraphQLResponse {
+		t.Helper()
+		return client.WithAuth(token).MustExecute(t, assignMutation, map[string]any{
+			"input": map[string]any{
+				"userId":    target,
+				"role":      "TEAM_LEAD",
+				"scopeType": "TEAM",
+				"scopeId":   teamID,
+			},
+		})
+	}
+
+	t.Run("LOCK global admin can assign team lead on any team", func(t *testing.T) {
+		token, err := testutil.GenerateAdminToken(adminUser)
+		require.NoError(t, err)
+		resp := assignTeamLead(t, token, teamB)
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+	})
+
+	t.Run("LOCK church admin can assign team lead on team in their church", func(t *testing.T) {
+		token, err := testutil.GenerateUserToken(churchAdminA)
+		require.NoError(t, err)
+		resp := assignTeamLead(t, token, teamA) // teamA has a church-A member
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+	})
+
+	t.Run("TARGET(Fix3) church admin cannot assign team lead on cross-church team", func(t *testing.T) {
+		token, err := testutil.GenerateUserToken(churchAdminA)
+		require.NoError(t, err)
+		resp := assignTeamLead(t, token, teamB) // teamB only has a church-B member
+		require.True(t, resp.HasErrors(), "church admin must NOT assign team lead outside their church")
+		assert.Contains(t, resp.ErrorMessage(), "permission")
 	})
 }
 

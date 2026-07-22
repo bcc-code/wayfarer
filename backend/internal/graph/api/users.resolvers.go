@@ -112,6 +112,11 @@ func (r *mutationResolver) UnlockUserChurch(ctx context.Context, userID string) 
 	return user, nil
 }
 
+// ImageObject is the resolver for the imageObject field.
+func (r *publicUserResolver) ImageObject(ctx context.Context, obj *model.PublicUser) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+}
+
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
 	// Check for M2M role from JWT token (M2M users don't exist in the database)
@@ -467,7 +472,11 @@ func (r *userResolver) Points(ctx context.Context, obj *model.User, projectID st
 	return int(score), nil
 }
 
+// PublicUser returns PublicUserResolver implementation.
+func (r *Resolver) PublicUser() PublicUserResolver { return &publicUserResolver{r} }
+
 // User returns UserResolver implementation.
 func (r *Resolver) User() UserResolver { return &userResolver{r} }
 
+type publicUserResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }

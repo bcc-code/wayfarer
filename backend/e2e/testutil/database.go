@@ -246,6 +246,16 @@ func (m *TestDBManager) AssignRoleWithScope(ctx context.Context, userID string, 
 	return nil
 }
 
+// CountChallengeEnrollments returns the number of enrollment rows for a challenge
+func (m *TestDBManager) CountChallengeEnrollments(ctx context.Context, challengeID string) (int, error) {
+	var count int
+	err := m.DB.Pool.QueryRow(ctx, `SELECT COUNT(*) FROM user_challenge_enrollments WHERE challenge_id = $1`, challengeID).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count challenge enrollments: %w", err)
+	}
+	return count, nil
+}
+
 // GetUserLanguage returns the language stored for a user in the database
 func (m *TestDBManager) GetUserLanguage(ctx context.Context, userID string) (string, error) {
 	var language string

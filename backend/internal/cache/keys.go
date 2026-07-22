@@ -72,10 +72,11 @@ const (
 	PrefixQuizSubmissionsCount  = "quizsubmissionscount:"
 
 	// Permissions/Roles
-	PrefixHasRole          = "hasrole:"
-	PrefixHasRoleInChurch  = "hasroleinchurch:"
-	PrefixHasRoleInProject = "hasroleinproject:"
-	PrefixHasRoleInTeam    = "hasroleinteam:"
+	PrefixHasRole            = "hasrole:"
+	PrefixHasAnyProjectAdmin = "hasanyprojectadmin:"
+	PrefixHasRoleInChurch    = "hasroleinchurch:"
+	PrefixHasRoleInProject   = "hasroleinproject:"
+	PrefixHasRoleInTeam      = "hasroleinteam:"
 
 	// Translations
 	PrefixTranslation = "translation:"
@@ -545,6 +546,11 @@ func UsersCountKey(params map[string]string) string {
 // HasRoleKey builds a cache key for HasRole checks
 func HasRoleKey(userID string, role string) string {
 	return fmt.Sprintf("%s%s:%s", PrefixHasRole, userID, role)
+}
+
+// HasAnyProjectAdminKey builds a cache key for "is project admin of any project" checks
+func HasAnyProjectAdminKey(userID string) string {
+	return fmt.Sprintf("%s%s", PrefixHasAnyProjectAdmin, userID)
 }
 
 // HasRoleInChurchKey builds a cache key for HasRoleInChurch checks

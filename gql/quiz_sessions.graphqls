@@ -56,7 +56,7 @@ type QuizSession {
     lockAt: DateTime
     finishAt: DateTime
 
-    createdBy: User! @goField(forceResolver: true)
+    createdBy: PublicUser! @goField(forceResolver: true)
     createdAt: DateTime!
 
     # Access info (admin only)

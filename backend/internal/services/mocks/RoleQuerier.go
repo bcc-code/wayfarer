@@ -106,6 +106,72 @@ func (_c *MockRoleQuerier_AssignRole_Call) RunAndReturn(run func(ctx context.Con
 	return _c
 }
 
+// CanProjectAdminAccessUser provides a mock function for the type MockRoleQuerier
+func (_mock *MockRoleQuerier) CanProjectAdminAccessUser(ctx context.Context, arg sqlc.CanProjectAdminAccessUserParams) (bool, error) {
+	ret := _mock.Called(ctx, arg)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CanProjectAdminAccessUser")
+	}
+
+	var r0 bool
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, sqlc.CanProjectAdminAccessUserParams) (bool, error)); ok {
+		return returnFunc(ctx, arg)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, sqlc.CanProjectAdminAccessUserParams) bool); ok {
+		r0 = returnFunc(ctx, arg)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, sqlc.CanProjectAdminAccessUserParams) error); ok {
+		r1 = returnFunc(ctx, arg)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockRoleQuerier_CanProjectAdminAccessUser_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CanProjectAdminAccessUser'
+type MockRoleQuerier_CanProjectAdminAccessUser_Call struct {
+	*mock.Call
+}
+
+// CanProjectAdminAccessUser is a helper method to define mock.On call
+//   - ctx context.Context
+//   - arg sqlc.CanProjectAdminAccessUserParams
+func (_e *MockRoleQuerier_Expecter) CanProjectAdminAccessUser(ctx any, arg any) *MockRoleQuerier_CanProjectAdminAccessUser_Call {
+	return &MockRoleQuerier_CanProjectAdminAccessUser_Call{Call: _e.mock.On("CanProjectAdminAccessUser", ctx, arg)}
+}
+
+func (_c *MockRoleQuerier_CanProjectAdminAccessUser_Call) Run(run func(ctx context.Context, arg sqlc.CanProjectAdminAccessUserParams)) *MockRoleQuerier_CanProjectAdminAccessUser_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 sqlc.CanProjectAdminAccessUserParams
+		if args[1] != nil {
+			arg1 = args[1].(sqlc.CanProjectAdminAccessUserParams)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockRoleQuerier_CanProjectAdminAccessUser_Call) Return(b bool, err error) *MockRoleQuerier_CanProjectAdminAccessUser_Call {
+	_c.Call.Return(b, err)
+	return _c
+}
+
+func (_c *MockRoleQuerier_CanProjectAdminAccessUser_Call) RunAndReturn(run func(ctx context.Context, arg sqlc.CanProjectAdminAccessUserParams) (bool, error)) *MockRoleQuerier_CanProjectAdminAccessUser_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetTeamCreatorChurchID provides a mock function for the type MockRoleQuerier
 func (_mock *MockRoleQuerier) GetTeamCreatorChurchID(ctx context.Context, teamid string) (string, error) {
 	ret := _mock.Called(ctx, teamid)
@@ -302,6 +368,72 @@ func (_c *MockRoleQuerier_GetUserRoles_Call) Return(userRoles []*sqlc.UserRole, 
 }
 
 func (_c *MockRoleQuerier_GetUserRoles_Call) RunAndReturn(run func(ctx context.Context, userID string) ([]*sqlc.UserRole, error)) *MockRoleQuerier_GetUserRoles_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// HasAnyProjectAdminRole provides a mock function for the type MockRoleQuerier
+func (_mock *MockRoleQuerier) HasAnyProjectAdminRole(ctx context.Context, userID string) (bool, error) {
+	ret := _mock.Called(ctx, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for HasAnyProjectAdminRole")
+	}
+
+	var r0 bool
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, error)); ok {
+		return returnFunc(ctx, userID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, userID)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, userID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockRoleQuerier_HasAnyProjectAdminRole_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'HasAnyProjectAdminRole'
+type MockRoleQuerier_HasAnyProjectAdminRole_Call struct {
+	*mock.Call
+}
+
+// HasAnyProjectAdminRole is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID string
+func (_e *MockRoleQuerier_Expecter) HasAnyProjectAdminRole(ctx any, userID any) *MockRoleQuerier_HasAnyProjectAdminRole_Call {
+	return &MockRoleQuerier_HasAnyProjectAdminRole_Call{Call: _e.mock.On("HasAnyProjectAdminRole", ctx, userID)}
+}
+
+func (_c *MockRoleQuerier_HasAnyProjectAdminRole_Call) Run(run func(ctx context.Context, userID string)) *MockRoleQuerier_HasAnyProjectAdminRole_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockRoleQuerier_HasAnyProjectAdminRole_Call) Return(b bool, err error) *MockRoleQuerier_HasAnyProjectAdminRole_Call {
+	_c.Call.Return(b, err)
+	return _c
+}
+
+func (_c *MockRoleQuerier_HasAnyProjectAdminRole_Call) RunAndReturn(run func(ctx context.Context, userID string) (bool, error)) *MockRoleQuerier_HasAnyProjectAdminRole_Call {
 	_c.Call.Return(run)
 	return _c
 }

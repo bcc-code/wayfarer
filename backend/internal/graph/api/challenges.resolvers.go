@@ -756,6 +756,19 @@ func (r *mutationResolver) BulkEnrollUsersInChallenge(ctx context.Context, targe
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
+	// Load challenge first so we can authorize against its project.
+	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, challengeID)
+	challenge, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("challenge not found: %w", err)
+	}
+
+	// Authorize the actor against the challenge's project and target scope BEFORE
+	// resolving the target or mutating anything.
+	if err := r.authorizeChallengeEnrollment(ctx, adminID, actorIsM2M(ctx), target, getChallengeProjectID(challenge)); err != nil {
+		return nil, err
+	}
+
 	// Resolve target to user IDs
 	userIds, err := r.resolveEnrollmentTarget(ctx, target)
 	if err != nil {
@@ -764,13 +777,6 @@ func (r *mutationResolver) BulkEnrollUsersInChallenge(ctx context.Context, targe
 
 	if len(userIds) == 0 {
 		return []model.Challenge{}, nil // No users to enroll
-	}
-
-	// Load challenge for authorization
-	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, challengeID)
-	challenge, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("challenge not found: %w", err)
 	}
 
 	// Bulk enroll
@@ -1036,6 +1042,12 @@ func (r *mutationResolver) BulkEnrollUsersInChallengeAsync(ctx context.Context, 
 		return nil, fmt.Errorf("challenge not found: %w", err)
 	}
 	projectID := getChallengeProjectID(challenge)
+
+	// Authorize the actor against the challenge's project and target scope BEFORE
+	// creating the job / publishing.
+	if err := r.authorizeChallengeEnrollment(ctx, userID, actorIsM2M(ctx), target, projectID); err != nil {
+		return nil, err
+	}
 
 	// Create job and publish to Pub/Sub
 	return r.BulkService.CreateBulkJobAndPublish(

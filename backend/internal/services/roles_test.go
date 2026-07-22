@@ -101,26 +101,77 @@ func TestCanAssignRole_ChurchAdminCanAssignTeamLead(t *testing.T) {
 		Role:   string(RoleAdmin),
 	}).Return(false, nil)
 
+	churchID := "CH01ARZ3NDEKTSV4RRFFQ69G5FAV"
+
 	// Mock: assigner has church admin role
 	mockQueries.On("GetUserRoles", ctx, assignerID).Return([]*sqlc.UserRole{
 		{
 			ID:       "UR01ARZ3NDEKTSV4RRFFQ69G5FAV",
 			UserID:   assignerID,
 			Role:     string(RoleChurchAdmin),
-			ChurchID: stringPtr("CH01ARZ3NDEKTSV4RRFFQ69G5FAV"),
+			ChurchID: stringPtr(churchID),
 		},
 	}, nil)
 
-	// Church admin CAN assign team lead
+	// Mock: the team has a member from the assigner's church (team belongs to it)
+	mockQueries.On("HasTeamMemberFromChurch", ctx, sqlc.HasTeamMemberFromChurchParams{
+		Teamid:   teamID,
+		Churchid: churchID,
+	}).Return(true, nil)
+
+	// Church admin CAN assign team lead on a team belonging to their church
 	canAssign, err := service.CanAssignRole(ctx, assignerID, RoleTeamLead, nil, nil, &teamID)
 	assert.NoError(t, err)
-	assert.True(t, canAssign, "Church admin should be able to assign team lead")
+	assert.True(t, canAssign, "Church admin should be able to assign team lead on their own church's team")
 
 	// Church admin CANNOT assign other roles
 	canAssign, err = service.CanAssignRole(ctx, assignerID, RoleProjectAdmin, nil, nil, nil)
 	assert.NoError(t, err)
 	assert.False(t, canAssign, "Church admin should NOT be able to assign project admin")
+}
 
+// TestCanAssignRole_ChurchAdminCannotAssignTeamLeadCrossChurch verifies the fix for
+// the cross-church TEAM_LEAD escalation: a church admin may not assign TEAM_LEAD on a
+// team that does not belong to a church they administer.
+func TestCanAssignRole_ChurchAdminCannotAssignTeamLeadCrossChurch(t *testing.T) {
+	mockQueries := mocks.NewMockRoleQuerier(t)
+	service := NewRoleService(mockQueries, newTestCache())
+
+	ctx := context.Background()
+	assignerID := "US01ARZ3NDEKTSV4RRFFQ69G5FAV"
+	teamID := "TM01ARZ3NDEKTSV4RRFFQ69G5FAV"
+	churchID := "CH01ARZ3NDEKTSV4RRFFQ69G5FAV"
+
+	mockQueries.On("HasRole", ctx, sqlc.HasRoleParams{
+		UserID: assignerID,
+		Role:   string(RoleSuperAdmin),
+	}).Return(false, nil)
+	mockQueries.On("HasRole", ctx, sqlc.HasRoleParams{
+		UserID: assignerID,
+		Role:   string(RoleAdmin),
+	}).Return(false, nil)
+
+	// Assigner is a church admin of churchID …
+	mockQueries.On("GetUserRoles", ctx, assignerID).Return([]*sqlc.UserRole{
+		{
+			ID:       "UR01ARZ3NDEKTSV4RRFFQ69G5FAV",
+			UserID:   assignerID,
+			Role:     string(RoleChurchAdmin),
+			ChurchID: stringPtr(churchID),
+		},
+	}, nil)
+
+	// … but the team has no member from that church …
+	mockQueries.On("HasTeamMemberFromChurch", ctx, sqlc.HasTeamMemberFromChurchParams{
+		Teamid:   teamID,
+		Churchid: churchID,
+	}).Return(false, nil)
+	// … and was not created by that church.
+	mockQueries.On("GetTeamCreatorChurchID", ctx, teamID).Return("CH09999999999999999999999999", nil)
+
+	canAssign, err := service.CanAssignRole(ctx, assignerID, RoleTeamLead, nil, nil, &teamID)
+	assert.NoError(t, err)
+	assert.False(t, canAssign, "Church admin must NOT assign team lead on a cross-church team")
 }
 
 func TestCanAssignRole_ChurchAdminCanAssignChurchAdminInOwnChurch(t *testing.T) {
@@ -168,6 +219,53 @@ func TestCanAssignRole_ChurchAdminCanAssignChurchAdminInOwnChurch(t *testing.T) 
 	assert.NoError(t, err)
 	assert.False(t, canAssign, "Church admin should NOT be able to assign church admin in another church")
 
+}
+
+// TestCanAccessUser_ProjectAdminScoped verifies that a project admin may access a
+// target user who is a member of a project they administer, but NOT one who is not
+// (the fix for the unscoped project-admin access leak).
+func TestCanAccessUser_ProjectAdminScoped(t *testing.T) {
+	ctx := context.Background()
+	actorID := "US01ARZ3NDEKTSV4RRFFQ69G5FAV"
+	targetID := "US02ARZ3NDEKTSV4RRFFQ69G5FAV"
+	targetChurchID := "CH01ARZ3NDEKTSV4RRFFQ69G5FAV"
+
+	// Helper: the common "not self/m2m/admin" mock expectations.
+	notPrivileged := func(m *mocks.MockRoleQuerier) {
+		m.On("HasRole", ctx, sqlc.HasRoleParams{UserID: actorID, Role: string(RoleM2M)}).Return(false, nil)
+		m.On("HasRole", ctx, sqlc.HasRoleParams{UserID: actorID, Role: string(RoleSuperAdmin)}).Return(false, nil)
+		m.On("HasRole", ctx, sqlc.HasRoleParams{UserID: actorID, Role: string(RoleAdmin)}).Return(false, nil)
+	}
+
+	t.Run("can access user in their project", func(t *testing.T) {
+		mockQueries := mocks.NewMockRoleQuerier(t)
+		service := NewRoleService(mockQueries, newTestCache())
+		notPrivileged(mockQueries)
+		mockQueries.On("CanProjectAdminAccessUser", ctx, sqlc.CanProjectAdminAccessUserParams{
+			ActorID:  actorID,
+			TargetID: targetID,
+		}).Return(true, nil)
+
+		assert.True(t, service.CanAccessUser(ctx, actorID, targetID, targetChurchID))
+	})
+
+	t.Run("cannot access user outside their project", func(t *testing.T) {
+		mockQueries := mocks.NewMockRoleQuerier(t)
+		service := NewRoleService(mockQueries, newTestCache())
+		notPrivileged(mockQueries)
+		mockQueries.On("CanProjectAdminAccessUser", ctx, sqlc.CanProjectAdminAccessUserParams{
+			ActorID:  actorID,
+			TargetID: targetID,
+		}).Return(false, nil)
+		// Falls through to the church-admin branch, which also denies.
+		mockQueries.On("HasRoleInChurch", ctx, sqlc.HasRoleInChurchParams{
+			UserID:   actorID,
+			Role:     string(RoleChurchAdmin),
+			ChurchID: &targetChurchID,
+		}).Return(false, nil)
+
+		assert.False(t, service.CanAccessUser(ctx, actorID, targetID, targetChurchID))
+	})
 }
 
 func TestIsAdmin_ReturnsTrueForSuperAdmin(t *testing.T) {

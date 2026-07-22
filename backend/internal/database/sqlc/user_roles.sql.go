@@ -53,6 +53,32 @@ func (q *Queries) AssignRole(ctx context.Context, arg AssignRoleParams) (*UserRo
 	return &i, err
 }
 
+const CanProjectAdminAccessUser = `-- name: CanProjectAdminAccessUser :one
+SELECT EXISTS (
+    SELECT 1
+    FROM user_roles ur
+    JOIN user_projects up ON up.project_id = ur.project_id
+    WHERE ur.user_id = $1::char(28)
+      AND ur.role = 'PROJECT_ADMIN'
+      AND ur.project_id IS NOT NULL
+      AND up.user_id = $2::char(28)
+) AS can_access
+`
+
+type CanProjectAdminAccessUserParams struct {
+	ActorID  string `json:"actor_id"`
+	TargetID string `json:"target_id"`
+}
+
+// Reports whether the actor is a PROJECT_ADMIN of at least one project the target
+// user is a member of. This scopes project-admin user access to their own projects.
+func (q *Queries) CanProjectAdminAccessUser(ctx context.Context, arg CanProjectAdminAccessUserParams) (bool, error) {
+	row := q.db.QueryRow(ctx, CanProjectAdminAccessUser, arg.ActorID, arg.TargetID)
+	var can_access bool
+	err := row.Scan(&can_access)
+	return can_access, err
+}
+
 const GetAllRolesForUsers = `-- name: GetAllRolesForUsers :many
 SELECT ur.user_id, ur.id, ur.role, ur.church_id, ur.project_id, ur.team_id, ur.assigned_by, ur.assigned_at
 FROM user_roles ur
@@ -488,12 +514,35 @@ func (q *Queries) GetUsersWithRoleInTeam(ctx context.Context, arg GetUsersWithRo
 	return items, nil
 }
 
+const HasAnyProjectAdminRole = `-- name: HasAnyProjectAdminRole :one
+SELECT EXISTS (
+    SELECT 1
+    FROM user_roles
+    WHERE user_id = $1::char(28)
+      AND role = 'PROJECT_ADMIN'
+      AND project_id IS NOT NULL
+) AS has_role
+`
+
+// Reports whether the user is a PROJECT_ADMIN of any project (used for coarse,
+// non-target-specific gates such as file uploads). This intentionally matches a
+// scoped row, unlike HasRole.
+func (q *Queries) HasAnyProjectAdminRole(ctx context.Context, userID string) (bool, error) {
+	row := q.db.QueryRow(ctx, HasAnyProjectAdminRole, userID)
+	var has_role bool
+	err := row.Scan(&has_role)
+	return has_role, err
+}
+
 const HasRole = `-- name: HasRole :one
 SELECT EXISTS (
     SELECT 1
     FROM user_roles
-    WHERE user_id = $1
+    WHERE user_id = $1::char(28)
       AND role = $2
+      AND church_id IS NULL
+      AND project_id IS NULL
+      AND team_id IS NULL
 ) AS has_role
 `
 
@@ -502,6 +551,10 @@ type HasRoleParams struct {
 	Role   string `json:"role"`
 }
 
+// HasRole checks for a GLOBAL (unscoped) role only. The scope columns must all be
+// NULL so a scoped role (e.g. a PROJECT_ADMIN of a single project) can never satisfy
+// a global-role check. Global roles (SUPERADMIN/ADMIN/USER/M2M) always have NULL
+// scope columns (enforced by the CHECK constraint in migration 00005).
 func (q *Queries) HasRole(ctx context.Context, arg HasRoleParams) (bool, error) {
 	row := q.db.QueryRow(ctx, HasRole, arg.UserID, arg.Role)
 	var has_role bool

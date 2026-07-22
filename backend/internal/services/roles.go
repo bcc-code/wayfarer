@@ -19,6 +19,8 @@ type RoleQuerier interface {
 	AssignRole(ctx context.Context, arg sqlc.AssignRoleParams) (*sqlc.UserRole, error)
 	RevokeRole(ctx context.Context, arg sqlc.RevokeRoleParams) error
 	HasRole(ctx context.Context, arg sqlc.HasRoleParams) (bool, error)
+	HasAnyProjectAdminRole(ctx context.Context, userID string) (bool, error)
+	CanProjectAdminAccessUser(ctx context.Context, arg sqlc.CanProjectAdminAccessUserParams) (bool, error)
 	HasRoleInChurch(ctx context.Context, arg sqlc.HasRoleInChurchParams) (bool, error)
 	HasRoleInProject(ctx context.Context, arg sqlc.HasRoleInProjectParams) (bool, error)
 	HasRoleInTeam(ctx context.Context, arg sqlc.HasRoleInTeamParams) (bool, error)
@@ -252,21 +254,12 @@ func (s *RoleService) CanAssignRole(ctx context.Context, assignerID string, role
 		}
 	}
 
-	// Church admins can assign team lead roles
+	// Church admins can assign team lead roles, but only on teams belonging to a
+	// church they administer (a member of the team is from that church, or the team
+	// was created by that church). Admins/superadmins already returned above.
 	if roleToAssign == RoleTeamLead && teamID != nil {
-		// We need to check if the team belongs to a church where the assigner is a church admin
-		// For now, we'll check if the assigner is a church admin in any church
-		// A more sophisticated check would verify the team's church relationship
-		roles, err := s.LoadUserRoles(ctx, assignerID)
-		if err != nil {
-			return false, err
-		}
-
-		for _, role := range roles {
-			if role.Role == string(RoleChurchAdmin) && role.ChurchID != nil {
-				// TODO: Verify that the team belongs to this church
-				return true, nil
-			}
+		if s.churchAdminManagesTeam(ctx, assignerID, *teamID) {
+			return true, nil
 		}
 	}
 
@@ -375,8 +368,16 @@ func (s *RoleService) CanManageTeam(ctx context.Context, userID, teamID string) 
 		return true
 	}
 
-	// Check if user is church admin and team has member from their church
-	// Get all user roles to find church admin roles
+	// Check if user is church admin of a church that owns the team (has a member
+	// from that church, or created the team).
+	return s.churchAdminManagesTeam(ctx, userID, teamID)
+}
+
+// churchAdminManagesTeam reports whether userID is a church admin of a church that
+// owns the given team — i.e. the team has a member from that church, or the team's
+// creator is from that church (covers empty teams). Used both for managing a team
+// and for authorizing TEAM_LEAD role assignment within a church admin's scope.
+func (s *RoleService) churchAdminManagesTeam(ctx context.Context, userID, teamID string) bool {
 	roles, err := s.LoadUserRoles(ctx, userID)
 	if err != nil {
 		slog.Error("error loading user roles", "userID", userID, "error", err)
@@ -457,9 +458,30 @@ func (s *RoleService) CanDeleteTeamByID(ctx context.Context, userID, teamID stri
 	return false
 }
 
-// IsProjectAdmin checks if a user has project admin role for any project
+// IsProjectAdmin checks if a user has project admin role for any project.
+// This is a coarse, non-target-specific check (e.g. gating file uploads). For
+// deciding access to a specific user, use the scoped CanAccessUser instead.
 func (s *RoleService) IsProjectAdmin(ctx context.Context, userID string) bool {
-	return s.HasRole(ctx, userID, RoleProjectAdmin)
+	// Check cache first
+	cacheKey := cache.HasAnyProjectAdminKey(userID)
+	if cached, ok := s.cache.Get(cacheKey); ok {
+		if hasRole, ok := cached.(bool); ok {
+			return hasRole
+		}
+	}
+
+	// Query database (HasRole is now global-only, so we need a dedicated query
+	// that matches scoped PROJECT_ADMIN rows)
+	hasRole, err := s.queries.HasAnyProjectAdminRole(ctx, userID)
+	if err != nil {
+		slog.Error("error when checking project admin role", userID, err)
+		return false
+	}
+
+	// Store in cache
+	s.cache.Set(cacheKey, hasRole)
+
+	return hasRole
 }
 
 // CanAccessUser checks if currentUserID can access targetUserID's User object.
@@ -488,8 +510,16 @@ func (s *RoleService) CanAccessUser(ctx context.Context, currentUserID, targetUs
 		return true
 	}
 
-	// Project admins can access any user
-	if s.IsProjectAdmin(ctx, currentUserID) {
+	// Project admins can access users who are members of a project they administer.
+	// Not cached: this depends on both the actor's roles AND the target's project
+	// membership, and the branch is only reached for non-self, non-admin, non-m2m
+	// actors, so it is not a hot path.
+	if ok, err := s.queries.CanProjectAdminAccessUser(ctx, sqlc.CanProjectAdminAccessUserParams{
+		ActorID:  currentUserID,
+		TargetID: targetUserID,
+	}); err != nil {
+		slog.Error("error checking project admin user access", "actor", currentUserID, "target", targetUserID, "error", err)
+	} else if ok {
 		return true
 	}
 

@@ -1375,6 +1375,13 @@ type ProjectFilter struct {
 	EndDateBefore   *scalars.DateTime `json:"endDateBefore,omitempty"`
 }
 
+type PublicUser struct {
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Image       *string `json:"image,omitempty"`
+	ImageObject *Image  `json:"imageObject,omitempty"`
+}
+
 type PushNotificationPreference struct {
 	NotificationType NotificationType `json:"notificationType"`
 	Enabled          bool             `json:"enabled"`
@@ -1576,7 +1583,7 @@ type QuizSession struct {
 	OpenAt          *scalars.DateTime `json:"openAt,omitempty"`
 	LockAt          *scalars.DateTime `json:"lockAt,omitempty"`
 	FinishAt        *scalars.DateTime `json:"finishAt,omitempty"`
-	CreatedBy       *User             `json:"createdBy"`
+	CreatedBy       *PublicUser       `json:"createdBy"`
 	CreatedAt       scalars.DateTime  `json:"createdAt"`
 	AccessCount     int               `json:"accessCount"`
 	SubmissionCount int               `json:"submissionCount"`
@@ -1987,14 +1994,14 @@ type TeamFilter struct {
 }
 
 type TeamMember struct {
-	ID         string  `json:"id"`
-	Name       string  `json:"name"`
-	Church     *Church `json:"church"`
-	IsTeamLead bool    `json:"isTeamLead"`
-	JoinedAt   string  `json:"joinedAt"`
-	User       *User   `json:"user"`
-	ChurchID   string  `json:"-"`
-	UserID     string  `json:"-"`
+	ID         string      `json:"id"`
+	Name       string      `json:"name"`
+	Church     *Church     `json:"church"`
+	IsTeamLead bool        `json:"isTeamLead"`
+	JoinedAt   string      `json:"joinedAt"`
+	User       *PublicUser `json:"user"`
+	ChurchID   string      `json:"-"`
+	UserID     string      `json:"-"`
 }
 
 type TranslationFieldStatus struct {

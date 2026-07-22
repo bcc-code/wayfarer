@@ -24,6 +24,20 @@ type RoleServiceInterface interface {
 	CanManageTeam(ctx context.Context, userID, teamID string) bool
 }
 
+// toPublicUser projects a full User onto the non-PII PublicUser exposed through
+// nested paths. imageObject is resolved separately (forceResolver), so only the
+// scalar image URL is carried over here.
+func toPublicUser(u *model.User) *model.PublicUser {
+	if u == nil {
+		return nil
+	}
+	return &model.PublicUser{
+		ID:    u.ID,
+		Name:  u.Name,
+		Image: u.Image,
+	}
+}
+
 // authenticatedUserInfo holds information about the authenticated user
 type authenticatedUserInfo struct {
 	UserID   string

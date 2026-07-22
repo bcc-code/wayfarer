@@ -61,6 +61,7 @@ type ResolverRoot interface {
 	PredefinedQuestion() PredefinedQuestionResolver
 	PredefinedResponse() PredefinedResponseResolver
 	Project() ProjectResolver
+	PublicUser() PublicUserResolver
 	Query() QueryResolver
 	Quiz() QuizResolver
 	QuizAchievement() QuizAchievementResolver
@@ -823,6 +824,13 @@ type ComplexityRoot struct {
 	ProjectEdge struct {
 		Cursor func(childComplexity int) int
 		Node   func(childComplexity int) int
+	}
+
+	PublicUser struct {
+		ID          func(childComplexity int) int
+		Image       func(childComplexity int) int
+		ImageObject func(childComplexity int) int
+		Name        func(childComplexity int) int
 	}
 
 	PushNotificationPreference struct {
@@ -1623,6 +1631,9 @@ type ProjectResolver interface {
 
 	TranslationStatus(ctx context.Context, obj *model.Project) ([]model.TranslationFieldStatus, error)
 }
+type PublicUserResolver interface {
+	ImageObject(ctx context.Context, obj *model.PublicUser) (*model.Image, error)
+}
 type QueryResolver interface {
 	Me(ctx context.Context) (*model.User, error)
 	InstanceID(ctx context.Context) (string, error)
@@ -1739,7 +1750,7 @@ type QuizPredefinedAnswerResolver interface {
 type QuizSessionResolver interface {
 	Quiz(ctx context.Context, obj *model.QuizSession) (*model.Quiz, error)
 
-	CreatedBy(ctx context.Context, obj *model.QuizSession) (*model.User, error)
+	CreatedBy(ctx context.Context, obj *model.QuizSession) (*model.PublicUser, error)
 
 	AccessCount(ctx context.Context, obj *model.QuizSession) (int, error)
 	SubmissionCount(ctx context.Context, obj *model.QuizSession) (int, error)
@@ -1828,7 +1839,7 @@ type TeamResolver interface {
 type TeamMemberResolver interface {
 	Church(ctx context.Context, obj *model.TeamMember) (*model.Church, error)
 
-	User(ctx context.Context, obj *model.TeamMember) (*model.User, error)
+	User(ctx context.Context, obj *model.TeamMember) (*model.PublicUser, error)
 }
 type UserResolver interface {
 	Church(ctx context.Context, obj *model.User) (*model.Church, error)
@@ -5872,6 +5883,31 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.ProjectEdge.Node(childComplexity), true
 
+	case "PublicUser.id":
+		if e.complexity.PublicUser.ID == nil {
+			break
+		}
+
+		return e.complexity.PublicUser.ID(childComplexity), true
+	case "PublicUser.image":
+		if e.complexity.PublicUser.Image == nil {
+			break
+		}
+
+		return e.complexity.PublicUser.Image(childComplexity), true
+	case "PublicUser.imageObject":
+		if e.complexity.PublicUser.ImageObject == nil {
+			break
+		}
+
+		return e.complexity.PublicUser.ImageObject(childComplexity), true
+	case "PublicUser.name":
+		if e.complexity.PublicUser.Name == nil {
+			break
+		}
+
+		return e.complexity.PublicUser.Name(childComplexity), true
+
 	case "PushNotificationPreference.enabled":
 		if e.complexity.PushNotificationPreference.Enabled == nil {
 			break
@@ -9117,7 +9153,7 @@ type TeamMember {
     church: Church! @goField(forceResolver: true)
     isTeamLead: Boolean!
     joinedAt: String!
-    user: User! @goField(forceResolver: true)
+    user: PublicUser! @goField(forceResolver: true)
 }
 
 type SuperTeam {
@@ -9847,6 +9883,17 @@ type User {
     language: String!
     createdAt: DateTime!
     points(projectId: ID!): Int! @goField(forceResolver: true)
+}
+
+# PublicUser is the non-sensitive projection of a User, safe to expose through
+# nested, non-privileged paths (team rosters, quiz session authors, etc.). It
+# deliberately omits all PII (email, birthdate, membersId, personUuid, church,
+# roles). Full User is only returned by explicitly authorized top-level fields.
+type PublicUser {
+    id: ID!
+    name: String!
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
 }
 
 # ==================== User Input Types ====================
@@ -10752,7 +10799,7 @@ type QuizSession {
     lockAt: DateTime
     finishAt: DateTime
 
-    createdBy: User! @goField(forceResolver: true)
+    createdBy: PublicUser! @goField(forceResolver: true)
     createdAt: DateTime!
 
     # Access info (admin only)
@@ -37820,6 +37867,132 @@ func (ec *executionContext) fieldContext_ProjectEdge_node(_ context.Context, fie
 	return fc, nil
 }
 
+func (ec *executionContext) _PublicUser_id(ctx context.Context, field graphql.CollectedField, obj *model.PublicUser) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PublicUser_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PublicUser_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PublicUser",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PublicUser_name(ctx context.Context, field graphql.CollectedField, obj *model.PublicUser) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PublicUser_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PublicUser_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PublicUser",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PublicUser_image(ctx context.Context, field graphql.CollectedField, obj *model.PublicUser) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PublicUser_image,
+		func(ctx context.Context) (any, error) {
+			return obj.Image, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_PublicUser_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PublicUser",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PublicUser_imageObject(ctx context.Context, field graphql.CollectedField, obj *model.PublicUser) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PublicUser_imageObject,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.PublicUser().ImageObject(ctx, obj)
+		},
+		nil,
+		ec.marshalOImage2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐImage,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_PublicUser_imageObject(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PublicUser",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "url":
+				return ec.fieldContext_Image_url(ctx, field)
+			case "width":
+				return ec.fieldContext_Image_width(ctx, field)
+			case "height":
+				return ec.fieldContext_Image_height(ctx, field)
+			case "blurhash":
+				return ec.fieldContext_Image_blurhash(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Image", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _PushNotificationPreference_notificationType(ctx context.Context, field graphql.CollectedField, obj *model.PushNotificationPreference) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -44781,7 +44954,7 @@ func (ec *executionContext) _QuizSession_createdBy(ctx context.Context, field gr
 			return ec.resolvers.QuizSession().CreatedBy(ctx, obj)
 		},
 		nil,
-		ec.marshalNUser2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUser,
+		ec.marshalNPublicUser2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐPublicUser,
 		true,
 		true,
 	)
@@ -44796,51 +44969,15 @@ func (ec *executionContext) fieldContext_QuizSession_createdBy(_ context.Context
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_User_id(ctx, field)
-			case "membersId":
-				return ec.fieldContext_User_membersId(ctx, field)
-			case "personUuid":
-				return ec.fieldContext_User_personUuid(ctx, field)
-			case "gender":
-				return ec.fieldContext_User_gender(ctx, field)
-			case "churchId":
-				return ec.fieldContext_User_churchId(ctx, field)
-			case "church":
-				return ec.fieldContext_User_church(ctx, field)
-			case "churchLockedUntil":
-				return ec.fieldContext_User_churchLockedUntil(ctx, field)
-			case "birthdate":
-				return ec.fieldContext_User_birthdate(ctx, field)
-			case "age":
-				return ec.fieldContext_User_age(ctx, field)
-			case "email":
-				return ec.fieldContext_User_email(ctx, field)
+				return ec.fieldContext_PublicUser_id(ctx, field)
 			case "name":
-				return ec.fieldContext_User_name(ctx, field)
+				return ec.fieldContext_PublicUser_name(ctx, field)
 			case "image":
-				return ec.fieldContext_User_image(ctx, field)
+				return ec.fieldContext_PublicUser_image(ctx, field)
 			case "imageObject":
-				return ec.fieldContext_User_imageObject(ctx, field)
-			case "projects":
-				return ec.fieldContext_User_projects(ctx, field)
-			case "events":
-				return ec.fieldContext_User_events(ctx, field)
-			case "teams":
-				return ec.fieldContext_User_teams(ctx, field)
-			case "superTeams":
-				return ec.fieldContext_User_superTeams(ctx, field)
-			case "roles":
-				return ec.fieldContext_User_roles(ctx, field)
-			case "consentStatus":
-				return ec.fieldContext_User_consentStatus(ctx, field)
-			case "language":
-				return ec.fieldContext_User_language(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_User_createdAt(ctx, field)
-			case "points":
-				return ec.fieldContext_User_points(ctx, field)
+				return ec.fieldContext_PublicUser_imageObject(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type PublicUser", field.Name)
 		},
 	}
 	return fc, nil
@@ -50384,7 +50521,7 @@ func (ec *executionContext) _TeamMember_user(ctx context.Context, field graphql.
 			return ec.resolvers.TeamMember().User(ctx, obj)
 		},
 		nil,
-		ec.marshalNUser2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUser,
+		ec.marshalNPublicUser2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐPublicUser,
 		true,
 		true,
 	)
@@ -50399,51 +50536,15 @@ func (ec *executionContext) fieldContext_TeamMember_user(_ context.Context, fiel
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_User_id(ctx, field)
-			case "membersId":
-				return ec.fieldContext_User_membersId(ctx, field)
-			case "personUuid":
-				return ec.fieldContext_User_personUuid(ctx, field)
-			case "gender":
-				return ec.fieldContext_User_gender(ctx, field)
-			case "churchId":
-				return ec.fieldContext_User_churchId(ctx, field)
-			case "church":
-				return ec.fieldContext_User_church(ctx, field)
-			case "churchLockedUntil":
-				return ec.fieldContext_User_churchLockedUntil(ctx, field)
-			case "birthdate":
-				return ec.fieldContext_User_birthdate(ctx, field)
-			case "age":
-				return ec.fieldContext_User_age(ctx, field)
-			case "email":
-				return ec.fieldContext_User_email(ctx, field)
+				return ec.fieldContext_PublicUser_id(ctx, field)
 			case "name":
-				return ec.fieldContext_User_name(ctx, field)
+				return ec.fieldContext_PublicUser_name(ctx, field)
 			case "image":
-				return ec.fieldContext_User_image(ctx, field)
+				return ec.fieldContext_PublicUser_image(ctx, field)
 			case "imageObject":
-				return ec.fieldContext_User_imageObject(ctx, field)
-			case "projects":
-				return ec.fieldContext_User_projects(ctx, field)
-			case "events":
-				return ec.fieldContext_User_events(ctx, field)
-			case "teams":
-				return ec.fieldContext_User_teams(ctx, field)
-			case "superTeams":
-				return ec.fieldContext_User_superTeams(ctx, field)
-			case "roles":
-				return ec.fieldContext_User_roles(ctx, field)
-			case "consentStatus":
-				return ec.fieldContext_User_consentStatus(ctx, field)
-			case "language":
-				return ec.fieldContext_User_language(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_User_createdAt(ctx, field)
-			case "points":
-				return ec.fieldContext_User_points(ctx, field)
+				return ec.fieldContext_PublicUser_imageObject(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type PublicUser", field.Name)
 		},
 	}
 	return fc, nil
@@ -66955,6 +67056,85 @@ func (ec *executionContext) _ProjectEdge(ctx context.Context, sel ast.SelectionS
 	return out
 }
 
+var publicUserImplementors = []string{"PublicUser"}
+
+func (ec *executionContext) _PublicUser(ctx context.Context, sel ast.SelectionSet, obj *model.PublicUser) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, publicUserImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PublicUser")
+		case "id":
+			out.Values[i] = ec._PublicUser_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "name":
+			out.Values[i] = ec._PublicUser_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "image":
+			out.Values[i] = ec._PublicUser_image(ctx, field, obj)
+		case "imageObject":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._PublicUser_imageObject(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var pushNotificationPreferenceImplementors = []string{"PushNotificationPreference"}
 
 func (ec *executionContext) _PushNotificationPreference(ctx context.Context, sel ast.SelectionSet, obj *model.PushNotificationPreference) graphql.Marshaler {
@@ -76868,6 +77048,20 @@ func (ec *executionContext) marshalNProjectEdge2ᚕgithubᚗcomᚋbccᚑmediaᚋ
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalNPublicUser2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐPublicUser(ctx context.Context, sel ast.SelectionSet, v model.PublicUser) graphql.Marshaler {
+	return ec._PublicUser(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNPublicUser2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐPublicUser(ctx context.Context, sel ast.SelectionSet, v *model.PublicUser) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PublicUser(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNPushNotificationPreference2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐPushNotificationPreference(ctx context.Context, sel ast.SelectionSet, v model.PushNotificationPreference) graphql.Marshaler {

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/bcc-media/wayfarer/e2e/testutil"
+	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -1091,5 +1092,167 @@ func TestChallengeVisibility(t *testing.T) {
 				t.Errorf("unenrolled user should NOT see challenge with NULL visible_at in list")
 			}
 		}
+	})
+}
+
+// TestChallenges_BulkEnrollScope verifies that a church admin may only bulk-enroll
+// users of their own church into a challenge in the challenge's project, while global
+// admins remain unrestricted. Builds a controlled two-church / two-project fixture.
+//
+//   - LOCK:   admin can enroll any target shape; church admin can enroll their own
+//     church-in-project.
+//   - TARGET(Fix4): church admin is DENIED for a different church, for a church in a
+//     different project than the challenge, and for the non-churchInProject target
+//     shapes — with no enrollment rows written.
+func TestChallenges_BulkEnrollScope(t *testing.T) {
+	ctx := context.Background()
+	dbMgr, _ := GetTestEnv()
+
+	require.NoError(t, dbMgr.Clean(ctx))
+	_, err := dbMgr.Seed(ctx, 42, testutil.DefaultSeedConfig())
+	require.NoError(t, err)
+
+	churchA := ulid.NewChurchID()
+	churchB := ulid.NewChurchID()
+	require.NoError(t, dbMgr.CreateTestChurch(ctx, churchA, "Church A", "NO", "S"))
+	require.NoError(t, dbMgr.CreateTestChurch(ctx, churchB, "Church B", "NO", "S"))
+
+	projectA := ulid.NewProjectID()
+	projectB := ulid.NewProjectID()
+	require.NoError(t, dbMgr.CreateTestProject(ctx, projectA, "Project A"))
+	require.NoError(t, dbMgr.CreateTestProject(ctx, projectB, "Project B"))
+
+	birth := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	// alice: church A, member of project A (the legitimately-enrollable user).
+	alice := ulid.NewUserID()
+	require.NoError(t, dbMgr.CreateTestUser(ctx, alice, "Alice", "FEMALE", birth, churchA))
+	require.NoError(t, dbMgr.EnrollUserInProject(ctx, alice, projectA))
+
+	churchAdminA := ulid.NewUserID()
+	require.NoError(t, dbMgr.CreateTestUser(ctx, churchAdminA, "Church Admin A", "MALE", birth, churchA))
+	require.NoError(t, dbMgr.AssignRoleWithScope(ctx, churchAdminA, testutil.RoleChurchAdmin, &churchA, nil, nil))
+
+	adminUser := ulid.NewUserID()
+	require.NoError(t, dbMgr.CreateTestUser(ctx, adminUser, "Admin", "MALE", birth, churchA))
+	require.NoError(t, dbMgr.AssignRole(ctx, adminUser, testutil.RoleAdmin))
+
+	router, cleanup, err := testutil.SetupTestServer(ctx, dbMgr)
+	require.NoError(t, err)
+	defer cleanup()
+
+	client := testutil.NewGraphQLClient(router)
+	defer client.Close()
+
+	adminToken, err := testutil.GenerateAdminToken(adminUser)
+	require.NoError(t, err)
+	churchAdminToken, err := testutil.GenerateUserToken(churchAdminA)
+	require.NoError(t, err)
+
+	// Create + publish a challenge in project A as admin.
+	createResp := client.WithAuth(adminToken).MustExecute(t, `
+		mutation CreateChallenge($projectId: ID!, $input: CreateChallengeInput!) {
+			createChallenge(projectId: $projectId, input: $input) {
+				... on SimpleChallenge { id }
+			}
+		}
+	`, map[string]any{
+		"projectId": projectA,
+		"input": map[string]any{
+			"type":       "SIMPLE",
+			"name":       "Scope Challenge",
+			"buttonText": "Complete",
+		},
+	})
+	require.False(t, createResp.HasErrors(), "unexpected error: %s", createResp.ErrorMessage())
+	var createResult struct {
+		CreateChallenge struct{ ID string } `json:"createChallenge"`
+	}
+	require.NoError(t, createResp.UnmarshalData(&createResult))
+	challengeID := createResult.CreateChallenge.ID
+
+	const enrollMutation = `
+		mutation BulkEnroll($target: EnrollmentTargetInput!, $challengeId: ID!) {
+			bulkEnrollUsersInChallenge(target: $target, challengeId: $challengeId) {
+				... on SimpleChallenge { id }
+			}
+		}`
+	const enrollAsyncMutation = `
+		mutation BulkEnrollAsync($target: EnrollmentTargetInput!, $challengeId: ID!) {
+			bulkEnrollUsersInChallengeAsync(target: $target, challengeId: $challengeId) { id }
+		}`
+
+	enroll := func(t *testing.T, token, mutation string, target map[string]any) *testutil.GraphQLResponse {
+		t.Helper()
+		return client.WithAuth(token).MustExecute(t, mutation, map[string]any{
+			"target":      target,
+			"challengeId": challengeID,
+		})
+	}
+
+	countEnrollments := func(t *testing.T) int {
+		t.Helper()
+		n, err := dbMgr.CountChallengeEnrollments(ctx, challengeID)
+		require.NoError(t, err)
+		return n
+	}
+
+	churchInA := map[string]any{"churchInProject": map[string]any{"churchId": churchA, "projectId": projectA}}
+
+	t.Run("LOCK admin can enroll by userIds", func(t *testing.T) {
+		resp := enroll(t, adminToken, enrollMutation, map[string]any{"userIds": []string{alice}})
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+		assert.Equal(t, 1, countEnrollments(t))
+	})
+
+	t.Run("LOCK church admin can enroll own church-in-project", func(t *testing.T) {
+		resp := enroll(t, churchAdminToken, enrollMutation, churchInA)
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+		// alice (church A, project A) is enrolled; row already exists so count stays 1.
+		assert.GreaterOrEqual(t, countEnrollments(t), 1)
+	})
+
+	t.Run("TARGET(Fix4) church admin denied for different church", func(t *testing.T) {
+		before := countEnrollments(t)
+		target := map[string]any{"churchInProject": map[string]any{"churchId": churchB, "projectId": projectA}}
+		resp := enroll(t, churchAdminToken, enrollMutation, target)
+		require.True(t, resp.HasErrors(), "church admin must not enroll another church")
+		assert.Contains(t, resp.ErrorMessage(), "permission")
+		assert.Equal(t, before, countEnrollments(t), "no enrollment rows should be written")
+	})
+
+	t.Run("TARGET(Fix4) church admin denied for church in wrong project", func(t *testing.T) {
+		before := countEnrollments(t)
+		// Challenge is in project A; targeting project B must be rejected.
+		target := map[string]any{"churchInProject": map[string]any{"churchId": churchA, "projectId": projectB}}
+		resp := enroll(t, churchAdminToken, enrollMutation, target)
+		require.True(t, resp.HasErrors(), "church admin must not enroll into a challenge outside the target project")
+		assert.Contains(t, resp.ErrorMessage(), "permission")
+		assert.Equal(t, before, countEnrollments(t))
+	})
+
+	t.Run("TARGET(Fix4) church admin denied for userIds target", func(t *testing.T) {
+		before := countEnrollments(t)
+		resp := enroll(t, churchAdminToken, enrollMutation, map[string]any{"userIds": []string{alice}})
+		require.True(t, resp.HasErrors(), "church admin must not use arbitrary userIds targets")
+		assert.Contains(t, resp.ErrorMessage(), "permission")
+		assert.Equal(t, before, countEnrollments(t))
+	})
+
+	t.Run("TARGET(Fix4) church admin denied for allProjectMembers target", func(t *testing.T) {
+		before := countEnrollments(t)
+		resp := enroll(t, churchAdminToken, enrollMutation, map[string]any{"allProjectMembers": projectA})
+		require.True(t, resp.HasErrors(), "church admin must not use allProjectMembers target")
+		assert.Contains(t, resp.ErrorMessage(), "permission")
+		assert.Equal(t, before, countEnrollments(t))
+	})
+
+	t.Run("TARGET(Fix4) church admin denied for different church (async)", func(t *testing.T) {
+		before := countEnrollments(t)
+		target := map[string]any{"churchInProject": map[string]any{"churchId": churchB, "projectId": projectA}}
+		resp := enroll(t, churchAdminToken, enrollAsyncMutation, target)
+		require.True(t, resp.HasErrors(), "async church admin must not enroll another church")
+		assert.Contains(t, resp.ErrorMessage(), "permission")
+		assert.Equal(t, before, countEnrollments(t))
 	})
 }
