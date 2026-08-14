@@ -364,6 +364,31 @@ func (c *CacheWithRegistry) InvalidateChallenge(challengeID, projectID string, e
 	c.broadcast(msg)
 }
 
+// InvalidateUserChallengeEnrollment invalidates only the cache entries that one
+// user's own enrollment change can affect.
+//
+// Use this for self-service enroll/unenroll instead of InvalidateChallenge.
+// InvalidateChallenge exists for changes to the challenge *definition* and,
+// because there is no reverse index from a challenge to its enrolled users, it
+// falls back to DeletePrefix over five per-user prefixes — which discards those
+// caches for every user in the system. That blast radius is fine when an admin
+// edits a challenge and ruinous when 4,000 users self-enroll in the same second:
+// each enrollment throws away the enrollment, completion, enrolled-challenge and
+// quiz-access caches that the very next ChallengePage request needs, so the cache
+// never survives long enough to serve anything. Measured on the ramped 10k spike,
+// that turned ChallengePage into a guaranteed miss.
+//
+// A self-enrollment only changes state scoped to (userID, projectID, challengeID),
+// and every one of those keys is directly addressable, so no prefix sweep is
+// needed. Local-only: callers pair this with InvalidateUser, which broadcasts.
+func (c *CacheWithRegistry) InvalidateUserChallengeEnrollment(userID, projectID, challengeID string) {
+	c.Delete(UserChallengeEnrollmentKey(userID, challengeID))
+	c.Delete(UserChallengeCompletionKey(userID, challengeID))
+	c.Delete(UserEnrolledChallengesKey(userID, projectID))
+	c.Delete(UserQuizSessionAccessKey(userID, projectID))
+	c.Delete(ActiveChallengesCountKey(userID, projectID))
+}
+
 // invalidateChallengeLocal invalidates challenge cache entries on this instance only
 func (c *CacheWithRegistry) invalidateChallengeLocal(challengeID, projectID string, eventID *string) {
 	c.Delete(ChallengeKey(challengeID))

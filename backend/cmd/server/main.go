@@ -290,6 +290,22 @@ func main() {
 		slog.Warn("Firebase service not initialized - missing configuration")
 	}
 
+	// Keep a Firebase custom token cached for every user in the current project.
+	// Minting is a local RSA-2048 signature (~1ms of CPU); a spike of cold users
+	// hitting firebaseToken at once turns that into thousands of signatures per
+	// second — a CPU profile of the 10k-user quiz spike attributed ~25% of all
+	// server CPU to it. Rotating in the background costs a handful of signatures
+	// per second and makes the request path a cache hit.
+	var tokenWarmer *services.FirebaseTokenWarmer
+	if firebaseService != nil {
+		tokenWarmer = services.NewFirebaseTokenWarmer(firebaseService, db.Queries, cacheInstance, settingsService)
+		if tokenWarmer != nil {
+			tokenWarmer.Start(ctx)
+			defer tokenWarmer.Stop()
+			slog.Info("Firebase token warmer started")
+		}
+	}
+
 	// Initialize Email service for feedback forwarding
 	var emailService *email.Service
 	if cfg.Resend.APIKey != "" {
