@@ -596,23 +596,27 @@ func (r *mutationResolver) EnrollInChallenge(ctx context.Context, challengeID st
 		return nil, fmt.Errorf("failed to enroll in challenge: %w", err)
 	}
 
-	// Cache invalidation
-	r.Cache.InvalidateUser(userID)
+	// Cache invalidation. A self-enrollment only changes this one user's state,
+	// so invalidate the per-user keys directly instead of calling
+	// InvalidateChallenge — that falls back to prefix sweeps which discard the
+	// enrollment and quiz-access caches for *every* user, so under a spike of
+	// concurrent self-enrollments the cache never survives to serve the
+	// ChallengePage request that immediately follows. See
+	// cache.InvalidateUserChallengeEnrollment for the measured effect.
 	projectID := getChallengeProjectID(challenge)
-	eventID := getChallengeEventID(challenge)
-	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
+	r.Cache.InvalidateUserChallengeEnrollment(userID, projectID, challengeID)
 
 	// Prime the cache with the enrollment timestamp AFTER invalidation
 	if enrolledAt.Valid {
 		ts := enrolledAt.Time
-		cacheKey := cache.UserChallengeEnrollmentKey(userID, challengeID)
-		r.Cache.Set(cacheKey, &ts)
-		fmt.Printf("DEBUG: Set cache key=%s, value=%v\n", cacheKey, ts)
+		r.Cache.Set(cache.UserChallengeEnrollmentKey(userID, challengeID), &ts)
 	}
 
-	// Grant quiz session access for quiz challenges
+	// Grant quiz session access for quiz challenges. The quiz comes from the
+	// cached loader rather than a direct query: this runs on every enrollment,
+	// and quiz definitions are static relative to a QR-code stampede.
 	if _, ok := challenge.(*model.QuizChallenge); ok {
-		quiz, err := r.DB.Queries.GetQuizByChallengeID(ctx, challengeID)
+		quiz, err := r.Loaders.QuizByChallengeIDLoader.Load(ctx, challengeID)()
 		if err == nil && quiz != nil {
 			sessions, err := r.DB.Queries.GetQuizSessionsByQuiz(ctx, sqlc.GetQuizSessionsByQuizParams{
 				Quizid: quiz.ID,

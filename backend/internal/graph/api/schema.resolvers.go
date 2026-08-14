@@ -11,6 +11,7 @@ import (
 
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/services"
 )
 
 // Empty is the resolver for the _empty field.
@@ -54,8 +55,10 @@ func (r *queryResolver) FirebaseToken(ctx context.Context) (*model.FirebaseToken
 		return nil, fmt.Errorf("firebase service not available")
 	}
 
-	// Check cache first
-	cacheKey := fmt.Sprintf("firebase_token:%s", userID)
+	// Check cache first. The key is shared with FirebaseTokenWarmer, which keeps
+	// this populated in the background so the request path avoids the ~1ms
+	// RSA signature entirely (see services.FirebaseTokenWarmer).
+	cacheKey := services.FirebaseTokenCacheKey(userID)
 	if cached, ok := r.Cache.Get(cacheKey); ok {
 		if response, ok := cached.(*model.FirebaseTokenResponse); ok {
 			return response, nil
