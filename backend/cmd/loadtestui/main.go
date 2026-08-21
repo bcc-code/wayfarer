@@ -388,7 +388,10 @@ const indexHTML = `<!doctype html>
   note <input id="note" placeholder="what change is under test" style="width:320px">
   <button id="go">Run</button>
 </form>
-<div id="status">idle <a href="/api/export" style="float:right;color:#5aa7ff">⬇ download all results (.tar.gz)</a></div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0 16px">
+  <span id="status">idle</span>
+  <a href="/api/export" style="color:#5aa7ff">⬇ download all results (.tar.gz)</a>
+</div>
 <div id="pctchart"></div>
 <table><thead><tr>
   <th>label</th><th>status</th><th>ramp</th><th>think</th><th>done</th><th>fail</th>
