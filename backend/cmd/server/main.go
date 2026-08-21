@@ -431,6 +431,17 @@ func main() {
 		router = gin.Default()
 	}
 
+	// Aggregated per-route request stats (served at /metrics/http) plus
+	// error/slow-request logging — the production replacement for gin's
+	// per-request access log.
+	httpStats := middleware.NewHTTPStats()
+	router.Use(httpStats.Middleware())
+	if cfg.Server.HTTPStatsFile != "" {
+		httpStats.StartDumper(ctx, cfg.Server.HTTPStatsFile, cfg.Server.HTTPStatsInterval)
+		slog.Info("HTTP stats dumper enabled",
+			"file", cfg.Server.HTTPStatsFile, "interval", cfg.Server.HTTPStatsInterval)
+	}
+
 	// Add OpenTelemetry middleware for HTTP tracing
 	if cfg.OTEL.Enabled {
 		router.Use(otelgin.Middleware(cfg.OTEL.ServiceName))
@@ -451,6 +462,12 @@ func main() {
 	// TODO: Actually check things, like DB connection
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	// Aggregated HTTP request stats (counts, status classes, latency
+	// percentiles per route since boot)
+	router.GET("/metrics/http", func(c *gin.Context) {
+		c.JSON(http.StatusOK, httpStats.Snapshot())
 	})
 
 	// Cache metrics endpoint
