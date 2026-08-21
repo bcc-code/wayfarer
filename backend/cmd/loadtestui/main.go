@@ -45,14 +45,35 @@ type meta struct {
 
 type runRow struct {
 	meta
-	Completions string `json:"completions"`
-	Failures    string `json:"failures"`
-	HTTPReqs    string `json:"http_reqs"`
-	P95         string `json:"p95"`
-	JournalD    string `json:"score_journal_delta"`
-	ServerCPU   string `json:"server_peak_cpu"`
-	PgCPU       string `json:"pg_peak_cpu"`
-	MTime       int64  `json:"mtime"`
+	Completions string            `json:"completions"`
+	Failures    string            `json:"failures"`
+	HTTPReqs    string            `json:"http_reqs"`
+	ReqRate     string            `json:"req_rate"`
+	Duration    map[string]string `json:"duration,omitempty"` // avg/min/med/max/p90/p95
+	Ops         []opStats         `json:"ops,omitempty"`      // per-operation breakdown
+	JournalD    string            `json:"score_journal_delta"`
+	ServerCPU   string            `json:"server_peak_cpu"`
+	PgCPU       string            `json:"pg_peak_cpu"`
+	BoxBusy     string            `json:"box_peak_busy"`
+	MTime       int64             `json:"mtime"`
+}
+
+type opStats struct {
+	Name  string            `json:"name"`
+	Stats map[string]string `json:"stats"`
+}
+
+// statsOf parses "avg=1.2ms min=... med=... max=... p(90)=... p(95)=..." pairs
+func statsOf(line string) map[string]string {
+	out := map[string]string{}
+	for _, m := range regexp.MustCompile(`([a-z]+|p\(\d+\))=([^\s]+)`).FindAllStringSubmatch(line, -1) {
+		k := strings.NewReplacer("p(", "p", ")", "").Replace(m[1])
+		out[k] = m[2]
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }
 
 func metaPath(label string) string { return filepath.Join(resultsDir, label+".meta.json") }
@@ -80,13 +101,6 @@ func firstField(s string) string {
 	return s
 }
 
-func p95Of(durLine string) string {
-	if m := regexp.MustCompile(`p\(95\)=([^\s]+)`).FindStringSubmatch(durLine); m != nil {
-		return m[1]
-	}
-	return ""
-}
-
 func rowFor(label string) runRow {
 	row := runRow{meta: meta{Label: label, Status: "unknown"}}
 	if b, err := os.ReadFile(metaPath(label)); err == nil {
@@ -102,8 +116,25 @@ func rowFor(label string) runRow {
 			logTxt := string(b)
 			row.Completions = firstField(extract(logTxt, "quiz_completions"))
 			row.Failures = firstField(extract(logTxt, "quiz_failures"))
-			row.HTTPReqs = firstField(extract(logTxt, "http_reqs"))
-			row.P95 = p95Of(extract(logTxt, "http_req_duration"))
+			reqs := extract(logTxt, "http_reqs")
+			row.HTTPReqs = firstField(reqs)
+			if f := strings.Fields(reqs); len(f) > 1 {
+				row.ReqRate = f[1]
+			}
+			row.Duration = statsOf(extract(logTxt, "http_req_duration"))
+			for _, m := range regexp.MustCompile(`(?m)^\s*\{ name:([A-Za-z]+) \}\.*:\s*(.+)$`).FindAllStringSubmatch(logTxt, -1) {
+				replaced := false
+				for i := range row.Ops {
+					if row.Ops[i].Name == m[1] {
+						row.Ops[i].Stats = statsOf(m[2]) // keep last occurrence (final summary)
+						replaced = true
+						break
+					}
+				}
+				if !replaced {
+					row.Ops = append(row.Ops, opStats{Name: m[1], Stats: statsOf(m[2])})
+				}
+			}
 			if m := regexp.MustCompile(`score_journal delta=(\d+)`).FindStringSubmatch(logTxt); m != nil {
 				row.JournalD = m[1]
 			}
@@ -112,6 +143,9 @@ func rowFor(label string) runRow {
 			}
 			if m := regexp.MustCompile(`postgres peak %CPU: (\d+)`).FindStringSubmatch(logTxt); m != nil {
 				row.PgCPU = m[1]
+			}
+			if m := regexp.MustCompile(`box peak busy: ([0-9.]+%)`).FindStringSubmatch(logTxt); m != nil {
+				row.BoxBusy = m[1]
 			}
 			if row.Status == "unknown" || row.Status == "" {
 				switch {
@@ -324,9 +358,14 @@ const indexHTML = `<!doctype html>
 </form>
 <div id="status">idle</div>
 <table><thead><tr>
-  <th>label</th><th>status</th><th>ramp</th><th>think</th><th>completions</th><th>failures</th>
-  <th>http reqs</th><th>p95</th><th>journal Δ</th><th>srv CPU%</th><th>pg CPU%</th><th>when</th><th>note</th>
+  <th>label</th><th>status</th><th>ramp</th><th>think</th><th>done</th><th>fail</th>
+  <th>reqs</th><th>req/s</th><th>avg</th><th>med</th><th>p90</th><th>p95</th><th>max</th>
+  <th>journal Δ</th><th>srv%</th><th>pg%</th><th>box</th><th>when</th><th>note</th>
 </tr></thead><tbody id="rows"></tbody></table>
+<h1 style="margin-top:24px" id="opstitle"></h1>
+<table id="opstable" style="display:none"><thead><tr>
+  <th>operation</th><th>avg</th><th>min</th><th>med</th><th>p90</th><th>p95</th><th>max</th>
+</tr></thead><tbody id="oprows"></tbody></table>
 <h1 style="margin-top:24px" id="logtitle"></h1>
 <pre id="log" style="display:none"></pre>
 <script>
@@ -347,18 +386,35 @@ async function refresh(){
   for(const run of d.runs||[]){
     const tr = document.createElement('tr');
     const when = run.mtime ? new Date(run.mtime*1000).toLocaleTimeString() : '';
+    const d = run.duration || {};
     tr.innerHTML = '<td>'+run.label+'</td><td class="'+run.status+'">'+run.status+'</td>'+
       '<td>'+(run.ramp_scale||'')+'</td><td>'+(run.think_scale||'')+'</td>'+
       '<td>'+(run.completions||'')+'</td><td>'+(run.failures||'')+'</td>'+
-      '<td>'+(run.http_reqs||'')+'</td><td>'+(run.p95||'')+'</td>'+
+      '<td>'+(run.http_reqs||'')+'</td><td>'+(run.req_rate||'')+'</td>'+
+      '<td>'+(d.avg||'')+'</td><td>'+(d.med||'')+'</td><td>'+(d.p90||'')+'</td>'+
+      '<td>'+(d.p95||'')+'</td><td>'+(d.max||'')+'</td>'+
       '<td>'+(run.score_journal_delta||'')+'</td><td>'+(run.server_peak_cpu||'')+'</td>'+
-      '<td>'+(run.pg_peak_cpu||'')+'</td><td>'+when+'</td>'+
+      '<td>'+(run.pg_peak_cpu||'')+'</td><td>'+(run.box_peak_busy||'')+'</td><td>'+when+'</td>'+
       '<td style="white-space:normal;min-width:220px">'+esc(run.note||'')+' <a href="#" onclick="return editNote(\''+run.label+'\',this)">✎</a></td>';
-    tr.onclick = () => { selected = run.label; showLog(); };
+    tr.onclick = () => { selected = run.label; showOps(run); showLog(); };
+    if(run.label === selected) showOps(run);
     tb.appendChild(tr);
   }
   if(d.running){ selected = selected || d.running; }
   if(selected) showLog();
+}
+function showOps(run){
+  const tbl = document.getElementById('opstable'), tb = document.getElementById('oprows');
+  document.getElementById('opstitle').textContent = 'per-operation: '+run.label;
+  tb.innerHTML='';
+  for(const op of run.ops||[]){
+    const s = op.stats||{};
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td>'+op.name+'</td><td>'+(s.avg||'')+'</td><td>'+(s.min||'')+'</td>'+
+      '<td>'+(s.med||'')+'</td><td>'+(s.p90||'')+'</td><td>'+(s.p95||'')+'</td><td>'+(s.max||'')+'</td>';
+    tb.appendChild(tr);
+  }
+  tbl.style.display = (run.ops&&run.ops.length) ? 'table' : 'none';
 }
 async function showLog(){
   const r = await fetch('/api/log?label='+encodeURIComponent(selected));
