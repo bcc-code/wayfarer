@@ -406,6 +406,10 @@ func main() {
 	apiHandler.Use(extension.AutomaticPersistedQuery{
 		Cache: lru.New[string](100),
 	})
+	// Whole-response cache for queries whose result is identical for every
+	// caller (currently the current-project bootstrap query). 30s TTL bounds
+	// staleness after admin edits.
+	apiHandler.Use(api.ResponseCache{Cache: cacheInstance, TTL: 30 * time.Second})
 	apiHandler.SetQueryCache(lru.New[*ast.QueryDocument](1000))
 
 	// Add OpenTelemetry tracing for GraphQL operations
@@ -414,12 +418,18 @@ func main() {
 		slog.Info("OpenTelemetry GraphQL instrumentation enabled")
 	}
 
-	// Set up Gin router
+	// Set up Gin router. In production, skip gin's per-request access logger:
+	// it writes one line per request to stdout synchronously (release mode
+	// does not disable it), which at load-test rates is thousands of journald
+	// writes per second.
+	var router *gin.Engine
 	if cfg.Server.Environment == "production" {
 		gin.SetMode(gin.ReleaseMode)
+		router = gin.New()
+		router.Use(gin.Recovery())
+	} else {
+		router = gin.Default()
 	}
-
-	router := gin.Default()
 
 	// Add OpenTelemetry middleware for HTTP tracing
 	if cfg.OTEL.Enabled {
