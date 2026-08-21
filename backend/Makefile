@@ -200,3 +200,16 @@ loadtest-quiz-stress: loadtest-gen-all ## Run quiz stress test (10 RPS, 5 minute
 loadtest-quiz-freetext-spike: loadtest-gen-all ## Run free-text quiz spike (10k users enter within 10s)
 	@echo "Running free-text quiz spike test..."
 	@k6 run --env SPIKE_USERS=10000 --env SPIKE_WINDOW=10 ./cmd/loadtest/k6/freetext-quiz-spike.js
+
+# Off-box load testing against the bare-metal bench box: k6 runs on this
+# machine, server + Postgres stay remote. See scripts/loadtest-remote.sh for
+# the LOADTEST_* env knobs (ssh destination, base URL, token count).
+
+loadtest-remote-config: ## Mint loadtest tokens on the bench box and fetch config.json
+	@./scripts/loadtest-remote.sh config
+
+loadtest-remote-smoke: ## Scaled-down off-box rampspike (~200 users) to verify plumbing
+	@./scripts/loadtest-remote.sh smoke
+
+loadtest-remote-rampspike: ## Full 10k ramped QR-stampede spike from this machine
+	@./scripts/loadtest-remote.sh run ramp_offbox

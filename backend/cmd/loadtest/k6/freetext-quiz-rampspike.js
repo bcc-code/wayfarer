@@ -36,7 +36,10 @@ import { startQuizSession, submitTextAnswer, submitAnswer, submitNumberAnswer, f
 const tokens = new SharedArray('tokens', function () {
     return JSON.parse(open('../config.json')).tokens;
 });
-const baseUrl = new SharedArray('baseUrl', function () {
+// BASE_URL overrides the baseUrl baked into config.json by tokengen, so a
+// config generated on the server box (baseUrl 127.0.0.1) can be replayed
+// from an off-box load generator without re-minting tokens.
+const baseUrl = __ENV.BASE_URL || new SharedArray('baseUrl', function () {
     return [JSON.parse(open('../config.json')).baseUrl];
 })[0];
 
