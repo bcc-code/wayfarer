@@ -61,3 +61,4 @@ tmp/
 
 # Load testing
 cmd/loadtest/config.json
+cmd/loadtest/results/
