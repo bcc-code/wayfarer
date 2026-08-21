@@ -40,6 +40,11 @@ type ServerConfig struct {
 	WriteTimeout    time.Duration
 	IdleTimeout     time.Duration
 	StaticFilesPath string // Path to frontend static files (empty to disable)
+
+	// HTTPStatsFile, when non-empty, enables periodic JSONL dumps of the
+	// aggregated per-route HTTP stats (the /metrics/http snapshot) to disk.
+	HTTPStatsFile     string
+	HTTPStatsInterval time.Duration
 }
 
 // DatabaseConfig holds database connection configuration
@@ -179,6 +184,9 @@ func Load() (*Config, error) {
 			WriteTimeout:    getEnvAsDuration("SERVER_WRITE_TIMEOUT", 5*time.Minute),
 			IdleTimeout:     getEnvAsDuration("SERVER_IDLE_TIMEOUT", 120*time.Second),
 			StaticFilesPath: getEnv("STATIC_FILES_PATH", ""),
+
+			HTTPStatsFile:     getEnv("HTTP_STATS_FILE", ""),
+			HTTPStatsInterval: getEnvAsDuration("HTTP_STATS_INTERVAL", time.Minute),
 		},
 		Database: DatabaseConfig{
 			URL:             getEnv("DATABASE_URL", ""),

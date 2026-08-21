@@ -7,6 +7,8 @@
 package main
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -282,6 +284,36 @@ func main() {
 		w.WriteHeader(http.StatusAccepted)
 		fmt.Fprintf(w, `{"label":%q}`, req.Label)
 	})
+	// /api/export streams the whole results directory as a tar.gz. Viewing
+	// it later: extract into any <dir>/cmd/loadtest/results and run
+	// `go run ./cmd/loadtestui -backend <dir>` locally.
+	http.HandleFunc("/api/export", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/gzip")
+		w.Header().Set("Content-Disposition", `attachment; filename="loadtest-results.tar.gz"`)
+		gz := gzip.NewWriter(w)
+		tw := tar.NewWriter(gz)
+		entries, _ := os.ReadDir(resultsDir)
+		for _, e := range entries {
+			if e.IsDir() {
+				continue
+			}
+			info, err := e.Info()
+			if err != nil {
+				continue
+			}
+			b, err := os.ReadFile(filepath.Join(resultsDir, e.Name()))
+			if err != nil {
+				continue
+			}
+			_ = tw.WriteHeader(&tar.Header{
+				Name: "results/" + e.Name(), Mode: 0o644,
+				Size: int64(len(b)), ModTime: info.ModTime(),
+			})
+			_, _ = tw.Write(b)
+		}
+		_ = tw.Close()
+		_ = gz.Close()
+	})
 	http.HandleFunc("/api/note", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "POST only", 405)
@@ -356,7 +388,7 @@ const indexHTML = `<!doctype html>
   note <input id="note" placeholder="what change is under test" style="width:320px">
   <button id="go">Run</button>
 </form>
-<div id="status">idle</div>
+<div id="status">idle <a href="/api/export" style="float:right;color:#5aa7ff">⬇ download all results (.tar.gz)</a></div>
 <div id="pctchart"></div>
 <table><thead><tr>
   <th>label</th><th>status</th><th>ramp</th><th>think</th><th>done</th><th>fail</th>
