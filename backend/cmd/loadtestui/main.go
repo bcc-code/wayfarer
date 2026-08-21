@@ -357,12 +357,14 @@ const indexHTML = `<!doctype html>
   <button id="go">Run</button>
 </form>
 <div id="status">idle</div>
+<div id="pctchart"></div>
 <table><thead><tr>
   <th>label</th><th>status</th><th>ramp</th><th>think</th><th>done</th><th>fail</th>
   <th>reqs</th><th>req/s</th><th>avg</th><th>med</th><th>p90</th><th>p95</th><th>max</th>
   <th>journal Δ</th><th>srv%</th><th>pg%</th><th>box</th><th>when</th><th>note</th>
 </tr></thead><tbody id="rows"></tbody></table>
 <h1 style="margin-top:24px" id="opstitle"></h1>
+<div id="rampchart"></div>
 <table id="opstable" style="display:none"><thead><tr>
   <th>operation</th><th>avg</th><th>min</th><th>med</th><th>p90</th><th>p95</th><th>max</th>
 </tr></thead><tbody id="oprows"></tbody></table>
@@ -370,6 +372,70 @@ const indexHTML = `<!doctype html>
 <pre id="log" style="display:none"></pre>
 <script>
 let selected = null;
+function toMs(v){
+  if(!v) return null;
+  if(v.endsWith('\u00b5s')) return parseFloat(v)/1000;
+  if(v.endsWith('ms')) return parseFloat(v);
+  if(v.endsWith('s')) return parseFloat(v)*1000;
+  return parseFloat(v);
+}
+function fmtMs(ms){ return ms>=1000 ? (ms/1000).toFixed(1)+'s' : ms>=1 ? Math.round(ms)+'ms' : ms.toFixed(2)+'ms'; }
+function pctChart(runs){
+  const data = runs.filter(r=>r.duration&&r.duration.p95).map(r=>({
+    label:r.label, p50:toMs(r.duration.med), p90:toMs(r.duration.p90), p95:toMs(r.duration.p95)})).reverse();
+  const el = document.getElementById('pctchart');
+  if(data.length<1){ el.innerHTML=''; return; }
+  const W=1000,H=260,L=64,B=84,T=16,R=16,n=data.length;
+  const vals=data.flatMap(d=>[d.p50,d.p90,d.p95]).filter(v=>v>0);
+  let lo=Math.min.apply(null,vals), hi=Math.max.apply(null,vals);
+  if(lo===hi){ lo/=2; hi*=2; }
+  const ly=v=>T+(1-(Math.log10(v)-Math.log10(lo))/(Math.log10(hi)-Math.log10(lo)))*(H-T-B);
+  const x=i=>n>1 ? L+i*(W-L-R)/(n-1) : (L+W-R)/2;
+  const series=[['p50','#4ec97a'],['p90','#e0b13f'],['p95','#e05252']];
+  let svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:'+W+'px">';
+  for(const tv of [lo, Math.sqrt(lo*hi), hi]){
+    const y=ly(tv);
+    svg+='<line x1="'+L+'" y1="'+y+'" x2="'+(W-R)+'" y2="'+y+'" stroke="#2a2d33"/>'+
+         '<text x="'+(L-6)+'" y="'+(y+4)+'" fill="#9aa0aa" font-size="11" text-anchor="end">'+fmtMs(tv)+'</text>';
+  }
+  for(const [key,color] of series){
+    let pts='';
+    data.forEach((d,i)=>{ if(d[key]>0) pts+=x(i)+','+ly(d[key])+' '; });
+    svg+='<polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="2"/>';
+    data.forEach((d,i)=>{ if(d[key]>0) svg+='<circle cx="'+x(i)+'" cy="'+ly(d[key])+'" r="3.5" fill="'+color+'"><title>'+esc(d.label)+' '+key+': '+fmtMs(d[key])+'</title></circle>'; });
+  }
+  data.forEach((d,i)=>{
+    svg+='<text x="'+x(i)+'" y="'+(H-B+16)+'" fill="#9aa0aa" font-size="11" text-anchor="end" transform="rotate(-30 '+x(i)+' '+(H-B+16)+')">'+esc(d.label)+'</text>';
+  });
+  series.forEach(([key,color],i)=>{
+    const lx=L+i*70;
+    svg+='<rect x="'+lx+'" y="'+(H-16)+'" width="12" height="12" fill="'+color+'"/>'+
+         '<text x="'+(lx+18)+'" y="'+(H-6)+'" fill="#d6d8de" font-size="12">'+key+'</text>';
+  });
+  el.innerHTML = svg+'</svg>';
+}
+function rampChart(run){
+  const el = document.getElementById('rampchart');
+  const scale = parseFloat(run.ramp_scale)||1;
+  const pts=[[0,0],[1,1000],[2,5000],[4,8000],[10,10000]].map(p=>[p[0],p[1]*scale]);
+  const W=1000,H=200,L=64,B=32,T=14,R=16,xmax=10,ymax=pts[pts.length-1][1];
+  const gx=t=>L+t*(W-L-R)/xmax, gy=u=>T+(1-u/ymax)*(H-T-B);
+  let svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:'+W+'px">';
+  for(let t=0;t<=xmax;t+=2)
+    svg+='<line x1="'+gx(t)+'" y1="'+T+'" x2="'+gx(t)+'" y2="'+(H-B)+'" stroke="#2a2d33"/>'+
+         '<text x="'+gx(t)+'" y="'+(H-B+16)+'" fill="#9aa0aa" font-size="11" text-anchor="middle">'+t+'s</text>';
+  for(const f of [0.25,0.5,0.75,1]){
+    const u=ymax*f;
+    svg+='<line x1="'+L+'" y1="'+gy(u)+'" x2="'+(W-R)+'" y2="'+gy(u)+'" stroke="#2a2d33"/>'+
+         '<text x="'+(L-6)+'" y="'+(gy(u)+4)+'" fill="#9aa0aa" font-size="11" text-anchor="end">'+Math.round(u).toLocaleString()+'</text>';
+  }
+  const line=pts.map(p=>gx(p[0])+','+gy(p[1])).join(' ');
+  svg+='<polygon points="'+gx(0)+','+gy(0)+' '+line+' '+gx(xmax)+','+gy(0)+'" fill="#2f6feb22"/>';
+  svg+='<polyline points="'+line+'" fill="none" stroke="#5aa7ff" stroke-width="2.5"/>';
+  pts.forEach(p=>{ svg+='<circle cx="'+gx(p[0])+'" cy="'+gy(p[1])+'" r="3.5" fill="#5aa7ff"><title>'+p[0]+'s: '+Math.round(p[1]).toLocaleString()+' users</title></circle>'; });
+  svg+='<text x="'+(W-R)+'" y="'+(T+2)+'" fill="#9aa0aa" font-size="12" text-anchor="end">cumulative arrivals (ramp scale '+scale+')</text>';
+  el.innerHTML = svg+'</svg>';
+}
 function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 async function editNote(label,el){
   const cur = el.parentElement.textContent.replace(' ✎','').trim();
@@ -400,12 +466,14 @@ async function refresh(){
     if(run.label === selected) showOps(run);
     tb.appendChild(tr);
   }
+  pctChart(d.runs||[]);
   if(d.running){ selected = selected || d.running; }
   if(selected) showLog();
 }
 function showOps(run){
   const tbl = document.getElementById('opstable'), tb = document.getElementById('oprows');
   document.getElementById('opstitle').textContent = 'per-operation: '+run.label;
+  rampChart(run);
   tb.innerHTML='';
   for(const op of run.ops||[]){
     const s = op.stats||{};
