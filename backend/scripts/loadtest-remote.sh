@@ -17,6 +17,13 @@
 #   LOADTEST_TOKENS     tokengen -limit            (13000, rampspike needs >=12100)
 #   LOADTEST_WARMUP     seconds after restart for the Firebase token-warmer
 #                       boot pass (18)
+#   LOADTEST_GENERATOR  optional ssh destination to run k6 on instead of this
+#                       machine (e.g. root@167.233.228.181). Needed for the
+#                       full 10k spike: >~5k concurrent connections from one
+#                       IP through an office NAT / across Hetzner's DDoS
+#                       heuristics get their connections killed (EOFs). Use a
+#                       VM in the same DC as the box; k6 output still streams
+#                       here and results are fetched back.
 set -euo pipefail
 
 LOADTEST_SSH=${LOADTEST_SSH:-root@49.12.121.62}
@@ -24,6 +31,8 @@ LOADTEST_BASE_URL=${LOADTEST_BASE_URL:-http://49.12.121.62:8080}
 LOADTEST_REMOTE_DIR=${LOADTEST_REMOTE_DIR:-/opt/wayfarer}
 LOADTEST_TOKENS=${LOADTEST_TOKENS:-13000}
 LOADTEST_WARMUP=${LOADTEST_WARMUP:-18}
+LOADTEST_GENERATOR=${LOADTEST_GENERATOR:-}
+LOADTEST_GENERATOR_DIR=${LOADTEST_GENERATOR_DIR:-/root/wayfarer-loadtest}
 
 QUIZ_ID='QZ01LOADTESTFREETEXT00000000'
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
@@ -89,11 +98,25 @@ cmd_run() {
     sj_before=$(rpsql "SELECT count(*) FROM score_journal;")
     start_samplers "$label"
 
-    echo "Running k6 locally against $LOADTEST_BASE_URL (label=$label)..."
     local k6_exit=0
-    k6 run --env "BASE_URL=$LOADTEST_BASE_URL" "$@" \
-        --out "csv=$RESULTS_DIR/$label.csv" \
-        "$LOADTEST_DIR/k6/freetext-quiz-rampspike.js" 2>&1 | tee "$RESULTS_DIR/$label.k6.log" || k6_exit=$?
+    if [ -n "$LOADTEST_GENERATOR" ]; then
+        echo "Syncing loadtest tree to generator $LOADTEST_GENERATOR..."
+        rsync -az --delete "$LOADTEST_DIR/k6" "$LOADTEST_DIR/config.json" \
+            "$LOADTEST_GENERATOR:$LOADTEST_GENERATOR_DIR/"
+        echo "Running k6 on $LOADTEST_GENERATOR against $LOADTEST_BASE_URL (label=$label)..."
+        # shellcheck disable=SC2029  # locals expand here on purpose
+        ssh -o BatchMode=yes "$LOADTEST_GENERATOR" \
+            "ulimit -n 65535; cd $LOADTEST_GENERATOR_DIR && \
+             k6 run --env BASE_URL=$LOADTEST_BASE_URL $* \
+                --out csv=$label.csv.gz k6/freetext-quiz-rampspike.js" \
+            2>&1 | tee "$RESULTS_DIR/$label.k6.log" || k6_exit=$?
+        scp -q "$LOADTEST_GENERATOR:$LOADTEST_GENERATOR_DIR/$label.csv.gz" "$RESULTS_DIR/" || true
+    else
+        echo "Running k6 locally against $LOADTEST_BASE_URL (label=$label)..."
+        k6 run --env "BASE_URL=$LOADTEST_BASE_URL" "$@" \
+            --out "csv=$RESULTS_DIR/$label.csv" \
+            "$LOADTEST_DIR/k6/freetext-quiz-rampspike.js" 2>&1 | tee "$RESULTS_DIR/$label.k6.log" || k6_exit=$?
+    fi
 
     stop_samplers
     local sj_after
