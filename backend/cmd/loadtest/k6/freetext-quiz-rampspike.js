@@ -49,6 +49,11 @@ const expectPoints = (__ENV.EXPECT_POINTS || '1') !== '0';
 // shape, so the same profile can be run at reduced load (e.g. to separate
 // server cost from load-generator contention when both share a machine).
 const scale = parseFloat(__ENV.RAMP_SCALE || '1');
+// THINK_SCALE compresses per-question think time (e.g. 0.02 turns 20-50s
+// reads into <1s) for fast iteration runs. NOTE: this changes the workload —
+// finalizes then land at ~arrival rate instead of trickling over the tail,
+// so it's a HARSHER scoring-path test, not comparable to THINK_SCALE=1 runs.
+const thinkScale = parseFloat(__ENV.THINK_SCALE || '1');
 
 const quizCompletions = new Counter('quiz_completions');
 const quizSkipped = new Counter('quiz_skipped');
@@ -66,7 +71,9 @@ function phase(rate, timeUnit, duration, startTime, vus, tokenBase) {
         preAllocatedVUs: Math.max(10, Math.round(vus * scale)),
         maxVUs: Math.max(10, Math.round(vus * scale)),
         gracefulStop: '4m',
-        env: { TOKEN_BASE: String(tokenBase) },
+        // Token slices scale with RAMP_SCALE so bursts don't overrun into each
+        // other's users. Total tokens needed ≈ 12,100 * scale (18,150 at 1.5).
+        env: { TOKEN_BASE: String(Math.round(tokenBase * scale)) },
         exec: 'journey',
     };
 }
@@ -152,14 +159,14 @@ export function journey() {
 
         switch (question.__typename) {
             case 'FreeTextQuestion': {
-                const thinkSeconds = Math.random() * 30 + 20;
+                const thinkSeconds = (Math.random() * 30 + 20) * thinkScale;
                 sleep(thinkSeconds);
                 const answerText = `${ANSWERS[(iteration + i) % ANSWERS.length]} (#${tokenBase + iteration})`;
                 answer = submitTextAnswer(baseUrl, token, submission.id, question.id, answerText, Math.round(thinkSeconds));
                 break;
             }
             case 'PredefinedQuestion': {
-                const thinkSeconds = Math.random() * 20 + 10;
+                const thinkSeconds = (Math.random() * 20 + 10) * thinkScale;
                 sleep(thinkSeconds);
                 const selectedIds = question.predefinedAnswers.map((a) => a.id);
                 answer = submitAnswer(baseUrl, token, submission.id, question.id, selectedIds, Math.round(thinkSeconds));
@@ -169,7 +176,7 @@ export function journey() {
                 break;
             }
             case 'NumberQuestion': {
-                const thinkSeconds = Math.random() * 10 + 5;
+                const thinkSeconds = (Math.random() * 10 + 5) * thinkScale;
                 sleep(thinkSeconds);
                 const min = question.minValue == null ? 1 : question.minValue;
                 const max = question.maxValue == null ? 100 : question.maxValue;
