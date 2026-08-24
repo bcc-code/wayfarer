@@ -186,6 +186,23 @@ SET
     updated_at = now()
 WHERE id = @id::char(28);
 
+-- name: UpdateUserProfileFromMembers :exec
+-- Empty string / NULL params leave the existing column value untouched,
+-- so a partial Members API response never blanks out known-good data.
+UPDATE users
+SET
+    email = COALESCE(NULLIF(@email::text, ''), email),
+    name = COALESCE(NULLIF(@name::text, ''), name),
+    first_name = COALESCE(NULLIF(@first_name::text, ''), first_name),
+    last_name = COALESCE(NULLIF(@last_name::text, ''), last_name),
+    middle_name = COALESCE(NULLIF(@middle_name::text, ''), middle_name),
+    display_name = COALESCE(NULLIF(@display_name::text, ''), display_name),
+    gender = COALESCE(NULLIF(@gender::text, ''), gender),
+    birthdate = COALESCE(@birthdate::date, birthdate),
+    church_id = COALESCE(NULLIF(@church_id::text, ''), church_id),
+    updated_at = now()
+WHERE id = @id::char(28);
+
 -- name: LockUserChurch :exec
 UPDATE users
 SET church_locked_until = @locked_until::timestamptz, updated_at = now()

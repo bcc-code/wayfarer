@@ -87,3 +87,46 @@ Key dependencies:
 4. Integrate with login flow to auto-populate user data
 5. Update GraphQL schema and resolvers
 6. Add configuration for Members API
+
+## Keeping Wayfarer Users in Sync with Members Data
+
+New user creation only ever happens reactively: `AuthHandler.findOrCreateUser`
+(`internal/handlers/auth.go`) creates a Wayfarer `users` row the first time a
+person authenticates via Auth0. Nothing polls or watches the Members API for
+brand-new people ahead of their first login — the Members API client has no
+"list/filter by created-at" method to support that, and no webhook exists for
+"member created" (the two existing webhooks, `content-events` and
+`consent-events`, both require an *existing* `members_id` in Wayfarer). This is
+a deliberate decision, not a gap to fix by default — revisit only if proactive
+account creation becomes an actual requirement.
+
+For users that already exist, three entry points re-pull data from the
+Members API. As of the change below, only the batch one applies the fully
+extended field set; the other two are still limited to gender/church/person_uuid
+and are candidates for the same treatment later:
+
+| Entry point | Trigger | Fields synced |
+|---|---|---|
+| `POST /api/maintenance/sync-user-data?limit=N` (`MaintenanceHandler.SyncUserData`) | Manual/API-key, batch, candidates = `gender = 'UNKNOWN'` | email, name, first/last/middle/display name, gender, birthdate, church_id |
+| `POST /api/maintenance/sync-user/:user_id` (`MaintenanceHandler.SyncSingleUser`) | Manual/API-key, one user | gender, church_id, person_uuid only |
+| GraphQL `syncUser(userId)` (`UserSyncService.SyncUser`) | Admin/superadmin GraphQL call | gender, church_id, person_uuid + SSF content-event backfill |
+
+No cron/scheduler exists anywhere in this repo for `sync-user-data` (checked:
+no Terraform/k8s manifests, no scheduled GitHub Actions, no in-process
+ticker). It's triggered externally, from outside this codebase.
+
+Shared logic lives in `internal/members/profile.go`:
+- `ExtractProfile(member *Member) ProfileFields` — computes email, first/last/middle/display
+  name, computed `name`, and a validated `*time.Time` birthdate from a Member record.
+  An empty string / nil field means "Members API had no value" — callers should leave
+  the existing DB value alone rather than blank it.
+- `GenerateDisplayName` / `ParseBirthdate` — same rules used at account creation
+  (`auth.go`) and at sync time, so a synced profile can't drift from a freshly
+  created one.
+
+The corresponding SQL, `UpdateUserProfileFromMembers`
+(`internal/database/queries/users.sql`), uses
+`COALESCE(NULLIF(@x::text, ''), x)` (and the date equivalent for birthdate) per
+column — an empty/absent value from the Members API is a no-op, never a
+blank-out. The older `UpdateUserGenderAndChurch` query is kept for now since
+`SyncSingleUser` and `UserSyncService` still use it.

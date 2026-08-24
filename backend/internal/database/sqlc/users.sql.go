@@ -1048,3 +1048,50 @@ func (q *Queries) UpdateUserPersonUUID(ctx context.Context, arg UpdateUserPerson
 	_, err := q.db.Exec(ctx, UpdateUserPersonUUID, arg.PersonUuid, arg.ID)
 	return err
 }
+
+const UpdateUserProfileFromMembers = `-- name: UpdateUserProfileFromMembers :exec
+UPDATE users
+SET
+    email = COALESCE(NULLIF($1::text, ''), email),
+    name = COALESCE(NULLIF($2::text, ''), name),
+    first_name = COALESCE(NULLIF($3::text, ''), first_name),
+    last_name = COALESCE(NULLIF($4::text, ''), last_name),
+    middle_name = COALESCE(NULLIF($5::text, ''), middle_name),
+    display_name = COALESCE(NULLIF($6::text, ''), display_name),
+    gender = COALESCE(NULLIF($7::text, ''), gender),
+    birthdate = COALESCE($8::date, birthdate),
+    church_id = COALESCE(NULLIF($9::text, ''), church_id),
+    updated_at = now()
+WHERE id = $10::char(28)
+`
+
+type UpdateUserProfileFromMembersParams struct {
+	Email       string      `json:"email"`
+	Name        string      `json:"name"`
+	FirstName   string      `json:"first_name"`
+	LastName    string      `json:"last_name"`
+	MiddleName  string      `json:"middle_name"`
+	DisplayName string      `json:"display_name"`
+	Gender      string      `json:"gender"`
+	Birthdate   pgtype.Date `json:"birthdate"`
+	ChurchID    string      `json:"church_id"`
+	ID          string      `json:"id"`
+}
+
+// Empty string / NULL params leave the existing column value untouched,
+// so a partial Members API response never blanks out known-good data.
+func (q *Queries) UpdateUserProfileFromMembers(ctx context.Context, arg UpdateUserProfileFromMembersParams) error {
+	_, err := q.db.Exec(ctx, UpdateUserProfileFromMembers,
+		arg.Email,
+		arg.Name,
+		arg.FirstName,
+		arg.LastName,
+		arg.MiddleName,
+		arg.DisplayName,
+		arg.Gender,
+		arg.Birthdate,
+		arg.ChurchID,
+		arg.ID,
+	)
+	return err
+}

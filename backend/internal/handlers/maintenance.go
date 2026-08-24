@@ -124,7 +124,11 @@ func (h *MaintenanceHandler) SyncUserData(c *gin.Context) {
 				return
 			}
 
-			// Determine updates
+			// Extract profile fields (email, name, birthdate, etc.) from Members API data.
+			// Empty fields mean "no data" — the update query below leaves those columns alone.
+			profile := members.ExtractProfile(member)
+
+			// Determine gender/church updates
 			var newGender string
 			var newChurchID string
 
@@ -151,17 +155,29 @@ func (h *MaintenanceHandler) SyncUserData(c *gin.Context) {
 				}
 			}
 
+			var birthdate pgtype.Date
+			if profile.Birthdate != nil {
+				birthdate = pgtype.Date{Time: *profile.Birthdate, Valid: true}
+			}
+
 			// Skip if nothing to update
-			if newGender == "" && newChurchID == "" {
+			if newGender == "" && newChurchID == "" && profile == (members.ProfileFields{}) {
 				slog.Debug("maintenance: no updates needed for user", "user_id", user.ID)
 				return
 			}
 
 			// Update user
-			err = h.DB.Queries.UpdateUserGenderAndChurch(ctx, sqlc.UpdateUserGenderAndChurchParams{
-				ID:       user.ID,
-				Gender:   newGender,
-				ChurchID: newChurchID,
+			err = h.DB.Queries.UpdateUserProfileFromMembers(ctx, sqlc.UpdateUserProfileFromMembersParams{
+				ID:          user.ID,
+				Email:       profile.Email,
+				Name:        profile.Name,
+				FirstName:   profile.FirstName,
+				LastName:    profile.LastName,
+				MiddleName:  profile.MiddleName,
+				DisplayName: profile.DisplayName,
+				Gender:      newGender,
+				Birthdate:   birthdate,
+				ChurchID:    newChurchID,
 			})
 			if err != nil {
 				slog.Error("maintenance: failed to update user",
@@ -184,6 +200,7 @@ func (h *MaintenanceHandler) SyncUserData(c *gin.Context) {
 				"user_id", user.ID,
 				"new_gender", newGender,
 				"new_church_id", newChurchID,
+				"birthdate_updated", profile.Birthdate != nil,
 			)
 			mu.Lock()
 			response.Updated++
