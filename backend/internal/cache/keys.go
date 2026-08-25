@@ -11,6 +11,14 @@ import (
 // Key prefixes for different entity types
 // These prefixes enable tag-based invalidation by matching prefix patterns
 const (
+	// Whole-response GraphQL cache (see graph/api/response_cache.go).
+	// Shared entries are identical for every caller; user entries embed the
+	// calling user's ID and are dropped on that user's mutations and on user
+	// invalidation.
+	PrefixGQLResponse       = "gqlresponse:"
+	PrefixGQLResponseShared = "gqlresponse:shared:"
+	prefixGQLResponseUser   = "gqlresponse:user:"
+
 	// Core entities
 	PrefixUser               = "user:"
 	PrefixChurch             = "church:"
@@ -1243,4 +1251,11 @@ func ScoreJournalKey(id string) string {
 // UserProjectPointsKey builds a cache key for a user's points in a project (myPoints field)
 func UserProjectPointsKey(userID, projectID string) string {
 	return fmt.Sprintf("%s%s:%s", PrefixUserProjectPoints, userID, projectID)
+}
+
+// GQLResponseUserPrefix builds the per-user response-cache key prefix. All of
+// a user's whole-response entries live under it, so a single DeletePrefix
+// drops them (on the user's own mutations and on user invalidation).
+func GQLResponseUserPrefix(userID string) string {
+	return prefixGQLResponseUser + userID + ":"
 }
