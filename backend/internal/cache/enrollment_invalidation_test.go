@@ -97,3 +97,70 @@ func TestInvalidateUserChallengeEnrollment_LeavesUnrelatedCachesIntact(t *testin
 		assert.True(t, ok, "%s must survive a self-enrollment invalidation", k)
 	}
 }
+
+// The whole-response cache stores per-user entries under
+// gqlresponse:user:{userID}: — an enrollment must drop the enrolling user's
+// entries (their cached ActiveChallengesPage embeds pre-enroll state) while a
+// bystander's entries and shared entries survive.
+func TestInvalidateUserChallengeEnrollment_DropsUsersResponseEntries(t *testing.T) {
+	c, err := NewCacheWithRegistry(DefaultConfig())
+	require.NoError(t, err)
+	defer c.Close()
+
+	const (
+		me        = "US00000000000000000000000001"
+		other     = "US00000000000000000000000002"
+		projectID = "PR00000000000000000000000001"
+		challenge = "CL00000000000000000000000001"
+	)
+
+	mine := GQLResponseUserPrefix(me) + "qhash:vhash:en"
+	theirs := GQLResponseUserPrefix(other) + "qhash:vhash:en"
+	shared := PrefixGQLResponseShared + "qhash:vhash:en"
+	for _, k := range []string{mine, theirs, shared} {
+		require.True(t, c.Set(k, "cached"))
+	}
+	c.Wait()
+
+	c.InvalidateUserChallengeEnrollment(me, projectID, challenge)
+	c.Wait()
+
+	_, ok := c.Get(mine)
+	assert.False(t, ok, "enrolling user's response entry must be dropped")
+	_, ok = c.Get(theirs)
+	assert.True(t, ok, "bystander's response entry must survive")
+	_, ok = c.Get(shared)
+	assert.True(t, ok, "shared response entry must survive")
+}
+
+// invalidateUserLocal (and thus InvalidateUser broadcasts) must also clear the
+// user's response entries, and invalidateProjectLocal clears every response
+// entry so admin project edits surface immediately.
+func TestResponseEntryInvalidation_UserAndProject(t *testing.T) {
+	c, err := NewCacheWithRegistry(DefaultConfig())
+	require.NoError(t, err)
+	defer c.Close()
+
+	const me = "US00000000000000000000000001"
+	userEntry := GQLResponseUserPrefix(me) + "qhash:vhash:en"
+	sharedEntry := PrefixGQLResponseShared + "qhash:vhash:en"
+	require.True(t, c.Set(userEntry, "cached"))
+	require.True(t, c.Set(sharedEntry, "cached"))
+	c.Wait()
+
+	c.invalidateUserLocal(me)
+	c.Wait()
+	_, ok := c.Get(userEntry)
+	assert.False(t, ok, "user invalidation must drop the user's response entries")
+	_, ok = c.Get(sharedEntry)
+	assert.True(t, ok, "user invalidation must not drop shared entries")
+
+	require.True(t, c.Set(userEntry, "cached"))
+	c.Wait()
+	c.invalidateProjectLocal("PR00000000000000000000000001")
+	c.Wait()
+	_, ok = c.Get(userEntry)
+	assert.False(t, ok, "project invalidation must drop all response entries")
+	_, ok = c.Get(sharedEntry)
+	assert.False(t, ok, "project invalidation must drop shared entries")
+}
