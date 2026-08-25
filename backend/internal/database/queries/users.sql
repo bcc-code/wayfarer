@@ -171,11 +171,17 @@ UPDATE users
 SET language = @language::text, updated_at = now()
 WHERE id = @user_id::char(28);
 
--- name: GetUsersWithIncompleteData :many
+-- name: GetUsersLeastRecentlySynced :many
+-- Ordered by updated_at ASC so repeated calls (e.g. from a cron job) cycle
+-- through the entire user base over time, not just a fixed subset. Excludes
+-- members_id values that aren't a real Members API person ID (e.g. the
+-- seed script's "MEM-<n>" placeholders) — those can never resolve via
+-- Lookup, and since a failed sync never bumps updated_at, they'd otherwise
+-- wedge permanently at the front of the queue.
 SELECT id, members_id, person_uuid, gender, church_id, church_locked_until
 FROM users
-WHERE gender = 'UNKNOWN'
-ORDER BY id
+WHERE members_id ~ '^[0-9]+$'
+ORDER BY updated_at ASC
 LIMIT @querylimit::int;
 
 -- name: UpdateUserGenderAndChurch :exec

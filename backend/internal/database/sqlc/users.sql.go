@@ -892,15 +892,15 @@ func (q *Queries) GetUsersFilteredCursor(ctx context.Context, arg GetUsersFilter
 	return items, nil
 }
 
-const GetUsersWithIncompleteData = `-- name: GetUsersWithIncompleteData :many
+const GetUsersLeastRecentlySynced = `-- name: GetUsersLeastRecentlySynced :many
 SELECT id, members_id, person_uuid, gender, church_id, church_locked_until
 FROM users
-WHERE gender = 'UNKNOWN'
-ORDER BY id
+WHERE members_id ~ '^[0-9]+$'
+ORDER BY updated_at ASC
 LIMIT $1::int
 `
 
-type GetUsersWithIncompleteDataRow struct {
+type GetUsersLeastRecentlySyncedRow struct {
 	ID                string             `json:"id"`
 	MembersID         string             `json:"members_id"`
 	PersonUuid        pgtype.UUID        `json:"person_uuid"`
@@ -909,15 +909,21 @@ type GetUsersWithIncompleteDataRow struct {
 	ChurchLockedUntil pgtype.Timestamptz `json:"church_locked_until"`
 }
 
-func (q *Queries) GetUsersWithIncompleteData(ctx context.Context, querylimit int32) ([]*GetUsersWithIncompleteDataRow, error) {
-	rows, err := q.db.Query(ctx, GetUsersWithIncompleteData, querylimit)
+// Ordered by updated_at ASC so repeated calls (e.g. from a cron job) cycle
+// through the entire user base over time, not just a fixed subset. Excludes
+// members_id values that aren't a real Members API person ID (e.g. the
+// seed script's "MEM-<n>" placeholders) — those can never resolve via
+// Lookup, and since a failed sync never bumps updated_at, they'd otherwise
+// wedge permanently at the front of the queue.
+func (q *Queries) GetUsersLeastRecentlySynced(ctx context.Context, querylimit int32) ([]*GetUsersLeastRecentlySyncedRow, error) {
+	rows, err := q.db.Query(ctx, GetUsersLeastRecentlySynced, querylimit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*GetUsersWithIncompleteDataRow{}
+	items := []*GetUsersLeastRecentlySyncedRow{}
 	for rows.Next() {
-		var i GetUsersWithIncompleteDataRow
+		var i GetUsersLeastRecentlySyncedRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.MembersID,

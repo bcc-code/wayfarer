@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -44,8 +45,107 @@ type SyncUserDataResponse struct {
 	Errors    []string `json:"errors,omitempty"`
 }
 
-// SyncUserData syncs incomplete user data from Members API
-// This endpoint is designed to be called by a cron job
+// syncUserProfileResult reports what changed while resyncing one user from the Members API.
+type syncUserProfileResult struct {
+	NewGender   string
+	NewChurchID string
+	Email       string
+	Name        string
+	Birthdate   string // formatted YYYY-MM-DD, empty if the member has none
+	PersonUUID  uuid.UUID
+}
+
+// syncUserProfile fetches personID's current Members API record and applies it to
+// userID: email, name, first/last/middle/display name, gender, birthdate, church_id,
+// and person_uuid are all overwritten with the Members API's current values (unless
+// churchLockedUntil is still active, in which case church_id is left alone). Fields
+// the Members API has no value for leave the existing column untouched.
+func (h *MaintenanceHandler) syncUserProfile(ctx context.Context, userID string, personID int, churchLockedUntil pgtype.Timestamptz) (*syncUserProfileResult, error) {
+	member, err := h.MembersClient.Lookup(ctx, personID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch member data: %w", err)
+	}
+
+	profile := members.ExtractProfile(member)
+
+	var newGender string
+	if member.Gender != "" {
+		newGender = members.NormalizeGender(member.Gender)
+	}
+
+	var newChurchID string
+	if churchLockedUntil.Valid && churchLockedUntil.Time.After(time.Now()) {
+		slog.Debug("maintenance: church update skipped due to lock",
+			"user_id", userID,
+			"locked_until", churchLockedUntil.Time,
+		)
+	} else if church, err := h.ChurchResolver.FindChurchFromAffiliations(ctx, member.Affiliations); err != nil {
+		slog.Debug("maintenance: no valid church from affiliations, keeping existing",
+			"user_id", userID,
+			"error", err,
+		)
+	} else {
+		newChurchID = church.ID
+	}
+
+	var birthdate pgtype.Date
+	if profile.Birthdate != nil {
+		birthdate = pgtype.Date{Time: *profile.Birthdate, Valid: true}
+	}
+
+	if err := h.DB.Queries.UpdateUserProfileFromMembers(ctx, sqlc.UpdateUserProfileFromMembersParams{
+		ID:          userID,
+		Email:       profile.Email,
+		Name:        profile.Name,
+		FirstName:   profile.FirstName,
+		LastName:    profile.LastName,
+		MiddleName:  profile.MiddleName,
+		DisplayName: profile.DisplayName,
+		Gender:      newGender,
+		Birthdate:   birthdate,
+		ChurchID:    newChurchID,
+	}); err != nil {
+		return nil, fmt.Errorf("failed to update user: %w", err)
+	}
+
+	if member.Uid != uuid.Nil {
+		if err := h.DB.Queries.UpdateUserPersonUUID(ctx, sqlc.UpdateUserPersonUUIDParams{
+			ID:         userID,
+			PersonUuid: pgtype.UUID{Bytes: member.Uid, Valid: true},
+		}); err != nil {
+			slog.Warn("maintenance: failed to update person_uuid", "user_id", userID, "error", err)
+		}
+	}
+
+	if h.Cache != nil {
+		h.Cache.InvalidateUser(userID)
+	}
+
+	newBirthdate := ""
+	if profile.Birthdate != nil {
+		newBirthdate = profile.Birthdate.Format("2006-01-02")
+	}
+
+	slog.Info("maintenance: updated user data",
+		"user_id", userID,
+		"new_gender", newGender,
+		"new_church_id", newChurchID,
+		"new_birthdate", newBirthdate,
+	)
+
+	return &syncUserProfileResult{
+		NewGender:   newGender,
+		NewChurchID: newChurchID,
+		Email:       profile.Email,
+		Name:        profile.Name,
+		Birthdate:   newBirthdate,
+		PersonUUID:  member.Uid,
+	}, nil
+}
+
+// SyncUserData resyncs a batch of users from the Members API, oldest-synced first.
+// Called repeatedly (e.g. from a cron job), it cycles through the entire user base
+// over time rather than only fixing a fixed set of flagged-incomplete users.
 func (h *MaintenanceHandler) SyncUserData(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -59,27 +159,20 @@ func (h *MaintenanceHandler) SyncUserData(c *gin.Context) {
 
 	slog.Info("maintenance: starting user data sync", "limit", limit)
 
-	// Get users with incomplete data
-	users, err := h.DB.Queries.GetUsersWithIncompleteData(ctx, int32(limit))
+	users, err := h.DB.Queries.GetUsersLeastRecentlySynced(ctx, int32(limit))
 	if err != nil {
-		slog.Error("maintenance: failed to get users with incomplete data", "error", err)
+		slog.Error("maintenance: failed to get users for sync", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get users"})
 		return
 	}
 
 	if len(users) == 0 {
-		c.JSON(http.StatusOK, SyncUserDataResponse{
-			Processed: 0,
-			Updated:   0,
-			Failed:    0,
-		})
+		c.JSON(http.StatusOK, SyncUserDataResponse{})
 		return
 	}
 
 	response := SyncUserDataResponse{
 		Processed: len(users),
-		Updated:   0,
-		Failed:    0,
 		Errors:    []string{},
 	}
 
@@ -94,11 +187,10 @@ func (h *MaintenanceHandler) SyncUserData(c *gin.Context) {
 	for _, user := range users {
 		wg.Add(1)
 		sem <- struct{}{}
-		go func(user *sqlc.GetUsersWithIncompleteDataRow) {
+		go func(user *sqlc.GetUsersLeastRecentlySyncedRow) {
 			defer wg.Done()
 			defer func() { <-sem }()
 
-			// Get person ID from members_id
 			personID, err := strconv.Atoi(user.MembersID)
 			if err != nil {
 				slog.Warn("maintenance: invalid members_id", "user_id", user.ID, "members_id", user.MembersID)
@@ -109,99 +201,15 @@ func (h *MaintenanceHandler) SyncUserData(c *gin.Context) {
 				return
 			}
 
-			// Fetch member data from Members API
-			member, err := h.MembersClient.Lookup(ctx, personID)
-			if err != nil {
-				slog.Warn("maintenance: failed to fetch member data",
-					"user_id", user.ID,
-					"person_id", personID,
-					"error", err,
-				)
+			if _, err := h.syncUserProfile(ctx, user.ID, personID, user.ChurchLockedUntil); err != nil {
+				slog.Warn("maintenance: failed to sync user", "user_id", user.ID, "error", err)
 				mu.Lock()
 				response.Failed++
-				response.Errors = append(response.Errors, "failed to fetch member "+user.ID+": "+err.Error())
+				response.Errors = append(response.Errors, "failed to sync user "+user.ID+": "+err.Error())
 				mu.Unlock()
 				return
 			}
 
-			// Extract profile fields (email, name, birthdate, etc.) from Members API data.
-			// Empty fields mean "no data" — the update query below leaves those columns alone.
-			profile := members.ExtractProfile(member)
-
-			// Determine gender/church updates
-			var newGender string
-			var newChurchID string
-
-			// Update gender if currently UNKNOWN and member has gender
-			if user.Gender == "UNKNOWN" && member.Gender != "" {
-				newGender = members.NormalizeGender(member.Gender)
-			}
-
-			// Update church if using default church and member has affiliation (skip if locked)
-			if user.ChurchLockedUntil.Valid && user.ChurchLockedUntil.Time.After(time.Now()) {
-				slog.Debug("maintenance: church update skipped due to lock",
-					"user_id", user.ID,
-					"locked_until", user.ChurchLockedUntil.Time,
-				)
-			} else if h.isDefaultChurch(ctx, user.ChurchID) {
-				church, err := h.ChurchResolver.FindChurchFromAffiliations(ctx, member.Affiliations)
-				if err != nil {
-					slog.Debug("maintenance: no valid church from affiliations",
-						"user_id", user.ID,
-						"error", err,
-					)
-				} else {
-					newChurchID = church.ID
-				}
-			}
-
-			var birthdate pgtype.Date
-			if profile.Birthdate != nil {
-				birthdate = pgtype.Date{Time: *profile.Birthdate, Valid: true}
-			}
-
-			// Skip if nothing to update
-			if newGender == "" && newChurchID == "" && profile == (members.ProfileFields{}) {
-				slog.Debug("maintenance: no updates needed for user", "user_id", user.ID)
-				return
-			}
-
-			// Update user
-			err = h.DB.Queries.UpdateUserProfileFromMembers(ctx, sqlc.UpdateUserProfileFromMembersParams{
-				ID:          user.ID,
-				Email:       profile.Email,
-				Name:        profile.Name,
-				FirstName:   profile.FirstName,
-				LastName:    profile.LastName,
-				MiddleName:  profile.MiddleName,
-				DisplayName: profile.DisplayName,
-				Gender:      newGender,
-				Birthdate:   birthdate,
-				ChurchID:    newChurchID,
-			})
-			if err != nil {
-				slog.Error("maintenance: failed to update user",
-					"user_id", user.ID,
-					"error", err,
-				)
-				mu.Lock()
-				response.Failed++
-				response.Errors = append(response.Errors, "failed to update user "+user.ID+": "+err.Error())
-				mu.Unlock()
-				return
-			}
-
-			// Invalidate all user-related cache entries
-			if h.Cache != nil {
-				h.Cache.InvalidateUser(user.ID)
-			}
-
-			slog.Info("maintenance: updated user data",
-				"user_id", user.ID,
-				"new_gender", newGender,
-				"new_church_id", newChurchID,
-				"birthdate_updated", profile.Birthdate != nil,
-			)
 			mu.Lock()
 			response.Updated++
 			mu.Unlock()
@@ -249,75 +257,18 @@ func (h *MaintenanceHandler) SyncSingleUser(c *gin.Context) {
 		return
 	}
 
-	// Fetch member data from Members API
-	member, err := h.MembersClient.Lookup(ctx, personID)
+	result, err := h.syncUserProfile(ctx, userID, personID, user.ChurchLockedUntil)
 	if err != nil {
-		slog.Error("maintenance: failed to fetch member data",
-			"user_id", userID,
-			"person_id", personID,
-			"error", err,
-		)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch member data"})
+		slog.Error("maintenance: failed to sync user", "user_id", userID, "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to sync user"})
 		return
-	}
-
-	// Determine updates - always sync from Members API for single user
-	var newGender string
-	var newChurchID string
-
-	// Always update gender from member data
-	if member.Gender != "" {
-		newGender = members.NormalizeGender(member.Gender)
-	}
-
-	// Attempt to update church from member affiliation (skip if locked)
-	if user.ChurchLockedUntil.Valid && user.ChurchLockedUntil.Time.After(time.Now()) {
-		slog.Debug("maintenance: church update skipped due to lock",
-			"user_id", userID,
-			"locked_until", user.ChurchLockedUntil.Time,
-		)
-	} else {
-		church, err := h.ChurchResolver.FindChurchFromAffiliations(ctx, member.Affiliations)
-		if err != nil {
-			slog.Debug("maintenance: no valid church from affiliations, keeping existing",
-				"user_id", userID,
-				"affiliations", member.Affiliations,
-				"error", err,
-			)
-			// Keep existing church - don't update to default
-		} else {
-			newChurchID = church.ID
-		}
-	}
-
-	// Update user
-	err = h.DB.Queries.UpdateUserGenderAndChurch(ctx, sqlc.UpdateUserGenderAndChurchParams{
-		ID:       userID,
-		Gender:   newGender,
-		ChurchID: newChurchID,
-	})
-	if err != nil {
-		slog.Error("maintenance: failed to update user", "user_id", userID, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update user"})
-		return
-	}
-
-	// Always update person_uuid from member data
-	if member.Uid != uuid.Nil {
-		err = h.DB.Queries.UpdateUserPersonUUID(ctx, sqlc.UpdateUserPersonUUIDParams{
-			ID:         userID,
-			PersonUuid: pgtype.UUID{Bytes: member.Uid, Valid: true},
-		})
-		if err != nil {
-			slog.Warn("maintenance: failed to update person_uuid", "user_id", userID, "error", err)
-		}
 	}
 
 	// Process pending data only when explicitly requested
 	onboardingProcessed := false
-	if processPending && member.Uid != uuid.Nil {
-		personUUIDStr := member.Uid.String()
-		personUUID := pgtype.UUID{Bytes: member.Uid, Valid: true}
+	if processPending && result.PersonUUID != uuid.Nil {
+		personUUIDStr := result.PersonUUID.String()
+		personUUID := pgtype.UUID{Bytes: result.PersonUUID, Valid: true}
 
 		h.AuthHandler.ProcessPendingConsentEvents(ctx, userID, personUUIDStr)
 
@@ -329,34 +280,16 @@ func (h *MaintenanceHandler) SyncSingleUser(c *gin.Context) {
 		slog.Info("maintenance: processed onboarding events", "user_id", userID, "person_uuid", personUUIDStr)
 	}
 
-	// Invalidate all user-related cache entries
-	if h.Cache != nil {
-		h.Cache.InvalidateUser(userID)
-	}
-
-	slog.Info("maintenance: updated user data",
-		"user_id", userID,
-		"new_gender", newGender,
-		"new_church_id", newChurchID,
-		"onboarding_processed", onboardingProcessed,
-	)
-
 	c.JSON(http.StatusOK, gin.H{
 		"message":              "user updated",
 		"user_id":              userID,
-		"new_gender":           newGender,
-		"new_church_id":        newChurchID,
+		"new_gender":           result.NewGender,
+		"new_church_id":        result.NewChurchID,
+		"new_email":            result.Email,
+		"new_name":             result.Name,
+		"new_birthdate":        result.Birthdate,
 		"onboarding_processed": onboardingProcessed,
 	})
-}
-
-// isDefaultChurch checks if the given church ID is the default church (external_id IS NULL)
-func (h *MaintenanceHandler) isDefaultChurch(ctx context.Context, churchID string) bool {
-	church, err := h.DB.Queries.GetChurchByID(ctx, churchID)
-	if err != nil {
-		return false
-	}
-	return church.ExternalID == nil
 }
 
 // BackfillSSFEventsResponse contains the results of a backfill operation
