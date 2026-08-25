@@ -379,13 +379,13 @@ func buildScenarios() []Scenario {
 			// Verbatim (not nonce'd): the internal Ristretto caches keyed by
 			// user/project are under test here; the response cache does not
 			// apply to these multi-top-level documents.
-			{Name: "prime-challenge", User: "u10005", Query: "ChallengePage", Vars: map[string]any{"challengeId": loadtestChalID}, CacheMode: cacheVerbatim},
-			{Name: "prime-active", User: "u10005", Query: "ActiveChallengesPage", CacheMode: cacheVerbatim},
-			{Name: "prime-profile", User: "u10005", Query: "ProfilePage", Vars: map[string]any{"ageFilter": nil}, CacheMode: cacheVerbatim},
-			{Name: "enroll", User: "u10005", Query: "EnrollInChallenge", Vars: map[string]any{"challengeId": loadtestChalID}},
-			{Name: "reread-challenge", User: "u10005", Query: "ChallengePage", Vars: map[string]any{"challengeId": loadtestChalID}, CacheMode: cacheVerbatim, ExpectDiverge: "P3"},
-			{Name: "reread-active", User: "u10005", Query: "ActiveChallengesPage", CacheMode: cacheVerbatim, ExpectDiverge: "P3"},
-			{Name: "reread-profile", User: "u10005", Query: "ProfilePage", Vars: map[string]any{"ageFilter": nil}, CacheMode: cacheVerbatim, ExpectDiverge: "P3"},
+			{Name: "prime-challenge", User: "u10006", Query: "ChallengePage", Vars: map[string]any{"challengeId": loadtestChalID}, CacheMode: cacheVerbatim},
+			{Name: "prime-active", User: "u10006", Query: "ActiveChallengesPage", CacheMode: cacheVerbatim},
+			{Name: "prime-profile", User: "u10006", Query: "ProfilePage", Vars: map[string]any{"ageFilter": nil}, CacheMode: cacheVerbatim},
+			{Name: "enroll", User: "u10006", Query: "EnrollInChallenge", Vars: map[string]any{"challengeId": loadtestChalID}},
+			{Name: "reread-challenge", User: "u10006", Query: "ChallengePage", Vars: map[string]any{"challengeId": loadtestChalID}, CacheMode: cacheVerbatim, ExpectDiverge: "P3"},
+			{Name: "reread-active", User: "u10006", Query: "ActiveChallengesPage", CacheMode: cacheVerbatim, ExpectDiverge: "P3"},
+			{Name: "reread-profile", User: "u10006", Query: "ProfilePage", Vars: map[string]any{"ageFilter": nil}, CacheMode: cacheVerbatim, ExpectDiverge: "P3"},
 		},
 	})
 
@@ -395,7 +395,7 @@ func buildScenarios() []Scenario {
 		Steps: []Step{
 			{Name: "warm", User: "u2", Query: "ProjectInfoProbe", CacheMode: cacheVerbatim},
 			{Name: "update-info", User: "admin", Query: "UpdateProjectInfoMessage",
-				Vars: map[string]any{"id": projectID, "input": map[string]any{"infoMessage": "Updated by A/B probe P4"}}},
+				Vars: map[string]any{"id": projectID, "input": map[string]any{"infoMessage": "Updated by A/B probe P4 (fix verification pass)"}}},
 			{Name: "reread-within-ttl", User: "u2", Query: "ProjectInfoProbe", CacheMode: cacheVerbatim, ExpectDiverge: "P4"},
 			{Name: "reread-after-ttl", User: "u2", Query: "ProjectInfoProbe", CacheMode: cacheVerbatim, SleepBefore: 31 * time.Second},
 		},

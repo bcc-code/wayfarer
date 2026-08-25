@@ -116,3 +116,33 @@ scope; B3 requires restoring the `InvalidateUser` broadcast (or an equivalent
 cross-replica invalidation) on enroll; B5 wants auth or a bind to localhost. The
 perf mechanisms themselves (token warmer, member_count reuse, stats middleware)
 introduced no functional drift.
+
+## Fix verification (2026-08-25, later the same day)
+
+All five divergences were fixed on `worktree-ram-first` in commit `9bdbb917`
+("fix(cache): correct response-cache keying, enrollment broadcast, metrics
+exposure") and re-verified on the same box setup with the fixed build deployed
+as side B (results in `/opt/wayfarer-diff/results-fixpass/`):
+
+| Check | Result |
+|---|---|
+| Warm read battery (verbatim repeats across users, all filters/variables) | **61/61 MATCH** (was 25 divergences) |
+| P1 cross-user leak | no longer reproduces — each user gets their own `me`/joinCode |
+| P2 variable collision | no longer reproduces — `first: 5` then `first: 50` returns 5 then 50 |
+| P3 stale-after-enroll (fresh user) | no longer reproduces — all post-enroll rereads fresh |
+| P4 TTL staleness on admin edit | no longer reproduces — project invalidation clears response entries |
+| P5 `/metrics/http` | externally 404 on both sides (loopback-only on the branch); on-box access retained |
+| Perf smoke (`freetext-quiz-rampspike`, RAMP_SCALE=0.05, THINK_SCALE=0.2, k6 on-box, fresh caches, disjoint user slices) | main: avg 9.35ms / p95 15.56ms; fixed branch: avg 9.25ms / p95 15.83ms — within noise; 502/502 iterations, 0 failures, 100% checks on both; sub-ms minimums on the branch confirm the (now per-user) response cache still serves hits |
+
+Fix mechanics: response-cache keys now include a variables hash and — whenever
+the selection (walked recursively, fragments included) touches any field not on
+a conservative user-independent allowlist — the calling user's ID; successful
+mutations flush the caller's per-user entries (read-your-own-writes); user,
+enrollment, and project invalidation clear the relevant response entries; the
+narrow enrollment invalidation now broadcasts a `userenroll` sync message to
+other replicas; `/metrics/http` answers only on loopback. Unit tests cover the
+key shapes, shareability classification and all three invalidation paths; the
+branch's full suite including e2e passes.
+
+The harness probes were re-pointed for the second pass (fresh enroll user,
+new P4 message) since the databases carry the first run's writes.
