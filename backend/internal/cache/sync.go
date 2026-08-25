@@ -36,6 +36,11 @@ const (
 
 	InvalidationTypeQuizSessionAccess InvalidationType = "quizsessionaccess"
 	InvalidationTypeQuizSession       InvalidationType = "quizsession"
+
+	// Narrow self-enrollment invalidation: (user, project, challenge) scoped,
+	// deliberately NOT the full user invalidation (see
+	// InvalidateUserChallengeEnrollment for the measured blast-radius cost).
+	InvalidationTypeUserEnrollment InvalidationType = "userenroll"
 )
 
 // InvalidationMessage is the payload sent via NOTIFY
@@ -218,6 +223,8 @@ func (s *CacheSync) applyInvalidation(msg InvalidationMessage) {
 		s.cache.invalidateAchievementLocal(msg.ID)
 	case InvalidationTypeQuiz:
 		s.cache.invalidateQuizLocal(msg.ID, msg.ChallengeID)
+	case InvalidationTypeUserEnrollment:
+		s.cache.invalidateUserChallengeEnrollmentLocal(msg.ID, msg.ProjectID, msg.ChallengeID)
 	case InvalidationTypeQuizSessionAccess:
 		s.cache.invalidateQuizSessionAccessLocal()
 	case InvalidationTypeQuizSession:

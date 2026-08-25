@@ -83,6 +83,19 @@ func (kr *KeyRegistry) Clear() {
 func extractPrefixes(key string) []string {
 	prefixes := []string{}
 
+	// Whole-response GraphQL cache keys register under the umbrella prefix
+	// (cleared on project invalidation) and, for per-user entries, under the
+	// exact per-user prefix (cleared on that user's mutations/invalidation).
+	if strings.HasPrefix(key, PrefixGQLResponse) {
+		prefixes = append(prefixes, PrefixGQLResponse)
+		if rest, ok := strings.CutPrefix(key, prefixGQLResponseUser); ok {
+			if i := strings.IndexByte(rest, ':'); i > 0 {
+				prefixes = append(prefixes, prefixGQLResponseUser+rest[:i+1])
+			}
+		}
+		return prefixes
+	}
+
 	// Handle leaderboard keys specially - they need to be registered under
 	// prefixes that match the invalidation patterns in InvalidateProject/InvalidateEvent
 	// Key formats:
@@ -268,6 +281,8 @@ func (c *CacheWithRegistry) invalidateUserLocal(userID string) {
 	// Invalidate user filter/count queries (gender/church changes affect results)
 	c.DeletePrefix(PrefixUsersFilter)
 	c.DeletePrefix(PrefixUsersCount)
+	// Drop the user's whole-response cache entries (per-user keyed)
+	c.DeletePrefix(GQLResponseUserPrefix(userID))
 }
 
 // InvalidateProject invalidates all cache entries related to a project and broadcasts to other instances
@@ -299,6 +314,11 @@ func (c *CacheWithRegistry) invalidateProjectLocal(projectID string) {
 
 	// Invalidate all team member leaderboards in this project (scores changed)
 	c.DeletePrefix(PrefixTeamMemberLeaderboard)
+
+	// Drop ALL whole-response cache entries: both shared and per-user entries
+	// embed project data (branding, info message, leaderboards), so admin
+	// project edits must surface immediately rather than after the TTL.
+	c.DeletePrefix(PrefixGQLResponse)
 }
 
 // InvalidateEvent invalidates all cache entries related to an event and broadcasts to other instances
@@ -380,13 +400,28 @@ func (c *CacheWithRegistry) InvalidateChallenge(challengeID, projectID string, e
 //
 // A self-enrollment only changes state scoped to (userID, projectID, challengeID),
 // and every one of those keys is directly addressable, so no prefix sweep is
-// needed. Local-only: callers pair this with InvalidateUser, which broadcasts.
+// needed. Broadcasts the same narrow invalidation to other instances, so
+// multi-replica deployments stay coherent without the InvalidateUser blast
+// radius.
 func (c *CacheWithRegistry) InvalidateUserChallengeEnrollment(userID, projectID, challengeID string) {
+	c.invalidateUserChallengeEnrollmentLocal(userID, projectID, challengeID)
+	c.broadcast(InvalidationMessage{
+		Type: InvalidationTypeUserEnrollment, ID: userID,
+		ProjectID: projectID, ChallengeID: challengeID,
+	})
+}
+
+// invalidateUserChallengeEnrollmentLocal drops the enrollment-scoped keys on
+// this instance only.
+func (c *CacheWithRegistry) invalidateUserChallengeEnrollmentLocal(userID, projectID, challengeID string) {
 	c.Delete(UserChallengeEnrollmentKey(userID, challengeID))
 	c.Delete(UserChallengeCompletionKey(userID, challengeID))
 	c.Delete(UserEnrolledChallengesKey(userID, projectID))
 	c.Delete(UserQuizSessionAccessKey(userID, projectID))
 	c.Delete(ActiveChallengesCountKey(userID, projectID))
+	// The user's whole-response entries embed enrollment state (active
+	// challenge lists, userEnrolledAt) and must not survive the enrollment.
+	c.DeletePrefix(GQLResponseUserPrefix(userID))
 }
 
 // invalidateChallengeLocal invalidates challenge cache entries on this instance only

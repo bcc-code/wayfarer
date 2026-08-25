@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -465,8 +466,14 @@ func main() {
 	})
 
 	// Aggregated HTTP request stats (counts, status classes, latency
-	// percentiles per route since boot)
+	// percentiles per route since boot). Loopback-only: the route inventory
+	// and traffic volumes are operational data, not public API — read it on
+	// the host (curl localhost) or over an SSH tunnel.
 	router.GET("/metrics/http", func(c *gin.Context) {
+		if ip := net.ParseIP(c.ClientIP()); ip == nil || !ip.IsLoopback() {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+			return
+		}
 		c.JSON(http.StatusOK, httpStats.Snapshot())
 	})
 
