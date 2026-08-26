@@ -1,0 +1,38 @@
+---
+- name: Install PostgreSQL and helpers
+  ansible.builtin.apt:
+    name:
+      - "postgresql-{{ postgres_version }}"
+      - postgresql-client
+      - postgresql-contrib   # pg_stat_statements
+      - python3-psycopg2   # for community.postgresql modules
+    state: present
+
+# ignore_errors in --check: unit/config dirs don't exist until the
+# package install above has really run.
+- name: Ensure PostgreSQL is enabled and running
+  ansible.builtin.systemd:
+    name: postgresql
+    enabled: true
+    state: started
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Deploy tuning configuration
+  ansible.builtin.template:
+    src: 90-tuning.conf.j2
+    dest: "/etc/postgresql/{{ postgres_version }}/main/conf.d/90-tuning.conf"
+    owner: postgres
+    group: postgres
+    mode: "0644"
+  notify: Restart postgresql
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Deploy pg_hba.conf
+  ansible.builtin.template:
+    src: pg_hba.conf.j2
+    dest: "/etc/postgresql/{{ postgres_version }}/main/pg_hba.conf"
+    owner: postgres
+    group: postgres
+    mode: "0640"
+  notify: Reload postgresql
+  ignore_errors: "{{ ansible_check_mode }}"

@@ -1,0 +1,10 @@
+---
+- name: Provision Interact test server
+  hosts: interact
+  become: true
+  roles:
+    - { role: hardening, tags: [hardening] }
+    - { role: firewall, tags: [firewall] }
+    - { role: postgres, tags: [postgres] }
+    - { role: interact, tags: [interact] }
+    - { role: dokploy, tags: [dokploy] }

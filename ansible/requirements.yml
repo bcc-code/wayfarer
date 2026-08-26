@@ -1,0 +1,4 @@
+---
+collections:
+  - name: community.general      # ufw module
+  - name: community.postgresql   # postgresql_user/db/ext modules

@@ -1,0 +1,107 @@
+---
+- name: Set machine hostname
+  ansible.builtin.hostname:
+    name: "{{ machine_hostname }}"
+
+- name: Map hostname in /etc/hosts
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: '^127\.0\.1\.1\s'
+    line: "127.0.1.1 {{ machine_hostname }}"
+
+# Runs even in --check (refreshing apt metadata is not a system change);
+# otherwise check-mode runs fail with "no package available" on a stale cache.
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+  check_mode: false
+  changed_when: false
+
+- name: Upgrade packages
+  ansible.builtin.apt:
+    upgrade: safe
+
+- name: Install baseline security packages
+  ansible.builtin.apt:
+    name:
+      - unattended-upgrades
+      - apt-listchanges
+      - fail2ban
+      - libpam-tmpdir
+      - needrestart
+    state: present
+
+- name: Enable unattended security upgrades
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+      APT::Periodic::AutocleanInterval "7";
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Harden sshd
+  ansible.builtin.template:
+    src: 60-hardening.conf.j2
+    dest: /etc/ssh/sshd_config.d/60-hardening.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "sshd -t -f %s"
+  notify: Restart sshd
+
+- name: Configure fail2ban for sshd
+  ansible.builtin.copy:
+    dest: /etc/fail2ban/jail.local
+    content: |
+      [DEFAULT]
+      bantime = 1h
+      findtime = 10m
+      maxretry = 5
+      backend = systemd
+
+      [sshd]
+      enabled = true
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart fail2ban
+
+- name: Apply kernel/network sysctl hardening
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/90-hardening.conf
+    content: |
+      # No redirects (we are not a router)
+      net.ipv4.conf.all.accept_redirects = 0
+      net.ipv4.conf.all.send_redirects = 0
+      net.ipv6.conf.all.accept_redirects = 0
+      # No source-routed packets
+      net.ipv4.conf.all.accept_source_route = 0
+      net.ipv6.conf.all.accept_source_route = 0
+      # SYN flood protection
+      net.ipv4.tcp_syncookies = 1
+      # Log martians
+      net.ipv4.conf.all.log_martians = 1
+      # Reverse path filtering
+      net.ipv4.conf.all.rp_filter = 1
+      net.ipv4.conf.default.rp_filter = 1
+      # Restrict kernel info leaks
+      kernel.dmesg_restrict = 1
+      kernel.kptr_restrict = 2
+      # Restrict ptrace to parent processes
+      kernel.yama.ptrace_scope = 1
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload sysctl
+
+- name: Ensure fail2ban is enabled and running
+  ansible.builtin.systemd:
+    name: fail2ban
+    enabled: true
+    state: started
+  # Unit doesn't exist in --check until the package is really installed.
+  ignore_errors: "{{ ansible_check_mode }}"
