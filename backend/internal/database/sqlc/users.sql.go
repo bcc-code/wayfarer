@@ -915,7 +915,9 @@ type GetUsersLeastRecentlySyncedRow struct {
 // seed script's "MEM-<n>" placeholders) — those can never resolve via
 // Lookup, and since a failed sync never bumps updated_at, they'd otherwise
 // wedge permanently at the front of the queue.
-func (q *Queries) GetUsersLeastRecentlySynced(ctx context.Context, querylimit int32) ([]*GetUsersLeastRecentlySyncedRow, error) {
+// A NULL querylimit means "no limit" (Postgres treats LIMIT NULL as no limit) — the whole
+// matching table is returned so a cron call can sweep everyone in one go.
+func (q *Queries) GetUsersLeastRecentlySynced(ctx context.Context, querylimit *int32) ([]*GetUsersLeastRecentlySyncedRow, error) {
 	rows, err := q.db.Query(ctx, GetUsersLeastRecentlySynced, querylimit)
 	if err != nil {
 		return nil, err

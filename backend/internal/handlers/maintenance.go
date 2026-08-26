@@ -162,17 +162,18 @@ func (h *MaintenanceHandler) syncUserProfile(ctx context.Context, userID string,
 func (h *MaintenanceHandler) SyncUserData(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	// Get limit from query param, default to 100
-	limit := 100
+	// Omitted ?limit= syncs the whole table (for a cron sweep); pass it for a quick manual test.
+	var limit *int32
 	if limitStr := c.Query("limit"); limitStr != "" {
 		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
-			limit = parsedLimit
+			limit = new(int32)
+			*limit = int32(parsedLimit)
 		}
 	}
 
 	slog.Info("maintenance: starting user data sync", "limit", limit)
 
-	users, err := h.DB.Queries.GetUsersLeastRecentlySynced(ctx, int32(limit))
+	users, err := h.DB.Queries.GetUsersLeastRecentlySynced(ctx, limit)
 	if err != nil {
 		slog.Error("maintenance: failed to get users for sync", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get users"})

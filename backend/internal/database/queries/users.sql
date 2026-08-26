@@ -178,11 +178,13 @@ WHERE id = @user_id::char(28);
 -- seed script's "MEM-<n>" placeholders) — those can never resolve via
 -- Lookup, and since a failed sync never bumps updated_at, they'd otherwise
 -- wedge permanently at the front of the queue.
+-- A NULL querylimit means "no limit" (Postgres treats LIMIT NULL as no limit) — the whole
+-- matching table is returned so a cron call can sweep everyone in one go.
 SELECT id, members_id, person_uuid, gender, church_id, church_locked_until
 FROM users
 WHERE members_id ~ '^[0-9]+$'
 ORDER BY updated_at ASC
-LIMIT @querylimit::int;
+LIMIT sqlc.narg('querylimit')::int;
 
 -- name: TouchUserSyncedAt :exec
 -- Bumps updated_at without changing any other column. Used when a Members sync attempt
