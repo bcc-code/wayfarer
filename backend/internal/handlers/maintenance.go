@@ -26,7 +26,7 @@ import (
 // sequentially would let a single sync request run for minutes. Bounded concurrency
 // keeps wall-clock low while staying well within the DB connection pool.
 //
-// 200 got rate-limited hard; 20/50/100 came back clean; 150 is testing upward from there — watch for "too many requests".
+// 200 got rate-limited hard
 const maintenanceSyncConcurrency = 150
 
 // MaintenanceHandler handles maintenance tasks like syncing user data
@@ -59,11 +59,7 @@ type syncUserProfileResult struct {
 	PersonUUID  uuid.UUID
 }
 
-// syncUserProfile fetches personID's current Members API record and applies it to
-// userID: email, name, first/last/middle/display name, gender, birthdate, church_id,
-// and person_uuid are all overwritten with the Members API's current values (unless
-// churchLockedUntil is still active, in which case church_id is left alone). Fields
-// the Members API has no value for leave the existing column untouched.
+// syncUserProfile overwrites userID's profile with personID's current Members API record, except church_id stays put while churchLockedUntil is active
 func (h *MaintenanceHandler) syncUserProfile(ctx context.Context, userID string, personID int, churchLockedUntil pgtype.Timestamptz) (*syncUserProfileResult, error) {
 	member, err := h.MembersClient.Lookup(ctx, personID)
 	if err != nil {
@@ -157,9 +153,7 @@ func (h *MaintenanceHandler) syncUserProfile(ctx context.Context, userID string,
 	}, nil
 }
 
-// SyncUserData resyncs a batch of users from the Members API, oldest-synced first.
-// Called repeatedly (e.g. from a cron job), it cycles through the entire user base
-// over time rather than only fixing a fixed set of flagged-incomplete users.
+// SyncUserData resyncs a batch of users from the Members API, oldest-synced first, so repeated calls cycle through the entire user base over time
 func (h *MaintenanceHandler) SyncUserData(c *gin.Context) {
 	ctx := c.Request.Context()
 

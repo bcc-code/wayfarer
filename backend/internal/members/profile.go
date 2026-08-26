@@ -2,10 +2,7 @@ package members
 
 import "time"
 
-// ProfileFields holds profile data derived from a Member record, ready to
-// apply to a Wayfarer user. An empty string field or a nil Birthdate means
-// the Members API had no value for it — callers should leave the existing
-// database value untouched rather than overwrite it.
+// ProfileFields holds profile data derived from a Member record; an empty/nil field means no value, so callers should leave the existing DB value alone.
 type ProfileFields struct {
 	Email       string
 	FirstName   string
