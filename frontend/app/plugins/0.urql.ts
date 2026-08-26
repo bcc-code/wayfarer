@@ -3,10 +3,11 @@ import { useAuth0 } from '@auth0/auth0-vue'
 import urql, { cacheExchange, Client, fetchExchange } from '@urql/vue'
 
 export default defineNuxtPlugin((nuxtApp) => {
+  const config = useRuntimeConfig()
   nuxtApp.vueApp.use(
     urql,
     new Client({
-      url: useRuntimeConfig().public.apiUrl,
+      url: config.public.apiUrl,
       preferGetMethod: false,
       requestPolicy: 'cache-and-network',
       fetchOptions() {
@@ -52,16 +53,16 @@ export default defineNuxtPlugin((nuxtApp) => {
               // Prevent multiple concurrent refresh attempts
               if (isRedirecting) return
 
-              // Clear expired Wayfarer token
-              wayfarerToken.value = null
-
-              const auth0 = useAuth0()
+              // This runs from a urql exchange callback, outside any Vue setup
+              // or app context — useAuth0() relies on inject(), so it must be
+              // resolved inside runWithContext or it returns undefined.
+              const auth0 = () =>
+                nuxtApp.vueApp.runWithContext(() => useAuth0())
 
               // Try silent refresh first - get fresh Auth0 token and exchange it
               try {
-                const auth0Token = await auth0.getAccessTokenSilently()
+                const auth0Token = await auth0().getAccessTokenSilently()
                 if (auth0Token) {
-                  const config = useRuntimeConfig()
                   const response = await $fetch<{ token: string }>(
                     `${config.public.tokenUrl}?token=${auth0Token}`,
                     { method: 'GET' },
@@ -75,13 +76,23 @@ export default defineNuxtPlugin((nuxtApp) => {
                 // Silent refresh failed, fall through to login redirect
               }
 
-              // Silent refresh failed - do full login redirect
+              // Silent refresh failed - clear the token and do a full login
+              // redirect. The token is only cleared here, after the refresh
+              // attempt, so a recoverable 401 never pauses in-flight queries.
               isRedirecting = true
-              await auth0.loginWithRedirect({
-                appState: {
-                  targetUrl: window.location.pathname + window.location.search,
-                },
-              })
+              wayfarerToken.value = null
+              try {
+                await auth0().loginWithRedirect({
+                  appState: {
+                    targetUrl:
+                      window.location.pathname + window.location.search,
+                  },
+                })
+              } catch {
+                // Auth0 client unavailable — still get the user to login
+                // instead of leaving the app stuck on a blank page.
+                window.location.assign('/login')
+              }
             },
             willAuthError() {
               return false
