@@ -1,4 +1,5 @@
 import { useAuth0 } from '@auth0/auth0-vue'
+import { until } from '@vueuse/core'
 
 gql(`
   query GetMe {
@@ -90,14 +91,12 @@ export function useAuth() {
 
   // Get the Wayfarer token for API calls
   const getAccessToken = async () => {
-    try {
-      while (isLoading.value) {
-        await new Promise((resolve) => setTimeout(resolve, 10))
-      }
-      return wayfarerToken.value
-    } catch {
+    await until(isLoading).toBe(false, { timeout: 10_000 })
+    if (!wayfarerToken.value || isTokenExpired(wayfarerToken.value)) {
       await loginWithRedirect()
+      return null
     }
+    return wayfarerToken.value
   }
 
   const getAccessTokenSilently = async () => {
@@ -125,7 +124,11 @@ export function useAuth() {
     const redirect = params.get('redirect')
     return auth0.loginWithRedirect({
       appState: {
-        targetUrl: redirect || (window.location.pathname === '/login' ? '/' : window.location.pathname + window.location.search),
+        targetUrl:
+          redirect ||
+          (window.location.pathname === '/login'
+            ? '/'
+            : window.location.pathname + window.location.search),
       },
     })
   }
