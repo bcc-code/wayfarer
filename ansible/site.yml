@@ -2,6 +2,10 @@
 - name: Provision Interact test server
   hosts: interact
   become: true
+  # Run notified handlers even if the play fails later — otherwise a failure
+  # (e.g. the DB password guard) leaves changed configs unapplied, like a
+  # postgres listen_addresses change with no restart.
+  force_handlers: true
   roles:
     - { role: hardening, tags: [hardening] }
     - { role: firewall, tags: [firewall] }
