@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_5zWKFzmbGY
 createdAt: 2025-12-14T21:49:01.948267
-updatedAt: 2026-01-07T14:44:48.544491
+updatedAt: 2026-07-26T15:47:57.814857
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_qhH6J7tuNv
 authentication: {}
@@ -20,6 +20,7 @@ body:
           html
         }
       }
+    bulkEnrollUsersInChallenge()
     }
   variables: ''
 bodyType: graphql
@@ -42,3 +43,18 @@ name: Update Project
 sortPriority: 2000.0
 url: ${[ HOST ]}/graphql
 urlParameters: []
+settingSendCookies:
+  enabled: false
+  value: true
+settingStoreCookies:
+  enabled: false
+  value: true
+settingValidateCertificates:
+  enabled: false
+  value: true
+settingFollowRedirects:
+  enabled: false
+  value: true
+settingRequestTimeout:
+  enabled: false
+  value: 0
