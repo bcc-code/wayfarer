@@ -138,6 +138,7 @@ func main() {
 
 	// Initialize Auth0 client for Members API token management
 	var membersClient *members.Client
+	var maintenanceMembersClient *members.Client
 	if cfg.Auth0.Domain != "" && cfg.Auth0.ClientID != "" && cfg.Members.Domain != "" {
 		auth0Client := auth0.New(auth0.Config{
 			Domain:       cfg.Auth0.Domain,
@@ -147,17 +148,31 @@ func main() {
 
 		// Create circuit breaker for Members API
 		membersBreaker := gobreaker.NewCircuitBreaker[[]byte](gobreaker.Settings{
-			Name:    "members-api",
-			Timeout: 2 * time.Second,
+			Name:         "members-api",
+			Timeout:      2 * time.Second,
+			IsSuccessful: members.IsBreakerSuccess,
 		})
 
-		// Initialize Members API client
+		// Members API client for interactive paths (login, admin-triggered single-user resync)
 		membersClient = members.New(
 			members.Config{Domain: cfg.Members.Domain},
 			auth0Client,
 			membersBreaker,
 		)
-		slog.Info("Members API client initialized", "domain", cfg.Members.Domain)
+
+		// Isolated client + breaker for the batch maintenance sync, so its failures can't trip the breaker interactive logins depend on
+		maintenanceMembersBreaker := gobreaker.NewCircuitBreaker[[]byte](gobreaker.Settings{
+			Name:         "members-api-maintenance",
+			Timeout:      2 * time.Second,
+			IsSuccessful: members.IsBreakerSuccess,
+		})
+		maintenanceMembersClient = members.New(
+			members.Config{Domain: cfg.Members.Domain},
+			auth0Client,
+			maintenanceMembersBreaker,
+		)
+
+		slog.Info("Members API clients initialized", "domain", cfg.Members.Domain)
 	} else {
 		slog.Warn("Members API client not initialized - missing configuration")
 	}
@@ -330,10 +345,16 @@ func main() {
 		WebhookService: webhookService,
 	}
 
-	// Church resolver (shared between auth, maintenance, and sync)
+	// Church resolver (shared between auth and sync)
 	churchResolver := &services.ChurchResolver{
 		DB:            db,
 		MembersClient: membersClient,
+	}
+
+	// Church resolver backed by the isolated maintenance Members client, for the same reason
+	maintenanceChurchResolver := &services.ChurchResolver{
+		DB:            db,
+		MembersClient: maintenanceMembersClient,
 	}
 
 	// User sync service
@@ -530,8 +551,8 @@ func main() {
 	maintenanceHandler := &handlers.MaintenanceHandler{
 		DB:                        db,
 		Cache:                     cacheInstance,
-		MembersClient:             membersClient,
-		ChurchResolver:            churchResolver,
+		MembersClient:             maintenanceMembersClient,
+		ChurchResolver:            maintenanceChurchResolver,
 		AuthHandler:               authHandler,
 		ContentAchievementService: contentAchievementService,
 		SSFClient:                 ssfClient,

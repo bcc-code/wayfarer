@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -24,7 +25,9 @@ import (
 // at once. Each Members lookup can take up to its client timeout; processing them
 // sequentially would let a single sync request run for minutes. Bounded concurrency
 // keeps wall-clock low while staying well within the DB connection pool.
-const maintenanceSyncConcurrency = 10
+//
+// 200 got rate-limited hard; 20/50/100 came back clean; 150 is testing upward from there — watch for "too many requests".
+const maintenanceSyncConcurrency = 150
 
 // MaintenanceHandler handles maintenance tasks like syncing user data
 type MaintenanceHandler struct {
@@ -63,6 +66,16 @@ type syncUserProfileResult struct {
 func (h *MaintenanceHandler) syncUserProfile(ctx context.Context, userID string, personID int, churchLockedUntil pgtype.Timestamptz) (*syncUserProfileResult, error) {
 	member, err := h.MembersClient.Lookup(ctx, personID)
 	if err != nil {
+		if errors.Is(err, members.ErrMemberNotFound) {
+			// Bump updated_at anyway so this row doesn't camp at the front of the sync queue forever.
+			if touchErr := h.DB.Queries.TouchUserSyncedAt(ctx, userID); touchErr != nil {
+				slog.Warn("maintenance: failed to touch updated_at for not-found member",
+					"user_id", userID,
+					"person_id", personID,
+					"error", touchErr,
+				)
+			}
+		}
 		return nil, fmt.Errorf("failed to fetch member data: %w", err)
 	}
 
@@ -152,7 +165,7 @@ func (h *MaintenanceHandler) SyncUserData(c *gin.Context) {
 	// Get limit from query param, default to 100
 	limit := 100
 	if limitStr := c.Query("limit"); limitStr != "" {
-		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 && parsedLimit <= 1000 {
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
 			limit = parsedLimit
 		}
 	}

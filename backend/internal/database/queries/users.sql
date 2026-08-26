@@ -184,6 +184,16 @@ WHERE members_id ~ '^[0-9]+$'
 ORDER BY updated_at ASC
 LIMIT @querylimit::int;
 
+-- name: TouchUserSyncedAt :exec
+-- Bumps updated_at without changing any other column. Used when a Members sync attempt
+-- fails with a definitive "this person no longer exists in Members" (404), as opposed to
+-- a transient error (timeout, 5xx) — without this, a since-deleted member's row would
+-- camp at the front of GetUsersLeastRecentlySynced's queue forever, since a failed sync
+-- normally never advances updated_at, wasting a batch slot on it every single call.
+UPDATE users
+SET updated_at = now()
+WHERE id = @id::char(28);
+
 -- name: UpdateUserGenderAndChurch :exec
 UPDATE users
 SET

@@ -992,6 +992,22 @@ func (q *Queries) LockUserChurch(ctx context.Context, arg LockUserChurchParams) 
 	return err
 }
 
+const TouchUserSyncedAt = `-- name: TouchUserSyncedAt :exec
+UPDATE users
+SET updated_at = now()
+WHERE id = $1::char(28)
+`
+
+// Bumps updated_at without changing any other column. Used when a Members sync attempt
+// fails with a definitive "this person no longer exists in Members" (404), as opposed to
+// a transient error (timeout, 5xx) — without this, a since-deleted member's row would
+// camp at the front of GetUsersLeastRecentlySynced's queue forever, since a failed sync
+// normally never advances updated_at, wasting a batch slot on it every single call.
+func (q *Queries) TouchUserSyncedAt(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, TouchUserSyncedAt, id)
+	return err
+}
+
 const UnlockUserChurch = `-- name: UnlockUserChurch :exec
 UPDATE users
 SET church_locked_until = NULL, updated_at = now()
