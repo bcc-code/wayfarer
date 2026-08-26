@@ -357,6 +357,13 @@ func main() {
 		MembersClient: maintenanceMembersClient,
 	}
 
+	// Member import service, backed by the isolated maintenance Members client since it
+	// fetches in bulk (not concurrently) but still shouldn't share a breaker with logins
+	memberImportService := &services.MemberImportService{
+		DB:            db,
+		MembersClient: maintenanceMembersClient,
+	}
+
 	// User sync service
 	userSyncService := &services.UserSyncService{
 		DB:                        db,
@@ -556,14 +563,17 @@ func main() {
 		AuthHandler:               authHandler,
 		ContentAchievementService: contentAchievementService,
 		SSFClient:                 ssfClient,
+		MemberImportService:       memberImportService,
 	}
 	router.POST("/api/maintenance/sync-user-data", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.SyncUserData)
 	router.POST("/api/maintenance/sync-user/:user_id", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.SyncSingleUser)
 	router.POST("/api/maintenance/backfill-ssf-events", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.BackfillSSFEvents)
+	router.POST("/api/maintenance/import-new-members", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.ImportNewMembers)
 	slog.Info("Maintenance endpoints registered",
 		"batch_sync", "POST /api/maintenance/sync-user-data",
 		"single_sync", "POST /api/maintenance/sync-user/:user_id",
 		"backfill_ssf", "POST /api/maintenance/backfill-ssf-events",
+		"import_new_members", "POST /api/maintenance/import-new-members",
 	)
 
 	// Quiz scheduler handler for timed session state transitions

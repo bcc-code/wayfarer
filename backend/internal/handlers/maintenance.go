@@ -38,6 +38,7 @@ type MaintenanceHandler struct {
 	AuthHandler               *AuthHandler
 	ContentAchievementService *services.ContentAchievementService
 	SSFClient                 *ssf.Client
+	MemberImportService       *services.MemberImportService
 }
 
 // SyncUserDataResponse contains the results of a user data sync operation
@@ -304,6 +305,27 @@ func (h *MaintenanceHandler) SyncSingleUser(c *gin.Context) {
 		"new_birthdate":        result.Birthdate,
 		"onboarding_processed": onboardingProcessed,
 	})
+}
+
+// ImportNewMembers creates users for newly-eligible members ahead of their first login. Called by the same external cron as SyncUserData.
+func (h *MaintenanceHandler) ImportNewMembers(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	if h.MemberImportService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "member import not configured"})
+		return
+	}
+
+	slog.Info("maintenance: starting new member import")
+
+	result, err := h.MemberImportService.ImportNewMembers(ctx)
+	if err != nil {
+		slog.Error("maintenance: failed to import new members", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to import new members"})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
 }
 
 // BackfillSSFEventsResponse contains the results of a backfill operation
