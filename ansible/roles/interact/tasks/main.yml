@@ -1,0 +1,37 @@
+---
+# Prepares the box for the Interact (Wayfarer) app, which is deployed
+# through Dokploy and connects to the host-level Postgres.
+
+- name: Fail if the database password was left at the placeholder
+  ansible.builtin.assert:
+    that: interact_db_password != 'CHANGE_ME'
+    fail_msg: >-
+      Set vault_interact_db_password (ansible-vault) or pass
+      -e interact_db_password=... before running this playbook.
+  no_log: true
+
+# ignore_errors in --check: Postgres/psycopg2 may not really be
+# installed yet during a dry run.
+- name: Provision Interact database objects
+  ignore_errors: "{{ ansible_check_mode }}"
+  become_user: postgres
+  block:
+    - name: Create Interact database role
+      community.postgresql.postgresql_user:
+        name: "{{ interact_db_user }}"
+        password: "{{ interact_db_password }}"
+        state: present
+      no_log: true
+
+    - name: Create Interact database
+      community.postgresql.postgresql_db:
+        name: "{{ interact_db_name }}"
+        owner: "{{ interact_db_user }}"
+        encoding: UTF-8
+        state: present
+
+    - name: Enable pg_stat_statements in the Interact database
+      community.postgresql.postgresql_ext:
+        name: pg_stat_statements
+        login_db: "{{ interact_db_name }}"
+        state: present

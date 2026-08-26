@@ -1,0 +1,32 @@
+# --- Host identity -------------------------------------------------------------
+machine_hostname: interact-test
+
+# --- SSH / hardening ---------------------------------------------------------
+# Root login stays enabled (key-only) because existing tooling
+# (make loadtest-remote-*) connects as root@.
+ssh_permit_root_login: prohibit-password
+ssh_port: 22
+
+# --- Firewall ----------------------------------------------------------------
+firewall_allowed_tcp_ports:
+  - "{{ ssh_port }}"
+  - 80    # Dokploy Traefik (HTTP -> ACME challenges + redirect to HTTPS)
+  - 443   # Dokploy Traefik (HTTPS)
+# Dokploy UI. Restricted to these source CIDRs; empty list = open to all.
+dokploy_ui_port: 3000
+dokploy_ui_allowed_sources: []
+
+# --- PostgreSQL ---------------------------------------------------------------
+postgres_version: 17
+# Listen on loopback + the Docker bridge gateway so Dokploy-deployed
+# containers can reach the host-level Postgres.
+postgres_listen_addresses: "127.0.0.1,172.17.0.1"
+postgres_docker_cidr: 172.16.0.0/12
+postgres_max_connections: 100
+
+# --- Interact (Wayfarer) -------------------------------------------------------
+interact_domain: interact-test.bcc.media
+interact_db_name: interact
+interact_db_user: interact
+# Set via `ansible-vault` or -e on the command line; never commit a real value.
+interact_db_password: "{{ vault_interact_db_password | default('CHANGE_ME') }}"
