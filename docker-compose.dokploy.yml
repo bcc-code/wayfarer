@@ -52,6 +52,15 @@ services:
       - traefik.http.routers.interact-http.entrypoints=web
       - traefik.http.routers.interact-http.middlewares=interact-redirect
       - traefik.http.middlewares.interact-redirect.redirectscheme.scheme=https
+      # Production domain (interact.bcc.no): served with the manually issued
+      # DNS-01 cert in /etc/dokploy/traefik/dynamic/certificates — deliberately
+      # NO certresolver here, since HTTP-01 can't succeed until DNS cuts over.
+      - traefik.http.routers.interact-prod.rule=Host(`${INTERACT_PROD_DOMAIN:-interact.bcc.no}`)
+      - traefik.http.routers.interact-prod.entrypoints=websecure
+      - traefik.http.routers.interact-prod.tls=true
+      - traefik.http.routers.interact-prod-http.rule=Host(`${INTERACT_PROD_DOMAIN:-interact.bcc.no}`)
+      - traefik.http.routers.interact-prod-http.entrypoints=web
+      - traefik.http.routers.interact-prod-http.middlewares=interact-redirect
 
 networks:
   dokploy-network:
