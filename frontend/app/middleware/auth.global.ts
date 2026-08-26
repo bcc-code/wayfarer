@@ -1,4 +1,5 @@
 import { useAuth0 } from '@auth0/auth0-vue'
+import { until } from '@vueuse/core'
 
 export default defineNuxtRouteMiddleware(async (to) => {
   // Skip auth check for auth pages
@@ -12,13 +13,27 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   const auth0 = useAuth0()
 
-  // Wait for Auth0 to initialize
-  while (auth0.isLoading.value) {
-    await new Promise((resolve) => setTimeout(resolve, 10))
+  // Wait for Auth0 to initialize, but never indefinitely — if the silent-auth
+  // iframe hangs (blocked cookies, offline resume), fall through to the token
+  // checks instead of blocking navigation forever.
+  try {
+    await until(auth0.isLoading).toBe(false, {
+      timeout: 10_000,
+      throwOnTimeout: true,
+    })
+  } catch {
+    // Auth0 init stalled; token checks below decide where to go
   }
 
   // Check if user has a valid Wayfarer token (already exchanged)
   const wayfarerToken = useLocalStorage<string>('token', () => null)
+
+  // An expired token is as good as no token — clear it so we re-exchange
+  // (Auth0 session alive) or land on /login, instead of rendering the page
+  // and letting every query 401.
+  if (wayfarerToken.value && isTokenExpired(wayfarerToken.value)) {
+    wayfarerToken.value = null
+  }
 
   // Redirect loop guard - prevent infinite redirects to callback
   const redirectAttempts = useLocalStorage('auth_redirect_attempts', 0)
@@ -56,7 +71,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
       redirectAttempts.value = 0
       lastRedirectTime.value = 0
       const redirect = to.fullPath === '/' ? undefined : to.fullPath
-      return navigateTo({ path: '/login', query: { redirect } }, { replace: true })
+      return navigateTo(
+        { path: '/login', query: { redirect } },
+        { replace: true },
+      )
     }
   } else {
     // Have valid token - clear redirect attempts
