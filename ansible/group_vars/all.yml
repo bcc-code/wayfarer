@@ -22,9 +22,11 @@ postgres_version: 17
 # containers can reach the host-level Postgres.
 postgres_listen_addresses: "127.0.0.1,172.17.0.1"
 postgres_docker_cidr: 172.16.0.0/12
-# 200: the load-test app pool alone is DB_MAX_OPEN_CONNS=100; 100 total
-# (minus 3 superuser-reserved) starved it at spike peak (SQLSTATE 53300).
-postgres_max_connections: 200
+# 400: the load-test app pool is DB_MAX_OPEN_CONNS=250 (loadtest.env) plus
+# warmer/psql headroom; 100 total starved the pool at spike peak (53300).
+# work_mem in the template scales with this — at 400 conns / 62GB it lands
+# around 40MB per sort node, still comfortable.
+postgres_max_connections: 400
 
 # --- Interact (Wayfarer) -------------------------------------------------------
 interact_domain: interact-test.bcc.media
