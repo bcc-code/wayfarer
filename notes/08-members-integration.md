@@ -90,15 +90,13 @@ Key dependencies:
 
 ## Keeping Wayfarer Users in Sync with Members Data
 
-New user creation only ever happens reactively: `AuthHandler.findOrCreateUser`
-(`internal/handlers/auth.go`) creates a Wayfarer `users` row the first time a
-person authenticates via Auth0. Nothing polls or watches the Members API for
-brand-new people ahead of their first login — the Members API client has no
-"list/filter by created-at" method to support that, and no webhook exists for
-"member created" (the two existing webhooks, `content-events` and
-`consent-events`, both require an *existing* `members_id` in Wayfarer). This is
-a deliberate decision, not a gap to fix by default — revisit only if proactive
-account creation becomes an actual requirement.
+New user creation happens two ways: reactively via `AuthHandler.findOrCreateUser`
+(`internal/handlers/auth.go`) on first login, and proactively via `POST
+/api/maintenance/import-new-members` (`services.MemberImportService`), which
+pulls in anyone newly eligible (e.g. just turned 12) who doesn't have a
+Wayfarer row yet. The two don't conflict — both set `members_id` and
+`person_uuid`, and `findOrCreateUser` checks those before creating a row, so
+a pre-imported person's first login reuses the existing row.
 
 For users that already exist, three entry points re-pull data from the
 Members API. As of the changes below, the two maintenance endpoints share one
@@ -111,6 +109,7 @@ gender/church/person_uuid and is a candidate for the same treatment later:
 | `POST /api/maintenance/sync-user-data?limit=N` (`MaintenanceHandler.SyncUserData`) | Manual/API-key, batch, oldest-`updated_at`-first (`GetUsersLeastRecentlySynced`) | email, name, first/last/middle/display name, gender, birthdate, church_id, person_uuid |
 | `POST /api/maintenance/sync-user/:user_id` (`MaintenanceHandler.SyncSingleUser`) | Manual/API-key, one user | same, always for the given user |
 | GraphQL `syncUser(userId)` (`UserSyncService.SyncUser`) | Admin/superadmin GraphQL call | gender, church_id, person_uuid + SSF content-event backfill |
+| `POST /api/maintenance/import-new-members` (`MaintenanceHandler.ImportNewMembers`) | Manual/API-key, batch | creates users for newly-eligible members not yet in Wayfarer (see below) |
 
 `SyncUserData` used to select candidates via `WHERE gender = 'UNKNOWN'` —
 meaning once a user's gender was known, that user could never be touched
@@ -133,9 +132,7 @@ this would wedge permanently at the front of the least-recently-synced queue
 — every batch call would burn its whole `limit` on the same unsyncable rows
 forever, and users with real numeric IDs would never get reached.
 
-No cron/scheduler exists anywhere in this repo for `sync-user-data` (checked:
-no Terraform/k8s manifests, no scheduled GitHub Actions, no in-process
-ticker). It's triggered externally, from outside this codebase.
+See `13-maintenance-cron-jobs.md` for how to schedule jobs.
 
 Shared logic lives in `internal/members/profile.go`:
 - `ExtractProfile(member *Member) ProfileFields` — computes email, first/last/middle/display
