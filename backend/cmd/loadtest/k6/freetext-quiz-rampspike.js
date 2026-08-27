@@ -38,18 +38,21 @@ const tokens = new SharedArray('tokens', function () {
     return JSON.parse(open('../config.json')).tokens;
 });
 // Simulated Auth0 tokens (tokengen -auth0-count) for the REALISM auth-dance
-// fraction, keyed by userId: quiz users are single-use per token slice, so
-// the dance must mint a token for the SAME user, never a random one.
+// fraction. Quiz users are single-use per token slice, so the dance must mint
+// a token for the SAME user, never a random one: tokengen orders both arrays
+// by user id, so when every user got an auth0 token they are index-aligned —
+// verified per lookup via the userId guard in auth0TokenFor(). Never copy
+// SharedArray entries into a per-VU map here: module init runs once per VU
+// and materializing 13k tokens per VU OOMs the generator.
 // SharedArray callbacks must return a non-empty array; null marks "not generated".
 const auth0Tokens = new SharedArray('auth0Tokens', function () {
     const parsed = JSON.parse(open('../config.json')).auth0Tokens;
     return parsed && parsed.length > 0 ? parsed : [null];
 });
-const auth0ByUser = {};
-for (const entry of auth0Tokens) {
-    if (entry) {
-        auth0ByUser[entry.userId] = entry.token;
-    }
+
+function auth0TokenFor(idx, userId) {
+    const entry = idx < auth0Tokens.length ? auth0Tokens[idx] : null;
+    return entry && entry.userId === userId ? entry.token : null;
 }
 // BASE_URL overrides the baseUrl baked into config.json by tokengen, so a
 // config generated on the server box (baseUrl 127.0.0.1) can be replayed
@@ -151,7 +154,7 @@ export function journey() {
 
     // A fraction of sessions start expired: Auth0 dance for the SAME user,
     // then continue with the freshly minted Wayfarer JWT.
-    token = maybeAuthDance(baseUrl, token, auth0ByUser[tokens[idx].userId]);
+    token = maybeAuthDance(baseUrl, token, auth0TokenFor(idx, tokens[idx].userId));
     // A fraction of sessions outlive their 1h Firebase custom token during the
     // long quiz think time and re-fetch it at the quiz midpoint.
     const refreshFirebaseToken = Math.random() < FIREBASE_REFRESH_FRACTION;
