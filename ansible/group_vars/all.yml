@@ -22,7 +22,9 @@ postgres_version: 17
 # containers can reach the host-level Postgres.
 postgres_listen_addresses: "127.0.0.1,172.17.0.1"
 postgres_docker_cidr: 172.16.0.0/12
-postgres_max_connections: 100
+# 200: the load-test app pool alone is DB_MAX_OPEN_CONNS=100; 100 total
+# (minus 3 superuser-reserved) starved it at spike peak (SQLSTATE 53300).
+postgres_max_connections: 200
 
 # --- Interact (Wayfarer) -------------------------------------------------------
 interact_domain: interact-test.bcc.media
