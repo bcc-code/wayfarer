@@ -39,6 +39,11 @@ services:
     extra_hosts:
       # Host-level PostgreSQL (the ansible-provisioned one)
       - host.docker.internal:host-gateway
+    volumes:
+      # Load-test scratch dir: HTTP_STATS_FILE (windowed JSONL dumps) writes
+      # here; mounting from the host keeps stats across redeploys and readable
+      # without entering the container. Docker creates the dir if missing.
+      - /opt/wayfarer:/opt/wayfarer
     networks:
       - dokploy-network
     labels:
