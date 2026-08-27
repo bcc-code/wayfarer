@@ -39,6 +39,11 @@ services:
     extra_hosts:
       # Host-level PostgreSQL (the ansible-provisioned one)
       - host.docker.internal:host-gateway
+    sysctls:
+      # Listen backlog inside the container's network namespace (host-level
+      # sysctl tuning doesn't reach it; the 4096 default overflowed at ~5k
+      # req/s burst — kernel dropped connections and traefik answered 502).
+      - net.core.somaxconn=8192
     volumes:
       # Load-test scratch dir: HTTP_STATS_FILE (windowed JSONL dumps) writes
       # here; mounting from the host keeps stats across redeploys and readable
