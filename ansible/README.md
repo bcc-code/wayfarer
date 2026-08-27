@@ -10,6 +10,7 @@ playbook reconfigures Postgres and the firewall on it.
 | Role        | Purpose |
 | ----------- | ------- |
 | `hardening` | apt upgrade + unattended security upgrades, sshd hardening (key-only, root stays allowed with keys for existing tooling), fail2ban, sysctl hardening |
+| `tuning`    | load-test base tuning: nofile 65535 (limits.d + systemd default), somaxconn/syn-backlog 8192, wider ephemeral port range, tcp_tw_reuse, nf_conntrack_max 262144 for Docker NAT |
 | `firewall`  | ufw: deny incoming by default; allow 22 (rate-limited), 80, 443; Dokploy UI on 3000 (optionally source-restricted); Postgres 5432 only from Docker subnets |
 | `postgres`  | PostgreSQL 17 from Debian repos, scram-only auth, listens on loopback + Docker bridge, tuning derived from host RAM/CPUs, pg_stat_statements |
 | `interact`  | Creates the `interact` database and role for the app |
