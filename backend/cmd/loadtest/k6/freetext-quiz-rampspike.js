@@ -4,7 +4,8 @@ import exec from 'k6/execution';
 import { Counter } from 'k6/metrics';
 
 import { parseResponse } from './lib/graphql.js';
-import { coldLoad } from './queries/bootstrap.js';
+import { coldLoad, getFirebaseToken } from './queries/bootstrap.js';
+import { maybeAuthDance, FIREBASE_REFRESH_FRACTION } from './lib/realism.js';
 import { challengePage, enrollInChallenge } from './queries/challenge.js';
 import { startQuizSession, submitTextAnswer, submitAnswer, submitNumberAnswer, finalizeQuiz } from './queries/quiz.js';
 
@@ -36,6 +37,20 @@ import { startQuizSession, submitTextAnswer, submitAnswer, submitNumberAnswer, f
 const tokens = new SharedArray('tokens', function () {
     return JSON.parse(open('../config.json')).tokens;
 });
+// Simulated Auth0 tokens (tokengen -auth0-count) for the REALISM auth-dance
+// fraction, keyed by userId: quiz users are single-use per token slice, so
+// the dance must mint a token for the SAME user, never a random one.
+// SharedArray callbacks must return a non-empty array; null marks "not generated".
+const auth0Tokens = new SharedArray('auth0Tokens', function () {
+    const parsed = JSON.parse(open('../config.json')).auth0Tokens;
+    return parsed && parsed.length > 0 ? parsed : [null];
+});
+const auth0ByUser = {};
+for (const entry of auth0Tokens) {
+    if (entry) {
+        auth0ByUser[entry.userId] = entry.token;
+    }
+}
 // BASE_URL overrides the baseUrl baked into config.json by tokengen, so a
 // config generated on the server box (baseUrl 127.0.0.1) can be replayed
 // from an off-box load generator without re-minting tokens.
@@ -96,6 +111,7 @@ export const options = {
         // count<1 is unreachable at 10k scale (a single loopback RST trips it);
         // allow a handful and rely on http_req_failed/graphql_errors for signal
         quiz_failures: ['count<20'],
+        'http_req_duration{name:AuthCallback}': ['p(95)<1000'],
         'http_req_duration{name:GetMe}': ['p(95)<500'],
         'http_req_duration{name:CurrentProject}': ['p(95)<500'],
         'http_req_duration{name:GetFirebaseToken}': ['p(95)<500'],
@@ -131,7 +147,14 @@ export function journey() {
         fail(iteration, `token slice overrun: index ${idx} >= ${tokens.length} tokens (run tokengen with a higher -limit)`);
         return;
     }
-    const { token } = tokens[idx];
+    let { token } = tokens[idx];
+
+    // A fraction of sessions start expired: Auth0 dance for the SAME user,
+    // then continue with the freshly minted Wayfarer JWT.
+    token = maybeAuthDance(baseUrl, token, auth0ByUser[tokens[idx].userId]);
+    // A fraction of sessions outlive their 1h Firebase custom token during the
+    // long quiz think time and re-fetch it at the quiz midpoint.
+    const refreshFirebaseToken = Math.random() < FIREBASE_REFRESH_FRACTION;
 
     coldLoad(baseUrl, token, () => challengePage(baseUrl, token, challengeId));
 
@@ -192,6 +215,10 @@ export function journey() {
         if (!answer) {
             fail(iteration, `failed to submit ${question.__typename} answer for question ${question.id}`);
             return;
+        }
+
+        if (refreshFirebaseToken && i === Math.floor(submission.orderedQuestions.length / 2)) {
+            getFirebaseToken(baseUrl, token);
         }
     }
 

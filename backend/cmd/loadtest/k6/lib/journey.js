@@ -1,6 +1,7 @@
 import { sleep } from 'k6';
 
-import { coldLoad } from '../queries/bootstrap.js';
+import { coldLoad, getFirebaseToken } from '../queries/bootstrap.js';
+import { maybeAuthDance, FIREBASE_REFRESH_FRACTION } from './realism.js';
 import { profilePage } from '../queries/profile.js';
 import { activeChallengesPage, completedChallengesPage } from '../queries/challenges.js';
 import { challengePage } from '../queries/challenge.js';
@@ -53,11 +54,26 @@ export function clickRandomChallenge(baseUrl, token, activeChallengesResponse) {
  * 2. Visit challenges and standings in random order
  *    - challenges: active list, ~40% open the completed tab, ~50% click a challenge
  *    - standings: wrapper query + a random tab (global/local/unit)
+ *
+ * With REALISM=1 (or the individual fractions set), a fraction of journeys
+ * start with the Auth0 dance (auth0Token required) and a fraction re-fetch
+ * the Firebase token mid-session, like clients whose 1h token expired.
+ * @param {string} baseUrl - Base URL of the GraphQL API
+ * @param {string} token - Pre-minted Wayfarer JWT
+ * @param {string} [auth0Token] - Simulated Auth0 JWT for the auth-dance fraction
  */
-export function userJourney(baseUrl, token) {
+export function userJourney(baseUrl, token, auth0Token) {
+    // 0. A fraction of sessions start expired: full Auth0 dance, then use the
+    //    freshly minted Wayfarer JWT for the rest of the journey.
+    token = maybeAuthDance(baseUrl, token, auth0Token);
+
     // 1. Cold app load, landing on the home page
     coldLoad(baseUrl, token, () => profilePage(baseUrl, token));
     sleep(Math.random() * 2 + 1);
+
+    // 1b. A fraction of sessions outlive their 1h Firebase custom token and
+    //     re-fetch it mid-session (server-side this is mostly a cache hit).
+    const refreshFirebaseToken = Math.random() < FIREBASE_REFRESH_FRACTION;
 
     // 2. Build the two page visits: challenges and standings
     const pages = [
@@ -83,6 +99,9 @@ export function userJourney(baseUrl, token) {
 
     pages[0]();
     sleep(Math.random() * 2 + 1);
+    if (refreshFirebaseToken) {
+        getFirebaseToken(baseUrl, token);
+    }
     pages[1]();
     sleep(Math.random() * 2 + 1);
 }

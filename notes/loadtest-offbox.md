@@ -57,3 +57,45 @@ CPU, box busy). Local outputs land in `backend/cmd/loadtest/results/`
   full 10k spike saturates the local machine or link, that shows up as
   k6-side `dropped_iterations` — trust the box-side samplers, and rerun at
   lower `RAMP_SCALE` from a wired connection.
+
+## Realism mode (2026-08-27)
+
+`REALISM=1` (k6 env, toggleable per run via the loadtestui "realism" checkbox
+or `loadtest-remote.sh run <label> --env REALISM=1`) turns on realistic auth
+behavior in `userJourney`:
+
+- **3% of journeys do the Auth0 dance** (`AUTH_DANCE_FRACTION`, override
+  freely): `GET /token?token=<simulated-auth0-jwt>` → JWKS validation → user
+  lookup → Wayfarer JWT minting; the journey continues with the returned
+  token. Tagged `AuthCallback` in k6/HTTP stats.
+- **50% of journeys re-fetch the Firebase token mid-session**
+  (`FIREBASE_REFRESH_FRACTION`), like clients whose 1h custom token expired.
+  Server-side these are mostly cache hits (30 min TTL + warmer) — that is the
+  production profile.
+
+Setup for the Auth0 dance:
+
+1. `tokengen -auth0-count N -jwks-out jwks.json` — mints RS256 tokens shaped
+   like login.bcc.no tokens into `config.json` (`auth0Tokens`) and writes the
+   matching JWKS. Needs users with numeric `members_id`, `person_uuid`, and a
+   church with `external_id`.
+2. Give the server the same key: tokengen signs with the RSA key from
+   `AUTH0_LOADTEST_PRIVATE_KEY` (or `-auth0-key`; a fresh key is generated and
+   printed if neither is set). Set that same `AUTH0_LOADTEST_PRIVATE_KEY` in
+   the server env — the server derives the JWKS from it and serves it at
+   `GET /jwks.json` itself, so `AUTH0_JWKS_URL=http://127.0.0.1:8080/jwks.json`
+   just points back at the server (boot-time fetch of the self-URL failing is
+   tolerated in this mode). No files, no sidecar. Set
+   `AUTH0_JWT_ISSUER=https://login.bcc.no/`. Members API stays unconfigured —
+   church resolution falls back to the token's churchId claim.
+
+Real Firestore: `backend/loadtest.env` is the load-test host env (gitignored —
+it embeds the real bccm-pc25 service account as base64 directly in
+`FIREBASE_SERVICE_ACCOUNT`; config.go accepts path / raw JSON / base64;
+re-generate with `base64 -i <sa.json> | tr -d '\n'`). This makes the
+notification writes (challenge completions,
+achievement awards, quiz finalize, ...) hit real Firestore — real gRPC pool,
+latency, and quota behavior, unlike the fake SA whose writes fail at the OAuth
+step and get swallowed. Caveats: writes land in that project's Firestore
+(`users/{id}/notifications/*`, `projects/{id}/notifications/*`), count against
+quota/billing, and a high-rate run fans out one write per award/completion.

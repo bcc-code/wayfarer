@@ -41,8 +41,9 @@ type meta struct {
 	RampScale  string `json:"ramp_scale"`
 	ThinkScale string `json:"think_scale"`
 	ExitCode   *int   `json:"exit_code,omitempty"`
-	Note       string `json:"note,omitempty"` // what change was under test
-	Status     string `json:"status"`         // running | passed | thresholds-crossed | failed
+	Realism    bool   `json:"realism,omitempty"` // REALISM=1: auth-dance + firebase-refresh fractions
+	Note       string `json:"note,omitempty"`    // what change was under test
+	Status     string `json:"status"`            // running | passed | thresholds-crossed | failed
 }
 
 type runRow struct {
@@ -187,7 +188,7 @@ func listRuns() []runRow {
 	return rows
 }
 
-func startRun(label, ramp, think, note string) error {
+func startRun(label, ramp, think, note string, realism bool) error {
 	runMu.Lock()
 	defer runMu.Unlock()
 	if running != "" {
@@ -200,6 +201,9 @@ func startRun(label, ramp, think, note string) error {
 	sh := fmt.Sprintf(
 		"ulimit -n 65535; cd %s && ./scripts/loadtest-remote.sh run %s --env THINK_SCALE=%s --env RAMP_SCALE=%s",
 		backendDir, label, think, ramp)
+	if realism {
+		sh += " --env REALISM=1"
+	}
 	cmd := exec.Command("bash", "-c", sh)
 	cmd.Stdout, cmd.Stderr = logF, logF
 	if err := cmd.Start(); err != nil {
@@ -207,7 +211,7 @@ func startRun(label, ramp, think, note string) error {
 		return err
 	}
 	running = label
-	m := meta{Label: label, Started: time.Now().Format(time.RFC3339), RampScale: ramp, ThinkScale: think, Note: note, Status: "running"}
+	m := meta{Label: label, Started: time.Now().Format(time.RFC3339), RampScale: ramp, ThinkScale: think, Realism: realism, Note: note, Status: "running"}
 	writeMeta(m)
 	go func() {
 		err := cmd.Wait()
@@ -259,7 +263,10 @@ func main() {
 			http.Error(w, "POST only", 405)
 			return
 		}
-		var req struct{ Label, Ramp, Think, Note string }
+		var req struct {
+			Label, Ramp, Think, Note string
+			Realism                  bool
+		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, err.Error(), 400)
 			return
@@ -277,7 +284,7 @@ func main() {
 			http.Error(w, "bad label/ramp/think", 400)
 			return
 		}
-		if err := startRun(req.Label, req.Ramp, req.Think, req.Note); err != nil {
+		if err := startRun(req.Label, req.Ramp, req.Think, req.Note, req.Realism); err != nil {
 			http.Error(w, err.Error(), 409)
 			return
 		}
@@ -385,6 +392,7 @@ const indexHTML = `<!doctype html>
   label <input id="label" placeholder="(auto)">
   ramp scale <input id="ramp" value="1">
   think scale <input id="think" value="0.06">
+  <label><input type="checkbox" id="realism"> realism</label>
   note <input id="note" placeholder="what change is under test" style="width:320px">
   <button id="go">Run</button>
 </form>
@@ -532,6 +540,7 @@ async function fire(e){
   e.preventDefault();
   const body = JSON.stringify({label:document.getElementById('label').value.trim(),
     ramp:document.getElementById('ramp').value.trim(), think:document.getElementById('think').value.trim(),
+    realism:document.getElementById('realism').checked,
     note:document.getElementById('note').value.trim()});
   const r = await fetch('/api/run',{method:'POST',body});
   if(!r.ok){ alert(await r.text()); return; }

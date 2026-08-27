@@ -65,6 +65,12 @@ type JWTConfig struct {
 	BrunstadTVIssuer  string
 	Auth0JWKSURL      string
 	Auth0Issuer       string
+	// Auth0LoadtestKey: RSA private key (PEM or base64 PEM) used by
+	// cmd/loadtest/tokengen to sign simulated Auth0 tokens. When set, the
+	// server derives the matching JWKS and serves it at GET /jwks.json, and
+	// tolerates a failed boot-time fetch of Auth0JWKSURL — so Auth0JWKSURL
+	// can point at the server itself. Load-test only; never set in production.
+	Auth0LoadtestKey string
 }
 
 // APIKeyConfig holds API key authentication configuration for external systems
@@ -203,6 +209,7 @@ func Load() (*Config, error) {
 			BrunstadTVIssuer:  getEnv("BRUNSTAD_TV_JWT_ISSUER", "https://api.brunstad.tv/"),
 			Auth0JWKSURL:      getEnv("AUTH0_JWKS_URL", "https://login.bcc.no/.well-known/jwks.json"),
 			Auth0Issuer:       getEnv("AUTH0_JWT_ISSUER", "https://login.bcc.no/"),
+			Auth0LoadtestKey:  getEnv("AUTH0_LOADTEST_PRIVATE_KEY", ""),
 		},
 		APIKey: APIKeyConfig{
 			Keys: parseAPIKeys(getEnv("EXTERNAL_API_KEYS", "")),

@@ -30,6 +30,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/directives"
 	"github.com/bcc-media/wayfarer/internal/handlers"
 	"github.com/bcc-media/wayfarer/internal/loaders"
+	"github.com/bcc-media/wayfarer/internal/loadtestauth"
 	"github.com/bcc-media/wayfarer/internal/logger"
 	"github.com/bcc-media/wayfarer/internal/members"
 	"github.com/bcc-media/wayfarer/internal/middleware"
@@ -117,12 +118,33 @@ func main() {
 	// Initialize JWKS for Auth0 (login.bcc.no) JWT validation
 	// Use custom storage with SkipAll to handle X5T validation issues in Auth0's JWKS
 	// Core security (RSA signature verification, expiration) is still enforced by JWT parsing
-	auth0Storage, err := jwkset.NewStorageFromHTTP(cfg.JWT.Auth0JWKSURL, jwkset.HTTPClientStorageOptions{
+	auth0Options := jwkset.HTTPClientStorageOptions{
 		Ctx: ctx,
 		ValidateOptions: jwkset.JWKValidateOptions{
 			SkipAll: true, // Skip JWK validation that fails with Auth0's X5T mismatch
 		},
-	})
+	}
+	var loadtestJWKS []byte
+	if cfg.JWT.Auth0LoadtestKey != "" {
+		// Load-test mode: derive the JWKS from the shared load-test key and
+		// serve it at /jwks.json ourselves, so the boot-time fetch of
+		// Auth0JWKSURL may target this very process. Tolerate the failed
+		// first fetch and refresh in the background; the keyfunc client also
+		// re-fetches on an unknown kid.
+		key, err := loadtestauth.ParsePrivateKey(cfg.JWT.Auth0LoadtestKey)
+		if err != nil {
+			slog.Error("Failed to parse AUTH0_LOADTEST_PRIVATE_KEY", "error", err)
+			os.Exit(1)
+		}
+		loadtestJWKS, err = loadtestauth.BuildJWKS(&key.PublicKey)
+		if err != nil {
+			slog.Error("Failed to build load-test JWKS", "error", err)
+			os.Exit(1)
+		}
+		auth0Options.NoErrorReturnFirstHTTPReq = true
+		auth0Options.RefreshInterval = 30 * time.Second
+	}
+	auth0Storage, err := jwkset.NewStorageFromHTTP(cfg.JWT.Auth0JWKSURL, auth0Options)
 	if err != nil {
 		slog.Error("Failed to create Auth0 JWKS storage", "error", err)
 		os.Exit(1)
@@ -536,6 +558,16 @@ func main() {
 		UserSyncService:           userSyncService,
 	}
 	router.GET("/token", authHandler.Callback)
+
+	// Load-test only: serve the simulated-Auth0 JWKS derived from
+	// AUTH0_LOADTEST_PRIVATE_KEY, so AUTH0_JWKS_URL can point back at this
+	// server (no sidecar or file needed). See internal/loadtestauth.
+	if loadtestJWKS != nil {
+		slog.Info("Serving load-test JWKS", "route", "/jwks.json")
+		router.GET("/jwks.json", func(c *gin.Context) {
+			c.Data(http.StatusOK, "application/json", loadtestJWKS)
+		})
+	}
 
 	// Webhook handler for external content events
 	webhookHandler := &handlers.WebhookHandler{
