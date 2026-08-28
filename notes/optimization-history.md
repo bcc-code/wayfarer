@@ -155,3 +155,13 @@ compressed finalize storm — see ram-first §17: ~2,200 inserts/s).
 Gotcha found en route: with the docker app still running, its warm 250-conn
 pool + the native server's 250 exceeded max_connections=400 → 53300s. One
 warm-pool app per database, or size accordingly.
+
+## Addendum 2 — GC tuning re-applied and re-measured (2026-08-28)
+
+GOGC=600/GOMEMLIMIT=12GiB had never been persisted to any env after the
+August session. Re-applied (loadtest.env + the native run env) and measured
+on the native-TLS stressor: overall p95 2.08 -> 1.83 s, worst request
+14.3 -> 9.3 s, FinalizeQuiz p95 5.84 -> 3.75 s (-36%) — the gain concentrates
+in the finalize storm, where GC pauses stacked on scoring-write queueing.
+Remember to set both vars in the Dokploy Environment tab for the dockerized
+deployment; they are process env, not code.
