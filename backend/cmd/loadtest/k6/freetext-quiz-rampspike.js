@@ -72,6 +72,20 @@ const scale = parseFloat(__ENV.RAMP_SCALE || '1');
 // finalizes then land at ~arrival rate instead of trickling over the tail,
 // so it's a HARSHER scoring-path test, not comparable to THINK_SCALE=1 runs.
 const thinkScale = parseFloat(__ENV.THINK_SCALE || '1');
+// THINK_UNIFORM="1-5": every question gets a uniform random think time in
+// [min,max] seconds regardless of question type, overriding the type-based
+// ranges and THINK_SCALE. Deemed the realistic per-question profile for a
+// camp quiz (short prompts, phones in hand).
+const thinkUniform = (__ENV.THINK_UNIFORM || '').match(/^([\d.]+)-([\d.]+)$/);
+
+function thinkTime(baseMin, baseRange) {
+    if (thinkUniform) {
+        const lo = parseFloat(thinkUniform[1]);
+        const hi = parseFloat(thinkUniform[2]);
+        return Math.random() * (hi - lo) + lo;
+    }
+    return (Math.random() * baseRange + baseMin) * thinkScale;
+}
 
 const quizCompletions = new Counter('quiz_completions');
 const quizSkipped = new Counter('quiz_skipped');
@@ -185,14 +199,14 @@ export function journey() {
 
         switch (question.__typename) {
             case 'FreeTextQuestion': {
-                const thinkSeconds = (Math.random() * 30 + 20) * thinkScale;
+                const thinkSeconds = thinkTime(20, 30);
                 sleep(thinkSeconds);
                 const answerText = `${ANSWERS[(iteration + i) % ANSWERS.length]} (#${tokenBase + iteration})`;
                 answer = submitTextAnswer(baseUrl, token, submission.id, question.id, answerText, Math.round(thinkSeconds));
                 break;
             }
             case 'PredefinedQuestion': {
-                const thinkSeconds = (Math.random() * 20 + 10) * thinkScale;
+                const thinkSeconds = thinkTime(10, 20);
                 sleep(thinkSeconds);
                 const selectedIds = question.predefinedAnswers.map((a) => a.id);
                 answer = submitAnswer(baseUrl, token, submission.id, question.id, selectedIds, Math.round(thinkSeconds));
@@ -202,7 +216,7 @@ export function journey() {
                 break;
             }
             case 'NumberQuestion': {
-                const thinkSeconds = (Math.random() * 10 + 5) * thinkScale;
+                const thinkSeconds = thinkTime(5, 10);
                 sleep(thinkSeconds);
                 const min = question.minValue == null ? 1 : question.minValue;
                 const max = question.maxValue == null ? 100 : question.maxValue;
