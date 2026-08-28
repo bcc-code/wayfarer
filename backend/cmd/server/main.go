@@ -39,6 +39,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/plugins"
 	"github.com/bcc-media/wayfarer/internal/plugins/ladder_to_heaven"
 	"github.com/bcc-media/wayfarer/internal/pubsub"
+	"github.com/bcc-media/wayfarer/internal/reuseport"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/services/bulk"
 	"github.com/bcc-media/wayfarer/internal/services/email"
@@ -789,18 +790,59 @@ func main() {
 		tlsMode = "static"
 	}
 
+	// SO_REUSEPORT for blue/green deploys: a second instance binds the same
+	// port during the overlap and the kernel splits new connections.
+	var listener net.Listener
+	if cfg.Server.ReusePort {
+		listener, err = reuseport.Listen(ctx, addr)
+		if err != nil {
+			slog.Error("Failed to bind with SO_REUSEPORT", "error", err)
+			os.Exit(1)
+		}
+	}
+
+	// Per-instance admin listener (deploy health gate): /health with a real
+	// DB ping. Private (bind to loopback); never routed through the shared port.
+	if cfg.Server.AdminAddr != "" {
+		adminMux := http.NewServeMux()
+		adminMux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+			pingCtx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+			defer cancel()
+			if err := db.Pool.Ping(pingCtx); err != nil {
+				http.Error(w, fmt.Sprintf(`{"status":"db unreachable: %v"}`, err), http.StatusServiceUnavailable)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprint(w, `{"status":"ok"}`)
+		})
+		adminSrv := &http.Server{Addr: cfg.Server.AdminAddr, Handler: adminMux, ReadTimeout: 5 * time.Second}
+		go func() {
+			slog.Info("Admin listener started", "address", cfg.Server.AdminAddr)
+			if err := adminSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				slog.Error("Admin listener failed", "error", err)
+			}
+		}()
+	}
+
 	// Start server in a goroutine
 	go func() {
 		slog.Info("Starting server",
 			"address", addr,
 			"environment", cfg.Server.Environment,
 			"tls", tlsMode,
+			"reuseport", cfg.Server.ReusePort,
 		)
 		var err error
-		switch tlsMode {
-		case "acme":
-			err = srv.ListenAndServeTLS("", "") // certs come from srv.TLSConfig
-		case "static":
+		switch {
+		case listener != nil && tlsMode == "acme":
+			err = srv.ServeTLS(listener, "", "") // certs come from srv.TLSConfig
+		case listener != nil && tlsMode == "static":
+			err = srv.ServeTLS(listener, cfg.Server.TLSCertFile, cfg.Server.TLSKeyFile)
+		case listener != nil:
+			err = srv.Serve(listener)
+		case tlsMode == "acme":
+			err = srv.ListenAndServeTLS("", "")
+		case tlsMode == "static":
 			err = srv.ListenAndServeTLS(cfg.Server.TLSCertFile, cfg.Server.TLSKeyFile)
 		default:
 			err = srv.ListenAndServe()

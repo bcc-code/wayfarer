@@ -15,6 +15,7 @@ playbook reconfigures Postgres and the firewall on it.
 | `postgres`  | PostgreSQL 17 from Debian repos, scram-only auth, listens on loopback + Docker bridge, tuning derived from host RAM/CPUs, pg_stat_statements |
 | `interact`  | Creates the `interact` database and role for the app |
 | `dokploy`   | Installs Dokploy via the official installer; its bundled Traefik owns 80/443 and terminates TLS |
+| `wayfarer`  | Native (proxyless) blue/green deploy layout: `wayfarer@{blue,green}` systemd units sharing the port via SO_REUSEPORT, per-color admin/health ports (9441/9442), split DB pools, `bin/deploy.sh` invoked by Semaphore CI (`.semaphore/`). Secret env `/opt/wayfarer/wayfarer.env` is placed manually |
 
 ## Prerequisites
 

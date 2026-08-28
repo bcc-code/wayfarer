@@ -59,6 +59,15 @@ type ServerConfig struct {
 	TLSAutoEmail    string
 	TLSAutoHTTPAddr string
 
+	// ReusePort: bind the listener with SO_REUSEPORT so a second instance
+	// (blue/green deploy) can bind the same port concurrently; the kernel
+	// splits new connections between them during the overlap.
+	ReusePort bool
+	// AdminAddr: when set (e.g. 127.0.0.1:9441), serves /health with a real
+	// DB ping on a private per-instance listener — the deploy health gate;
+	// the shared public port can't target one instance during an overlap.
+	AdminAddr string
+
 	// HTTPStatsFile, when non-empty, enables periodic JSONL dumps of the
 	// aggregated per-route HTTP stats (the /metrics/http snapshot) to disk.
 	HTTPStatsFile     string
@@ -214,6 +223,8 @@ func Load() (*Config, error) {
 			TLSAutoCacheDir: getEnv("TLS_AUTO_CACHE_DIR", "/var/lib/wayfarer/autocert"),
 			TLSAutoEmail:    getEnv("TLS_AUTO_EMAIL", ""),
 			TLSAutoHTTPAddr: getEnv("TLS_AUTO_HTTP_ADDR", ""),
+			ReusePort:       getEnvAsBool("SERVER_REUSEPORT", false),
+			AdminAddr:       getEnv("ADMIN_ADDR", ""),
 
 			HTTPStatsFile:     getEnv("HTTP_STATS_FILE", ""),
 			HTTPStatsInterval: getEnvAsDuration("HTTP_STATS_INTERVAL", time.Minute),

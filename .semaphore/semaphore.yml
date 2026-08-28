@@ -1,0 +1,60 @@
+version: v1.0
+name: Wayfarer CI
+agent:
+  machine:
+    type: e1-standard-4
+    os_image: ubuntu2204
+
+blocks:
+  - name: Backend tests
+    dependencies: []
+    task:
+      prologue:
+        commands:
+          - checkout
+          - sem-version go 1.25
+      jobs:
+        - name: unit tests
+          commands:
+            - cd backend
+            - cache restore go-mod
+            - go mod download
+            - cache store go-mod ~/go/pkg/mod
+            - make test
+
+  - name: Build release
+    dependencies: ["Backend tests"]
+    task:
+      prologue:
+        commands:
+          - checkout
+          - sem-version go 1.25
+          - sem-version node 22
+      jobs:
+        - name: build binary + frontend
+          commands:
+            - corepack enable && corepack prepare pnpm@latest --activate
+            # Frontend (served by the Go binary via STATIC_FILES_PATH)
+            - cd frontend
+            - cache restore pnpm-store
+            - pnpm install --frozen-lockfile
+            - cache store pnpm-store ~/.local/share/pnpm/store
+            - pnpm run build
+            - cd ..
+            # Backend binary
+            - cd backend
+            - cache restore go-mod
+            - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o wayfarer-server ./cmd/server
+            - cd ..
+            # Release tarball: binary + static assets, addressed by commit sha
+            - mkdir -p release
+            - cp backend/wayfarer-server release/
+            - cp -r frontend/.output/public release/static
+            - tar -czf "release-${SEMAPHORE_GIT_SHA}.tar.gz" -C release .
+            - artifact push workflow "release-${SEMAPHORE_GIT_SHA}.tar.gz"
+
+promotions:
+  - name: Deploy to interact-test
+    pipeline_file: deploy.yml
+    auto_promote:
+      when: "result = 'passed' and branch = 'main'"

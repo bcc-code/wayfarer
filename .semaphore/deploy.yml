@@ -1,0 +1,30 @@
+version: v1.0
+name: Deploy to interact-test
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu2204
+
+blocks:
+  - name: Blue/green deploy
+    dependencies: []
+    task:
+      # Semaphore secret "wayfarer-deploy" must provide:
+      #   ~/.ssh/wayfarer_deploy   (private key authorized on the box)
+      #   DEPLOY_HOST              (e.g. root@49.12.121.62)
+      secrets:
+        - name: wayfarer-deploy
+      jobs:
+        - name: ship release and swap colors
+          commands:
+            - artifact pull workflow "release-${SEMAPHORE_GIT_SHA}.tar.gz"
+            - chmod 600 ~/.ssh/wayfarer_deploy
+            - export SSHOPTS="-i ~/.ssh/wayfarer_deploy -o StrictHostKeyChecking=accept-new"
+            # Unpack into the sha-addressed release dir on the box
+            - ssh $SSHOPTS "$DEPLOY_HOST" "mkdir -p /opt/wayfarer/releases/${SEMAPHORE_GIT_SHA}"
+            - scp $SSHOPTS "release-${SEMAPHORE_GIT_SHA}.tar.gz" "$DEPLOY_HOST:/tmp/"
+            - ssh $SSHOPTS "$DEPLOY_HOST" "tar -xzf /tmp/release-${SEMAPHORE_GIT_SHA}.tar.gz -C /opt/wayfarer/releases/${SEMAPHORE_GIT_SHA} && rm /tmp/release-${SEMAPHORE_GIT_SHA}.tar.gz"
+            # Blue/green swap: start inactive color (SO_REUSEPORT overlap),
+            # health-gate on its admin port, retire the old color. Fails the
+            # pipeline (old color keeps serving) if the gate doesn't pass.
+            - ssh $SSHOPTS "$DEPLOY_HOST" "/opt/wayfarer/bin/deploy.sh ${SEMAPHORE_GIT_SHA}"
