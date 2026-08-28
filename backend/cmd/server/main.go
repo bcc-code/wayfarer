@@ -329,6 +329,14 @@ func main() {
 		}
 	}
 
+	// Leaderboard apply worker: drains the score-delta outbox filled by the
+	// score_journal INSERT trigger (migration 00101) outside request
+	// transactions. Replaces the synchronous 38-statement trigger fan-out.
+	leaderboardApplyWorker := services.NewLeaderboardApplyWorker(db.Queries)
+	leaderboardApplyWorker.Start(ctx)
+	defer leaderboardApplyWorker.Stop()
+	slog.Info("Leaderboard apply worker started")
+
 	// Initialize Email service for feedback forwarding
 	var emailService *email.Service
 	if cfg.Resend.APIKey != "" {
