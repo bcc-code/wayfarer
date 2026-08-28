@@ -77,6 +77,10 @@ const thinkScale = parseFloat(__ENV.THINK_SCALE || '1');
 // ranges and THINK_SCALE. Deemed the realistic per-question profile for a
 // camp quiz (short prompts, phones in hand).
 const thinkUniform = (__ENV.THINK_UNIFORM || '').match(/^([\d.]+)-([\d.]+)$/);
+// PRE_ENROLLED=1: users are already enrolled in the challenge (seed the
+// user_challenge_enrollments rows first) — the journey skips the enroll
+// mutation and its page refetch, reading the session from the cold load.
+const preEnrolled = ['1', 'true', 'yes'].includes(String(__ENV.PRE_ENROLLED).toLowerCase());
 
 function thinkTime(baseMin, baseRange) {
     if (thinkUniform) {
@@ -173,10 +177,14 @@ export function journey() {
     // long quiz think time and re-fetch it at the quiz midpoint.
     const refreshFirebaseToken = Math.random() < FIREBASE_REFRESH_FRACTION;
 
-    coldLoad(baseUrl, token, () => challengePage(baseUrl, token, challengeId));
+    const coldPage = coldLoad(baseUrl, token, () => challengePage(baseUrl, token, challengeId));
 
-    enrollInChallenge(baseUrl, token, challengeId);
-    const pageData = parseResponse(challengePage(baseUrl, token, challengeId));
+    let pageResponse = coldPage;
+    if (!preEnrolled) {
+        enrollInChallenge(baseUrl, token, challengeId);
+        pageResponse = challengePage(baseUrl, token, challengeId);
+    }
+    const pageData = parseResponse(pageResponse);
     const quiz = pageData && pageData.challenge && pageData.challenge.quiz;
     if (!quiz || !quiz.userActiveSession) {
         fail(iteration, `no active session on challenge ${challengeId}`);

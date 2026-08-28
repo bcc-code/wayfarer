@@ -187,3 +187,16 @@ same box, before -> after:
 queue backlog 0, person-board rows vs SUM(score_journal): 0 mismatches,
 totals equal (13,173,140). E2E drains the queue synchronously around each
 request for deterministic assertions.
+
+## Addendum 4 — pre-enrolled event profile (2026-08-28)
+
+PRE_ENROLLED=1 (rampspike knob; seed user_challenge_enrollments first, see
+scratchpad pre_enroll.sql pattern) skips the enroll mutation and its page
+refetch — the "attendees enrolled in advance" event shape. First fully green
+full-scale run (k6 exit 0, all thresholds incl. p95<500ms): overall p95
+337 ms, worst request in the whole 10k stampede 782 ms, medians single-digit
+ms, 100% success. Enrollment writes + their cache invalidation during the
+burst were the last latency driver; without them, burst read p95s halved
+(ChallengePage 917->447 ms, GetMe 832->411 ms). Operational takeaway: for a
+camp event, pre-enrolling attendees is worth more than any further server
+work.
