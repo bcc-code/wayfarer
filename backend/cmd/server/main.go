@@ -22,6 +22,7 @@ import (
 	"github.com/MicahParks/jwkset"
 	"github.com/MicahParks/keyfunc/v3"
 	"github.com/bcc-media/wayfarer/internal/auth0"
+	"github.com/bcc-media/wayfarer/internal/autotls"
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database"
@@ -754,19 +755,54 @@ func main() {
 		MaxHeaderBytes: 1 << 20, // 1 MB
 	}
 
+	// Native TLS modes (no fronting proxy): ACME with automatic issuance and
+	// renewal (TLS_AUTO_DOMAINS), or static cert files (TLS_CERT_FILE/KEY).
+	tlsMode := "off"
+	switch {
+	case len(cfg.Server.TLSAutoDomains) > 0:
+		tlsMode = "acme"
+		acmeManager, err := autotls.New(cfg.Server.TLSAutoDomains, cfg.Server.TLSAutoCacheDir, cfg.Server.TLSAutoEmail)
+		if err != nil {
+			slog.Error("Failed to configure ACME TLS", "error", err)
+			os.Exit(1)
+		}
+		srv.TLSConfig = acmeManager.TLSConfig()
+		slog.Info("ACME TLS enabled",
+			"domains", cfg.Server.TLSAutoDomains,
+			"cache", cfg.Server.TLSAutoCacheDir,
+		)
+		if cfg.Server.TLSAutoHTTPAddr != "" {
+			// http-01 fallback + HTTPS redirect.
+			go func() {
+				httpSrv := &http.Server{
+					Addr:         cfg.Server.TLSAutoHTTPAddr,
+					Handler:      acmeManager.HTTPHandler(),
+					ReadTimeout:  10 * time.Second,
+					WriteTimeout: 10 * time.Second,
+				}
+				if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+					slog.Error("ACME HTTP challenge listener failed", "error", err)
+				}
+			}()
+		}
+	case cfg.Server.TLSCertFile != "" && cfg.Server.TLSKeyFile != "":
+		tlsMode = "static"
+	}
+
 	// Start server in a goroutine
 	go func() {
-		tls := cfg.Server.TLSCertFile != "" && cfg.Server.TLSKeyFile != ""
 		slog.Info("Starting server",
 			"address", addr,
 			"environment", cfg.Server.Environment,
-			"tls", tls,
+			"tls", tlsMode,
 		)
 		var err error
-		if tls {
-			// Native TLS termination — no fronting proxy.
+		switch tlsMode {
+		case "acme":
+			err = srv.ListenAndServeTLS("", "") // certs come from srv.TLSConfig
+		case "static":
 			err = srv.ListenAndServeTLS(cfg.Server.TLSCertFile, cfg.Server.TLSKeyFile)
-		} else {
+		default:
 			err = srv.ListenAndServe()
 		}
 		if err != nil && err != http.ErrServerClosed {

@@ -46,6 +46,19 @@ type ServerConfig struct {
 	TLSCertFile string
 	TLSKeyFile  string
 
+	// TLSAutoDomains: when non-empty, the server terminates TLS with ACME
+	// (Let's Encrypt) certificates for these domains, issued and renewed
+	// automatically (internal/autotls). Takes precedence over
+	// TLSCertFile/TLSKeyFile. The listener must be reachable on port 443
+	// for tls-alpn-01 challenges. TLSAutoCacheDir persists certificates
+	// across restarts (required); TLSAutoEmail receives CA expiry notices
+	// (optional). TLSAutoHTTPAddr, when set (e.g. ":80"), serves http-01
+	// challenges and redirects everything else to HTTPS.
+	TLSAutoDomains  []string
+	TLSAutoCacheDir string
+	TLSAutoEmail    string
+	TLSAutoHTTPAddr string
+
 	// HTTPStatsFile, when non-empty, enables periodic JSONL dumps of the
 	// aggregated per-route HTTP stats (the /metrics/http snapshot) to disk.
 	HTTPStatsFile     string
@@ -197,6 +210,10 @@ func Load() (*Config, error) {
 			StaticFilesPath: getEnv("STATIC_FILES_PATH", ""),
 			TLSCertFile:     getEnv("TLS_CERT_FILE", ""),
 			TLSKeyFile:      getEnv("TLS_KEY_FILE", ""),
+			TLSAutoDomains:  splitNonEmpty(getEnv("TLS_AUTO_DOMAINS", ""), ","),
+			TLSAutoCacheDir: getEnv("TLS_AUTO_CACHE_DIR", "/var/lib/wayfarer/autocert"),
+			TLSAutoEmail:    getEnv("TLS_AUTO_EMAIL", ""),
+			TLSAutoHTTPAddr: getEnv("TLS_AUTO_HTTP_ADDR", ""),
 
 			HTTPStatsFile:     getEnv("HTTP_STATS_FILE", ""),
 			HTTPStatsInterval: getEnvAsDuration("HTTP_STATS_INTERVAL", time.Minute),
@@ -305,6 +322,17 @@ func Load() (*Config, error) {
 }
 
 // Helper functions to read environment variables with defaults
+
+// splitNonEmpty splits s by sep, trims whitespace, and drops empty entries.
+func splitNonEmpty(s, sep string) []string {
+	var out []string
+	for _, part := range strings.Split(s, sep) {
+		if trimmed := strings.TrimSpace(part); trimmed != "" {
+			out = append(out, trimmed)
+		}
+	}
+	return out
+}
 
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
