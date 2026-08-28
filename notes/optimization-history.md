@@ -132,3 +132,26 @@ ES256 unavailable there), then TLS handshakes (fixed by EC256, available).
 4. **Asymmetric crypto is the recurring burst tax.** Profile for it first.
 5. **Never co-locate the generator; check the governor; make tests assert the
    work happened** (a zero-point quiz hid the scoring path for three rounds).
+
+## Addendum — ad-hoc test: Go-native TLS vs traefik (2026-08-28)
+
+Server gained optional native TLS termination (`TLS_CERT_FILE`/`TLS_KEY_FILE`
+→ `ListenAndServeTLS`); the binary ran bare on the box at :8443 (no
+docker/dokploy), same EC256 cert, loopback Postgres, docker app stopped.
+Same 10k THINK_SCALE=0.03 stressor:
+
+| | traefik+RSA4096 | traefik+EC256 | native Go TLS |
+|---|---|---|---|
+| failed reqs | 4.65% (502s) | 6.37% (502s) | **0.00%** |
+| completions | 5,354 | 3,685 | **9,828 (all)** |
+| overall p95 | 10.75 s | 12.18 s | **2.18 s** |
+
+The proxy hop was the difference between collapse and a 100% pass. Costs of
+adopting natively: own ACME (certmagic/autocert), no dokploy blue/green (port
+ownership), no multi-domain routing. Next app-level ceiling behind it: the
+scoring trigger fan-out (FinalizeQuiz p95 5.8 s queued, not failed, under the
+compressed finalize storm — see ram-first §17: ~2,200 inserts/s).
+
+Gotcha found en route: with the docker app still running, its warm 250-conn
+pool + the native server's 250 exceeded max_connections=400 → 53300s. One
+warm-pool app per database, or size accordingly.

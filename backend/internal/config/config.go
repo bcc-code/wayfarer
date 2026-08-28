@@ -41,6 +41,11 @@ type ServerConfig struct {
 	IdleTimeout     time.Duration
 	StaticFilesPath string // Path to frontend static files (empty to disable)
 
+	// TLSCertFile/TLSKeyFile: when both set, the server terminates TLS itself
+	// (ListenAndServeTLS) instead of expecting a fronting proxy.
+	TLSCertFile string
+	TLSKeyFile  string
+
 	// HTTPStatsFile, when non-empty, enables periodic JSONL dumps of the
 	// aggregated per-route HTTP stats (the /metrics/http snapshot) to disk.
 	HTTPStatsFile     string
@@ -190,6 +195,8 @@ func Load() (*Config, error) {
 			WriteTimeout:    getEnvAsDuration("SERVER_WRITE_TIMEOUT", 5*time.Minute),
 			IdleTimeout:     getEnvAsDuration("SERVER_IDLE_TIMEOUT", 120*time.Second),
 			StaticFilesPath: getEnv("STATIC_FILES_PATH", ""),
+			TLSCertFile:     getEnv("TLS_CERT_FILE", ""),
+			TLSKeyFile:      getEnv("TLS_KEY_FILE", ""),
 
 			HTTPStatsFile:     getEnv("HTTP_STATS_FILE", ""),
 			HTTPStatsInterval: getEnvAsDuration("HTTP_STATS_INTERVAL", time.Minute),

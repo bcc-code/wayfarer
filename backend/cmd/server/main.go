@@ -748,11 +748,20 @@ func main() {
 
 	// Start server in a goroutine
 	go func() {
+		tls := cfg.Server.TLSCertFile != "" && cfg.Server.TLSKeyFile != ""
 		slog.Info("Starting server",
 			"address", addr,
 			"environment", cfg.Server.Environment,
+			"tls", tls,
 		)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		var err error
+		if tls {
+			// Native TLS termination — no fronting proxy.
+			err = srv.ListenAndServeTLS(cfg.Server.TLSCertFile, cfg.Server.TLSKeyFile)
+		} else {
+			err = srv.ListenAndServe()
+		}
+		if err != nil && err != http.ErrServerClosed {
 			slog.Error("Server failed to start", "error", err)
 			os.Exit(1)
 		}
