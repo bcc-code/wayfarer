@@ -165,3 +165,25 @@ on the native-TLS stressor: overall p95 2.08 -> 1.83 s, worst request
 in the finalize storm, where GC pauses stacked on scoring-write queueing.
 Remember to set both vars in the Dokploy Environment tab for the dockerized
 deployment; they are process env, not code.
+
+## Addendum 3 — async leaderboard apply (2026-08-28, migration 00101)
+
+The score_journal INSERT trigger fan-out (38 statements per award) moved to a
+durable outbox queue drained by a background worker calling the same
+update_*_leaderboard helpers (commit 71dd5f3e). Nothing is memory-only:
+score_journal still commits in the request transaction, aggregates stay in
+Postgres, unapplied deltas sit in leaderboard_apply_queue. Native stressor,
+same box, before -> after:
+
+| | sync trigger | async apply |
+|---|---|---|
+| overall p95 | 1.83 s | **1.43 s** |
+| worst request | 9.32 s | **5.80 s** |
+| FinalizeQuiz p95 | 3.75 s | **1.84 s** (-51%) |
+| SubmitQuizAnswer p95 | 716 ms | **484 ms** |
+| GetMe p95 | 1.37 s | **752 ms** (reads benefit too — DB freed from fan-out) |
+
+100.00% of 405k checks, 10,005 completions, 0 failures. Post-run audit:
+queue backlog 0, person-board rows vs SUM(score_journal): 0 mismatches,
+totals equal (13,173,140). E2E drains the queue synchronously around each
+request for deterministic assertions.
