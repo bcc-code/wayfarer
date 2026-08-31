@@ -114,14 +114,22 @@ watch(modelValue, () => updateIndicator(true))
 
 // Use ResizeObserver to detect when button content (like icons) finishes loading
 let resizeObserver: ResizeObserver | null = null
+let rafId: number | null = null
 
 onMounted(() => {
   // Initial update
   setTimeout(() => updateIndicator(false), 0)
 
-  // Watch for size changes (e.g., when icons load)
+  // Watch for size changes (e.g., when icons load). Defer the indicator update
+  // to the next frame: writing geometry synchronously inside the observer
+  // callback re-triggers observation and hits the browser's loop limit
+  // ("ResizeObserver loop completed with undelivered notifications")
   resizeObserver = new ResizeObserver(() => {
-    updateIndicator(false)
+    if (rafId !== null) return
+    rafId = requestAnimationFrame(() => {
+      rafId = null
+      updateIndicator(false)
+    })
   })
 
   // Observe all buttons for size changes
@@ -134,6 +142,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   resizeObserver?.disconnect()
+  if (rafId !== null) cancelAnimationFrame(rafId)
 })
 </script>
 

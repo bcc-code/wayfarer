@@ -27,6 +27,13 @@ Sentry.init({
   // https://docs.sentry.io/platforms/javascript/guides/nuxt/configuration/options/#sendDefaultPii
   sendDefaultPii: true,
 
+  // Benign browser warning fired when a ResizeObserver callback changes
+  // layout; also triggered by library internals (reka-ui, vaul)
+  ignoreErrors: [
+    'ResizeObserver loop completed with undelivered notifications',
+    'ResizeObserver loop limit exceeded',
+  ],
+
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: false,
 })
