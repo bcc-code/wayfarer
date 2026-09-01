@@ -30,6 +30,10 @@ blocks:
     dependencies:
       - Backend tests
     task:
+      env_vars:
+        # Node caps its heap at ~2GB by default; the Nuxt/Vite build needs more
+        - name: NODE_OPTIONS
+          value: '--max-old-space-size=6144'
       prologue:
         commands:
           - checkout
