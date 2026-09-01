@@ -281,14 +281,17 @@ WHERE qs.quiz_id = ANY(@quizids::char(28)[])
 
 -- name: GetBulkUsersSessionAccessQuizIDsByProject :many
 -- Returns (user_id, quiz_id) pairs for quizzes in the project each user has
--- session access to (sessions in a visible state)
-SELECT DISTINCT qsa.user_id, qs.quiz_id
+-- session access to (sessions in a visible state), with has_live_session
+-- true when at least one of those sessions is still OPEN or LOCKED
+SELECT qsa.user_id, qs.quiz_id,
+    bool_or(qs.state IN ('OPEN', 'LOCKED')) AS has_live_session
 FROM quiz_sessions qs
 JOIN quiz_session_access qsa ON qsa.session_id = qs.id
 JOIN quizzes q ON q.id = qs.quiz_id
 WHERE q.project_id = @projectid::char(28)
     AND qsa.user_id = ANY(@userids::char(28)[])
-    AND qs.state IN ('OPEN', 'LOCKED', 'FINISHED');
+    AND qs.state IN ('OPEN', 'LOCKED', 'FINISHED')
+GROUP BY qsa.user_id, qs.quiz_id;
 
 -- name: GetUsersActiveSessionForQuiz :many
 -- Latest visible session per user for a quiz (bulk variant of

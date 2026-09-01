@@ -135,7 +135,10 @@ func userEnrolledChallengeIDsBatchFunc(db *database.DB, c *cache.CacheWithRegist
 }
 
 // userAccessibleQuizIDsBatchFunc batches quiz session-access lookups, grouped
-// by project. The accessible quiz ID set is computed project-wide and cached
+// by project. A quiz ID's presence in the map means the user has access to a
+// visible session; the value is true only when at least one of those sessions
+// is still live (OPEN or LOCKED), false when all are FINISHED.
+// The accessible quiz ID set is computed project-wide and cached
 // per (user, project) under cache.UserQuizSessionAccessKey with a short TTL
 // (session states also change on a schedule, without invalidation). Explicit
 // invalidation stays with InvalidateQuizSessionAccess / invalidateQuizLocal.
@@ -156,7 +159,7 @@ func userAccessibleQuizIDsBatchFunc(db *database.DB, c *cache.CacheWithRegistry)
 					if idsByUser[row.UserID] == nil {
 						idsByUser[row.UserID] = make(map[string]bool)
 					}
-					idsByUser[row.UserID][row.QuizID] = true
+					idsByUser[row.UserID][row.QuizID] = row.HasLiveSession
 				}
 				return idsByUser, nil
 			},

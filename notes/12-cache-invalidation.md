@@ -226,6 +226,18 @@ When implementing new mutations:
 
 4. **Not loading entity before delete** - Always load the entity first to get parent IDs needed for invalidation.
 
+5. **Duplicate Set of a fresh key fires OnReject for a live key** — When the same
+   new key is Set twice before ristretto's set buffer is processed (two
+   concurrent cache misses storing the same value), the first item is stored
+   and the second is rejected — and ristretto fires OnReject for it. The
+   registry must NOT unregister on that callback alone, or the live entry is
+   stranded outside the registry and prefix invalidation silently misses it
+   until TTL. `NewCacheWithRegistry` therefore routes eviction callbacks
+   through an async pruner (`pruneEvictedKeys`) that re-checks the cache
+   before unregistering. The re-check cannot happen inside the callback:
+   ristretto invokes it while holding shard locks and a Get there deadlocks
+   (notably during `Close`/`Clear`).
+
 ## References
 
 - Cache implementation: `backend/internal/cache/`

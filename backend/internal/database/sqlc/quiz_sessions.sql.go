@@ -325,13 +325,15 @@ func (q *Queries) GetBulkUserSessionAccessQuizIDs(ctx context.Context, arg GetBu
 }
 
 const GetBulkUsersSessionAccessQuizIDsByProject = `-- name: GetBulkUsersSessionAccessQuizIDsByProject :many
-SELECT DISTINCT qsa.user_id, qs.quiz_id
+SELECT qsa.user_id, qs.quiz_id,
+    bool_or(qs.state IN ('OPEN', 'LOCKED')) AS has_live_session
 FROM quiz_sessions qs
 JOIN quiz_session_access qsa ON qsa.session_id = qs.id
 JOIN quizzes q ON q.id = qs.quiz_id
 WHERE q.project_id = $1::char(28)
     AND qsa.user_id = ANY($2::char(28)[])
     AND qs.state IN ('OPEN', 'LOCKED', 'FINISHED')
+GROUP BY qsa.user_id, qs.quiz_id
 `
 
 type GetBulkUsersSessionAccessQuizIDsByProjectParams struct {
@@ -340,12 +342,14 @@ type GetBulkUsersSessionAccessQuizIDsByProjectParams struct {
 }
 
 type GetBulkUsersSessionAccessQuizIDsByProjectRow struct {
-	UserID string `json:"user_id"`
-	QuizID string `json:"quiz_id"`
+	UserID         string `json:"user_id"`
+	QuizID         string `json:"quiz_id"`
+	HasLiveSession bool   `json:"has_live_session"`
 }
 
 // Returns (user_id, quiz_id) pairs for quizzes in the project each user has
-// session access to (sessions in a visible state)
+// session access to (sessions in a visible state), with has_live_session
+// true when at least one of those sessions is still OPEN or LOCKED
 func (q *Queries) GetBulkUsersSessionAccessQuizIDsByProject(ctx context.Context, arg GetBulkUsersSessionAccessQuizIDsByProjectParams) ([]*GetBulkUsersSessionAccessQuizIDsByProjectRow, error) {
 	rows, err := q.db.Query(ctx, GetBulkUsersSessionAccessQuizIDsByProject, arg.Projectid, arg.Userids)
 	if err != nil {
@@ -355,7 +359,7 @@ func (q *Queries) GetBulkUsersSessionAccessQuizIDsByProject(ctx context.Context,
 	items := []*GetBulkUsersSessionAccessQuizIDsByProjectRow{}
 	for rows.Next() {
 		var i GetBulkUsersSessionAccessQuizIDsByProjectRow
-		if err := rows.Scan(&i.UserID, &i.QuizID); err != nil {
+		if err := rows.Scan(&i.UserID, &i.QuizID, &i.HasLiveSession); err != nil {
 			return nil, err
 		}
 		items = append(items, &i)

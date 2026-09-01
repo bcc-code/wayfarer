@@ -176,6 +176,12 @@ type CacheWithRegistry struct {
 	registry *KeyRegistry
 	sync     *CacheSync
 	pool     *pgxpool.Pool
+
+	// evictedKeys feeds the pruneEvictedKeys worker; closeOnce guards the
+	// stop channel against double Close.
+	evictedKeys chan string
+	stop        chan struct{}
+	closeOnce   sync.Once
 }
 
 // NewCacheWithRegistry creates a cache with key registry support
@@ -185,17 +191,63 @@ func NewCacheWithRegistry(cfg Config) (*CacheWithRegistry, error) {
 	// Prune keys from the registry when ristretto evicts them on its own (TTL
 	// expiry / cost eviction / admission rejection). Without this the registry
 	// grows unbounded and DeletePrefix slows down over time.
-	cfg.onEvictKey = registry.Unregister
+	// Ristretto fires OnReject not only for admission rejections but also for
+	// a duplicate Set of a key it already holds (two concurrent cache misses
+	// storing the same key: the second item is rejected while the first one's
+	// value stays cached). Unregistering unconditionally would strand such a
+	// live entry outside the registry, silently breaking prefix invalidation
+	// for it — so keys must be re-checked against the cache before pruning.
+	// The check cannot run inside the callback itself: ristretto invokes it
+	// while holding internal shard locks, and a Get there deadlocks. The
+	// callback only enqueues; pruneEvictedKeys does the check. A full queue
+	// skips pruning (the registry then keeps a dead key until an explicit
+	// Delete/DeletePrefix removes it), which is safe.
+	evictedKeys := make(chan string, 4096)
+	cfg.onEvictKey = func(key string) {
+		select {
+		case evictedKeys <- key:
+		default:
+		}
+	}
 
 	cache, err := New(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return &CacheWithRegistry{
-		Cache:    cache,
-		registry: registry,
-	}, nil
+	c := &CacheWithRegistry{
+		Cache:       cache,
+		registry:    registry,
+		evictedKeys: evictedKeys,
+		stop:        make(chan struct{}),
+	}
+	go c.pruneEvictedKeys()
+	return c, nil
+}
+
+// pruneEvictedKeys unregisters keys that ristretto evicted on its own, but
+// only after confirming the key is really gone — an eviction callback can
+// fire for an item whose key is still live (see NewCacheWithRegistry).
+func (c *CacheWithRegistry) pruneEvictedKeys() {
+	for {
+		select {
+		case key := <-c.evictedKeys:
+			// Flush pending sets first so a just-stored value for this key
+			// is visible to the Get (no-op once the cache is closed).
+			c.Cache.Wait()
+			if _, ok := c.Cache.Get(key); !ok {
+				c.registry.Unregister(key)
+			}
+		case <-c.stop:
+			return
+		}
+	}
+}
+
+// Close stops the registry pruning worker and closes the underlying cache.
+func (c *CacheWithRegistry) Close() {
+	c.closeOnce.Do(func() { close(c.stop) })
+	c.Cache.Close()
 }
 
 // SetSync configures the cache sync for cross-instance invalidation

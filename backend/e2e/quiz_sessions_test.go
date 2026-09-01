@@ -2042,6 +2042,114 @@ func TestQuizSessions(t *testing.T) {
 		assert.True(t, found, "quiz challenge should be visible after granting session access")
 	})
 
+	t.Run("finished session moves quiz challenge from active to completed", func(t *testing.T) {
+		challengeID := createChallenge(t, "Finished Session Challenge")
+		publishChallenge(t, challengeID)
+		makeChallengeVisible(t, challengeID)
+		quizID := createQuiz(t, "Finished Session Quiz", challengeID)
+		addQuestion(t, quizID, "Question?")
+
+		createResp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation CreateSession($input: CreateQuizSessionInput!) {
+				createQuizSession(input: $input) {
+					id
+				}
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"quizId": quizID,
+			},
+		})
+		require.False(t, createResp.HasErrors())
+
+		var createResult struct {
+			CreateQuizSession struct{ ID string } `json:"createQuizSession"`
+		}
+		require.NoError(t, createResp.UnmarshalData(&createResult))
+		sessionID := createResult.CreateQuizSession.ID
+
+		client.WithAuth(adminToken).MustExecute(t, `
+			mutation OpenSession($id: ID!) {
+				openQuizSession(id: $id) { id }
+			}
+		`, map[string]any{"id": sessionID})
+
+		client.WithAuth(adminToken).MustExecute(t, `
+			mutation GrantAccess($input: GrantQuizSessionAccessInput!) {
+				grantQuizSessionAccess(input: $input)
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"sessionId": sessionID,
+				"userIds":   []string{userID},
+			},
+		})
+
+		type challengeLists struct {
+			Project struct {
+				ActiveChallenges []struct {
+					ID string `json:"id"`
+				} `json:"activeChallenges"`
+				CompletedChallenges []struct {
+					ID string `json:"id"`
+				} `json:"completedChallenges"`
+			} `json:"project"`
+		}
+
+		queryLists := func(t *testing.T) (active, completed bool) {
+			resp := client.WithAuth(userToken).MustExecute(t, `
+				query GetChallengeLists($id: ID!) {
+					project(id: $id) {
+						activeChallenges { id }
+						completedChallenges { id }
+					}
+				}
+			`, map[string]any{"id": projectID})
+			require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+			var result challengeLists
+			require.NoError(t, resp.UnmarshalData(&result))
+			for _, ch := range result.Project.ActiveChallenges {
+				if ch.ID == challengeID {
+					active = true
+				}
+			}
+			for _, ch := range result.Project.CompletedChallenges {
+				if ch.ID == challengeID {
+					completed = true
+				}
+			}
+			return active, completed
+		}
+
+		// While the session is OPEN, the challenge is active
+		active, completed := queryLists(t)
+		assert.True(t, active, "quiz challenge should be active while session is OPEN")
+		assert.False(t, completed, "quiz challenge should not be completed while session is OPEN")
+
+		// LOCKED still counts as live (users may be viewing betting results)
+		client.WithAuth(adminToken).MustExecute(t, `
+			mutation LockSession($id: ID!) {
+				lockQuizSession(id: $id) { id }
+			}
+		`, map[string]any{"id": sessionID})
+
+		active, completed = queryLists(t)
+		assert.True(t, active, "quiz challenge should be active while session is LOCKED")
+		assert.False(t, completed, "quiz challenge should not be completed while session is LOCKED")
+
+		// FINISHED: the quiz can no longer be played, so the challenge moves
+		// to completed even though the user never submitted
+		client.WithAuth(adminToken).MustExecute(t, `
+			mutation FinishSession($id: ID!) {
+				finishQuizSession(id: $id) { id }
+			}
+		`, map[string]any{"id": sessionID})
+
+		active, completed = queryLists(t)
+		assert.False(t, active, "quiz challenge should not be active after session FINISHED")
+		assert.True(t, completed, "quiz challenge should be completed after session FINISHED")
+	})
+
 	// ==================== DIRECT CHALLENGE QUERY TESTS ====================
 
 	t.Run("cannot load quiz challenge directly without session access", func(t *testing.T) {

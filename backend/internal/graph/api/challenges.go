@@ -94,8 +94,10 @@ func (r *Resolver) getFilteredChallenges(ctx context.Context, projectID string, 
 	for _, ch := range challenges {
 		if _, ok := ch.(*model.QuizChallenge); ok {
 			quiz := quizByChallenge[ch.GetID()]
-			if quiz != nil && sessionAccessQuizIDs[quiz.ID] {
-				visible = append(visible, ch)
+			if quiz != nil {
+				if _, hasAccess := sessionAccessQuizIDs[quiz.ID]; hasAccess {
+					visible = append(visible, ch)
+				}
 			}
 			continue
 		}
@@ -139,7 +141,18 @@ func (r *Resolver) getFilteredChallenges(ctx context.Context, projectID string, 
 				completed = true
 			}
 
-			isCompleted := completed || pastEndTime
+			// A quiz whose sessions have all FINISHED can no longer be
+			// played, so it belongs with the completed challenges even
+			// without a completion record (e.g. auto-submitted or never
+			// started before the session closed).
+			sessionsOver := false
+			if _, ok := ch.(*model.QuizChallenge); ok {
+				if quiz := quizByChallenge[ch.GetID()]; quiz != nil {
+					sessionsOver = !sessionAccessQuizIDs[quiz.ID]
+				}
+			}
+
+			isCompleted := completed || pastEndTime || sessionsOver
 
 			switch mode {
 			case challengeFilterActive:
@@ -216,8 +229,10 @@ func (r *Resolver) getVisibleEventChallenges(ctx context.Context, obj *model.Eve
 		// Quiz challenges (authenticated): visible only when session access is granted,
 		// regardless of publishedAt/visibleAt.
 		if _, ok := ch.(*model.QuizChallenge); ok && userID != "" {
-			if quiz := quizByChallenge[ch.GetID()]; quiz != nil && sessionAccessQuizIDs[quiz.ID] {
-				result = append(result, ch)
+			if quiz := quizByChallenge[ch.GetID()]; quiz != nil {
+				if _, hasAccess := sessionAccessQuizIDs[quiz.ID]; hasAccess {
+					result = append(result, ch)
+				}
 			}
 			continue
 		}

@@ -67,3 +67,49 @@ func TestKeyRegistry_ExplicitDeleteUnregisters(t *testing.T) {
 	c.Delete(key)
 	assert.Empty(t, c.registry.GetKeys(PrefixUser), "explicit delete should unregister the key")
 }
+
+// TestKeyRegistry_DuplicateSetKeepsRegistration pins a subtle ristretto interaction:
+// when the same new key is Set twice before the set buffer is processed, ristretto
+// stores the first item and fires OnReject for the second — for a key whose value is
+// alive in the cache. Unregistering on that callback would strand the live entry
+// outside the registry, so DeletePrefix (i.e. every prefix-based invalidation) would
+// silently stop covering it until TTL expiry.
+func TestKeyRegistry_DuplicateSetKeepsRegistration(t *testing.T) {
+	c, err := NewCacheWithRegistry(Config{
+		NumCounters: 1000,
+		MaxCost:     10_000,
+		BufferItems: 64,
+		DefaultTTL:  time.Hour,
+	})
+	require.NoError(t, err)
+	defer c.Close()
+
+	key := UserQuizSessionAccessKey("US01ARZ3NDEKTSV4RRFFQ69G5FAV", "PR01ARZ3NDEKTSV4RRFFQ69G5FAV")
+
+	// Two back-to-back sets of the same fresh key: both enter the set buffer as
+	// itemNew, the second is rejected by the admission policy (key already added).
+	c.SetWithTTL(key, map[string]bool{"QZA": true}, time.Hour)
+	c.SetWithTTL(key, map[string]bool{"QZA": true}, time.Hour)
+	c.Wait()
+
+	// The value must still be cached, and — after the async pruner has had time to
+	// process the rejection — the key must still be registered so prefix
+	// invalidation can find it.
+	_, cached := c.Get(key)
+	require.True(t, cached, "value should be cached after duplicate set")
+
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if len(c.registry.GetKeys(PrefixUserQuizSessionAccess)) > 0 {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	assert.NotEmpty(t, c.registry.GetKeys(PrefixUserQuizSessionAccess),
+		"registry must keep a live key registered after a duplicate-set rejection")
+
+	// And prefix invalidation must actually clear it.
+	c.DeletePrefix(PrefixUserQuizSessionAccess)
+	_, cached = c.Get(key)
+	assert.False(t, cached, "DeletePrefix must delete the live entry")
+}

@@ -116,7 +116,7 @@ func (r *Resolver) LoadChallengeWithVisibility(ctx context.Context, challengeID 
 		quiz, err := quizThunk()
 		if err == nil && quiz != nil {
 			accessibleQuizIDs, err := r.getUserAccessibleQuizIDs(ctx, userID, projectID, []string{quiz.ID})
-			if err == nil && accessibleQuizIDs[quiz.ID] {
+			if _, hasAccess := accessibleQuizIDs[quiz.ID]; err == nil && hasAccess {
 				return challenge, nil // Session access grants visibility
 			}
 		}

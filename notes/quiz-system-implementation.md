@@ -299,3 +299,18 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 5. Add proper error handling and validation
 6. Write unit tests for business logic
 7. Write integration tests for full quiz flow
+
+## Challenge Visibility vs. Active/Completed Split (2026-09)
+
+A quiz challenge is *visible* to a user whenever they have access to a session
+in a visible state (`OPEN`, `LOCKED`, `FINISHED`) — FINISHED stays visible so
+users can review their results. The active/completed split in
+`getFilteredChallenges` additionally treats a quiz challenge as **completed**
+when the user's visible sessions are all FINISHED (no OPEN/LOCKED session
+left), even without a `user_challenge_completions` row. This covers
+auto-submitted submissions and users who never played before the session
+closed — previously such challenges sat in the Active tab forever.
+
+Mechanism: `GetBulkUsersSessionAccessQuizIDsByProject` returns
+`has_live_session` per (user, quiz); the `UserAccessibleQuizIDsLoader` map
+value carries it (presence in the map = access, value = live session).

@@ -20,7 +20,10 @@ func (r *Resolver) getUserEnrolledChallengeIDs(ctx context.Context, userID, proj
 
 // getUserAccessibleQuizIDs returns which quiz IDs in the project the user has
 // session access to, batched per project through UserAccessibleQuizIDsLoader
-// and cached per (user, project) with a short TTL. The set is computed
+// and cached per (user, project) with a short TTL. A quiz ID's presence in
+// the map means the user has access to a visible session; the value is true
+// only while at least one of those sessions is live (OPEN or LOCKED), false
+// once all of them have FINISHED. The set is computed
 // project-wide, so it covers any quiz subset callers filter against (the
 // quizIDs parameter only signals whether there is anything to check). The
 // returned map is shared across requests — read-only.
