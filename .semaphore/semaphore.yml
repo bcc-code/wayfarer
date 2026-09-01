@@ -20,6 +20,8 @@ blocks:
             - go mod download
             - cache store go-mod ~/go/pkg/mod
             - make test
+      secrets:
+        - name: wayfarer-deploy
   - name: Build release
     dependencies:
       - Backend tests
