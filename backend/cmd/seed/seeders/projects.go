@@ -103,9 +103,15 @@ func (s *Seeder) SeedProjects(stats *Stats) error {
 	for i := 0; i < s.Config.NumProjects; i++ {
 		projectID := ulid.NewProjectID()
 
-		// Random project timing
+		// Random project timing. The first project is always active
+		// (started, not ended) — e2e tests award achievements on
+		// ProjectIDs[0], which the backend rejects for ended projects.
 		startOffset := rand.Intn(365) - 180 // -180 to +185 days
 		duration := rand.Intn(120) + 30     // 30-150 days duration
+		if i == 0 {
+			startOffset = -30
+			duration = 365
+		}
 		startDate := time.Now().AddDate(0, 0, startOffset)
 		endDate := startDate.AddDate(0, 0, duration)
 
