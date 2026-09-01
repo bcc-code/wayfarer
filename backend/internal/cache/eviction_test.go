@@ -113,3 +113,60 @@ func TestKeyRegistry_DuplicateSetKeepsRegistration(t *testing.T) {
 	_, cached = c.Get(key)
 	assert.False(t, cached, "DeletePrefix must delete the live entry")
 }
+
+// TestKeyRegistry_UnregisterIfGen verifies the generation guard: an unregister
+// based on a stale generation (a Register happened in between) must be a no-op,
+// so the async pruner cannot unregister a concurrently re-inserted key.
+func TestKeyRegistry_UnregisterIfGen(t *testing.T) {
+	kr := NewKeyRegistry()
+	key := UserKey("US01ARZ3NDEKTSV4RRFFQ69G5FAV")
+
+	kr.Register(key)
+	gen, ok := kr.Gen(key)
+	require.True(t, ok)
+
+	// Concurrent re-insert bumps the generation; the stale unregister is ignored.
+	kr.Register(key)
+	kr.UnregisterIfGen(key, gen)
+	_, stillRegistered := kr.Gen(key)
+	assert.True(t, stillRegistered, "stale-generation unregister must not remove a re-registered key")
+
+	// With the current generation it removes the key.
+	gen, _ = kr.Gen(key)
+	kr.UnregisterIfGen(key, gen)
+	_, stillRegistered = kr.Gen(key)
+	assert.False(t, stillRegistered)
+	assert.Empty(t, kr.GetKeys(PrefixUser))
+}
+
+// TestCacheWithRegistry_SweepPrunesDeadKeys verifies the overflow fallback: a
+// full registry sweep unregisters keys whose cache entries are gone but keeps
+// live ones. (In production the sweep runs when the eviction queue overflowed
+// and notifications were dropped.)
+func TestCacheWithRegistry_SweepPrunesDeadKeys(t *testing.T) {
+	c, err := NewCacheWithRegistry(Config{
+		NumCounters: 1000,
+		MaxCost:     10_000,
+		BufferItems: 64,
+		DefaultTTL:  time.Hour,
+	})
+	require.NoError(t, err)
+	defer c.Close()
+
+	liveKey := UserKey("US01ARZ3NDEKTSV4RRFFQ69G5FAV")
+	deadKey := UserKey("US01ARZ3NDEKTSV4RRFFQ69G5FAX")
+	require.True(t, c.SetWithTTL(liveKey, "live", time.Hour))
+	require.True(t, c.SetWithTTL(deadKey, "dead", time.Hour))
+	c.Wait()
+
+	// Delete the entry behind the registry's back (embedded Cache, so no
+	// Unregister happens) — this is the state a dropped eviction leaves.
+	c.Cache.Delete(deadKey)
+	c.Wait()
+
+	c.pruneKeys(c.registry.AllKeys())
+
+	keys := c.registry.GetKeys(PrefixUser)
+	assert.Contains(t, keys, liveKey, "sweep must keep keys whose entries are still cached")
+	assert.NotContains(t, keys, deadKey, "sweep must unregister keys whose entries are gone")
+}

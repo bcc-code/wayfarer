@@ -234,9 +234,13 @@ When implementing new mutations:
    stranded outside the registry and prefix invalidation silently misses it
    until TTL. `NewCacheWithRegistry` therefore routes eviction callbacks
    through an async pruner (`pruneEvictedKeys`) that re-checks the cache
-   before unregistering. The re-check cannot happen inside the callback:
-   ristretto invokes it while holding shard locks and a Get there deadlocks
-   (notably during `Close`/`Clear`).
+   before unregistering, guarded by per-key registration generations so a
+   concurrent re-insert between the check and the unregister is a no-op. The
+   re-check cannot happen inside the callback: ristretto invokes it while
+   holding shard locks and a Get there deadlocks (notably during
+   `Close`/`Clear`). If the eviction queue overflows, a flag schedules a full
+   registry sweep instead of leaking registrations, and `Close` waits for the
+   pruner to exit before closing ristretto.
 
 ## References
 

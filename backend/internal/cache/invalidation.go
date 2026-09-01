@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -14,20 +15,28 @@ import (
 type KeyRegistry struct {
 	mu   sync.RWMutex
 	keys map[string]map[string]struct{} // prefix -> set of keys with that prefix
+	// gens holds a per-key registration generation, bumped on every Register.
+	// The async eviction pruner uses it to detect a concurrent re-insert
+	// between its cache check and its unregister (see UnregisterIfGen).
+	gens map[string]uint64
 }
 
 // NewKeyRegistry creates a new key registry
 func NewKeyRegistry() *KeyRegistry {
 	return &KeyRegistry{
 		keys: make(map[string]map[string]struct{}),
+		gens: make(map[string]uint64),
 	}
 }
 
 // Register adds a key to the registry under its prefixes. Registering the
-// same key multiple times (e.g. concurrent cache misses) is idempotent.
+// same key multiple times (e.g. concurrent cache misses) is idempotent for
+// the prefix sets but bumps the key's generation.
 func (kr *KeyRegistry) Register(key string) {
 	kr.mu.Lock()
 	defer kr.mu.Unlock()
+
+	kr.gens[key]++
 
 	// Extract all relevant prefixes/tags from the key
 	prefixes := extractPrefixes(key)
@@ -45,7 +54,11 @@ func (kr *KeyRegistry) Register(key string) {
 func (kr *KeyRegistry) Unregister(key string) {
 	kr.mu.Lock()
 	defer kr.mu.Unlock()
+	kr.unregisterLocked(key)
+}
 
+func (kr *KeyRegistry) unregisterLocked(key string) {
+	delete(kr.gens, key)
 	prefixes := extractPrefixes(key)
 	for _, prefix := range prefixes {
 		set := kr.keys[prefix]
@@ -54,6 +67,39 @@ func (kr *KeyRegistry) Unregister(key string) {
 			delete(kr.keys, prefix)
 		}
 	}
+}
+
+// Gen returns the key's current registration generation, and whether the key
+// is registered at all.
+func (kr *KeyRegistry) Gen(key string) (uint64, bool) {
+	kr.mu.RLock()
+	defer kr.mu.RUnlock()
+	gen, ok := kr.gens[key]
+	return gen, ok
+}
+
+// UnregisterIfGen removes the key only if its registration generation still
+// equals gen — i.e. no Register happened since the caller read that
+// generation. This lets the async eviction pruner drop dead keys without
+// racing a concurrent re-insert into unregistering a live one.
+func (kr *KeyRegistry) UnregisterIfGen(key string, gen uint64) {
+	kr.mu.Lock()
+	defer kr.mu.Unlock()
+	if kr.gens[key] != gen {
+		return
+	}
+	kr.unregisterLocked(key)
+}
+
+// AllKeys returns a snapshot of every registered key.
+func (kr *KeyRegistry) AllKeys() []string {
+	kr.mu.RLock()
+	defer kr.mu.RUnlock()
+	result := make([]string, 0, len(kr.gens))
+	for key := range kr.gens {
+		result = append(result, key)
+	}
+	return result
 }
 
 // GetKeys returns all keys matching the given prefix
@@ -74,6 +120,7 @@ func (kr *KeyRegistry) Clear() {
 	kr.mu.Lock()
 	defer kr.mu.Unlock()
 	kr.keys = make(map[string]map[string]struct{})
+	kr.gens = make(map[string]uint64)
 }
 
 // extractPrefixes extracts all relevant prefixes from a cache key
@@ -177,10 +224,14 @@ type CacheWithRegistry struct {
 	sync     *CacheSync
 	pool     *pgxpool.Pool
 
-	// evictedKeys feeds the pruneEvictedKeys worker; closeOnce guards the
-	// stop channel against double Close.
+	// evictedKeys feeds the pruneEvictedKeys worker; needsSweep is set when
+	// the queue overflows and a notification is dropped, requesting a full
+	// registry sweep. closeOnce guards the stop channel against double Close,
+	// and done is closed when the worker has exited.
 	evictedKeys chan string
+	needsSweep  atomic.Bool
 	stop        chan struct{}
+	done        chan struct{}
 	closeOnce   sync.Once
 }
 
@@ -199,14 +250,22 @@ func NewCacheWithRegistry(cfg Config) (*CacheWithRegistry, error) {
 	// for it — so keys must be re-checked against the cache before pruning.
 	// The check cannot run inside the callback itself: ristretto invokes it
 	// while holding internal shard locks, and a Get there deadlocks. The
-	// callback only enqueues; pruneEvictedKeys does the check. A full queue
-	// skips pruning (the registry then keeps a dead key until an explicit
-	// Delete/DeletePrefix removes it), which is safe.
+	// callback only enqueues; pruneEvictedKeys does the check. When the queue
+	// is full the notification is dropped and a sweep flag is set instead —
+	// the worker then walks the whole registry and prunes every dead key, so
+	// eviction storms cannot leak registrations.
 	evictedKeys := make(chan string, 4096)
+	c := &CacheWithRegistry{
+		registry:    registry,
+		evictedKeys: evictedKeys,
+		stop:        make(chan struct{}),
+		done:        make(chan struct{}),
+	}
 	cfg.onEvictKey = func(key string) {
 		select {
 		case evictedKeys <- key:
 		default:
+			c.needsSweep.Store(true)
 		}
 	}
 
@@ -214,13 +273,8 @@ func NewCacheWithRegistry(cfg Config) (*CacheWithRegistry, error) {
 	if err != nil {
 		return nil, err
 	}
+	c.Cache = cache
 
-	c := &CacheWithRegistry{
-		Cache:       cache,
-		registry:    registry,
-		evictedKeys: evictedKeys,
-		stop:        make(chan struct{}),
-	}
 	go c.pruneEvictedKeys()
 	return c, nil
 }
@@ -229,14 +283,35 @@ func NewCacheWithRegistry(cfg Config) (*CacheWithRegistry, error) {
 // only after confirming the key is really gone — an eviction callback can
 // fire for an item whose key is still live (see NewCacheWithRegistry).
 func (c *CacheWithRegistry) pruneEvictedKeys() {
+	defer close(c.done)
+	sweepTicker := time.NewTicker(pruneSweepInterval)
+	defer sweepTicker.Stop()
 	for {
+		// Prefer stop over further pruning so Close doesn't wait behind a
+		// busy eviction queue.
+		select {
+		case <-c.stop:
+			return
+		default:
+		}
 		select {
 		case key := <-c.evictedKeys:
-			// Flush pending sets first so a just-stored value for this key
-			// is visible to the Get (no-op once the cache is closed).
-			c.Cache.Wait()
-			if _, ok := c.Cache.Get(key); !ok {
-				c.registry.Unregister(key)
+			// Batch whatever is already queued so one buffer flush (Wait)
+			// covers all of them.
+			keys := []string{key}
+		batching:
+			for len(keys) < 256 {
+				select {
+				case k := <-c.evictedKeys:
+					keys = append(keys, k)
+				default:
+					break batching
+				}
+			}
+			c.pruneKeys(keys)
+		case <-sweepTicker.C:
+			if c.needsSweep.Swap(false) {
+				c.pruneKeys(c.registry.AllKeys())
 			}
 		case <-c.stop:
 			return
@@ -244,9 +319,37 @@ func (c *CacheWithRegistry) pruneEvictedKeys() {
 	}
 }
 
-// Close stops the registry pruning worker and closes the underlying cache.
+// pruneSweepInterval is how often the pruning worker checks whether an
+// overflowed eviction queue requires a full registry sweep.
+const pruneSweepInterval = 30 * time.Second
+
+// pruneKeys unregisters each key that is no longer in the cache. The
+// generation check makes the miss-then-unregister sequence safe against a
+// concurrent re-insert: Register bumps the generation, turning this
+// unregister into a no-op for the freshly stored entry.
+func (c *CacheWithRegistry) pruneKeys(keys []string) {
+	// Flush pending sets first so just-stored values are visible to the Gets
+	// (no-op once the cache is closed).
+	c.Cache.Wait()
+	for _, key := range keys {
+		gen, registered := c.registry.Gen(key)
+		if !registered {
+			continue
+		}
+		if _, ok := c.Cache.Get(key); !ok {
+			c.registry.UnregisterIfGen(key, gen)
+		}
+	}
+}
+
+// Close stops the registry pruning worker, waits for it to exit, and then
+// closes the underlying cache — the worker must never touch a closing
+// ristretto instance.
 func (c *CacheWithRegistry) Close() {
-	c.closeOnce.Do(func() { close(c.stop) })
+	c.closeOnce.Do(func() {
+		close(c.stop)
+		<-c.done
+	})
 	c.Cache.Close()
 }
 
