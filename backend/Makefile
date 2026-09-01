@@ -1,4 +1,4 @@
-.PHONY: help generate migrate seed seed-tui test test-ci build clean test-e2e test-e2e-short test-e2e-coverage test-all update-db-url
+.PHONY: help generate migrate seed seed-tui test test-ci test-e2e-ci build clean test-e2e test-e2e-short test-e2e-coverage test-all update-db-url
 
 help: ## Display this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -40,8 +40,11 @@ test: ## Run unit tests
 	@echo "Running unit tests..."
 	@go test -v -race ./...
 
-test-ci: ## Run unit tests for CI (quiet output, race detector on)
-	@go test -race ./...
+test-ci: ## Run unit tests for CI (quiet output, race detector on, e2e excluded — CI runs it in a parallel job)
+	@go test -race $$(go list ./... | grep -v '/e2e')
+
+test-e2e-ci: ## Run E2E tests for CI (quiet output, requires Docker)
+	@go test -race -timeout 10m ./e2e/...
 
 test-coverage: ## Run tests with coverage report
 	@echo "Running tests with coverage..."

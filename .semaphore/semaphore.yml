@@ -22,6 +22,8 @@ blocks:
         commands:
           - checkout
           - sem-version go 1.25
+      # Jobs in a block run in parallel on separate VMs, so unit and e2e
+      # tests overlap instead of running serially.
       jobs:
         - name: unit tests
           commands:
@@ -34,6 +36,16 @@ blocks:
             - make test-ci
             - cache store go-mod ~/go/pkg/mod
             - cache store go-build-$SEMAPHORE_GIT_SHA ~/.cache/go-build
+        - name: e2e tests
+          commands:
+            - cd backend
+            # overlap the postgres image pull with compilation
+            - docker pull postgres:16-alpine > /dev/null 2>&1 &
+            - cache restore go-mod
+            - go mod download
+            - cache restore go-build
+            - make test-e2e-ci
+            - cache store go-build-e2e-$SEMAPHORE_GIT_SHA ~/.cache/go-build
   - name: Build release
     dependencies:
       - Backend tests
@@ -71,8 +83,6 @@ blocks:
             - cp -r frontend/.output/public release/static
             - 'tar -czf "release-${SEMAPHORE_GIT_SHA}.tar.gz" -C release .'
             - 'artifact push workflow "release-${SEMAPHORE_GIT_SHA}.tar.gz"'
-      secrets:
-        - name: wayfarer-frontend-build
 promotions:
   - name: Deploy to interact-prod
     pipeline_file: deploy.yml
