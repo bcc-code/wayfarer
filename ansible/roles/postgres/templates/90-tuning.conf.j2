@@ -8,12 +8,12 @@ max_connections = {{ postgres_max_connections }}
 
 # --- Security ---
 password_encryption = scram-sha-256
-ssl = off   # never leaves the host / docker bridge
+ssl = off   # loopback only, never leaves the host
 
 # --- Memory ---
 shared_buffers = {{ (mem_mb * 0.25) | int }}MB
 effective_cache_size = {{ (mem_mb * 0.6) | int }}MB
-# Per sort/hash node; keep modest since Dokploy apps share this host.
+# Per sort/hash node; keep modest since the app shares this host.
 work_mem = {{ [(mem_mb * 1024 / (postgres_max_connections * 4)) | int, 65536] | min }}kB
 maintenance_work_mem = {{ [(mem_mb * 0.05) | int, 1024] | min }}MB
 

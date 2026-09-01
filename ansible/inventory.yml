@@ -2,6 +2,6 @@ all:
   children:
     interact:
       hosts:
-        interact-test:
+        interact-prod:
           ansible_host: 49.12.121.62
           ansible_user: root

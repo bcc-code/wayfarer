@@ -41,6 +41,33 @@ type ServerConfig struct {
 	IdleTimeout     time.Duration
 	StaticFilesPath string // Path to frontend static files (empty to disable)
 
+	// TLSCertFile/TLSKeyFile: when both set, the server terminates TLS itself
+	// (ListenAndServeTLS) instead of expecting a fronting proxy.
+	TLSCertFile string
+	TLSKeyFile  string
+
+	// TLSAutoDomains: when non-empty, the server terminates TLS with ACME
+	// (Let's Encrypt) certificates for these domains, issued and renewed
+	// automatically (internal/autotls). Takes precedence over
+	// TLSCertFile/TLSKeyFile. The listener must be reachable on port 443
+	// for tls-alpn-01 challenges. TLSAutoCacheDir persists certificates
+	// across restarts (required); TLSAutoEmail receives CA expiry notices
+	// (optional). TLSAutoHTTPAddr, when set (e.g. ":80"), serves http-01
+	// challenges and redirects everything else to HTTPS.
+	TLSAutoDomains  []string
+	TLSAutoCacheDir string
+	TLSAutoEmail    string
+	TLSAutoHTTPAddr string
+
+	// ReusePort: bind the listener with SO_REUSEPORT so a second instance
+	// (blue/green deploy) can bind the same port concurrently; the kernel
+	// splits new connections between them during the overlap.
+	ReusePort bool
+	// AdminAddr: when set (e.g. 127.0.0.1:9441), serves /health with a real
+	// DB ping on a private per-instance listener — the deploy health gate;
+	// the shared public port can't target one instance during an overlap.
+	AdminAddr string
+
 	// HTTPStatsFile, when non-empty, enables periodic JSONL dumps of the
 	// aggregated per-route HTTP stats (the /metrics/http snapshot) to disk.
 	HTTPStatsFile     string
@@ -65,6 +92,12 @@ type JWTConfig struct {
 	BrunstadTVIssuer  string
 	Auth0JWKSURL      string
 	Auth0Issuer       string
+	// Auth0LoadtestKey: RSA private key (PEM or base64 PEM) used by
+	// cmd/loadtest/tokengen to sign simulated Auth0 tokens. When set, the
+	// server derives the matching JWKS and serves it at GET /jwks.json, and
+	// tolerates a failed boot-time fetch of Auth0JWKSURL — so Auth0JWKSURL
+	// can point at the server itself. Load-test only; never set in production.
+	Auth0LoadtestKey string
 }
 
 // APIKeyConfig holds API key authentication configuration for external systems
@@ -184,6 +217,14 @@ func Load() (*Config, error) {
 			WriteTimeout:    getEnvAsDuration("SERVER_WRITE_TIMEOUT", 5*time.Minute),
 			IdleTimeout:     getEnvAsDuration("SERVER_IDLE_TIMEOUT", 120*time.Second),
 			StaticFilesPath: getEnv("STATIC_FILES_PATH", ""),
+			TLSCertFile:     getEnv("TLS_CERT_FILE", ""),
+			TLSKeyFile:      getEnv("TLS_KEY_FILE", ""),
+			TLSAutoDomains:  splitNonEmpty(getEnv("TLS_AUTO_DOMAINS", ""), ","),
+			TLSAutoCacheDir: getEnv("TLS_AUTO_CACHE_DIR", "/var/lib/wayfarer/autocert"),
+			TLSAutoEmail:    getEnv("TLS_AUTO_EMAIL", ""),
+			TLSAutoHTTPAddr: getEnv("TLS_AUTO_HTTP_ADDR", ""),
+			ReusePort:       getEnvAsBool("SERVER_REUSEPORT", false),
+			AdminAddr:       getEnv("ADMIN_ADDR", ""),
 
 			HTTPStatsFile:     getEnv("HTTP_STATS_FILE", ""),
 			HTTPStatsInterval: getEnvAsDuration("HTTP_STATS_INTERVAL", time.Minute),
@@ -203,6 +244,7 @@ func Load() (*Config, error) {
 			BrunstadTVIssuer:  getEnv("BRUNSTAD_TV_JWT_ISSUER", "https://api.brunstad.tv/"),
 			Auth0JWKSURL:      getEnv("AUTH0_JWKS_URL", "https://login.bcc.no/.well-known/jwks.json"),
 			Auth0Issuer:       getEnv("AUTH0_JWT_ISSUER", "https://login.bcc.no/"),
+			Auth0LoadtestKey:  getEnv("AUTH0_LOADTEST_PRIVATE_KEY", ""),
 		},
 		APIKey: APIKeyConfig{
 			Keys: parseAPIKeys(getEnv("EXTERNAL_API_KEYS", "")),
@@ -291,6 +333,17 @@ func Load() (*Config, error) {
 }
 
 // Helper functions to read environment variables with defaults
+
+// splitNonEmpty splits s by sep, trims whitespace, and drops empty entries.
+func splitNonEmpty(s, sep string) []string {
+	var out []string
+	for _, part := range strings.Split(s, sep) {
+		if trimmed := strings.TrimSpace(part); trimmed != "" {
+			out = append(out, trimmed)
+		}
+	}
+	return out
+}
 
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {

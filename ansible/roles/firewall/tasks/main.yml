@@ -24,28 +24,17 @@
         proto: tcp
       loop: "{{ firewall_allowed_tcp_ports }}"
 
-    - name: Allow Dokploy UI from trusted sources only
+    - name: Allow all traffic on the tailnet interface
       community.general.ufw:
         rule: allow
-        port: "{{ dokploy_ui_port }}"
-        proto: tcp
-        from_ip: "{{ item }}"
-      loop: "{{ dokploy_ui_allowed_sources }}"
-      when: dokploy_ui_allowed_sources | length > 0
+        interface: tailscale0
+        direction: in
 
-    - name: Allow Dokploy UI from anywhere (no source restriction configured)
+    - name: Allow Tailscale WireGuard port (direct connections instead of DERP relays)
       community.general.ufw:
         rule: allow
-        port: "{{ dokploy_ui_port }}"
-        proto: tcp
-      when: dokploy_ui_allowed_sources | length == 0
-
-    - name: Allow Docker containers to reach host Postgres
-      community.general.ufw:
-        rule: allow
-        port: "5432"
-        proto: tcp
-        from_ip: "{{ postgres_docker_cidr }}"
+        port: "41641"
+        proto: udp
 
     - name: Rate-limit SSH
       community.general.ufw:

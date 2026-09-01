@@ -1,3 +1,6 @@
+import http from 'k6/http';
+import { check } from 'k6';
+
 import { graphqlRequest, checkGraphQLResponse } from '../lib/graphql.js';
 
 // Queries fired by the SPA on every cold app load, before any page query:
@@ -140,6 +143,34 @@ export function getFirebaseToken(baseUrl, token) {
     const response = graphqlRequest(baseUrl, GET_FIREBASE_TOKEN_QUERY, {}, token, 'GetFirebaseToken');
     checkGraphQLResponse(response, 'GetFirebaseToken');
     return response;
+}
+
+/**
+ * Perform the Auth0 authentication dance: exchange a (simulated) Auth0 JWT at
+ * the server's callback endpoint for a Wayfarer JWT, like a user whose session
+ * expired. Requires config.json to contain auth0Tokens (tokengen -auth0-count)
+ * and the server to point AUTH0_JWKS_URL at the matching jwks.json.
+ * @param {string} baseUrl - Base URL of the API
+ * @param {string} auth0Token - Simulated Auth0 RS256 JWT
+ * @returns {string|null} The freshly minted Wayfarer JWT, or null on failure
+ */
+export function authDance(baseUrl, auth0Token) {
+    const response = http.get(`${baseUrl}/token?token=${encodeURIComponent(auth0Token)}`, {
+        tags: { name: 'AuthCallback' },
+    });
+    const ok = check(response, {
+        'AuthCallback: status is 200': (r) => r.status === 200,
+    });
+    if (!ok) {
+        console.error(`AuthCallback: HTTP ${response.status}`);
+        return null;
+    }
+    try {
+        return JSON.parse(response.body).token || null;
+    } catch {
+        console.error('AuthCallback: invalid JSON response');
+        return null;
+    }
 }
 
 /**

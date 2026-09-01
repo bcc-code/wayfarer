@@ -378,7 +378,23 @@ func (m *TestDBManager) AddScoreForUser(ctx context.Context, userID, projectID s
 	if err != nil {
 		return fmt.Errorf("failed to add score for user %s: %w", userID, err)
 	}
-	return nil
+	return m.DrainLeaderboardApplyQueue(ctx)
+}
+
+// DrainLeaderboardApplyQueue applies all queued leaderboard score deltas
+// (migration 00101 made the score_journal INSERT fan-out asynchronous; in
+// production a background worker drains the queue, in tests it is drained
+// synchronously so leaderboard reads are deterministic).
+func (m *TestDBManager) DrainLeaderboardApplyQueue(ctx context.Context) error {
+	for {
+		applied, err := m.DB.Queries.DrainLeaderboardApplyQueue(ctx, 500)
+		if err != nil {
+			return fmt.Errorf("failed to drain leaderboard apply queue: %w", err)
+		}
+		if applied < 500 {
+			return nil
+		}
+	}
 }
 
 // EnsureLeaderboardConsent ensures the leaderboard_consent consent type exists
@@ -657,7 +673,7 @@ func (m *TestDBManager) AddScoreForUserEvent(ctx context.Context, userID, projec
 	if err != nil {
 		return fmt.Errorf("failed to add event score for user %s: %w", userID, err)
 	}
-	return nil
+	return m.DrainLeaderboardApplyQueue(ctx)
 }
 
 // RemoveUserFromProject removes a user from a project

@@ -17,6 +17,7 @@ packages:
       LanguageQuerier:
       UserLoader:
       LeaderboardQuerier:
+      LeaderboardApplyQuerier:
       FirebaseTokenMinter:
       TokenWarmerQuerier:
       ProjectIDProvider:

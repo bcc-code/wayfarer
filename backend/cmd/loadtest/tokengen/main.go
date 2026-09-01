@@ -18,9 +18,10 @@ import (
 
 // LoadTestConfig is the output structure for k6 consumption
 type LoadTestConfig struct {
-	BaseURL   string      `json:"baseUrl"`
-	Tokens    []UserToken `json:"tokens"`
-	Generated time.Time   `json:"generated"`
+	BaseURL     string      `json:"baseUrl"`
+	Tokens      []UserToken `json:"tokens"`
+	Auth0Tokens []UserToken `json:"auth0Tokens,omitempty"`
+	Generated   time.Time   `json:"generated"`
 }
 
 // UserToken contains a user ID and their JWT token
@@ -43,6 +44,9 @@ func main() {
 	baseURL := flag.String("base-url", "http://localhost:8080", "GraphQL API base URL")
 	validDays := flag.Int("valid-days", 7, "JWT token validity in days")
 	secret := flag.String("secret", "", "JWT secret (defaults to JWT_SECRET env var)")
+	auth0Count := flag.Int("auth0-count", 0, "Also mint simulated Auth0 (RS256) tokens for this many users, for the auth-dance scenario")
+	auth0Issuer := flag.String("auth0-issuer", "https://login.bcc.no/", "Issuer for simulated Auth0 tokens (must match the server's AUTH0_JWT_ISSUER)")
+	auth0Key := flag.String("auth0-key", "", "RSA private key (PEM or base64 PEM) for signing simulated Auth0 tokens (defaults to AUTH0_LOADTEST_PRIVATE_KEY env var; generated if empty)")
 	flag.Parse()
 
 	// Determine JWT secret
@@ -141,11 +145,37 @@ func main() {
 		})
 	}
 
+	// Optionally mint simulated Auth0 tokens for the auth-dance scenario
+	var auth0Tokens []UserToken
+	if *auth0Count > 0 {
+		keySpec := *auth0Key
+		if keySpec == "" {
+			keySpec = os.Getenv("AUTH0_LOADTEST_PRIVATE_KEY")
+		}
+		key, encodedKey, err := resolveAuth0Key(keySpec)
+		if err != nil {
+			slog.Error("Failed to resolve Auth0 signing key", "error", err)
+			os.Exit(1)
+		}
+		auth0Tokens, err = generateAuth0Tokens(ctx, db, *auth0Count, *auth0Issuer, key, now, time.Duration(*validDays)*24*time.Hour)
+		if err != nil {
+			slog.Error("Failed to generate simulated Auth0 tokens", "error", err)
+			os.Exit(1)
+		}
+		slog.Info("Simulated Auth0 token generation complete", "auth0Tokens", len(auth0Tokens))
+		if keySpec == "" {
+			// Fresh key: the server must hold the same one to accept these
+			// tokens — print the env line to paste into the server env.
+			fmt.Printf("\nSet this in the SERVER environment (new key was generated):\n\nAUTH0_LOADTEST_PRIVATE_KEY=%s\n\n", encodedKey)
+		}
+	}
+
 	// Create output config
 	outputConfig := LoadTestConfig{
-		BaseURL:   *baseURL,
-		Tokens:    tokens,
-		Generated: now,
+		BaseURL:     *baseURL,
+		Tokens:      tokens,
+		Auth0Tokens: auth0Tokens,
+		Generated:   now,
 	}
 
 	// Write JSON output file

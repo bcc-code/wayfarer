@@ -1,5 +1,5 @@
 # --- Host identity -------------------------------------------------------------
-machine_hostname: interact-test
+machine_hostname: interact-prod
 
 # --- SSH / hardening ---------------------------------------------------------
 # Root login stays enabled (key-only) because existing tooling
@@ -10,22 +10,27 @@ ssh_port: 22
 # --- Firewall ----------------------------------------------------------------
 firewall_allowed_tcp_ports:
   - "{{ ssh_port }}"
-  - 80    # Dokploy Traefik (HTTP -> ACME challenges + redirect to HTTPS)
-  - 443   # Dokploy Traefik (HTTPS)
-# Dokploy UI. Restricted to these source CIDRs; empty list = open to all.
-dokploy_ui_port: 3000
-dokploy_ui_allowed_sources: []
+  - 80    # wayfarer server (ACME http-01 challenges + redirect to HTTPS)
+  - 443   # wayfarer server (native Go TLS termination)
+
+# --- Tailscale -----------------------------------------------------------------
+# Only needed for the first join (node not yet on the tailnet). Generate a
+# (preferably pre-authorized, single-use) key in the Tailscale admin console
+# and pass it via vault or -e; never commit a real value.
+tailscale_authkey: "{{ vault_tailscale_authkey | default('') }}"
 
 # --- PostgreSQL ---------------------------------------------------------------
 postgres_version: 17
-# Listen on loopback + the Docker bridge gateway so Dokploy-deployed
-# containers can reach the host-level Postgres.
-postgres_listen_addresses: "127.0.0.1,172.17.0.1"
-postgres_docker_cidr: 172.16.0.0/12
-postgres_max_connections: 100
+# The app runs natively on the box; nothing needs Postgres off-loopback.
+postgres_listen_addresses: "127.0.0.1"
+# 500: each blue/green color runs DB_MAX_OPEN_CONNS=230 (roles/wayfarer), and
+# both colors are up concurrently during a deploy — 460 peak, leaving 40 for
+# psql/monitoring/bench headroom. (100 total starved the pool at spike
+# peak, SQLSTATE 53300.) work_mem in the template scales with this — at
+# 500 conns / 62GB it lands around 32MB per sort node, still comfortable.
+postgres_max_connections: 500
 
 # --- Interact (Wayfarer) -------------------------------------------------------
-interact_domain: interact-test.bcc.media
 interact_db_name: interact
 interact_db_user: interact
 # Set via `ansible-vault` or -e on the command line; never commit a real value.

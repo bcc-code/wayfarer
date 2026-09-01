@@ -72,7 +72,7 @@ type MockFirebaseTokenMinter_CreateCustomToken_Call struct {
 //   - ctx context.Context
 //   - userID string
 //   - churchID string
-func (_e *MockFirebaseTokenMinter_Expecter) CreateCustomToken(ctx interface{}, userID interface{}, churchID interface{}) *MockFirebaseTokenMinter_CreateCustomToken_Call {
+func (_e *MockFirebaseTokenMinter_Expecter) CreateCustomToken(ctx any, userID any, churchID any) *MockFirebaseTokenMinter_CreateCustomToken_Call {
 	return &MockFirebaseTokenMinter_CreateCustomToken_Call{Call: _e.mock.On("CreateCustomToken", ctx, userID, churchID)}
 }
 

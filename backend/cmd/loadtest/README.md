@@ -168,6 +168,9 @@ k6 run --env SPIKE_USERS=25 --env SPIKE_WINDOW=5 ./cmd/loadtest/k6/freetext-quiz
 | `SPIKE_WINDOW` | 10 | Seconds over which spike users arrive |
 | `CHALLENGE_ID` | CL01LOADTESTFREETEXT00000000 | Quiz challenge ID for the free-text spike |
 | `TOKEN_OFFSET` | 0 | Skip the first N tokens (rerun the spike with fresh users) |
+| `REALISM` | _(unset)_ | Master switch for realistic auth behavior (`userJourney` and the rampspike journey): 3% of journeys do the Auth0 dance, 50% re-fetch the Firebase token mid-session |
+| `AUTH_DANCE_FRACTION` | 0 (0.03 with `REALISM=1`) | Fraction of journeys that exchange a simulated Auth0 token at `/token` and use the returned Wayfarer JWT (needs `auth0Tokens` in config.json) |
+| `FIREBASE_REFRESH_FRACTION` | 0 (0.5 with `REALISM=1`) | Fraction of journeys that issue a second `GetFirebaseToken` mid-session, like clients whose 1h custom token expired |
 
 ### Token Generator Flags
 
@@ -177,8 +180,31 @@ go run ./cmd/loadtest/tokengen \
   -output config.json \   # Output file
   -base-url http://localhost:8080 \  # API URL
   -valid-days 7 \         # Token validity
-  -secret "your-jwt-secret"  # Override JWT_SECRET
+  -secret "your-jwt-secret" \  # Override JWT_SECRET
+  -auth0-count 100 \      # Also mint simulated Auth0 (RS256) tokens for the auth-dance scenario
+  -auth0-issuer https://login.bcc.no/ \  # Must match the server's AUTH0_JWT_ISSUER
+  -auth0-key "$AUTH0_LOADTEST_PRIVATE_KEY"  # RSA key (base64 PEM); generated + printed if omitted
 ```
+
+### Simulated Auth0 dance
+
+`tokengen -auth0-count N` selects N users (numeric `members_id`, `person_uuid`
+set, church with an `external_id`) and mints RS256 tokens shaped like
+`login.bcc.no` tokens into `config.json` (`auth0Tokens`), signed with the RSA
+key from `AUTH0_LOADTEST_PRIVATE_KEY` / `-auth0-key` (generated and printed if
+unset). Give the server the SAME key — it derives the JWKS and serves it at
+`GET /jwks.json` itself, so no file or extra server is needed:
+
+```bash
+AUTH0_LOADTEST_PRIVATE_KEY=<base64 PEM, same as tokengen used>
+AUTH0_JWKS_URL=http://127.0.0.1:8080/jwks.json
+AUTH0_JWT_ISSUER=https://login.bcc.no/
+```
+
+With `REALISM=1` (or `AUTH_DANCE_FRACTION` set), that fraction of journeys
+starts by exchanging an Auth0 token at `GET /token` — exercising JWKS
+validation, user lookup and Wayfarer JWT minting — and uses the returned
+token for the rest of the session. Requests are tagged `AuthCallback`.
 
 ## Thresholds
 

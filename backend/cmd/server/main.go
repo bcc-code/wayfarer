@@ -22,6 +22,7 @@ import (
 	"github.com/MicahParks/jwkset"
 	"github.com/MicahParks/keyfunc/v3"
 	"github.com/bcc-media/wayfarer/internal/auth0"
+	"github.com/bcc-media/wayfarer/internal/autotls"
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database"
@@ -30,6 +31,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/directives"
 	"github.com/bcc-media/wayfarer/internal/handlers"
 	"github.com/bcc-media/wayfarer/internal/loaders"
+	"github.com/bcc-media/wayfarer/internal/loadtestauth"
 	"github.com/bcc-media/wayfarer/internal/logger"
 	"github.com/bcc-media/wayfarer/internal/members"
 	"github.com/bcc-media/wayfarer/internal/middleware"
@@ -37,6 +39,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/plugins"
 	"github.com/bcc-media/wayfarer/internal/plugins/ladder_to_heaven"
 	"github.com/bcc-media/wayfarer/internal/pubsub"
+	"github.com/bcc-media/wayfarer/internal/reuseport"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/services/bulk"
 	"github.com/bcc-media/wayfarer/internal/services/email"
@@ -117,12 +120,33 @@ func main() {
 	// Initialize JWKS for Auth0 (login.bcc.no) JWT validation
 	// Use custom storage with SkipAll to handle X5T validation issues in Auth0's JWKS
 	// Core security (RSA signature verification, expiration) is still enforced by JWT parsing
-	auth0Storage, err := jwkset.NewStorageFromHTTP(cfg.JWT.Auth0JWKSURL, jwkset.HTTPClientStorageOptions{
+	auth0Options := jwkset.HTTPClientStorageOptions{
 		Ctx: ctx,
 		ValidateOptions: jwkset.JWKValidateOptions{
 			SkipAll: true, // Skip JWK validation that fails with Auth0's X5T mismatch
 		},
-	})
+	}
+	var loadtestJWKS []byte
+	if cfg.JWT.Auth0LoadtestKey != "" {
+		// Load-test mode: derive the JWKS from the shared load-test key and
+		// serve it at /jwks.json ourselves, so the boot-time fetch of
+		// Auth0JWKSURL may target this very process. Tolerate the failed
+		// first fetch and refresh in the background; the keyfunc client also
+		// re-fetches on an unknown kid.
+		key, err := loadtestauth.ParsePrivateKey(cfg.JWT.Auth0LoadtestKey)
+		if err != nil {
+			slog.Error("Failed to parse AUTH0_LOADTEST_PRIVATE_KEY", "error", err)
+			os.Exit(1)
+		}
+		loadtestJWKS, err = loadtestauth.BuildJWKS(&key.PublicKey)
+		if err != nil {
+			slog.Error("Failed to build load-test JWKS", "error", err)
+			os.Exit(1)
+		}
+		auth0Options.NoErrorReturnFirstHTTPReq = true
+		auth0Options.RefreshInterval = 30 * time.Second
+	}
+	auth0Storage, err := jwkset.NewStorageFromHTTP(cfg.JWT.Auth0JWKSURL, auth0Options)
 	if err != nil {
 		slog.Error("Failed to create Auth0 JWKS storage", "error", err)
 		os.Exit(1)
@@ -306,6 +330,14 @@ func main() {
 			slog.Info("Firebase token warmer started")
 		}
 	}
+
+	// Leaderboard apply worker: drains the score-delta outbox filled by the
+	// score_journal INSERT trigger (migration 00101) outside request
+	// transactions. Replaces the synchronous 38-statement trigger fan-out.
+	leaderboardApplyWorker := services.NewLeaderboardApplyWorker(db.Queries)
+	leaderboardApplyWorker.Start(ctx)
+	defer leaderboardApplyWorker.Stop()
+	slog.Info("Leaderboard apply worker started")
 
 	// Initialize Email service for feedback forwarding
 	var emailService *email.Service
@@ -537,6 +569,16 @@ func main() {
 	}
 	router.GET("/token", authHandler.Callback)
 
+	// Load-test only: serve the simulated-Auth0 JWKS derived from
+	// AUTH0_LOADTEST_PRIVATE_KEY, so AUTH0_JWKS_URL can point back at this
+	// server (no sidecar or file needed). See internal/loadtestauth.
+	if loadtestJWKS != nil {
+		slog.Info("Serving load-test JWKS", "route", "/jwks.json")
+		router.GET("/jwks.json", func(c *gin.Context) {
+			c.Data(http.StatusOK, "application/json", loadtestJWKS)
+		})
+	}
+
 	// Webhook handler for external content events
 	webhookHandler := &handlers.WebhookHandler{
 		DB:                        db,
@@ -714,13 +756,98 @@ func main() {
 		MaxHeaderBytes: 1 << 20, // 1 MB
 	}
 
+	// Native TLS modes (no fronting proxy): ACME with automatic issuance and
+	// renewal (TLS_AUTO_DOMAINS), or static cert files (TLS_CERT_FILE/KEY).
+	tlsMode := "off"
+	switch {
+	case len(cfg.Server.TLSAutoDomains) > 0:
+		tlsMode = "acme"
+		acmeManager, err := autotls.New(cfg.Server.TLSAutoDomains, cfg.Server.TLSAutoCacheDir, cfg.Server.TLSAutoEmail)
+		if err != nil {
+			slog.Error("Failed to configure ACME TLS", "error", err)
+			os.Exit(1)
+		}
+		srv.TLSConfig = acmeManager.TLSConfig()
+		slog.Info("ACME TLS enabled",
+			"domains", cfg.Server.TLSAutoDomains,
+			"cache", cfg.Server.TLSAutoCacheDir,
+		)
+		if cfg.Server.TLSAutoHTTPAddr != "" {
+			// http-01 fallback + HTTPS redirect.
+			go func() {
+				httpSrv := &http.Server{
+					Addr:         cfg.Server.TLSAutoHTTPAddr,
+					Handler:      acmeManager.HTTPHandler(),
+					ReadTimeout:  10 * time.Second,
+					WriteTimeout: 10 * time.Second,
+				}
+				if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+					slog.Error("ACME HTTP challenge listener failed", "error", err)
+				}
+			}()
+		}
+	case cfg.Server.TLSCertFile != "" && cfg.Server.TLSKeyFile != "":
+		tlsMode = "static"
+	}
+
+	// SO_REUSEPORT for blue/green deploys: a second instance binds the same
+	// port during the overlap and the kernel splits new connections.
+	var listener net.Listener
+	if cfg.Server.ReusePort {
+		listener, err = reuseport.Listen(ctx, addr)
+		if err != nil {
+			slog.Error("Failed to bind with SO_REUSEPORT", "error", err)
+			os.Exit(1)
+		}
+	}
+
+	// Per-instance admin listener (deploy health gate): /health with a real
+	// DB ping. Private (bind to loopback); never routed through the shared port.
+	if cfg.Server.AdminAddr != "" {
+		adminMux := http.NewServeMux()
+		adminMux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+			pingCtx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+			defer cancel()
+			if err := db.Pool.Ping(pingCtx); err != nil {
+				http.Error(w, fmt.Sprintf(`{"status":"db unreachable: %v"}`, err), http.StatusServiceUnavailable)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprint(w, `{"status":"ok"}`)
+		})
+		adminSrv := &http.Server{Addr: cfg.Server.AdminAddr, Handler: adminMux, ReadTimeout: 5 * time.Second}
+		go func() {
+			slog.Info("Admin listener started", "address", cfg.Server.AdminAddr)
+			if err := adminSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				slog.Error("Admin listener failed", "error", err)
+			}
+		}()
+	}
+
 	// Start server in a goroutine
 	go func() {
 		slog.Info("Starting server",
 			"address", addr,
 			"environment", cfg.Server.Environment,
+			"tls", tlsMode,
+			"reuseport", cfg.Server.ReusePort,
 		)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		var err error
+		switch {
+		case listener != nil && tlsMode == "acme":
+			err = srv.ServeTLS(listener, "", "") // certs come from srv.TLSConfig
+		case listener != nil && tlsMode == "static":
+			err = srv.ServeTLS(listener, cfg.Server.TLSCertFile, cfg.Server.TLSKeyFile)
+		case listener != nil:
+			err = srv.Serve(listener)
+		case tlsMode == "acme":
+			err = srv.ListenAndServeTLS("", "")
+		case tlsMode == "static":
+			err = srv.ListenAndServeTLS(cfg.Server.TLSCertFile, cfg.Server.TLSKeyFile)
+		default:
+			err = srv.ListenAndServe()
+		}
+		if err != nil && err != http.ErrServerClosed {
 			slog.Error("Server failed to start", "error", err)
 			os.Exit(1)
 		}

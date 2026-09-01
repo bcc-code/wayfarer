@@ -74,7 +74,7 @@ type MockTokenWarmerQuerier_GetUserIDsInProject_Call struct {
 // GetUserIDsInProject is a helper method to define mock.On call
 //   - ctx context.Context
 //   - projectid string
-func (_e *MockTokenWarmerQuerier_Expecter) GetUserIDsInProject(ctx interface{}, projectid interface{}) *MockTokenWarmerQuerier_GetUserIDsInProject_Call {
+func (_e *MockTokenWarmerQuerier_Expecter) GetUserIDsInProject(ctx any, projectid any) *MockTokenWarmerQuerier_GetUserIDsInProject_Call {
 	return &MockTokenWarmerQuerier_GetUserIDsInProject_Call{Call: _e.mock.On("GetUserIDsInProject", ctx, projectid)}
 }
 
@@ -142,7 +142,7 @@ type MockTokenWarmerQuerier_GetUsersByIDs_Call struct {
 // GetUsersByIDs is a helper method to define mock.On call
 //   - ctx context.Context
 //   - ids []string
-func (_e *MockTokenWarmerQuerier_Expecter) GetUsersByIDs(ctx interface{}, ids interface{}) *MockTokenWarmerQuerier_GetUsersByIDs_Call {
+func (_e *MockTokenWarmerQuerier_Expecter) GetUsersByIDs(ctx any, ids any) *MockTokenWarmerQuerier_GetUsersByIDs_Call {
 	return &MockTokenWarmerQuerier_GetUsersByIDs_Call{Call: _e.mock.On("GetUsersByIDs", ctx, ids)}
 }
 
