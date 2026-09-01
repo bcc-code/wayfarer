@@ -70,7 +70,7 @@ type MockProjectIDProvider_GetCurrentProjectID_Call struct {
 
 // GetCurrentProjectID is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockProjectIDProvider_Expecter) GetCurrentProjectID(ctx interface{}) *MockProjectIDProvider_GetCurrentProjectID_Call {
+func (_e *MockProjectIDProvider_Expecter) GetCurrentProjectID(ctx any) *MockProjectIDProvider_GetCurrentProjectID_Call {
 	return &MockProjectIDProvider_GetCurrentProjectID_Call{Call: _e.mock.On("GetCurrentProjectID", ctx)}
 }
 
