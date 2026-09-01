@@ -13,6 +13,12 @@ firewall_allowed_tcp_ports:
   - 80    # wayfarer server (ACME http-01 challenges + redirect to HTTPS)
   - 443   # wayfarer server (native Go TLS termination)
 
+# --- Tailscale -----------------------------------------------------------------
+# Only needed for the first join (node not yet on the tailnet). Generate a
+# (preferably pre-authorized, single-use) key in the Tailscale admin console
+# and pass it via vault or -e; never commit a real value.
+tailscale_authkey: "{{ vault_tailscale_authkey | default('') }}"
+
 # --- PostgreSQL ---------------------------------------------------------------
 postgres_version: 17
 # The app runs natively on the box; nothing needs Postgres off-loopback.

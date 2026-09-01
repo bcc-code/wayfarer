@@ -10,6 +10,7 @@
     - { role: hardening, tags: [hardening] }
     - { role: tuning, tags: [tuning] }
     - { role: firewall, tags: [firewall] }
+    - { role: tailscale, tags: [tailscale] }
     - { role: postgres, tags: [postgres] }
     - { role: interact, tags: [interact] }
     - { role: wayfarer, tags: [wayfarer] }

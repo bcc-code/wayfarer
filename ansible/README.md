@@ -11,7 +11,8 @@ playbook reconfigures Postgres and the firewall on it.
 | ----------- | ------- |
 | `hardening` | apt upgrade + unattended security upgrades, sshd hardening (key-only, root stays allowed with keys for existing tooling), fail2ban, sysctl hardening |
 | `tuning`    | load-test base tuning: nofile 65535 (limits.d + systemd default), somaxconn/syn-backlog 8192, wider ephemeral port range, tcp_tw_reuse, nf_conntrack_max 131072 (ufw stateful tracking), CPU governor pinned to `performance` |
-| `firewall`  | ufw: deny incoming by default; allow 22 (rate-limited), 80 (ACME http-01), 443 (native TLS) |
+| `firewall`  | ufw: deny incoming by default; allow 22 (rate-limited), 80 (ACME http-01), 443 (native TLS); tailnet traffic on `tailscale0` + UDP 41641 |
+| `tailscale` | Installs Tailscale from the official apt repo and joins the tailnet (first join needs `tailscale_authkey`; a no-op once the node is Running) |
 | `postgres`  | PostgreSQL 17 from Debian repos, scram-only auth, loopback-only, tuning derived from host RAM/CPUs, pg_stat_statements |
 | `interact`  | Creates the `interact` database and role for the app |
 | `wayfarer`  | Native (proxyless) blue/green deploy layout: `wayfarer@{blue,green}` systemd units sharing the port via SO_REUSEPORT, per-color admin/health ports (9441/9442), split DB pools, `bin/deploy.sh` invoked by Semaphore CI (`.semaphore/`). Secret env `/opt/wayfarer/wayfarer.env` is placed manually |
@@ -39,6 +40,15 @@ ansible-vault create group_vars/interact/vault.yml
 ansible-playbook site.yml --ask-vault-pass
 ```
 
+For the **first** tailnet join, also pass a Tailscale auth key (generate a
+pre-authorized one at <https://login.tailscale.com/admin/settings/keys>):
+
+```sh
+ansible-playbook site.yml -e tailscale_authkey=tskey-auth-...   # or vault_tailscale_authkey
+```
+
+Once the node shows up as Running, reruns don't need the key.
+
 ## Run
 
 ```sh
@@ -46,11 +56,12 @@ make deps      # once: install ansible collections
 make ping      # connectivity check
 make dry-run   # --check --diff
 make deploy    # everything
-make postgres  # any single role by name (hardening/tuning/firewall/postgres/interact/wayfarer)
+make postgres  # any single role by name (hardening/tuning/firewall/tailscale/postgres/interact/wayfarer)
 ```
 
-The Makefile picks up the DB password from `$INTERACT_DB_PASSWORD` if set;
-otherwise use vault as described above.
+The Makefile picks up the DB password from `$INTERACT_DB_PASSWORD` and the
+Tailscale auth key from `$TAILSCALE_AUTHKEY` if set; otherwise use vault as
+described above.
 
 ## Design notes / gotchas
 
