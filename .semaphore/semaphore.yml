@@ -44,7 +44,6 @@ blocks:
       secrets:
         - name: wayfarer-frontend-build
       env_vars:
-        # Node caps its heap at ~2GB by default; the Nuxt/Vite build needs more
         - name: NODE_OPTIONS
           value: '--max-old-space-size=6144'
       prologue:
@@ -72,6 +71,8 @@ blocks:
             - cp -r frontend/.output/public release/static
             - 'tar -czf "release-${SEMAPHORE_GIT_SHA}.tar.gz" -C release .'
             - 'artifact push workflow "release-${SEMAPHORE_GIT_SHA}.tar.gz"'
+      secrets:
+        - name: wayfarer-frontend-build
 promotions:
   - name: Deploy to interact-prod
     pipeline_file: deploy.yml
