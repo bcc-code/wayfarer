@@ -18,3 +18,5 @@ blocks:
             - 'scp $SSHOPTS "release-${SEMAPHORE_GIT_SHA}.tar.gz" "$DEPLOY_HOST:/tmp/"'
             - 'ssh $SSHOPTS "$DEPLOY_HOST" "tar -xzf /tmp/release-${SEMAPHORE_GIT_SHA}.tar.gz -C /opt/wayfarer/releases/${SEMAPHORE_GIT_SHA} && rm /tmp/release-${SEMAPHORE_GIT_SHA}.tar.gz"'
             - 'ssh $SSHOPTS "$DEPLOY_HOST" "/opt/wayfarer/bin/deploy.sh ${SEMAPHORE_GIT_SHA}"'
+      secrets:
+        - name: wayfarer-deploy
