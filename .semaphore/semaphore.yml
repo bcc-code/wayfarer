@@ -4,7 +4,12 @@ agent:
   machine:
     type: e1-standard-4
     os_image: ubuntu2204
-
+fail_fast:
+  stop:
+    when: 'true'
+auto_cancel:
+  running:
+    when: 'true'
 blocks:
   - name: Backend tests
     dependencies: []
@@ -21,9 +26,9 @@ blocks:
             - go mod download
             - cache store go-mod ~/go/pkg/mod
             - make test
-
   - name: Build release
-    dependencies: ["Backend tests"]
+    dependencies:
+      - Backend tests
     task:
       prologue:
         commands:
@@ -34,27 +39,23 @@ blocks:
         - name: build binary + frontend
           commands:
             - corepack enable && corepack prepare pnpm@latest --activate
-            # Frontend (served by the Go binary via STATIC_FILES_PATH)
             - cd frontend
             - cache restore pnpm-store
             - pnpm install --frozen-lockfile
             - cache store pnpm-store ~/.local/share/pnpm/store
             - pnpm run build
             - cd ..
-            # Backend binary
             - cd backend
             - cache restore go-mod
             - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o wayfarer-server ./cmd/server
             - cd ..
-            # Release tarball: binary + static assets, addressed by commit sha
             - mkdir -p release
             - cp backend/wayfarer-server release/
             - cp -r frontend/.output/public release/static
-            - tar -czf "release-${SEMAPHORE_GIT_SHA}.tar.gz" -C release .
-            - artifact push workflow "release-${SEMAPHORE_GIT_SHA}.tar.gz"
-
+            - 'tar -czf "release-${SEMAPHORE_GIT_SHA}.tar.gz" -C release .'
+            - 'artifact push workflow "release-${SEMAPHORE_GIT_SHA}.tar.gz"'
 promotions:
   - name: Deploy to interact-prod
     pipeline_file: deploy.yml
     auto_promote:
-      when: "result = 'passed' and branch = 'main'"
+      when: result = 'passed' and branch = 'main'
