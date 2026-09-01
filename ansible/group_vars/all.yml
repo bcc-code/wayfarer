@@ -1,5 +1,5 @@
 # --- Host identity -------------------------------------------------------------
-machine_hostname: interact-test
+machine_hostname: interact-prod
 
 # --- SSH / hardening ---------------------------------------------------------
 # Root login stays enabled (key-only) because existing tooling

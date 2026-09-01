@@ -1,4 +1,4 @@
-# Provisioning for the Interact test server (49.12.121.62).
+# Provisioning for the Interact prod server (49.12.121.62).
 # Requires: ansible-core (brew install ansible), plus `make deps` once.
 #
 # The interact role needs a DB password, and the tailscale role needs an

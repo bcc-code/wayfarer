@@ -1,7 +1,7 @@
-# Interact test server provisioning
+# Interact prod server provisioning
 
-Ansible setup for the Interact (Wayfarer) test box at `49.12.121.62`
-(`interact-test.bcc.media`, Debian 13). **Warning:** this box doubles as the
+Ansible setup for the Interact (Wayfarer) prod box at `49.12.121.62`
+(`interact.bcc.no` / `interact.bcc.media`, Debian 13). **Warning:** this box doubles as the
 loadtest bench (see `notes` about `make loadtest-remote-*`); running this
 playbook reconfigures Postgres and the firewall on it.
 
@@ -23,8 +23,9 @@ playbook reconfigures Postgres and the firewall on it.
 ansible-galaxy collection install -r requirements.yml
 ```
 
-DNS for `interact-test.bcc.media` must point at `49.12.121.62` before the
-wayfarer server first starts with TLS enabled, or ACME issuance will fail.
+DNS for `interact.bcc.no` and `interact.bcc.media` must point at
+`49.12.121.62` before the wayfarer server first starts with TLS enabled, or
+ACME issuance will fail (both names are in `TLS_AUTO_DOMAINS`).
 
 ## Secrets
 

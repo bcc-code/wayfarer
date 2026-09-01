@@ -21,12 +21,12 @@ func TestNew_Validation(t *testing.T) {
 
 func TestNew_CreatesCacheDirAndHostPolicy(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "nested", "autocert")
-	m, err := New([]string{"interact-test.bcc.media", "interact.bcc.no"}, dir, "ops@example.com")
+	m, err := New([]string{"interact.bcc.no", "interact.bcc.media"}, dir, "ops@example.com")
 	require.NoError(t, err)
 	assert.DirExists(t, dir)
 
-	assert.True(t, m.AllowsHost("interact-test.bcc.media"))
 	assert.True(t, m.AllowsHost("interact.bcc.no"))
+	assert.True(t, m.AllowsHost("interact.bcc.media"))
 	assert.False(t, m.AllowsHost("evil.example.com"))
 
 	cfg := m.TLSConfig()

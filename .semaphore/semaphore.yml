@@ -54,7 +54,7 @@ blocks:
             - artifact push workflow "release-${SEMAPHORE_GIT_SHA}.tar.gz"
 
 promotions:
-  - name: Deploy to interact-test
+  - name: Deploy to interact-prod
     pipeline_file: deploy.yml
     auto_promote:
       when: "result = 'passed' and branch = 'main'"
