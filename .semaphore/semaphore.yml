@@ -13,6 +13,10 @@ auto_cancel:
 blocks:
   - name: Backend tests
     dependencies: []
+    # Skipped blocks count as passed, so Build release still runs.
+    # gql/ is included: schema edits regenerate backend code.
+    run:
+      when: "change_in(['/backend/', '/gql/'], {default_branch: 'main'})"
     task:
       prologue:
         commands:
@@ -24,8 +28,12 @@ blocks:
             - cd backend
             - cache restore go-mod
             - go mod download
+            # prefix-restore picks the most recent go-build-* key;
+            # store is keyed per commit since existing keys are never updated
+            - cache restore go-build
+            - make test-ci
             - cache store go-mod ~/go/pkg/mod
-            - make test
+            - cache store go-build-$SEMAPHORE_GIT_SHA ~/.cache/go-build
   - name: Build release
     dependencies:
       - Backend tests
