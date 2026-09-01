@@ -8,7 +8,7 @@
 PLAYBOOK := site.yml
 EXTRA_VARS := $(if $(INTERACT_DB_PASSWORD),-e interact_db_password=$(INTERACT_DB_PASSWORD),)
 
-.PHONY: help deps check lint dry-run deploy ping hardening firewall postgres interact dokploy
+.PHONY: help deps check lint dry-run deploy ping hardening tuning firewall postgres interact wayfarer
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
@@ -31,6 +31,6 @@ dry-run: check ## Full dry run with diff output
 deploy: check ## Provision the server (everything)
 	ansible-playbook $(PLAYBOOK) $(EXTRA_VARS)
 
-# Per-role targets, e.g. `make dokploy`
-hardening firewall postgres interact dokploy: check ## Run a single role by tag
+# Per-role targets, e.g. `make postgres`
+hardening tuning firewall postgres interact wayfarer: check ## Run a single role by tag
 	ansible-playbook $(PLAYBOOK) $(EXTRA_VARS) -t $@

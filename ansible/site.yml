@@ -13,4 +13,3 @@
     - { role: postgres, tags: [postgres] }
     - { role: interact, tags: [interact] }
     - { role: wayfarer, tags: [wayfarer] }
-    - { role: dokploy, tags: [dokploy] }

@@ -2,7 +2,7 @@
 # Load-test / high-connection-count tuning. Codifies the base linux
 # optimizations applied by hand during the first load-testing rounds
 # (the load-test tooling assumes `ulimit -n 65535`; the sysctl set covers
-# 10k+ concurrent connections through traefik/docker NAT).
+# 10k+ concurrent connections hitting the native listener directly).
 
 - name: Ensure nf_conntrack module loads at boot (sysctl key must exist)
   ansible.builtin.copy:
@@ -22,18 +22,19 @@
   ansible.builtin.copy:
     dest: /etc/sysctl.d/91-loadtest-tuning.conf
     content: |
-      # Accept-queue depth for listening sockets (traefik, the app, postgres)
+      # Accept-queue depth for listening sockets (the app, postgres)
       net.core.somaxconn = 8192
       net.ipv4.tcp_max_syn_backlog = 8192
       # NIC ingress queue under bursty arrival (10k users in 10s)
       net.core.netdev_max_backlog = 8192
-      # More ephemeral ports for proxy hops (traefik -> container, app -> db)
+      # More ephemeral ports for outgoing connections (app -> db, ACME dials)
       net.ipv4.ip_local_port_range = 10240 65535
       # Reuse TIME_WAIT sockets for outgoing connections
       net.ipv4.tcp_tw_reuse = 1
-      # Docker NATs every connection through conntrack; default table is too
-      # small for spike tests and drops packets silently when full
-      net.netfilter.nf_conntrack_max = 262144
+      # ufw's stateful rules track every client flow through conntrack; the
+      # default table is too small for spike tests and drops packets silently
+      # when full. (Docker NAT is gone, so half the old 262144 suffices.)
+      net.netfilter.nf_conntrack_max = 131072
     owner: root
     group: root
     mode: "0644"
@@ -69,3 +70,33 @@
     group: root
     mode: "0644"
   notify: Reexec systemd
+
+# The box shipped with the `powersave` governor, capping clocks at ~71% and
+# poisoning the first load-test rounds. Pin `performance` persistently.
+- name: Install CPU governor systemd unit
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/cpu-governor-performance.service
+    content: |
+      [Unit]
+      Description=Set CPU frequency governor to performance
+
+      [Service]
+      Type=oneshot
+      ExecStart=/bin/sh -c 'for g in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do [ -e "$g" ] && echo performance > "$g"; done'
+      RemainAfterExit=yes
+
+      [Install]
+      WantedBy=multi-user.target
+    owner: root
+    group: root
+    mode: "0644"
+
+# ignore_errors in --check: the unit file above doesn't really exist yet
+# during a dry run.
+- name: Enable and apply the CPU governor unit
+  ignore_errors: "{{ ansible_check_mode }}"
+  ansible.builtin.systemd_service:
+    name: cpu-governor-performance.service
+    enabled: true
+    state: started
+    daemon_reload: true

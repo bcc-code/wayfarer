@@ -1,6 +1,6 @@
 ---
-# Prepares the box for the Interact (Wayfarer) app, which is deployed
-# through Dokploy and connects to the host-level Postgres.
+# Prepares the box for the Interact (Wayfarer) app, which runs natively
+# (roles/wayfarer) and connects to the host-level Postgres over loopback.
 
 - name: Fail if the database password was left at the placeholder
   ansible.builtin.assert:
