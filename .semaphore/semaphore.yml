@@ -30,6 +30,11 @@ blocks:
     dependencies:
       - Backend tests
     task:
+      # Semaphore secret "wayfarer-frontend-build" provides the NUXT_PUBLIC_*
+      # env vars baked into the SPA bundle (see frontend/.env.example) and
+      # SENTRY_AUTH_TOKEN for sourcemap upload.
+      secrets:
+        - name: wayfarer-frontend-build
       env_vars:
         # Node caps its heap at ~2GB by default; the Nuxt/Vite build needs more
         - name: NODE_OPTIONS
@@ -39,6 +44,7 @@ blocks:
           - checkout
           - sem-version go 1.25
           - sem-version node 22
+          - export APP_VERSION=$SEMAPHORE_GIT_SHA
       jobs:
         - name: build binary + frontend
           commands:
