@@ -25,7 +25,7 @@
     "@posthog/nuxt": "^1.7.80",
     "@rudderstack/analytics-js": "^3.31.4",
     "@sentry/nuxt": "^10.63.0",
-    "@tiptap/core": "^3.27.1",
+    "@tiptap/core": "^3.30.4",
     "@tiptap/markdown": "^3.27.1",
     "@tiptap/pm": "^3.27.1",
     "@tiptap/starter-kit": "^3.27.1",
