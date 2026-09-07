@@ -21,8 +21,11 @@ tailscale_authkey: "{{ vault_tailscale_authkey | default('') }}"
 
 # --- PostgreSQL ---------------------------------------------------------------
 postgres_version: 17
-# The app runs natively on the box; nothing needs Postgres off-loopback.
-postgres_listen_addresses: "127.0.0.1"
+# Listen on every interface: the tailscale IP is not known until tailscaled
+# is up, so binding it explicitly would fail on early boot. Exposure is
+# controlled by ufw (5432 is not public; tailscale0 is open) and by
+# pg_hba.conf (only the backup role is admitted from the tailnet).
+postgres_listen_addresses: "*"
 # 500: each blue/green color runs DB_MAX_OPEN_CONNS=230 (roles/wayfarer), and
 # both colors are up concurrently during a deploy — 460 peak, leaving 40 for
 # psql/monitoring/bench headroom. (100 total starved the pool at spike
@@ -35,3 +38,13 @@ interact_db_name: interact
 interact_db_user: interact
 # Set via `ansible-vault` or -e on the command line; never commit a real value.
 interact_db_password: "{{ vault_interact_db_password | default('CHANGE_ME') }}"
+
+# --- Backup (read-only, tailnet only) ------------------------------------------
+# Tailscale address ranges (IPv4 CGNAT + IPv6 ULA) admitted in pg_hba.conf
+# for the backup role only.
+tailnet_cidrs:
+  - 100.64.0.0/10
+  - fd7a:115c:a1e0::/48
+backup_db_user: backup
+# Set via `ansible-vault` or -e on the command line; never commit a real value.
+backup_db_password: "{{ vault_backup_db_password | default('CHANGE_ME') }}"

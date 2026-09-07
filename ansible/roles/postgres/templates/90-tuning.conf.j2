@@ -8,7 +8,7 @@ max_connections = {{ postgres_max_connections }}
 
 # --- Security ---
 password_encryption = scram-sha-256
-ssl = off   # loopback only, never leaves the host
+ssl = off   # clients are loopback or the WireGuard-encrypted tailnet (see pg_hba)
 
 # --- Memory ---
 shared_buffers = {{ (mem_mb * 0.25) | int }}MB

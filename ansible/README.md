@@ -13,8 +13,9 @@ playbook reconfigures Postgres and the firewall on it.
 | `tuning`    | load-test base tuning: nofile 65535 (limits.d + systemd default), somaxconn/syn-backlog 8192, wider ephemeral port range, tcp_tw_reuse, nf_conntrack_max 131072 (ufw stateful tracking), CPU governor pinned to `performance` |
 | `firewall`  | ufw: deny incoming by default; allow 22 (rate-limited), 80 (ACME http-01), 443 (native TLS); tailnet traffic on `tailscale0` + UDP 41641 |
 | `tailscale` | Installs Tailscale from the official apt repo and joins the tailnet (first join needs `tailscale_authkey`; a no-op once the node is Running) |
-| `postgres`  | PostgreSQL 17 from Debian repos, scram-only auth, loopback-only, tuning derived from host RAM/CPUs, pg_stat_statements |
+| `postgres`  | PostgreSQL 17 from Debian repos, scram-only auth, tailnet reachable for the backup role only, tuning derived from host RAM/CPUs, pg_stat_statements |
 | `interact`  | Creates the `interact` database and role for the app |
+| `backup`    | Read-only `backup` role (`pg_read_all_data` + stats/settings) for off-box `pg_dump` over the tailnet; admitted by `pg_hba` from the Tailscale ranges only |
 | `wayfarer`  | Native (proxyless) blue/green deploy layout: `wayfarer@{blue,green}` systemd units sharing the port via SO_REUSEPORT, per-color admin/health ports (9441/9442), split DB pools, `bin/deploy.sh` invoked by Semaphore CI (`.semaphore/`). Secret env `/opt/wayfarer/wayfarer.env` is placed manually |
 
 ## Prerequisites
@@ -29,15 +30,15 @@ ACME issuance will fail (both names are in `TLS_AUTO_DOMAINS`).
 
 ## Secrets
 
-The Interact DB password must be provided; the playbook refuses the
-`CHANGE_ME` placeholder. Either:
+The Interact and backup DB passwords must be provided; the playbook refuses
+the `CHANGE_ME` placeholder. Either:
 
 ```sh
 # one-off
-ansible-playbook site.yml -e interact_db_password=...
+ansible-playbook site.yml -e interact_db_password=... -e backup_db_password=...
 
 # or with vault: put vault_interact_db_password in an encrypted vars file
-ansible-vault create group_vars/interact/vault.yml
+ansible-vault create group_vars/interact/vault.yml   # vault_interact_db_password, vault_backup_db_password
 ansible-playbook site.yml --ask-vault-pass
 ```
 
@@ -57,11 +58,11 @@ make deps      # once: install ansible collections
 make ping      # connectivity check
 make dry-run   # --check --diff
 make deploy    # everything
-make postgres  # any single role by name (hardening/tuning/firewall/tailscale/postgres/interact/wayfarer)
+make postgres  # any single role by name (hardening/tuning/firewall/tailscale/postgres/interact/backup/wayfarer)
 ```
 
-The Makefile picks up the DB password from `$INTERACT_DB_PASSWORD` and the
-Tailscale auth key from `$TAILSCALE_AUTHKEY` if set; otherwise use vault as
+The Makefile picks up the DB passwords from `$INTERACT_DB_PASSWORD` and
+`$BACKUP_DB_PASSWORD`, and the Tailscale auth key from `$TAILSCALE_AUTHKEY` if set; otherwise use vault as
 described above.
 
 ## Design notes / gotchas
@@ -71,7 +72,12 @@ described above.
   `/opt/wayfarer/autocert`). No proxy in front.
 - **App → Postgres:** the app runs natively on the box and reaches the
   database at `127.0.0.1:5432`, database/user `interact`, scram auth.
-  Postgres listens on loopback only.
+- **Postgres exposure:** `listen_addresses = '*'`, but ufw never opens 5432
+  publicly and `pg_hba.conf` only admits the `backup` role from the Tailscale
+  ranges (`tailnet_cidrs`); `interact`/`postgres` stay loopback-only. Changing
+  `listen_addresses` restarts Postgres (brief app connection drop).
+- **Backups over the tailnet:** from any tailnet machine,
+  `pg_dump -Fc -h <box tailscale IP> -U backup -d interact -f interact.dump`.
 - **Dokploy/Docker removal:** this playbook no longer installs Dokploy, but
   it doesn't uninstall an existing install either. On a box previously
   provisioned with it, tear down Dokploy/Traefik/Docker swarm by hand (or
