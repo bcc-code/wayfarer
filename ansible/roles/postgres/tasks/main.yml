@@ -17,6 +17,48 @@
     state: started
   ignore_errors: "{{ ansible_check_mode }}"
 
+# Postgres binds the node's Tailscale addresses (see postgres_listen_addresses)
+# but may start before tailscaled has brought them up on boot. Non-local
+# bind lets the socket be created anyway; traffic flows once the address
+# appears.
+- name: Allow binding addresses that are not up yet (tailscale IPs)
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/92-postgres-nonlocal-bind.conf
+    content: |
+      # Postgres listens on the tailscale IPs, which tailscaled assigns after
+      # boot; let it bind them before they exist.
+      net.ipv4.ip_nonlocal_bind = 1
+      net.ipv6.ip_nonlocal_bind = 1
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload sysctl (postgres)
+
+# `tailscale ip` prints the node's IPv4 and IPv6 tailnet addresses, one per
+# line. They are stable for the lifetime of the node.
+- name: Query tailscale addresses
+  ansible.builtin.command: tailscale ip
+  register: tailscale_ip_result
+  check_mode: false
+  changed_when: false
+  failed_when: false
+
+- name: Collect tailscale addresses for listen_addresses
+  ansible.builtin.set_fact:
+    postgres_tailscale_ips: >-
+      {{ (tailscale_ip_result.stdout | default('')).splitlines()
+         | map('trim') | select('ne', '') | list
+         if tailscale_ip_result.rc | default(1) == 0 else [] }}
+
+- name: Fail if the node has no tailscale address
+  ansible.builtin.assert:
+    that: postgres_tailscale_ips | length > 0
+    fail_msg: >-
+      `tailscale ip` returned nothing. Postgres binds the tailnet addresses,
+      so join the node first (`make tailscale`) and rerun.
+  # In --check on a fresh box tailscale is not installed/joined yet.
+  ignore_errors: "{{ ansible_check_mode }}"
+
 - name: Deploy tuning configuration
   ansible.builtin.template:
     src: 90-tuning.conf.j2

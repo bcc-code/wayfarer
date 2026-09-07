@@ -21,11 +21,11 @@ tailscale_authkey: "{{ vault_tailscale_authkey | default('') }}"
 
 # --- PostgreSQL ---------------------------------------------------------------
 postgres_version: 17
-# Listen on every interface: the tailscale IP is not known until tailscaled
-# is up, so binding it explicitly would fail on early boot. Exposure is
-# controlled by ufw (5432 is not public; tailscale0 is open) and by
-# pg_hba.conf (only the backup role is admitted from the tailnet).
-postgres_listen_addresses: "*"
+# Loopback plus the node's Tailscale addresses (looked up with `tailscale ip`
+# in roles/postgres). ip_nonlocal_bind (also set there) lets Postgres bind
+# them even when it starts before tailscaled has brought the interface up.
+# pg_hba.conf additionally admits only the backup role from the tailnet.
+postgres_listen_addresses: "127.0.0.1,::1,{{ postgres_tailscale_ips | join(',') }}"
 # 500: each blue/green color runs DB_MAX_OPEN_CONNS=230 (roles/wayfarer), and
 # both colors are up concurrently during a deploy — 460 peak, leaving 40 for
 # psql/monitoring/bench headroom. (100 total starved the pool at spike
