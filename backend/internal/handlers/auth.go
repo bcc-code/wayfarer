@@ -133,7 +133,26 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		)
 	}
 
-	// 3. Fetch member data from Members API (needed for Auth0 tokens, optional for Brunstad TV)
+	// 3. Fast path: a user we already know needs no Members API round trip.
+	// The member record is only used to create a new user or to resolve the
+	// church for an Auth0 token without a churchId; existing rows are kept
+	// fresh by the nightly member sync, not by logins.
+	existing, _, err := h.findExistingUser(ctx, claims)
+	if err != nil {
+		slog.Error("callback: failed to look up user", "person_id", claims.PersonID, "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to process user"})
+		return
+	}
+	if existing != nil {
+		slog.Info("callback: user authenticated",
+			"user_id", existing.ID,
+			"members_id", existing.MembersID,
+		)
+		h.respondWithToken(c, existing.ID)
+		return
+	}
+
+	// 4. Fetch member data from Members API (needed for Auth0 tokens, optional for Brunstad TV)
 	var member *members.Member
 	var gender string
 
@@ -152,7 +171,7 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		}
 	}
 
-	// 4. Determine gender
+	// 5. Determine gender
 	if member != nil && member.Gender != "" {
 		gender = members.NormalizeGender(member.Gender)
 	} else if claims.Gender != "" {
@@ -161,9 +180,8 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		gender = "UNKNOWN"
 	}
 
-	// 5. Find church
+	// 6. Find church
 	var church *sqlc.GetChurchByExternalIDRow
-	var err error
 
 	if isAuth0Token && claims.ChurchID == 0 {
 		// Auth0 token without churchId - get from member affiliations
@@ -206,7 +224,7 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		}
 	}
 
-	// 6. Find or create user
+	// 7. Find or create user
 	user, err := h.findOrCreateUser(ctx, claims, church.ID, member, gender)
 	if err != nil {
 		slog.Error("callback: failed to find or create user",
@@ -222,18 +240,20 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		"members_id", user.MembersID,
 	)
 
-	// 7. Generate Wayfarer JWT
-	wayfarerToken, err := h.generateWayfarerToken(user.ID)
+	// 8. Issue the Wayfarer JWT
+	h.respondWithToken(c, user.ID)
+}
+
+// respondWithToken generates the Wayfarer JWT for userID and writes the
+// callback response.
+func (h *AuthHandler) respondWithToken(c *gin.Context, userID string) {
+	wayfarerToken, err := h.generateWayfarerToken(userID)
 	if err != nil {
 		slog.Error("callback: failed to generate token", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate authentication token"})
 		return
 	}
-
-	// 8. Return the token
-	c.JSON(http.StatusOK, CallbackResponse{
-		Token: wayfarerToken,
-	})
+	c.JSON(http.StatusOK, CallbackResponse{Token: wayfarerToken})
 }
 
 // validateBrunstadTVToken validates the JWT from Brunstad TV using JWKS
@@ -295,7 +315,11 @@ func (h *AuthHandler) validateAuth0Token(tokenString string) (*Auth0Claims, erro
 }
 
 // findOrCreateUser finds an existing user by person_uuid or members_id, or creates a new one
-func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVClaims, churchID string, member *members.Member, gender string) (*sqlc.GetUserByMembersIDRow, error) {
+// findExistingUser looks a user up by person_uuid (preferred) and then by
+// members_id, backfilling person_uuid on the row when the JWT carries one the
+// row lacks. It returns (nil, personUUID, nil) when no user exists; the parsed
+// personUUID is returned so callers creating a user need not re-parse it.
+func (h *AuthHandler) findExistingUser(ctx context.Context, claims *BrunstadTVClaims) (*sqlc.GetUserByMembersIDRow, pgtype.UUID, error) {
 	// Parse person_uuid from claims if present
 	var personUUID pgtype.UUID
 	if claims.PersonUUID != "" {
@@ -334,10 +358,10 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 				MiddleName:  user.MiddleName,
 				DisplayName: user.DisplayName,
 				AvatarUrl:   user.AvatarUrl,
-			}, nil
+			}, personUUID, nil
 		}
 		if !errors.Is(err, pgx.ErrNoRows) {
-			return nil, fmt.Errorf("database error while finding user by person_uuid: %w", err)
+			return nil, personUUID, fmt.Errorf("database error while finding user by person_uuid: %w", err)
 		}
 		slog.Debug("auth: user not found by person_uuid, trying members_id",
 			"person_uuid", uuid.UUID(personUUID.Bytes).String(),
@@ -367,12 +391,21 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 				user.PersonUuid = personUUID
 			}
 		}
-		return user, nil
+		return user, personUUID, nil
 	}
-
-	// If user doesn't exist, create new user
 	if !errors.Is(err, pgx.ErrNoRows) {
-		return nil, fmt.Errorf("database error while finding user: %w", err)
+		return nil, personUUID, fmt.Errorf("database error while finding user: %w", err)
+	}
+	return nil, personUUID, nil
+}
+
+func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVClaims, churchID string, member *members.Member, gender string) (*sqlc.GetUserByMembersIDRow, error) {
+	existing, personUUID, err := h.findExistingUser(ctx, claims)
+	if err != nil {
+		return nil, err
+	}
+	if existing != nil {
+		return existing, nil
 	}
 
 	slog.Debug("auth: user not found by members_id, will create new user",
