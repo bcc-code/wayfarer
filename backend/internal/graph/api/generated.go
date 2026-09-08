@@ -50,6 +50,7 @@ type ResolverRoot interface {
 	FreeTextResponse() FreeTextResponseResolver
 	JsonQuestion() JsonQuestionResolver
 	JsonResponse() JsonResponseResolver
+	LeaderboardConnection() LeaderboardConnectionResolver
 	LeaderboardEntry() LeaderboardEntryResolver
 	MarkdownText() MarkdownTextResolver
 	Mutation() MutationResolver
@@ -470,10 +471,11 @@ type ComplexityRoot struct {
 	}
 
 	LeaderboardConnection struct {
-		Edges      func(childComplexity int) int
-		Me         func(childComplexity int) int
-		PageInfo   func(childComplexity int) int
-		TotalCount func(childComplexity int) int
+		Edges               func(childComplexity int) int
+		Me                  func(childComplexity int) int
+		NearestChurchRivals func(childComplexity int, first *int) int
+		PageInfo            func(childComplexity int) int
+		TotalCount          func(childComplexity int) int
 	}
 
 	LeaderboardEdge struct {
@@ -1411,6 +1413,9 @@ type JsonResponseResolver interface {
 	Question(ctx context.Context, obj *model.JSONResponse) (model.QuizQuestion, error)
 
 	JournalEntry(ctx context.Context, obj *model.JSONResponse) (*model.ScoreJournal, error)
+}
+type LeaderboardConnectionResolver interface {
+	NearestChurchRivals(ctx context.Context, obj *model.LeaderboardConnection, first *int) ([]model.LeaderboardEntry, error)
 }
 type LeaderboardEntryResolver interface {
 	ImageObject(ctx context.Context, obj *model.LeaderboardEntry) (*model.Image, error)
@@ -3462,6 +3467,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.LeaderboardConnection.Me(childComplexity), true
+	case "LeaderboardConnection.nearestChurchRivals":
+		if e.complexity.LeaderboardConnection.NearestChurchRivals == nil {
+			break
+		}
+
+		args, err := ec.field_LeaderboardConnection_nearestChurchRivals_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.LeaderboardConnection.NearestChurchRivals(childComplexity, args["first"].(*int)), true
 	case "LeaderboardConnection.pageInfo":
 		if e.complexity.LeaderboardConnection.PageInfo == nil {
 			break
@@ -8804,6 +8820,11 @@ type LeaderboardConnection {
     pageInfo: PageInfo!
     totalCount: Int!
     me: LeaderboardEntry
+    """
+    Nearest same-church entries ranked above the viewer on a PERSONS leaderboard.
+    Empty for other entity types or when the viewer isn't on the board.
+    """
+    nearestChurchRivals(first: Int = 3): [LeaderboardEntry!]! @goField(forceResolver: true)
 }
 
 input LeaderboardFilter {
@@ -11397,6 +11418,17 @@ func (ec *executionContext) field_Event_leaderboard_args(ctx context.Context, ra
 		return nil, err
 	}
 	args["before"] = arg5
+	return args, nil
+}
+
+func (ec *executionContext) field_LeaderboardConnection_nearestChurchRivals_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg0
 	return args, nil
 }
 
@@ -18771,6 +18803,8 @@ func (ec *executionContext) fieldContext_Event_leaderboard(ctx context.Context, 
 				return ec.fieldContext_LeaderboardConnection_totalCount(ctx, field)
 			case "me":
 				return ec.fieldContext_LeaderboardConnection_me(ctx, field)
+			case "nearestChurchRivals":
+				return ec.fieldContext_LeaderboardConnection_nearestChurchRivals(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type LeaderboardConnection", field.Name)
 		},
@@ -22768,6 +22802,67 @@ func (ec *executionContext) fieldContext_LeaderboardConnection_me(_ context.Cont
 			}
 			return nil, fmt.Errorf("no field named %q was found under type LeaderboardEntry", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeaderboardConnection_nearestChurchRivals(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardConnection_nearestChurchRivals,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.LeaderboardConnection().NearestChurchRivals(ctx, obj, fc.Args["first"].(*int))
+		},
+		nil,
+		ec.marshalNLeaderboardEntry2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntryᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardConnection_nearestChurchRivals(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_LeaderboardEntry_id(ctx, field)
+			case "name":
+				return ec.fieldContext_LeaderboardEntry_name(ctx, field)
+			case "description":
+				return ec.fieldContext_LeaderboardEntry_description(ctx, field)
+			case "score":
+				return ec.fieldContext_LeaderboardEntry_score(ctx, field)
+			case "rank":
+				return ec.fieldContext_LeaderboardEntry_rank(ctx, field)
+			case "tags":
+				return ec.fieldContext_LeaderboardEntry_tags(ctx, field)
+			case "image":
+				return ec.fieldContext_LeaderboardEntry_image(ctx, field)
+			case "imageObject":
+				return ec.fieldContext_LeaderboardEntry_imageObject(ctx, field)
+			case "lastScoreAt":
+				return ec.fieldContext_LeaderboardEntry_lastScoreAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type LeaderboardEntry", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_LeaderboardConnection_nearestChurchRivals_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -37117,6 +37212,8 @@ func (ec *executionContext) fieldContext_Project_leaderboard(ctx context.Context
 				return ec.fieldContext_LeaderboardConnection_totalCount(ctx, field)
 			case "me":
 				return ec.fieldContext_LeaderboardConnection_me(ctx, field)
+			case "nearestChurchRivals":
+				return ec.fieldContext_LeaderboardConnection_nearestChurchRivals(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type LeaderboardConnection", field.Name)
 		},
@@ -63379,20 +63476,56 @@ func (ec *executionContext) _LeaderboardConnection(ctx context.Context, sel ast.
 		case "edges":
 			out.Values[i] = ec._LeaderboardConnection_edges(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "pageInfo":
 			out.Values[i] = ec._LeaderboardConnection_pageInfo(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "totalCount":
 			out.Values[i] = ec._LeaderboardConnection_totalCount(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "me":
 			out.Values[i] = ec._LeaderboardConnection_me(ctx, field, obj)
+		case "nearestChurchRivals":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._LeaderboardConnection_nearestChurchRivals(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

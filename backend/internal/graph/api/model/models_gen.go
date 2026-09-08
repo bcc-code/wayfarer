@@ -993,6 +993,10 @@ type LeaderboardConnection struct {
 	PageInfo   *PageInfo         `json:"pageInfo"`
 	TotalCount int               `json:"totalCount"`
 	Me         *LeaderboardEntry `json:"me,omitempty"`
+	// Nearest same-church entries ranked above the viewer on a PERSONS leaderboard.
+	// Empty for other entity types or when the viewer isn't on the board.
+	NearestChurchRivals []LeaderboardEntry  `json:"nearestChurchRivals"`
+	RivalCandidates     []*LeaderboardEntry `json:"-"`
 }
 
 type LeaderboardEdge struct {

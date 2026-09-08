@@ -198,6 +198,11 @@ models:
       ProjectID:
         type: string
 
+  LeaderboardConnection:
+    extraFields:
+      RivalCandidates:
+        type: "[]*github.com/bcc-media/wayfarer/internal/graph/api/model.LeaderboardEntry"
+
   SimpleAchievement:
     fields:
       project:

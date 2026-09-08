@@ -32,6 +32,11 @@ func (r *contentItemResolver) ExternalContent(ctx context.Context, obj *model.Co
 	return ec, nil
 }
 
+// NearestChurchRivals is the resolver for the nearestChurchRivals field.
+func (r *leaderboardConnectionResolver) NearestChurchRivals(ctx context.Context, obj *model.LeaderboardConnection, first *int) ([]model.LeaderboardEntry, error) {
+	panic(fmt.Errorf("not implemented: NearestChurchRivals - nearestChurchRivals"))
+}
+
 // ImageObject is the resolver for the imageObject field.
 func (r *leaderboardEntryResolver) ImageObject(ctx context.Context, obj *model.LeaderboardEntry) (*model.Image, error) {
 	return resolveImageByURL(ctx, r.Loaders, obj.Image)
@@ -48,6 +53,11 @@ func (r *Resolver) Branding() BrandingResolver { return &brandingResolver{r} }
 // ContentItem returns ContentItemResolver implementation.
 func (r *Resolver) ContentItem() ContentItemResolver { return &contentItemResolver{r} }
 
+// LeaderboardConnection returns LeaderboardConnectionResolver implementation.
+func (r *Resolver) LeaderboardConnection() LeaderboardConnectionResolver {
+	return &leaderboardConnectionResolver{r}
+}
+
 // LeaderboardEntry returns LeaderboardEntryResolver implementation.
 func (r *Resolver) LeaderboardEntry() LeaderboardEntryResolver { return &leaderboardEntryResolver{r} }
 
@@ -56,5 +66,6 @@ func (r *Resolver) MarkdownText() MarkdownTextResolver { return &markdownTextRes
 
 type brandingResolver struct{ *Resolver }
 type contentItemResolver struct{ *Resolver }
+type leaderboardConnectionResolver struct{ *Resolver }
 type leaderboardEntryResolver struct{ *Resolver }
 type markdownTextResolver struct{ *Resolver }

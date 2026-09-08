@@ -19,6 +19,10 @@ import (
 // abandoned request can't hold a DB connection indefinitely.
 const leaderboardFetchTimeout = 30 * time.Second
 
+// maxNearestChurchRivals caps how many nearest-same-church entries are
+// scanned/returned for "me", regardless of what the client requests.
+const maxNearestChurchRivals = 20
+
 // LeaderboardQuerier defines the database operations needed for leaderboards
 type LeaderboardQuerier interface {
 	// Project leaderboards
@@ -102,6 +106,9 @@ type LeaderboardEntry struct {
 	Score       int
 	Rank        int64
 	LastScoreAt *time.Time
+	// ChurchID is only populated for PERSONS entries; it drives
+	// findNearestChurchRivals and is not exposed on the GraphQL type.
+	ChurchID string
 }
 
 // cachedLeaderboard is a decoded full leaderboard as stored in Ristretto.
@@ -121,6 +128,41 @@ func (c *cachedLeaderboard) findMe(entityID string) *LeaderboardEntry {
 		return &entry
 	}
 	return nil
+}
+
+// findNearestChurchRivals walks backward from entityID's position, collecting
+// up to n entries with a strictly better rank that share the same ChurchID.
+// Entries are returned nearest-first (i.e. in descending rank order, from the
+// viewer's position toward the top of the board). Returns nil if entityID is
+// absent from the board, or if it has no ChurchID.
+func (c *cachedLeaderboard) findNearestChurchRivals(entityID string, n int) []LeaderboardEntry {
+	if entityID == "" || n <= 0 {
+		return nil
+	}
+	i, ok := c.IndexByEntityID[entityID]
+	if !ok || i == 0 {
+		return nil
+	}
+
+	me := c.Entries[i]
+	if me.ChurchID == "" {
+		return nil
+	}
+
+	results := make([]LeaderboardEntry, 0, n)
+	for j := i - 1; j >= 0 && len(results) < n; j-- {
+		entry := c.Entries[j]
+		// DENSE_RANK ties sort before "me" by last_score_at/name tiebreak,
+		// so a lower index does not imply a better rank — only true
+		// rank improvements count as "above me".
+		if entry.Rank >= me.Rank {
+			continue
+		}
+		if entry.ChurchID == me.ChurchID {
+			results = append(results, entry)
+		}
+	}
+	return results
 }
 
 // getFullLeaderboardCached returns the full leaderboard for cacheKey, serving
