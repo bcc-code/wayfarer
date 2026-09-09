@@ -1,10 +1,13 @@
 package api
 
 import (
+	"context"
 	"testing"
 
+	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFilterPersonLeaderboardEntries(t *testing.T) {
@@ -340,4 +343,75 @@ func TestCalculatePersonLeaderboardLimit(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestClampRivalCandidates(t *testing.T) {
+	candidates := func(n int) []*model.LeaderboardEntry {
+		out := make([]*model.LeaderboardEntry, n)
+		for i := 0; i < n; i++ {
+			out[i] = &model.LeaderboardEntry{ID: string(rune('a' + i))}
+		}
+		return out
+	}
+	intPtr := func(n int) *int { return &n }
+
+	tests := []struct {
+		name       string
+		candidates []*model.LeaderboardEntry
+		first      *int
+		wantLen    int
+		wantFirst  string
+	}{
+		{"nil first defaults to 3", candidates(5), nil, 3, "a"},
+		{"first within range", candidates(5), intPtr(2), 2, "a"},
+		{"first exceeds candidates - not padded", candidates(2), intPtr(5), 2, "a"},
+		{"first is zero", candidates(5), intPtr(0), 0, ""},
+		{"first is negative clamps to zero", candidates(5), intPtr(-1), 0, ""},
+		{"no candidates", nil, intPtr(3), 0, ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := clampRivalCandidates(tt.candidates, tt.first)
+			require.Len(t, result, tt.wantLen)
+			if tt.wantLen > 0 {
+				assert.Equal(t, tt.wantFirst, result[0].ID)
+			}
+		})
+	}
+}
+
+// TestNearestChurchRivalsWiring exercises the full path from the service
+// layer's rivals slice through buildLeaderboardConnection's RivalCandidates
+// field to the actual LeaderboardConnection.nearestChurchRivals resolver -
+// the link TestClampRivalCandidates and the service-level tests don't cover
+// on their own.
+func TestNearestChurchRivalsWiring(t *testing.T) {
+	rivals := []services.LeaderboardEntry{
+		{EntityID: "US01ARZ3NDEKTSV4RRFFQ69G5FA2", Name: "Kari", Rank: 338},
+		{EntityID: "US01ARZ3NDEKTSV4RRFFQ69G5FA1", Name: "Per", Rank: 331},
+	}
+
+	connection, err := buildLeaderboardConnection(
+		context.Background(),
+		nil, // edges not under test here
+		&services.LeaderboardEntry{EntityID: "US01ARZ3NDEKTSV4RRFFQ69G5FA0", Rank: 340},
+		1,
+		rivals,
+		"US01ARZ3NDEKTSV4RRFFQ69G5FA0",
+		model.LeaderboardEntityTypePersons,
+		"PR01ARZ3NDEKTSV4RRFFQ69G5FAV",
+		nil, // Loaders unused for PERSONS tag computation
+		nil, nil, nil, nil,
+	)
+	require.NoError(t, err)
+	require.Len(t, connection.RivalCandidates, 2)
+
+	resolver := &leaderboardConnectionResolver{&Resolver{}}
+
+	first := 1
+	got, err := resolver.NearestChurchRivals(context.Background(), connection, &first)
+	require.NoError(t, err)
+	require.Len(t, got, 1)
+	assert.Equal(t, "Kari", got[0].Name, "resolver must read obj.RivalCandidates, nearest first")
 }
