@@ -17,9 +17,14 @@ import (
 )
 
 func personRow(userID string, rank int64, score int64) *sqlc.GetFullProjectPersonLeaderboardRow {
+	return personRowWithChurch(userID, rank, score, "")
+}
+
+func personRowWithChurch(userID string, rank int64, score int64, churchID string) *sqlc.GetFullProjectPersonLeaderboardRow {
 	return &sqlc.GetFullProjectPersonLeaderboardRow{
 		EntityID:   userID,
 		Name:       fmt.Sprintf("User %d", rank),
+		ChurchID:   churchID,
 		ChurchName: "Church",
 		Score:      score,
 		Rank:       rank,
@@ -50,7 +55,7 @@ func TestGetProjectLeaderboardCachesDecodedBoard(t *testing.T) {
 
 	params := personLeaderboardParams("US01ARZ3NDEKTSV4RRFFQ69G5FA2")
 
-	entries, me, total, err := service.GetProjectLeaderboard(context.Background(), params)
+	entries, me, total, _, err := service.GetProjectLeaderboard(context.Background(), params)
 	require.NoError(t, err)
 	assert.Len(t, entries, 3)
 	assert.Equal(t, 3, total)
@@ -61,7 +66,7 @@ func TestGetProjectLeaderboardCachesDecodedBoard(t *testing.T) {
 	// Wait for ristretto to admit the entry, then hit the cache
 	service.cache.Wait()
 
-	entries, me, total, err = service.GetProjectLeaderboard(context.Background(), params)
+	entries, me, total, _, err = service.GetProjectLeaderboard(context.Background(), params)
 	require.NoError(t, err)
 	assert.Len(t, entries, 3)
 	assert.Equal(t, 3, total)
@@ -78,7 +83,7 @@ func TestGetProjectLeaderboardMeNotOnBoard(t *testing.T) {
 	}
 	mockQueries.On("GetFullProjectPersonLeaderboard", mock.Anything, mock.Anything).Return(rows, nil).Once()
 
-	_, me, total, err := service.GetProjectLeaderboard(context.Background(), personLeaderboardParams("US01ARZ3NDEKTSV4RRFFQ69G5FA9"))
+	_, me, total, _, err := service.GetProjectLeaderboard(context.Background(), personLeaderboardParams("US01ARZ3NDEKTSV4RRFFQ69G5FA9"))
 	require.NoError(t, err)
 	assert.Equal(t, 1, total)
 	assert.Nil(t, me, "user not on the board should get no me entry")
@@ -98,7 +103,7 @@ func TestGetProjectLeaderboardPaginatesSharedBoard(t *testing.T) {
 	params := personLeaderboardParams("")
 	params.First = &first
 
-	entries, _, total, err := service.GetProjectLeaderboard(context.Background(), params)
+	entries, _, total, _, err := service.GetProjectLeaderboard(context.Background(), params)
 	require.NoError(t, err)
 	assert.Equal(t, 5, total)
 	require.Len(t, entries, 2)
@@ -110,7 +115,7 @@ func TestGetProjectLeaderboardPaginatesSharedBoard(t *testing.T) {
 	// Second page from the cached board
 	after := "2"
 	params.After = &after
-	entries, _, _, err = service.GetProjectLeaderboard(context.Background(), params)
+	entries, _, _, _, err = service.GetProjectLeaderboard(context.Background(), params)
 	require.NoError(t, err)
 	require.Len(t, entries, 2)
 	assert.Equal(t, int64(3), entries[0].Rank)
@@ -139,7 +144,7 @@ func TestGetProjectLeaderboardSingleflightSharesFetch(t *testing.T) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			_, _, total, err := service.GetProjectLeaderboard(context.Background(), params)
+			_, _, total, _, err := service.GetProjectLeaderboard(context.Background(), params)
 			errs[i] = err
 			totals[i] = total
 		}(i)
@@ -159,7 +164,7 @@ func TestGetProjectLeaderboardFetchErrorPropagates(t *testing.T) {
 	mockQueries.On("GetFullProjectPersonLeaderboard", mock.Anything, mock.Anything).
 		Return(nil, fmt.Errorf("db down")).Once()
 
-	_, _, _, err := service.GetProjectLeaderboard(context.Background(), personLeaderboardParams(""))
+	_, _, _, _, err := service.GetProjectLeaderboard(context.Background(), personLeaderboardParams(""))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get full project person leaderboard")
 }
@@ -187,7 +192,7 @@ func TestGetProjectLeaderboardCancelledCallerDoesNotPoisonFlight(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	_, _, total, err := service.GetProjectLeaderboard(ctx, personLeaderboardParams(""))
+	_, _, total, _, err := service.GetProjectLeaderboard(ctx, personLeaderboardParams(""))
 	require.NoError(t, err)
 	assert.Equal(t, 1, total)
 }

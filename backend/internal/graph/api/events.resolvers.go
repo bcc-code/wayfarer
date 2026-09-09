@@ -45,7 +45,7 @@ func (r *eventResolver) Leaderboard(ctx context.Context, obj *model.Event, entit
 	}
 
 	// Get leaderboard from service
-	entries, meEntry, totalCount, err := r.LeaderboardService.GetEventLeaderboard(ctx, params)
+	entries, meEntry, totalCount, rivals, err := r.LeaderboardService.GetEventLeaderboard(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get event leaderboard: %w", err)
 	}
@@ -58,7 +58,7 @@ func (r *eventResolver) Leaderboard(ctx context.Context, obj *model.Event, entit
 	}
 
 	// Build connection
-	connection, err := buildLeaderboardConnection(ctx, entries, meEntry, totalCount, currentUserID, entityType, obj.ProjectID, r.Loaders, first, last, after, before)
+	connection, err := buildLeaderboardConnection(ctx, entries, meEntry, totalCount, rivals, currentUserID, entityType, obj.ProjectID, r.Loaders, first, last, after, before)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build leaderboard connection: %w", err)
 	}

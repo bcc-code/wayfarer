@@ -20,6 +20,33 @@ func timeToDateTime(t *time.Time) *scalars.DateTime {
 	return &scalars.DateTime{Time: *t}
 }
 
+// defaultNearestChurchRivals is used when the client omits the `first`
+// argument on LeaderboardConnection.nearestChurchRivals.
+const defaultNearestChurchRivals = 3
+
+// clampRivalCandidates slices the pre-computed rival candidates (already
+// capped server-side, see services.maxNearestChurchRivals) down to the
+// client-requested count. Returns fewer than requested — never padded —
+// when there simply aren't that many candidates.
+func clampRivalCandidates(candidates []*model.LeaderboardEntry, first *int) []model.LeaderboardEntry {
+	n := defaultNearestChurchRivals
+	if first != nil {
+		n = *first
+	}
+	if n < 0 {
+		n = 0
+	}
+	if n > len(candidates) {
+		n = len(candidates)
+	}
+
+	result := make([]model.LeaderboardEntry, n)
+	for i := 0; i < n; i++ {
+		result[i] = *candidates[i]
+	}
+	return result
+}
+
 // resolveProjectByID is a helper function to load a project by ID using the dataloader
 // and applies translations for the requested language
 func resolveProjectByID(ctx context.Context, r *Resolver, projectID string) (*model.Project, error) {
@@ -188,6 +215,7 @@ func buildLeaderboardConnection(
 	entries []services.LeaderboardEntry,
 	meEntry *services.LeaderboardEntry,
 	totalCount int,
+	rivals []services.LeaderboardEntry,
 	currentUserID string,
 	entityType model.LeaderboardEntityType,
 	projectID string,
@@ -275,11 +303,32 @@ func buildLeaderboardConnection(
 		}
 	}
 
+	// Build rival candidates using the same pre-loaded context. Kept as a
+	// private field (RivalCandidates) rather than the public schema field
+	// (NearestChurchRivals) — the resolver slices this down to the
+	// client-requested `first` on demand.
+	rivalCandidates := make([]*model.LeaderboardEntry, len(rivals))
+	for i, entry := range rivals {
+		tags := computeLeaderboardTags(entityType, entry.EntityID, currentUserID, viewerCtx)
+		rank := int(entry.Rank)
+		rivalCandidates[i] = &model.LeaderboardEntry{
+			ID:          entry.EntityID,
+			Name:        entry.Name,
+			Description: entry.Description,
+			Score:       entry.Score,
+			Rank:        &rank,
+			Tags:        tags,
+			Image:       entry.Image,
+			LastScoreAt: timeToDateTime(entry.LastScoreAt),
+		}
+	}
+
 	return &model.LeaderboardConnection{
-		Edges:      edges,
-		PageInfo:   pageInfo,
-		TotalCount: totalCount,
-		Me:         me,
+		Edges:           edges,
+		PageInfo:        pageInfo,
+		TotalCount:      totalCount,
+		Me:              me,
+		RivalCandidates: rivalCandidates,
 	}, nil
 }
 
