@@ -81,3 +81,51 @@ func DecodeChallengeCursor(cursor string) (ChallengeCursor, error) {
 		ID:          parts[1],
 	}, nil
 }
+
+// LeaderboardConfigCursor represents a decoded leaderboard config cursor with timestamp and ID
+type LeaderboardConfigCursor struct {
+	CreatedAt time.Time
+	ID        string
+}
+
+// EncodeLeaderboardConfigCursor encodes a timestamp and ID into a composite cursor string
+// Format: base64(RFC3339_timestamp|id)
+func EncodeLeaderboardConfigCursor(createdAt time.Time, id string) string {
+	if id == "" {
+		return ""
+	}
+	raw := createdAt.Format(time.RFC3339Nano) + "|" + id
+	return base64.StdEncoding.EncodeToString([]byte(raw))
+}
+
+// DecodeLeaderboardConfigCursor decodes a composite cursor string back to timestamp and ID
+func DecodeLeaderboardConfigCursor(cursor string) (LeaderboardConfigCursor, error) {
+	if cursor == "" {
+		return LeaderboardConfigCursor{}, nil
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(cursor)
+	if err != nil {
+		return LeaderboardConfigCursor{}, fmt.Errorf("invalid cursor format: %w", err)
+	}
+
+	raw := string(decoded)
+	parts := strings.SplitN(raw, "|", 2)
+	if len(parts) != 2 {
+		return LeaderboardConfigCursor{}, fmt.Errorf("invalid leaderboard config cursor format: expected timestamp|id")
+	}
+
+	createdAt, err := time.Parse(time.RFC3339Nano, parts[0])
+	if err != nil {
+		return LeaderboardConfigCursor{}, fmt.Errorf("invalid timestamp in cursor: %w", err)
+	}
+
+	if parts[1] == "" {
+		return LeaderboardConfigCursor{}, fmt.Errorf("cursor decoded to empty ID")
+	}
+
+	return LeaderboardConfigCursor{
+		CreatedAt: createdAt,
+		ID:        parts[1],
+	}, nil
+}
