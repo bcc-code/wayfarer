@@ -1,0 +1,101 @@
+# Persisted, admin-managed leaderboard definitions
+
+# ==================== LeaderboardConfig Type ====================
+
+type LeaderboardConfig {
+    id: ID!
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    name: String!
+    slug: String!
+    entityType: LeaderboardEntityType!
+    """
+    The filter applied to this leaderboard, mirroring the `LeaderboardFilter` input shape.
+    """
+    filter: JSON
+    sortOrder: Int!
+    isActive: Boolean!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    """
+    The finished, computed leaderboard for this config.
+    """
+    leaderboard(first: Int, after: String, last: Int, before: String): LeaderboardConnection! @goField(forceResolver: true)
+}
+
+# ==================== Input Types ====================
+
+input CreateLeaderboardConfigInput {
+    projectId: ID!
+    eventId: ID
+    name: String!
+    slug: String!
+    entityType: LeaderboardEntityType!
+    filter: LeaderboardFilter
+    sortOrder: Int
+    isActive: Boolean
+}
+
+input UpdateLeaderboardConfigInput {
+    name: String
+    slug: String
+    entityType: LeaderboardEntityType
+    filter: LeaderboardFilter
+    """
+    Set to true to remove the existing filter entirely (show an unfiltered leaderboard).
+    Ignored if `filter` is also provided. Has no effect otherwise.
+    """
+    clearFilter: Boolean
+    sortOrder: Int
+    isActive: Boolean
+}
+
+input LeaderboardConfigFilter {
+    projectId: ID
+    eventId: ID
+    isActive: Boolean
+    ids: [ID!]
+}
+
+# ==================== Pagination ====================
+
+type LeaderboardConfigEdge {
+    cursor: String!
+    node: LeaderboardConfig!
+}
+
+type LeaderboardConfigConnection {
+    edges: [LeaderboardConfigEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+# ==================== Queries ====================
+
+extend type Query {
+    # Admin management — includes inactive/draft configs.
+    leaderboardConfig(id: ID!): LeaderboardConfig! @requireRole(roles: ["admin", "superadmin"])
+    leaderboardConfigs(filter: LeaderboardConfigFilter, first: Int, after: String, last: Int, before: String): LeaderboardConfigConnection! @requireRole(roles: ["admin", "superadmin"])
+}
+
+extend type Project {
+    """
+    Active leaderboard configs for this project (all configs, including inactive, for admins/superadmins).
+    """
+    leaderboards: [LeaderboardConfig!]! @goField(forceResolver: true)
+}
+
+extend type Event {
+    """
+    Active leaderboard configs for this event (all configs, including inactive, for admins/superadmins).
+    """
+    leaderboards: [LeaderboardConfig!]! @goField(forceResolver: true)
+}
+
+# ==================== Mutations ====================
+
+extend type Mutation {
+    createLeaderboardConfig(input: CreateLeaderboardConfigInput!): LeaderboardConfig! @requireRole(roles: ["admin", "superadmin"])
+    updateLeaderboardConfig(id: ID!, input: UpdateLeaderboardConfigInput!): LeaderboardConfig! @requireRole(roles: ["admin", "superadmin"])
+    deleteLeaderboardConfig(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+}

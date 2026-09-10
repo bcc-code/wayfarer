@@ -485,6 +485,17 @@ type CreateEventInput struct {
 	EndDate     scalars.DateTime `json:"endDate"`
 }
 
+type CreateLeaderboardConfigInput struct {
+	ProjectID  string                `json:"projectId"`
+	EventID    *string               `json:"eventId,omitempty"`
+	Name       string                `json:"name"`
+	Slug       string                `json:"slug"`
+	EntityType LeaderboardEntityType `json:"entityType"`
+	Filter     *LeaderboardFilter    `json:"filter,omitempty"`
+	SortOrder  *int                  `json:"sortOrder,omitempty"`
+	IsActive   *bool                 `json:"isActive,omitempty"`
+}
+
 type CreateOrderingItemInput struct {
 	ItemText     string `json:"itemText"`
 	CorrectOrder int    `json:"correctOrder"`
@@ -676,7 +687,9 @@ type Event struct {
 	EndDate           scalars.DateTime         `json:"endDate"`
 	ParentProject     *Project                 `json:"parentProject"`
 	TranslationStatus []TranslationFieldStatus `json:"translationStatus"`
-	ProjectID         string                   `json:"-"`
+	// Active leaderboard configs for this event (all configs, including inactive, for admins/superadmins).
+	Leaderboards []LeaderboardConfig `json:"leaderboards"`
+	ProjectID    string              `json:"-"`
 }
 
 func (Event) IsScoreSource() {}
@@ -987,6 +1000,43 @@ func (this JSONResponse) GetTimeSpentSeconds() *int        { return this.TimeSpe
 func (this JSONResponse) GetPointsEarned() *int            { return this.PointsEarned }
 func (this JSONResponse) GetBetAmount() *int               { return this.BetAmount }
 func (this JSONResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
+
+type LeaderboardConfig struct {
+	ID         string                `json:"id"`
+	Project    *Project              `json:"project"`
+	Event      *Event                `json:"event,omitempty"`
+	Name       string                `json:"name"`
+	Slug       string                `json:"slug"`
+	EntityType LeaderboardEntityType `json:"entityType"`
+	// The filter applied to this leaderboard, mirroring the `LeaderboardFilter` input shape.
+	Filter    *string          `json:"filter,omitempty"`
+	SortOrder int              `json:"sortOrder"`
+	IsActive  bool             `json:"isActive"`
+	CreatedAt scalars.DateTime `json:"createdAt"`
+	UpdatedAt scalars.DateTime `json:"updatedAt"`
+	// The finished, computed leaderboard for this config.
+	Leaderboard *LeaderboardConnection `json:"leaderboard"`
+	EventID     *string                `json:"-"`
+	ProjectID   string                 `json:"-"`
+}
+
+type LeaderboardConfigConnection struct {
+	Edges      []LeaderboardConfigEdge `json:"edges"`
+	PageInfo   *PageInfo               `json:"pageInfo"`
+	TotalCount int                     `json:"totalCount"`
+}
+
+type LeaderboardConfigEdge struct {
+	Cursor string             `json:"cursor"`
+	Node   *LeaderboardConfig `json:"node"`
+}
+
+type LeaderboardConfigFilter struct {
+	ProjectID *string  `json:"projectId,omitempty"`
+	EventID   *string  `json:"eventId,omitempty"`
+	IsActive  *bool    `json:"isActive,omitempty"`
+	Ids       []string `json:"ids,omitempty"`
+}
 
 type LeaderboardConnection struct {
 	Edges      []LeaderboardEdge `json:"edges"`
@@ -1358,8 +1408,10 @@ type Project struct {
 	MyPoints              int                      `json:"myPoints"`
 	ArchivedAt            *bool                    `json:"archivedAt,omitempty"`
 	TranslationStatus     []TranslationFieldStatus `json:"translationStatus"`
-	InfoMessageRaw        *string                  `json:"-"`
-	RulesRaw              *string                  `json:"-"`
+	// Active leaderboard configs for this project (all configs, including inactive, for admins/superadmins).
+	Leaderboards   []LeaderboardConfig `json:"leaderboards"`
+	InfoMessageRaw *string             `json:"-"`
+	RulesRaw       *string             `json:"-"`
 }
 
 type ProjectConnection struct {
@@ -2067,6 +2119,18 @@ type UpdateEventInput struct {
 	Description *string           `json:"description,omitempty"`
 	StartDate   *scalars.DateTime `json:"startDate,omitempty"`
 	EndDate     *scalars.DateTime `json:"endDate,omitempty"`
+}
+
+type UpdateLeaderboardConfigInput struct {
+	Name       *string                `json:"name,omitempty"`
+	Slug       *string                `json:"slug,omitempty"`
+	EntityType *LeaderboardEntityType `json:"entityType,omitempty"`
+	Filter     *LeaderboardFilter     `json:"filter,omitempty"`
+	// Set to true to remove the existing filter entirely (show an unfiltered leaderboard).
+	// Ignored if `filter` is also provided. Has no effect otherwise.
+	ClearFilter *bool `json:"clearFilter,omitempty"`
+	SortOrder   *int  `json:"sortOrder,omitempty"`
+	IsActive    *bool `json:"isActive,omitempty"`
 }
 
 type UpdateProjectInput struct {

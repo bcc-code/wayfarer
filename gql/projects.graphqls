@@ -21,7 +21,7 @@ type Project {
         after: String
         last: Int
         before: String
-    ): LeaderboardConnection! @goField(forceResolver: true)
+    ): LeaderboardConnection! @goField(forceResolver: true) @deprecated(reason: "Use `leaderboards` (LeaderboardConfig) for persisted, admin-managed leaderboards instead.")
     events: [Event!]! @goField(forceResolver: true)
     startDate: DateTime!
     endDate: DateTime!
