@@ -272,11 +272,11 @@ WHERE
     AND ($4::bool IS NULL OR is_active = $4::bool)
     AND (
         $5::timestamptz IS NULL
-        OR (created_at, id) < ($5::timestamptz, $6::text)
+        OR (created_at, id) < ($5::timestamptz, $6::char(28))
     )
     AND (
         $7::timestamptz IS NULL
-        OR (created_at, id) > ($7::timestamptz, $8::text)
+        OR (created_at, id) > ($7::timestamptz, $8::char(28))
     )
 ORDER BY
     CASE WHEN $9::bool = true THEN created_at END ASC,
@@ -348,22 +348,26 @@ SET
     name = COALESCE($1::text, name),
     slug = COALESCE($2::text, slug),
     entity_type = COALESCE($3::text, entity_type),
-    filter = COALESCE($4::jsonb, filter),
-    sort_order = COALESCE($5::int, sort_order),
-    is_active = COALESCE($6::bool, is_active),
-    updated_at = now()
-WHERE id = $7::char(28)
+    filter = CASE
+        WHEN $4::jsonb IS NOT NULL THEN $4::jsonb
+        WHEN $5::bool = true THEN NULL
+        ELSE filter
+    END,
+    sort_order = COALESCE($6::int, sort_order),
+    is_active = COALESCE($7::bool, is_active)
+WHERE id = $8::char(28)
 RETURNING id, project_id, event_id, name, slug, entity_type, filter, sort_order, is_active, created_at, updated_at
 `
 
 type UpdateLeaderboardConfigParams struct {
-	Name       *string `json:"name"`
-	Slug       *string `json:"slug"`
-	Entitytype *string `json:"entitytype"`
-	Filter     []byte  `json:"filter"`
-	Sortorder  *int32  `json:"sortorder"`
-	Isactive   *bool   `json:"isactive"`
-	ID         string  `json:"id"`
+	Name        *string `json:"name"`
+	Slug        *string `json:"slug"`
+	Entitytype  *string `json:"entitytype"`
+	Filter      []byte  `json:"filter"`
+	Clearfilter *bool   `json:"clearfilter"`
+	Sortorder   *int32  `json:"sortorder"`
+	Isactive    *bool   `json:"isactive"`
+	ID          string  `json:"id"`
 }
 
 func (q *Queries) UpdateLeaderboardConfig(ctx context.Context, arg UpdateLeaderboardConfigParams) (*LeaderboardConfig, error) {
@@ -372,6 +376,7 @@ func (q *Queries) UpdateLeaderboardConfig(ctx context.Context, arg UpdateLeaderb
 		arg.Slug,
 		arg.Entitytype,
 		arg.Filter,
+		arg.Clearfilter,
 		arg.Sortorder,
 		arg.Isactive,
 		arg.ID,

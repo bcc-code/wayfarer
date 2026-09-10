@@ -34,11 +34,11 @@ WHERE
     AND (sqlc.narg('isactive')::bool IS NULL OR is_active = sqlc.narg('isactive')::bool)
     AND (
         @aftercursorcreatedat::timestamptz IS NULL
-        OR (created_at, id) < (@aftercursorcreatedat::timestamptz, @aftercursorid::text)
+        OR (created_at, id) < (@aftercursorcreatedat::timestamptz, @aftercursorid::char(28))
     )
     AND (
         @beforecursorcreatedat::timestamptz IS NULL
-        OR (created_at, id) > (@beforecursorcreatedat::timestamptz, @beforecursorid::text)
+        OR (created_at, id) > (@beforecursorcreatedat::timestamptz, @beforecursorid::char(28))
     )
 ORDER BY
     CASE WHEN @isbackward::bool = true THEN created_at END ASC,
@@ -87,10 +87,13 @@ SET
     name = COALESCE(sqlc.narg('name')::text, name),
     slug = COALESCE(sqlc.narg('slug')::text, slug),
     entity_type = COALESCE(sqlc.narg('entitytype')::text, entity_type),
-    filter = COALESCE(sqlc.narg('filter')::jsonb, filter),
+    filter = CASE
+        WHEN sqlc.narg('filter')::jsonb IS NOT NULL THEN sqlc.narg('filter')::jsonb
+        WHEN sqlc.narg('clearfilter')::bool = true THEN NULL
+        ELSE filter
+    END,
     sort_order = COALESCE(sqlc.narg('sortorder')::int, sort_order),
-    is_active = COALESCE(sqlc.narg('isactive')::bool, is_active),
-    updated_at = now()
+    is_active = COALESCE(sqlc.narg('isactive')::bool, is_active)
 WHERE id = @id::char(28)
 RETURNING id, project_id, event_id, name, slug, entity_type, filter, sort_order, is_active, created_at, updated_at;
 
