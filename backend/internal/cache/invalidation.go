@@ -608,6 +608,27 @@ func (c *CacheWithRegistry) invalidateChallengeLocal(challengeID, projectID stri
 	c.DeletePrefix(PrefixActiveChallengesCount)
 }
 
+// InvalidateLeaderboardConfig invalidates all cache entries related to a leaderboard config and broadcasts to other instances
+func (c *CacheWithRegistry) InvalidateLeaderboardConfig(configID, projectID string, eventID *string) {
+	c.invalidateLeaderboardConfigLocal(configID, projectID, eventID)
+	msg := InvalidationMessage{Type: InvalidationTypeLeaderboardConfig, ID: configID, ProjectID: projectID}
+	if eventID != nil {
+		msg.EventID = *eventID
+	}
+	c.broadcast(msg)
+}
+
+// invalidateLeaderboardConfigLocal invalidates leaderboard config cache entries on this instance only
+func (c *CacheWithRegistry) invalidateLeaderboardConfigLocal(configID, projectID string, eventID *string) {
+	c.Delete(LeaderboardConfigKey(configID))
+
+	// Invalidate config list caches for project and event
+	c.Delete(LeaderboardConfigsByProjectKey(projectID))
+	if eventID != nil {
+		c.Delete(LeaderboardConfigsByEventKey(*eventID))
+	}
+}
+
 // InvalidateAchievement invalidates all cache entries related to an achievement and broadcasts to other instances
 func (c *CacheWithRegistry) InvalidateAchievement(achievementID string) {
 	c.invalidateAchievementLocal(achievementID)
