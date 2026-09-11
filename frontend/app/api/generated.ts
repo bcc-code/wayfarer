@@ -488,6 +488,17 @@ export type CreateEventInput = {
   startDate: Scalars['DateTime']['input'];
 };
 
+export type CreateLeaderboardConfigInput = {
+  entityType: LeaderboardEntityType;
+  eventId?: InputMaybe<Scalars['ID']['input']>;
+  filter?: InputMaybe<LeaderboardFilter>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  name: Scalars['String']['input'];
+  projectId: Scalars['ID']['input'];
+  slug: Scalars['String']['input'];
+  sortOrder?: InputMaybe<Scalars['Int']['input']>;
+};
+
 export type CreateOrderingItemInput = {
   correctOrder: Scalars['Int']['input'];
   itemText: Scalars['String']['input'];
@@ -675,7 +686,10 @@ export type Event = {
   description: Scalars['String']['output'];
   endDate: Scalars['DateTime']['output'];
   id: Scalars['ID']['output'];
+  /** @deprecated Use `leaderboards` (LeaderboardConfig) for persisted, admin-managed leaderboards instead. */
   leaderboard: LeaderboardConnection;
+  /** Active leaderboard configs for this event (all configs, including inactive, for admins/superadmins). */
+  leaderboards: Array<LeaderboardConfig>;
   name: Scalars['String']['output'];
   parentProject: Project;
   startDate: Scalars['DateTime']['output'];
@@ -942,12 +956,68 @@ export type JsonResponse = QuizResponse & {
   timeSpentSeconds?: Maybe<Scalars['Int']['output']>;
 };
 
+export type LeaderboardConfig = {
+  __typename?: 'LeaderboardConfig';
+  createdAt: Scalars['DateTime']['output'];
+  entityType: LeaderboardEntityType;
+  event?: Maybe<Event>;
+  /** The filter applied to this leaderboard, mirroring the `LeaderboardFilter` input shape. */
+  filter?: Maybe<Scalars['JSON']['output']>;
+  id: Scalars['ID']['output'];
+  isActive: Scalars['Boolean']['output'];
+  /** The finished, computed leaderboard for this config. */
+  leaderboard: LeaderboardConnection;
+  name: Scalars['String']['output'];
+  project: Project;
+  slug: Scalars['String']['output'];
+  sortOrder: Scalars['Int']['output'];
+  updatedAt: Scalars['DateTime']['output'];
+};
+
+
+export type LeaderboardConfigLeaderboardArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type LeaderboardConfigConnection = {
+  __typename?: 'LeaderboardConfigConnection';
+  edges: Array<LeaderboardConfigEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type LeaderboardConfigEdge = {
+  __typename?: 'LeaderboardConfigEdge';
+  cursor: Scalars['String']['output'];
+  node: LeaderboardConfig;
+};
+
+export type LeaderboardConfigFilter = {
+  eventId?: InputMaybe<Scalars['ID']['input']>;
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
+};
+
 export type LeaderboardConnection = {
   __typename?: 'LeaderboardConnection';
   edges: Array<LeaderboardEdge>;
   me?: Maybe<LeaderboardEntry>;
+  /**
+   * Nearest same-church entries ranked above the viewer on a PERSONS leaderboard.
+   * Empty for other entity types or when the viewer isn't on the board.
+   */
+  nearestChurchRivals: Array<LeaderboardEntry>;
   pageInfo: PageInfo;
   totalCount: Scalars['Int']['output'];
+};
+
+
+export type LeaderboardConnectionNearestChurchRivalsArgs = {
+  first?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type LeaderboardEdge = {
@@ -1075,6 +1145,7 @@ export type Mutation = {
   createContentAchievement: ContentAchievement;
   createContentAchievementFromExternalContent: ContentAchievement;
   createEvent: Event;
+  createLeaderboardConfig: LeaderboardConfig;
   createProject: Project;
   createQuiz: Quiz;
   createQuizAchievement: QuizAchievement;
@@ -1091,6 +1162,7 @@ export type Mutation = {
   deleteChallenge: Scalars['Boolean']['output'];
   deleteEvent: Scalars['Boolean']['output'];
   deleteFeedback: Scalars['Boolean']['output'];
+  deleteLeaderboardConfig: Scalars['Boolean']['output'];
   deleteProject: Scalars['Boolean']['output'];
   deleteQuiz: Scalars['Boolean']['output'];
   deleteQuizQuestion: Scalars['Boolean']['output'];
@@ -1166,6 +1238,7 @@ export type Mutation = {
   updateContentAchievement: ContentAchievement;
   updateEvent: Event;
   updateFeedbackTags: UserFeedback;
+  updateLeaderboardConfig: LeaderboardConfig;
   updateProject: Project;
   updateQuiz: Quiz;
   updateQuizAchievement: QuizAchievement;
@@ -1375,6 +1448,11 @@ export type MutationCreateEventArgs = {
 };
 
 
+export type MutationCreateLeaderboardConfigArgs = {
+  input: CreateLeaderboardConfigInput;
+};
+
+
 export type MutationCreateProjectArgs = {
   input: CreateProjectInput;
 };
@@ -1456,6 +1534,11 @@ export type MutationDeleteEventArgs = {
 
 
 export type MutationDeleteFeedbackArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteLeaderboardConfigArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -1866,6 +1949,12 @@ export type MutationUpdateFeedbackTagsArgs = {
 };
 
 
+export type MutationUpdateLeaderboardConfigArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateLeaderboardConfigInput;
+};
+
+
 export type MutationUpdateProjectArgs = {
   id: Scalars['ID']['input'];
   input: UpdateProjectInput;
@@ -2076,7 +2165,10 @@ export type Project = {
   infoMessageEnd?: Maybe<Scalars['DateTime']['output']>;
   infoMessageStart?: Maybe<Scalars['DateTime']['output']>;
   journal: ScoreJournalConnection;
+  /** @deprecated Use `leaderboards` (LeaderboardConfig) for persisted, admin-managed leaderboards instead. */
   leaderboard: LeaderboardConnection;
+  /** Active leaderboard configs for this project (all configs, including inactive, for admins/superadmins). */
+  leaderboards: Array<LeaderboardConfig>;
   myChurchTeams: Array<Team>;
   myPoints: Scalars['Int']['output'];
   myTeam?: Maybe<Team>;
@@ -2171,6 +2263,8 @@ export type Query = {
   firebaseToken: FirebaseTokenResponse;
   frontendConfig: Scalars['JSON']['output'];
   instanceID: Scalars['String']['output'];
+  leaderboardConfig: LeaderboardConfig;
+  leaderboardConfigs: LeaderboardConfigConnection;
   me: User;
   myBulkJobs: Array<BulkJob>;
   myCurrentEvent: Event;
@@ -2329,6 +2423,20 @@ export type QueryFeedbackArgs = {
 
 export type QueryFileUploadArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryLeaderboardConfigArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryLeaderboardConfigsArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<LeaderboardConfigFilter>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -3094,6 +3202,20 @@ export type UpdateEventInput = {
   endDate?: InputMaybe<Scalars['DateTime']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   startDate?: InputMaybe<Scalars['DateTime']['input']>;
+};
+
+export type UpdateLeaderboardConfigInput = {
+  /**
+   * Set to true to remove the existing filter entirely (show an unfiltered leaderboard).
+   * Ignored if `filter` is also provided. Has no effect otherwise.
+   */
+  clearFilter?: InputMaybe<Scalars['Boolean']['input']>;
+  entityType?: InputMaybe<LeaderboardEntityType>;
+  filter?: InputMaybe<LeaderboardFilter>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  slug?: InputMaybe<Scalars['String']['input']>;
+  sortOrder?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type UpdateProjectInput = {
