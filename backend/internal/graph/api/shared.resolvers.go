@@ -34,7 +34,7 @@ func (r *contentItemResolver) ExternalContent(ctx context.Context, obj *model.Co
 
 // NearestChurchRivals is the resolver for the nearestChurchRivals field.
 func (r *leaderboardConnectionResolver) NearestChurchRivals(ctx context.Context, obj *model.LeaderboardConnection, first *int) ([]model.LeaderboardEntry, error) {
-	return clampRivalCandidates(obj.RivalCandidates, first), nil
+	return resolveNearestChurchRivals(ctx, r.LeaderboardService, obj, first)
 }
 
 // ImageObject is the resolver for the imageObject field.

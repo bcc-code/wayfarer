@@ -24,27 +24,55 @@ func timeToDateTime(t *time.Time) *scalars.DateTime {
 // argument on LeaderboardConnection.nearestChurchRivals.
 const defaultNearestChurchRivals = 3
 
-// clampRivalCandidates slices the pre-computed rival candidates (already
-// capped server-side, see services.maxNearestChurchRivals) down to the
-// client-requested count. Returns fewer than requested — never padded —
-// when there simply aren't that many candidates.
-func clampRivalCandidates(candidates []*model.LeaderboardEntry, first *int) []model.LeaderboardEntry {
+// resolveNearestChurchRivals runs the rivals scan only when a
+// client selects this field — using the lookup context buildLeaderboardConnection
+// stashed on obj. Returns empty for non-PERSONS connections (RivalsUserID unset)
+func resolveNearestChurchRivals(ctx context.Context, svc *services.LeaderboardService, obj *model.LeaderboardConnection, first *int) ([]model.LeaderboardEntry, error) {
 	n := defaultNearestChurchRivals
 	if first != nil {
 		n = *first
 	}
-	if n < 0 {
-		n = 0
+
+	rivalsParams := services.LeaderboardParams{
+		ContextID: obj.RivalsContextID,
+		Filter:    obj.RivalsFilter,
+		UserID:    obj.RivalsUserID,
 	}
-	if n > len(candidates) {
-		n = len(candidates)
+	rivals, err := svc.NearestChurchRivals(ctx, rivalsParams, obj.RivalsIsEvent, n)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get nearest church rivals: %w", err)
 	}
 
-	result := make([]model.LeaderboardEntry, n)
-	for i := 0; i < n; i++ {
-		result[i] = *candidates[i]
+	result := make([]model.LeaderboardEntry, len(rivals))
+	for i, entry := range rivals {
+		rank := int(entry.Rank)
+		result[i] = model.LeaderboardEntry{
+			ID:          entry.EntityID,
+			Name:        entry.Name,
+			Description: entry.Description,
+			Score:       entry.Score,
+			Rank:        &rank,
+			Tags:        []model.LeaderboardEntryTag{},
+			Image:       entry.Image,
+			LastScoreAt: timeToDateTime(entry.LastScoreAt),
+		}
 	}
-	return result
+	return result, nil
+}
+
+// rivalsLookupFor returns the rivals lookup context for a LeaderboardConnection
+// populated only for PERSONS boards; zero-valued otherwise, which NearestChurchRivals treats as "skip"
+func rivalsLookupFor(
+	entityType model.LeaderboardEntityType,
+	contextID string,
+	isEvent bool,
+	filter *model.LeaderboardFilter,
+	currentUserID string,
+) (rivalsContextID string, rivalsIsEvent bool, rivalsFilter *model.LeaderboardFilter, rivalsUserID string) {
+	if entityType != model.LeaderboardEntityTypePersons {
+		return "", false, nil, ""
+	}
+	return contextID, isEvent, filter, currentUserID
 }
 
 // resolveProjectByID is a helper function to load a project by ID using the dataloader
@@ -209,13 +237,11 @@ func preloadViewerContext(
 	return viewerCtx, nil
 }
 
-// buildLeaderboardConnection builds a GraphQL connection from leaderboard entries
 func buildLeaderboardConnection(
 	ctx context.Context,
 	entries []services.LeaderboardEntry,
 	meEntry *services.LeaderboardEntry,
 	totalCount int,
-	rivals []services.LeaderboardEntry,
 	currentUserID string,
 	entityType model.LeaderboardEntityType,
 	projectID string,
@@ -224,6 +250,9 @@ func buildLeaderboardConnection(
 	last *int,
 	after *string,
 	before *string,
+	rivalsContextID string,
+	rivalsIsEvent bool,
+	rivalsFilter *model.LeaderboardFilter,
 ) (*model.LeaderboardConnection, error) {
 	// Determine if there are more entries
 	hasMore := false
@@ -303,32 +332,17 @@ func buildLeaderboardConnection(
 		}
 	}
 
-	// Build rival candidates using the same pre-loaded context. Kept as a
-	// private field (RivalCandidates) rather than the public schema field
-	// (NearestChurchRivals) — the resolver slices this down to the
-	// client-requested `first` on demand.
-	rivalCandidates := make([]*model.LeaderboardEntry, len(rivals))
-	for i, entry := range rivals {
-		tags := computeLeaderboardTags(entityType, entry.EntityID, currentUserID, viewerCtx)
-		rank := int(entry.Rank)
-		rivalCandidates[i] = &model.LeaderboardEntry{
-			ID:          entry.EntityID,
-			Name:        entry.Name,
-			Description: entry.Description,
-			Score:       entry.Score,
-			Rank:        &rank,
-			Tags:        tags,
-			Image:       entry.Image,
-			LastScoreAt: timeToDateTime(entry.LastScoreAt),
-		}
-	}
+	rivalsCtxID, rivalsEvent, rivalsFlt, rivalsUser := rivalsLookupFor(entityType, rivalsContextID, rivalsIsEvent, rivalsFilter, currentUserID)
 
 	return &model.LeaderboardConnection{
 		Edges:           edges,
 		PageInfo:        pageInfo,
 		TotalCount:      totalCount,
 		Me:              me,
-		RivalCandidates: rivalCandidates,
+		RivalsContextID: rivalsCtxID,
+		RivalsIsEvent:   rivalsEvent,
+		RivalsFilter:    rivalsFlt,
+		RivalsUserID:    rivalsUser,
 	}, nil
 }
 

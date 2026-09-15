@@ -200,8 +200,14 @@ models:
 
   LeaderboardConnection:
     extraFields:
-      RivalCandidates:
-        type: "[]*github.com/bcc-media/wayfarer/internal/graph/api/model.LeaderboardEntry"
+      RivalsContextID:
+        type: string
+      RivalsIsEvent:
+        type: bool
+      RivalsFilter:
+        type: "*github.com/bcc-media/wayfarer/internal/graph/api/model.LeaderboardFilter"
+      RivalsUserID:
+        type: string
 
   SimpleAchievement:
     fields:

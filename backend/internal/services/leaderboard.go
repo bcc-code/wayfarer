@@ -21,7 +21,7 @@ const leaderboardFetchTimeout = 30 * time.Second
 
 // maxNearestChurchRivals caps how many nearest-same-church entries are
 // scanned/returned for "me", regardless of what the client requests.
-const maxNearestChurchRivals = 20
+const maxNearestChurchRivals = 5
 
 // LeaderboardQuerier defines the database operations needed for leaderboards
 type LeaderboardQuerier interface {
@@ -264,7 +264,7 @@ func (s *LeaderboardService) eventProjectID(ctx context.Context, eventID string)
 }
 
 // GetProjectLeaderboard retrieves leaderboard for a project
-func (s *LeaderboardService) GetProjectLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, []LeaderboardEntry, error) {
+func (s *LeaderboardService) GetProjectLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, error) {
 	switch params.EntityType {
 	case model.LeaderboardEntityTypePersons:
 		return s.getProjectPersonLeaderboard(ctx, params)
@@ -275,12 +275,12 @@ func (s *LeaderboardService) GetProjectLeaderboard(ctx context.Context, params L
 	case model.LeaderboardEntityTypeChurches:
 		return s.getProjectChurchLeaderboard(ctx, params)
 	default:
-		return nil, nil, 0, nil, fmt.Errorf("invalid entity type: %s", params.EntityType)
+		return nil, nil, 0, fmt.Errorf("invalid entity type: %s", params.EntityType)
 	}
 }
 
 // GetEventLeaderboard retrieves leaderboard for an event
-func (s *LeaderboardService) GetEventLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, []LeaderboardEntry, error) {
+func (s *LeaderboardService) GetEventLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, error) {
 	switch params.EntityType {
 	case model.LeaderboardEntityTypePersons:
 		return s.getEventPersonLeaderboard(ctx, params)
@@ -291,17 +291,46 @@ func (s *LeaderboardService) GetEventLeaderboard(ctx context.Context, params Lea
 	case model.LeaderboardEntityTypeChurches:
 		return s.getEventChurchLeaderboard(ctx, params)
 	default:
-		return nil, nil, 0, nil, fmt.Errorf("invalid entity type: %s", params.EntityType)
+		return nil, nil, 0, fmt.Errorf("invalid entity type: %s", params.EntityType)
 	}
+}
+
+// NearestChurchRivals returns the nearest same-church entries ranked above
+// userID on a PERSONS leaderboard. Called lazily, only from the
+// nearestChurchRivals resolver, and reuses the same cached board as the
+// parent query — a cache hit, not a new DB round trip, in the common case
+func (s *LeaderboardService) NearestChurchRivals(ctx context.Context, params LeaderboardParams, isEvent bool, first int) ([]LeaderboardEntry, error) {
+	if params.UserID == "" || first <= 0 {
+		return nil, nil
+	}
+	if first > maxNearestChurchRivals {
+		first = maxNearestChurchRivals
+	}
+
+	var board *cachedLeaderboard
+	var err error
+	if isEvent {
+		board, err = s.eventPersonBoard(ctx, params)
+	} else {
+		board, err = s.projectPersonBoard(ctx, params)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return board.findNearestChurchRivals(params.UserID, first), nil
 }
 
 // Helper functions for project leaderboards
 
-func (s *LeaderboardService) getProjectPersonLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, []LeaderboardEntry, error) {
+// projectPersonBoard fetches (or serves from cache) the full PERSONS board
+// for a project+filter. Shared by getProjectPersonLeaderboard and
+// NearestChurchRivals so both hit the exact same cache entry.
+func (s *LeaderboardService) projectPersonBoard(ctx context.Context, params LeaderboardParams) (*cachedLeaderboard, error) {
 	filterParams := buildFilterParamsMap(params.Filter)
 	cacheKey := cache.FullLeaderboardKey("project", params.ContextID, "persons", filterParams)
 
-	board, err := s.getFullLeaderboardCached(ctx, cacheKey, func(ctx context.Context) ([]LeaderboardEntry, error) {
+	return s.getFullLeaderboardCached(ctx, cacheKey, func(ctx context.Context) ([]LeaderboardEntry, error) {
 		rows, err := s.queries.GetFullProjectPersonLeaderboard(ctx, s.buildFullProjectPersonParams(params))
 		if err != nil {
 			return nil, fmt.Errorf("failed to get full project person leaderboard: %w", err)
@@ -323,17 +352,20 @@ func (s *LeaderboardService) getProjectPersonLeaderboard(ctx context.Context, pa
 		}
 		return entries, nil
 	})
+}
+
+func (s *LeaderboardService) getProjectPersonLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, error) {
+	board, err := s.projectPersonBoard(ctx, params)
 	if err != nil {
-		return nil, nil, 0, nil, err
+		return nil, nil, 0, err
 	}
 
 	meEntry := board.findMe(params.UserID)
-	rivals := board.findNearestChurchRivals(params.UserID, maxNearestChurchRivals)
 	paginated := paginateLeaderboard(board.Entries, params.First, params.After, params.Last, params.Before)
-	return paginated, meEntry, len(board.Entries), rivals, nil
+	return paginated, meEntry, len(board.Entries), nil
 }
 
-func (s *LeaderboardService) getProjectTeamLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, []LeaderboardEntry, error) {
+func (s *LeaderboardService) getProjectTeamLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, error) {
 	filterParams := buildFilterParamsMap(params.Filter)
 	cacheKey := cache.FullLeaderboardKey("project", params.ContextID, "teams", filterParams)
 
@@ -358,7 +390,7 @@ func (s *LeaderboardService) getProjectTeamLeaderboard(ctx context.Context, para
 		return entries, nil
 	})
 	if err != nil {
-		return nil, nil, 0, nil, err
+		return nil, nil, 0, err
 	}
 
 	var meEntry *LeaderboardEntry
@@ -366,10 +398,10 @@ func (s *LeaderboardService) getProjectTeamLeaderboard(ctx context.Context, para
 		meEntry = board.findMe(s.meTeamIDInProject(ctx, params.UserID, params.ContextID))
 	}
 	paginated := paginateLeaderboard(board.Entries, params.First, params.After, params.Last, params.Before)
-	return paginated, meEntry, len(board.Entries), nil, nil
+	return paginated, meEntry, len(board.Entries), nil
 }
 
-func (s *LeaderboardService) getProjectSuperTeamLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, []LeaderboardEntry, error) {
+func (s *LeaderboardService) getProjectSuperTeamLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, error) {
 	filterParams := buildFilterParamsMap(params.Filter)
 	cacheKey := cache.FullLeaderboardKey("project", params.ContextID, "superteams", filterParams)
 
@@ -394,7 +426,7 @@ func (s *LeaderboardService) getProjectSuperTeamLeaderboard(ctx context.Context,
 		return entries, nil
 	})
 	if err != nil {
-		return nil, nil, 0, nil, err
+		return nil, nil, 0, err
 	}
 
 	var meEntry *LeaderboardEntry
@@ -402,10 +434,10 @@ func (s *LeaderboardService) getProjectSuperTeamLeaderboard(ctx context.Context,
 		meEntry = board.findMe(s.meSuperTeamIDInProject(ctx, params.UserID, params.ContextID))
 	}
 	paginated := paginateLeaderboard(board.Entries, params.First, params.After, params.Last, params.Before)
-	return paginated, meEntry, len(board.Entries), nil, nil
+	return paginated, meEntry, len(board.Entries), nil
 }
 
-func (s *LeaderboardService) getProjectChurchLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, []LeaderboardEntry, error) {
+func (s *LeaderboardService) getProjectChurchLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, error) {
 	filterParams := buildFilterParamsMap(params.Filter)
 	cacheKey := cache.FullLeaderboardKey("project", params.ContextID, "churches", filterParams)
 
@@ -430,7 +462,7 @@ func (s *LeaderboardService) getProjectChurchLeaderboard(ctx context.Context, pa
 		return entries, nil
 	})
 	if err != nil {
-		return nil, nil, 0, nil, err
+		return nil, nil, 0, err
 	}
 
 	var meEntry *LeaderboardEntry
@@ -438,16 +470,19 @@ func (s *LeaderboardService) getProjectChurchLeaderboard(ctx context.Context, pa
 		meEntry = board.findMe(s.meChurchID(ctx, params.UserID))
 	}
 	paginated := paginateLeaderboard(board.Entries, params.First, params.After, params.Last, params.Before)
-	return paginated, meEntry, len(board.Entries), nil, nil
+	return paginated, meEntry, len(board.Entries), nil
 }
 
 // Helper functions for event leaderboards
 
-func (s *LeaderboardService) getEventPersonLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, []LeaderboardEntry, error) {
+// eventPersonBoard fetches (or serves from cache) the full PERSONS board for
+// an event+filter. Shared by getEventPersonLeaderboard and
+// NearestChurchRivals so both hit the exact same cache entry.
+func (s *LeaderboardService) eventPersonBoard(ctx context.Context, params LeaderboardParams) (*cachedLeaderboard, error) {
 	filterParams := buildFilterParamsMap(params.Filter)
 	cacheKey := cache.FullLeaderboardKey("event", params.ContextID, "persons", filterParams)
 
-	board, err := s.getFullLeaderboardCached(ctx, cacheKey, func(ctx context.Context) ([]LeaderboardEntry, error) {
+	return s.getFullLeaderboardCached(ctx, cacheKey, func(ctx context.Context) ([]LeaderboardEntry, error) {
 		rows, err := s.queries.GetFullEventPersonLeaderboard(ctx, s.buildFullEventPersonParams(params))
 		if err != nil {
 			return nil, fmt.Errorf("failed to get full event person leaderboard: %w", err)
@@ -469,17 +504,20 @@ func (s *LeaderboardService) getEventPersonLeaderboard(ctx context.Context, para
 		}
 		return entries, nil
 	})
+}
+
+func (s *LeaderboardService) getEventPersonLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, error) {
+	board, err := s.eventPersonBoard(ctx, params)
 	if err != nil {
-		return nil, nil, 0, nil, err
+		return nil, nil, 0, err
 	}
 
 	meEntry := board.findMe(params.UserID)
-	rivals := board.findNearestChurchRivals(params.UserID, maxNearestChurchRivals)
 	paginated := paginateLeaderboard(board.Entries, params.First, params.After, params.Last, params.Before)
-	return paginated, meEntry, len(board.Entries), rivals, nil
+	return paginated, meEntry, len(board.Entries), nil
 }
 
-func (s *LeaderboardService) getEventTeamLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, []LeaderboardEntry, error) {
+func (s *LeaderboardService) getEventTeamLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, error) {
 	filterParams := buildFilterParamsMap(params.Filter)
 	cacheKey := cache.FullLeaderboardKey("event", params.ContextID, "teams", filterParams)
 
@@ -504,7 +542,7 @@ func (s *LeaderboardService) getEventTeamLeaderboard(ctx context.Context, params
 		return entries, nil
 	})
 	if err != nil {
-		return nil, nil, 0, nil, err
+		return nil, nil, 0, err
 	}
 
 	var meEntry *LeaderboardEntry
@@ -514,10 +552,10 @@ func (s *LeaderboardService) getEventTeamLeaderboard(ctx context.Context, params
 		}
 	}
 	paginated := paginateLeaderboard(board.Entries, params.First, params.After, params.Last, params.Before)
-	return paginated, meEntry, len(board.Entries), nil, nil
+	return paginated, meEntry, len(board.Entries), nil
 }
 
-func (s *LeaderboardService) getEventSuperTeamLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, []LeaderboardEntry, error) {
+func (s *LeaderboardService) getEventSuperTeamLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, error) {
 	filterParams := buildFilterParamsMap(params.Filter)
 	cacheKey := cache.FullLeaderboardKey("event", params.ContextID, "superteams", filterParams)
 
@@ -542,7 +580,7 @@ func (s *LeaderboardService) getEventSuperTeamLeaderboard(ctx context.Context, p
 		return entries, nil
 	})
 	if err != nil {
-		return nil, nil, 0, nil, err
+		return nil, nil, 0, err
 	}
 
 	var meEntry *LeaderboardEntry
@@ -552,10 +590,10 @@ func (s *LeaderboardService) getEventSuperTeamLeaderboard(ctx context.Context, p
 		}
 	}
 	paginated := paginateLeaderboard(board.Entries, params.First, params.After, params.Last, params.Before)
-	return paginated, meEntry, len(board.Entries), nil, nil
+	return paginated, meEntry, len(board.Entries), nil
 }
 
-func (s *LeaderboardService) getEventChurchLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, []LeaderboardEntry, error) {
+func (s *LeaderboardService) getEventChurchLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, error) {
 	filterParams := buildFilterParamsMap(params.Filter)
 	cacheKey := cache.FullLeaderboardKey("event", params.ContextID, "churches", filterParams)
 
@@ -580,7 +618,7 @@ func (s *LeaderboardService) getEventChurchLeaderboard(ctx context.Context, para
 		return entries, nil
 	})
 	if err != nil {
-		return nil, nil, 0, nil, err
+		return nil, nil, 0, err
 	}
 
 	var meEntry *LeaderboardEntry
@@ -588,7 +626,7 @@ func (s *LeaderboardService) getEventChurchLeaderboard(ctx context.Context, para
 		meEntry = board.findMe(s.meChurchID(ctx, params.UserID))
 	}
 	paginated := paginateLeaderboard(board.Entries, params.First, params.After, params.Last, params.Before)
-	return paginated, meEntry, len(board.Entries), nil, nil
+	return paginated, meEntry, len(board.Entries), nil
 }
 
 // Parameter builders for project queries

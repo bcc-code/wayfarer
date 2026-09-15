@@ -483,7 +483,7 @@ func (r *projectResolver) Leaderboard(ctx context.Context, obj *model.Project, e
 	}
 
 	// Get leaderboard from service
-	entries, meEntry, totalCount, rivals, err := r.LeaderboardService.GetProjectLeaderboard(ctx, params)
+	entries, meEntry, totalCount, err := r.LeaderboardService.GetProjectLeaderboard(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get project leaderboard: %w", err)
 	}
@@ -496,7 +496,7 @@ func (r *projectResolver) Leaderboard(ctx context.Context, obj *model.Project, e
 	}
 
 	// Build connection
-	connection, err := buildLeaderboardConnection(ctx, entries, meEntry, totalCount, rivals, currentUserID, entityType, obj.ID, r.Loaders, first, last, after, before)
+	connection, err := buildLeaderboardConnection(ctx, entries, meEntry, totalCount, currentUserID, entityType, obj.ID, r.Loaders, first, last, after, before, obj.ID, false, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build leaderboard connection: %w", err)
 	}

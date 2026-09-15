@@ -115,7 +115,7 @@ func TestFindNearestChurchRivals(t *testing.T) {
 	})
 }
 
-func TestGetProjectLeaderboardNearestChurchRivalsIntegration(t *testing.T) {
+func TestNearestChurchRivalsUsesCachedBoard(t *testing.T) {
 	mockQueries := mocks.NewMockLeaderboardQuerier(t)
 	service := NewLeaderboardService(mockQueries, newTestCache(), nil)
 
@@ -125,14 +125,48 @@ func TestGetProjectLeaderboardNearestChurchRivalsIntegration(t *testing.T) {
 			fmt.Sprintf("US01ARZ3NDEKTSV4RRFFQ69G5%03d", i), i, 1000-i, "CHMINE"))
 	}
 	rows = append(rows, personRowWithChurch("US01ARZ3NDEKTSV4RRFFQ69G5ME0", 26, 1000-26, "CHMINE"))
+	// .Once() proves the second call below is served from cache, not a new DB query.
 	mockQueries.On("GetFullProjectPersonLeaderboard", mock.Anything, mock.Anything).Return(rows, nil).Once()
 
-	params := personLeaderboardParams("US01ARZ3NDEKTSV4RRFFQ69G5ME0")
-	_, _, _, rivals, err := service.GetProjectLeaderboard(context.Background(), params)
-	require.NoError(t, err)
+	ctx := context.Background()
+	params := LeaderboardParams{
+		ContextID: "PR01ARZ3NDEKTSV4RRFFQ69G5FAV",
+		UserID:    "US01ARZ3NDEKTSV4RRFFQ69G5ME0",
+	}
 
-	// Capped server-side at maxNearestChurchRivals even though 25 same-church
-	// candidates rank above "me".
+	// Requesting more than maxNearestChurchRivals is capped server-side even
+	// though 25 same-church candidates rank above "me".
+	rivals, err := service.NearestChurchRivals(ctx, params, false, 20)
+	require.NoError(t, err)
 	assert.Len(t, rivals, maxNearestChurchRivals)
 	assert.Equal(t, "US01ARZ3NDEKTSV4RRFFQ69G5025", rivals[0].EntityID, "nearest rival (rank 25) comes first")
+
+	service.cache.Wait()
+
+	// Same contextID+filter must hit the warm cache, not re-query the DB.
+	rivals, err = service.NearestChurchRivals(ctx, params, false, 2)
+	require.NoError(t, err)
+	assert.Len(t, rivals, 2)
+}
+
+func TestNearestChurchRivalsGuardsShortCircuitBeforeAnyFetch(t *testing.T) {
+	// No .On(...) expectations set: mockery fails the test if the DB query
+	// is called, proving these guards short-circuit before any board fetch.
+	mockQueries := mocks.NewMockLeaderboardQuerier(t)
+	service := NewLeaderboardService(mockQueries, newTestCache(), nil)
+	ctx := context.Background()
+	contextID := "PR01ARZ3NDEKTSV4RRFFQ69G5FAV"
+
+	rivals, err := service.NearestChurchRivals(ctx, LeaderboardParams{ContextID: contextID, UserID: ""}, false, 5)
+	require.NoError(t, err)
+	assert.Empty(t, rivals, "empty userID must short-circuit")
+
+	withUser := LeaderboardParams{ContextID: contextID, UserID: "US01ARZ3NDEKTSV4RRFFQ69G5ME0"}
+	rivals, err = service.NearestChurchRivals(ctx, withUser, false, 0)
+	require.NoError(t, err)
+	assert.Empty(t, rivals, "first<=0 must short-circuit")
+
+	rivals, err = service.NearestChurchRivals(ctx, withUser, false, -1)
+	require.NoError(t, err)
+	assert.Empty(t, rivals, "negative first must short-circuit")
 }
