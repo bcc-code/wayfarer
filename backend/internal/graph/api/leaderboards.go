@@ -120,11 +120,10 @@ func (r *Resolver) getLeaderboardForConfig(ctx context.Context, obj *model.Leade
 	var entries []services.LeaderboardEntry
 	var meEntry *services.LeaderboardEntry
 	var totalCount int
-	var rivals []services.LeaderboardEntry
 	if isEvent {
-		entries, meEntry, totalCount, rivals, err = r.LeaderboardService.GetEventLeaderboard(ctx, params)
+		entries, meEntry, totalCount, err = r.LeaderboardService.GetEventLeaderboard(ctx, params)
 	} else {
-		entries, meEntry, totalCount, rivals, err = r.LeaderboardService.GetProjectLeaderboard(ctx, params)
+		entries, meEntry, totalCount, err = r.LeaderboardService.GetProjectLeaderboard(ctx, params)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leaderboard: %w", err)
@@ -136,7 +135,7 @@ func (r *Resolver) getLeaderboardForConfig(ctx context.Context, obj *model.Leade
 		first = result.AdjustedFirst
 	}
 
-	connection, err := buildLeaderboardConnection(ctx, entries, meEntry, totalCount, rivals, currentUserID, obj.EntityType, obj.ProjectID, r.Loaders, first, last, after, before)
+	connection, err := buildLeaderboardConnection(ctx, entries, meEntry, totalCount, currentUserID, obj.EntityType, obj.ProjectID, r.Loaders, first, last, after, before, params.ContextID, isEvent, params.Filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build leaderboard connection: %w", err)
 	}
