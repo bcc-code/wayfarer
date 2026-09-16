@@ -67,9 +67,8 @@ func TestBuildLeaderboardParamsFromConfig_ProjectScoped(t *testing.T) {
 		EntityType: model.LeaderboardEntityTypePersons,
 	}
 
-	params, isEvent, err := buildLeaderboardParamsFromConfig(config, nil, nil, nil, nil, "US01ARZ3NDEKTSV4RRFFQ69G5FAV")
+	params, isEvent := buildLeaderboardParamsFromConfig(config, nil, nil, nil, nil, "US01ARZ3NDEKTSV4RRFFQ69G5FAV")
 
-	require.NoError(t, err)
 	assert.False(t, isEvent)
 	assert.Equal(t, projectID, params.ContextID)
 	assert.Equal(t, model.LeaderboardEntityTypePersons, params.EntityType)
@@ -86,40 +85,41 @@ func TestBuildLeaderboardParamsFromConfig_EventScoped(t *testing.T) {
 		EntityType: model.LeaderboardEntityTypeTeams,
 	}
 
-	params, isEvent, err := buildLeaderboardParamsFromConfig(config, nil, nil, nil, nil, "US01ARZ3NDEKTSV4RRFFQ69G5FAV")
+	params, isEvent := buildLeaderboardParamsFromConfig(config, nil, nil, nil, nil, "US01ARZ3NDEKTSV4RRFFQ69G5FAV")
 
-	require.NoError(t, err)
 	assert.True(t, isEvent)
 	assert.Equal(t, eventID, params.ContextID)
 }
 
-func TestBuildLeaderboardParamsFromConfig_ParsesFilter(t *testing.T) {
-	filterJSON := `{"minScore":42}`
+func TestBuildLeaderboardParamsFromConfig_ConvertsFilterView(t *testing.T) {
+	minScore := 42
 	config := &model.LeaderboardConfig{
 		ProjectID:  "PR01ARZ3NDEKTSV4RRFFQ69G5FAV",
 		EntityType: model.LeaderboardEntityTypePersons,
-		Filter:     &filterJSON,
+		Filter:     &model.LeaderboardFilterView{MinScore: &minScore},
 	}
 
-	params, _, err := buildLeaderboardParamsFromConfig(config, nil, nil, nil, nil, "US01ARZ3NDEKTSV4RRFFQ69G5FAV")
+	params, _ := buildLeaderboardParamsFromConfig(config, nil, nil, nil, nil, "US01ARZ3NDEKTSV4RRFFQ69G5FAV")
 
-	require.NoError(t, err)
 	require.NotNil(t, params.Filter)
 	require.NotNil(t, params.Filter.MinScore)
 	assert.Equal(t, 42, *params.Filter.MinScore)
 }
 
-func TestBuildLeaderboardParamsFromConfig_InvalidFilterJSON(t *testing.T) {
-	invalidJSON := `{not valid json`
-	config := &model.LeaderboardConfig{
-		ProjectID:  "PR01ARZ3NDEKTSV4RRFFQ69G5FAV",
-		EntityType: model.LeaderboardEntityTypePersons,
-		Filter:     &invalidJSON,
+func TestFilterViewToFilter_Nil(t *testing.T) {
+	assert.Nil(t, filterViewToFilter(nil))
+}
+
+func TestFilterViewToFilter_ConvertsAgeRange(t *testing.T) {
+	view := &model.LeaderboardFilterView{
+		AgeRange: &model.AgeRange{Min: 10, Max: 20},
 	}
 
-	_, _, err := buildLeaderboardParamsFromConfig(config, nil, nil, nil, nil, "US01ARZ3NDEKTSV4RRFFQ69G5FAV")
+	filter := filterViewToFilter(view)
 
-	assert.Error(t, err)
+	require.NotNil(t, filter.AgeRange)
+	assert.Equal(t, 10, filter.AgeRange.Min)
+	assert.Equal(t, 20, filter.AgeRange.Max)
 }
 
 func TestBuildLeaderboardConfigFilterParamsCursor_AppliesFilterFields(t *testing.T) {

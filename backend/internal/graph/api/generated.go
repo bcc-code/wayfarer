@@ -482,7 +482,6 @@ type ComplexityRoot struct {
 		Leaderboard func(childComplexity int, first *int, after *string, last *int, before *string) int
 		Name        func(childComplexity int) int
 		Project     func(childComplexity int) int
-		Slug        func(childComplexity int) int
 		SortOrder   func(childComplexity int) int
 		UpdatedAt   func(childComplexity int) int
 	}
@@ -521,6 +520,18 @@ type ComplexityRoot struct {
 		Rank        func(childComplexity int) int
 		Score       func(childComplexity int) int
 		Tags        func(childComplexity int) int
+	}
+
+	LeaderboardFilterView struct {
+		AgeRange       func(childComplexity int) int
+		ChurchCategory func(childComplexity int) int
+		ChurchID       func(childComplexity int) int
+		Country        func(childComplexity int) int
+		Gender         func(childComplexity int) int
+		MaxScore       func(childComplexity int) int
+		MinScore       func(childComplexity int) int
+		SuperTeamID    func(childComplexity int) int
+		TeamID         func(childComplexity int) int
 	}
 
 	MarkdownText struct {
@@ -1409,10 +1420,10 @@ type ContentItemResolver interface {
 type EventResolver interface {
 	Challenges(ctx context.Context, obj *model.Event) ([]model.Challenge, error)
 	Leaderboard(ctx context.Context, obj *model.Event, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) (*model.LeaderboardConnection, error)
+	Leaderboards(ctx context.Context, obj *model.Event) ([]model.LeaderboardConfig, error)
 
 	ParentProject(ctx context.Context, obj *model.Event) (*model.Project, error)
 	TranslationStatus(ctx context.Context, obj *model.Event) ([]model.TranslationFieldStatus, error)
-	Leaderboards(ctx context.Context, obj *model.Event) ([]model.LeaderboardConfig, error)
 }
 type ExternalChallengeResolver interface {
 	ImageObject(ctx context.Context, obj *model.ExternalChallenge) (*model.Image, error)
@@ -1661,6 +1672,7 @@ type ProjectResolver interface {
 	CompletedChallenges(ctx context.Context, obj *model.Project) ([]model.Challenge, error)
 	ActiveChallengesCount(ctx context.Context, obj *model.Project) (int, error)
 	Leaderboard(ctx context.Context, obj *model.Project, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) (*model.LeaderboardConnection, error)
+	Leaderboards(ctx context.Context, obj *model.Project) ([]model.LeaderboardConfig, error)
 	Events(ctx context.Context, obj *model.Project) ([]model.Event, error)
 
 	Teams(ctx context.Context, obj *model.Project) ([]model.Team, error)
@@ -1671,7 +1683,6 @@ type ProjectResolver interface {
 	MyPoints(ctx context.Context, obj *model.Project) (int, error)
 
 	TranslationStatus(ctx context.Context, obj *model.Project) ([]model.TranslationFieldStatus, error)
-	Leaderboards(ctx context.Context, obj *model.Project) ([]model.LeaderboardConfig, error)
 }
 type QueryResolver interface {
 	Me(ctx context.Context) (*model.User, error)
@@ -3567,12 +3578,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.LeaderboardConfig.Project(childComplexity), true
-	case "LeaderboardConfig.slug":
-		if e.complexity.LeaderboardConfig.Slug == nil {
-			break
-		}
-
-		return e.complexity.LeaderboardConfig.Slug(childComplexity), true
 	case "LeaderboardConfig.sortOrder":
 		if e.complexity.LeaderboardConfig.SortOrder == nil {
 			break
@@ -3721,6 +3726,61 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.LeaderboardEntry.Tags(childComplexity), true
+
+	case "LeaderboardFilterView.ageRange":
+		if e.complexity.LeaderboardFilterView.AgeRange == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardFilterView.AgeRange(childComplexity), true
+	case "LeaderboardFilterView.churchCategory":
+		if e.complexity.LeaderboardFilterView.ChurchCategory == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardFilterView.ChurchCategory(childComplexity), true
+	case "LeaderboardFilterView.churchId":
+		if e.complexity.LeaderboardFilterView.ChurchID == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardFilterView.ChurchID(childComplexity), true
+	case "LeaderboardFilterView.country":
+		if e.complexity.LeaderboardFilterView.Country == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardFilterView.Country(childComplexity), true
+	case "LeaderboardFilterView.gender":
+		if e.complexity.LeaderboardFilterView.Gender == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardFilterView.Gender(childComplexity), true
+	case "LeaderboardFilterView.maxScore":
+		if e.complexity.LeaderboardFilterView.MaxScore == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardFilterView.MaxScore(childComplexity), true
+	case "LeaderboardFilterView.minScore":
+		if e.complexity.LeaderboardFilterView.MinScore == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardFilterView.MinScore(childComplexity), true
+	case "LeaderboardFilterView.superTeamId":
+		if e.complexity.LeaderboardFilterView.SuperTeamID == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardFilterView.SuperTeamID(childComplexity), true
+	case "LeaderboardFilterView.teamId":
+		if e.complexity.LeaderboardFilterView.TeamID == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardFilterView.TeamID(childComplexity), true
 
 	case "MarkdownText.html":
 		if e.complexity.MarkdownText.HTML == nil {
@@ -9159,6 +9219,10 @@ type Project {
     activeChallenges: [Challenge!]! @goField(forceResolver: true)
     completedChallenges: [Challenge!]! @goField(forceResolver: true)
     activeChallengesCount: Int! @goField(forceResolver: true)
+    """
+    Ad-hoc leaderboard computed directly from the given entityType/filter at request time.
+    For named, admin-curated leaderboards, see ` + "`" + `leaderboards` + "`" + ` (LeaderboardConfig) instead.
+    """
     leaderboard(
         entityType: LeaderboardEntityType!
         filter: LeaderboardFilter
@@ -9166,7 +9230,11 @@ type Project {
         after: String
         last: Int
         before: String
-    ): LeaderboardConnection! @goField(forceResolver: true) @deprecated(reason: "Use ` + "`" + `leaderboards` + "`" + ` (LeaderboardConfig) for persisted, admin-managed leaderboards instead.")
+    ): LeaderboardConnection! @goField(forceResolver: true)
+    """
+    Active leaderboard configs for this project (all configs, including inactive, for admins/superadmins).
+    """
+    leaderboards: [LeaderboardConfig!]! @goField(forceResolver: true)
     events: [Event!]! @goField(forceResolver: true)
     startDate: DateTime!
     endDate: DateTime!
@@ -9267,6 +9335,10 @@ type Event {
     name: String!
     description: String!
     challenges: [Challenge!]! @goField(forceResolver: true)
+    """
+    Ad-hoc leaderboard computed directly from the given entityType/filter at request time.
+    For named, admin-curated leaderboards, see ` + "`" + `leaderboards` + "`" + ` (LeaderboardConfig) instead.
+    """
     leaderboard(
         entityType: LeaderboardEntityType!
         filter: LeaderboardFilter
@@ -9274,7 +9346,11 @@ type Event {
         after: String
         last: Int
         before: String
-    ): LeaderboardConnection! @goField(forceResolver: true) @deprecated(reason: "Use ` + "`" + `leaderboards` + "`" + ` (LeaderboardConfig) for persisted, admin-managed leaderboards instead.")
+    ): LeaderboardConnection! @goField(forceResolver: true)
+    """
+    Active leaderboard configs for this event (all configs, including inactive, for admins/superadmins).
+    """
+    leaderboards: [LeaderboardConfig!]! @goField(forceResolver: true)
     startDate: DateTime!
     endDate: DateTime!
     parentProject: Project! @goField(forceResolver: true)
@@ -10077,12 +10153,8 @@ type LeaderboardConfig {
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     name: String!
-    slug: String!
     entityType: LeaderboardEntityType!
-    """
-    The filter applied to this leaderboard, mirroring the ` + "`" + `LeaderboardFilter` + "`" + ` input shape.
-    """
-    filter: JSON
+    filter: LeaderboardFilterView
     sortOrder: Int!
     isActive: Boolean!
     createdAt: DateTime!
@@ -10093,13 +10165,31 @@ type LeaderboardConfig {
     leaderboard(first: Int, after: String, last: Int, before: String): LeaderboardConnection! @goField(forceResolver: true)
 }
 
+# ==================== Filter View (read-side mirror of LeaderboardFilter) ====================
+
+"""
+Read-only mirror of the ` + "`" + `LeaderboardFilter` + "`" + ` input, applied to this leaderboard.
+Kept as a separate type because GraphQL doesn't allow an ` + "`" + `input` + "`" + ` type as an output field's
+type — mirrors the AgeRange/AgeRangeInput pattern already used elsewhere in this schema.
+"""
+type LeaderboardFilterView {
+    minScore: Int
+    maxScore: Int
+    churchId: ID
+    country: String
+    churchCategory: ChurchCategory
+    gender: Gender
+    ageRange: AgeRange
+    teamId: ID
+    superTeamId: ID
+}
+
 # ==================== Input Types ====================
 
 input CreateLeaderboardConfigInput {
     projectId: ID!
     eventId: ID
     name: String!
-    slug: String!
     entityType: LeaderboardEntityType!
     filter: LeaderboardFilter
     sortOrder: Int
@@ -10107,17 +10197,11 @@ input CreateLeaderboardConfigInput {
 }
 
 input UpdateLeaderboardConfigInput {
-    name: String
-    slug: String
-    entityType: LeaderboardEntityType
+    name: String!
+    entityType: LeaderboardEntityType!
     filter: LeaderboardFilter
-    """
-    Set to true to remove the existing filter entirely (show an unfiltered leaderboard).
-    Ignored if ` + "`" + `filter` + "`" + ` is also provided. Has no effect otherwise.
-    """
-    clearFilter: Boolean
-    sortOrder: Int
-    isActive: Boolean
+    sortOrder: Int!
+    isActive: Boolean!
 }
 
 input LeaderboardConfigFilter {
@@ -10143,23 +10227,10 @@ type LeaderboardConfigConnection {
 # ==================== Queries ====================
 
 extend type Query {
-    # Admin management — includes inactive/draft configs.
-    leaderboardConfig(id: ID!): LeaderboardConfig! @requireRole(roles: ["admin", "superadmin"])
-    leaderboardConfigs(filter: LeaderboardConfigFilter, first: Int, after: String, last: Int, before: String): LeaderboardConfigConnection! @requireRole(roles: ["admin", "superadmin"])
-}
-
-extend type Project {
-    """
-    Active leaderboard configs for this project (all configs, including inactive, for admins/superadmins).
-    """
-    leaderboards: [LeaderboardConfig!]! @goField(forceResolver: true)
-}
-
-extend type Event {
-    """
-    Active leaderboard configs for this event (all configs, including inactive, for admins/superadmins).
-    """
-    leaderboards: [LeaderboardConfig!]! @goField(forceResolver: true)
+    # Admin management — includes inactive/draft configs. Authorization enforced in the resolver
+    # (admin/superadmin only) — @requireRole is reserved for mutations in this schema.
+    leaderboardConfig(id: ID!): LeaderboardConfig!
+    leaderboardConfigs(filter: LeaderboardConfigFilter, first: Int, after: String, last: Int, before: String): LeaderboardConfigConnection!
 }
 
 # ==================== Mutations ====================
@@ -18516,6 +18587,8 @@ func (ec *executionContext) fieldContext_ContentAchievement_project(_ context.Co
 				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
 			case "events":
 				return ec.fieldContext_Project_events(ctx, field)
 			case "startDate":
@@ -18540,8 +18613,6 @@ func (ec *executionContext) fieldContext_ContentAchievement_project(_ context.Co
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Project_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -18583,6 +18654,8 @@ func (ec *executionContext) fieldContext_ContentAchievement_event(_ context.Cont
 				return ec.fieldContext_Event_challenges(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Event_leaderboards(ctx, field)
 			case "startDate":
 				return ec.fieldContext_Event_startDate(ctx, field)
 			case "endDate":
@@ -18591,8 +18664,6 @@ func (ec *executionContext) fieldContext_ContentAchievement_event(_ context.Cont
 				return ec.fieldContext_Event_parentProject(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Event_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Event_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -19262,6 +19333,59 @@ func (ec *executionContext) fieldContext_Event_leaderboard(ctx context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _Event_leaderboards(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Event_leaderboards,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Event().Leaderboards(ctx, obj)
+		},
+		nil,
+		ec.marshalNLeaderboardConfig2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardConfigᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Event_leaderboards(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Event",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_LeaderboardConfig_id(ctx, field)
+			case "project":
+				return ec.fieldContext_LeaderboardConfig_project(ctx, field)
+			case "event":
+				return ec.fieldContext_LeaderboardConfig_event(ctx, field)
+			case "name":
+				return ec.fieldContext_LeaderboardConfig_name(ctx, field)
+			case "entityType":
+				return ec.fieldContext_LeaderboardConfig_entityType(ctx, field)
+			case "filter":
+				return ec.fieldContext_LeaderboardConfig_filter(ctx, field)
+			case "sortOrder":
+				return ec.fieldContext_LeaderboardConfig_sortOrder(ctx, field)
+			case "isActive":
+				return ec.fieldContext_LeaderboardConfig_isActive(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_LeaderboardConfig_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_LeaderboardConfig_updatedAt(ctx, field)
+			case "leaderboard":
+				return ec.fieldContext_LeaderboardConfig_leaderboard(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type LeaderboardConfig", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Event_startDate(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -19368,6 +19492,8 @@ func (ec *executionContext) fieldContext_Event_parentProject(_ context.Context, 
 				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
 			case "events":
 				return ec.fieldContext_Project_events(ctx, field)
 			case "startDate":
@@ -19392,8 +19518,6 @@ func (ec *executionContext) fieldContext_Event_parentProject(_ context.Context, 
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Project_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -19431,61 +19555,6 @@ func (ec *executionContext) fieldContext_Event_translationStatus(_ context.Conte
 				return ec.fieldContext_TranslationFieldStatus_fields(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type TranslationFieldStatus", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Event_leaderboards(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Event_leaderboards,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Event().Leaderboards(ctx, obj)
-		},
-		nil,
-		ec.marshalNLeaderboardConfig2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardConfigᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Event_leaderboards(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Event",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_LeaderboardConfig_id(ctx, field)
-			case "project":
-				return ec.fieldContext_LeaderboardConfig_project(ctx, field)
-			case "event":
-				return ec.fieldContext_LeaderboardConfig_event(ctx, field)
-			case "name":
-				return ec.fieldContext_LeaderboardConfig_name(ctx, field)
-			case "slug":
-				return ec.fieldContext_LeaderboardConfig_slug(ctx, field)
-			case "entityType":
-				return ec.fieldContext_LeaderboardConfig_entityType(ctx, field)
-			case "filter":
-				return ec.fieldContext_LeaderboardConfig_filter(ctx, field)
-			case "sortOrder":
-				return ec.fieldContext_LeaderboardConfig_sortOrder(ctx, field)
-			case "isActive":
-				return ec.fieldContext_LeaderboardConfig_isActive(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_LeaderboardConfig_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_LeaderboardConfig_updatedAt(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_LeaderboardConfig_leaderboard(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type LeaderboardConfig", field.Name)
 		},
 	}
 	return fc, nil
@@ -19657,6 +19726,8 @@ func (ec *executionContext) fieldContext_EventEdge_node(_ context.Context, field
 				return ec.fieldContext_Event_challenges(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Event_leaderboards(ctx, field)
 			case "startDate":
 				return ec.fieldContext_Event_startDate(ctx, field)
 			case "endDate":
@@ -19665,8 +19736,6 @@ func (ec *executionContext) fieldContext_EventEdge_node(_ context.Context, field
 				return ec.fieldContext_Event_parentProject(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Event_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Event_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -19877,6 +19946,8 @@ func (ec *executionContext) fieldContext_ExternalChallenge_project(_ context.Con
 				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
 			case "events":
 				return ec.fieldContext_Project_events(ctx, field)
 			case "startDate":
@@ -19901,8 +19972,6 @@ func (ec *executionContext) fieldContext_ExternalChallenge_project(_ context.Con
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Project_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -19944,6 +20013,8 @@ func (ec *executionContext) fieldContext_ExternalChallenge_event(_ context.Conte
 				return ec.fieldContext_Event_challenges(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Event_leaderboards(ctx, field)
 			case "startDate":
 				return ec.fieldContext_Event_startDate(ctx, field)
 			case "endDate":
@@ -19952,8 +20023,6 @@ func (ec *executionContext) fieldContext_ExternalChallenge_event(_ context.Conte
 				return ec.fieldContext_Event_parentProject(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Event_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Event_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -23233,6 +23302,8 @@ func (ec *executionContext) fieldContext_LeaderboardConfig_project(_ context.Con
 				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
 			case "events":
 				return ec.fieldContext_Project_events(ctx, field)
 			case "startDate":
@@ -23257,8 +23328,6 @@ func (ec *executionContext) fieldContext_LeaderboardConfig_project(_ context.Con
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Project_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -23300,6 +23369,8 @@ func (ec *executionContext) fieldContext_LeaderboardConfig_event(_ context.Conte
 				return ec.fieldContext_Event_challenges(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Event_leaderboards(ctx, field)
 			case "startDate":
 				return ec.fieldContext_Event_startDate(ctx, field)
 			case "endDate":
@@ -23308,8 +23379,6 @@ func (ec *executionContext) fieldContext_LeaderboardConfig_event(_ context.Conte
 				return ec.fieldContext_Event_parentProject(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Event_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Event_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -23334,35 +23403,6 @@ func (ec *executionContext) _LeaderboardConfig_name(ctx context.Context, field g
 }
 
 func (ec *executionContext) fieldContext_LeaderboardConfig_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LeaderboardConfig",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _LeaderboardConfig_slug(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardConfig) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_LeaderboardConfig_slug,
-		func(ctx context.Context) (any, error) {
-			return obj.Slug, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_LeaderboardConfig_slug(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "LeaderboardConfig",
 		Field:      field,
@@ -23414,7 +23454,7 @@ func (ec *executionContext) _LeaderboardConfig_filter(ctx context.Context, field
 			return obj.Filter, nil
 		},
 		nil,
-		ec.marshalOJSON2ᚖstring,
+		ec.marshalOLeaderboardFilterView2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardFilterView,
 		true,
 		false,
 	)
@@ -23427,7 +23467,27 @@ func (ec *executionContext) fieldContext_LeaderboardConfig_filter(_ context.Cont
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type JSON does not have child fields")
+			switch field.Name {
+			case "minScore":
+				return ec.fieldContext_LeaderboardFilterView_minScore(ctx, field)
+			case "maxScore":
+				return ec.fieldContext_LeaderboardFilterView_maxScore(ctx, field)
+			case "churchId":
+				return ec.fieldContext_LeaderboardFilterView_churchId(ctx, field)
+			case "country":
+				return ec.fieldContext_LeaderboardFilterView_country(ctx, field)
+			case "churchCategory":
+				return ec.fieldContext_LeaderboardFilterView_churchCategory(ctx, field)
+			case "gender":
+				return ec.fieldContext_LeaderboardFilterView_gender(ctx, field)
+			case "ageRange":
+				return ec.fieldContext_LeaderboardFilterView_ageRange(ctx, field)
+			case "teamId":
+				return ec.fieldContext_LeaderboardFilterView_teamId(ctx, field)
+			case "superTeamId":
+				return ec.fieldContext_LeaderboardFilterView_superTeamId(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type LeaderboardFilterView", field.Name)
 		},
 	}
 	return fc, nil
@@ -23766,8 +23826,6 @@ func (ec *executionContext) fieldContext_LeaderboardConfigEdge_node(_ context.Co
 				return ec.fieldContext_LeaderboardConfig_event(ctx, field)
 			case "name":
 				return ec.fieldContext_LeaderboardConfig_name(ctx, field)
-			case "slug":
-				return ec.fieldContext_LeaderboardConfig_slug(ctx, field)
 			case "entityType":
 				return ec.fieldContext_LeaderboardConfig_entityType(ctx, field)
 			case "filter":
@@ -24346,6 +24404,273 @@ func (ec *executionContext) fieldContext_LeaderboardEntry_lastScoreAt(_ context.
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeaderboardFilterView_minScore(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardFilterView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardFilterView_minScore,
+		func(ctx context.Context) (any, error) {
+			return obj.MinScore, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardFilterView_minScore(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardFilterView",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeaderboardFilterView_maxScore(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardFilterView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardFilterView_maxScore,
+		func(ctx context.Context) (any, error) {
+			return obj.MaxScore, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardFilterView_maxScore(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardFilterView",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeaderboardFilterView_churchId(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardFilterView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardFilterView_churchId,
+		func(ctx context.Context) (any, error) {
+			return obj.ChurchID, nil
+		},
+		nil,
+		ec.marshalOID2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardFilterView_churchId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardFilterView",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeaderboardFilterView_country(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardFilterView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardFilterView_country,
+		func(ctx context.Context) (any, error) {
+			return obj.Country, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardFilterView_country(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardFilterView",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeaderboardFilterView_churchCategory(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardFilterView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardFilterView_churchCategory,
+		func(ctx context.Context) (any, error) {
+			return obj.ChurchCategory, nil
+		},
+		nil,
+		ec.marshalOChurchCategory2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurchCategory,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardFilterView_churchCategory(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardFilterView",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ChurchCategory does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeaderboardFilterView_gender(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardFilterView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardFilterView_gender,
+		func(ctx context.Context) (any, error) {
+			return obj.Gender, nil
+		},
+		nil,
+		ec.marshalOGender2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐGender,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardFilterView_gender(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardFilterView",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Gender does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeaderboardFilterView_ageRange(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardFilterView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardFilterView_ageRange,
+		func(ctx context.Context) (any, error) {
+			return obj.AgeRange, nil
+		},
+		nil,
+		ec.marshalOAgeRange2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAgeRange,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardFilterView_ageRange(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardFilterView",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "min":
+				return ec.fieldContext_AgeRange_min(ctx, field)
+			case "max":
+				return ec.fieldContext_AgeRange_max(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AgeRange", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeaderboardFilterView_teamId(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardFilterView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardFilterView_teamId,
+		func(ctx context.Context) (any, error) {
+			return obj.TeamID, nil
+		},
+		nil,
+		ec.marshalOID2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardFilterView_teamId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardFilterView",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeaderboardFilterView_superTeamId(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardFilterView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardFilterView_superTeamId,
+		func(ctx context.Context) (any, error) {
+			return obj.SuperTeamID, nil
+		},
+		nil,
+		ec.marshalOID2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardFilterView_superTeamId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardFilterView",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
 		},
 	}
 	return fc, nil
@@ -25078,6 +25403,8 @@ func (ec *executionContext) fieldContext_Mutation_joinProject(ctx context.Contex
 				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
 			case "events":
 				return ec.fieldContext_Project_events(ctx, field)
 			case "startDate":
@@ -25102,8 +25429,6 @@ func (ec *executionContext) fieldContext_Mutation_joinProject(ctx context.Contex
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Project_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -25189,6 +25514,8 @@ func (ec *executionContext) fieldContext_Mutation_createProject(ctx context.Cont
 				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
 			case "events":
 				return ec.fieldContext_Project_events(ctx, field)
 			case "startDate":
@@ -25213,8 +25540,6 @@ func (ec *executionContext) fieldContext_Mutation_createProject(ctx context.Cont
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Project_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -25300,6 +25625,8 @@ func (ec *executionContext) fieldContext_Mutation_updateProject(ctx context.Cont
 				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
 			case "events":
 				return ec.fieldContext_Project_events(ctx, field)
 			case "startDate":
@@ -25324,8 +25651,6 @@ func (ec *executionContext) fieldContext_Mutation_updateProject(ctx context.Cont
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Project_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -25497,6 +25822,8 @@ func (ec *executionContext) fieldContext_Mutation_joinEvent(ctx context.Context,
 				return ec.fieldContext_Event_challenges(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Event_leaderboards(ctx, field)
 			case "startDate":
 				return ec.fieldContext_Event_startDate(ctx, field)
 			case "endDate":
@@ -25505,8 +25832,6 @@ func (ec *executionContext) fieldContext_Mutation_joinEvent(ctx context.Context,
 				return ec.fieldContext_Event_parentProject(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Event_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Event_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -25578,6 +25903,8 @@ func (ec *executionContext) fieldContext_Mutation_createEvent(ctx context.Contex
 				return ec.fieldContext_Event_challenges(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Event_leaderboards(ctx, field)
 			case "startDate":
 				return ec.fieldContext_Event_startDate(ctx, field)
 			case "endDate":
@@ -25586,8 +25913,6 @@ func (ec *executionContext) fieldContext_Mutation_createEvent(ctx context.Contex
 				return ec.fieldContext_Event_parentProject(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Event_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Event_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -25659,6 +25984,8 @@ func (ec *executionContext) fieldContext_Mutation_updateEvent(ctx context.Contex
 				return ec.fieldContext_Event_challenges(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Event_leaderboards(ctx, field)
 			case "startDate":
 				return ec.fieldContext_Event_startDate(ctx, field)
 			case "endDate":
@@ -25667,8 +25994,6 @@ func (ec *executionContext) fieldContext_Mutation_updateEvent(ctx context.Contex
 				return ec.fieldContext_Event_parentProject(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Event_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Event_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -25799,6 +26124,8 @@ func (ec *executionContext) fieldContext_Mutation_moveEvent(ctx context.Context,
 				return ec.fieldContext_Event_challenges(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Event_leaderboards(ctx, field)
 			case "startDate":
 				return ec.fieldContext_Event_startDate(ctx, field)
 			case "endDate":
@@ -25807,8 +26134,6 @@ func (ec *executionContext) fieldContext_Mutation_moveEvent(ctx context.Context,
 				return ec.fieldContext_Event_parentProject(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Event_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Event_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -30056,8 +30381,6 @@ func (ec *executionContext) fieldContext_Mutation_createLeaderboardConfig(ctx co
 				return ec.fieldContext_LeaderboardConfig_event(ctx, field)
 			case "name":
 				return ec.fieldContext_LeaderboardConfig_name(ctx, field)
-			case "slug":
-				return ec.fieldContext_LeaderboardConfig_slug(ctx, field)
 			case "entityType":
 				return ec.fieldContext_LeaderboardConfig_entityType(ctx, field)
 			case "filter":
@@ -30141,8 +30464,6 @@ func (ec *executionContext) fieldContext_Mutation_updateLeaderboardConfig(ctx co
 				return ec.fieldContext_LeaderboardConfig_event(ctx, field)
 			case "name":
 				return ec.fieldContext_LeaderboardConfig_name(ctx, field)
-			case "slug":
-				return ec.fieldContext_LeaderboardConfig_slug(ctx, field)
 			case "entityType":
 				return ec.fieldContext_LeaderboardConfig_entityType(ctx, field)
 			case "filter":
@@ -36931,6 +37252,8 @@ func (ec *executionContext) fieldContext_PluginChallenge_project(_ context.Conte
 				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
 			case "events":
 				return ec.fieldContext_Project_events(ctx, field)
 			case "startDate":
@@ -36955,8 +37278,6 @@ func (ec *executionContext) fieldContext_PluginChallenge_project(_ context.Conte
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Project_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -36998,6 +37319,8 @@ func (ec *executionContext) fieldContext_PluginChallenge_event(_ context.Context
 				return ec.fieldContext_Event_challenges(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Event_leaderboards(ctx, field)
 			case "startDate":
 				return ec.fieldContext_Event_startDate(ctx, field)
 			case "endDate":
@@ -37006,8 +37329,6 @@ func (ec *executionContext) fieldContext_PluginChallenge_event(_ context.Context
 				return ec.fieldContext_Event_parentProject(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Event_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Event_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -38614,6 +38935,59 @@ func (ec *executionContext) fieldContext_Project_leaderboard(ctx context.Context
 	return fc, nil
 }
 
+func (ec *executionContext) _Project_leaderboards(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Project_leaderboards,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Project().Leaderboards(ctx, obj)
+		},
+		nil,
+		ec.marshalNLeaderboardConfig2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardConfigᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Project_leaderboards(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Project",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_LeaderboardConfig_id(ctx, field)
+			case "project":
+				return ec.fieldContext_LeaderboardConfig_project(ctx, field)
+			case "event":
+				return ec.fieldContext_LeaderboardConfig_event(ctx, field)
+			case "name":
+				return ec.fieldContext_LeaderboardConfig_name(ctx, field)
+			case "entityType":
+				return ec.fieldContext_LeaderboardConfig_entityType(ctx, field)
+			case "filter":
+				return ec.fieldContext_LeaderboardConfig_filter(ctx, field)
+			case "sortOrder":
+				return ec.fieldContext_LeaderboardConfig_sortOrder(ctx, field)
+			case "isActive":
+				return ec.fieldContext_LeaderboardConfig_isActive(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_LeaderboardConfig_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_LeaderboardConfig_updatedAt(ctx, field)
+			case "leaderboard":
+				return ec.fieldContext_LeaderboardConfig_leaderboard(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type LeaderboardConfig", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Project_events(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -38648,6 +39022,8 @@ func (ec *executionContext) fieldContext_Project_events(_ context.Context, field
 				return ec.fieldContext_Event_challenges(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Event_leaderboards(ctx, field)
 			case "startDate":
 				return ec.fieldContext_Event_startDate(ctx, field)
 			case "endDate":
@@ -38656,8 +39032,6 @@ func (ec *executionContext) fieldContext_Project_events(_ context.Context, field
 				return ec.fieldContext_Event_parentProject(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Event_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Event_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -39090,61 +39464,6 @@ func (ec *executionContext) fieldContext_Project_translationStatus(_ context.Con
 	return fc, nil
 }
 
-func (ec *executionContext) _Project_leaderboards(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Project_leaderboards,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Project().Leaderboards(ctx, obj)
-		},
-		nil,
-		ec.marshalNLeaderboardConfig2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardConfigᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Project_leaderboards(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Project",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_LeaderboardConfig_id(ctx, field)
-			case "project":
-				return ec.fieldContext_LeaderboardConfig_project(ctx, field)
-			case "event":
-				return ec.fieldContext_LeaderboardConfig_event(ctx, field)
-			case "name":
-				return ec.fieldContext_LeaderboardConfig_name(ctx, field)
-			case "slug":
-				return ec.fieldContext_LeaderboardConfig_slug(ctx, field)
-			case "entityType":
-				return ec.fieldContext_LeaderboardConfig_entityType(ctx, field)
-			case "filter":
-				return ec.fieldContext_LeaderboardConfig_filter(ctx, field)
-			case "sortOrder":
-				return ec.fieldContext_LeaderboardConfig_sortOrder(ctx, field)
-			case "isActive":
-				return ec.fieldContext_LeaderboardConfig_isActive(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_LeaderboardConfig_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_LeaderboardConfig_updatedAt(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_LeaderboardConfig_leaderboard(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type LeaderboardConfig", field.Name)
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _ProjectConnection_edges(ctx context.Context, field graphql.CollectedField, obj *model.ProjectConnection) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -39325,6 +39644,8 @@ func (ec *executionContext) fieldContext_ProjectEdge_node(_ context.Context, fie
 				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
 			case "events":
 				return ec.fieldContext_Project_events(ctx, field)
 			case "startDate":
@@ -39349,8 +39670,6 @@ func (ec *executionContext) fieldContext_ProjectEdge_node(_ context.Context, fie
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Project_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -39691,6 +40010,8 @@ func (ec *executionContext) fieldContext_Query_project(ctx context.Context, fiel
 				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
 			case "events":
 				return ec.fieldContext_Project_events(ctx, field)
 			case "startDate":
@@ -39715,8 +40036,6 @@ func (ec *executionContext) fieldContext_Query_project(ctx context.Context, fiel
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Project_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -39832,6 +40151,8 @@ func (ec *executionContext) fieldContext_Query_myProjects(_ context.Context, fie
 				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
 			case "events":
 				return ec.fieldContext_Project_events(ctx, field)
 			case "startDate":
@@ -39856,8 +40177,6 @@ func (ec *executionContext) fieldContext_Query_myProjects(_ context.Context, fie
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Project_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -39913,6 +40232,8 @@ func (ec *executionContext) fieldContext_Query_myCurrentProject(_ context.Contex
 				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
 			case "events":
 				return ec.fieldContext_Project_events(ctx, field)
 			case "startDate":
@@ -39937,8 +40258,6 @@ func (ec *executionContext) fieldContext_Query_myCurrentProject(_ context.Contex
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Project_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -39994,6 +40313,8 @@ func (ec *executionContext) fieldContext_Query_currentProject(_ context.Context,
 				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
 			case "events":
 				return ec.fieldContext_Project_events(ctx, field)
 			case "startDate":
@@ -40018,8 +40339,6 @@ func (ec *executionContext) fieldContext_Query_currentProject(_ context.Context,
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Project_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -40062,6 +40381,8 @@ func (ec *executionContext) fieldContext_Query_event(ctx context.Context, field 
 				return ec.fieldContext_Event_challenges(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Event_leaderboards(ctx, field)
 			case "startDate":
 				return ec.fieldContext_Event_startDate(ctx, field)
 			case "endDate":
@@ -40070,8 +40391,6 @@ func (ec *executionContext) fieldContext_Query_event(ctx context.Context, field 
 				return ec.fieldContext_Event_parentProject(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Event_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Event_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -40174,6 +40493,8 @@ func (ec *executionContext) fieldContext_Query_myEvents(ctx context.Context, fie
 				return ec.fieldContext_Event_challenges(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Event_leaderboards(ctx, field)
 			case "startDate":
 				return ec.fieldContext_Event_startDate(ctx, field)
 			case "endDate":
@@ -40182,8 +40503,6 @@ func (ec *executionContext) fieldContext_Query_myEvents(ctx context.Context, fie
 				return ec.fieldContext_Event_parentProject(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Event_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Event_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -40236,6 +40555,8 @@ func (ec *executionContext) fieldContext_Query_myCurrentEvent(_ context.Context,
 				return ec.fieldContext_Event_challenges(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Event_leaderboards(ctx, field)
 			case "startDate":
 				return ec.fieldContext_Event_startDate(ctx, field)
 			case "endDate":
@@ -40244,8 +40565,6 @@ func (ec *executionContext) fieldContext_Query_myCurrentEvent(_ context.Context,
 				return ec.fieldContext_Event_parentProject(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Event_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Event_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -40287,6 +40606,8 @@ func (ec *executionContext) fieldContext_Query_currentEvent(_ context.Context, f
 				return ec.fieldContext_Event_challenges(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Event_leaderboards(ctx, field)
 			case "startDate":
 				return ec.fieldContext_Event_startDate(ctx, field)
 			case "endDate":
@@ -40295,8 +40616,6 @@ func (ec *executionContext) fieldContext_Query_currentEvent(_ context.Context, f
 				return ec.fieldContext_Event_parentProject(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Event_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Event_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -40777,25 +41096,7 @@ func (ec *executionContext) _Query_leaderboardConfig(ctx context.Context, field 
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Query().LeaderboardConfig(ctx, fc.Args["id"].(string))
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
-				if err != nil {
-					var zeroVal *model.LeaderboardConfig
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal *model.LeaderboardConfig
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalNLeaderboardConfig2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardConfig,
 		true,
 		true,
@@ -40818,8 +41119,6 @@ func (ec *executionContext) fieldContext_Query_leaderboardConfig(ctx context.Con
 				return ec.fieldContext_LeaderboardConfig_event(ctx, field)
 			case "name":
 				return ec.fieldContext_LeaderboardConfig_name(ctx, field)
-			case "slug":
-				return ec.fieldContext_LeaderboardConfig_slug(ctx, field)
 			case "entityType":
 				return ec.fieldContext_LeaderboardConfig_entityType(ctx, field)
 			case "filter":
@@ -40862,25 +41161,7 @@ func (ec *executionContext) _Query_leaderboardConfigs(ctx context.Context, field
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Query().LeaderboardConfigs(ctx, fc.Args["filter"].(*model.LeaderboardConfigFilter), fc.Args["first"].(*int), fc.Args["after"].(*string), fc.Args["last"].(*int), fc.Args["before"].(*string))
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
-				if err != nil {
-					var zeroVal *model.LeaderboardConfigConnection
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal *model.LeaderboardConfigConnection
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalNLeaderboardConfigConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardConfigConnection,
 		true,
 		true,
@@ -43663,6 +43944,8 @@ func (ec *executionContext) fieldContext_Quiz_project(_ context.Context, field g
 				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
 			case "events":
 				return ec.fieldContext_Project_events(ctx, field)
 			case "startDate":
@@ -43687,8 +43970,6 @@ func (ec *executionContext) fieldContext_Quiz_project(_ context.Context, field g
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Project_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -44630,6 +44911,8 @@ func (ec *executionContext) fieldContext_QuizAchievement_project(_ context.Conte
 				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
 			case "events":
 				return ec.fieldContext_Project_events(ctx, field)
 			case "startDate":
@@ -44654,8 +44937,6 @@ func (ec *executionContext) fieldContext_QuizAchievement_project(_ context.Conte
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Project_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -44697,6 +44978,8 @@ func (ec *executionContext) fieldContext_QuizAchievement_event(_ context.Context
 				return ec.fieldContext_Event_challenges(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Event_leaderboards(ctx, field)
 			case "startDate":
 				return ec.fieldContext_Event_startDate(ctx, field)
 			case "endDate":
@@ -44705,8 +44988,6 @@ func (ec *executionContext) fieldContext_QuizAchievement_event(_ context.Context
 				return ec.fieldContext_Event_parentProject(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Event_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Event_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -45257,6 +45538,8 @@ func (ec *executionContext) fieldContext_QuizChallenge_project(_ context.Context
 				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
 			case "events":
 				return ec.fieldContext_Project_events(ctx, field)
 			case "startDate":
@@ -45281,8 +45564,6 @@ func (ec *executionContext) fieldContext_QuizChallenge_project(_ context.Context
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Project_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -45324,6 +45605,8 @@ func (ec *executionContext) fieldContext_QuizChallenge_event(_ context.Context, 
 				return ec.fieldContext_Event_challenges(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Event_leaderboards(ctx, field)
 			case "startDate":
 				return ec.fieldContext_Event_startDate(ctx, field)
 			case "endDate":
@@ -45332,8 +45615,6 @@ func (ec *executionContext) fieldContext_QuizChallenge_event(_ context.Context, 
 				return ec.fieldContext_Event_parentProject(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Event_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Event_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -47721,6 +48002,8 @@ func (ec *executionContext) fieldContext_RoleScope_project(_ context.Context, fi
 				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
 			case "events":
 				return ec.fieldContext_Project_events(ctx, field)
 			case "startDate":
@@ -47745,8 +48028,6 @@ func (ec *executionContext) fieldContext_RoleScope_project(_ context.Context, fi
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Project_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -47882,6 +48163,8 @@ func (ec *executionContext) fieldContext_ScoreJournal_project(_ context.Context,
 				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
 			case "events":
 				return ec.fieldContext_Project_events(ctx, field)
 			case "startDate":
@@ -47906,8 +48189,6 @@ func (ec *executionContext) fieldContext_ScoreJournal_project(_ context.Context,
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Project_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -48024,6 +48305,8 @@ func (ec *executionContext) fieldContext_ScoreJournal_event(_ context.Context, f
 				return ec.fieldContext_Event_challenges(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Event_leaderboards(ctx, field)
 			case "startDate":
 				return ec.fieldContext_Event_startDate(ctx, field)
 			case "endDate":
@@ -48032,8 +48315,6 @@ func (ec *executionContext) fieldContext_ScoreJournal_event(_ context.Context, f
 				return ec.fieldContext_Event_parentProject(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Event_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Event_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -48920,6 +49201,8 @@ func (ec *executionContext) fieldContext_SimpleAchievement_project(_ context.Con
 				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
 			case "events":
 				return ec.fieldContext_Project_events(ctx, field)
 			case "startDate":
@@ -48944,8 +49227,6 @@ func (ec *executionContext) fieldContext_SimpleAchievement_project(_ context.Con
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Project_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -48987,6 +49268,8 @@ func (ec *executionContext) fieldContext_SimpleAchievement_event(_ context.Conte
 				return ec.fieldContext_Event_challenges(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Event_leaderboards(ctx, field)
 			case "startDate":
 				return ec.fieldContext_Event_startDate(ctx, field)
 			case "endDate":
@@ -48995,8 +49278,6 @@ func (ec *executionContext) fieldContext_SimpleAchievement_event(_ context.Conte
 				return ec.fieldContext_Event_parentProject(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Event_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Event_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -49416,6 +49697,8 @@ func (ec *executionContext) fieldContext_SimpleChallenge_project(_ context.Conte
 				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
 			case "events":
 				return ec.fieldContext_Project_events(ctx, field)
 			case "startDate":
@@ -49440,8 +49723,6 @@ func (ec *executionContext) fieldContext_SimpleChallenge_project(_ context.Conte
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Project_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -49483,6 +49764,8 @@ func (ec *executionContext) fieldContext_SimpleChallenge_event(_ context.Context
 				return ec.fieldContext_Event_challenges(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Event_leaderboards(ctx, field)
 			case "startDate":
 				return ec.fieldContext_Event_startDate(ctx, field)
 			case "endDate":
@@ -49491,8 +49774,6 @@ func (ec *executionContext) fieldContext_SimpleChallenge_event(_ context.Context
 				return ec.fieldContext_Event_parentProject(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Event_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Event_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -50183,6 +50464,8 @@ func (ec *executionContext) fieldContext_StreakAchievement_project(_ context.Con
 				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
 			case "events":
 				return ec.fieldContext_Project_events(ctx, field)
 			case "startDate":
@@ -50207,8 +50490,6 @@ func (ec *executionContext) fieldContext_StreakAchievement_project(_ context.Con
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Project_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -50250,6 +50531,8 @@ func (ec *executionContext) fieldContext_StreakAchievement_event(_ context.Conte
 				return ec.fieldContext_Event_challenges(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Event_leaderboards(ctx, field)
 			case "startDate":
 				return ec.fieldContext_Event_startDate(ctx, field)
 			case "endDate":
@@ -50258,8 +50541,6 @@ func (ec *executionContext) fieldContext_StreakAchievement_event(_ context.Conte
 				return ec.fieldContext_Event_parentProject(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Event_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Event_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -50897,6 +51178,8 @@ func (ec *executionContext) fieldContext_SuperTeam_parentProject(_ context.Conte
 				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
 			case "events":
 				return ec.fieldContext_Project_events(ctx, field)
 			case "startDate":
@@ -50921,8 +51204,6 @@ func (ec *executionContext) fieldContext_SuperTeam_parentProject(_ context.Conte
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Project_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -51694,6 +51975,8 @@ func (ec *executionContext) fieldContext_Team_parentProject(_ context.Context, f
 				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
 			case "events":
 				return ec.fieldContext_Project_events(ctx, field)
 			case "startDate":
@@ -51718,8 +52001,6 @@ func (ec *executionContext) fieldContext_Team_parentProject(_ context.Context, f
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Project_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -52690,6 +52971,8 @@ func (ec *executionContext) fieldContext_User_projects(_ context.Context, field 
 				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
 			case "events":
 				return ec.fieldContext_Project_events(ctx, field)
 			case "startDate":
@@ -52714,8 +52997,6 @@ func (ec *executionContext) fieldContext_User_projects(_ context.Context, field 
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Project_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -52757,6 +53038,8 @@ func (ec *executionContext) fieldContext_User_events(_ context.Context, field gr
 				return ec.fieldContext_Event_challenges(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Event_leaderboards(ctx, field)
 			case "startDate":
 				return ec.fieldContext_Event_startDate(ctx, field)
 			case "endDate":
@@ -52765,8 +53048,6 @@ func (ec *executionContext) fieldContext_User_events(_ context.Context, field gr
 				return ec.fieldContext_Event_parentProject(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Event_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Event_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
@@ -54502,6 +54783,8 @@ func (ec *executionContext) fieldContext_Webhook_project(_ context.Context, fiel
 				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
 			case "leaderboard":
 				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
 			case "events":
 				return ec.fieldContext_Project_events(ctx, field)
 			case "startDate":
@@ -54526,8 +54809,6 @@ func (ec *executionContext) fieldContext_Webhook_project(_ context.Context, fiel
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
-			case "leaderboards":
-				return ec.fieldContext_Project_leaderboards(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -57620,7 +57901,7 @@ func (ec *executionContext) unmarshalInputCreateLeaderboardConfigInput(ctx conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"projectId", "eventId", "name", "slug", "entityType", "filter", "sortOrder", "isActive"}
+	fieldsInOrder := [...]string{"projectId", "eventId", "name", "entityType", "filter", "sortOrder", "isActive"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -57648,13 +57929,6 @@ func (ec *executionContext) unmarshalInputCreateLeaderboardConfigInput(ctx conte
 				return it, err
 			}
 			it.Name = data
-		case "slug":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("slug"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Slug = data
 		case "entityType":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("entityType"))
 			data, err := ec.unmarshalNLeaderboardEntityType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntityType(ctx, v)
@@ -60421,7 +60695,7 @@ func (ec *executionContext) unmarshalInputUpdateLeaderboardConfigInput(ctx conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "slug", "entityType", "filter", "clearFilter", "sortOrder", "isActive"}
+	fieldsInOrder := [...]string{"name", "entityType", "filter", "sortOrder", "isActive"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -60430,21 +60704,14 @@ func (ec *executionContext) unmarshalInputUpdateLeaderboardConfigInput(ctx conte
 		switch k {
 		case "name":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.Name = data
-		case "slug":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("slug"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Slug = data
 		case "entityType":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("entityType"))
-			data, err := ec.unmarshalOLeaderboardEntityType2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntityType(ctx, v)
+			data, err := ec.unmarshalNLeaderboardEntityType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntityType(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -60456,23 +60723,16 @@ func (ec *executionContext) unmarshalInputUpdateLeaderboardConfigInput(ctx conte
 				return it, err
 			}
 			it.Filter = data
-		case "clearFilter":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearFilter"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ClearFilter = data
 		case "sortOrder":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sortOrder"))
-			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			data, err := ec.unmarshalNInt2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.SortOrder = data
 		case "isActive":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("isActive"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -63632,6 +63892,42 @@ func (ec *executionContext) _Event(ctx context.Context, sel ast.SelectionSet, ob
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "leaderboards":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Event_leaderboards(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "startDate":
 			out.Values[i] = ec._Event_startDate(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -63688,42 +63984,6 @@ func (ec *executionContext) _Event(ctx context.Context, sel ast.SelectionSet, ob
 					}
 				}()
 				res = ec._Event_translationStatus(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "leaderboards":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Event_leaderboards(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -65428,11 +65688,6 @@ func (ec *executionContext) _LeaderboardConfig(ctx context.Context, sel ast.Sele
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "slug":
-			out.Values[i] = ec._LeaderboardConfig_slug(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "entityType":
 			out.Values[i] = ec._LeaderboardConfig_entityType(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -65818,6 +66073,58 @@ func (ec *executionContext) _LeaderboardEntry(ctx context.Context, sel ast.Selec
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "lastScoreAt":
 			out.Values[i] = ec._LeaderboardEntry_lastScoreAt(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var leaderboardFilterViewImplementors = []string{"LeaderboardFilterView"}
+
+func (ec *executionContext) _LeaderboardFilterView(ctx context.Context, sel ast.SelectionSet, obj *model.LeaderboardFilterView) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, leaderboardFilterViewImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("LeaderboardFilterView")
+		case "minScore":
+			out.Values[i] = ec._LeaderboardFilterView_minScore(ctx, field, obj)
+		case "maxScore":
+			out.Values[i] = ec._LeaderboardFilterView_maxScore(ctx, field, obj)
+		case "churchId":
+			out.Values[i] = ec._LeaderboardFilterView_churchId(ctx, field, obj)
+		case "country":
+			out.Values[i] = ec._LeaderboardFilterView_country(ctx, field, obj)
+		case "churchCategory":
+			out.Values[i] = ec._LeaderboardFilterView_churchCategory(ctx, field, obj)
+		case "gender":
+			out.Values[i] = ec._LeaderboardFilterView_gender(ctx, field, obj)
+		case "ageRange":
+			out.Values[i] = ec._LeaderboardFilterView_ageRange(ctx, field, obj)
+		case "teamId":
+			out.Values[i] = ec._LeaderboardFilterView_teamId(ctx, field, obj)
+		case "superTeamId":
+			out.Values[i] = ec._LeaderboardFilterView_superTeamId(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -68841,6 +69148,42 @@ func (ec *executionContext) _Project(ctx context.Context, sel ast.SelectionSet, 
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "leaderboards":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Project_leaderboards(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "events":
 			field := field
 
@@ -69117,42 +69460,6 @@ func (ec *executionContext) _Project(ctx context.Context, sel ast.SelectionSet, 
 					}
 				}()
 				res = ec._Project_translationStatus(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "leaderboards":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Project_leaderboards(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -81509,6 +81816,13 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
+func (ec *executionContext) marshalOAgeRange2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAgeRange(ctx context.Context, sel ast.SelectionSet, v *model.AgeRange) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AgeRange(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalOAgeRangeInput2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAgeRangeInput(ctx context.Context, v any) (*model.AgeRangeInput, error) {
 	if v == nil {
 		return nil, nil
@@ -81949,22 +82263,6 @@ func (ec *executionContext) unmarshalOLeaderboardConfigFilter2ᚖgithubᚗcomᚋ
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalOLeaderboardEntityType2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntityType(ctx context.Context, v any) (*model.LeaderboardEntityType, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var res = new(model.LeaderboardEntityType)
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOLeaderboardEntityType2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntityType(ctx context.Context, sel ast.SelectionSet, v *model.LeaderboardEntityType) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return v
-}
-
 func (ec *executionContext) marshalOLeaderboardEntry2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntry(ctx context.Context, sel ast.SelectionSet, v *model.LeaderboardEntry) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -81978,6 +82276,13 @@ func (ec *executionContext) unmarshalOLeaderboardFilter2ᚖgithubᚗcomᚋbccᚑ
 	}
 	res, err := ec.unmarshalInputLeaderboardFilter(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOLeaderboardFilterView2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardFilterView(ctx context.Context, sel ast.SelectionSet, v *model.LeaderboardFilterView) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._LeaderboardFilterView(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOMarkdownText2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMarkdownText(ctx context.Context, sel ast.SelectionSet, v *model.MarkdownText) graphql.Marshaler {

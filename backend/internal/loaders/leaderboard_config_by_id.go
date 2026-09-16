@@ -2,6 +2,7 @@ package loaders
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
@@ -68,10 +69,10 @@ func leaderboardConfigByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry)
 
 // ConvertRowToLeaderboardConfig converts a database row to the GraphQL model
 func ConvertRowToLeaderboardConfig(row *sqlc.LeaderboardConfig) *model.LeaderboardConfig {
-	var filter *string
+	var filter *model.LeaderboardFilterView
 	if len(row.Filter) > 0 {
-		f := string(row.Filter)
-		filter = &f
+		filter = &model.LeaderboardFilterView{}
+		_ = json.Unmarshal(row.Filter, filter)
 	}
 
 	return &model.LeaderboardConfig{
@@ -79,7 +80,6 @@ func ConvertRowToLeaderboardConfig(row *sqlc.LeaderboardConfig) *model.Leaderboa
 		ProjectID:  row.ProjectID,
 		EventID:    row.EventID,
 		Name:       row.Name,
-		Slug:       row.Slug,
 		EntityType: model.LeaderboardEntityType(row.EntityType),
 		Filter:     filter,
 		SortOrder:  int(row.SortOrder),

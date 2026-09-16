@@ -489,7 +489,6 @@ type CreateLeaderboardConfigInput struct {
 	ProjectID  string                `json:"projectId"`
 	EventID    *string               `json:"eventId,omitempty"`
 	Name       string                `json:"name"`
-	Slug       string                `json:"slug"`
 	EntityType LeaderboardEntityType `json:"entityType"`
 	Filter     *LeaderboardFilter    `json:"filter,omitempty"`
 	SortOrder  *int                  `json:"sortOrder,omitempty"`
@@ -678,18 +677,20 @@ type EnrollmentTargetInput struct {
 }
 
 type Event struct {
-	ID                string                   `json:"id"`
-	Name              string                   `json:"name"`
-	Description       string                   `json:"description"`
-	Challenges        []Challenge              `json:"challenges"`
-	Leaderboard       *LeaderboardConnection   `json:"leaderboard"`
+	ID          string      `json:"id"`
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	Challenges  []Challenge `json:"challenges"`
+	// Ad-hoc leaderboard computed directly from the given entityType/filter at request time.
+	// For named, admin-curated leaderboards, see `leaderboards` (LeaderboardConfig) instead.
+	Leaderboard *LeaderboardConnection `json:"leaderboard"`
+	// Active leaderboard configs for this event (all configs, including inactive, for admins/superadmins).
+	Leaderboards      []LeaderboardConfig      `json:"leaderboards"`
 	StartDate         scalars.DateTime         `json:"startDate"`
 	EndDate           scalars.DateTime         `json:"endDate"`
 	ParentProject     *Project                 `json:"parentProject"`
 	TranslationStatus []TranslationFieldStatus `json:"translationStatus"`
-	// Active leaderboard configs for this event (all configs, including inactive, for admins/superadmins).
-	Leaderboards []LeaderboardConfig `json:"leaderboards"`
-	ProjectID    string              `json:"-"`
+	ProjectID         string                   `json:"-"`
 }
 
 func (Event) IsScoreSource() {}
@@ -1002,18 +1003,16 @@ func (this JSONResponse) GetBetAmount() *int               { return this.BetAmou
 func (this JSONResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
 
 type LeaderboardConfig struct {
-	ID         string                `json:"id"`
-	Project    *Project              `json:"project"`
-	Event      *Event                `json:"event,omitempty"`
-	Name       string                `json:"name"`
-	Slug       string                `json:"slug"`
-	EntityType LeaderboardEntityType `json:"entityType"`
-	// The filter applied to this leaderboard, mirroring the `LeaderboardFilter` input shape.
-	Filter    *string          `json:"filter,omitempty"`
-	SortOrder int              `json:"sortOrder"`
-	IsActive  bool             `json:"isActive"`
-	CreatedAt scalars.DateTime `json:"createdAt"`
-	UpdatedAt scalars.DateTime `json:"updatedAt"`
+	ID         string                 `json:"id"`
+	Project    *Project               `json:"project"`
+	Event      *Event                 `json:"event,omitempty"`
+	Name       string                 `json:"name"`
+	EntityType LeaderboardEntityType  `json:"entityType"`
+	Filter     *LeaderboardFilterView `json:"filter,omitempty"`
+	SortOrder  int                    `json:"sortOrder"`
+	IsActive   bool                   `json:"isActive"`
+	CreatedAt  scalars.DateTime       `json:"createdAt"`
+	UpdatedAt  scalars.DateTime       `json:"updatedAt"`
 	// The finished, computed leaderboard for this config.
 	Leaderboard *LeaderboardConnection `json:"leaderboard"`
 	EventID     *string                `json:"-"`
@@ -1077,6 +1076,21 @@ type LeaderboardFilter struct {
 	ChurchCategory *ChurchCategory `json:"churchCategory,omitempty"`
 	Gender         *Gender         `json:"gender,omitempty"`
 	AgeRange       *AgeRangeInput  `json:"ageRange,omitempty"`
+	TeamID         *string         `json:"teamId,omitempty"`
+	SuperTeamID    *string         `json:"superTeamId,omitempty"`
+}
+
+// Read-only mirror of the `LeaderboardFilter` input, applied to this leaderboard.
+// Kept as a separate type because GraphQL doesn't allow an `input` type as an output field's
+// type — mirrors the AgeRange/AgeRangeInput pattern already used elsewhere in this schema.
+type LeaderboardFilterView struct {
+	MinScore       *int            `json:"minScore,omitempty"`
+	MaxScore       *int            `json:"maxScore,omitempty"`
+	ChurchID       *string         `json:"churchId,omitempty"`
+	Country        *string         `json:"country,omitempty"`
+	ChurchCategory *ChurchCategory `json:"churchCategory,omitempty"`
+	Gender         *Gender         `json:"gender,omitempty"`
+	AgeRange       *AgeRange       `json:"ageRange,omitempty"`
 	TeamID         *string         `json:"teamId,omitempty"`
 	SuperTeamID    *string         `json:"superTeamId,omitempty"`
 }
@@ -1384,34 +1398,36 @@ func (this PredefinedResponse) GetBetAmount() *int               { return this.B
 func (this PredefinedResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
 
 type Project struct {
-	ID                    string                   `json:"id"`
-	Name                  string                   `json:"name"`
-	Description           string                   `json:"description"`
-	Rules                 *MarkdownText            `json:"rules,omitempty"`
-	InfoMessage           *MarkdownText            `json:"infoMessage,omitempty"`
-	InfoMessageStart      *scalars.DateTime        `json:"infoMessageStart,omitempty"`
-	InfoMessageEnd        *scalars.DateTime        `json:"infoMessageEnd,omitempty"`
-	Challenges            []Challenge              `json:"challenges"`
-	ActiveChallenges      []Challenge              `json:"activeChallenges"`
-	CompletedChallenges   []Challenge              `json:"completedChallenges"`
-	ActiveChallengesCount int                      `json:"activeChallengesCount"`
-	Leaderboard           *LeaderboardConnection   `json:"leaderboard"`
-	Events                []Event                  `json:"events"`
-	StartDate             scalars.DateTime         `json:"startDate"`
-	EndDate               scalars.DateTime         `json:"endDate"`
-	Branding              *Branding                `json:"branding"`
-	Teams                 []Team                   `json:"teams"`
-	MyChurchTeams         []Team                   `json:"myChurchTeams"`
-	MyTeam                *Team                    `json:"myTeam,omitempty"`
-	Achievements          []Achievement            `json:"achievements"`
-	Journal               *ScoreJournalConnection  `json:"journal"`
-	MyPoints              int                      `json:"myPoints"`
-	ArchivedAt            *bool                    `json:"archivedAt,omitempty"`
-	TranslationStatus     []TranslationFieldStatus `json:"translationStatus"`
+	ID                    string            `json:"id"`
+	Name                  string            `json:"name"`
+	Description           string            `json:"description"`
+	Rules                 *MarkdownText     `json:"rules,omitempty"`
+	InfoMessage           *MarkdownText     `json:"infoMessage,omitempty"`
+	InfoMessageStart      *scalars.DateTime `json:"infoMessageStart,omitempty"`
+	InfoMessageEnd        *scalars.DateTime `json:"infoMessageEnd,omitempty"`
+	Challenges            []Challenge       `json:"challenges"`
+	ActiveChallenges      []Challenge       `json:"activeChallenges"`
+	CompletedChallenges   []Challenge       `json:"completedChallenges"`
+	ActiveChallengesCount int               `json:"activeChallengesCount"`
+	// Ad-hoc leaderboard computed directly from the given entityType/filter at request time.
+	// For named, admin-curated leaderboards, see `leaderboards` (LeaderboardConfig) instead.
+	Leaderboard *LeaderboardConnection `json:"leaderboard"`
 	// Active leaderboard configs for this project (all configs, including inactive, for admins/superadmins).
-	Leaderboards   []LeaderboardConfig `json:"leaderboards"`
-	InfoMessageRaw *string             `json:"-"`
-	RulesRaw       *string             `json:"-"`
+	Leaderboards      []LeaderboardConfig      `json:"leaderboards"`
+	Events            []Event                  `json:"events"`
+	StartDate         scalars.DateTime         `json:"startDate"`
+	EndDate           scalars.DateTime         `json:"endDate"`
+	Branding          *Branding                `json:"branding"`
+	Teams             []Team                   `json:"teams"`
+	MyChurchTeams     []Team                   `json:"myChurchTeams"`
+	MyTeam            *Team                    `json:"myTeam,omitempty"`
+	Achievements      []Achievement            `json:"achievements"`
+	Journal           *ScoreJournalConnection  `json:"journal"`
+	MyPoints          int                      `json:"myPoints"`
+	ArchivedAt        *bool                    `json:"archivedAt,omitempty"`
+	TranslationStatus []TranslationFieldStatus `json:"translationStatus"`
+	InfoMessageRaw    *string                  `json:"-"`
+	RulesRaw          *string                  `json:"-"`
 }
 
 type ProjectConnection struct {
@@ -2122,15 +2138,11 @@ type UpdateEventInput struct {
 }
 
 type UpdateLeaderboardConfigInput struct {
-	Name       *string                `json:"name,omitempty"`
-	Slug       *string                `json:"slug,omitempty"`
-	EntityType *LeaderboardEntityType `json:"entityType,omitempty"`
-	Filter     *LeaderboardFilter     `json:"filter,omitempty"`
-	// Set to true to remove the existing filter entirely (show an unfiltered leaderboard).
-	// Ignored if `filter` is also provided. Has no effect otherwise.
-	ClearFilter *bool `json:"clearFilter,omitempty"`
-	SortOrder   *int  `json:"sortOrder,omitempty"`
-	IsActive    *bool `json:"isActive,omitempty"`
+	Name       string                `json:"name"`
+	EntityType LeaderboardEntityType `json:"entityType"`
+	Filter     *LeaderboardFilter    `json:"filter,omitempty"`
+	SortOrder  int                   `json:"sortOrder"`
+	IsActive   bool                  `json:"isActive"`
 }
 
 type UpdateProjectInput struct {

@@ -6,7 +6,6 @@ package api
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
@@ -14,13 +13,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/ulid"
-	"github.com/jackc/pgx/v5/pgconn"
 )
-
-// Leaderboards is the resolver for the leaderboards field.
-func (r *eventResolver) Leaderboards(ctx context.Context, obj *model.Event) ([]model.LeaderboardConfig, error) {
-	return r.getVisibleLeaderboardConfigsByEvent(ctx, obj.ID)
-}
 
 // Project is the resolver for the project field.
 func (r *leaderboardConfigResolver) Project(ctx context.Context, obj *model.LeaderboardConfig) (*model.Project, error) {
@@ -64,7 +57,6 @@ func (r *mutationResolver) CreateLeaderboardConfig(ctx context.Context, input mo
 		Projectid:  input.ProjectID,
 		Eventid:    input.EventID,
 		Name:       input.Name,
-		Slug:       input.Slug,
 		Entitytype: string(input.EntityType),
 		Filter:     filterBytes,
 		Sortorder:  sortOrder,
@@ -73,10 +65,6 @@ func (r *mutationResolver) CreateLeaderboardConfig(ctx context.Context, input mo
 
 	row, err := r.DB.Queries.CreateLeaderboardConfig(ctx, params)
 	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-			return nil, fmt.Errorf("a leaderboard config with this slug already exists in this project")
-		}
 		return nil, fmt.Errorf("failed to create leaderboard config: %w", err)
 	}
 
@@ -101,40 +89,22 @@ func (r *mutationResolver) UpdateLeaderboardConfig(ctx context.Context, id strin
 		return nil, fmt.Errorf("unauthorized to update leaderboard configs in this project")
 	}
 
-	var entityType *string
-	if input.EntityType != nil {
-		et := string(*input.EntityType)
-		entityType = &et
-	}
-
 	filterBytes, err := marshalLeaderboardFilter(input.Filter)
 	if err != nil {
 		return nil, fmt.Errorf("invalid filter: %w", err)
 	}
 
-	var sortOrder *int32
-	if input.SortOrder != nil {
-		so := int32(*input.SortOrder)
-		sortOrder = &so
-	}
-
 	params := sqlc.UpdateLeaderboardConfigParams{
-		ID:          id,
-		Name:        input.Name,
-		Slug:        input.Slug,
-		Entitytype:  entityType,
-		Filter:      filterBytes,
-		Clearfilter: input.ClearFilter,
-		Sortorder:   sortOrder,
-		Isactive:    input.IsActive,
+		ID:         id,
+		Name:       input.Name,
+		Entitytype: string(input.EntityType),
+		Filter:     filterBytes,
+		Sortorder:  int32(input.SortOrder),
+		Isactive:   input.IsActive,
 	}
 
 	row, err := r.DB.Queries.UpdateLeaderboardConfig(ctx, params)
 	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-			return nil, fmt.Errorf("a leaderboard config with this slug already exists in this project")
-		}
 		return nil, fmt.Errorf("failed to update leaderboard config: %w", err)
 	}
 
@@ -168,13 +138,16 @@ func (r *mutationResolver) DeleteLeaderboardConfig(ctx context.Context, id strin
 	return true, nil
 }
 
-// Leaderboards is the resolver for the leaderboards field.
-func (r *projectResolver) Leaderboards(ctx context.Context, obj *model.Project) ([]model.LeaderboardConfig, error) {
-	return r.getVisibleLeaderboardConfigsByProject(ctx, obj.ID)
-}
-
 // LeaderboardConfig is the resolver for the leaderboardConfig field.
 func (r *queryResolver) LeaderboardConfig(ctx context.Context, id string) (*model.LeaderboardConfig, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+	if !r.RoleService.IsAdmin(ctx, userID) {
+		return nil, fmt.Errorf("permission denied: admin role required")
+	}
+
 	thunk := r.Loaders.LeaderboardConfigByIDLoader.Load(ctx, id)
 	config, err := thunk()
 	if err != nil {
@@ -185,6 +158,13 @@ func (r *queryResolver) LeaderboardConfig(ctx context.Context, id string) (*mode
 
 // LeaderboardConfigs is the resolver for the leaderboardConfigs field.
 func (r *queryResolver) LeaderboardConfigs(ctx context.Context, filter *model.LeaderboardConfigFilter, first *int, after *string, last *int, before *string) (*model.LeaderboardConfigConnection, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+	if !r.RoleService.IsAdmin(ctx, userID) {
+		return nil, fmt.Errorf("permission denied: admin role required")
+	}
 	return r.getFilteredLeaderboardConfigs(ctx, filter, first, after, last, before)
 }
 

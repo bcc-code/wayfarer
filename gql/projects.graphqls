@@ -14,6 +14,10 @@ type Project {
     activeChallenges: [Challenge!]! @goField(forceResolver: true)
     completedChallenges: [Challenge!]! @goField(forceResolver: true)
     activeChallengesCount: Int! @goField(forceResolver: true)
+    """
+    Ad-hoc leaderboard computed directly from the given entityType/filter at request time.
+    For named, admin-curated leaderboards, see `leaderboards` (LeaderboardConfig) instead.
+    """
     leaderboard(
         entityType: LeaderboardEntityType!
         filter: LeaderboardFilter
@@ -21,7 +25,11 @@ type Project {
         after: String
         last: Int
         before: String
-    ): LeaderboardConnection! @goField(forceResolver: true) @deprecated(reason: "Use `leaderboards` (LeaderboardConfig) for persisted, admin-managed leaderboards instead.")
+    ): LeaderboardConnection! @goField(forceResolver: true)
+    """
+    Active leaderboard configs for this project (all configs, including inactive, for admins/superadmins).
+    """
+    leaderboards: [LeaderboardConfig!]! @goField(forceResolver: true)
     events: [Event!]! @goField(forceResolver: true)
     startDate: DateTime!
     endDate: DateTime!

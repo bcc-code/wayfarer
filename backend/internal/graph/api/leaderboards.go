@@ -77,14 +77,7 @@ func filterConfigsByVisibility(configs []*model.LeaderboardConfig, isAdmin bool)
 // buildLeaderboardParamsFromConfig adapts a persisted LeaderboardConfig plus pagination
 // args into services.LeaderboardParams, and reports whether it's an event-scoped config
 // (so the caller knows to call GetEventLeaderboard instead of GetProjectLeaderboard).
-func buildLeaderboardParamsFromConfig(obj *model.LeaderboardConfig, first *int, after *string, last *int, before *string, userID string) (params services.LeaderboardParams, isEvent bool, err error) {
-	var filter *model.LeaderboardFilter
-	if obj.Filter != nil {
-		if err := json.Unmarshal([]byte(*obj.Filter), &filter); err != nil {
-			return services.LeaderboardParams{}, false, fmt.Errorf("failed to parse leaderboard config filter: %w", err)
-		}
-	}
-
+func buildLeaderboardParamsFromConfig(obj *model.LeaderboardConfig, first *int, after *string, last *int, before *string, userID string) (params services.LeaderboardParams, isEvent bool) {
 	contextID := obj.ProjectID
 	isEvent = obj.EventID != nil
 	if isEvent {
@@ -94,13 +87,35 @@ func buildLeaderboardParamsFromConfig(obj *model.LeaderboardConfig, first *int, 
 	return services.LeaderboardParams{
 		ContextID:  contextID,
 		EntityType: obj.EntityType,
-		Filter:     filter,
+		Filter:     filterViewToFilter(obj.Filter),
 		First:      first,
 		After:      after,
 		Last:       last,
 		Before:     before,
 		UserID:     userID,
-	}, isEvent, nil
+	}, isEvent
+}
+
+// filterViewToFilter converts the read-only LeaderboardFilterView (LeaderboardConfig.filter)
+// back into the LeaderboardFilter input shape used internally by the leaderboard engine.
+func filterViewToFilter(view *model.LeaderboardFilterView) *model.LeaderboardFilter {
+	if view == nil {
+		return nil
+	}
+	filter := &model.LeaderboardFilter{
+		MinScore:       view.MinScore,
+		MaxScore:       view.MaxScore,
+		ChurchID:       view.ChurchID,
+		Country:        view.Country,
+		ChurchCategory: view.ChurchCategory,
+		Gender:         view.Gender,
+		TeamID:         view.TeamID,
+		SuperTeamID:    view.SuperTeamID,
+	}
+	if view.AgeRange != nil {
+		filter.AgeRange = &model.AgeRangeInput{Min: view.AgeRange.Min, Max: view.AgeRange.Max}
+	}
+	return filter
 }
 
 // getLeaderboardForConfig computes the finished, paginated leaderboard for a persisted
@@ -112,14 +127,12 @@ func (r *Resolver) getLeaderboardForConfig(ctx context.Context, obj *model.Leade
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
-	params, isEvent, err := buildLeaderboardParamsFromConfig(obj, first, after, last, before, currentUserID)
-	if err != nil {
-		return nil, err
-	}
+	params, isEvent := buildLeaderboardParamsFromConfig(obj, first, after, last, before, currentUserID)
 
 	var entries []services.LeaderboardEntry
 	var meEntry *services.LeaderboardEntry
 	var totalCount int
+	var err error
 	if isEvent {
 		entries, meEntry, totalCount, err = r.LeaderboardService.GetEventLeaderboard(ctx, params)
 	} else {

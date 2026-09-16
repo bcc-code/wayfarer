@@ -7,6 +7,10 @@ type Event {
     name: String!
     description: String!
     challenges: [Challenge!]! @goField(forceResolver: true)
+    """
+    Ad-hoc leaderboard computed directly from the given entityType/filter at request time.
+    For named, admin-curated leaderboards, see `leaderboards` (LeaderboardConfig) instead.
+    """
     leaderboard(
         entityType: LeaderboardEntityType!
         filter: LeaderboardFilter
@@ -14,7 +18,11 @@ type Event {
         after: String
         last: Int
         before: String
-    ): LeaderboardConnection! @goField(forceResolver: true) @deprecated(reason: "Use `leaderboards` (LeaderboardConfig) for persisted, admin-managed leaderboards instead.")
+    ): LeaderboardConnection! @goField(forceResolver: true)
+    """
+    Active leaderboard configs for this event (all configs, including inactive, for admins/superadmins).
+    """
+    leaderboards: [LeaderboardConfig!]! @goField(forceResolver: true)
     startDate: DateTime!
     endDate: DateTime!
     parentProject: Project! @goField(forceResolver: true)

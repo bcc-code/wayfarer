@@ -7,12 +7,8 @@ type LeaderboardConfig {
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     name: String!
-    slug: String!
     entityType: LeaderboardEntityType!
-    """
-    The filter applied to this leaderboard, mirroring the `LeaderboardFilter` input shape.
-    """
-    filter: JSON
+    filter: LeaderboardFilterView
     sortOrder: Int!
     isActive: Boolean!
     createdAt: DateTime!
@@ -23,13 +19,31 @@ type LeaderboardConfig {
     leaderboard(first: Int, after: String, last: Int, before: String): LeaderboardConnection! @goField(forceResolver: true)
 }
 
+# ==================== Filter View (read-side mirror of LeaderboardFilter) ====================
+
+"""
+Read-only mirror of the `LeaderboardFilter` input, applied to this leaderboard.
+Kept as a separate type because GraphQL doesn't allow an `input` type as an output field's
+type — mirrors the AgeRange/AgeRangeInput pattern already used elsewhere in this schema.
+"""
+type LeaderboardFilterView {
+    minScore: Int
+    maxScore: Int
+    churchId: ID
+    country: String
+    churchCategory: ChurchCategory
+    gender: Gender
+    ageRange: AgeRange
+    teamId: ID
+    superTeamId: ID
+}
+
 # ==================== Input Types ====================
 
 input CreateLeaderboardConfigInput {
     projectId: ID!
     eventId: ID
     name: String!
-    slug: String!
     entityType: LeaderboardEntityType!
     filter: LeaderboardFilter
     sortOrder: Int
@@ -37,17 +51,11 @@ input CreateLeaderboardConfigInput {
 }
 
 input UpdateLeaderboardConfigInput {
-    name: String
-    slug: String
-    entityType: LeaderboardEntityType
+    name: String!
+    entityType: LeaderboardEntityType!
     filter: LeaderboardFilter
-    """
-    Set to true to remove the existing filter entirely (show an unfiltered leaderboard).
-    Ignored if `filter` is also provided. Has no effect otherwise.
-    """
-    clearFilter: Boolean
-    sortOrder: Int
-    isActive: Boolean
+    sortOrder: Int!
+    isActive: Boolean!
 }
 
 input LeaderboardConfigFilter {
@@ -73,23 +81,8 @@ type LeaderboardConfigConnection {
 # ==================== Queries ====================
 
 extend type Query {
-    # Admin management — includes inactive/draft configs.
-    leaderboardConfig(id: ID!): LeaderboardConfig! @requireRole(roles: ["admin", "superadmin"])
-    leaderboardConfigs(filter: LeaderboardConfigFilter, first: Int, after: String, last: Int, before: String): LeaderboardConfigConnection! @requireRole(roles: ["admin", "superadmin"])
-}
-
-extend type Project {
-    """
-    Active leaderboard configs for this project (all configs, including inactive, for admins/superadmins).
-    """
-    leaderboards: [LeaderboardConfig!]! @goField(forceResolver: true)
-}
-
-extend type Event {
-    """
-    Active leaderboard configs for this event (all configs, including inactive, for admins/superadmins).
-    """
-    leaderboards: [LeaderboardConfig!]! @goField(forceResolver: true)
+    leaderboardConfig(id: ID!): LeaderboardConfig!
+    leaderboardConfigs(filter: LeaderboardConfigFilter, first: Int, after: String, last: Int, before: String): LeaderboardConfigConnection!
 }
 
 # ==================== Mutations ====================

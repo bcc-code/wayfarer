@@ -20,7 +20,6 @@ func TestConvertRowToLeaderboardConfig(t *testing.T) {
 		ProjectID:  "PR01ARZ3NDEKTSV4RRFFQ69G5FAV",
 		EventID:    &eventID,
 		Name:       "Top Churches",
-		Slug:       "top-churches",
 		EntityType: "CHURCHES",
 		Filter:     []byte(`{"minScore":5}`),
 		SortOrder:  2,
@@ -36,10 +35,10 @@ func TestConvertRowToLeaderboardConfig(t *testing.T) {
 	require.NotNil(t, result.EventID)
 	assert.Equal(t, eventID, *result.EventID)
 	assert.Equal(t, "Top Churches", result.Name)
-	assert.Equal(t, "top-churches", result.Slug)
 	assert.Equal(t, model.LeaderboardEntityTypeChurches, result.EntityType)
 	require.NotNil(t, result.Filter)
-	assert.JSONEq(t, `{"minScore":5}`, *result.Filter)
+	require.NotNil(t, result.Filter.MinScore)
+	assert.Equal(t, 5, *result.Filter.MinScore)
 	assert.Equal(t, 2, result.SortOrder)
 	assert.True(t, result.IsActive)
 	assert.True(t, now.Equal(result.CreatedAt.Time))
@@ -51,7 +50,6 @@ func TestConvertRowToLeaderboardConfig_NilFilterAndEvent(t *testing.T) {
 		ProjectID:  "PR01ARZ3NDEKTSV4RRFFQ69G5FAV",
 		EventID:    nil,
 		Name:       "Global",
-		Slug:       "global",
 		EntityType: "PERSONS",
 		Filter:     nil,
 		SortOrder:  0,

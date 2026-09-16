@@ -495,7 +495,6 @@ export type CreateLeaderboardConfigInput = {
   isActive?: InputMaybe<Scalars['Boolean']['input']>;
   name: Scalars['String']['input'];
   projectId: Scalars['ID']['input'];
-  slug: Scalars['String']['input'];
   sortOrder?: InputMaybe<Scalars['Int']['input']>;
 };
 
@@ -686,7 +685,10 @@ export type Event = {
   description: Scalars['String']['output'];
   endDate: Scalars['DateTime']['output'];
   id: Scalars['ID']['output'];
-  /** @deprecated Use `leaderboards` (LeaderboardConfig) for persisted, admin-managed leaderboards instead. */
+  /**
+   * Ad-hoc leaderboard computed directly from the given entityType/filter at request time.
+   * For named, admin-curated leaderboards, see `leaderboards` (LeaderboardConfig) instead.
+   */
   leaderboard: LeaderboardConnection;
   /** Active leaderboard configs for this event (all configs, including inactive, for admins/superadmins). */
   leaderboards: Array<LeaderboardConfig>;
@@ -961,15 +963,13 @@ export type LeaderboardConfig = {
   createdAt: Scalars['DateTime']['output'];
   entityType: LeaderboardEntityType;
   event?: Maybe<Event>;
-  /** The filter applied to this leaderboard, mirroring the `LeaderboardFilter` input shape. */
-  filter?: Maybe<Scalars['JSON']['output']>;
+  filter?: Maybe<LeaderboardFilterView>;
   id: Scalars['ID']['output'];
   isActive: Scalars['Boolean']['output'];
   /** The finished, computed leaderboard for this config. */
   leaderboard: LeaderboardConnection;
   name: Scalars['String']['output'];
   project: Project;
-  slug: Scalars['String']['output'];
   sortOrder: Scalars['Int']['output'];
   updatedAt: Scalars['DateTime']['output'];
 };
@@ -1063,6 +1063,24 @@ export type LeaderboardFilter = {
   minScore?: InputMaybe<Scalars['Int']['input']>;
   superTeamId?: InputMaybe<Scalars['ID']['input']>;
   teamId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+/**
+ * Read-only mirror of the `LeaderboardFilter` input, applied to this leaderboard.
+ * Kept as a separate type because GraphQL doesn't allow an `input` type as an output field's
+ * type — mirrors the AgeRange/AgeRangeInput pattern already used elsewhere in this schema.
+ */
+export type LeaderboardFilterView = {
+  __typename?: 'LeaderboardFilterView';
+  ageRange?: Maybe<AgeRange>;
+  churchCategory?: Maybe<ChurchCategory>;
+  churchId?: Maybe<Scalars['ID']['output']>;
+  country?: Maybe<Scalars['String']['output']>;
+  gender?: Maybe<Gender>;
+  maxScore?: Maybe<Scalars['Int']['output']>;
+  minScore?: Maybe<Scalars['Int']['output']>;
+  superTeamId?: Maybe<Scalars['ID']['output']>;
+  teamId?: Maybe<Scalars['ID']['output']>;
 };
 
 export type MarkdownText = {
@@ -2165,7 +2183,10 @@ export type Project = {
   infoMessageEnd?: Maybe<Scalars['DateTime']['output']>;
   infoMessageStart?: Maybe<Scalars['DateTime']['output']>;
   journal: ScoreJournalConnection;
-  /** @deprecated Use `leaderboards` (LeaderboardConfig) for persisted, admin-managed leaderboards instead. */
+  /**
+   * Ad-hoc leaderboard computed directly from the given entityType/filter at request time.
+   * For named, admin-curated leaderboards, see `leaderboards` (LeaderboardConfig) instead.
+   */
   leaderboard: LeaderboardConnection;
   /** Active leaderboard configs for this project (all configs, including inactive, for admins/superadmins). */
   leaderboards: Array<LeaderboardConfig>;
@@ -3205,17 +3226,11 @@ export type UpdateEventInput = {
 };
 
 export type UpdateLeaderboardConfigInput = {
-  /**
-   * Set to true to remove the existing filter entirely (show an unfiltered leaderboard).
-   * Ignored if `filter` is also provided. Has no effect otherwise.
-   */
-  clearFilter?: InputMaybe<Scalars['Boolean']['input']>;
-  entityType?: InputMaybe<LeaderboardEntityType>;
+  entityType: LeaderboardEntityType;
   filter?: InputMaybe<LeaderboardFilter>;
-  isActive?: InputMaybe<Scalars['Boolean']['input']>;
-  name?: InputMaybe<Scalars['String']['input']>;
-  slug?: InputMaybe<Scalars['String']['input']>;
-  sortOrder?: InputMaybe<Scalars['Int']['input']>;
+  isActive: Scalars['Boolean']['input'];
+  name: Scalars['String']['input'];
+  sortOrder: Scalars['Int']['input'];
 };
 
 export type UpdateProjectInput = {

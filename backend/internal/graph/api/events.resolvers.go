@@ -66,6 +66,11 @@ func (r *eventResolver) Leaderboard(ctx context.Context, obj *model.Event, entit
 	return connection, nil
 }
 
+// Leaderboards is the resolver for the leaderboards field.
+func (r *eventResolver) Leaderboards(ctx context.Context, obj *model.Event) ([]model.LeaderboardConfig, error) {
+	return r.getVisibleLeaderboardConfigsByEvent(ctx, obj.ID)
+}
+
 // ParentProject is the resolver for the parentProject field.
 func (r *eventResolver) ParentProject(ctx context.Context, obj *model.Event) (*model.Project, error) {
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)

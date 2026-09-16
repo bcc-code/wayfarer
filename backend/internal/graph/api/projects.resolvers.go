@@ -504,6 +504,11 @@ func (r *projectResolver) Leaderboard(ctx context.Context, obj *model.Project, e
 	return connection, nil
 }
 
+// Leaderboards is the resolver for the leaderboards field.
+func (r *projectResolver) Leaderboards(ctx context.Context, obj *model.Project) ([]model.LeaderboardConfig, error) {
+	return r.getVisibleLeaderboardConfigsByProject(ctx, obj.ID)
+}
+
 // Events is the resolver for the events field.
 func (r *projectResolver) Events(ctx context.Context, obj *model.Project) ([]model.Event, error) {
 	thunk := r.Loaders.EventsByProjectLoader.Load(ctx, obj.ID)

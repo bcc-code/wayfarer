@@ -247,7 +247,6 @@ type LeaderboardConfig struct {
 	ProjectID  string             `json:"project_id"`
 	EventID    *string            `json:"event_id"`
 	Name       string             `json:"name"`
-	Slug       string             `json:"slug"`
 	EntityType string             `json:"entity_type"`
 	Filter     []byte             `json:"filter"`
 	SortOrder  int32              `json:"sort_order"`

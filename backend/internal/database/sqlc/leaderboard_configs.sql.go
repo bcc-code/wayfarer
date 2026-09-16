@@ -46,7 +46,6 @@ INSERT INTO leaderboard_configs (
     project_id,
     event_id,
     name,
-    slug,
     entity_type,
     filter,
     sort_order,
@@ -58,12 +57,11 @@ VALUES (
     $3::text,
     $4::text,
     $5::text,
-    $6::text,
-    $7::jsonb,
-    COALESCE($8::int, 0),
-    COALESCE($9::bool, true)
+    $6::jsonb,
+    COALESCE($7::int, 0),
+    COALESCE($8::bool, true)
 )
-RETURNING id, project_id, event_id, name, slug, entity_type, filter, sort_order, is_active, created_at, updated_at
+RETURNING id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at
 `
 
 type CreateLeaderboardConfigParams struct {
@@ -71,7 +69,6 @@ type CreateLeaderboardConfigParams struct {
 	Projectid  string  `json:"projectid"`
 	Eventid    *string `json:"eventid"`
 	Name       string  `json:"name"`
-	Slug       string  `json:"slug"`
 	Entitytype string  `json:"entitytype"`
 	Filter     []byte  `json:"filter"`
 	Sortorder  *int32  `json:"sortorder"`
@@ -84,7 +81,6 @@ func (q *Queries) CreateLeaderboardConfig(ctx context.Context, arg CreateLeaderb
 		arg.Projectid,
 		arg.Eventid,
 		arg.Name,
-		arg.Slug,
 		arg.Entitytype,
 		arg.Filter,
 		arg.Sortorder,
@@ -96,7 +92,6 @@ func (q *Queries) CreateLeaderboardConfig(ctx context.Context, arg CreateLeaderb
 		&i.ProjectID,
 		&i.EventID,
 		&i.Name,
-		&i.Slug,
 		&i.EntityType,
 		&i.Filter,
 		&i.SortOrder,
@@ -118,7 +113,7 @@ func (q *Queries) DeleteLeaderboardConfig(ctx context.Context, id string) error 
 }
 
 const GetLeaderboardConfigByID = `-- name: GetLeaderboardConfigByID :one
-SELECT id, project_id, event_id, name, slug, entity_type, filter, sort_order, is_active, created_at, updated_at
+SELECT id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at
 FROM leaderboard_configs
 WHERE id = $1::char(28)
 `
@@ -131,7 +126,6 @@ func (q *Queries) GetLeaderboardConfigByID(ctx context.Context, id string) (*Lea
 		&i.ProjectID,
 		&i.EventID,
 		&i.Name,
-		&i.Slug,
 		&i.EntityType,
 		&i.Filter,
 		&i.SortOrder,
@@ -143,7 +137,7 @@ func (q *Queries) GetLeaderboardConfigByID(ctx context.Context, id string) (*Lea
 }
 
 const GetLeaderboardConfigsByEventIDs = `-- name: GetLeaderboardConfigsByEventIDs :many
-SELECT id, project_id, event_id, name, slug, entity_type, filter, sort_order, is_active, created_at, updated_at
+SELECT id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at
 FROM leaderboard_configs
 WHERE event_id = ANY($1::char(28)[])
 ORDER BY event_id, sort_order, id
@@ -165,7 +159,6 @@ func (q *Queries) GetLeaderboardConfigsByEventIDs(ctx context.Context, eventIds 
 			&i.ProjectID,
 			&i.EventID,
 			&i.Name,
-			&i.Slug,
 			&i.EntityType,
 			&i.Filter,
 			&i.SortOrder,
@@ -184,7 +177,7 @@ func (q *Queries) GetLeaderboardConfigsByEventIDs(ctx context.Context, eventIds 
 }
 
 const GetLeaderboardConfigsByIDs = `-- name: GetLeaderboardConfigsByIDs :many
-SELECT id, project_id, event_id, name, slug, entity_type, filter, sort_order, is_active, created_at, updated_at
+SELECT id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at
 FROM leaderboard_configs
 WHERE id = ANY($1::char(28)[])
 `
@@ -203,7 +196,6 @@ func (q *Queries) GetLeaderboardConfigsByIDs(ctx context.Context, ids []string) 
 			&i.ProjectID,
 			&i.EventID,
 			&i.Name,
-			&i.Slug,
 			&i.EntityType,
 			&i.Filter,
 			&i.SortOrder,
@@ -222,7 +214,7 @@ func (q *Queries) GetLeaderboardConfigsByIDs(ctx context.Context, ids []string) 
 }
 
 const GetLeaderboardConfigsByProjectIDs = `-- name: GetLeaderboardConfigsByProjectIDs :many
-SELECT id, project_id, event_id, name, slug, entity_type, filter, sort_order, is_active, created_at, updated_at
+SELECT id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at
 FROM leaderboard_configs
 WHERE project_id = ANY($1::char(28)[])
 ORDER BY project_id, sort_order, id
@@ -244,7 +236,6 @@ func (q *Queries) GetLeaderboardConfigsByProjectIDs(ctx context.Context, project
 			&i.ProjectID,
 			&i.EventID,
 			&i.Name,
-			&i.Slug,
 			&i.EntityType,
 			&i.Filter,
 			&i.SortOrder,
@@ -263,7 +254,7 @@ func (q *Queries) GetLeaderboardConfigsByProjectIDs(ctx context.Context, project
 }
 
 const GetLeaderboardConfigsFilteredCursor = `-- name: GetLeaderboardConfigsFilteredCursor :many
-SELECT id, project_id, event_id, name, slug, entity_type, filter, sort_order, is_active, created_at, updated_at
+SELECT id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at
 FROM leaderboard_configs
 WHERE
     ($1::char(28)[] IS NULL OR id = ANY($1::char(28)[]))
@@ -324,7 +315,6 @@ func (q *Queries) GetLeaderboardConfigsFilteredCursor(ctx context.Context, arg G
 			&i.ProjectID,
 			&i.EventID,
 			&i.Name,
-			&i.Slug,
 			&i.EntityType,
 			&i.Filter,
 			&i.SortOrder,
@@ -345,38 +335,31 @@ func (q *Queries) GetLeaderboardConfigsFilteredCursor(ctx context.Context, arg G
 const UpdateLeaderboardConfig = `-- name: UpdateLeaderboardConfig :one
 UPDATE leaderboard_configs
 SET
-    name = COALESCE($1::text, name),
-    slug = COALESCE($2::text, slug),
-    entity_type = COALESCE($3::text, entity_type),
-    filter = CASE
-        WHEN $4::jsonb IS NOT NULL THEN $4::jsonb
-        WHEN $5::bool = true THEN NULL
-        ELSE filter
-    END,
-    sort_order = COALESCE($6::int, sort_order),
-    is_active = COALESCE($7::bool, is_active)
-WHERE id = $8::char(28)
-RETURNING id, project_id, event_id, name, slug, entity_type, filter, sort_order, is_active, created_at, updated_at
+    name = $1::text,
+    entity_type = $2::text,
+    filter = $3::jsonb,
+    sort_order = $4::int,
+    is_active = $5::bool
+WHERE id = $6::char(28)
+RETURNING id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at
 `
 
 type UpdateLeaderboardConfigParams struct {
-	Name        *string `json:"name"`
-	Slug        *string `json:"slug"`
-	Entitytype  *string `json:"entitytype"`
-	Filter      []byte  `json:"filter"`
-	Clearfilter *bool   `json:"clearfilter"`
-	Sortorder   *int32  `json:"sortorder"`
-	Isactive    *bool   `json:"isactive"`
-	ID          string  `json:"id"`
+	Name       string `json:"name"`
+	Entitytype string `json:"entitytype"`
+	Filter     []byte `json:"filter"`
+	Sortorder  int32  `json:"sortorder"`
+	Isactive   bool   `json:"isactive"`
+	ID         string `json:"id"`
 }
 
+// Full-replace update: the caller always sends the complete desired state.
+// A null filter means "no filter" (never ambiguous with "not provided").
 func (q *Queries) UpdateLeaderboardConfig(ctx context.Context, arg UpdateLeaderboardConfigParams) (*LeaderboardConfig, error) {
 	row := q.db.QueryRow(ctx, UpdateLeaderboardConfig,
 		arg.Name,
-		arg.Slug,
 		arg.Entitytype,
 		arg.Filter,
-		arg.Clearfilter,
 		arg.Sortorder,
 		arg.Isactive,
 		arg.ID,
@@ -387,7 +370,6 @@ func (q *Queries) UpdateLeaderboardConfig(ctx context.Context, arg UpdateLeaderb
 		&i.ProjectID,
 		&i.EventID,
 		&i.Name,
-		&i.Slug,
 		&i.EntityType,
 		&i.Filter,
 		&i.SortOrder,
