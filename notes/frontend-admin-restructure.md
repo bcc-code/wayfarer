@@ -420,6 +420,28 @@ about a dozen Nuxt UI components, nearly all `UIcon`, because it runs on the
 
 Also in this pass:
 
+- **Semantic colours stopped leaking in from the user app.** `assets/styles/user.css`
+  — imported by the *user-facing* `default.vue` — sets `--ui-success` and
+  `--ui-error` on `:root` from the brand accents (`#9ed63c`, a lime). Those are
+  per-layout CSS chunks, so once that layout has been visited the declarations
+  stay for the rest of the SPA session and the admin panel renders the user
+  app's lime as its success colour. Admin now declares its own semantic tokens
+  in `admin.css`, with the palettes (`emerald`/`rose`/`amber`/`blue`) chosen in
+  `app.config.ts`.
+
+  Two things learned while verifying, both non-obvious:
+
+  - Nuxt UI injects its generated palette inside `@layer theme`, and **unlayered
+    CSS beats any layer**, so plain `:root` declarations in `admin.css` win
+    without extra specificity. (The reference template relies on the same thing
+    for `--ui-radius`.)
+  - `app.config.ts` cannot choose the *shade* a semantic token resolves to — it
+    is fixed at 500 light / 400 dark (`IC(role, 500)` / `IC(role, 400)` in the
+    runtime generator). Changing that needs a CSS token, which is why the shade
+    lives in `admin.css` while the palette lives in app.config. Admin uses 600
+    in light mode, where 500 reads as neon on the pale tints that `subtle`
+    badges use; dark stays at 400, matching the default.
+
 - **Admin page background put on one palette.** The shell inherited
   `bg-background-default` from `nuxt.config`'s `rootAttrs` — the _user app's_
   grey (`#efefef` / `#222222`) — while `UCard` and the tables sit on Nuxt UI's

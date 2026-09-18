@@ -39,6 +39,12 @@ export default defineAppConfig({
     colors: {
       primary: 'emerald',
       neutral: 'zinc',
+      // Semantic palettes for the admin panel. Softer hues than the Nuxt UI
+      // defaults; the shade they resolve to is set per mode in admin.css.
+      success: 'emerald',
+      error: 'rose',
+      warning: 'amber',
+      info: 'blue',
     },
     button: {
       slots: {
