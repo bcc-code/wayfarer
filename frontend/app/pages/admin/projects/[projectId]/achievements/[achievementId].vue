@@ -95,9 +95,9 @@ const { confirm } = useConfirm()
 
 const { isAuthReady } = useAuthReady()
 const { data, fetching, error } = useAdminProjectAchievementPageQuery({
-  variables: {
+  variables: computed(() => ({
     achievementId: route.params.achievementId,
-  },
+  })),
   pause: computed(() => !isAuthReady.value),
 })
 

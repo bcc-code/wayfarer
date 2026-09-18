@@ -49,9 +49,9 @@ const {
   error,
   executeQuery: refetchQuiz,
 } = useAdminChallengeQuizPageQuery({
-  variables: {
+  variables: computed(() => ({
     challengeId: route.params.challengeId,
-  },
+  })),
   pause: computed(() => !isAuthReady.value),
 })
 

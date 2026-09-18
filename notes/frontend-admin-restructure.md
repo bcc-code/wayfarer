@@ -545,6 +545,64 @@ needed a real timer delay, since a microtask let it pass on timing luck.
 
 Unit tests 459 → 519.
 
+### 2026-09-18 — project context, tabs → routes
+
+`pages/admin/projects/[projectId].vue` is now a parent route and the `UTabs`
+kitchen sink is gone. The route-manifest snapshot confirmed the `unrouting`
+behaviour on the real tree — the only change from adding the parent was:
+
+```
++ (unnamed)                 /admin/projects/:projectId()   [projectId].vue
+- admin-projects-projectId  /admin/projects/:projectId()   [projectId]/index.vue
++ admin-projects-projectId  /admin/projects/:projectId()/  [projectId]/index.vue
+```
+
+The parent goes unnamed, `admin-projects-projectId` stays with `index.vue`, and
+all ~60 named-route bindings keep resolving. Nothing else moved.
+
+**`useCurrentProject()` owns the project**, not the parent page. The consumers
+that need it most — sidebar, project switcher, navbar title — are rendered by
+the *layout*, which is an ancestor of the page, so anything the page provided
+would be invisible to them. urql's document cache keys on operation + variables,
+so every caller shares one result. `requestPolicy: 'cache-first'` because the
+client default would otherwise fire an identical request per subscriber on first
+paint.
+
+**Every query variable in the project subtree became a `computed`** (12 files).
+This was the single most likely regression: pages passed
+`variables: { projectId: route.params.projectId }` as a plain object, which is
+correct only while each page remounts on navigation. With a persistent parent,
+switching project changes the param *without* a remount and a static object
+silently keeps querying the old project.
+
+New routes:
+
+| Route | Source |
+| --- | --- |
+| `challenges/index.vue` | the challenges tab |
+| `achievements/index.vue` | the achievements tab, drag-reorder intact |
+| `events/index.vue` | new — un-orphans `events/new` and `events/[eventId]`, which nothing linked to |
+| `superteams/index.vue` | the superteams tab — a real list at last |
+| `superteams/distribute.vue` | the ladder-to-heaven tool that used to occupy `superteams/index.vue` |
+
+`[projectId]/index.vue` is now an overview: project header plus a counts-only
+query (`first: 0`, `totalCount`) linking to each section. The old mega-query is
+gone from `generated.ts` entirely, and with it the hardcoded `first: 50` that
+silently truncated any project with more than 50 of anything.
+
+`?tab=` links were written to history by the old tab state, so the overview
+redirects the three known values to their replacement routes for one release.
+
+`PROJECT_NAV` grew from 3 entries to 6 now the routes exist — an append, as
+predicted, not a redesign.
+
+The domain-boundary test earned its keep here: `useCurrentProject.ts` calls the
+generated `useAdminProjectShellQuery`, which matches its `useAdmin*` probe, and
+it sits in the shared `composables/` folder. It is admin code, so it joined
+`ADMIN_DOMAIN` in both the test and the ESLint rule.
+
+Unit tests hold at 519; the work was structural rather than new logic.
+
 ### Gate status after the above
 
 | Check           | Before | After                          |
@@ -561,14 +619,9 @@ Unit tests 459 → 519.
 
 Each step is independently shippable.
 
-1. **Project context + tabs → routes.** `[projectId].vue` parent with a
-   `useCurrentProject()` composable, split the mega-query, add
-   `challenges/index.vue`, `achievements/index.vue` (keep the
-   `vue-draggable-plus` reorder), `events/index.vue`, move LADD to
-   `superteams/distribute.vue` and write the real superteams list.
-2. **Route moves.** `teams`/`scores` under `[projectId]` with redirect stubs;
+1. **Route moves.** `teams`/`scores` under `[projectId]` with redirect stubs;
    the `canManageTeam` TODO is already resolved.
-3. **Nuxt layers.** `git mv` into `layers/user/app/**` and `layers/admin/app/**`,
+2. **Nuxt layers.** `git mv` into `layers/user/app/**` and `layers/admin/app/**`,
    keeping the `admin/` directory inside the admin layer's `pages/`. Verified by
    the route-manifest snapshot staying byte-identical. Then widen the `~` alias
    in `vitest.config.ts`, add the layer pages dirs as roots in

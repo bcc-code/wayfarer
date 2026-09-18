@@ -51,9 +51,9 @@ const { confirm } = useConfirm()
 
 const { isAuthReady } = useAuthReady()
 const { data, fetching, error } = useAdminProjectChallengePageQuery({
-  variables: {
+  variables: computed(() => ({
     challengeId: route.params.challengeId,
-  },
+  })),
   pause: computed(() => !isAuthReady.value),
 })
 

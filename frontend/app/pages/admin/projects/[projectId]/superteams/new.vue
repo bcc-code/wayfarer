@@ -18,9 +18,9 @@ const toast = useToast()
 
 const { isAuthReady } = useAuthReady()
 const { data } = useAdminSuperTeamNewPageQuery({
-  variables: {
+  variables: computed(() => ({
     projectId: route.params.projectId,
-  },
+  })),
   pause: computed(() => !isAuthReady.value),
 })
 

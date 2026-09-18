@@ -41,9 +41,9 @@ const route = useRoute('admin-projects-projectId-edit')
 
 const { isAuthReady } = useAuthReady()
 const { data } = useAdminProjectEditPageQuery({
-  variables: {
+  variables: computed(() => ({
     projectId: route.params.projectId,
-  },
+  })),
   pause: computed(() => !isAuthReady.value),
 })
 

@@ -98,16 +98,31 @@ export const GLOBAL_NAV: AdminNavItem[] = [
 /**
  * Shown only while inside `/admin/projects/:projectId`.
  *
- * Limited to routes that exist today. The sections still living as tabs on
- * `projects/[projectId]/index.vue` — challenges, achievements, events — plus the
- * project-scoped teams and scores join this list once those routes exist; at
- * that point this is an append, not a redesign.
+ * The project-scoped teams and scores join this list once those routes exist.
  */
 export const PROJECT_NAV: AdminNavItem[] = [
   {
     label: 'Oversikt',
     icon: 'lucide:layout-dashboard',
     to: 'admin-projects-projectId',
+  },
+  {
+    label: 'Utfordringer',
+    icon: 'lucide:swords',
+    to: 'admin-projects-projectId-challenges',
+    match: 'admin-projects-projectId-challenges',
+  },
+  {
+    label: 'Utmerkelser',
+    icon: 'lucide:award',
+    to: 'admin-projects-projectId-achievements',
+    match: 'admin-projects-projectId-achievements',
+  },
+  {
+    label: 'Arrangement',
+    icon: 'lucide:calendar',
+    to: 'admin-projects-projectId-events',
+    match: 'admin-projects-projectId-events',
   },
   {
     label: 'Superlag',

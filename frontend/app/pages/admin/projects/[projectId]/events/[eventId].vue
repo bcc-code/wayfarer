@@ -30,9 +30,9 @@ const route = useRoute('admin-projects-projectId-events-eventId')
 
 const { isAuthReady } = useAuthReady()
 const { data, fetching, error } = useAdminProjectEventPageQuery({
-  variables: {
+  variables: computed(() => ({
     eventId: route.params.eventId,
-  },
+  })),
   pause: computed(() => !isAuthReady.value),
 })
 

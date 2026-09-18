@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { VueDraggable } from 'vue-draggable-plus'
+import type { RouteLocationRaw } from 'vue-router'
 
 definePageMeta({
   permission: 'projects:view',
@@ -7,486 +7,130 @@ definePageMeta({
 })
 
 const route = useRoute('admin-projects-projectId')
-
 const { canEditProject } = usePermissions()
-const { isSuperAdmin } = useAuth()
 const canEdit = computed(() => canEditProject(route.params.projectId))
 
+// The project itself comes from the parent route's composable, so this page
+// does not re-fetch what the shell already has.
+const { project, fetching: fetchingProject } = useCurrentProject()
+
+// Counts only — each section owns its own list query on its own route.
 gql(`
-  query AdminProjectPage($projectId: ID!) {
-    project(id: $projectId) {
-      id
-      name
-      description
-      startDate
-      endDate
-      branding {
-        logoImage {
-          ...ImageFields
-        }
-        rounding
-        colors {
-          light {
-            accent
-          }
-          dark {
-            accent
-          }
-        }
-      }
-    }
-    achievements(first: 50, filter: { projectId: $projectId }) {
-      edges {
-        node {
-          id
-          name
-          descriptionPending
-          descriptionCompleted
-          imagePendingObject {
-            ...ImageFields
-          }
-          imageCompletedObject {
-            ...ImageFields
-          }
-          points
-          hidden
-        }
-      }
-    }
-    challenges(first: 50, filter: { projectId: $projectId }) {
-      edges {
-        node {
-          __typename
-          id
-          name
-          description
-          imageObject {
-            ...ImageFields
-          }
-        }
-      }
-    }
-    superteams(first: 50, filter: { projectId: $projectId }) {
-      edges {
-        node {
-          id
-          name
-          description
-          color
-          imageObject {
-            ...ImageFields
-          }
-          teams {
-            id
-          }
-        }
-      }
-    }
+  query AdminProjectOverview($projectId: ID!) {
+    challenges(first: 0, filter: { projectId: $projectId }) { totalCount }
+    achievements(first: 0, filter: { projectId: $projectId }) { totalCount }
+    events(first: 0, filter: { projectId: $projectId }) { totalCount }
+    superteams(first: 0, filter: { projectId: $projectId }) { totalCount }
   }
 `)
 
 const { isAuthReady } = useAuthReady()
-const {
-  data,
-  error,
-  fetching,
-  executeQuery: refetch,
-} = useAdminProjectPageQuery({
-  variables: {
-    projectId: route.params.projectId,
-  },
+const { data, error, fetching } = useAdminProjectOverviewQuery({
+  variables: computed(() => ({ projectId: route.params.projectId })),
   pause: computed(() => !isAuthReady.value),
 })
 
-type State = Omit<AdminProjectPageQuery['project'], 'id'>
+const projectRoute = (name: string): RouteLocationRaw =>
+  ({
+    name,
+    params: { projectId: route.params.projectId },
+  }) as RouteLocationRaw
 
-const state = reactive<State>({
-  name: '',
-  description: '',
-  startDate: '',
-  endDate: '',
-  branding: {
-    logoImage: null,
-    colors: {
-      dark: {
-        accent: '',
-      },
-      light: {
-        accent: '',
-      },
-    },
-    rounding: 0,
+const sections = computed(() => [
+  {
+    label: 'Utfordringer',
+    icon: 'lucide:swords',
+    count: data.value?.challenges.totalCount,
+    to: 'admin-projects-projectId-challenges',
   },
-})
-
-watch(data, () => {
-  if (data.value) {
-    state.name = data.value.project.name
-    state.description = data.value.project.description
-    state.startDate = data.value.project.startDate
-    state.endDate = data.value.project.endDate
-    state.branding = data.value.project.branding
-  }
-})
-
-// Tabs state management
-const params = useUrlSearchParams('history')
-const fallbackTab = useLocalStorage('fallback-tab', 'achievements')
-const tab = computed({
-  get() {
-    if (typeof params.tab === 'string') return params.tab
-    if (fallbackTab.value) return fallbackTab.value
-    return 'events'
+  {
+    label: 'Utmerkelser',
+    icon: 'lucide:award',
+    count: data.value?.achievements.totalCount,
+    to: 'admin-projects-projectId-achievements',
   },
-  set(tab: string) {
-    params.tab = tab
-    fallbackTab.value = tab
+  {
+    label: 'Arrangement',
+    icon: 'lucide:calendar',
+    count: data.value?.events.totalCount,
+    to: 'admin-projects-projectId-events',
   },
-})
-
-// Achievement reordering
-type AchievementNode =
-  AdminProjectPageQuery['achievements']['edges'][number]['node']
-const achievements = ref<AchievementNode[]>([])
-
-watch(
-  () => data.value?.achievements.edges,
-  (edges) => {
-    if (edges) {
-      achievements.value = edges.map((e) => e.node)
-    }
+  {
+    label: 'Superlag',
+    icon: 'lucide:users',
+    count: data.value?.superteams.totalCount,
+    to: 'admin-projects-projectId-superteams',
   },
-  { immediate: true },
-)
+])
 
-const { executeMutation: reorderAchievements } =
-  useReorderAchievementsMutation()
-const isReordering = ref(false)
-
-const toast = useToast()
-
-async function handleReorder() {
-  if (isReordering.value) return
-  isReordering.value = true
-
-  const result = await reorderAchievements({
-    projectId: route.params.projectId,
-    achievementIds: achievements.value.map((a) => a.id),
-  })
-
-  isReordering.value = false
-
-  if (result.error) {
-    toast.add({
-      title: 'Kunne ikke endre rekkefølge',
-      description: result.error.message,
-      color: 'error',
-    })
-    // Refetch to restore original order
-    refetch({ requestPolicy: 'network-only' })
-    return
-  }
-
-  toast.add({
-    title: 'Rekkefølge lagret',
-    color: 'success',
-  })
+// `?tab=` links are in the wild: the old tab state was written to history.
+// Redirect them to the route that replaced each tab for one release.
+const TAB_ROUTES: Record<string, string> = {
+  achievements: 'admin-projects-projectId-achievements',
+  challenges: 'admin-projects-projectId-challenges',
+  superteams: 'admin-projects-projectId-superteams',
 }
+
+onMounted(() => {
+  const tab = route.query.tab
+  const target = typeof tab === 'string' ? TAB_ROUTES[tab] : undefined
+  if (target) {
+    navigateTo(projectRoute(target), { replace: true })
+  }
+})
 </script>
 
 <template>
   <div>
-    <div class="border-default border-b py-2">
-      <div>
-        <UBreadcrumb
-          :items="[
-            {
-              label: 'Prosjekter',
-              to: { name: 'admin-projects' },
-            },
-            {
-              label: data?.project.name ?? route.params.projectId,
-              to: {
-                name: 'admin-projects-projectId',
-                params: { projectId: route.params.projectId },
-              },
-            },
-          ]"
+    <LoadingState v-if="fetchingProject" />
+    <ErrorState v-else-if="error" :error />
+    <template v-else-if="project">
+      <header class="mb-8 space-y-2">
+        <img
+          v-if="project.branding.logoImage?.url"
+          :src="project.branding.logoImage.url"
+          width="64"
+          class="mb-4 rounded"
         />
-      </div>
-    </div>
-    <div>
-      <LoadingState v-if="fetching" />
-      <ErrorState v-else-if="error" :error class="h-150" />
-      <template v-else-if="data">
-        <header class="my-12">
-          <div class="space-y-2">
-            <img
-              v-if="state.branding.logoImage?.url"
-              :src="state.branding.logoImage.url"
-              width="64"
-              class="mb-4 rounded"
-            />
-            <h1 class="text-3xl">
-              {{ state.name }}
-            </h1>
-            <p v-if="state.description" class="text-muted max-w-2xl">
-              {{ state.description }}
-            </p>
-            <div v-if="canEdit" class="mt-4 flex gap-2">
-              <UButton
-                variant="soft"
-                icon="lucide:pencil"
-                :to="{
-                  name: 'admin-projects-projectId-edit',
-                  params: { projectId: route.params.projectId },
-                }"
-              >
-                Rediger prosjekt
-              </UButton>
-              <UButton
-                v-if="isSuperAdmin"
-                variant="soft"
-                icon="lucide:users"
-                :to="{
-                  name: 'admin-projects-projectId-superteams',
-                  params: { projectId: route.params.projectId },
-                }"
-              >
-                LADD Superteams
-              </UButton>
-            </div>
-          </div>
-        </header>
-        <UTabs
-          v-model="tab"
-          :items="[
-            {
-              value: 'achievements',
-              label: 'Utmerkelser',
-              slot: 'achievements',
-            },
-            { value: 'challenges', label: 'Utfordringer', slot: 'challenges' },
-            {
-              value: 'superteams',
-              label: 'Superteams',
-              slot: 'superteams',
-            },
-          ]"
-          variant="link"
+        <h1 class="text-3xl">{{ project.name }}</h1>
+        <p v-if="project.description" class="text-muted max-w-2xl">
+          {{ project.description }}
+        </p>
+        <p class="text-dimmed text-sm">
+          {{ formatDateRange(project.startDate, project.endDate) }}
+        </p>
+        <div v-if="canEdit" class="pt-2">
+          <UButton
+            variant="soft"
+            icon="lucide:pencil"
+            :to="{
+              name: 'admin-projects-projectId-edit',
+              params: { projectId: route.params.projectId },
+            }"
+          >
+            Rediger prosjekt
+          </UButton>
+        </div>
+      </header>
+
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <NuxtLink
+          v-for="section in sections"
+          :key="section.label"
+          :to="projectRoute(section.to)"
         >
-          <template #challenges>
-            <div v-if="canEdit" class="my-2">
-              <UButton
-                icon="lucide:plus"
-                :to="{
-                  name: 'admin-projects-projectId-challenges-new',
-                  params: { projectId: route.params.projectId },
-                }"
-              >
-                Opprett utfordring
-              </UButton>
+          <UCard class="hover:bg-elevated/50 h-full transition-colors">
+            <div class="flex items-center gap-3">
+              <UIcon :name="section.icon" class="text-muted size-5" />
+              <span class="font-medium">{{ section.label }}</span>
             </div>
-            <UTable
-              :data="data.challenges.edges.map((e) => e.node)"
-              :columns="[
-                { accessorKey: 'imageObject' },
-                { accessorKey: 'name' },
-                { accessorKey: 'description' },
-                { accessorKey: 'type', header: 'Type' },
-                { id: 'actions' },
-              ]"
-            >
-              <template #imageObject-cell="{ row }">
-                <img
-                  v-if="row.original.imageObject?.url"
-                  :src="row.original.imageObject.url"
-                  height="32"
-                  width="32"
-                  class="bg-muted size-8 rounded"
-                />
-              </template>
-              <template #type-cell="{ row }">
-                {{
-                  row.original.__typename === 'ExternalChallenge'
-                    ? 'Ekstern'
-                    : row.original.__typename === 'QuizChallenge'
-                      ? 'Quiz'
-                      : row.original.__typename === 'PluginChallenge'
-                        ? 'Plugin'
-                        : 'Enkel'
-                }}
-              </template>
-              <template #actions-cell="{ row }">
-                <div class="flex justify-end">
-                  <UButton
-                    variant="ghost"
-                    size="sm"
-                    :to="{
-                      name: 'admin-projects-projectId-challenges-challengeId',
-                      params: {
-                        projectId: route.params.projectId,
-                        challengeId: row.original.id,
-                      },
-                    }"
-                  >
-                    Rediger
-                  </UButton>
-                </div>
-              </template>
-            </UTable>
-          </template>
-          <template #superteams>
-            <div v-if="canEdit" class="my-2">
-              <UButton
-                icon="lucide:plus"
-                :to="{
-                  name: 'admin-projects-projectId-superteams-new',
-                  params: { projectId: route.params.projectId },
-                }"
-              >
-                Opprett superteam
-              </UButton>
+            <div class="mt-2 text-2xl tabular-nums">
+              <USkeleton v-if="fetching" class="h-8 w-12" />
+              <template v-else>{{ section.count ?? 0 }}</template>
             </div>
-            <UTable
-              :data="data.superteams.edges.map((e) => e.node)"
-              :columns="[
-                { accessorKey: 'color', header: 'Farge' },
-                { accessorKey: 'imageObject', header: 'Bilde' },
-                { accessorKey: 'name', header: 'Navn' },
-                { accessorKey: 'teams', header: 'Lag' },
-                { id: 'actions' },
-              ]"
-            >
-              <template #color-cell="{ row }">
-                <div
-                  v-if="row.original.color"
-                  class="size-6 rounded-full border"
-                  :style="{ backgroundColor: row.original.color }"
-                />
-              </template>
-              <template #imageObject-cell="{ row }">
-                <img
-                  v-if="row.original.imageObject?.url"
-                  :src="row.original.imageObject.url"
-                  height="32"
-                  width="32"
-                  class="bg-muted size-8 rounded"
-                />
-              </template>
-              <template #teams-cell="{ row }">
-                {{ row.original.teams.length }} lag
-              </template>
-              <template #actions-cell="{ row }">
-                <div class="flex justify-end">
-                  <UButton
-                    variant="ghost"
-                    size="sm"
-                    :to="{
-                      name: 'admin-projects-projectId-superteams-superTeamId',
-                      params: {
-                        projectId: route.params.projectId,
-                        superTeamId: row.original.id,
-                      },
-                    }"
-                  >
-                    Rediger
-                  </UButton>
-                </div>
-              </template>
-            </UTable>
-            <div
-              v-if="data.superteams.edges.length === 0"
-              class="text-dimmed py-8 text-center"
-            >
-              Ingen superteams ennå
-            </div>
-          </template>
-          <template #achievements>
-            <div v-if="canEdit" class="mt-2 mb-4">
-              <UButton
-                icon="lucide:plus"
-                :to="{
-                  name: 'admin-projects-projectId-achievements-new',
-                  params: { projectId: route.params.projectId },
-                }"
-              >
-                Opprett utmerkelse
-              </UButton>
-            </div>
-            <div class="border-default rounded-lg border">
-              <VueDraggable
-                v-model="achievements"
-                handle=".drag-handle"
-                ghost-class="opacity-50"
-                :animation="200"
-                @end="handleReorder"
-              >
-                <div
-                  v-for="achievement in achievements"
-                  :key="achievement.id"
-                  class="border-default flex items-center gap-4 border-b px-4 py-3 last:border-b-0"
-                >
-                  <div
-                    class="drag-handle text-muted cursor-grab active:cursor-grabbing"
-                  >
-                    <UIcon name="lucide:grip-vertical" class="size-5" />
-                  </div>
-                  <img
-                    v-if="achievement.imageCompletedObject?.url"
-                    :src="achievement.imageCompletedObject.url"
-                    height="32"
-                    width="32"
-                    class="size-8 shrink-0 rounded"
-                  />
-                  <img
-                    v-else
-                    src="/images/achievement-placeholder.png"
-                    height="32"
-                    width="32"
-                    class="size-8 shrink-0 rounded"
-                  />
-                  <div class="min-w-0 flex-1">
-                    <div class="font-medium">{{ achievement.name }}</div>
-                    <div class="text-dimmed truncate text-sm">
-                      {{ achievement.descriptionPending }}
-                    </div>
-                  </div>
-                  <div class="text-muted shrink-0 text-sm">
-                    {{ formatNumber(achievement.points) }} pts
-                  </div>
-                  <UBadge
-                    v-if="achievement.hidden"
-                    variant="soft"
-                    color="warning"
-                  >
-                    Skjult
-                  </UBadge>
-                  <UButton
-                    variant="ghost"
-                    size="sm"
-                    :to="{
-                      name: 'admin-projects-projectId-achievements-achievementId',
-                      params: {
-                        projectId: route.params.projectId,
-                        achievementId: achievement.id,
-                      },
-                    }"
-                  >
-                    Rediger
-                  </UButton>
-                </div>
-              </VueDraggable>
-              <div
-                v-if="achievements.length === 0"
-                class="text-dimmed py-8 text-center"
-              >
-                Ingen utmerkelser ennå
-              </div>
-            </div>
-          </template>
-        </UTabs>
-      </template>
-    </div>
+          </UCard>
+        </NuxtLink>
+      </div>
+    </template>
   </div>
 </template>

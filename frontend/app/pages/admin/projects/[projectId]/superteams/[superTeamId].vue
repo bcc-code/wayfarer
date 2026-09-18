@@ -45,10 +45,10 @@ const {
   error,
   executeQuery: refetch,
 } = useAdminSuperTeamDetailPageQuery({
-  variables: {
+  variables: computed(() => ({
     id: route.params.superTeamId,
     projectId: route.params.projectId,
-  },
+  })),
   pause: computed(() => !isAuthReady.value),
 })
 

@@ -16,6 +16,7 @@ const ADMIN_DOMAIN = [
   'app/layouts/admin.vue',
   'app/layouts/church-admin.vue',
   'app/composables/useAdminNav.ts',
+  'app/composables/useCurrentProject.ts',
   'app/utils/adminNav.ts',
 ]
 
