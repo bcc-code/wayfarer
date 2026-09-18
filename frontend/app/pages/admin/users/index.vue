@@ -2,8 +2,8 @@
 import type { TableColumn } from '@nuxt/ui'
 
 definePageMeta({
+  permission: 'users:view',
   layout: 'admin',
-  middleware: 'superadmin',
 })
 
 gql(`

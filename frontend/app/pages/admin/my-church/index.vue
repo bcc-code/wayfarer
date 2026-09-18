@@ -1,7 +1,7 @@
 <script setup lang="ts">
 definePageMeta({
+  permission: 'church:manage',
   layout: 'church-admin',
-  middleware: ['admin'],
 })
 
 const { canManageChurchAdmins } = usePermissions()

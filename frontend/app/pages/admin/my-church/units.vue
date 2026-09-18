@@ -4,8 +4,8 @@ import { VueDraggable } from 'vue-draggable-plus'
 import { generateUniqueNames } from '~/utils/unitNameGenerator'
 
 definePageMeta({
+  permission: 'church:manage',
   layout: 'church-admin',
-  middleware: ['admin'],
 })
 
 gql(`

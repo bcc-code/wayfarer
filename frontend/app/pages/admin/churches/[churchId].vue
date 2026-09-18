@@ -2,8 +2,8 @@
 import { ChurchCategory } from '~/api/generated'
 
 definePageMeta({
+  permission: 'churches:view',
   layout: 'admin',
-  middleware: 'superadmin',
 })
 
 gql(`

@@ -47,81 +47,13 @@ useHead({
   title: 'Interact Admin',
 })
 
-const { me, isLoading, isAuth0Loading, token } = useAuth()
-const {
-  canAccessAdmin,
-  canAccessProjects,
-  canAccessUsers,
-  canAccessTeams,
-  canAccessConsents,
-  canAccessScores,
-  canAccessFeedback,
-  canAccessMaintenance,
-} = usePermissions()
-
-const route = useRoute()
-
-// Check if user is church-admin-only
-const isChurchAdminOnly = computed(() => {
-  if (!me.value) return false
-  const hasFullAdminRole = me.value.roles.some((role: { role: RoleType }) =>
-    [RoleType.Admin, RoleType.Superadmin].includes(role.role),
-  )
-  return (
-    !hasFullAdminRole &&
-    me.value.roles.some(
-      (role: { role: RoleType }) => role.role === RoleType.ChurchAdmin,
-    )
-  )
-})
-
-// Redirect unauthorized users after auth loads.
-// TODO: replaced by a `permission` route-meta key plus one global middleware —
-// see notes/frontend-admin-restructure.md. Left as-is here so the shell rewrite
-// and the permission change land in separate, separately revertible commits.
-watch(
-  [isLoading, isAuth0Loading, me, token, () => route.path],
-  ([loading, auth0Loading, user, hasToken, path]) => {
-    // Wait for both Wayfarer auth and Auth0 to finish loading
-    if (loading || auth0Loading) return
-    // If we have a token but no user data yet, wait for the query to complete
-    if (hasToken && !user) return
-    if (!user || !canAccessAdmin.value) {
-      navigateTo('/')
-      return
-    }
-
-    // Restrict church-admin-only users to /admin/my-church
-    if (isChurchAdminOnly.value && !path.startsWith('/admin/my-church')) {
-      navigateTo('/admin/my-church')
-      return
-    }
-
-    // Redirect users away from routes they don't have permission for
-    const routePermissions: [string, boolean][] = [
-      ['/admin/users', !!canAccessUsers.value],
-      ['/admin/consents', !!canAccessConsents.value],
-      ['/admin/maintenance', !!canAccessMaintenance.value],
-      ['/admin/teams', !!canAccessTeams.value],
-      ['/admin/projects', !!canAccessProjects.value],
-      ['/admin/scores', !!canAccessScores.value],
-      ['/admin/feedback', !!canAccessFeedback.value],
-    ]
-    for (const [route, allowed] of routePermissions) {
-      if (path.startsWith(route) && !allowed) {
-        navigateTo('/admin')
-        return
-      }
-    }
-  },
-  { immediate: true },
-)
+// Access control lives in `middleware/admin-permission.global.ts`; the layout
+// only needs to know whether to render the main nav. Church admins who hold no
+// other admin role are confined to /admin/my-church, which uses its own layout.
+const { me } = useAuth()
+const showNav = computed(() => !isChurchAdminOnly(me.value?.roles))
 
 const { navItems, searchGroups, currentTitle } = useAdminNav()
-
-// Church-admin-only users are redirected to the church-admin layout by the
-// watcher above; suppress the nav in the frame or two before that lands.
-const showNav = computed(() => !isChurchAdminOnly.value)
 </script>
 
 <template>

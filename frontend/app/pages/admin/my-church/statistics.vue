@@ -3,8 +3,8 @@ import { VisAxis, VisGroupedBar, VisXYContainer } from '@unovis/vue'
 import { formatTimeAgoIntl } from '@vueuse/core'
 
 definePageMeta({
+  permission: 'church:manage',
   layout: 'church-admin',
-  middleware: ['admin'],
 })
 
 gql(`

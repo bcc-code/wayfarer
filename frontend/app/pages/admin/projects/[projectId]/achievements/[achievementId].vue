@@ -2,8 +2,8 @@
 import type { AchievementFormData } from '~/components/admin/achievement/AdminAchievementForm.vue'
 
 definePageMeta({
+  permission: 'projects:view',
   layout: 'admin',
-  middleware: 'admin',
 })
 
 gql(`

@@ -3,8 +3,8 @@ import type { FormSubmitEvent } from '@nuxt/ui'
 import z from 'zod'
 
 definePageMeta({
+  permission: 'projects:view',
   layout: 'admin',
-  middleware: 'admin',
 })
 
 const route = useRoute('admin-projects-projectId-events-new')

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 definePageMeta({
+  permission: 'consents:view',
   layout: 'admin',
-  middleware: 'superadmin',
 })
 
 gql(`

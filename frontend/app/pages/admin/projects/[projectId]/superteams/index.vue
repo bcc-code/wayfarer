@@ -2,8 +2,8 @@
 import { VisAxis, VisGroupedBar, VisXYContainer } from '@unovis/vue'
 
 definePageMeta({
+  permission: 'projects:view',
   layout: 'admin',
-  middleware: 'admin',
 })
 
 gql(`

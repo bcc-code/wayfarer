@@ -2,8 +2,8 @@
 import { onKeyDown } from '@vueuse/core'
 
 definePageMeta({
+  permission: 'church:manage',
   layout: 'church-admin',
-  middleware: ['admin'],
 })
 
 gql(`

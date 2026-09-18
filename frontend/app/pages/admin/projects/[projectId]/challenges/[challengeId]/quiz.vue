@@ -2,8 +2,8 @@
 import type { QuizFormData } from '~/components/admin/quiz/AdminQuizForm.vue'
 
 definePageMeta({
+  permission: 'projects:view',
   layout: 'admin',
-  middleware: 'admin',
 })
 
 gql(`

@@ -2,8 +2,8 @@
 import { VueDraggable } from 'vue-draggable-plus'
 
 definePageMeta({
+  permission: 'projects:view',
   layout: 'admin',
-  middleware: 'admin',
 })
 
 const route = useRoute('admin-projects-projectId')

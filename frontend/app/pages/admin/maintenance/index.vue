@@ -1,7 +1,7 @@
 <script setup lang="ts">
 definePageMeta({
+  permission: 'maintenance:view',
   layout: 'admin',
-  middleware: ['admin', 'superadmin'],
 })
 
 const tools = [

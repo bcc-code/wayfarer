@@ -40,7 +40,7 @@ function stubGlobals(tokenIsExpired = false) {
 async function loadMiddleware(tokenIsExpired = false) {
   stubGlobals(tokenIsExpired)
   vi.resetModules()
-  const mod = await import('../../app/middleware/auth.global')
+  const mod = await import('../../app/middleware/01.auth.global')
   return mod.default as (to: {
     path: string
     fullPath: string

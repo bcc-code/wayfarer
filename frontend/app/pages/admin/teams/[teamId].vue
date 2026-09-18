@@ -1,7 +1,7 @@
 <script setup lang="ts">
 definePageMeta({
+  permission: 'teams:view',
   layout: 'admin',
-  middleware: 'superadmin',
 })
 
 gql(`
@@ -43,7 +43,9 @@ gql(`
 const route = useRoute('admin-teams-teamId')
 
 const { canManageTeam } = usePermissions()
-const canEdit = computed(() => canManageTeam(route.params.teamId))
+// Role-only: no team mutation accepts `project_admin`, so there is nothing
+// team-specific left to check.
+const canEdit = computed(() => canManageTeam())
 
 const { isAuthReady } = useAuthReady()
 const {

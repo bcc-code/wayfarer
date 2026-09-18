@@ -3,8 +3,8 @@ import type { TableColumn } from '@nuxt/ui'
 import { ForwardDestination } from '~/api/generated'
 
 definePageMeta({
+  permission: 'feedback:view',
   layout: 'admin',
-  middleware: 'admin',
 })
 
 // Subscribe to admin feedback notifications

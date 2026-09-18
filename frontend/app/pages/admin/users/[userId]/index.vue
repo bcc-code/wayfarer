@@ -7,8 +7,8 @@ import {
 } from '~/api/generated'
 
 definePageMeta({
+  permission: 'users:view',
   layout: 'admin',
-  middleware: 'superadmin',
 })
 
 gql(`

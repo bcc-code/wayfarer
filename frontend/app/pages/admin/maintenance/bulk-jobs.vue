@@ -3,8 +3,8 @@ import type { TableColumn } from '@nuxt/ui'
 import { BulkJobStatus } from '~/api/generated'
 
 definePageMeta({
+  permission: 'maintenance:view',
   layout: 'admin',
-  middleware: ['admin', 'superadmin'],
 })
 
 gql(`

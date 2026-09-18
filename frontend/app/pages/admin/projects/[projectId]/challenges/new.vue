@@ -2,8 +2,8 @@
 import type { ChallengeFormData } from '~/components/admin/challenge/AdminChallengeForm.vue'
 
 definePageMeta({
+  permission: 'projects:view',
   layout: 'admin',
-  middleware: 'admin',
 })
 
 gql(`

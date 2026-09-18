@@ -2,8 +2,8 @@
 import type { TableColumn } from '@nuxt/ui'
 
 definePageMeta({
+  permission: 'maintenance:view',
   layout: 'admin',
-  middleware: ['admin', 'superadmin'],
 })
 
 // Hardcoded achievement ID for now

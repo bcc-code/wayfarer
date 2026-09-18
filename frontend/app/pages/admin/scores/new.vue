@@ -3,8 +3,8 @@ import type { FormSubmitEvent } from '@nuxt/ui'
 import { z } from 'zod'
 
 definePageMeta({
+  permission: 'scores:view',
   layout: 'admin',
-  middleware: 'admin',
 })
 
 // Query for projects and users dropdowns
