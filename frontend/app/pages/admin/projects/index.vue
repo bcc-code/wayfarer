@@ -57,12 +57,17 @@ const { canCreateProject } = usePermissions()
     </div>
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
-    <div v-else-if="data" class="space-y-12">
+    <!--
+      Container query, not viewport: `lg:` measured the window while the cards
+      live in a panel the sidebar has already taken ~300px out of.
+    -->
+    <div v-else-if="data" class="@container space-y-12">
       <section v-if="currentProjects.length > 0">
         <h2 class="mb-4">Aktive prosjekter</h2>
-        <ul class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <ul class="grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-3">
           <li v-for="project in currentProjects" :key="project.id">
             <NuxtLink
+              class="block h-full"
               :to="{
                 name: 'admin-projects-projectId',
                 params: { projectId: project.id },
@@ -75,9 +80,10 @@ const { canCreateProject } = usePermissions()
       </section>
       <section v-if="futureProjects.length > 0">
         <h2 class="mb-4">Kommende prosjekter</h2>
-        <ul class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <ul class="grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-3">
           <li v-for="project in futureProjects" :key="project.id">
             <NuxtLink
+              class="block h-full"
               :to="{
                 name: 'admin-projects-projectId',
                 params: { projectId: project.id },
@@ -90,13 +96,14 @@ const { canCreateProject } = usePermissions()
       </section>
       <section v-if="pastProjects.length > 0">
         <h2 class="mb-4">Tidligere prosjekter</h2>
-        <ul class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <ul class="grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-3">
           <li
             v-for="project in pastProjects"
             :key="project.id"
             class="opacity-50 transition-opacity hover:opacity-100"
           >
             <NuxtLink
+              class="block h-full"
               :to="{
                 name: 'admin-projects-projectId',
                 params: { projectId: project.id },

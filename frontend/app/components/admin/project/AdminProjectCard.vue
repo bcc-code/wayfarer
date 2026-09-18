@@ -27,8 +27,14 @@ const accentColor = computed(() => {
 </script>
 
 <template>
+  <!--
+    Sized by its content, not by a ratio. `aspect-video` forced a 16:9 box, so a
+    card in a wide column stretched to ~320px tall for three lines of text and a
+    date. Cards in a row still match: the grid stretches them and `h-full`
+    carries that down.
+  -->
   <UCard
-    class="aspect-video shadow-md"
+    class="h-full shadow-md"
     :style="{ '--accent': accentColor }"
     :ui="{
       root: accentColor && 'ring-(--accent)/25 hover:ring-(--accent)/50',
@@ -59,7 +65,7 @@ const accentColor = computed(() => {
         height="32"
         width="32"
         class="rounded"
-      >
+      />
       <UBadge
         v-if="isWithinRange(new Date(), project.startDate, project.endDate)"
         variant="outline"

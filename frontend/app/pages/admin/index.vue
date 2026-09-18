@@ -83,11 +83,12 @@ const greeting = computed(() => {
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
 
-    <div v-else-if="data" class="space-y-8">
+    <!-- Container query, not viewport: the sidebar has already taken ~300px. -->
+    <div v-else-if="data" class="@container space-y-8">
       <AdminDashboardStats :stats="data.adminDashboardStats" />
 
-      <div class="grid gap-6 lg:grid-cols-3">
-        <div class="lg:col-span-2">
+      <div class="grid gap-6 @4xl:grid-cols-3">
+        <div class="@4xl:col-span-2">
           <AdminRecentActivity :feedback-entries="feedbackEntries" />
         </div>
       </div>
@@ -111,6 +112,7 @@ const greeting = computed(() => {
           <NuxtLink
             v-for="project in currentProjects"
             :key="project.id"
+            class="block h-full"
             :to="{
               name: 'admin-projects-projectId',
               params: { projectId: project.id },

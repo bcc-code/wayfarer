@@ -658,12 +658,22 @@ Visual hierarchy is one class: the secondary carries `shadow-none` while the
 primary keeps its shadow, so the app rail reads as the top layer and the
 contextual column sits flatter behind it.
 
+**Grids moved to container queries, and the project card lost its aspect ratio.**
+The card's `aspect-video` was the reason the projects page looked so empty: a
+16:9 box meant a card in a wide column stretched to ~320px tall to hold three
+lines of text and a date. It is `h-full` now, sized by content, with `block h-full`
+on the wrapping link so cards in a row still match each other via the grid's
+stretch.
+
 **The overview grid moved to container queries.** `lg:grid-cols-4` measured the
 *viewport*, but two sidebars take ~600px out of it, so four cards overflowed the
 panel at exactly the widths the breakpoint was meant to cover. It is now
 `@container` with `@md:grid-cols-2 @4xl:grid-cols-4`, measured against the panel.
 Verified in the built CSS as `@container (min-width:28rem)` and `(min-width:56rem)`
-rules rather than `@media`.
+rules rather than `@media`. The same swap was applied to `projects/index.vue`
+(`@xl:grid-cols-2 @4xl:grid-cols-3`) and `admin/index.vue`. Any admin page that
+sizes in-panel layout off `sm:`/`lg:` has this latent bug — the sidebars take
+~300-600px out of the window before the panel gets any.
 
 Both sidebars are capped at `max-w-[300px]`. `default-size` is a *percentage* of the
 viewport (the dashboard context sets `unit: '%'`), so 16% passes 300px on
