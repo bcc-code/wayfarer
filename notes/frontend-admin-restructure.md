@@ -763,6 +763,30 @@ admin code in the shared `composables/` folder, like `useAdminNav` and
 
 Net: **591 lines deleted, 55 added.** Unit tests 519 → 529.
 
+### 2026-09-18 — viewport breakpoints swept; churches decision recorded
+
+Every grid in an admin-layout page now measures the panel rather than the
+window. Five files converted: the four maintenance tools and the LADD
+distribution page.
+
+The audit corrected two of my own earlier claims:
+
+- **`users/[userId]/index.vue` has no viewport grid breakpoints at all.** I had
+  named it as a likely offender; it is not one.
+- **`my-church/units.vue` is not affected either**, and must not be converted:
+  those pages use the `church-admin` layout, which is a header plus `<slot />`
+  with no sidebar, so their content really is viewport-wide. A container query
+  there would be wrong.
+
+A grep for `\b(md|lg):grid-cols` also reports false positives, because `@` is
+not a word character — it matches inside the `@md:` container variants it is
+meant to distinguish from. Anchor on `(^|[" ])` instead.
+
+**Churches:** `churches/[churchId].vue` stays a drill-down leaf with no list
+page and no nav entry, reachable from a user's detail page. Churches are rarely
+added or edited, so a top-level section would be dead weight. This closes the
+open question rather than deferring it again.
+
 ### Gate status after the above
 
 | Check           | Before | After                          |
@@ -788,8 +812,7 @@ Each step is independently shippable.
 Optional follow-ups, deliberately out of scope: admin i18n (the nav model
 should hold keys from day one so this is a labelling change later); splitting
 the 1,000-line outliers (`my-church/units.vue` 1,105, `users/[userId]/index.vue`
-1,068); and giving `churches/[churchId].vue` a home — it has no list page and no
-nav entry, reachable only from `users/[userId]/index.vue:588`.
+1,068); `churches/[churchId].vue` is settled: it stays a drill-down leaf, see the log.
 
 ## Watch out for
 

@@ -36,7 +36,7 @@ const tools = [
 </script>
 
 <template>
-  <div>
+  <div class="@container">
     <div class="mb-8">
       <h1 class="text-3xl">Vedlikehold</h1>
       <p class="text-muted mt-2">
@@ -44,7 +44,7 @@ const tools = [
       </p>
     </div>
 
-    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div class="grid gap-4 @md:grid-cols-2 @xl:grid-cols-3">
       <NuxtLink
         v-for="tool in tools"
         :key="tool.title"

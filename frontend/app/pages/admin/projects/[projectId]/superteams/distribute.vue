@@ -322,7 +322,7 @@ function getTeamsByChurch(st: SuperteamResult): Map<string, TeamInfo[]> {
 </script>
 
 <template>
-  <div>
+  <div class="@container">
     <div>
       <header class="mb-12">
         <h1 class="text-3xl font-semibold">LADD Superteams</h1>
@@ -379,7 +379,7 @@ function getTeamsByChurch(st: SuperteamResult): Map<string, TeamInfo[]> {
       <!-- Results -->
       <div v-if="previewData" class="space-y-8">
         <!-- Summary cards -->
-        <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div class="grid grid-cols-2 gap-4 @2xl:grid-cols-4">
           <div
             v-for="st in previewData.superteams"
             :key="st.name"
@@ -490,7 +490,7 @@ function getTeamsByChurch(st: SuperteamResult): Map<string, TeamInfo[]> {
             <h3 class="mb-3 text-sm font-medium text-gray-500">
               Church Assignment Summary
             </h3>
-            <div class="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+            <div class="grid gap-2 @md:grid-cols-2 @xl:grid-cols-3">
               <div
                 v-for="church in churchAnalysis"
                 :key="church.churchId"

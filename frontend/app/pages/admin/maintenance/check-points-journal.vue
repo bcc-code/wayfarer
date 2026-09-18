@@ -49,7 +49,7 @@ const columns: TableColumn<UserRow>[] = [
 </script>
 
 <template>
-  <div>
+  <div class="@container">
     <div class="mb-8">
       <div class="mb-4 flex items-center gap-2">
         <UButton
@@ -72,7 +72,7 @@ const columns: TableColumn<UserRow>[] = [
     <ErrorState v-if="error" :error />
 
     <template v-else>
-      <div class="mb-8 grid gap-4 md:grid-cols-3">
+      <div class="mb-8 grid gap-4 @xl:grid-cols-3">
         <UCard>
           <div class="flex flex-col gap-1">
             <span class="text-muted text-sm">Berørte brukere</span>
