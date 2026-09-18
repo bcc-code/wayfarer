@@ -1,7 +1,7 @@
 // @vitest-environment nuxt
 import { describe, it, expect } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import EmptyState from '~/components/EmptyState.vue'
+import EmptyState from '../../layers/user/app/components/EmptyState.vue'
 
 describe('EmptyState', () => {
   it('renders the title text', async () => {

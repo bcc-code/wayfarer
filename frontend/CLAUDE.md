@@ -2,7 +2,7 @@
 
 ## Tech Stack
 
-- **Framework**: Nuxt 4.3 (Vue 3, `ssr: false` — SPA only)
+- **Framework**: Nuxt 4.4 (Vue 3, `ssr: false` — SPA only), three layers: root (shared), `layers/user`, `layers/admin`
 - **Language**: TypeScript
 - **Package Manager**: pnpm
 - **GraphQL Client**: urql with auth exchange
@@ -18,27 +18,45 @@
 
 ```
 frontend/
-├── app/
-│   ├── pages/              # File-based routing
-│   ├── components/         # Vue components (Design* = design system)
-│   │   ├── global/         # Auto-imported globally (icons, buttons)
-│   │   ├── achievements/   # Feature-scoped components
-│   │   ├── standings/      # Feature-scoped components
-│   │   └── ...
-│   ├── layouts/            # default, admin, church-admin
-│   ├── composables/        # Vue composables (useAuth, usePushNotifications, etc.)
-│   ├── utils/              # Pure utility functions
-│   ├── plugins/            # Numbered for load order (0.urql, 1.auth0, 2.rudderstack, ...)
-│   ├── middleware/          # Route guards (auth.global, admin, superadmin)
-│   ├── graphql/
-│   │   ├── fragments/      # Reusable GraphQL fragments (*.gql)
-│   │   ├── queries/        # GraphQL queries (*.gql)
-│   │   └── mutations/      # GraphQL mutations (*.gql)
-│   ├── api/
-│   │   └── generated.ts    # ⚠ GENERATED — do not edit
-│   └── assets/             # Images, fonts, styles
+├── app/                    # SHARED ONLY — the base layer, no domain code
+│   ├── pages/              # Only auth0-callback, login, logout-callback
+│   │                       #   (01.auth.global.ts hardcodes these paths)
+│   ├── composables/        # useAuth, useAuthReady, useAnalytics, usePermissions,
+│   │                       #   useFirestoreSync/Refresh — all used by both domains
+│   ├── utils/              # graphql, jwt, formatters, leaderboard, analytics +
+│   │                       #   the permission trio (see below)
+│   ├── plugins/            # Numbered for load order (0.urql, 1.auth0, ...)
+│   ├── middleware/         # 01.auth.global, 02.admin-permission.global
+│   ├── graphql/            # *.gql — one contract, one generated output
+│   ├── api/generated.ts    # ⚠ GENERATED — do not edit
+│   ├── app.config.ts       # Nuxt UI theme (admin content, global by mechanism)
+│   ├── types/              # route-meta.d.ts
+│   └── assets/             # Images, fonts, main.css (the Tailwind entry)
+├── layers/                 # Auto-registered by Nuxt — each needs a nuxt.config
+│   ├── admin/              # The admin panel (49 pages)
+│   │   ├── nuxt.config.ts  # ⚠ Required — see below
+│   │   └── app/
+│   │       ├── pages/admin/**   # ⚠ The admin/ dir must stay inside
+│   │       ├── components/admin/, components/devtools/
+│   │       ├── layouts/         # admin.vue, church-admin.vue
+│   │       ├── composables/     # useAdminNav, useAdminPage, useCurrentProject,
+│   │       │                    #   useConfirm, useGroupedProjects, usePagination
+│   │       ├── utils/           # adminNav, dates, fuzzySearch, pagination,
+│   │       │                    #   languageMapping, unitNameGenerator
+│   │       └── assets/styles/admin.css
+│   └── user/               # The user-facing app (12 pages)
+│       ├── nuxt.config.ts  # ⚠ Required — needs BOTH dirs entries
+│       └── app/
+│           ├── pages/           # index, challenges, standings, settings, ...
+│           ├── components/      # Design* design system, global/ icons,
+│           │                    #   ErrorState, LoadingState, feature folders
+│           ├── layouts/default.vue
+│           ├── composables/     # useGsap, useQuizViewState, ...
+│           ├── utils/           # teams, animations, constants, ...
+│           └── assets/styles/user.css
 ├── test/
 │   ├── unit/               # Vitest unit tests
+│   ├── component/          # Rendered component tests (Nuxt env)
 │   └── utils/              # Test utilities and mocks
 ├── service-worker/         # PWA service worker
 ├── nuxt.config.ts          # Nuxt configuration
@@ -46,6 +64,58 @@ frontend/
 ├── package.json
 └── .prettierrc             # Code style: no semi, single quotes, trailing commas
 ```
+
+### Working with the layers
+
+Domain code lives in a layer; root `app/` is the shared base. A file belongs in
+`layers/admin/` or `layers/user/` when only that domain uses it, and stays in
+root `app/` when both do or when it is domain-neutral infrastructure — the
+generated client, the auth and permission guards, pure utilities.
+
+Neither root `app/` nor `layers/user/` may import from `layers/admin/`; the
+reverse is allowed (the admin panel renders user-facing components to preview
+the end-user experience). `eslint.config.mjs` and
+`test/unit/domain-boundary.test.ts` enforce this — layers organise code, they
+do not isolate it. Every layer's components, composables and utils merge into
+one auto-import registry.
+
+Five rules with no compile-time or runtime error to warn you:
+
+- **Every layer needs a `nuxt.config.ts`.** A layer directory without one is
+  silently skipped and its routes simply vanish.
+- **It must declare `components: { dirs: [{ path: 'components', pathPrefix: false }] }`.**
+  A layer that declares none defaults to path-prefixed names, so `AdminUserMenu`
+  would register as `AdminAdminUserMenu`. The bare relative path matters:
+  `~/components` would resolve through the _global_ alias back to root.
+- **The user layer additionally needs `{ path: 'components/global', global: true }`.**
+  Three icons are passed as _strings_ (`icon="IconSettings"`, `IconClose`,
+  `IconChevronRight`) and resolve by name alone — without global registration
+  they render nothing, with no error.
+- **No global middleware or plugins in a layer.** They are gathered per layer
+  with extended layers first, so a filename prefix only orders within one layer —
+  a layer's `*.global.ts` would run before `01.auth.global.ts`.
+- **Imports within a layer must be relative.** `~` maps to the root `app/` in
+  `tsconfig`, so an intra-layer `~/utils/adminNav` fails typecheck. Use
+  `~/...` for shared root code, relative paths within the layer, and
+  `#layers/<name>/app/...` only for deliberate cross-layer references.
+
+**Root `app/` is shared-only, and that is tested.** A module used by just one
+domain does not belong there — auto-imports mean it keeps working wherever it
+sits, so the drift is invisible. `test/unit/shared-root.test.ts` walks root
+`app/utils` and `app/composables` and fails any module reachable from only one
+layer. Its `PINNED_TO_ROOT` list holds the deliberate exceptions: the permission
+trio (`adminPermissions`, `permissions`, `usePermissions`) is admin by content
+but load-bearing for `02.admin-permission.global.ts`, and moving it would make
+the shared base import from a layer — the one direction the boundary forbids.
+
+One more that bit us: in `eslint.config.mjs`, the restricted-import pattern for
+the admin alias **must keep its backslash escape** (`'\\#layers/admin/**'`).
+These patterns use gitignore semantics, where an unescaped leading `#` marks a
+comment — the pattern is dropped silently and every alias-form import goes
+uncaught.
+
+`test/unit/layers.test.ts` asserts the first four;
+`test/unit/domain-boundary.test.ts` asserts the escape.
 
 ## Key Commands
 
@@ -81,7 +151,11 @@ const { data, fetching } = useMyPageQuery({
 ```
 
 - Always pause GraphQL queries until auth is ready
-- Use `<LoadingState>` and `<ErrorState>` components for loading/error states
+- Use `<LoadingState>` / `<ErrorState>` for loading and error states in the
+  user layer, and `<AdminLoadingState>` / `<AdminErrorState>` in the admin
+  layer. They share a prop and emit surface; the admin pair is built on Nuxt UI
+  tokens, and keeping them separate is what stops the admin layer depending on
+  the user-facing design system.
 
 ### Components
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fuzzyMatch, fuzzySearch } from '../../app/utils/fuzzySearch'
+import { fuzzyMatch, fuzzySearch } from '../../layers/admin/app/utils/fuzzySearch'
 
 describe('fuzzySearch', () => {
   describe('fuzzyMatch', () => {

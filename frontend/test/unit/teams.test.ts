@@ -4,7 +4,7 @@ import {
   findMemberById,
   isMemberTeamLead,
   getNonLeaderMembers,
-} from '../../app/utils/teams'
+} from '../../layers/user/app/utils/teams'
 import { LeaderboardEntryTag } from '../../app/api/generated'
 import type { LeaderboardEntryLike } from '../../app/utils/leaderboard'
 

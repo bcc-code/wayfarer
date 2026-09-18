@@ -6,10 +6,10 @@ agent:
     os_image: ubuntu2204
 fail_fast:
   stop:
-    when: 'true'
+    when: "true"
 auto_cancel:
   running:
-    when: 'true'
+    when: "true"
 blocks:
   - name: Backend tests
     dependencies: []
@@ -46,9 +46,42 @@ blocks:
             - cache restore go-build
             - make test-e2e-ci
             - cache store go-build-e2e-$SEMAPHORE_GIT_SHA ~/.cache/go-build
+  - name: Frontend tests
+    dependencies: []
+    # Skipped blocks count as passed, so Build release still runs.
+    # gql/ is included: schema edits regenerate app/api/generated.ts.
+    run:
+      when: "change_in(['/frontend/', '/gql/'], {default_branch: 'main'})"
+    task:
+      prologue:
+        commands:
+          - checkout
+          - sem-version node 22
+          - corepack enable && corepack prepare pnpm@latest --activate
+          - cd frontend
+          - cache restore pnpm-store
+          - pnpm install --frozen-lockfile
+          - cache store pnpm-store ~/.local/share/pnpm/store
+      # Jobs in a block run in parallel on separate VMs.
+      jobs:
+        - name: lint + typecheck
+          commands:
+            # `pnpm lint` runs eslint with --fix, which would "pass" by
+            # rewriting files. Call eslint directly so CI is read-only.
+            - pnpm exec eslint .
+            # nuxt generate does not typecheck, so this is the only gate that
+            # catches a stale route name or a bad useRoute('...') argument.
+            - pnpm typecheck
+        - name: unit tests
+          commands:
+            - pnpm test:unit
+        - name: component tests
+          commands:
+            - pnpm test:component
   - name: Build release
     dependencies:
       - Backend tests
+      - Frontend tests
     task:
       # Semaphore secret "wayfarer-frontend-build" provides the NUXT_PUBLIC_*
       # env vars baked into the SPA bundle (see frontend/.env.example) and
@@ -57,7 +90,7 @@ blocks:
         - name: wayfarer-frontend-build
       env_vars:
         - name: NODE_OPTIONS
-          value: '--max-old-space-size=6144'
+          value: "--max-old-space-size=6144"
       prologue:
         commands:
           - checkout

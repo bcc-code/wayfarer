@@ -3,8 +3,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref, nextTick } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
-import StandingsUnit from '~/components/standings/StandingsUnit.vue'
-import DesignButton from '~/components/design/DesignButton.vue'
+import StandingsUnit from '../../layers/user/app/components/standings/StandingsUnit.vue'
+import DesignButton from '../../layers/user/app/components/design/DesignButton.vue'
 import { LeaderboardEntryTag } from '~/api/generated'
 
 // --- Auto-import mocks --------------------------------------------------------

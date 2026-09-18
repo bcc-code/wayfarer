@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calculateStaggerTiming } from '../../app/utils/animations'
+import { calculateStaggerTiming } from '../../layers/user/app/utils/animations'
 
 describe('animations', () => {
   describe('calculateStaggerTiming', () => {

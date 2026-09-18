@@ -2,10 +2,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
-import QuizReviewMode from '~/components/challenges/quiz/QuizReviewMode.vue'
-import QuizPredefinedQuestion from '~/components/challenges/quiz/questions/QuizPredefinedQuestion.vue'
-import QuizNumberQuestion from '~/components/challenges/quiz/questions/QuizNumberQuestion.vue'
-import type { QuizActionState } from '~/components/challenges/quiz/types'
+import QuizReviewMode from '../../layers/user/app/components/challenges/quiz/QuizReviewMode.vue'
+import QuizPredefinedQuestion from '../../layers/user/app/components/challenges/quiz/questions/QuizPredefinedQuestion.vue'
+import QuizNumberQuestion from '../../layers/user/app/components/challenges/quiz/questions/QuizNumberQuestion.vue'
+import type { QuizActionState } from '../../layers/user/app/components/challenges/quiz/types'
 
 // Child question components need these; review mode itself has no data deps.
 const { analyticsMock, submitMock, updateMock } = vi.hoisted(() => ({

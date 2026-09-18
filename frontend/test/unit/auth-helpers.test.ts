@@ -114,7 +114,7 @@ describe('Auth Helper Functions', () => {
   })
 
   describe('JWT Payload Parsing', () => {
-    const parseJWTPayload = (token: string): any => {
+    const parseJWTPayload = (token: string): Record<string, unknown> | null => {
       try {
         const parts = token.split('.')
         if (parts.length !== 3) return null
@@ -231,7 +231,10 @@ describe('Auth Helper Functions', () => {
   describe('Role Checking', () => {
     interface Role {
       role: string
-      scope?: any
+      scope?: {
+        project?: { id: string } | null
+        church?: { id: string } | null
+      } | null
     }
 
     const hasRole = (roles: Role[], targetRole: string): boolean => {

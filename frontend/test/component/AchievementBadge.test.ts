@@ -2,8 +2,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref, nextTick } from 'vue'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
-import AchievementBadge from '~/components/achievements/AchievementBadge.vue'
-import DesignImage from '~/components/design/DesignImage.vue'
+import AchievementBadge from '../../layers/user/app/components/achievements/AchievementBadge.vue'
+import DesignImage from '../../layers/user/app/components/design/DesignImage.vue'
 
 const { analyticsMock, sheetMock, celebratedMutationMock } = vi.hoisted(() => ({
   analyticsMock: vi.fn(),

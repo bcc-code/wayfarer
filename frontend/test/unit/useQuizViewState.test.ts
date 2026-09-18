@@ -4,8 +4,8 @@ import {
   resolveFooterState,
   type QuizViewStateInput,
   type FooterInput,
-} from '../../app/composables/useQuizViewState'
-import type { QuizActionState } from '../../app/components/challenges/quiz/types'
+} from '../../layers/user/app/composables/useQuizViewState'
+import type { QuizActionState } from '../../layers/user/app/components/challenges/quiz/types'
 
 function makeInput(
   overrides: Partial<QuizViewStateInput> = {},

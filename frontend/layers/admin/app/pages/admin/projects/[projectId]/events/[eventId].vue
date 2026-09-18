@@ -1,0 +1,188 @@
+<script setup lang="ts">
+import type { FormSubmitEvent } from '@nuxt/ui'
+import z from 'zod'
+
+definePageMeta({
+  permission: 'projects:view',
+  layout: 'admin',
+})
+
+gql(`
+	query AdminProjectEventPage($eventId: ID!) {
+		event(id: $eventId) {
+			id
+			name
+			description
+      startDate
+      endDate
+      translationStatus {
+        ...TranslationStatus
+      }
+      parentProject {
+        id
+        name
+      }
+		}
+	}
+`)
+
+const route = useRoute('admin-projects-projectId-events-eventId')
+
+const { isAuthReady } = useAuthReady()
+const { data, fetching, error } = useAdminProjectEventPageQuery({
+  variables: computed(() => ({
+    eventId: route.params.eventId,
+  })),
+  pause: computed(() => !isAuthReady.value),
+})
+
+const schema = z.object({
+  name: z.string().min(1, 'Navn er påkrevd'),
+  description: z.string().min(1, 'Beskrivelse er påkrevd'),
+  startDate: z.string().min(1, 'Startdato er påkrevd'),
+  endDate: z.string().min(1, 'Sluttdato er påkrevd'),
+})
+type Schema = z.infer<typeof schema>
+const state = reactive<Schema>({
+  name: '',
+  description: '',
+  startDate: '',
+  endDate: '',
+})
+
+// Supplies the trailing breadcrumb crumb and the navbar title; everything
+// above it is derived from the route.
+useAdminPage(() => state.name)
+
+watch(
+  () => data.value,
+  (d) => {
+    if (d) {
+      state.name = d.event.name
+      state.description = d.event.description
+      state.startDate = d.event.startDate
+      state.endDate = d.event.endDate
+    }
+  },
+  { once: true },
+)
+
+const { executeMutation } = useUpdateEventMutation()
+const { executeMutation: executeDelete } = useDeleteEventMutation()
+const toast = useToast()
+const { confirm } = useConfirm()
+
+async function updateEvent(event: FormSubmitEvent<Schema>) {
+  if (!event.data) {
+    return
+  }
+
+  executeMutation({ id: route.params.eventId, input: event.data }).then(
+    (response) => {
+      if (response.error) {
+        toast.add({
+          title: response.error.name,
+          description: response.error.message,
+          color: 'error',
+        })
+        return
+      }
+      if (!response.data) {
+        return
+      }
+      toast.add({
+        title: 'Suksess',
+        description: 'Arrangement oppdatert',
+        color: 'success',
+      })
+      navigateTo({
+        name: 'admin-projects-projectId',
+        params: { projectId: route.params.projectId },
+      })
+    },
+  )
+}
+
+async function deleteEvent() {
+  const confirmed = await confirm({
+    title: `Slette "${state.name}"?`,
+    description: 'Denne handlingen kan ikke angres.',
+    icon: 'lucide:triangle-alert',
+  })
+
+  if (!confirmed) {
+    return
+  }
+
+  const response = await executeDelete({ id: route.params.eventId })
+  if (response.error) {
+    toast.add({
+      title: response.error.name,
+      description: response.error.message,
+      color: 'error',
+    })
+    return
+  }
+  toast.add({
+    title: 'Suksess',
+    description: 'Arrangement slettet',
+    color: 'success',
+  })
+  navigateTo({
+    name: 'admin-projects-projectId',
+    params: { projectId: route.params.projectId },
+  })
+}
+</script>
+
+<template>
+  <div>
+    <div>
+      <AdminLoadingState v-if="fetching" />
+      <AdminErrorState v-else-if="error" :error />
+      <template v-else-if="data">
+        <UForm
+          :state
+          :schema="schema"
+          loading-auto
+          class="flex max-w-md flex-col gap-6"
+          @submit.prevent="updateEvent"
+        >
+          <AdminTranslatableFormField
+            label="Navn"
+            :translation-status="data?.event.translationStatus"
+            name="name"
+          >
+            <UInput v-model="state.name" size="xl" required class="w-full" />
+          </AdminTranslatableFormField>
+          <AdminTranslatableFormField
+            label="Beskrivelse"
+            :translation-status="data?.event.translationStatus"
+            name="description"
+          >
+            <UTextarea
+              v-model="state.description"
+              class="w-full"
+              autoresize
+              required
+            />
+          </AdminTranslatableFormField>
+          <DateRangeField
+            v-model:start="state.startDate"
+            v-model:end="state.endDate"
+          />
+          <UButton type="submit" size="lg" block>Lagre endringer</UButton>
+          <UButton
+            color="error"
+            variant="ghost"
+            size="lg"
+            block
+            @click="deleteEvent"
+          >
+            Slett arrangement
+          </UButton>
+        </UForm>
+      </template>
+    </div>
+  </div>
+</template>

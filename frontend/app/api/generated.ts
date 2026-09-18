@@ -3495,14 +3495,6 @@ export type WebhookLog = {
   responseStatusCode?: Maybe<Scalars['Int']['output']>;
 };
 
-export type AdminExternalContentEventsQueryVariables = Exact<{
-  userId: Scalars['ID']['input'];
-  externalContentId: Scalars['ID']['input'];
-}>;
-
-
-export type AdminExternalContentEventsQuery = { __typename?: 'Query', adminExternalContentEvents: Array<{ __typename?: 'AdminExternalContentEvent', id: string, taskId: string, planId: string, source: string, receivedAt: any, consumedAt?: any | null, contentProgress?: number | null }> };
-
 export type PointHistoryQueryVariables = Exact<{
   last?: InputMaybe<Scalars['Int']['input']>;
 }>;
@@ -4343,6 +4335,31 @@ export type CurrentProjectQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type CurrentProjectQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, activeChallengesCount: number, branding: { __typename?: 'Branding', rounding: number, logoImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, bannerImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } }, leaderboard: { __typename?: 'LeaderboardConnection', totalCount: number } } };
 
+export type StandingsPageQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type StandingsPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', myTeam?: { __typename?: 'Team', id: string } | null } };
+
+export type AdminExternalContentEventsQueryVariables = Exact<{
+  userId: Scalars['ID']['input'];
+  externalContentId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminExternalContentEventsQuery = { __typename?: 'Query', adminExternalContentEvents: Array<{ __typename?: 'AdminExternalContentEvent', id: string, taskId: string, planId: string, source: string, receivedAt: any, consumedAt?: any | null, contentProgress?: number | null }> };
+
+export type AdminProjectSwitcherQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminProjectSwitcherQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, startDate: any, endDate: any } }> } };
+
+export type AdminProjectShellQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminProjectShellQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', rounding: number, logoImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string }, dark: { __typename?: 'ColorSet', accent: string } } } } };
+
 export type AdminChurchPageQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -4492,8 +4509,20 @@ export type AdminProjectAchievementPageQuery = { __typename?: 'Query', achieveme
     | { __typename: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, items: Array<{ __typename?: 'ContentItem', id: string, sortOrder: number, externalContent: { __typename?: 'ExternalContent', id: string, planId: string, taskId: string, contentId?: string | null, contentType: ExternalContentType, publishedAt?: any | null, source: string, syncedAt: any, createdAt: any, updatedAt: any, title?: string | null, translations: Array<{ __typename?: 'ExternalContentTranslation', languageCode: string, title?: string | null }> } }>, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }>, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
     | { __typename: 'QuizAchievement', minScorePercentage?: number | null, requireCompletion: boolean, id: string, name: string, descriptionPending: string, descriptionCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, quiz?: { __typename?: 'Quiz', id: string, name: string } | null, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }>, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
     | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }>, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
-    | { __typename: 'StreakAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, items: Array<{ __typename?: 'ContentItem', id: string, sortOrder: number, externalContent: { __typename?: 'ExternalContent', id: string, planId: string, taskId: string, contentType: ExternalContentType, title?: string | null } }>, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }>, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'StreakAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, items: Array<{ __typename?: 'ContentItem', id: string, sortOrder: number, externalContent: { __typename?: 'ExternalContent', id: string, planId: string, taskId: string, contentType: ExternalContentType, title?: string | null, source: string, publishedAt?: any | null } }>, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }>, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
    };
+
+export type AdminProjectAchievementsQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminProjectAchievementsQuery = { __typename?: 'Query', achievements: { __typename?: 'AchievementConnection', edges: Array<{ __typename?: 'AchievementEdge', node:
+        | { __typename?: 'ContentAchievement', id: string, name: string, descriptionPending: string, points: number, hidden: boolean, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+        | { __typename?: 'QuizAchievement', id: string, name: string, descriptionPending: string, points: number, hidden: boolean, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+        | { __typename?: 'SimpleAchievement', id: string, name: string, descriptionPending: string, points: number, hidden: boolean, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+        | { __typename?: 'StreakAchievement', id: string, name: string, descriptionPending: string, points: number, hidden: boolean, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+       }> } };
 
 export type AdminProjectAchievementsNewPageQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
@@ -4544,6 +4573,18 @@ export type AdminChallengeSessionsPageQuery = { __typename?: 'Query', challenge:
     | { __typename: 'SimpleChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
    };
 
+export type AdminProjectChallengesQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminProjectChallengesQuery = { __typename?: 'Query', challenges: { __typename?: 'ChallengeConnection', edges: Array<{ __typename?: 'ChallengeEdge', node:
+        | { __typename: 'ExternalChallenge', id: string, name: string, description: any, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
+        | { __typename: 'PluginChallenge', id: string, name: string, description: any, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
+        | { __typename: 'QuizChallenge', id: string, name: string, description: any, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
+        | { __typename: 'SimpleChallenge', id: string, name: string, description: any, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
+       }> } };
+
 export type AdminProjectChallengeNewPageQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
 }>;
@@ -4565,49 +4606,19 @@ export type AdminProjectEventPageQueryVariables = Exact<{
 
 export type AdminProjectEventPageQuery = { __typename?: 'Query', event: { __typename?: 'Event', id: string, name: string, description: string, startDate: any, endDate: any, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }>, parentProject: { __typename?: 'Project', id: string, name: string } } };
 
-export type AdminProjectPageQueryVariables = Exact<{
+export type AdminProjectEventsQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
 }>;
 
 
-export type AdminProjectPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', rounding: number, logoImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string }, dark: { __typename?: 'ColorSet', accent: string } } } }, achievements: { __typename?: 'AchievementConnection', edges: Array<{ __typename?: 'AchievementEdge', node:
-        | { __typename?: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, points: number, hidden: boolean, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
-        | { __typename?: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, points: number, hidden: boolean, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
-        | { __typename?: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, points: number, hidden: boolean, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
-        | { __typename?: 'StreakAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, points: number, hidden: boolean, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
-       }> }, challenges: { __typename?: 'ChallengeConnection', edges: Array<{ __typename?: 'ChallengeEdge', node:
-        | { __typename: 'ExternalChallenge', id: string, name: string, description: any, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
-        | { __typename: 'PluginChallenge', id: string, name: string, description: any, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
-        | { __typename: 'QuizChallenge', id: string, name: string, description: any, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
-        | { __typename: 'SimpleChallenge', id: string, name: string, description: any, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
-       }> }, superteams: { __typename?: 'SuperTeamConnection', edges: Array<{ __typename?: 'SuperTeamEdge', node: { __typename?: 'SuperTeam', id: string, name: string, description: string, color?: string | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, teams: Array<{ __typename?: 'Team', id: string }> } }> } };
+export type AdminProjectEventsQuery = { __typename?: 'Query', events: { __typename?: 'EventConnection', edges: Array<{ __typename?: 'EventEdge', node: { __typename?: 'Event', id: string, name: string, description: string, startDate: any, endDate: any } }> } };
 
-export type AdminSuperTeamDetailPageQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
+export type AdminProjectOverviewQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
 }>;
 
 
-export type AdminSuperTeamDetailPageQuery = { __typename?: 'Query', superteam: { __typename?: 'SuperTeam', id: string, name: string, description: string, color?: string | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, teams: Array<{ __typename?: 'Team', id: string, name: string, description: string }> }, teams: { __typename?: 'TeamConnection', edges: Array<{ __typename?: 'TeamEdge', node: { __typename?: 'Team', id: string, name: string, superTeam?: { __typename?: 'SuperTeam', id: string } | null } }> } };
-
-export type SuperteamsPageEventsQueryVariables = Exact<{
-  projectId: Scalars['ID']['input'];
-}>;
-
-
-export type SuperteamsPageEventsQuery = { __typename?: 'Query', events: { __typename?: 'EventConnection', edges: Array<{ __typename?: 'EventEdge', node: { __typename?: 'Event', id: string, name: string, startDate: any } }> } };
-
-export type AdminSuperTeamNewPageQueryVariables = Exact<{
-  projectId: Scalars['ID']['input'];
-}>;
-
-
-export type AdminSuperTeamNewPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string } };
-
-export type AdminProjectsPageQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type AdminProjectsPageQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo?: string | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string }, dark: { __typename?: 'ColorSet', accent: string } } } } }> } };
+export type AdminProjectOverviewQuery = { __typename?: 'Query', challenges: { __typename?: 'ChallengeConnection', totalCount: number }, achievements: { __typename?: 'AchievementConnection', totalCount: number }, events: { __typename?: 'EventConnection', totalCount: number }, superteams: { __typename?: 'SuperTeamConnection', totalCount: number } };
 
 export type AdminScoresPageQueryVariables = Exact<{
   filter?: InputMaybe<ScoreJournalFilter>;
@@ -4627,17 +4638,34 @@ export type DeleteScoreJournalEntryMutationVariables = Exact<{
 
 export type DeleteScoreJournalEntryMutation = { __typename?: 'Mutation', deleteScoreJournalEntry: boolean };
 
-export type AdminScoresNewPageQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type AdminScoresNewPageQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string } }> } };
-
 export type CreateScoreAdjustmentMutationVariables = Exact<{
   input: CreateScoreAdjustmentInput;
 }>;
 
 
 export type CreateScoreAdjustmentMutation = { __typename?: 'Mutation', createScoreAdjustment: { __typename?: 'ScoreJournal', id: string, points: number, reason?: string | null } };
+
+export type AdminSuperTeamDetailPageQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminSuperTeamDetailPageQuery = { __typename?: 'Query', superteam: { __typename?: 'SuperTeam', id: string, name: string, description: string, color?: string | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, teams: Array<{ __typename?: 'Team', id: string, name: string, description: string }> }, teams: { __typename?: 'TeamConnection', edges: Array<{ __typename?: 'TeamEdge', node: { __typename?: 'Team', id: string, name: string, superTeam?: { __typename?: 'SuperTeam', id: string } | null } }> } };
+
+export type SuperteamsPageEventsQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type SuperteamsPageEventsQuery = { __typename?: 'Query', events: { __typename?: 'EventConnection', edges: Array<{ __typename?: 'EventEdge', node: { __typename?: 'Event', id: string, name: string, startDate: any } }> } };
+
+export type AdminProjectSuperteamsQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminProjectSuperteamsQuery = { __typename?: 'Query', superteams: { __typename?: 'SuperTeamConnection', edges: Array<{ __typename?: 'SuperTeamEdge', node: { __typename?: 'SuperTeam', id: string, name: string, description: string, color?: string | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, teams: Array<{ __typename?: 'Team', id: string }> } }> } };
 
 export type AdminTeamPageQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -4656,6 +4684,18 @@ export type AdminTeamsPageQueryVariables = Exact<{
 
 
 export type AdminTeamsPageQuery = { __typename?: 'Query', teams: { __typename?: 'TeamConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'TeamEdge', cursor: string, node: { __typename?: 'Team', id: string, name: string, description: string, members: Array<{ __typename?: 'TeamMember', id: string }>, parentProject: { __typename?: 'Project', id: string, name: string }, superTeam?: { __typename?: 'SuperTeam', id: string, name: string } | null } }> } };
+
+export type AdminProjectsPageQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminProjectsPageQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo?: string | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string }, dark: { __typename?: 'ColorSet', accent: string } } } } }> } };
+
+export type LegacyTeamRedirectQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type LegacyTeamRedirectQuery = { __typename?: 'Query', team: { __typename?: 'Team', id: string, parentProject: { __typename?: 'Project', id: string } } };
 
 export type AdminAchievementsForPickerQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
@@ -4748,11 +4788,6 @@ export type AdminUsersPageQueryVariables = Exact<{
 
 
 export type AdminUsersPageQuery = { __typename?: 'Query', users: { __typename?: 'UserConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'UserEdge', cursor: string, node: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, church: { __typename?: 'Church', name: string }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType }> } }> } };
-
-export type StandingsPageQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type StandingsPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', myTeam?: { __typename?: 'Team', id: string } | null } };
 
 export const ImageFieldsFragmentDoc = gql`
     fragment ImageFields on Image {
@@ -4988,26 +5023,6 @@ export const QuizSubmissionResultFieldsFragmentDoc = gql`
   pointsAwarded
 }
     `;
-export const AdminExternalContentEventsDocument = gql`
-    query AdminExternalContentEvents($userId: ID!, $externalContentId: ID!) {
-  adminExternalContentEvents(
-    userId: $userId
-    externalContentId: $externalContentId
-  ) {
-    id
-    taskId
-    planId
-    source
-    receivedAt
-    consumedAt
-    contentProgress
-  }
-}
-    `;
-
-export function useAdminExternalContentEventsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminExternalContentEventsQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<AdminExternalContentEventsQuery, AdminExternalContentEventsQueryVariables | undefined>({ query: AdminExternalContentEventsDocument, variables: undefined, ...options });
-};
 export const PointHistoryDocument = gql`
     query PointHistory($last: Int) {
   myCurrentProject {
@@ -6438,6 +6453,86 @@ export const CurrentProjectDocument = gql`
 export function useCurrentProjectQuery(options?: Omit<Urql.UseQueryArgs<never, CurrentProjectQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<CurrentProjectQuery, CurrentProjectQueryVariables | undefined>({ query: CurrentProjectDocument, variables: undefined, ...options });
 };
+export const StandingsPageDocument = gql`
+    query StandingsPage {
+  myCurrentProject {
+    myTeam {
+      id
+    }
+  }
+}
+    `;
+
+export function useStandingsPageQuery(options?: Omit<Urql.UseQueryArgs<never, StandingsPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<StandingsPageQuery, StandingsPageQueryVariables | undefined>({ query: StandingsPageDocument, variables: undefined, ...options });
+};
+export const AdminExternalContentEventsDocument = gql`
+    query AdminExternalContentEvents($userId: ID!, $externalContentId: ID!) {
+  adminExternalContentEvents(
+    userId: $userId
+    externalContentId: $externalContentId
+  ) {
+    id
+    taskId
+    planId
+    source
+    receivedAt
+    consumedAt
+    contentProgress
+  }
+}
+    `;
+
+export function useAdminExternalContentEventsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminExternalContentEventsQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminExternalContentEventsQuery, AdminExternalContentEventsQueryVariables | undefined>({ query: AdminExternalContentEventsDocument, variables: undefined, ...options });
+};
+export const AdminProjectSwitcherDocument = gql`
+    query AdminProjectSwitcher {
+  projects(first: 100) {
+    edges {
+      node {
+        id
+        name
+        startDate
+        endDate
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminProjectSwitcherQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectSwitcherQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectSwitcherQuery, AdminProjectSwitcherQueryVariables | undefined>({ query: AdminProjectSwitcherDocument, variables: undefined, ...options });
+};
+export const AdminProjectShellDocument = gql`
+    query AdminProjectShell($projectId: ID!) {
+  project(id: $projectId) {
+    id
+    name
+    description
+    startDate
+    endDate
+    branding {
+      logoImage {
+        ...ImageFields
+      }
+      rounding
+      colors {
+        light {
+          accent
+        }
+        dark {
+          accent
+        }
+      }
+    }
+  }
+}
+    ${ImageFieldsFragmentDoc}`;
+
+export function useAdminProjectShellQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectShellQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectShellQuery, AdminProjectShellQueryVariables | undefined>({ query: AdminProjectShellDocument, variables: undefined, ...options });
+};
 export const AdminChurchPageDocument = gql`
     query AdminChurchPage($id: ID!) {
   church(id: $id) {
@@ -6968,6 +7063,8 @@ export const AdminProjectAchievementPageDocument = gql`
           taskId
           contentType
           title
+          source
+          publishedAt
         }
       }
     }
@@ -6999,6 +7096,28 @@ ${BrandingColorsFieldsFragmentDoc}`;
 
 export function useAdminProjectAchievementPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectAchievementPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectAchievementPageQuery, AdminProjectAchievementPageQueryVariables | undefined>({ query: AdminProjectAchievementPageDocument, variables: undefined, ...options });
+};
+export const AdminProjectAchievementsDocument = gql`
+    query AdminProjectAchievements($projectId: ID!) {
+  achievements(first: 50, filter: {projectId: $projectId}) {
+    edges {
+      node {
+        id
+        name
+        descriptionPending
+        imageCompletedObject {
+          ...ImageFields
+        }
+        points
+        hidden
+      }
+    }
+  }
+}
+    ${ImageFieldsFragmentDoc}`;
+
+export function useAdminProjectAchievementsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectAchievementsQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectAchievementsQuery, AdminProjectAchievementsQueryVariables | undefined>({ query: AdminProjectAchievementsDocument, variables: undefined, ...options });
 };
 export const AdminProjectAchievementsNewPageDocument = gql`
     query AdminProjectAchievementsNewPage($projectId: ID!) {
@@ -7119,6 +7238,27 @@ export const AdminChallengeSessionsPageDocument = gql`
 export function useAdminChallengeSessionsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminChallengeSessionsPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminChallengeSessionsPageQuery, AdminChallengeSessionsPageQueryVariables | undefined>({ query: AdminChallengeSessionsPageDocument, variables: undefined, ...options });
 };
+export const AdminProjectChallengesDocument = gql`
+    query AdminProjectChallenges($projectId: ID!) {
+  challenges(first: 50, filter: {projectId: $projectId}) {
+    edges {
+      node {
+        __typename
+        id
+        name
+        description
+        imageObject {
+          ...ImageFields
+        }
+      }
+    }
+  }
+}
+    ${ImageFieldsFragmentDoc}`;
+
+export function useAdminProjectChallengesQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectChallengesQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectChallengesQuery, AdminProjectChallengesQueryVariables | undefined>({ query: AdminProjectChallengesDocument, variables: undefined, ...options });
+};
 export const AdminProjectChallengeNewPageDocument = gql`
     query AdminProjectChallengeNewPage($projectId: ID!) {
   project(id: $projectId) {
@@ -7199,173 +7339,44 @@ export const AdminProjectEventPageDocument = gql`
 export function useAdminProjectEventPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectEventPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectEventPageQuery, AdminProjectEventPageQueryVariables | undefined>({ query: AdminProjectEventPageDocument, variables: undefined, ...options });
 };
-export const AdminProjectPageDocument = gql`
-    query AdminProjectPage($projectId: ID!) {
-  project(id: $projectId) {
-    id
-    name
-    description
-    startDate
-    endDate
-    branding {
-      logoImage {
-        ...ImageFields
-      }
-      rounding
-      colors {
-        light {
-          accent
-        }
-        dark {
-          accent
-        }
-      }
-    }
-  }
-  achievements(first: 50, filter: {projectId: $projectId}) {
-    edges {
-      node {
-        id
-        name
-        descriptionPending
-        descriptionCompleted
-        imagePendingObject {
-          ...ImageFields
-        }
-        imageCompletedObject {
-          ...ImageFields
-        }
-        points
-        hidden
-      }
-    }
-  }
-  challenges(first: 50, filter: {projectId: $projectId}) {
-    edges {
-      node {
-        __typename
-        id
-        name
-        description
-        imageObject {
-          ...ImageFields
-        }
-      }
-    }
-  }
-  superteams(first: 50, filter: {projectId: $projectId}) {
+export const AdminProjectEventsDocument = gql`
+    query AdminProjectEvents($projectId: ID!) {
+  events(first: 50, filter: {projectId: $projectId}) {
     edges {
       node {
         id
         name
         description
-        color
-        imageObject {
-          ...ImageFields
-        }
-        teams {
-          id
-        }
-      }
-    }
-  }
-}
-    ${ImageFieldsFragmentDoc}`;
-
-export function useAdminProjectPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectPageQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<AdminProjectPageQuery, AdminProjectPageQueryVariables | undefined>({ query: AdminProjectPageDocument, variables: undefined, ...options });
-};
-export const AdminSuperTeamDetailPageDocument = gql`
-    query AdminSuperTeamDetailPage($id: ID!, $projectId: ID!) {
-  superteam(id: $id) {
-    id
-    name
-    description
-    color
-    imageObject {
-      ...ImageFields
-    }
-    teams {
-      id
-      name
-      description
-    }
-  }
-  teams(first: 200, filter: {projectId: $projectId}) {
-    edges {
-      node {
-        id
-        name
-        superTeam {
-          id
-        }
-      }
-    }
-  }
-}
-    ${ImageFieldsFragmentDoc}`;
-
-export function useAdminSuperTeamDetailPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminSuperTeamDetailPageQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<AdminSuperTeamDetailPageQuery, AdminSuperTeamDetailPageQueryVariables | undefined>({ query: AdminSuperTeamDetailPageDocument, variables: undefined, ...options });
-};
-export const SuperteamsPageEventsDocument = gql`
-    query SuperteamsPageEvents($projectId: ID!) {
-  events(first: 100, filter: {projectId: $projectId}) {
-    edges {
-      node {
-        id
-        name
         startDate
-      }
-    }
-  }
-}
-    `;
-
-export function useSuperteamsPageEventsQuery(options?: Omit<Urql.UseQueryArgs<never, SuperteamsPageEventsQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<SuperteamsPageEventsQuery, SuperteamsPageEventsQueryVariables | undefined>({ query: SuperteamsPageEventsDocument, variables: undefined, ...options });
-};
-export const AdminSuperTeamNewPageDocument = gql`
-    query AdminSuperTeamNewPage($projectId: ID!) {
-  project(id: $projectId) {
-    id
-    name
-  }
-}
-    `;
-
-export function useAdminSuperTeamNewPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminSuperTeamNewPageQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<AdminSuperTeamNewPageQuery, AdminSuperTeamNewPageQueryVariables | undefined>({ query: AdminSuperTeamNewPageDocument, variables: undefined, ...options });
-};
-export const AdminProjectsPageDocument = gql`
-    query AdminProjectsPage {
-  projects(first: 100) {
-    edges {
-      node {
-        id
-        name
-        description
         endDate
-        startDate
-        branding {
-          logo
-          colors {
-            light {
-              accent
-            }
-            dark {
-              accent
-            }
-          }
-        }
       }
     }
   }
 }
     `;
 
-export function useAdminProjectsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectsPageQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<AdminProjectsPageQuery, AdminProjectsPageQueryVariables | undefined>({ query: AdminProjectsPageDocument, variables: undefined, ...options });
+export function useAdminProjectEventsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectEventsQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectEventsQuery, AdminProjectEventsQueryVariables | undefined>({ query: AdminProjectEventsDocument, variables: undefined, ...options });
+};
+export const AdminProjectOverviewDocument = gql`
+    query AdminProjectOverview($projectId: ID!) {
+  challenges(first: 0, filter: {projectId: $projectId}) {
+    totalCount
+  }
+  achievements(first: 0, filter: {projectId: $projectId}) {
+    totalCount
+  }
+  events(first: 0, filter: {projectId: $projectId}) {
+    totalCount
+  }
+  superteams(first: 0, filter: {projectId: $projectId}) {
+    totalCount
+  }
+}
+    `;
+
+export function useAdminProjectOverviewQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectOverviewQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectOverviewQuery, AdminProjectOverviewQueryVariables | undefined>({ query: AdminProjectOverviewDocument, variables: undefined, ...options });
 };
 export const AdminScoresPageDocument = gql`
     query AdminScoresPage($filter: ScoreJournalFilter, $first: Int, $after: String, $last: Int, $before: String) {
@@ -7421,22 +7432,6 @@ export const DeleteScoreJournalEntryDocument = gql`
 export function useDeleteScoreJournalEntryMutation() {
   return Urql.useMutation<DeleteScoreJournalEntryMutation, DeleteScoreJournalEntryMutationVariables>(DeleteScoreJournalEntryDocument);
 };
-export const AdminScoresNewPageDocument = gql`
-    query AdminScoresNewPage {
-  projects(first: 100) {
-    edges {
-      node {
-        id
-        name
-      }
-    }
-  }
-}
-    `;
-
-export function useAdminScoresNewPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminScoresNewPageQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<AdminScoresNewPageQuery, AdminScoresNewPageQueryVariables | undefined>({ query: AdminScoresNewPageDocument, variables: undefined, ...options });
-};
 export const CreateScoreAdjustmentDocument = gql`
     mutation CreateScoreAdjustment($input: CreateScoreAdjustmentInput!) {
   createScoreAdjustment(input: $input) {
@@ -7449,6 +7444,80 @@ export const CreateScoreAdjustmentDocument = gql`
 
 export function useCreateScoreAdjustmentMutation() {
   return Urql.useMutation<CreateScoreAdjustmentMutation, CreateScoreAdjustmentMutationVariables>(CreateScoreAdjustmentDocument);
+};
+export const AdminSuperTeamDetailPageDocument = gql`
+    query AdminSuperTeamDetailPage($id: ID!, $projectId: ID!) {
+  superteam(id: $id) {
+    id
+    name
+    description
+    color
+    imageObject {
+      ...ImageFields
+    }
+    teams {
+      id
+      name
+      description
+    }
+  }
+  teams(first: 200, filter: {projectId: $projectId}) {
+    edges {
+      node {
+        id
+        name
+        superTeam {
+          id
+        }
+      }
+    }
+  }
+}
+    ${ImageFieldsFragmentDoc}`;
+
+export function useAdminSuperTeamDetailPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminSuperTeamDetailPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminSuperTeamDetailPageQuery, AdminSuperTeamDetailPageQueryVariables | undefined>({ query: AdminSuperTeamDetailPageDocument, variables: undefined, ...options });
+};
+export const SuperteamsPageEventsDocument = gql`
+    query SuperteamsPageEvents($projectId: ID!) {
+  events(first: 100, filter: {projectId: $projectId}) {
+    edges {
+      node {
+        id
+        name
+        startDate
+      }
+    }
+  }
+}
+    `;
+
+export function useSuperteamsPageEventsQuery(options?: Omit<Urql.UseQueryArgs<never, SuperteamsPageEventsQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<SuperteamsPageEventsQuery, SuperteamsPageEventsQueryVariables | undefined>({ query: SuperteamsPageEventsDocument, variables: undefined, ...options });
+};
+export const AdminProjectSuperteamsDocument = gql`
+    query AdminProjectSuperteams($projectId: ID!) {
+  superteams(first: 50, filter: {projectId: $projectId}) {
+    edges {
+      node {
+        id
+        name
+        description
+        color
+        imageObject {
+          ...ImageFields
+        }
+        teams {
+          id
+        }
+      }
+    }
+  }
+}
+    ${ImageFieldsFragmentDoc}`;
+
+export function useAdminProjectSuperteamsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectSuperteamsQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectSuperteamsQuery, AdminProjectSuperteamsQueryVariables | undefined>({ query: AdminProjectSuperteamsDocument, variables: undefined, ...options });
 };
 export const AdminTeamPageDocument = gql`
     query AdminTeamPage($id: ID!) {
@@ -7530,6 +7599,50 @@ export const AdminTeamsPageDocument = gql`
 
 export function useAdminTeamsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminTeamsPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminTeamsPageQuery, AdminTeamsPageQueryVariables | undefined>({ query: AdminTeamsPageDocument, variables: undefined, ...options });
+};
+export const AdminProjectsPageDocument = gql`
+    query AdminProjectsPage {
+  projects(first: 100) {
+    edges {
+      node {
+        id
+        name
+        description
+        endDate
+        startDate
+        branding {
+          logo
+          colors {
+            light {
+              accent
+            }
+            dark {
+              accent
+            }
+          }
+        }
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminProjectsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectsPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectsPageQuery, AdminProjectsPageQueryVariables | undefined>({ query: AdminProjectsPageDocument, variables: undefined, ...options });
+};
+export const LegacyTeamRedirectDocument = gql`
+    query LegacyTeamRedirect($id: ID!) {
+  team(id: $id) {
+    id
+    parentProject {
+      id
+    }
+  }
+}
+    `;
+
+export function useLegacyTeamRedirectQuery(options?: Omit<Urql.UseQueryArgs<never, LegacyTeamRedirectQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<LegacyTeamRedirectQuery, LegacyTeamRedirectQueryVariables | undefined>({ query: LegacyTeamRedirectDocument, variables: undefined, ...options });
 };
 export const AdminAchievementsForPickerDocument = gql`
     query AdminAchievementsForPicker($projectId: ID!) {
@@ -7827,17 +7940,4 @@ export const AdminUsersPageDocument = gql`
 
 export function useAdminUsersPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminUsersPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminUsersPageQuery, AdminUsersPageQueryVariables | undefined>({ query: AdminUsersPageDocument, variables: undefined, ...options });
-};
-export const StandingsPageDocument = gql`
-    query StandingsPage {
-  myCurrentProject {
-    myTeam {
-      id
-    }
-  }
-}
-    `;
-
-export function useStandingsPageQuery(options?: Omit<Urql.UseQueryArgs<never, StandingsPageQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<StandingsPageQuery, StandingsPageQueryVariables | undefined>({ query: StandingsPageDocument, variables: undefined, ...options });
 };

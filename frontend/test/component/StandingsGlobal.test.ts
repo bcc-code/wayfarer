@@ -2,11 +2,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref } from 'vue'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
-import StandingsGlobal from '~/components/standings/StandingsGlobal.vue'
-import StandingsListSkeleton from '~/components/standings/StandingsListSkeleton.vue'
-import LeaderboardList from '~/components/leaderboard/LeaderboardList.vue'
-import ErrorState from '~/components/ErrorState.vue'
-import EmptyState from '~/components/EmptyState.vue'
+import StandingsGlobal from '../../layers/user/app/components/standings/StandingsGlobal.vue'
+import StandingsListSkeleton from '../../layers/user/app/components/standings/StandingsListSkeleton.vue'
+import LeaderboardList from '../../layers/user/app/components/leaderboard/LeaderboardList.vue'
+import ErrorState from '../../layers/user/app/components/ErrorState.vue'
+import EmptyState from '../../layers/user/app/components/EmptyState.vue'
 
 // These composables are Nuxt auto-imports; replace them so we can drive the
 // component through each of its render states without a real GraphQL backend.

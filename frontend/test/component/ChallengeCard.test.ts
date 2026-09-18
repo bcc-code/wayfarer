@@ -1,8 +1,8 @@
 // @vitest-environment nuxt
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
-import ChallengeCard from '~/components/challenges/ChallengeCard.vue'
-import DesignButton from '~/components/design/DesignButton.vue'
+import ChallengeCard from '../../layers/user/app/components/challenges/ChallengeCard.vue'
+import DesignButton from '../../layers/user/app/components/design/DesignButton.vue'
 
 // useAnalytics is a Nuxt auto-import; mockNuxtImport replaces it globally.
 const track = vi.fn()

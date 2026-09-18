@@ -2,11 +2,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref } from 'vue'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
-import StandingsLocal from '~/components/standings/StandingsLocal.vue'
-import StandingsListSkeleton from '~/components/standings/StandingsListSkeleton.vue'
-import LeaderboardList from '~/components/leaderboard/LeaderboardList.vue'
-import ErrorState from '~/components/ErrorState.vue'
-import EmptyState from '~/components/EmptyState.vue'
+import StandingsLocal from '../../layers/user/app/components/standings/StandingsLocal.vue'
+import StandingsListSkeleton from '../../layers/user/app/components/standings/StandingsListSkeleton.vue'
+import LeaderboardList from '../../layers/user/app/components/leaderboard/LeaderboardList.vue'
+import ErrorState from '../../layers/user/app/components/ErrorState.vue'
+import EmptyState from '../../layers/user/app/components/EmptyState.vue'
 import { LeaderboardEntityType } from '~/api/generated'
 
 const { queryMock, authMock, authReadyMock, localStorageMock } = vi.hoisted(
