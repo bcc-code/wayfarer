@@ -51,3 +51,32 @@ vi.mock('@auth0/auth0-vue', () => ({
     getAccessTokenSilently: vi.fn(),
   }),
 }))
+
+// The @posthog/nuxt module registers a client plugin (`posthog-client`) that
+// calls `posthog.init()` for real during app init. posthog-js then attaches
+// listeners to browser globals the test environment does not fully provide, and
+// throws *asynchronously* — an unhandled rejection Vitest reports as
+// "TypeError: t.addEventListener is not a function". Every test still passes,
+// but the run exits non-zero, so it only ever showed up as a red CI job.
+//
+// It is timing-dependent: it does not reproduce on macOS/Node 24 locally and
+// does on Linux/Node 22 in CI. Stub the module so the plugin no-ops, as we
+// already do for Sentry, Firebase and Auth0.
+//
+// `__loaded` must stay false: the plugin returns early when it is truthy, and
+// would then never provide `$posthog`, which `useAnalytics` calls.
+vi.mock('posthog-js', () => {
+  const posthog = {
+    __isTestStub: true,
+    __loaded: false,
+    init: vi.fn(),
+    debug: vi.fn(),
+    capture: vi.fn(),
+    captureException: vi.fn(),
+    identify: vi.fn(),
+    reset: vi.fn(),
+    opt_in_capturing: vi.fn(),
+    opt_out_capturing: vi.fn(),
+  }
+  return { default: posthog, posthog }
+})

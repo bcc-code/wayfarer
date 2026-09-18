@@ -212,8 +212,13 @@ in a Nuxt runtime environment (via `@nuxt/test-utils`) so auto-imports
 - Start each file with `// @vitest-environment nuxt`
 - Mount with `mountSuspended` from `@nuxt/test-utils/runtime`
 - Mock Nuxt auto-imports (composables) with `mockNuxtImport`
-- `test/component/setup.ts` globally stubs Auth0 and Sentry so app init doesn't
-  throw during mount — no per-test boilerplate needed
+- `test/component/setup.ts` globally stubs the browser-only third-party SDKs —
+  Auth0, Sentry, Firebase and **posthog-js** — so app init doesn't throw during
+  mount. No per-test boilerplate needed. Add any new one here rather than
+  per-test: a client plugin that throws _asynchronously_ still lets every test
+  pass while making the run exit non-zero, so it surfaces only as a red CI job
+  with a green test list. `posthog-stub.test.ts` guards that one, because a
+  stub that quietly stops being applied looks exactly like a working one.
 
 **Mock composables, render real components.** The boundary of a component test
 is data, not UI:
