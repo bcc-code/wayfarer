@@ -58,13 +58,6 @@ export function useAdminNav() {
       : [],
   )
 
-  /** `UNavigationMenu` renders each sub-array as its own divided group. */
-  const navItems = computed<NavigationMenuItem[][]>(() =>
-    projectNav.value.length
-      ? [globalNav.value, projectNav.value]
-      : [globalNav.value],
-  )
-
   const toPaletteItems = (items: NavigationMenuItem[]): CommandPaletteItem[] =>
     items.map((item) => ({
       label: item.label,
@@ -107,7 +100,6 @@ export function useAdminNav() {
     projectId,
     globalNav,
     projectNav,
-    navItems,
     searchGroups,
     currentTitle,
   }

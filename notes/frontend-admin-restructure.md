@@ -603,6 +603,87 @@ it sits in the shared `composables/` folder. It is admin code, so it joined
 
 Unit tests hold at 519; the work was structural rather than new logic.
 
+### 2026-09-18 — teams and scores moved under the project
+
+The four remaining project-scoped pages moved to
+`projects/[projectId]/{teams,scores}/`, and **Lag** and **Poeng** moved out of
+`GLOBAL_NAV` into `PROJECT_NAV`. Both list queries gained
+`filter: { projectId }` merged with their pagination cursor, and their now
+redundant "Prosjekt" column is gone.
+
+`scores/new.vue` lost its project picker — the route says which project — and
+with it the `AdminScoresNewPage` query, which existed only to populate that
+dropdown.
+
+**Legacy URLs still resolve.** The route-manifest diff was additions only:
+`admin-teams`, `admin-teams-teamId`, `admin-scores` and `admin-scores-new` are
+all still in the manifest, now served by stubs.
+
+`/admin/teams/:teamId` is the interesting one. It cannot be a
+`definePageMeta({ redirect })`, because that is synchronous and the old URL
+carries no projectId — the target has to be looked up. `Team.parentProject`
+exists server-side, so the stub queries it and redirects, falling back to an
+explanatory empty state when the team is gone or the project is not visible to
+the user. The other three are static redirects to the project picker, since
+there is no current project to infer.
+
+The user detail page needed no stub: its query already selected
+`team.parentProject.id`, so it addresses the project-scoped route directly. Its
+"Vis alle" score-journal button was removed instead — that panel spans projects,
+and there is no single journal to send it to any more.
+
+Two nav tests were updated rather than deleted: the guard one previously
+asserted that the *global* "Lag" entry must not match
+`admin-projects-projectId-teams`. That relationship inverted with the move, so
+it now asserts the project entry matches its own branch and its `:teamId` child
+but not the legacy global route — the same substring-matching bug, guarded from
+the other side.
+
+### 2026-09-18 — project nav in a secondary sidebar
+
+The project section moved out of the primary sidebar into a column of its own, so
+the global nav stays a fixed landmark while the project one comes and goes with
+the route. Resizing was dropped from both at the same time; with nothing
+resizable left, `UDashboardGroup`'s `storage`/`storage-key` went too — they only
+persist resize state.
+
+The **project switcher heads the secondary column**, not the primary. Keeping it
+in both printed the same truncated project name twice, side by side, and moving
+it gives the column an identity: this one *is* the project. The trade is that
+the switcher is unreachable outside a project — the "Prosjekter" list is the way
+in, which is the right order anyway. Below `lg`, where there is no second
+column, the switcher rides in the primary's slideover with the project nav.
+
+Visual hierarchy is one class: the secondary carries `shadow-none` while the
+primary keeps its shadow, so the app rail reads as the top layer and the
+contextual column sits flatter behind it.
+
+**The overview grid moved to container queries.** `lg:grid-cols-4` measured the
+*viewport*, but two sidebars take ~600px out of it, so four cards overflowed the
+panel at exactly the widths the breakpoint was meant to cover. It is now
+`@container` with `@md:grid-cols-2 @4xl:grid-cols-4`, measured against the panel.
+Verified in the built CSS as `@container (min-width:28rem)` and `(min-width:56rem)`
+rules rather than `@media`.
+
+Both sidebars are capped at `max-w-[300px]`. `default-size` is a *percentage* of the
+viewport (the dashboard context sets `unit: '%'`), so 16% passes 300px on
+anything wider than ~1875px; a ceiling is the right fix rather than a smaller
+percentage, which would leave the sidebar cramped on a laptop.
+
+Two things that are not obvious from the markup:
+
+- **The secondary sidebar's header is load-bearing.** Its
+  `min-h-(--ui-header-height)` is what lines the first nav item up with the
+  primary sidebar's and with the navbar. Without it the column starts higher
+  than everything beside it.
+- **Only one sidebar may be mounted on mobile.** `UDashboardSidebar` registers
+  `useRuntimeHook('dashboard:sidebar:toggle', () => open.value = !open.value)`,
+  and that hook is global — *every* mounted sidebar listens. Two of them means
+  one tap on the hamburger opens two slideovers, stacked. The secondary is
+  therefore mounted on desktop only (`useMediaQuery`, safe here because
+  `ssr: false`), and below `lg` the project nav rides along in the primary's
+  slideover, which renders that sidebar's default slot.
+
 ### Gate status after the above
 
 | Check           | Before | After                          |
@@ -619,9 +700,7 @@ Unit tests hold at 519; the work was structural rather than new logic.
 
 Each step is independently shippable.
 
-1. **Route moves.** `teams`/`scores` under `[projectId]` with redirect stubs;
-   the `canManageTeam` TODO is already resolved.
-2. **Nuxt layers.** `git mv` into `layers/user/app/**` and `layers/admin/app/**`,
+1. **Nuxt layers.** `git mv` into `layers/user/app/**` and `layers/admin/app/**`,
    keeping the `admin/` directory inside the admin layer's `pages/`. Verified by
    the route-manifest snapshot staying byte-identical. Then widen the `~` alias
    in `vitest.config.ts`, add the layer pages dirs as roots in

@@ -1,0 +1,132 @@
+<script setup lang="ts">
+import type { TableColumn } from '@nuxt/ui'
+
+definePageMeta({
+  permission: 'teams:view',
+  layout: 'admin',
+})
+
+gql(`
+  query AdminTeamsPage($filter: TeamFilter, $first: Int, $after: String, $last: Int, $before: String) {
+    teams(
+      filter: $filter
+      first: $first
+      after: $after
+      last: $last
+      before: $before
+    ) {
+      totalCount
+      pageInfo {
+        hasNextPage
+        hasPreviousPage
+        startCursor
+        endCursor
+      }
+      edges {
+        cursor
+        node {
+          id
+          name
+          description
+          members {
+            id
+          }
+          parentProject {
+            id
+            name
+          }
+          superTeam {
+            id
+            name
+          }
+        }
+      }
+    }
+  }
+`)
+
+const route = useRoute('admin-projects-projectId-teams')
+
+const pagination = usePagination({
+  defaultPageSize: 15,
+})
+
+const { isAuthReady } = useAuthReady()
+const { data, fetching, error } = useAdminTeamsPageQuery({
+  // Merged with the pagination cursor rather than replacing it. Computed so the
+  // list repoints when the project switcher changes the param — this route no
+  // longer remounts, it lives under the persistent [projectId].vue parent.
+  variables: computed(() => ({
+    ...pagination.variables.value,
+    filter: { projectId: route.params.projectId },
+  })),
+  pause: computed(() => !isAuthReady.value),
+})
+
+watch(
+  () => data.value?.teams,
+  (connection) => {
+    pagination.updateConnection(connection)
+  },
+)
+
+const teams = computed(() => data.value?.teams.edges.map((edge) => edge.node))
+
+const columns: TableColumn<
+  AdminTeamsPageQuery['teams']['edges'][number]['node']
+>[] = [
+  { accessorKey: 'name', header: 'Navn' },
+  { accessorKey: 'superTeam.name', id: 'superTeam', header: 'Superlag' },
+  { accessorKey: 'members', header: 'Medlemmer' },
+  { id: 'actions' },
+]
+</script>
+
+<template>
+  <div>
+    <h1 class="mb-6 text-3xl">Lag</h1>
+    <ErrorState v-if="error" :error />
+    <div v-else class="space-y-4">
+      <div class="flex items-center justify-between gap-2">
+        <RelayPagination v-model:pagination="pagination" />
+      </div>
+      <UTable :data="teams" :loading="fetching" :columns>
+        <template #name-cell="{ row }">
+          <div class="flex flex-col">
+            <span class="font-medium">{{ row.original.name }}</span>
+            <span class="text-dimmed line-clamp-1 text-xs">{{
+              row.original.description
+            }}</span>
+          </div>
+        </template>
+        <template #superTeam="{ row }">
+          <span v-if="row.original.superTeam">{{
+            row.original.superTeam.name
+          }}</span>
+          <span v-else class="text-dimmed">—</span>
+        </template>
+        <template #members-cell="{ row }">
+          <UBadge variant="soft">
+            {{ row.original.members.length }}
+          </UBadge>
+        </template>
+        <template #actions-cell="{ row }">
+          <div class="flex justify-end">
+            <UButton
+              variant="ghost"
+              :to="{
+                name: 'admin-projects-projectId-teams-teamId',
+                params: {
+                  projectId: route.params.projectId,
+                  teamId: row.original.id,
+                },
+              }"
+            >
+              Rediger
+            </UButton>
+          </div>
+        </template>
+      </UTable>
+    </div>
+  </div>
+</template>

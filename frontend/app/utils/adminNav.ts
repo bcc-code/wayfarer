@@ -52,25 +52,11 @@ export const GLOBAL_NAV: AdminNavItem[] = [
     can: (p) => !!p.canAccessProjects.value,
   },
   {
-    label: 'Lag',
-    icon: 'lucide:users-round',
-    to: 'admin-teams',
-    match: 'admin-teams',
-    can: (p) => !!p.canAccessTeams.value,
-  },
-  {
     label: 'Brukere',
     icon: 'lucide:user',
     to: 'admin-users',
     match: 'admin-users',
     can: (p) => !!p.canAccessUsers.value,
-  },
-  {
-    label: 'Poeng',
-    icon: 'lucide:trophy',
-    to: 'admin-scores',
-    match: 'admin-scores',
-    can: (p) => !!p.canAccessScores.value,
   },
   {
     label: 'Samtykker',
@@ -97,8 +83,6 @@ export const GLOBAL_NAV: AdminNavItem[] = [
 
 /**
  * Shown only while inside `/admin/projects/:projectId`.
- *
- * The project-scoped teams and scores join this list once those routes exist.
  */
 export const PROJECT_NAV: AdminNavItem[] = [
   {
@@ -129,6 +113,20 @@ export const PROJECT_NAV: AdminNavItem[] = [
     icon: 'lucide:users',
     to: 'admin-projects-projectId-superteams',
     match: 'admin-projects-projectId-superteams',
+  },
+  {
+    label: 'Lag',
+    icon: 'lucide:users-round',
+    to: 'admin-projects-projectId-teams',
+    match: 'admin-projects-projectId-teams',
+    can: (p) => !!p.canAccessTeams.value,
+  },
+  {
+    label: 'Poeng',
+    icon: 'lucide:trophy',
+    to: 'admin-projects-projectId-scores',
+    match: 'admin-projects-projectId-scores',
+    can: (p) => !!p.canAccessScores.value,
   },
   {
     label: 'Innstillinger',

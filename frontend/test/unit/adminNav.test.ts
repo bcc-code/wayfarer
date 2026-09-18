@@ -55,20 +55,18 @@ describe('admin nav model', () => {
         GLOBAL_NAV,
         permissions({
           canAccessProjects: true,
-          canAccessTeams: true,
           canAccessUsers: true,
-          canAccessScores: true,
           canAccessConsents: true,
           canAccessFeedback: true,
           canAccessMaintenance: true,
         }),
       )
+      // Teams and scores are not here: they are project-scoped now and live in
+      // PROJECT_NAV.
       expect(labels(items)).toEqual([
         'Hjem',
         'Prosjekter',
-        'Lag',
         'Brukere',
-        'Poeng',
         'Samtykker',
         'Tilbakemeldinger',
         'Vedlikehold',
@@ -107,15 +105,20 @@ describe('admin nav model', () => {
       ).toBe(true)
     })
 
-    // The old check was `route.fullPath.includes('/teams')`, which lights up the
-    // global "Lag" entry on /admin/projects/x/teams once teams move under a
-    // project. Name-prefix matching is what makes that move safe.
+    // The old check was `route.fullPath.includes('/teams')`, which would light
+    // the project "Lag" entry on the legacy global /admin/teams route as well.
+    // Name-prefix matching keeps the two branches apart, which is what made the
+    // move safe.
     it('does not match a different branch that merely shares a word', () => {
       const teams = find('Lag')
-      expect(isNavItemActive(teams, 'admin-teams')).toBe(true)
       expect(isNavItemActive(teams, 'admin-projects-projectId-teams')).toBe(
-        false,
+        true,
       )
+      expect(
+        isNavItemActive(teams, 'admin-projects-projectId-teams-teamId'),
+      ).toBe(true)
+      // The legacy global route, which now only redirects.
+      expect(isNavItemActive(teams, 'admin-teams')).toBe(false)
     })
 
     it('does not treat a longer sibling name as nested', () => {

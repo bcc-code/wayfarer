@@ -652,7 +652,13 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
             <NuxtLink
               v-for="team in data.user.teams"
               :key="team.id"
-              :to="{ name: 'admin-teams-teamId', params: { teamId: team.id } }"
+              :to="{
+                name: 'admin-projects-projectId-teams-teamId',
+                params: {
+                  projectId: team.parentProject.id,
+                  teamId: team.id,
+                },
+              }"
               class="border-default flex items-center justify-between rounded-md border p-3 hover:bg-elevated transition-colors"
             >
               <div>
@@ -926,9 +932,6 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
                   ({{ scoreTotalCount }} oppføringer)
                 </span>
               </h2>
-              <UButton variant="ghost" size="sm" :to="{ name: 'admin-scores' }">
-                Vis alle
-              </UButton>
             </div>
           </template>
 

@@ -113,23 +113,30 @@ onMounted(() => {
         </div>
       </header>
 
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <NuxtLink
-          v-for="section in sections"
-          :key="section.label"
-          :to="projectRoute(section.to)"
-        >
-          <UCard class="hover:bg-elevated/50 h-full transition-colors">
-            <div class="flex items-center gap-3">
-              <UIcon :name="section.icon" class="text-muted size-5" />
-              <span class="font-medium">{{ section.label }}</span>
-            </div>
-            <div class="mt-2 text-2xl tabular-nums">
-              <USkeleton v-if="fetching" class="h-8 w-12" />
-              <template v-else>{{ section.count ?? 0 }}</template>
-            </div>
-          </UCard>
-        </NuxtLink>
+      <!--
+        Container query, not viewport. `lg:grid-cols-4` measured the window, but
+        two sidebars take ~600px out of it, so four cards overflowed the panel
+        on exactly the widths the breakpoint was meant to cover.
+      -->
+      <div class="@container">
+        <div class="grid gap-4 @md:grid-cols-2 @4xl:grid-cols-4">
+          <NuxtLink
+            v-for="section in sections"
+            :key="section.label"
+            :to="projectRoute(section.to)"
+          >
+            <UCard class="hover:bg-elevated/50 h-full transition-colors">
+              <div class="flex items-center gap-3">
+                <UIcon :name="section.icon" class="text-muted size-5" />
+                <span class="font-medium">{{ section.label }}</span>
+              </div>
+              <div class="mt-2 text-2xl tabular-nums">
+                <USkeleton v-if="fetching" class="h-8 w-12" />
+                <template v-else>{{ section.count ?? 0 }}</template>
+              </div>
+            </UCard>
+          </NuxtLink>
+        </div>
       </div>
     </template>
   </div>
