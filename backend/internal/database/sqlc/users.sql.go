@@ -892,15 +892,15 @@ func (q *Queries) GetUsersFilteredCursor(ctx context.Context, arg GetUsersFilter
 	return items, nil
 }
 
-const GetUsersWithIncompleteData = `-- name: GetUsersWithIncompleteData :many
+const GetUsersLeastRecentlySynced = `-- name: GetUsersLeastRecentlySynced :many
 SELECT id, members_id, person_uuid, gender, church_id, church_locked_until
 FROM users
-WHERE gender = 'UNKNOWN'
-ORDER BY id
+WHERE members_id ~ '^[0-9]+$'
+ORDER BY updated_at ASC
 LIMIT $1::int
 `
 
-type GetUsersWithIncompleteDataRow struct {
+type GetUsersLeastRecentlySyncedRow struct {
 	ID                string             `json:"id"`
 	MembersID         string             `json:"members_id"`
 	PersonUuid        pgtype.UUID        `json:"person_uuid"`
@@ -909,15 +909,23 @@ type GetUsersWithIncompleteDataRow struct {
 	ChurchLockedUntil pgtype.Timestamptz `json:"church_locked_until"`
 }
 
-func (q *Queries) GetUsersWithIncompleteData(ctx context.Context, querylimit int32) ([]*GetUsersWithIncompleteDataRow, error) {
-	rows, err := q.db.Query(ctx, GetUsersWithIncompleteData, querylimit)
+// Ordered by updated_at ASC so repeated calls (e.g. from a cron job) cycle
+// through the entire user base over time, not just a fixed subset. Excludes
+// members_id values that aren't a real Members API person ID (e.g. the
+// seed script's "MEM-<n>" placeholders) — those can never resolve via
+// Lookup, and since a failed sync never bumps updated_at, they'd otherwise
+// wedge permanently at the front of the queue.
+// A NULL querylimit means "no limit" (Postgres treats LIMIT NULL as no limit) — the whole
+// matching table is returned so a cron call can sweep everyone in one go.
+func (q *Queries) GetUsersLeastRecentlySynced(ctx context.Context, querylimit *int32) ([]*GetUsersLeastRecentlySyncedRow, error) {
+	rows, err := q.db.Query(ctx, GetUsersLeastRecentlySynced, querylimit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*GetUsersWithIncompleteDataRow{}
+	items := []*GetUsersLeastRecentlySyncedRow{}
 	for rows.Next() {
-		var i GetUsersWithIncompleteDataRow
+		var i GetUsersLeastRecentlySyncedRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.MembersID,
@@ -986,6 +994,22 @@ func (q *Queries) LockUserChurch(ctx context.Context, arg LockUserChurchParams) 
 	return err
 }
 
+const TouchUserSyncedAt = `-- name: TouchUserSyncedAt :exec
+UPDATE users
+SET updated_at = now()
+WHERE id = $1::char(28)
+`
+
+// Bumps updated_at without changing any other column. Used when a Members sync attempt
+// fails with a definitive "this person no longer exists in Members" (404), as opposed to
+// a transient error (timeout, 5xx) — without this, a since-deleted member's row would
+// camp at the front of GetUsersLeastRecentlySynced's queue forever, since a failed sync
+// normally never advances updated_at, wasting a batch slot on it every single call.
+func (q *Queries) TouchUserSyncedAt(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, TouchUserSyncedAt, id)
+	return err
+}
+
 const UnlockUserChurch = `-- name: UnlockUserChurch :exec
 UPDATE users
 SET church_locked_until = NULL, updated_at = now()
@@ -1046,5 +1070,52 @@ type UpdateUserPersonUUIDParams struct {
 
 func (q *Queries) UpdateUserPersonUUID(ctx context.Context, arg UpdateUserPersonUUIDParams) error {
 	_, err := q.db.Exec(ctx, UpdateUserPersonUUID, arg.PersonUuid, arg.ID)
+	return err
+}
+
+const UpdateUserProfileFromMembers = `-- name: UpdateUserProfileFromMembers :exec
+UPDATE users
+SET
+    email = COALESCE(NULLIF($1::text, ''), email),
+    name = COALESCE(NULLIF($2::text, ''), name),
+    first_name = COALESCE(NULLIF($3::text, ''), first_name),
+    last_name = COALESCE(NULLIF($4::text, ''), last_name),
+    middle_name = COALESCE(NULLIF($5::text, ''), middle_name),
+    display_name = COALESCE(NULLIF($6::text, ''), display_name),
+    gender = COALESCE(NULLIF($7::text, ''), gender),
+    birthdate = COALESCE($8::date, birthdate),
+    church_id = COALESCE(NULLIF($9::text, ''), church_id),
+    updated_at = now()
+WHERE id = $10::char(28)
+`
+
+type UpdateUserProfileFromMembersParams struct {
+	Email       string      `json:"email"`
+	Name        string      `json:"name"`
+	FirstName   string      `json:"first_name"`
+	LastName    string      `json:"last_name"`
+	MiddleName  string      `json:"middle_name"`
+	DisplayName string      `json:"display_name"`
+	Gender      string      `json:"gender"`
+	Birthdate   pgtype.Date `json:"birthdate"`
+	ChurchID    string      `json:"church_id"`
+	ID          string      `json:"id"`
+}
+
+// Empty string / NULL params leave the existing column value untouched,
+// so a partial Members API response never blanks out known-good data.
+func (q *Queries) UpdateUserProfileFromMembers(ctx context.Context, arg UpdateUserProfileFromMembersParams) error {
+	_, err := q.db.Exec(ctx, UpdateUserProfileFromMembers,
+		arg.Email,
+		arg.Name,
+		arg.FirstName,
+		arg.LastName,
+		arg.MiddleName,
+		arg.DisplayName,
+		arg.Gender,
+		arg.Birthdate,
+		arg.ChurchID,
+		arg.ID,
+	)
 	return err
 }

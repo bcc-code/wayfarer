@@ -171,17 +171,52 @@ UPDATE users
 SET language = @language::text, updated_at = now()
 WHERE id = @user_id::char(28);
 
--- name: GetUsersWithIncompleteData :many
+-- name: GetUsersLeastRecentlySynced :many
+-- Ordered by updated_at ASC so repeated calls (e.g. from a cron job) cycle
+-- through the entire user base over time, not just a fixed subset. Excludes
+-- members_id values that aren't a real Members API person ID (e.g. the
+-- seed script's "MEM-<n>" placeholders) — those can never resolve via
+-- Lookup, and since a failed sync never bumps updated_at, they'd otherwise
+-- wedge permanently at the front of the queue.
+-- A NULL querylimit means "no limit" (Postgres treats LIMIT NULL as no limit) — the whole
+-- matching table is returned so a cron call can sweep everyone in one go.
 SELECT id, members_id, person_uuid, gender, church_id, church_locked_until
 FROM users
-WHERE gender = 'UNKNOWN'
-ORDER BY id
-LIMIT @querylimit::int;
+WHERE members_id ~ '^[0-9]+$'
+ORDER BY updated_at ASC
+LIMIT sqlc.narg('querylimit')::int;
+
+-- name: TouchUserSyncedAt :exec
+-- Bumps updated_at without changing any other column. Used when a Members sync attempt
+-- fails with a definitive "this person no longer exists in Members" (404), as opposed to
+-- a transient error (timeout, 5xx) — without this, a since-deleted member's row would
+-- camp at the front of GetUsersLeastRecentlySynced's queue forever, since a failed sync
+-- normally never advances updated_at, wasting a batch slot on it every single call.
+UPDATE users
+SET updated_at = now()
+WHERE id = @id::char(28);
 
 -- name: UpdateUserGenderAndChurch :exec
 UPDATE users
 SET
     gender = COALESCE(NULLIF(@gender::text, ''), gender),
+    church_id = COALESCE(NULLIF(@church_id::text, ''), church_id),
+    updated_at = now()
+WHERE id = @id::char(28);
+
+-- name: UpdateUserProfileFromMembers :exec
+-- Empty string / NULL params leave the existing column value untouched,
+-- so a partial Members API response never blanks out known-good data.
+UPDATE users
+SET
+    email = COALESCE(NULLIF(@email::text, ''), email),
+    name = COALESCE(NULLIF(@name::text, ''), name),
+    first_name = COALESCE(NULLIF(@first_name::text, ''), first_name),
+    last_name = COALESCE(NULLIF(@last_name::text, ''), last_name),
+    middle_name = COALESCE(NULLIF(@middle_name::text, ''), middle_name),
+    display_name = COALESCE(NULLIF(@display_name::text, ''), display_name),
+    gender = COALESCE(NULLIF(@gender::text, ''), gender),
+    birthdate = COALESCE(@birthdate::date, birthdate),
     church_id = COALESCE(NULLIF(@church_id::text, ''), church_id),
     updated_at = now()
 WHERE id = @id::char(28);
