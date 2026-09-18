@@ -6,7 +6,7 @@ import {
   isNavItemActive,
   visibleNavItems,
   type AdminNavItem,
-} from '../../app/utils/adminNav'
+} from '../../layers/admin/app/utils/adminNav'
 
 /**
  * The nav model is plain data plus two pure functions, so the rules that used

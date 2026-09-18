@@ -18,25 +18,27 @@
 
 ```
 frontend/
-├── app/
-│   ├── pages/              # File-based routing
-│   ├── components/         # Vue components (Design* = design system)
-│   │   ├── global/         # Auto-imported globally (icons, buttons)
-│   │   ├── achievements/   # Feature-scoped components
-│   │   ├── standings/      # Feature-scoped components
-│   │   └── ...
-│   ├── layouts/            # default, admin, church-admin
-│   ├── composables/        # Vue composables (useAuth, usePushNotifications, etc.)
-│   ├── utils/              # Pure utility functions
-│   ├── plugins/            # Numbered for load order (0.urql, 1.auth0, 2.rudderstack, ...)
-│   ├── middleware/          # Route guards (auth.global, admin, superadmin)
-│   ├── graphql/
-│   │   ├── fragments/      # Reusable GraphQL fragments (*.gql)
-│   │   ├── queries/        # GraphQL queries (*.gql)
-│   │   └── mutations/      # GraphQL mutations (*.gql)
-│   ├── api/
-│   │   └── generated.ts    # ⚠ GENERATED — do not edit
-│   └── assets/             # Images, fonts, styles
+├── app/                    # SHARED + user-facing (the base layer)
+│   ├── pages/              # User-facing routes only; admin lives in the layer
+│   ├── components/         # Design* design system, global/ icons, shared states
+│   ├── layouts/            # default.vue
+│   ├── composables/        # useAuth, useAuthReady, usePermissions, ...
+│   ├── utils/              # Pure utilities, adminPermissions (see below)
+│   ├── plugins/            # Numbered for load order (0.urql, 1.auth0, ...)
+│   ├── middleware/         # 01.auth.global, 02.admin-permission.global
+│   ├── graphql/            # *.gql — one contract, one generated output
+│   ├── api/generated.ts    # ⚠ GENERATED — do not edit
+│   └── assets/             # Images, fonts, main.css (the Tailwind entry)
+├── layers/
+│   └── admin/              # The admin panel, auto-registered by Nuxt
+│       ├── nuxt.config.ts  # ⚠ Required — see below
+│       └── app/
+│           ├── pages/admin/**   # ⚠ The admin/ dir must stay inside
+│           ├── components/admin/, components/devtools/
+│           ├── layouts/         # admin.vue, church-admin.vue
+│           ├── composables/     # useAdminNav, useAdminPage, useCurrentProject, ...
+│           ├── utils/adminNav.ts
+│           └── assets/styles/admin.css
 ├── test/
 │   ├── unit/               # Vitest unit tests
 │   └── utils/              # Test utilities and mocks
@@ -46,6 +48,34 @@ frontend/
 ├── package.json
 └── .prettierrc             # Code style: no semi, single quotes, trailing commas
 ```
+
+### Working with the admin layer
+
+A file belongs in `layers/admin/` when its name or content names admin concepts.
+It stays in root `app/` when both domains use it, or when it is domain-neutral
+infrastructure — the generated client, the auth and permission guards, the shared
+UI kit, pure utilities. Root `app/` must not import from the layer; the reverse
+is allowed (the admin panel renders user-facing components to preview the
+end-user experience). `eslint.config.mjs` and `test/unit/domain-boundary.test.ts`
+enforce this — layers organise code, they do not isolate it.
+
+Four rules with no compile-time or runtime error to warn you:
+
+- **`layers/admin/nuxt.config.ts` is required.** A layer directory without one is
+  silently skipped and its routes simply vanish.
+- **It must declare `components: { dirs: [{ path: 'components', pathPrefix: false }] }`.**
+  A layer that declares none defaults to path-prefixed names, so `AdminUserMenu`
+  would register as `AdminAdminUserMenu`. The bare relative path matters:
+  `~/components` would resolve through the _global_ alias back to root.
+- **No global middleware or plugins in the layer.** They are gathered per layer
+  with extended layers first, so a filename prefix only orders within one layer —
+  a layer's `*.global.ts` would run before `01.auth.global.ts`.
+- **Imports within the layer must be relative.** `~` maps to the root `app/` in
+  `tsconfig`, so an intra-layer `~/utils/adminNav` fails typecheck. Use
+  `~/...` for shared root code, relative paths within the layer, and
+  `#layers/admin/app/...` only for deliberate cross-layer references.
+
+`test/unit/layers.test.ts` asserts the first three.
 
 ## Key Commands
 

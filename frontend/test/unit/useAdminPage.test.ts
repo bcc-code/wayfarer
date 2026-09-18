@@ -44,7 +44,7 @@ function stubGlobals() {
 async function load() {
   stubGlobals()
   vi.resetModules()
-  const mod = await import('../../app/composables/useAdminPage')
+  const mod = await import('../../layers/admin/app/composables/useAdminPage')
   return mod.useAdminPage
 }
 

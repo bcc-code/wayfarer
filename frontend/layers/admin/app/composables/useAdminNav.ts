@@ -10,7 +10,7 @@ import {
   isNavItemActive,
   visibleNavItems,
   type AdminNavItem,
-} from '~/utils/adminNav'
+} from '../utils/adminNav'
 
 /**
  * Turns the declarative nav model into the shapes `UNavigationMenu` and

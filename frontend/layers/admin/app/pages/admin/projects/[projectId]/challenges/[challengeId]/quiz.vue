@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { RouteLocationRaw } from 'vue-router'
-import type { QuizFormData } from '~/components/admin/quiz/AdminQuizForm.vue'
+import type { QuizFormData } from '../../../../../../components/admin/quiz/AdminQuizForm.vue'
 
 definePageMeta({
   permission: 'projects:view',

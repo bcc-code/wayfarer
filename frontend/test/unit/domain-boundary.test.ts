@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readdirSync, statSync, readFileSync } from 'node:fs'
+import { readdirSync, statSync, readFileSync, existsSync } from 'node:fs'
 import { join, resolve, relative } from 'node:path'
 
 /**
@@ -21,22 +21,25 @@ import { join, resolve, relative } from 'node:path'
  * components to preview the end-user experience.
  */
 
-const APP = resolve(__dirname, '../../app')
-
-/** Paths that make up the admin domain; kept in step with eslint.config.mjs. */
-const ADMIN_DOMAIN = [
-  'pages/admin/',
-  'components/admin/',
-  'layouts/admin.vue',
-  'layouts/church-admin.vue',
-  'composables/useAdminNav.ts',
-  'composables/useCurrentProject.ts',
-  'composables/useAdminPage.ts',
-  'utils/adminNav.ts',
-]
+const FE = resolve(__dirname, '../..')
+const APP = join(FE, 'app')
+/** The admin panel is a directory now, so it is simply not scanned. */
+const ADMIN_LAYER = join(FE, 'layers/admin/app')
 
 /** Generated or vendored files that are not hand-written source. */
 const EXCLUDED = ['api/generated.ts']
+
+/**
+ * Admin-layer composables whose names the `useAdmin*` scan below would miss.
+ * `useConfirm` is the one that matters: its dialog is mounted by the admin
+ * layout, so a user-facing caller gets a promise that never resolves — a hang,
+ * not an error.
+ */
+const ADMIN_ONLY_COMPOSABLES = [
+  'useCurrentProject',
+  'useConfirm',
+  'useGroupedProjects',
+]
 
 function walk(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
@@ -46,21 +49,21 @@ function walk(dir: string): string[] {
   })
 }
 
-function isAdminDomain(relPath: string): boolean {
-  return ADMIN_DOMAIN.some((p) =>
-    p.endsWith('/') ? relPath.startsWith(p) : relPath === p,
-  )
-}
-
 describe('admin/user domain boundary', () => {
   const userFacingFiles = walk(APP)
     .map((f) => relative(APP, f))
-    .filter((f) => !isAdminDomain(f) && !EXCLUDED.includes(f))
+    .filter((f) => !EXCLUDED.includes(f))
 
   it('has user-facing files to check', () => {
     // Guards against the walk silently matching nothing and the suite passing
     // vacuously.
     expect(userFacingFiles.length).toBeGreaterThan(50)
+  })
+
+  it('the admin layer is where it is meant to be', () => {
+    // Without this the scan above could pass vacuously against a renamed tree.
+    expect(existsSync(ADMIN_LAYER)).toBe(true)
+    expect(walk(ADMIN_LAYER).length).toBeGreaterThan(70)
   })
 
   it('no user-facing or shared file uses an admin component or composable', () => {
@@ -77,6 +80,10 @@ describe('admin/user domain boundary', () => {
       // `useAdminFoo(` auto-imported composable
       for (const m of text.matchAll(/\b(useAdmin[A-Z][A-Za-z0-9]*)\s*\(/g)) {
         hits.add(`${m[1]}()`)
+      }
+      // ...and the admin-only ones that do not start with `useAdmin`.
+      for (const name of ADMIN_ONLY_COMPOSABLES) {
+        if (new RegExp(`\\b${name}\\s*\\(`).test(text)) hits.add(`${name}()`)
       }
 
       if (hits.size) violations.push(`${relPath}: ${[...hits].join(', ')}`)

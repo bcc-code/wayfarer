@@ -1,6 +1,6 @@
 import type { BreadcrumbItem } from '@nuxt/ui'
 import type { RouteLocationRaw } from 'vue-router'
-import { GLOBAL_NAV, PROJECT_NAV, isNavItemActive } from '~/utils/adminNav'
+import { GLOBAL_NAV, PROJECT_NAV, isNavItemActive } from '../utils/adminNav'
 
 /**
  * The page's place in the admin chrome: its breadcrumb and navbar title.

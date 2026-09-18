@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { useConfirm } from '../../app/composables/useConfirm'
+import { useConfirm } from '../../layers/admin/app/composables/useConfirm'
 
 describe('useConfirm', () => {
   beforeEach(() => {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ChallengeFormData } from '~/components/admin/challenge/AdminChallengeForm.vue'
+import type { ChallengeFormData } from '../../../../../components/admin/challenge/AdminChallengeForm.vue'
 
 definePageMeta({
   permission: 'projects:view',

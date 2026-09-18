@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AchievementFormData } from '~/components/admin/achievement/AdminAchievementForm.vue'
+import type { AchievementFormData } from '../../../../../components/admin/achievement/AdminAchievementForm.vue'
 
 definePageMeta({
   permission: 'projects:view',

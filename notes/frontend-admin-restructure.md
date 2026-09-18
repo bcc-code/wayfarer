@@ -787,6 +787,65 @@ page and no nav entry, reachable from a user's detail page. Churches are rarely
 added or edited, so a top-level section would be dead weight. This closes the
 open question rather than deferring it again.
 
+### 2026-09-18 — admin split into a Nuxt layer
+
+`layers/admin/` now holds the 49 admin pages, both admin layouts, all 35 admin
+components, `QuickAccess`, five admin composables, `adminNav.ts` and `admin.css`.
+Root `app/` is the shared base layer. **Admin layer only** — the user app is 12
+pages leaning hard on shared code, so a `layers/user` would have meant a
+user-vs-shared verdict on every file for no benefit.
+
+**The routing contract held.** 61 routes, every name and path identical before
+and after; only the snapshot's file column changed. That was the whole reason
+the route-manifest test exists.
+
+**Two assumptions I had wrong, both corrected by measurement rather than
+reasoning:**
+
+- **`~` inside a layer falls back to the root.** The plugin rewrites `~` to the
+  layer's srcDir and then calls `this.resolve(...)`, which returns null when the
+  layer-local path does not exist — so Vite continues to the global alias. A
+  moved page importing `~/api/generated` therefore builds fine, and the `#api`
+  alias I had added for it was dead weight and was removed.
+- **The breakage is the other direction, and only TypeScript sees it.**
+  `.nuxt/tsconfig.json` has a single `~/* -> ../app/*` mapping, so an
+  *intra-layer* `~/utils/adminNav` resolves to the root, where it no longer
+  exists. Vite would have resolved it layer-first and built happily. Eight files
+  needed relative imports; `pnpm typecheck` found all of them.
+
+The net rule, now in `frontend/CLAUDE.md`: `~/...` for shared root code,
+relative paths within the layer, `#layers/admin/app/...` for deliberate
+cross-layer references. (The docs say `#layers/<name>` points at the layer's
+srcDir; it actually points at its rootDir, hence the `app/` segment.)
+
+**Three silent-failure modes, each checked directly rather than assumed:**
+
+| Hazard | Check | Result |
+| --- | --- | --- |
+| A layer without `components: { pathPrefix: false }` renames every component | sorted `export const` list from `.nuxt/components.d.ts`, before vs after | 547 names, identical |
+| Tailwind not scanning the layer | admin-only classes in the built CSS | `bg-glass`, `@container (min-width:56rem)`, `dark:bg-neutral-950` all present |
+| Codegen reordering `generated.ts` | sorted export-symbol set before vs after `pnpm codegen` | 969 symbols, identical set; a 105-line pure permutation |
+
+`test/unit/layers.test.ts` (new) locks the three that have no other detector: the
+layer must have a `nuxt.config.ts` (a layer without one is silently skipped and
+its routes vanish), that config must declare the bare relative `components` path,
+and **no global middleware or plugins may live in a layer** — they are gathered
+per layer with extended layers first, so a filename prefix only orders within one
+layer and a layer's `*.global.ts` would run before `01.auth.global.ts`.
+
+That last one is why `02.admin-permission.global.ts` and `utils/adminPermissions.ts`
+stay in root despite being admin by content: they are the boundary itself, the
+same argument that keeps `01.auth.global.ts` there.
+
+The boundary enforcers got sharper as a side effect. `ADMIN_DOMAIN` was a
+hand-maintained file list in two places that had drifted out of date; it is now
+just the layer directory. The auto-import scanner still matters — layers do not
+close that vector — and gained the admin-only composables whose names do not
+start with `useAdmin` (`useConfirm` above all: its dialog is mounted by the admin
+layout, so a user-facing caller gets a promise that never resolves).
+
+Unit tests 531 → 536.
+
 ### Gate status after the above
 
 | Check           | Before | After                          |
@@ -801,15 +860,7 @@ open question rather than deferring it again.
 
 ## Remaining sequence
 
-Each step is independently shippable.
-
-1. **Nuxt layers.** `git mv` into `layers/user/app/**` and `layers/admin/app/**`,
-   keeping the `admin/` directory inside the admin layer's `pages/`. Verified by
-   the route-manifest snapshot staying byte-identical. Then widen the `~` alias
-   in `vitest.config.ts`, add the layer pages dirs as roots in
-   `routes.test.ts`, and tighten the ESLint boundary group to `#layers/admin/**`.
-
-Optional follow-ups, deliberately out of scope: admin i18n (the nav model
+The sequenced work is complete. Optional follow-ups, deliberately out of scope: admin i18n (the nav model
 should hold keys from day one so this is a labelling change later); splitting
 the 1,000-line outliers (`my-church/units.vue` 1,105, `users/[userId]/index.vue`
 1,068); `churches/[churchId].vue` is settled: it stays a drill-down leaf, see the log.

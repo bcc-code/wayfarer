@@ -3358,19 +3358,6 @@ export type WebhookLog = {
   responseStatusCode?: Maybe<Scalars['Int']['output']>;
 };
 
-export type AdminExternalContentEventsQueryVariables = Exact<{
-  userId: Scalars['ID']['input'];
-  externalContentId: Scalars['ID']['input'];
-}>;
-
-
-export type AdminExternalContentEventsQuery = { __typename?: 'Query', adminExternalContentEvents: Array<{ __typename?: 'AdminExternalContentEvent', id: string, taskId: string, planId: string, source: string, receivedAt: any, consumedAt?: any | null, contentProgress?: number | null }> };
-
-export type AdminProjectSwitcherQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type AdminProjectSwitcherQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, startDate: any, endDate: any } }> } };
-
 export type PointHistoryQueryVariables = Exact<{
   last?: InputMaybe<Scalars['Int']['input']>;
 }>;
@@ -3397,13 +3384,6 @@ export type GetMeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type GetMeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, membersId: string, language: string, gender: Gender, birthdate: string, age?: number | null, createdAt: any, church: { __typename?: 'Church', id: string, name: string, country: string, category: ChurchCategory }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType, scope?: { __typename?: 'RoleScope', id: string, type: ScopeType, church?: { __typename?: 'Church', id: string } | null, team?: { __typename?: 'Team', id: string } | null, project?: { __typename?: 'Project', id: string } | null } | null }> } };
-
-export type AdminProjectShellQueryVariables = Exact<{
-  projectId: Scalars['ID']['input'];
-}>;
-
-
-export type AdminProjectShellQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', rounding: number, logoImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string }, dark: { __typename?: 'ColorSet', accent: string } } } } };
 
 export type ColorSetFieldsFragment = { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string };
 
@@ -4218,6 +4198,31 @@ export type CurrentProjectQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type CurrentProjectQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, activeChallengesCount: number, branding: { __typename?: 'Branding', rounding: number, logoImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, bannerImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } }, leaderboard: { __typename?: 'LeaderboardConnection', totalCount: number } } };
 
+export type StandingsPageQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type StandingsPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', myTeam?: { __typename?: 'Team', id: string } | null } };
+
+export type AdminExternalContentEventsQueryVariables = Exact<{
+  userId: Scalars['ID']['input'];
+  externalContentId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminExternalContentEventsQuery = { __typename?: 'Query', adminExternalContentEvents: Array<{ __typename?: 'AdminExternalContentEvent', id: string, taskId: string, planId: string, source: string, receivedAt: any, consumedAt?: any | null, contentProgress?: number | null }> };
+
+export type AdminProjectSwitcherQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminProjectSwitcherQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, startDate: any, endDate: any } }> } };
+
+export type AdminProjectShellQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminProjectShellQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', rounding: number, logoImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string }, dark: { __typename?: 'ColorSet', accent: string } } } } };
+
 export type AdminChurchPageQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -4647,11 +4652,6 @@ export type AdminUsersPageQueryVariables = Exact<{
 
 export type AdminUsersPageQuery = { __typename?: 'Query', users: { __typename?: 'UserConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'UserEdge', cursor: string, node: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, church: { __typename?: 'Church', name: string }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType }> } }> } };
 
-export type StandingsPageQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type StandingsPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', myTeam?: { __typename?: 'Team', id: string } | null } };
-
 export const ImageFieldsFragmentDoc = gql`
     fragment ImageFields on Image {
   url
@@ -4886,44 +4886,6 @@ export const QuizSubmissionResultFieldsFragmentDoc = gql`
   pointsAwarded
 }
     `;
-export const AdminExternalContentEventsDocument = gql`
-    query AdminExternalContentEvents($userId: ID!, $externalContentId: ID!) {
-  adminExternalContentEvents(
-    userId: $userId
-    externalContentId: $externalContentId
-  ) {
-    id
-    taskId
-    planId
-    source
-    receivedAt
-    consumedAt
-    contentProgress
-  }
-}
-    `;
-
-export function useAdminExternalContentEventsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminExternalContentEventsQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<AdminExternalContentEventsQuery, AdminExternalContentEventsQueryVariables | undefined>({ query: AdminExternalContentEventsDocument, variables: undefined, ...options });
-};
-export const AdminProjectSwitcherDocument = gql`
-    query AdminProjectSwitcher {
-  projects(first: 100) {
-    edges {
-      node {
-        id
-        name
-        startDate
-        endDate
-      }
-    }
-  }
-}
-    `;
-
-export function useAdminProjectSwitcherQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectSwitcherQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<AdminProjectSwitcherQuery, AdminProjectSwitcherQueryVariables | undefined>({ query: AdminProjectSwitcherDocument, variables: undefined, ...options });
-};
 export const PointHistoryDocument = gql`
     query PointHistory($last: Int) {
   myCurrentProject {
@@ -5028,35 +4990,6 @@ export const GetMeDocument = gql`
 
 export function useGetMeQuery(options?: Omit<Urql.UseQueryArgs<never, GetMeQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<GetMeQuery, GetMeQueryVariables | undefined>({ query: GetMeDocument, variables: undefined, ...options });
-};
-export const AdminProjectShellDocument = gql`
-    query AdminProjectShell($projectId: ID!) {
-  project(id: $projectId) {
-    id
-    name
-    description
-    startDate
-    endDate
-    branding {
-      logoImage {
-        ...ImageFields
-      }
-      rounding
-      colors {
-        light {
-          accent
-        }
-        dark {
-          accent
-        }
-      }
-    }
-  }
-}
-    ${ImageFieldsFragmentDoc}`;
-
-export function useAdminProjectShellQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectShellQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<AdminProjectShellQuery, AdminProjectShellQueryVariables | undefined>({ query: AdminProjectShellDocument, variables: undefined, ...options });
 };
 export const DeleteAchievementDocument = gql`
     mutation DeleteAchievement($id: ID!) {
@@ -6382,6 +6315,86 @@ export const CurrentProjectDocument = gql`
 
 export function useCurrentProjectQuery(options?: Omit<Urql.UseQueryArgs<never, CurrentProjectQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<CurrentProjectQuery, CurrentProjectQueryVariables | undefined>({ query: CurrentProjectDocument, variables: undefined, ...options });
+};
+export const StandingsPageDocument = gql`
+    query StandingsPage {
+  myCurrentProject {
+    myTeam {
+      id
+    }
+  }
+}
+    `;
+
+export function useStandingsPageQuery(options?: Omit<Urql.UseQueryArgs<never, StandingsPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<StandingsPageQuery, StandingsPageQueryVariables | undefined>({ query: StandingsPageDocument, variables: undefined, ...options });
+};
+export const AdminExternalContentEventsDocument = gql`
+    query AdminExternalContentEvents($userId: ID!, $externalContentId: ID!) {
+  adminExternalContentEvents(
+    userId: $userId
+    externalContentId: $externalContentId
+  ) {
+    id
+    taskId
+    planId
+    source
+    receivedAt
+    consumedAt
+    contentProgress
+  }
+}
+    `;
+
+export function useAdminExternalContentEventsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminExternalContentEventsQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminExternalContentEventsQuery, AdminExternalContentEventsQueryVariables | undefined>({ query: AdminExternalContentEventsDocument, variables: undefined, ...options });
+};
+export const AdminProjectSwitcherDocument = gql`
+    query AdminProjectSwitcher {
+  projects(first: 100) {
+    edges {
+      node {
+        id
+        name
+        startDate
+        endDate
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminProjectSwitcherQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectSwitcherQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectSwitcherQuery, AdminProjectSwitcherQueryVariables | undefined>({ query: AdminProjectSwitcherDocument, variables: undefined, ...options });
+};
+export const AdminProjectShellDocument = gql`
+    query AdminProjectShell($projectId: ID!) {
+  project(id: $projectId) {
+    id
+    name
+    description
+    startDate
+    endDate
+    branding {
+      logoImage {
+        ...ImageFields
+      }
+      rounding
+      colors {
+        light {
+          accent
+        }
+        dark {
+          accent
+        }
+      }
+    }
+  }
+}
+    ${ImageFieldsFragmentDoc}`;
+
+export function useAdminProjectShellQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectShellQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectShellQuery, AdminProjectShellQueryVariables | undefined>({ query: AdminProjectShellDocument, variables: undefined, ...options });
 };
 export const AdminChurchPageDocument = gql`
     query AdminChurchPage($id: ID!) {
@@ -7790,17 +7803,4 @@ export const AdminUsersPageDocument = gql`
 
 export function useAdminUsersPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminUsersPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminUsersPageQuery, AdminUsersPageQueryVariables | undefined>({ query: AdminUsersPageDocument, variables: undefined, ...options });
-};
-export const StandingsPageDocument = gql`
-    query StandingsPage {
-  myCurrentProject {
-    myTeam {
-      id
-    }
-  }
-}
-    `;
-
-export function useStandingsPageQuery(options?: Omit<Urql.UseQueryArgs<never, StandingsPageQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<StandingsPageQuery, StandingsPageQueryVariables | undefined>({ query: StandingsPageDocument, variables: undefined, ...options });
 };

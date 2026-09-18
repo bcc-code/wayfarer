@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { ref } from 'vue'
-import useGroupedProjects from '../../app/composables/useGroupedProjects'
+import useGroupedProjects from '../../layers/admin/app/composables/useGroupedProjects'
 
 type Project = { id: string; startDate: string; endDate: string }
 

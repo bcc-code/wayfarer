@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { buildTree, toVueRouter4 } from 'unrouting'
-import { readdirSync, statSync, readFileSync } from 'node:fs'
+import { readdirSync, statSync, readFileSync, existsSync } from 'node:fs'
 import { join, resolve, relative } from 'node:path'
-import { GLOBAL_NAV, PROJECT_NAV } from '../../app/utils/adminNav'
+import { GLOBAL_NAV, PROJECT_NAV } from '../../layers/admin/app/utils/adminNav'
 
 /**
  * Route manifest guards.
@@ -19,8 +19,22 @@ import { GLOBAL_NAV, PROJECT_NAV } from '../../app/utils/adminNav'
  *    runtime, as a vue-router warning and a dead link.
  */
 
-const APP = resolve(__dirname, '../../app')
-const PAGES = join(APP, 'pages')
+const ROOT = resolve(__dirname, '../..')
+const APP = join(ROOT, 'app')
+
+/**
+ * Every layer's pages directory. Nuxt collects these the same way
+ * (`getLayerDirectories(nuxt).map(d => d.appPages)`) and passes them all as
+ * `roots`, so a file is named by its path *relative to its own layer* — which
+ * is why moving `pages/admin/**` into a layer leaves the manifest unchanged.
+ */
+const PAGE_ROOTS = [
+  join(APP, 'pages'),
+  ...readdirSync(join(ROOT, 'layers'), { withFileTypes: true })
+    .filter((e) => e.isDirectory())
+    .map((e) => join(ROOT, 'layers', e.name, 'app', 'pages'))
+    .filter((dir) => existsSync(dir)),
+]
 
 function walk(dir: string, match: RegExp): string[] {
   return readdirSync(dir).flatMap((entry) => {
@@ -41,11 +55,11 @@ interface Route {
 }
 
 function buildManifest(): Route[] {
-  const files = walk(PAGES, /\.vue$/)
+  const files = PAGE_ROOTS.flatMap((root) => walk(root, /\.vue$/))
     .sort()
     .map((path) => ({ path, priority: 0 }))
   // Mirrors createPagesContext() in nuxt/dist/index.mjs.
-  const tree = buildTree(files, { roots: [PAGES], modes: ['client'] })
+  const tree = buildTree(files, { roots: PAGE_ROOTS, modes: ['client'] })
   return toVueRouter4(tree, { attrs: { mode: ['client'] } }) as Route[]
 }
 
@@ -61,7 +75,7 @@ function flatten(
       {
         name: route.name,
         path: full,
-        file: route.file ? relative(APP, route.file) : undefined,
+        file: route.file ? relative(ROOT, route.file) : undefined,
         children: route.children?.length ?? 0,
       },
       ...flatten(route.children ?? [], full),
@@ -122,7 +136,8 @@ describe('route manifest', () => {
     const names = new Set(manifest.flatMap((r) => (r.name ? [r.name] : [])))
 
     const dangling = new Map<string, string[]>()
-    for (const file of walk(APP, /\.(vue|ts)$/)) {
+    const sources = [APP, join(ROOT, 'layers')].filter((d) => existsSync(d))
+    for (const file of sources.flatMap((d) => walk(d, /\.(vue|ts)$/))) {
       if (file.endsWith('api/generated.ts')) continue
       const text = readFileSync(file, 'utf8')
       const referenced = [
@@ -134,7 +149,7 @@ describe('route manifest', () => {
 
       for (const name of referenced) {
         if (!names.has(name)) {
-          const at = relative(APP, file)
+          const at = relative(ROOT, file)
           dangling.set(name, [...(dangling.get(name) ?? []), at])
         }
       }
