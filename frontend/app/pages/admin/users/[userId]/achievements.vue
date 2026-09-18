@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { RouteLocationRaw } from 'vue-router'
 definePageMeta({
   permission: 'users:view',
   layout: 'admin',
@@ -76,6 +77,18 @@ const { canCheckAchievements } = usePermissions()
 const { data: currentProjectData } = useAdminUserPageCurrentProjectQuery({
   pause: computed(() => !isAuthReady.value),
 })
+
+// Trailing breadcrumb crumbs; the path above them is derived from the route.
+useAdminPage(() => [
+  {
+    label: userData.value?.user.name ?? 'Bruker',
+    to: {
+      name: 'admin-users-userId',
+      params: { userId: route.params.userId },
+    } as RouteLocationRaw,
+  },
+  'Utmerkelser',
+])
 const currentProjectId = computed(
   () => currentProjectData.value?.currentProject.id,
 )

@@ -7,6 +7,9 @@ definePageMeta({
   layout: 'admin',
 })
 
+// Trailing breadcrumb crumbs; the path above them is derived from the route.
+useAdminPage(() => 'Ny')
+
 const route = useRoute('admin-projects-projectId-events-new')
 const toast = useToast()
 const { executeMutation } = useCreateEventMutation()

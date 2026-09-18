@@ -141,10 +141,6 @@ const state = reactive<Schema>({
   infoMessageEnd: undefined,
 })
 
-// Supplies the trailing breadcrumb crumb and the navbar title; everything
-// above it is derived from the route.
-useAdminPage(() => state.name)
-
 watch(
   () => data.value,
   (d) => {

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { RouteLocationRaw } from 'vue-router'
 definePageMeta({
   permission: 'projects:view',
   layout: 'admin',
@@ -36,6 +37,21 @@ const { data, fetching, error } = useAdminChallengeSessionsPageQuery({
   })),
   pause: computed(() => !isAuthReady.value),
 })
+
+// Trailing breadcrumb crumbs; the path above them is derived from the route.
+useAdminPage(() => [
+  {
+    label: data.value?.challenge.name ?? 'Utfordring',
+    to: {
+      name: 'admin-projects-projectId-challenges-challengeId',
+      params: {
+        projectId: route.params.projectId,
+        challengeId: route.params.challengeId,
+      },
+    } as RouteLocationRaw,
+  },
+  'Sesjoner',
+])
 
 const quizId = computed(() => {
   if (data.value?.challenge.__typename === 'QuizChallenge') {

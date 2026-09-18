@@ -7,6 +7,9 @@ definePageMeta({
   layout: 'admin',
 })
 
+// Trailing breadcrumb crumbs; the path above them is derived from the route.
+useAdminPage(() => 'Nytt prosjekt')
+
 const schema = z.object({
   name: z.string().nonempty({ error: 'Name is required' }),
   description: z.string().optional(),

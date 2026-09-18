@@ -6,6 +6,9 @@ definePageMeta({
   layout: 'admin',
 })
 
+// Trailing breadcrumb crumbs; the path above them is derived from the route.
+useAdminPage(() => 'Ny')
+
 gql(`
   query AdminProjectChallengeNewPage($projectId: ID!) {
     project(id: $projectId) {

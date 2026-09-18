@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { RouteLocationRaw } from 'vue-router'
 import type { QuizFormData } from '~/components/admin/quiz/AdminQuizForm.vue'
 
 definePageMeta({
@@ -54,6 +55,21 @@ const {
   })),
   pause: computed(() => !isAuthReady.value),
 })
+
+// Trailing breadcrumb crumbs; the path above them is derived from the route.
+useAdminPage(() => [
+  {
+    label: data.value?.challenge.name ?? 'Utfordring',
+    to: {
+      name: 'admin-projects-projectId-challenges-challengeId',
+      params: {
+        projectId: route.params.projectId,
+        challengeId: route.params.challengeId,
+      },
+    } as RouteLocationRaw,
+  },
+  'Quiz',
+])
 
 const { executeMutation: createQuiz } = useCreateQuizMutation()
 const { executeMutation: updateQuiz } = useUpdateQuizMutation()

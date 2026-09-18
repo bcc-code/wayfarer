@@ -6,6 +6,9 @@ definePageMeta({
   layout: 'admin',
 })
 
+// Trailing breadcrumb crumbs; the path above them is derived from the route.
+useAdminPage(() => 'Fordeling')
+
 gql(`
   query SuperteamsPageEvents($projectId: ID!) {
     events(first: 100, filter: { projectId: $projectId }) {

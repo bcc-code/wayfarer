@@ -699,7 +699,14 @@ Two things that are not obvious from the markup:
 Twenty-five pages each carried their own `<UBreadcrumb :items="[...]">` inside an
 identical bordered wrapper, rendered in the page body — below the navbar's own
 border, and scrolling away with the content. They are now derived once and
-rendered in the layout's `UDashboardToolbar`.
+rendered in the layout's navbar, **in place of the title**: the last crumb is the
+title, so showing both said the same thing twice and cost a second
+`--ui-header-height` row of chrome on every page.
+
+It goes in the navbar's `#left` slot, which replaces the default
+leading/title/trailing group but *not* the mobile toggle — the navbar renders
+that just outside the slot. Routes with no ancestors (`/admin`) fall back to a
+plain heading, since a one-item breadcrumb is a title with extra markup.
 
 **Almost all of it is derivable.** `useAdminPage()` builds
 `Prosjekter → <project> → <section>` from the route plus the nav model plus
@@ -726,6 +733,29 @@ Removing the blocks also killed a query: `superteams/new.vue` fetched
 `project { id name }` solely to label its breadcrumb. The shell reads the same
 data from `useCurrentProject`'s shared cached query, so that page now makes one
 request fewer. Worth checking for elsewhere.
+
+**Follow-up after review: the first cut was incomplete in two ways.**
+
+It supported only one trailing crumb, so routes nested below a detail page —
+`challenges/:id/quiz`, `challenges/:id/sessions`, `users/:id/achievements` —
+stopped at their section and lost both the entity name and their own. The page
+label is now `string | {label, to} | Array<…>`, so those pages supply two, the
+first linking back to the detail view. `edit.vue` had the opposite problem: it
+set the *project* name as its label, which `PROJECT_NAV`'s "Innstillinger" crumb
+already covers, printing the project twice.
+
+Worse, all seven `my-church/**` pages use the `church-admin` layout, which
+renders no breadcrumb at all — so removing their inline ones left them with no
+navigation whatsoever, on the one admin surface that has no sidebar either.
+Their breadcrumbs are restored as they were, i18n intact. Giving that layout
+real navigation is still the separate, deferred item it always was.
+
+The maintenance tools were never regressed but now name themselves rather than
+all reading "Vedlikehold".
+
+An audit of every admin page against what its old trail said is what surfaced
+these; checking only the two routes that prompted the review would have missed
+the my-church regression entirely.
 
 `useAdminPage.ts` tripped the domain-boundary rule on its way in, correctly —
 admin code in the shared `composables/` folder, like `useAdminNav` and

@@ -1,5 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { computed, ref, watchEffect, toRef, onScopeDispose, type Ref } from 'vue'
+import {
+  computed,
+  ref,
+  shallowRef,
+  watchEffect,
+  toRef,
+  onScopeDispose,
+  type Ref,
+} from 'vue'
 
 /**
  * Breadcrumb derivation.
@@ -15,6 +23,7 @@ let projectName: Ref<string | undefined>
 
 function stubGlobals() {
   vi.stubGlobal('ref', ref)
+  vi.stubGlobal('shallowRef', shallowRef)
   vi.stubGlobal('computed', computed)
   vi.stubGlobal('toRef', toRef)
   vi.stubGlobal('watchEffect', watchEffect)
@@ -99,6 +108,37 @@ describe('admin breadcrumb', () => {
       ['Utfordringer', 'link'],
       ['Bibelquiz', 'current'],
     ])
+  })
+
+  // Routes nested below a detail page need two crumbs, and the first links
+  // back: /challenges/:id/quiz is inside a challenge, not beside it.
+  it('accepts several trailing crumbs, only the last unlinked', async () => {
+    const useAdminPage = await load()
+    routeName.value = 'admin-projects-projectId-challenges-challengeId-quiz'
+    projectId.value = 'PR01'
+    projectName.value = 'Sommerleir'
+
+    useAdminPage(() => [{ label: 'Bibelquiz', to: { name: 'x' } }, 'Quiz'])
+
+    expect(crumbs(useAdminPage().breadcrumb.value)).toEqual([
+      ['Prosjekter', 'link'],
+      ['Sommerleir', 'link'],
+      ['Utfordringer', 'link'],
+      ['Bibelquiz', 'link'],
+      ['Quiz', 'current'],
+    ])
+  })
+
+  it('drops crumbs whose label has not resolved yet', async () => {
+    const useAdminPage = await load()
+    routeName.value = 'admin-projects-projectId-challenges-challengeId-quiz'
+    projectId.value = 'PR01'
+
+    useAdminPage(() => [{ label: '' }, 'Quiz'])
+
+    expect(useAdminPage().breadcrumb.value.map((c) => c.label)).not.toContain(
+      '',
+    )
   })
 
   // The overview *is* the project crumb; listing "Oversikt" after it would say

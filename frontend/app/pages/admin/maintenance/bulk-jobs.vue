@@ -7,6 +7,10 @@ definePageMeta({
   layout: 'admin',
 })
 
+// Names this tool in the trail; without it every maintenance page reads
+// simply "Vedlikehold".
+useAdminPage(() => 'Massejobber')
+
 gql(`
   query AdminBulkJobsPage($filter: BulkJobFilter, $first: Int, $after: String, $last: Int, $before: String) {
     bulkJobs(filter: $filter, first: $first, after: $after, last: $last, before: $before) {

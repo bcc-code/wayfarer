@@ -6,6 +6,10 @@ definePageMeta({
   layout: 'admin',
 })
 
+// Names this tool in the trail; without it every maintenance page reads
+// simply "Vedlikehold".
+useAdminPage(() => 'Check points journal')
+
 // Hardcoded achievement ID for now
 const ACHIEVEMENT_ID = 'AC01KCCNMRWECKQG6W0WCXN4BZ2R'
 

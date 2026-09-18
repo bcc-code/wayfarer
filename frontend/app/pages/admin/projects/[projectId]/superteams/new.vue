@@ -4,6 +4,9 @@ definePageMeta({
   layout: 'admin',
 })
 
+// Trailing breadcrumb crumbs; the path above them is derived from the route.
+useAdminPage(() => 'Ny')
+
 const route = useRoute('admin-projects-projectId-superteams-new')
 const toast = useToast()
 

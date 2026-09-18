@@ -162,25 +162,28 @@ const isDesktop = useMediaQuery('(min-width: 1024px)')
 
     <UDashboardPanel id="admin-main">
       <template #header>
-        <UDashboardNavbar :title>
+        <!--
+          The breadcrumb stands in for the navbar title: its last crumb is the
+          title, so rendering both said the same thing twice and cost a second
+          `--ui-header-height` row of chrome on every page.
+
+          `#left` replaces the default leading/title/trailing group but not the
+          mobile toggle, which the navbar renders just outside this slot.
+
+          Routes with no ancestors — `/admin` — get a plain heading instead;
+          a one-item breadcrumb would just be the title with extra markup.
+        -->
+        <UDashboardNavbar>
+          <template #left>
+            <UBreadcrumb v-if="breadcrumb.length > 1" :items="breadcrumb" />
+            <h1 v-else class="text-highlighted truncate font-semibold">
+              {{ title }}
+            </h1>
+          </template>
           <template #right>
             <AdminUserFeedback />
           </template>
         </UDashboardNavbar>
-
-        <!--
-          Breadcrumbs belong to the shell, not to each page. They used to be
-          ~25 copies of the same bordered block rendered inside the page body,
-          which put them below the navbar's own border and left them scrolling
-          with the content.
-
-          Hidden at one crumb: that says only where you already are.
-        -->
-        <UDashboardToolbar v-if="breadcrumb.length > 1">
-          <template #left>
-            <UBreadcrumb :items="breadcrumb" />
-          </template>
-        </UDashboardToolbar>
       </template>
 
       <template #body>

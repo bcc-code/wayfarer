@@ -16,24 +16,47 @@ import { GLOBAL_NAV, PROJECT_NAV, isNavItemActive } from '~/utils/adminNav'
  */
 
 /**
+ * What a page contributes to the trail. A bare string is the common case — the
+ * name of the thing being shown. Routes nested below a detail page need two,
+ * and the first of those links back: a quiz belongs to a challenge.
+ */
+export type AdminPageCrumb = string | { label: string; to?: RouteLocationRaw }
+
+/**
  * Module-level so the layout can read what the page set. The layout renders the
  * chrome and is an *ancestor* of the page, so provide/inject cannot carry this
  * upward.
  */
-const pageLabel = ref<string | null>(null)
+// shallowRef, not ref: `BreadcrumbItem['to']` is the full typed-routes union,
+// and deep-unwrapping it blows TypeScript's instantiation depth.
+const pageCrumbs = shallowRef<BreadcrumbItem[]>([])
 
-export function useAdminPage(label?: MaybeRefOrGetter<string | undefined>) {
+function normalise(
+  value: AdminPageCrumb | AdminPageCrumb[] | undefined,
+): BreadcrumbItem[] {
+  if (!value) return []
+  const list = Array.isArray(value) ? value : [value]
+  return list
+    .filter((crumb) => (typeof crumb === 'string' ? crumb : crumb.label))
+    .map((crumb) =>
+      typeof crumb === 'string' ? { label: crumb } : { ...crumb },
+    )
+}
+
+export function useAdminPage(
+  label?: MaybeRefOrGetter<AdminPageCrumb | AdminPageCrumb[] | undefined>,
+) {
   // Only a caller that passes something is a setter; the layout calls this bare
   // to read.
   if (label !== undefined) {
     const source = toRef(label)
     watchEffect(() => {
-      pageLabel.value = source.value ?? null
+      pageCrumbs.value = normalise(source.value)
     })
     // Without this the previous page's name lingers on the next route until its
     // own query resolves.
     onScopeDispose(() => {
-      pageLabel.value = null
+      pageCrumbs.value = []
     })
   }
 
@@ -78,7 +101,7 @@ export function useAdminPage(label?: MaybeRefOrGetter<string | undefined>) {
       }
     }
 
-    if (pageLabel.value) items.push({ label: pageLabel.value })
+    items.push(...pageCrumbs.value)
 
     // The last crumb is where you already are.
     const last = items.at(-1)
@@ -89,7 +112,8 @@ export function useAdminPage(label?: MaybeRefOrGetter<string | undefined>) {
 
   /** Navbar heading: the page's own label when it has one, else its section. */
   const title = computed(() => {
-    if (pageLabel.value) return pageLabel.value
+    const own = pageCrumbs.value.at(-1)?.label
+    if (own) return own
     const routeName = String(route.name ?? '')
     const match =
       [...PROJECT_NAV].reverse().find((i) => isNavItemActive(i, routeName)) ??

@@ -6,6 +6,10 @@ definePageMeta({
   layout: 'admin',
 })
 
+// Names this tool in the trail; without it every maintenance page reads
+// simply "Vedlikehold".
+useAdminPage(() => 'Fix streakfremgang')
+
 gql(`
   query MaintenanceStreakProgressPreview {
     previewMissingStreakProgress {

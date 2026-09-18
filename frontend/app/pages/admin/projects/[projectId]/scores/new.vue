@@ -7,6 +7,9 @@ definePageMeta({
   layout: 'admin',
 })
 
+// Trailing breadcrumb crumbs; the path above them is derived from the route.
+useAdminPage(() => 'Ny justering')
+
 gql(`
   mutation CreateScoreAdjustment($input: CreateScoreAdjustmentInput!) {
     createScoreAdjustment(input: $input) {
