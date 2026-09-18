@@ -76,7 +76,7 @@ const greeting = computed(() => {
 </script>
 
 <template>
-  <UContainer>
+  <div>
     <h1 v-if="data?.me" class="my-8 text-3xl text-balance">
       {{ greeting }}, {{ data.me.name }}
     </h1>
@@ -129,5 +129,5 @@ const greeting = computed(() => {
         />
       </section>
     </div>
-  </UContainer>
+  </div>
 </template>

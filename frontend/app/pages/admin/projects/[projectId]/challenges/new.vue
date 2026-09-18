@@ -54,8 +54,14 @@ const eventOptions = computed(() => {
 })
 
 async function handleSubmit(formData: ChallengeFormData) {
-  const { type, allowSelfCompletion, url, publishedAt, pluginChallengeId, ...rest } =
-    formData
+  const {
+    type,
+    allowSelfCompletion,
+    url,
+    publishedAt,
+    pluginChallengeId,
+    ...rest
+  } = formData
 
   // Only include type-specific fields
   const input = {
@@ -139,7 +145,7 @@ async function handleSubmit(formData: ChallengeFormData) {
 <template>
   <div>
     <div class="border-default border-b py-2">
-      <UContainer>
+      <div>
         <UBreadcrumb
           :items="[
             {
@@ -161,9 +167,9 @@ async function handleSubmit(formData: ChallengeFormData) {
             },
           ]"
         />
-      </UContainer>
+      </div>
     </div>
-    <UContainer class="py-12">
+    <div>
       <h1 class="mb-6 text-2xl font-bold">Opprett utfordring</h1>
       <AdminChallengeForm
         :project-id="route.params.projectId"
@@ -182,6 +188,6 @@ async function handleSubmit(formData: ChallengeFormData) {
           </UFormField>
         </template>
       </AdminChallengeForm>
-    </UContainer>
+    </div>
   </div>
 </template>

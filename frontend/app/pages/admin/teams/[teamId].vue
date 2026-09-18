@@ -242,7 +242,7 @@ async function handleToggleLeaderboardExclusion(excluded: boolean) {
 <template>
   <div>
     <div class="border-default border-b py-2">
-      <UContainer>
+      <div>
         <UBreadcrumb
           :items="[
             { label: 'Lag', to: { name: 'admin-teams' } },
@@ -255,9 +255,9 @@ async function handleToggleLeaderboardExclusion(excluded: boolean) {
             },
           ]"
         />
-      </UContainer>
+      </div>
     </div>
-    <UContainer class="py-12">
+    <div>
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error />
       <div v-else-if="data" class="space-y-6">
@@ -430,6 +430,6 @@ async function handleToggleLeaderboardExclusion(excluded: boolean) {
           <div v-else class="text-dimmed">Ingen medlemmer</div>
         </UCard>
       </div>
-    </UContainer>
+    </div>
   </div>
 </template>

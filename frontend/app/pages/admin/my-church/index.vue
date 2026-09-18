@@ -19,7 +19,7 @@ async function copyLink() {
 </script>
 
 <template>
-  <UContainer class="py-12 flex flex-col items-center justify-center xl:h-3/4">
+  <div class="flex flex-col items-center justify-center xl:h-3/4">
     <template v-if="canManageChurchAdmins">
       <div class="flex flex-wrap gap-12 text-4xl *:grow">
         <NuxtLink
@@ -73,5 +73,5 @@ async function copyLink() {
     <p v-else class="text-3xl leading-relaxed text-center text-balance">
       {{ $t('admin.churchHome.noAccess') }}
     </p>
-  </UContainer>
+  </div>
 </template>

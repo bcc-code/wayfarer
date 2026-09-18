@@ -270,7 +270,7 @@ async function handleUpdateTags(feedbackId: string, tags: string[]) {
 </script>
 
 <template>
-  <UContainer class="py-12">
+  <div>
     <div class="mb-6 flex items-center gap-6">
       <h1 class="text-3xl">Tilbakemeldinger</h1>
     </div>
@@ -524,5 +524,5 @@ async function handleUpdateTags(feedbackId: string, tags: string[]) {
         </div>
       </template>
     </UModal>
-  </UContainer>
+  </div>
 </template>

@@ -22,7 +22,7 @@ const ADMIN_DOMAIN = [
 export default withNuxt([
   globalIgnores(['**/api/']),
   {
-    name: 'wayfarer/domain-boundary',
+    name: 'interact/domain-boundary',
     files: ['app/**/*.{vue,ts}'],
     ignores: ADMIN_DOMAIN,
     rules: {

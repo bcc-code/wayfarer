@@ -213,7 +213,7 @@ function handleUserSelect(item: UserItem | undefined) {
 <template>
   <div>
     <div class="border-default border-b py-2">
-      <UContainer>
+      <div>
         <UBreadcrumb
           :items="[
             {
@@ -225,9 +225,9 @@ function handleUserSelect(item: UserItem | undefined) {
             },
           ]"
         />
-      </UContainer>
+      </div>
     </div>
-    <UContainer class="py-6">
+    <div>
       <UButton
         color="neutral"
         variant="soft"
@@ -318,7 +318,7 @@ function handleUserSelect(item: UserItem | undefined) {
           </p>
         </TransitionGroup>
       </div>
-    </UContainer>
+    </div>
 
     <!-- Remove confirmation modal -->
     <UModal v-model:open="removeConfirmOpen">

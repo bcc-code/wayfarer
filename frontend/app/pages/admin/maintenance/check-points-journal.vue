@@ -45,7 +45,7 @@ const columns: TableColumn<UserRow>[] = [
 </script>
 
 <template>
-  <UContainer class="py-12">
+  <div>
     <div class="mb-8">
       <div class="mb-4 flex items-center gap-2">
         <UButton
@@ -141,5 +141,5 @@ const columns: TableColumn<UserRow>[] = [
         Ingen brukere med manglende poengjournal-oppforinger funnet.
       </div>
     </template>
-  </UContainer>
+  </div>
 </template>

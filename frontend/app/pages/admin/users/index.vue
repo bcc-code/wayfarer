@@ -86,7 +86,7 @@ const columns: TableColumn<
 </script>
 
 <template>
-  <UContainer class="py-12">
+  <div>
     <h1 class="mb-6 text-3xl">Brukere</h1>
     <ErrorState v-if="error" :error />
     <div v-else class="space-y-4">
@@ -125,5 +125,5 @@ const columns: TableColumn<
         </template>
       </UTable>
     </div>
-  </UContainer>
+  </div>
 </template>

@@ -91,5 +91,24 @@ export function useAdminNav() {
     ],
   )
 
-  return { projectId, globalNav, projectNav, navItems, searchGroups }
+  /**
+   * Label of the deepest matching nav entry, for the navbar heading. Project
+   * entries win over global ones because they are the more specific match.
+   */
+  const currentTitle = computed(() => {
+    const name = route.name as string | undefined
+    const match =
+      [...PROJECT_NAV].reverse().find((item) => isNavItemActive(item, name)) ??
+      [...GLOBAL_NAV].reverse().find((item) => isNavItemActive(item, name))
+    return match?.label ?? 'Admin'
+  })
+
+  return {
+    projectId,
+    globalNav,
+    projectNav,
+    navItems,
+    searchGroups,
+    currentTitle,
+  }
 }

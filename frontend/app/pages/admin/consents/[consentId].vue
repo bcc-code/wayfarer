@@ -128,7 +128,7 @@ async function publishConsent() {
 <template>
   <div>
     <div class="border-default border-b py-2">
-      <UContainer>
+      <div>
         <UBreadcrumb
           :items="[
             { label: 'Samtykker', to: { name: 'admin-consents' } },
@@ -141,9 +141,9 @@ async function publishConsent() {
             },
           ]"
         />
-      </UContainer>
+      </div>
     </div>
-    <UContainer class="py-12">
+    <div>
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error />
       <div v-else-if="data" class="space-y-6">
@@ -312,6 +312,6 @@ async function publishConsent() {
           />
         </UCard>
       </div>
-    </UContainer>
+    </div>
   </div>
 </template>

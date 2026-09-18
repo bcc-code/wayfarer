@@ -395,7 +395,7 @@ function getDropdownItems(session: (typeof sessions.value)[number]) {
 <template>
   <div>
     <div class="border-default border-b py-2">
-      <UContainer>
+      <div>
         <UBreadcrumb
           :items="[
             {
@@ -427,9 +427,9 @@ function getDropdownItems(session: (typeof sessions.value)[number]) {
             },
           ]"
         />
-      </UContainer>
+      </div>
     </div>
-    <UContainer class="py-12">
+    <div>
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error />
       <template v-else-if="data">
@@ -510,7 +510,7 @@ function getDropdownItems(session: (typeof sessions.value)[number]) {
           </UTable>
         </template>
       </template>
-    </UContainer>
+    </div>
 
     <!-- Create/Edit modal -->
     <UModal v-model:open="editModalOpen">

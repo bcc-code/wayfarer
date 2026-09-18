@@ -103,7 +103,7 @@ async function saveChanges() {
 </script>
 
 <template>
-  <UContainer class="space-y-6 my-12">
+  <div class="space-y-6">
     <div class="flex items-center justify-between">
       <h1>Menighetdetaljer</h1>
       <UButton
@@ -167,5 +167,5 @@ async function saveChanges() {
         </div>
       </UCard>
     </template>
-  </UContainer>
+  </div>
 </template>

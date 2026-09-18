@@ -44,7 +44,7 @@ const { canCreateProject } = usePermissions()
 </script>
 
 <template>
-  <UContainer class="py-12">
+  <div>
     <div class="mb-12 flex flex-col items-start gap-8">
       <h1 class="text-3xl">Prosjekter</h1>
       <UButton
@@ -108,5 +108,5 @@ const { canCreateProject } = usePermissions()
         </ul>
       </section>
     </div>
-  </UContainer>
+  </div>
 </template>

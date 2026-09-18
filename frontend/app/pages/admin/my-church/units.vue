@@ -707,7 +707,7 @@ function handleDropMember(
 <template>
   <div>
     <div class="border-default border-b py-2">
-      <UContainer>
+      <div>
         <UBreadcrumb
           :items="[
             {
@@ -719,9 +719,9 @@ function handleDropMember(
             },
           ]"
         />
-      </UContainer>
+      </div>
     </div>
-    <UContainer class="py-6">
+    <div>
       <UButton
         color="neutral"
         variant="soft"
@@ -1005,7 +1005,7 @@ function handleDropMember(
           </div>
         </div>
       </div>
-    </UContainer>
+    </div>
 
     <!-- Floating bulk action bar -->
     <Transition

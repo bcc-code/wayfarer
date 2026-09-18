@@ -365,6 +365,85 @@ folder rather than a real leak.
 
 Unit tests 457 → 459.
 
+### 2026-09-18 — admin visual design, adapted from the Nuxt UI calendar template
+
+Reference: github.com/nuxt-ui-templates/calendar. Three things about it are worth
+recording, because none are obvious from reading the repo.
+
+**Its `app.config.ts` cannot be copied on its own.** It is the visible half of a
+"liquid glass" system whose other half is `app/assets/css/main.css`: the config
+builds surfaces from a `glass-material` utility and `--glass-bg`, `--control-bg`,
+`--control-bg-hover`, `--well-bg` and `--overlay-blur` custom properties, all
+declared in that stylesheet. Copying the config alone leaves every dropdown,
+modal, popover and select with a **transparent** background.
+
+Rather than port the reference's CSS verbatim, the system was rebuilt on stock
+Tailwind, which is the house rule here:
+
+| Reference                                     | Here                                                                             |
+| --------------------------------------------- | -------------------------------------------------------------------------------- |
+| `@utility glass-material` + `--glass-filter`  | `backdrop-blur-xl backdrop-saturate-150 backdrop-brightness-105`                 |
+| `bg-(--glass-bg)`                             | `bg-glass` (a `@theme` colour)                                                   |
+| `bg-(--control-bg)` / `-hover`                | `bg-control` / `bg-control-hover`                                                |
+| `bg-(--well-bg)`                              | `bg-well`                                                                        |
+| `backdrop-blur-(--overlay-blur)`              | `backdrop-blur-sm`                                                               |
+| `@media (prefers-reduced-transparency)` block | `@custom-variant reduceTransparency`, applied once via a shared `solid` constant |
+
+The tokens live in the existing `@theme` block with their dark values in the
+existing `.dark` block, matching how the rest of the file already declares
+colours. No hand-written CSS rules were added.
+
+**Its `sidebar:` block targets `USidebar`, not `UDashboardSidebar`.** The
+reference hand-rolls its shell (`<div class="isolate relative flex h-svh
+overflow-hidden">`) around `<USidebar variant="floating">`. Our shell uses
+`UDashboardSidebar`, which carries the resizable persisted width and the mobile
+slideover that `USidebar` has no companion component for, so the treatment was
+split: the glass surface goes on `dashboardSidebar.slots.root` in
+`app.config.ts` (shared theme), and the geometry that makes it float — `m-2`,
+the radius, `min-h-0` to undo the theme's `min-h-svh` (which would otherwise
+overflow the viewport by that margin) and `border-e-0` to drop the theme's rule
+in favour of the ring — is passed as a `ui` prop from `layouts/admin.vue`. That
+belongs to the one layout rather than to every dashboard sidebar, and an
+instance `ui` prop is appended after the theme rather than merged into it, so
+it cannot lose a merge.
+
+**`--ui-radius` was deliberately not taken.** The reference uses `0.5rem`; admin
+stays at `0.3rem`. Every `rounded-*` utility in the app derives from that token
+(`--radius-lg` is `calc(var(--ui-radius) * 2)`), and because `--radius-*` is
+declared at `:root` its `var()` resolves there — so overriding `--ui-radius` on
+a wrapper element does **not** rescope it. Raising it would have rounded the
+user-facing `Design*` components too.
+
+Blast radius is small despite `app.config.ts` being global: user-facing code uses
+about a dozen Nuxt UI components, nearly all `UIcon`, because it runs on the
+`Design*` system. In practice this dresses the admin panel only.
+
+Also in this pass:
+
+- **Collapsible sidebar dropped** at the user's request, along with
+  `UDashboardSidebarCollapse`.
+- **Search is discoverable.** `UDashboardSearch` was mounted but nothing opened
+  it, so the command palette was reachable only by shortcut. The sidebar now
+  leads with `UDashboardSearchButton`, which renders the meta+K hint itself.
+- **The navbar has a title**, derived from the nav model via a new
+  `currentTitle` in `useAdminNav` (deepest matching entry wins, so a project
+  section beats the global one).
+- **Content is full width.** `UContainer` (max-width 80rem, centred) was leaving
+  most of a wide screen empty inside the dashboard panel. All 40 admin pages
+  swapped it for a plain `div`, dropping the `py-*`/`my-*` the panel body now
+  owns while preserving deliberate `max-w-*`; the `p-0` panel shim from PR 1 is
+  gone.
+- **`QuickAccess` moved** from `fixed bottom-4 left-4` to bottom-right, where it
+  no longer sits on top of the user menu in the sidebar footer.
+
+Verified: typecheck 0, lint 0, 459 unit + 149 component, `pnpm build` exit 0, and
+the emitted CSS actually contains
+`.glass-material{-webkit-backdrop-filter:var(--glass-filter);backdrop-filter:var(--glass-filter)}`
+plus the light/dark tokens and the `prefers-reduced-transparency` fallback —
+the check that matters, since a config referencing an unregistered `@utility`
+would fail silently. **Not verified: appearance.** The admin layout requires an
+Auth0 session, so this needs a human look.
+
 ### Gate status after the above
 
 | Check           | Before | After                          |

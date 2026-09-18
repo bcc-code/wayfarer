@@ -8,7 +8,7 @@ definePageMeta({
 <template>
   <div>
     <div class="border-default border-b py-2">
-      <UContainer>
+      <div>
         <UBreadcrumb
           :items="[
             {
@@ -20,9 +20,9 @@ definePageMeta({
             },
           ]"
         />
-      </UContainer>
+      </div>
     </div>
-    <UContainer class="py-6 relative">
+    <div class="relative">
       <UButton
         color="neutral"
         variant="soft"
@@ -54,6 +54,6 @@ definePageMeta({
           {{ $t('admin.churchHome.gameNight', { number: gamenight }) }}
         </NuxtLink>
       </div>
-    </UContainer>
+    </div>
   </div>
 </template>

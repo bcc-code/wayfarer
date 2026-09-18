@@ -18,7 +18,9 @@ function copyToken() {
 
 <template>
   <DevOnly>
-    <div class="fixed bottom-4 left-4">
+    <!-- Bottom-right: the admin shell puts the user menu in the sidebar
+         footer, which is where this used to sit. -->
+    <div class="fixed right-4 bottom-4 z-50">
       <UButton icon="lucide:copy" variant="soft" size="sm" @click="copyToken">
         Copy token
       </UButton>

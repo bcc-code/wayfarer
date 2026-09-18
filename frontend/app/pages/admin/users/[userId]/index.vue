@@ -475,7 +475,7 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
 <template>
   <div>
     <div class="border-default border-b py-2">
-      <UContainer>
+      <div>
         <UBreadcrumb
           :items="[
             { label: 'Brukere', to: { name: 'admin-users' } },
@@ -488,9 +488,9 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
             },
           ]"
         />
-      </UContainer>
+      </div>
     </div>
-    <UContainer class="py-12">
+    <div>
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error />
       <div v-else-if="data" class="space-y-6">
@@ -975,7 +975,7 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
           <div v-else class="text-dimmed">Ingen poengoppføringer</div>
         </UCard>
       </div>
-    </UContainer>
+    </div>
 
     <!-- Add Role Modal -->
     <UModal v-model:open="showAddRoleModal">

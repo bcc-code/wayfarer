@@ -58,7 +58,7 @@ const { isActive, start, stop, remaining } = useCountdown(10, {
 <template>
   <div>
     <div class="border-default border-b py-2">
-      <UContainer>
+      <div>
         <UBreadcrumb
           :items="[
             {
@@ -70,9 +70,9 @@ const { isActive, start, stop, remaining } = useCountdown(10, {
             },
           ]"
         />
-      </UContainer>
+      </div>
     </div>
-    <UContainer class="py-6 relative">
+    <div class="relative">
       <UButton
         color="neutral"
         variant="soft"
@@ -99,7 +99,7 @@ const { isActive, start, stop, remaining } = useCountdown(10, {
         </h2>
         <p key="description">
           {{ $t('admin.churchHome.kickOffOnboardingDescription') }}
-          <br >
+          <br />
           {{ $t('admin.churchHome.kickOffOnboardingDescriptionWarning') }}
         </p>
 
@@ -161,6 +161,6 @@ const { isActive, start, stop, remaining } = useCountdown(10, {
           :ui="{ title: 'text-default' }"
         />
       </TransitionGroup>
-    </UContainer>
+    </div>
   </div>
 </template>

@@ -157,7 +157,7 @@ watch(fixComplete, (complete) => {
 </script>
 
 <template>
-  <UContainer class="py-12">
+  <div>
     <div class="mb-8">
       <div class="mb-4 flex items-center gap-2">
         <UButton
@@ -359,5 +359,5 @@ watch(fixComplete, (complete) => {
         </UCard>
       </template>
     </UModal>
-  </UContainer>
+  </div>
 </template>

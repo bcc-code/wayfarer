@@ -94,7 +94,7 @@ const lastUpdatedFormatted = computed(() => {
 <template>
   <div>
     <div class="border-default border-b py-2">
-      <UContainer>
+      <div>
         <UBreadcrumb
           :items="[
             {
@@ -106,9 +106,9 @@ const lastUpdatedFormatted = computed(() => {
             },
           ]"
         />
-      </UContainer>
+      </div>
     </div>
-    <UContainer class="py-6">
+    <div>
       <UButton
         color="neutral"
         variant="soft"
@@ -183,7 +183,7 @@ const lastUpdatedFormatted = computed(() => {
           </p>
         </section>
       </div>
-    </UContainer>
+    </div>
   </div>
 </template>
 

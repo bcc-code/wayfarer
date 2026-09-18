@@ -28,8 +28,7 @@ const tools = [
   },
   {
     title: 'Massejobber',
-    description:
-      'Se oversikt over asynkrone massejobber og deres status.',
+    description: 'Se oversikt over asynkrone massejobber og deres status.',
     icon: 'lucide:layers',
     to: '/admin/maintenance/bulk-jobs',
   },
@@ -37,7 +36,7 @@ const tools = [
 </script>
 
 <template>
-  <UContainer class="py-12">
+  <div>
     <div class="mb-8">
       <h1 class="text-3xl">Vedlikehold</h1>
       <p class="text-muted mt-2">
@@ -63,5 +62,5 @@ const tools = [
         </UCard>
       </NuxtLink>
     </div>
-  </UContainer>
+  </div>
 </template>

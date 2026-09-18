@@ -61,7 +61,7 @@ async function createEvent(event: FormSubmitEvent<Schema>) {
 <template>
   <div>
     <div class="border-default border-b py-2">
-      <UContainer>
+      <div>
         <UBreadcrumb
           :items="[
             {
@@ -83,9 +83,9 @@ async function createEvent(event: FormSubmitEvent<Schema>) {
             },
           ]"
         />
-      </UContainer>
+      </div>
     </div>
-    <UContainer class="py-12">
+    <div>
       <h1 class="mb-6 text-2xl font-bold">Opprett arrangement</h1>
       <UForm
         :state
@@ -111,6 +111,6 @@ async function createEvent(event: FormSubmitEvent<Schema>) {
         />
         <UButton type="submit" size="lg" block>Opprett arrangement</UButton>
       </UForm>
-    </UContainer>
+    </div>
   </div>
 </template>

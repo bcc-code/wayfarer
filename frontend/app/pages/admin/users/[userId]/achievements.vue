@@ -203,7 +203,7 @@ function statusLabel(
 <template>
   <div>
     <div class="border-default border-b py-2">
-      <UContainer>
+      <div>
         <UBreadcrumb
           :items="[
             { label: 'Brukere', to: { name: 'admin-users' } },
@@ -217,10 +217,10 @@ function statusLabel(
             { label: 'Sjekk prestasjoner' },
           ]"
         />
-      </UContainer>
+      </div>
     </div>
 
-    <UContainer class="py-12">
+    <div>
       <div v-if="!canCheckAchievements" class="text-dimmed">Ingen tilgang</div>
       <div v-else class="space-y-6">
         <h1 class="text-3xl font-bold">Sjekk prestasjoner</h1>
@@ -361,7 +361,7 @@ function statusLabel(
           </div>
         </template>
       </div>
-    </UContainer>
+    </div>
 
     <!-- Award confirmation -->
     <UModal v-model:open="showAwardConfirm">

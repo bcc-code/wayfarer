@@ -119,7 +119,7 @@ async function handleSubmit(formData: AchievementFormData) {
 <template>
   <div>
     <div class="border-default border-b py-2">
-      <UContainer>
+      <div>
         <UBreadcrumb
           :items="[
             {
@@ -141,9 +141,9 @@ async function handleSubmit(formData: AchievementFormData) {
             },
           ]"
         />
-      </UContainer>
+      </div>
     </div>
-    <UContainer class="py-12">
+    <div>
       <h1 class="mb-6 text-2xl font-bold">Opprett utmerkelse</h1>
       <AdminAchievementForm
         :project-id="route.params.projectId"
@@ -151,6 +151,6 @@ async function handleSubmit(formData: AchievementFormData) {
         submit-label="Opprett utmerkelse"
         @submit="handleSubmit"
       />
-    </UContainer>
+    </div>
   </div>
 </template>

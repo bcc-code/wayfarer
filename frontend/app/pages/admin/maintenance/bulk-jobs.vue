@@ -77,9 +77,7 @@ watch(
   },
 )
 
-const jobs = computed(() =>
-  data.value?.bulkJobs.edges.map((edge) => edge.node),
-)
+const jobs = computed(() => data.value?.bulkJobs.edges.map((edge) => edge.node))
 
 // Status options
 const statusOptions = [
@@ -124,7 +122,9 @@ function formatOperationType(type: string): string {
   return labels[type] ?? type
 }
 
-function getStatusColor(status: BulkJobStatus): 'neutral' | 'info' | 'success' | 'error' {
+function getStatusColor(
+  status: BulkJobStatus,
+): 'neutral' | 'info' | 'success' | 'error' {
   switch (status) {
     case BulkJobStatus.Pending:
       return 'neutral'
@@ -154,7 +154,10 @@ function getStatusLabel(status: BulkJobStatus): string {
   }
 }
 
-function formatDuration(startedAt: string | null | undefined, completedAt: string | null | undefined): string {
+function formatDuration(
+  startedAt: string | null | undefined,
+  completedAt: string | null | undefined,
+): string {
   if (!startedAt) return '-'
   const start = new Date(startedAt)
   const end = completedAt ? new Date(completedAt) : new Date()
@@ -174,7 +177,11 @@ function calculateProgress(processed: number, total: number): number {
 async function handleRetry(jobId: string) {
   const { error } = await retryBulkJob({ id: jobId })
   if (error) {
-    toast.add({ title: 'Kunne ikke kjore jobb pa nytt', description: error.message, color: 'error' })
+    toast.add({
+      title: 'Kunne ikke kjore jobb pa nytt',
+      description: error.message,
+      color: 'error',
+    })
     return
   }
   toast.add({ title: 'Jobb opprettet pa nytt', color: 'success' })
@@ -191,12 +198,14 @@ function clearFilters() {
 }
 
 const hasActiveFilters = computed(
-  () => selectedStatus.value !== undefined || selectedOperationType.value !== undefined,
+  () =>
+    selectedStatus.value !== undefined ||
+    selectedOperationType.value !== undefined,
 )
 </script>
 
 <template>
-  <UContainer class="py-12">
+  <div>
     <div class="mb-8">
       <div class="mb-4 flex items-center gap-2">
         <UButton
@@ -216,7 +225,9 @@ const hasActiveFilters = computed(
     <div v-else class="space-y-4">
       <div class="flex items-center gap-2">
         <USelectMenu
-          :model-value="statusOptions.find((o) => o.value === selectedStatus)?.value"
+          :model-value="
+            statusOptions.find((o) => o.value === selectedStatus)?.value
+          "
           :items="statusOptions"
           value-key="value"
           label-key="label"
@@ -227,7 +238,9 @@ const hasActiveFilters = computed(
           @update:model-value="selectedStatus = $event"
         />
         <USelectMenu
-          :model-value="operationTypes.find((o) => o.value === selectedOperationType)?.value"
+          :model-value="
+            operationTypes.find((o) => o.value === selectedOperationType)?.value
+          "
           :items="operationTypes"
           value-key="value"
           label-key="label"
@@ -273,16 +286,23 @@ const hasActiveFilters = computed(
 
         <template #progress-cell="{ row }">
           <div class="flex items-center gap-2 min-w-32">
-            <div class="h-2 flex-1 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700">
+            <div
+              class="h-2 flex-1 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700"
+            >
               <div
                 class="h-full rounded-full transition-all"
                 :class="{
-                  'bg-neutral-400': row.original.status === BulkJobStatus.Pending,
-                  'bg-blue-500': row.original.status === BulkJobStatus.Processing,
-                  'bg-green-500': row.original.status === BulkJobStatus.Completed,
+                  'bg-neutral-400':
+                    row.original.status === BulkJobStatus.Pending,
+                  'bg-blue-500':
+                    row.original.status === BulkJobStatus.Processing,
+                  'bg-green-500':
+                    row.original.status === BulkJobStatus.Completed,
                   'bg-red-500': row.original.status === BulkJobStatus.Failed,
                 }"
-                :style="{ width: `${calculateProgress(row.original.processedCount, row.original.totalCount)}%` }"
+                :style="{
+                  width: `${calculateProgress(row.original.processedCount, row.original.totalCount)}%`,
+                }"
               />
             </div>
             <span class="text-dimmed text-xs whitespace-nowrap">
@@ -293,9 +313,13 @@ const hasActiveFilters = computed(
 
         <template #result-cell="{ row }">
           <div class="flex items-center gap-2">
-            <span class="text-success text-sm">{{ row.original.successCount }}</span>
+            <span class="text-success text-sm">{{
+              row.original.successCount
+            }}</span>
             <span class="text-dimmed">/</span>
-            <span class="text-error text-sm">{{ row.original.failureCount }}</span>
+            <span class="text-error text-sm">{{
+              row.original.failureCount
+            }}</span>
             <UPopover v-if="row.original.errorMessage">
               <UButton
                 variant="ghost"
@@ -323,13 +347,18 @@ const hasActiveFilters = computed(
 
         <template #duration-cell="{ row }">
           <span class="text-dimmed text-sm">
-            {{ formatDuration(row.original.startedAt, row.original.completedAt) }}
+            {{
+              formatDuration(row.original.startedAt, row.original.completedAt)
+            }}
           </span>
         </template>
 
         <template #actions-cell="{ row }">
           <UButton
-            v-if="row.original.status === BulkJobStatus.Completed || row.original.status === BulkJobStatus.Failed"
+            v-if="
+              row.original.status === BulkJobStatus.Completed ||
+              row.original.status === BulkJobStatus.Failed
+            "
             variant="ghost"
             size="xs"
             icon="lucide:refresh-cw"
@@ -344,5 +373,5 @@ const hasActiveFilters = computed(
         description="Det finnes ingen jobber som matcher de valgte filtrene."
       />
     </div>
-  </UContainer>
+  </div>
 </template>

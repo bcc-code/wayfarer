@@ -193,7 +193,7 @@ function toggleTeam(teamId: string) {
 <template>
   <div>
     <div class="border-default border-b py-2">
-      <UContainer>
+      <div>
         <UBreadcrumb
           :items="[
             {
@@ -215,9 +215,9 @@ function toggleTeam(teamId: string) {
             },
           ]"
         />
-      </UContainer>
+      </div>
     </div>
-    <UContainer class="max-w-2xl py-12">
+    <div class="max-w-2xl">
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error class="h-150" />
       <template v-else-if="data">
@@ -294,6 +294,6 @@ function toggleTeam(teamId: string) {
           </UButton>
         </div>
       </template>
-    </UContainer>
+    </div>
   </div>
 </template>

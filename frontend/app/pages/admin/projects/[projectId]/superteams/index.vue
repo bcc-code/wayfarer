@@ -321,7 +321,7 @@ function getTeamsByChurch(st: SuperteamResult): Map<string, TeamInfo[]> {
 <template>
   <div>
     <div class="border-default border-b py-2">
-      <UContainer>
+      <div>
         <UBreadcrumb
           :items="[
             {
@@ -340,9 +340,9 @@ function getTeamsByChurch(st: SuperteamResult): Map<string, TeamInfo[]> {
             },
           ]"
         />
-      </UContainer>
+      </div>
     </div>
-    <UContainer class="py-12">
+    <div>
       <header class="mb-12">
         <h1 class="text-3xl font-semibold">LADD Superteams</h1>
         <p class="text-muted mt-2 max-w-2xl">
@@ -665,7 +665,7 @@ function getTeamsByChurch(st: SuperteamResult): Map<string, TeamInfo[]> {
           Click "Preview Distribution" to see the proposed superteam assignments
         </p>
       </div>
-    </UContainer>
+    </div>
   </div>
 </template>
 

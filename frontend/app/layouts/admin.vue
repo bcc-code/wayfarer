@@ -117,7 +117,7 @@ watch(
   { immediate: true },
 )
 
-const { navItems, searchGroups } = useAdminNav()
+const { navItems, searchGroups, currentTitle } = useAdminNav()
 
 // Church-admin-only users are redirected to the church-admin layout by the
 // watcher above; suppress the nav in the frame or two before that lands.
@@ -125,56 +125,48 @@ const showNav = computed(() => !isChurchAdminOnly.value)
 </script>
 
 <template>
-  <UDashboardGroup storage="local" storage-key="wayfarer-admin">
+  <UDashboardGroup storage="local" storage-key="interact-admin">
+    <!--
+      `m-2` floats the sidebar off the chrome, which needs the theme's
+      `min-h-svh` undone or it overflows the viewport by that margin, and its
+      `border-e` dropped since the floating surface is framed by its own ring.
+    -->
     <UDashboardSidebar
       id="admin-sidebar"
-      collapsible
       resizable
       :default-size="16"
+      :ui="{
+        root: 'm-2 min-h-0 rounded-lg overflow-hidden border-e-0',
+      }"
     >
-      <template #header="{ collapsed }">
+      <template #header>
         <NuxtLink to="/admin" class="flex items-center">
           <UColorModeImage
-            v-if="!collapsed"
             light="/images/logo/logo.svg"
             dark="/images/logo/logo-light.svg"
             class="h-6"
           />
         </NuxtLink>
-        <UDashboardSidebarCollapse class="ms-auto" />
       </template>
 
-      <template #default="{ collapsed }">
+      <template #default>
         <template v-if="showNav">
-          <AdminProjectSwitcher :collapsed />
-          <UNavigationMenu
-            :items="navItems"
-            :collapsed
-            orientation="vertical"
-            highlight
-          />
+          <!-- Renders the meta+K hint itself and opens UDashboardSearch, which
+               was previously reachable only by the shortcut. -->
+          <UDashboardSearchButton label="Søk" variant="soft" />
+          <AdminProjectSwitcher />
+          <UNavigationMenu :items="navItems" orientation="vertical" highlight />
         </template>
       </template>
 
-      <template #footer="{ collapsed }">
-        <AdminUserMenu :collapsed />
+      <template #footer>
+        <AdminUserMenu />
       </template>
     </UDashboardSidebar>
 
-    <!--
-      Pages still bring their own `UContainer` and vertical padding, so the
-      panel body's default padding is removed here to avoid doubling it. The
-      responsive variants have to be zeroed explicitly: the body default is
-      `p-4 sm:p-6 gap-4 sm:gap-6`, and tailwind-merge is variant-aware, so a
-      bare `p-0` would only override the base and leave `sm:p-6` in place.
-      As pages move onto a shared page header this override goes away.
-    -->
-    <UDashboardPanel
-      id="admin-main"
-      :ui="{ body: 'p-0 sm:p-0 gap-0 sm:gap-0' }"
-    >
+    <UDashboardPanel id="admin-main">
       <template #header>
-        <UDashboardNavbar>
+        <UDashboardNavbar :title="currentTitle">
           <template #right>
             <AdminUserFeedback />
           </template>

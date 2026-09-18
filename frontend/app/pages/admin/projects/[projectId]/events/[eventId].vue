@@ -134,7 +134,7 @@ async function deleteEvent() {
 <template>
   <div>
     <div class="border-default border-b py-2">
-      <UContainer>
+      <div>
         <UBreadcrumb
           :items="[
             {
@@ -163,9 +163,9 @@ async function deleteEvent() {
             },
           ]"
         />
-      </UContainer>
+      </div>
     </div>
-    <UContainer class="py-12">
+    <div>
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error />
       <template v-else-if="data">
@@ -211,6 +211,6 @@ async function deleteEvent() {
           </UButton>
         </UForm>
       </template>
-    </UContainer>
+    </div>
   </div>
 </template>

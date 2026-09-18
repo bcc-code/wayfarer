@@ -3,6 +3,7 @@
 @import '@nuxt/ui';
 
 @custom-variant limitedHeight (@media (max-height: 720px));
+@custom-variant reduceTransparency (@media (prefers-reduced-transparency: reduce));
 
 @theme {
   /* Font families */
@@ -95,6 +96,18 @@
   --font-weight-body: var(--font-weight-normal);
   --font-weight-caption: var(--font-weight-medium);
   --font-weight-tiny: var(--font-weight-medium);
+
+  /* Glass surfaces, adapted from the Nuxt UI calendar template. Declared as
+     theme colours so they are reached through `bg-glass`, `bg-control` and
+     `bg-well` rather than arbitrary-value classes; dark values are overridden
+     in the .dark block below. */
+  --color-glass: rgb(255 255 255 / 0.42);
+  /* A control standing on glass: `bg-elevated` is opaque and would cover the
+     pane it sits on. */
+  --color-control: rgb(0 0 0 / 0.05);
+  --color-control-hover: rgb(0 0 0 / 0.09);
+  /* A well cut into the glass, for a track whose controls read as raised. */
+  --color-well: rgb(0 0 0 / 0.05);
 }
 
 /* Dark mode */
@@ -113,6 +126,13 @@
   --color-shadow-default: rgb(0 0 0 / 0.3);
   --color-shadow-blank: rgb(0 0 0 / 0);
   --color-border-default: rgb(255 255 255 / 0.09);
+
+  --color-glass: rgb(28 28 30 / 0.55);
+  --color-control: rgb(255 255 255 / 0.06);
+  --color-control-hover: rgb(255 255 255 / 0.1);
+  /* Deeper than the light one: the pane behind it is already dark, so the same
+     alpha would not read as a well at all. */
+  --color-well: rgb(0 0 0 / 0.22);
 }
 
 /* Semantic Typography Classes */

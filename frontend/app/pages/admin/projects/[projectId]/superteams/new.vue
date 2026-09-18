@@ -72,7 +72,7 @@ async function handleSubmit() {
 <template>
   <div>
     <div class="border-default border-b py-2">
-      <UContainer>
+      <div>
         <UBreadcrumb
           :items="[
             {
@@ -94,9 +94,9 @@ async function handleSubmit() {
             },
           ]"
         />
-      </UContainer>
+      </div>
     </div>
-    <UContainer class="max-w-2xl py-12">
+    <div class="max-w-2xl">
       <h1 class="mb-6 text-2xl font-bold">Opprett superteam</h1>
       <form class="space-y-6" @submit.prevent="handleSubmit">
         <UFormField name="name" label="Navn" required>
@@ -137,6 +137,6 @@ async function handleSubmit() {
           </UButton>
         </div>
       </form>
-    </UContainer>
+    </div>
   </div>
 </template>

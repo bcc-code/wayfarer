@@ -197,7 +197,7 @@ async function handleReorder() {
 <template>
   <div>
     <div class="border-default border-b py-2">
-      <UContainer>
+      <div>
         <UBreadcrumb
           :items="[
             {
@@ -213,9 +213,9 @@ async function handleReorder() {
             },
           ]"
         />
-      </UContainer>
+      </div>
     </div>
-    <UContainer class="py-12">
+    <div>
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error class="h-150" />
       <template v-else-if="data">
@@ -226,7 +226,7 @@ async function handleReorder() {
               :src="state.branding.logoImage.url"
               width="64"
               class="mb-4 rounded"
-            >
+            />
             <h1 class="text-3xl">
               {{ state.name }}
             </h1>
@@ -304,7 +304,7 @@ async function handleReorder() {
                   height="32"
                   width="32"
                   class="bg-muted size-8 rounded"
-                >
+                />
               </template>
               <template #type-cell="{ row }">
                 {{
@@ -372,7 +372,7 @@ async function handleReorder() {
                   height="32"
                   width="32"
                   class="bg-muted size-8 rounded"
-                >
+                />
               </template>
               <template #teams-cell="{ row }">
                 {{ row.original.teams.length }} lag
@@ -438,14 +438,14 @@ async function handleReorder() {
                     height="32"
                     width="32"
                     class="size-8 shrink-0 rounded"
-                  >
+                  />
                   <img
                     v-else
                     src="/images/achievement-placeholder.png"
                     height="32"
                     width="32"
                     class="size-8 shrink-0 rounded"
-                  >
+                  />
                   <div class="min-w-0 flex-1">
                     <div class="font-medium">{{ achievement.name }}</div>
                     <div class="text-dimmed truncate text-sm">
@@ -487,6 +487,6 @@ async function handleReorder() {
           </template>
         </UTabs>
       </template>
-    </UContainer>
+    </div>
   </div>
 </template>

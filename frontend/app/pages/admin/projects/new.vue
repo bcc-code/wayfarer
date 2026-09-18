@@ -122,7 +122,7 @@ async function createProject(event: FormSubmitEvent<Schema>) {
 <template>
   <div>
     <div class="border-default border-b py-2">
-      <UContainer>
+      <div>
         <UBreadcrumb
           :items="[
             { label: 'Prosjekter', to: { name: 'admin-projects' } },
@@ -131,9 +131,9 @@ async function createProject(event: FormSubmitEvent<Schema>) {
             },
           ]"
         />
-      </UContainer>
+      </div>
     </div>
-    <UContainer class="py-12">
+    <div>
       <UForm
         :state
         :schema="schema"
@@ -171,6 +171,6 @@ async function createProject(event: FormSubmitEvent<Schema>) {
         </UFormField>
         <UButton type="submit" size="lg" block>Opprett prosjekt</UButton>
       </UForm>
-    </UContainer>
+    </div>
   </div>
 </template>

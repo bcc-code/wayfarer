@@ -130,7 +130,7 @@ const { canDeleteScoreEntry, canManageScores } = usePermissions()
 </script>
 
 <template>
-  <UContainer class="py-12">
+  <div>
     <div class="mb-6 flex items-center justify-between">
       <h1 class="text-3xl">Poengjusteringer</h1>
       <UButton v-if="canManageScores" :to="{ name: 'admin-scores-new' }">
@@ -217,5 +217,5 @@ const { canDeleteScoreEntry, canManageScores } = usePermissions()
         </div>
       </template>
     </UModal>
-  </UContainer>
+  </div>
 </template>

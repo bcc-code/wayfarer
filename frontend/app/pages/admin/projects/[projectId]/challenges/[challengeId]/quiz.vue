@@ -359,7 +359,7 @@ const isQuizChallenge = computed(() => {
 <template>
   <div>
     <div class="border-default border-b py-2">
-      <UContainer>
+      <div>
         <UBreadcrumb
           :items="[
             {
@@ -388,9 +388,9 @@ const isQuizChallenge = computed(() => {
             },
           ]"
         />
-      </UContainer>
+      </div>
     </div>
-    <UContainer class="py-12">
+    <div>
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error />
       <template v-else-if="data">
@@ -417,13 +417,17 @@ const isQuizChallenge = computed(() => {
           </h1>
           <AdminQuizForm
             :quiz-data="quizData"
-            :translation-status="data?.challenge.__typename === 'QuizChallenge' ? data.challenge.quiz?.translationStatus ?? [] : []"
+            :translation-status="
+              data?.challenge.__typename === 'QuizChallenge'
+                ? (data.challenge.quiz?.translationStatus ?? [])
+                : []
+            "
             :project-id="route.params.projectId"
             :challenge-id="route.params.challengeId"
             @save="saveQuiz"
           />
         </template>
       </template>
-    </UContainer>
+    </div>
   </div>
 </template>

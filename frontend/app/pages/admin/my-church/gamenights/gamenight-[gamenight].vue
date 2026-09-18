@@ -295,7 +295,7 @@ async function enrollUnitLeadersInChallenge() {
 <template>
   <div>
     <div class="border-default border-b py-2">
-      <UContainer>
+      <div>
         <UBreadcrumb
           :items="[
             {
@@ -311,9 +311,9 @@ async function enrollUnitLeadersInChallenge() {
             },
           ]"
         />
-      </UContainer>
+      </div>
     </div>
-    <UContainer class="py-6 relative">
+    <div class="relative">
       <UButton
         color="neutral"
         variant="soft"
@@ -637,6 +637,6 @@ async function enrollUnitLeadersInChallenge() {
           </p>
         </div>
       </div>
-    </UContainer>
+    </div>
   </div>
 </template>

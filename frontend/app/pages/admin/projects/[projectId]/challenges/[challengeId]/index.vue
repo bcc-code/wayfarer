@@ -179,7 +179,7 @@ async function handleDelete() {
 <template>
   <div>
     <div class="border-default border-b py-2">
-      <UContainer>
+      <div>
         <UBreadcrumb
           :items="[
             {
@@ -208,9 +208,9 @@ async function handleDelete() {
             },
           ]"
         />
-      </UContainer>
+      </div>
     </div>
-    <UContainer class="py-12">
+    <div>
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error />
       <div v-else-if="initialData" class="space-y-6">
@@ -245,6 +245,6 @@ async function handleDelete() {
           @submit="handleSubmit"
         />
       </div>
-    </UContainer>
+    </div>
   </div>
 </template>

@@ -43,7 +43,7 @@ const columns: TableColumn<ConsentRow>[] = [
 </script>
 
 <template>
-  <UContainer class="py-12">
+  <div>
     <div class="mb-6 flex flex-col items-start gap-8">
       <h1 class="text-3xl">Samtykker</h1>
       <UButton
@@ -105,5 +105,5 @@ const columns: TableColumn<ConsentRow>[] = [
         Ingen samtykker funnet. Opprett ditt første samtykke for å komme i gang.
       </div>
     </div>
-  </UContainer>
+  </div>
 </template>
