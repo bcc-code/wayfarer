@@ -159,13 +159,6 @@ watch([visibilityState, isWindowFocused], ([visibility, focused]) => {
 useFirestoreRefresh(['ProfilePageDocument'], () => {
   refresh({ requestPolicy: 'network-only' })
 })
-
-// Hidden Treasures link based on locale
-const { locale } = useI18n()
-const hiddenTreasuresLink = computed(() => {
-  const langCode = getHiddenTreasureLocale(locale.value)
-  return `https://app.hiddentreasures.org/${langCode}/podcasts/hidden-treasures-podcast`
-})
 </script>
 
 <template>
