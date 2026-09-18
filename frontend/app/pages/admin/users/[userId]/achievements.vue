@@ -202,24 +202,6 @@ function statusLabel(
 
 <template>
   <div>
-    <div class="border-default border-b py-2">
-      <div>
-        <UBreadcrumb
-          :items="[
-            { label: 'Brukere', to: { name: 'admin-users' } },
-            {
-              label: userData?.user.name ?? route.params.userId,
-              to: {
-                name: 'admin-users-userId',
-                params: { userId: route.params.userId },
-              },
-            },
-            { label: 'Sjekk prestasjoner' },
-          ]"
-        />
-      </div>
-    </div>
-
     <div>
       <div v-if="!canCheckAchievements" class="text-dimmed">Ingen tilgang</div>
       <div v-else class="space-y-6">

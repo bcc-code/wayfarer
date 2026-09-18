@@ -118,31 +118,6 @@ async function handleSubmit(formData: AchievementFormData) {
 
 <template>
   <div>
-    <div class="border-default border-b py-2">
-      <div>
-        <UBreadcrumb
-          :items="[
-            {
-              label: 'Prosjekter',
-              to: { name: 'admin-projects' },
-            },
-            {
-              label: data?.project.name ?? route.params.projectId,
-              to: {
-                name: 'admin-projects-projectId',
-                params: { projectId: route.params.projectId },
-              },
-            },
-            {
-              label: 'Utmerkelser',
-            },
-            {
-              label: 'Ny',
-            },
-          ]"
-        />
-      </div>
-    </div>
     <div>
       <h1 class="mb-6 text-2xl font-bold">Opprett utmerkelse</h1>
       <AdminAchievementForm

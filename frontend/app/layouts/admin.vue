@@ -53,7 +53,8 @@ useHead({
 const { me } = useAuth()
 const showNav = computed(() => !isChurchAdminOnly(me.value?.roles))
 
-const { globalNav, projectNav, searchGroups, currentTitle } = useAdminNav()
+const { globalNav, projectNav, searchGroups } = useAdminNav()
+const { breadcrumb, title } = useAdminPage()
 // `ssr: false`, so this is safe to gate rendering on.
 const isDesktop = useMediaQuery('(min-width: 1024px)')
 </script>
@@ -73,7 +74,7 @@ const isDesktop = useMediaQuery('(min-width: 1024px)')
       `border-e` dropped since the floating surface is framed by its own ring.
 
       `default-size` is a percentage of the viewport (the dashboard context uses
-      `unit: '%'`), so 16% passes 300px on anything wider than ~1875px. The cap
+      `unit: '%'`), so 16% passes 250px on anything wider than ~1560px. The cap
       is a max-width rather than a smaller percentage, which would make the
       sidebar too narrow on a laptop.
     -->
@@ -81,7 +82,7 @@ const isDesktop = useMediaQuery('(min-width: 1024px)')
       id="admin-sidebar"
       :default-size="16"
       :ui="{
-        root: 'm-2 min-h-0 max-w-[300px] rounded-lg overflow-hidden border-e-0',
+        root: 'm-2 min-h-0 max-w-[250px] rounded-lg overflow-hidden border-e-0',
       }"
     >
       <template #header>
@@ -147,7 +148,7 @@ const isDesktop = useMediaQuery('(min-width: 1024px)')
       id="admin-project-sidebar"
       :default-size="13"
       :ui="{
-        root: 'my-2 me-2 min-h-0 max-w-[300px] rounded-lg overflow-hidden border-e-0 shadow-none',
+        root: 'my-2 me-2 min-h-0 max-w-[250px] rounded-lg overflow-hidden border-e-0 shadow-none',
       }"
     >
       <template #header>
@@ -161,11 +162,25 @@ const isDesktop = useMediaQuery('(min-width: 1024px)')
 
     <UDashboardPanel id="admin-main">
       <template #header>
-        <UDashboardNavbar :title="currentTitle">
+        <UDashboardNavbar :title>
           <template #right>
             <AdminUserFeedback />
           </template>
         </UDashboardNavbar>
+
+        <!--
+          Breadcrumbs belong to the shell, not to each page. They used to be
+          ~25 copies of the same bordered block rendered inside the page body,
+          which put them below the navbar's own border and left them scrolling
+          with the content.
+
+          Hidden at one crumb: that says only where you already are.
+        -->
+        <UDashboardToolbar v-if="breadcrumb.length > 1">
+          <template #left>
+            <UBreadcrumb :items="breadcrumb" />
+          </template>
+        </UDashboardToolbar>
       </template>
 
       <template #body>

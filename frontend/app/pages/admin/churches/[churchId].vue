@@ -43,6 +43,10 @@ const {
   pause: computed(() => !isAuthReady.value),
 })
 
+// Supplies the trailing breadcrumb crumb and the navbar title; everything
+// above it is derived from the route.
+useAdminPage(() => data.value?.church.name)
+
 const { executeMutation: updateChurch } = useUpdateChurchMutation()
 const toast = useToast()
 

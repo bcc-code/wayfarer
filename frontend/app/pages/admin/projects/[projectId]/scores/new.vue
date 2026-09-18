@@ -73,22 +73,6 @@ async function handleSubmit(event: FormSubmitEvent<Schema>) {
 
 <template>
   <div>
-    <div class="border-default border-b py-2">
-      <div>
-        <UBreadcrumb
-          :items="[
-            {
-              label: 'Poenglogg',
-              to: {
-                name: 'admin-projects-projectId-scores',
-                params: { projectId: route.params.projectId },
-              },
-            },
-            { label: 'Ny justering' },
-          ]"
-        />
-      </div>
-    </div>
     <div>
       <div class="max-w-2xl">
         <h1 class="mb-6 text-3xl font-bold">Opprett poengjustering</h1>

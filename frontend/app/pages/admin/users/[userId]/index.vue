@@ -188,6 +188,10 @@ const { data: currentProjectData } = useAdminUserPageCurrentProjectQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
+// Supplies the trailing breadcrumb crumb and the navbar title; everything
+// above it is derived from the route.
+useAdminPage(() => data.value?.user.name)
+
 const currentProjectId = computed(
   () => currentProjectData.value?.currentProject.id,
 )
@@ -474,22 +478,6 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
 
 <template>
   <div>
-    <div class="border-default border-b py-2">
-      <div>
-        <UBreadcrumb
-          :items="[
-            { label: 'Brukere', to: { name: 'admin-users' } },
-            {
-              label: data?.user.name ?? route.params.userId,
-              to: {
-                name: 'admin-users-userId',
-                params: { userId: route.params.userId },
-              },
-            },
-          ]"
-        />
-      </div>
-    </div>
     <div>
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error />

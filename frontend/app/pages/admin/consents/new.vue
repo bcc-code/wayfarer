@@ -82,16 +82,6 @@ async function handleSubmit(event: FormSubmitEvent<Schema>) {
 
 <template>
   <div>
-    <div class="border-default border-b py-2">
-      <div>
-        <UBreadcrumb
-          :items="[
-            { label: 'Samtykker', to: { name: 'admin-consents' } },
-            { label: 'Nytt samtykke' },
-          ]"
-        />
-      </div>
-    </div>
     <div>
       <div class="max-w-2xl">
         <h1 class="mb-6 text-3xl font-bold">Opprett nytt samtykke</h1>

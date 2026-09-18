@@ -121,18 +121,6 @@ async function createProject(event: FormSubmitEvent<Schema>) {
 
 <template>
   <div>
-    <div class="border-default border-b py-2">
-      <div>
-        <UBreadcrumb
-          :items="[
-            { label: 'Prosjekter', to: { name: 'admin-projects' } },
-            {
-              label: state.name || 'Nytt prosjekt',
-            },
-          ]"
-        />
-      </div>
-    </div>
     <div>
       <UForm
         :state

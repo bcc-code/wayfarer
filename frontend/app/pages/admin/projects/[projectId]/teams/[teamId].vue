@@ -60,6 +60,10 @@ const {
   pause: computed(() => !isAuthReady.value),
 })
 
+// Supplies the trailing breadcrumb crumb and the navbar title; everything
+// above it is derived from the route.
+useAdminPage(() => data.value?.team.name)
+
 const { executeMutation: updateTeam } = useUpdateTeamMutation()
 const { executeMutation: removeTeamMembers } = useRemoveTeamMembersMutation()
 const { executeMutation: regenerateJoinCode } = useRegenerateJoinCodeMutation()
@@ -246,31 +250,6 @@ async function handleToggleLeaderboardExclusion(excluded: boolean) {
 
 <template>
   <div>
-    <div class="border-default border-b py-2">
-      <div>
-        <UBreadcrumb
-          :items="[
-            {
-              label: 'Lag',
-              to: {
-                name: 'admin-projects-projectId-teams',
-                params: { projectId: route.params.projectId },
-              },
-            },
-            {
-              label: data?.team.name ?? route.params.teamId,
-              to: {
-                name: 'admin-projects-projectId-teams-teamId',
-                params: {
-                  projectId: route.params.projectId,
-                  teamId: route.params.teamId,
-                },
-              },
-            },
-          ]"
-        />
-      </div>
-    </div>
     <div>
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error />

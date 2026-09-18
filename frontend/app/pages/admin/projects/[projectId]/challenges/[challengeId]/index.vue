@@ -57,6 +57,10 @@ const { data, fetching, error } = useAdminProjectChallengePageQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
+// Supplies the trailing breadcrumb crumb and the navbar title; everything
+// above it is derived from the route.
+useAdminPage(() => data.value?.challenge.name)
+
 const { executeMutation } = useUpdateChallengeMutation()
 const { executeMutation: executeDelete } = useDeleteChallengeMutation()
 
@@ -178,38 +182,6 @@ async function handleDelete() {
 
 <template>
   <div>
-    <div class="border-default border-b py-2">
-      <div>
-        <UBreadcrumb
-          :items="[
-            {
-              label: 'Prosjekter',
-              to: { name: 'admin-projects' },
-            },
-            {
-              label: data?.challenge.project.name ?? route.params.projectId,
-              to: {
-                name: 'admin-projects-projectId',
-                params: { projectId: route.params.projectId },
-              },
-            },
-            {
-              label: 'Utfordringer',
-            },
-            {
-              label: data?.challenge.name ?? route.params.challengeId,
-              to: {
-                name: 'admin-projects-projectId-challenges-challengeId',
-                params: {
-                  projectId: route.params.projectId,
-                  challengeId: route.params.challengeId,
-                },
-              },
-            },
-          ]"
-        />
-      </div>
-    </div>
     <div>
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error />

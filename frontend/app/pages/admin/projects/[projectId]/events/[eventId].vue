@@ -50,6 +50,10 @@ const state = reactive<Schema>({
   endDate: '',
 })
 
+// Supplies the trailing breadcrumb crumb and the navbar title; everything
+// above it is derived from the route.
+useAdminPage(() => state.name)
+
 watch(
   () => data.value,
   (d) => {
@@ -133,38 +137,6 @@ async function deleteEvent() {
 
 <template>
   <div>
-    <div class="border-default border-b py-2">
-      <div>
-        <UBreadcrumb
-          :items="[
-            {
-              label: 'Prosjekter',
-              to: { name: 'admin-projects' },
-            },
-            {
-              label: data?.event.parentProject.name ?? route.params.projectId,
-              to: {
-                name: 'admin-projects-projectId',
-                params: { projectId: route.params.projectId },
-              },
-            },
-            {
-              label: 'Arrangementer',
-            },
-            {
-              label: data?.event.name ?? route.params.eventId,
-              to: {
-                name: 'admin-projects-projectId-events-eventId',
-                params: {
-                  projectId: route.params.projectId,
-                  eventId: route.params.eventId,
-                },
-              },
-            },
-          ]"
-        />
-      </div>
-    </div>
     <div>
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error />

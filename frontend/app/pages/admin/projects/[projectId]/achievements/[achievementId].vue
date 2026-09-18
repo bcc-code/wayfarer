@@ -101,6 +101,10 @@ const { data, fetching, error } = useAdminProjectAchievementPageQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
+// Supplies the trailing breadcrumb crumb and the navbar title; everything
+// above it is derived from the route.
+useAdminPage(() => data.value?.achievement.name)
+
 const { executeMutation: updateSimple } = useUpdateAchievementMutation()
 const { executeMutation: updateContent } = useUpdateContentAchievementMutation()
 const { executeMutation: updateStreak } = useUpdateStreakAchievementMutation()
@@ -298,38 +302,6 @@ async function handleDelete() {
 
 <template>
   <div>
-    <div class="border-default border-b py-2">
-      <div>
-        <UBreadcrumb
-          :items="[
-            {
-              label: 'Prosjekter',
-              to: { name: 'admin-projects' },
-            },
-            {
-              label: data?.achievement.project.name ?? route.params.projectId,
-              to: {
-                name: 'admin-projects-projectId',
-                params: { projectId: route.params.projectId },
-              },
-            },
-            {
-              label: 'Utmerkelser',
-            },
-            {
-              label: data?.achievement.name ?? route.params.achievementId,
-              to: {
-                name: 'admin-projects-projectId-achievements-achievementId',
-                params: {
-                  projectId: route.params.projectId,
-                  achievementId: route.params.achievementId,
-                },
-              },
-            },
-          ]"
-        />
-      </div>
-    </div>
     <div>
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error />

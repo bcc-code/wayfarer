@@ -358,38 +358,6 @@ const isQuizChallenge = computed(() => {
 
 <template>
   <div>
-    <div class="border-default border-b py-2">
-      <div>
-        <UBreadcrumb
-          :items="[
-            {
-              label: 'Prosjekter',
-              to: { name: 'admin-projects' },
-            },
-            {
-              label: data?.challenge.project.name ?? route.params.projectId,
-              to: {
-                name: 'admin-projects-projectId',
-                params: { projectId: route.params.projectId },
-              },
-            },
-            {
-              label: data?.challenge.name ?? 'Utfordring',
-              to: {
-                name: 'admin-projects-projectId-challenges-challengeId',
-                params: {
-                  projectId: route.params.projectId,
-                  challengeId: route.params.challengeId,
-                },
-              },
-            },
-            {
-              label: 'Quiz',
-            },
-          ]"
-        />
-      </div>
-    </div>
     <div>
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error />

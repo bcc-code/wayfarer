@@ -4525,13 +4525,6 @@ export type AdminProjectSuperteamsQueryVariables = Exact<{
 
 export type AdminProjectSuperteamsQuery = { __typename?: 'Query', superteams: { __typename?: 'SuperTeamConnection', edges: Array<{ __typename?: 'SuperTeamEdge', node: { __typename?: 'SuperTeam', id: string, name: string, description: string, color?: string | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, teams: Array<{ __typename?: 'Team', id: string }> } }> } };
 
-export type AdminSuperTeamNewPageQueryVariables = Exact<{
-  projectId: Scalars['ID']['input'];
-}>;
-
-
-export type AdminSuperTeamNewPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string } };
-
 export type AdminTeamPageQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -7375,18 +7368,6 @@ export const AdminProjectSuperteamsDocument = gql`
 
 export function useAdminProjectSuperteamsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectSuperteamsQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectSuperteamsQuery, AdminProjectSuperteamsQueryVariables | undefined>({ query: AdminProjectSuperteamsDocument, variables: undefined, ...options });
-};
-export const AdminSuperTeamNewPageDocument = gql`
-    query AdminSuperTeamNewPage($projectId: ID!) {
-  project(id: $projectId) {
-    id
-    name
-  }
-}
-    `;
-
-export function useAdminSuperTeamNewPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminSuperTeamNewPageQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<AdminSuperTeamNewPageQuery, AdminSuperTeamNewPageQueryVariables | undefined>({ query: AdminSuperTeamNewPageDocument, variables: undefined, ...options });
 };
 export const AdminTeamPageDocument = gql`
     query AdminTeamPage($id: ID!) {

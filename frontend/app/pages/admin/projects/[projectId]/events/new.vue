@@ -60,31 +60,6 @@ async function createEvent(event: FormSubmitEvent<Schema>) {
 
 <template>
   <div>
-    <div class="border-default border-b py-2">
-      <div>
-        <UBreadcrumb
-          :items="[
-            {
-              label: 'Prosjekter',
-              to: { name: 'admin-projects' },
-            },
-            {
-              label: route.params.projectId,
-              to: {
-                name: 'admin-projects-projectId',
-                params: { projectId: route.params.projectId },
-              },
-            },
-            {
-              label: 'Arrangementer',
-            },
-            {
-              label: 'Ny',
-            },
-          ]"
-        />
-      </div>
-    </div>
     <div>
       <h1 class="mb-6 text-2xl font-bold">Opprett arrangement</h1>
       <UForm

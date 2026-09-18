@@ -320,28 +320,6 @@ function getTeamsByChurch(st: SuperteamResult): Map<string, TeamInfo[]> {
 
 <template>
   <div>
-    <div class="border-default border-b py-2">
-      <div>
-        <UBreadcrumb
-          :items="[
-            {
-              label: 'Prosjekter',
-              to: { name: 'admin-projects' },
-            },
-            {
-              label: route.params.projectId,
-              to: {
-                name: 'admin-projects-projectId',
-                params: { projectId: route.params.projectId },
-              },
-            },
-            {
-              label: 'Superteams Distribution',
-            },
-          ]"
-        />
-      </div>
-    </div>
     <div>
       <header class="mb-12">
         <h1 class="text-3xl font-semibold">LADD Superteams</h1>

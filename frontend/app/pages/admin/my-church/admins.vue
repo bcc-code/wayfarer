@@ -212,21 +212,6 @@ function handleUserSelect(item: UserItem | undefined) {
 
 <template>
   <div>
-    <div class="border-default border-b py-2">
-      <div>
-        <UBreadcrumb
-          :items="[
-            {
-              label: $t('admin.breadcrumb.home'),
-              to: { name: 'admin-my-church' },
-            },
-            {
-              label: $t('admin.churchHome.administrators'),
-            },
-          ]"
-        />
-      </div>
-    </div>
     <div>
       <UButton
         color="neutral"

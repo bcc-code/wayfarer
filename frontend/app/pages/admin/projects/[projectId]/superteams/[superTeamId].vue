@@ -62,6 +62,10 @@ const state = reactive({
   imageUrl: null as string | null,
 })
 
+// Supplies the trailing breadcrumb crumb and the navbar title; everything
+// above it is derived from the route.
+useAdminPage(() => state.name)
+
 const hasColor = ref(false)
 const colorValue = ref('#000000')
 
@@ -192,31 +196,6 @@ function toggleTeam(teamId: string) {
 
 <template>
   <div>
-    <div class="border-default border-b py-2">
-      <div>
-        <UBreadcrumb
-          :items="[
-            {
-              label: 'Prosjekter',
-              to: { name: 'admin-projects' },
-            },
-            {
-              label: route.params.projectId,
-              to: {
-                name: 'admin-projects-projectId',
-                params: { projectId: route.params.projectId },
-              },
-            },
-            {
-              label: 'Superteams',
-            },
-            {
-              label: data?.superteam.name ?? route.params.superTeamId,
-            },
-          ]"
-        />
-      </div>
-    </div>
     <div class="max-w-2xl">
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error class="h-150" />

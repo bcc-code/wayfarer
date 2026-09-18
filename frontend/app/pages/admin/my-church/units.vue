@@ -706,21 +706,6 @@ function handleDropMember(
 
 <template>
   <div>
-    <div class="border-default border-b py-2">
-      <div>
-        <UBreadcrumb
-          :items="[
-            {
-              label: $t('admin.breadcrumb.home'),
-              to: { name: 'admin-my-church' },
-            },
-            {
-              label: $t('admin.units.title'),
-            },
-          ]"
-        />
-      </div>
-    </div>
     <div>
       <UButton
         color="neutral"

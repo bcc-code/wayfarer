@@ -4,25 +4,8 @@ definePageMeta({
   layout: 'admin',
 })
 
-gql(`
-  query AdminSuperTeamNewPage($projectId: ID!) {
-    project(id: $projectId) {
-      id
-      name
-    }
-  }
-`)
-
 const route = useRoute('admin-projects-projectId-superteams-new')
 const toast = useToast()
-
-const { isAuthReady } = useAuthReady()
-const { data } = useAdminSuperTeamNewPageQuery({
-  variables: computed(() => ({
-    projectId: route.params.projectId,
-  })),
-  pause: computed(() => !isAuthReady.value),
-})
 
 const { executeMutation } = useCreateSuperTeamMutation()
 
@@ -71,31 +54,6 @@ async function handleSubmit() {
 
 <template>
   <div>
-    <div class="border-default border-b py-2">
-      <div>
-        <UBreadcrumb
-          :items="[
-            {
-              label: 'Prosjekter',
-              to: { name: 'admin-projects' },
-            },
-            {
-              label: data?.project.name ?? route.params.projectId,
-              to: {
-                name: 'admin-projects-projectId',
-                params: { projectId: route.params.projectId },
-              },
-            },
-            {
-              label: 'Superteams',
-            },
-            {
-              label: 'Ny',
-            },
-          ]"
-        />
-      </div>
-    </div>
     <div class="max-w-2xl">
       <h1 class="mb-6 text-2xl font-bold">Opprett superteam</h1>
       <form class="space-y-6" @submit.prevent="handleSubmit">

@@ -141,6 +141,10 @@ const state = reactive<Schema>({
   infoMessageEnd: undefined,
 })
 
+// Supplies the trailing breadcrumb crumb and the navbar title; everything
+// above it is derived from the route.
+useAdminPage(() => state.name)
+
 watch(
   () => data.value,
   (d) => {
@@ -205,29 +209,6 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
 
 <template>
   <div>
-    <div class="border-default border-b py-2">
-      <div>
-        <UBreadcrumb
-          :items="[
-            { label: 'Prosjekter', to: { name: 'admin-projects' } },
-            {
-              label: state.name,
-              to: {
-                name: 'admin-projects-projectId',
-                params: { projectId: route.params.projectId },
-              },
-            },
-            {
-              label: 'Rediger',
-              to: {
-                name: 'admin-projects-projectId-edit',
-                params: { projectId: route.params.projectId },
-              },
-            },
-          ]"
-        />
-      </div>
-    </div>
     <div>
       <UForm
         :state

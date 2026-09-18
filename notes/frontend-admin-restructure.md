@@ -694,6 +694,45 @@ Two things that are not obvious from the markup:
   `ssr: false`), and below `lg` the project nav rides along in the primary's
   slideover, which renders that sidebar's default slot.
 
+### 2026-09-18 — breadcrumbs moved into the shell
+
+Twenty-five pages each carried their own `<UBreadcrumb :items="[...]">` inside an
+identical bordered wrapper, rendered in the page body — below the navbar's own
+border, and scrolling away with the content. They are now derived once and
+rendered in the layout's `UDashboardToolbar`.
+
+**Almost all of it is derivable.** `useAdminPage()` builds
+`Prosjekter → <project> → <section>` from the route plus the nav model plus
+`useCurrentProject()`. A page supplies only what the URL cannot know — the name
+of the thing it is showing — via `useAdminPage(() => data.value?.challenge.name)`,
+which also becomes the navbar title. Nine detail pages set one; the rest need
+nothing.
+
+The label lives in a module-level ref because the layout renders the chrome and
+is an *ancestor* of the page, so provide/inject cannot carry it upward. It is
+cleared on scope dispose, or the previous page's name lingers on the next route
+until that page's own query resolves.
+
+Two details worth keeping:
+
+- The overview never appears as its own section crumb. `PROJECT_NAV`'s
+  "Oversikt" resolves to the same route as the project crumb, so listing it
+  would say the same thing twice.
+- Only prefix-matching nav entries can be ancestors. "Hjem" is an exact-match
+  entry — a destination, not a parent — so `/admin` correctly has no breadcrumb
+  at all.
+
+Removing the blocks also killed a query: `superteams/new.vue` fetched
+`project { id name }` solely to label its breadcrumb. The shell reads the same
+data from `useCurrentProject`'s shared cached query, so that page now makes one
+request fewer. Worth checking for elsewhere.
+
+`useAdminPage.ts` tripped the domain-boundary rule on its way in, correctly —
+admin code in the shared `composables/` folder, like `useAdminNav` and
+`useCurrentProject` before it.
+
+Net: **591 lines deleted, 55 added.** Unit tests 519 → 529.
+
 ### Gate status after the above
 
 | Check           | Before | After                          |
@@ -716,8 +755,7 @@ Each step is independently shippable.
    in `vitest.config.ts`, add the layer pages dirs as roots in
    `routes.test.ts`, and tighten the ESLint boundary group to `#layers/admin/**`.
 
-Optional follow-ups, deliberately out of scope: an `AdminPage` scaffold to
-absorb the ~20 copy-pasted inline breadcrumb headers; admin i18n (the nav model
+Optional follow-ups, deliberately out of scope: admin i18n (the nav model
 should hold keys from day one so this is a labelling change later); splitting
 the 1,000-line outliers (`my-church/units.vue` 1,105, `users/[userId]/index.vue`
 1,068); and giving `churches/[churchId].vue` a home — it has no list page and no

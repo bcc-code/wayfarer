@@ -42,6 +42,10 @@ const {
   pause: computed(() => !isAuthReady.value),
 })
 
+// Supplies the trailing breadcrumb crumb and the navbar title; everything
+// above it is derived from the route.
+useAdminPage(() => data.value?.consent.title)
+
 const { executeMutation: updateConsent } = useUpdateConsentMutation()
 const toast = useToast()
 
@@ -127,22 +131,6 @@ async function publishConsent() {
 
 <template>
   <div>
-    <div class="border-default border-b py-2">
-      <div>
-        <UBreadcrumb
-          :items="[
-            { label: 'Samtykker', to: { name: 'admin-consents' } },
-            {
-              label: data?.consent.title ?? route.params.consentId,
-              to: {
-                name: 'admin-consents-consentId',
-                params: { consentId: route.params.consentId },
-              },
-            },
-          ]"
-        />
-      </div>
-    </div>
     <div>
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error />

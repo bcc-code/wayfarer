@@ -294,25 +294,6 @@ async function enrollUnitLeadersInChallenge() {
 
 <template>
   <div>
-    <div class="border-default border-b py-2">
-      <div>
-        <UBreadcrumb
-          :items="[
-            {
-              label: $t('admin.breadcrumb.home'),
-              to: { name: 'admin-my-church' },
-            },
-            {
-              label: $t('admin.churchHome.gameNights'),
-              to: { name: 'admin-my-church-gamenights' },
-            },
-            {
-              label: $t('admin.churchHome.gameNight', { number: gamenight }),
-            },
-          ]"
-        />
-      </div>
-    </div>
     <div class="relative">
       <UButton
         color="neutral"
