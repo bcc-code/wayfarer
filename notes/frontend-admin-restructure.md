@@ -675,9 +675,9 @@ rules rather than `@media`. The same swap was applied to `projects/index.vue`
 sizes in-panel layout off `sm:`/`lg:` has this latent bug — the sidebars take
 ~300-600px out of the window before the panel gets any.
 
-Both sidebars are capped at `max-w-[300px]`. `default-size` is a *percentage* of the
-viewport (the dashboard context sets `unit: '%'`), so 16% passes 300px on
-anything wider than ~1875px; a ceiling is the right fix rather than a smaller
+Both sidebars are capped at `max-w-[250px]`. `default-size` is a *percentage* of the
+viewport (the dashboard context sets `unit: '%'`), so 16% passes 250px on
+anything wider than ~1560px; a ceiling is the right fix rather than a smaller
 percentage, which would leave the sidebar cramped on a laptop.
 
 Two things that are not obvious from the markup:
