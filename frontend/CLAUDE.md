@@ -21,8 +21,10 @@ frontend/
 ├── app/                    # SHARED ONLY — the base layer, no domain code
 │   ├── pages/              # Only auth0-callback, login, logout-callback
 │   │                       #   (01.auth.global.ts hardcodes these paths)
-│   ├── composables/        # useAuth, useAuthReady, useAnalytics, usePermissions, ...
-│   ├── utils/              # Pure utilities + adminPermissions (see below)
+│   ├── composables/        # useAuth, useAuthReady, useAnalytics, usePermissions,
+│   │                       #   useFirestoreSync/Refresh — all used by both domains
+│   ├── utils/              # graphql, jwt, formatters, leaderboard, analytics +
+│   │                       #   the permission trio (see below)
 │   ├── plugins/            # Numbered for load order (0.urql, 1.auth0, ...)
 │   ├── middleware/         # 01.auth.global, 02.admin-permission.global
 │   ├── graphql/            # *.gql — one contract, one generated output
@@ -37,8 +39,10 @@ frontend/
 │   │       ├── pages/admin/**   # ⚠ The admin/ dir must stay inside
 │   │       ├── components/admin/, components/devtools/
 │   │       ├── layouts/         # admin.vue, church-admin.vue
-│   │       ├── composables/     # useAdminNav, useAdminPage, useCurrentProject, ...
-│   │       ├── utils/adminNav.ts
+│   │       ├── composables/     # useAdminNav, useAdminPage, useCurrentProject,
+│   │       │                    #   useConfirm, useGroupedProjects, usePagination
+│   │       ├── utils/           # adminNav, dates, fuzzySearch, pagination,
+│   │       │                    #   languageMapping, unitNameGenerator
 │   │       └── assets/styles/admin.css
 │   └── user/               # The user-facing app (12 pages)
 │       ├── nuxt.config.ts  # ⚠ Required — needs BOTH dirs entries
@@ -94,6 +98,15 @@ Five rules with no compile-time or runtime error to warn you:
   `tsconfig`, so an intra-layer `~/utils/adminNav` fails typecheck. Use
   `~/...` for shared root code, relative paths within the layer, and
   `#layers/<name>/app/...` only for deliberate cross-layer references.
+
+**Root `app/` is shared-only, and that is tested.** A module used by just one
+domain does not belong there — auto-imports mean it keeps working wherever it
+sits, so the drift is invisible. `test/unit/shared-root.test.ts` walks root
+`app/utils` and `app/composables` and fails any module reachable from only one
+layer. Its `PINNED_TO_ROOT` list holds the deliberate exceptions: the permission
+trio (`adminPermissions`, `permissions`, `usePermissions`) is admin by content
+but load-bearing for `02.admin-permission.global.ts`, and moving it would make
+the shared base import from a layer — the one direction the boundary forbids.
 
 One more that bit us: in `eslint.config.mjs`, the restricted-import pattern for
 the admin alias **must keep its backslash escape** (`'\\#layers/admin/**'`).

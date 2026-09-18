@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ExternalContentType, ExternalContentSortBy } from '~/api/generated'
-import { fuzzyMatch } from '~/utils/fuzzySearch'
+import { fuzzyMatch } from '../../../utils/fuzzySearch'
 
 interface ContentItem {
   id: string

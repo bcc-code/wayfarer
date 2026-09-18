@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { FormSubmitEvent } from '@nuxt/ui'
 import z from 'zod'
-import { toLocalDatetimeLocal, toISOString } from '~/utils/dates'
+import { toLocalDatetimeLocal, toISOString } from '../../../../utils/dates'
 
 definePageMeta({
   permission: 'project:edit',

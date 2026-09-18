@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { TranslationStatusFragment } from '~/api/generated'
-import { dbLanguageToLocale, localeToFlagEmoji } from '~/utils/languageMapping'
+import { dbLanguageToLocale, localeToFlagEmoji } from '../../utils/languageMapping'
 
 const props = defineProps<{
   translationStatus: TranslationStatusFragment[]

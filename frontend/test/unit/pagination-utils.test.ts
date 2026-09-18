@@ -6,8 +6,8 @@ import {
   isFirstPage,
   isLastPage,
   validatePageSize,
-} from '../../app/utils/pagination'
-import type { CursorPageInfo } from '../../app/utils/pagination'
+} from '../../layers/admin/app/utils/pagination'
+import type { CursorPageInfo } from '../../layers/admin/app/utils/pagination'
 
 describe('pagination utils', () => {
   describe('buildNextPageVariables', () => {

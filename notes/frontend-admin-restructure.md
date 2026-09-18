@@ -914,13 +914,68 @@ would silently miss every user-facing page.
 
 Unit tests 536 → 545.
 
+### 2026-09-18 — audit: six admin-only modules were still in the shared root
+
+Prompted by "double check that everything in the root app now is only the shared
+stuff". It wasn't. Six modules were reachable from `layers/admin` alone and are
+now in it:
+
+| Module | Referencing files |
+| --- | --- |
+| `utils/dates.ts` | 12, all admin |
+| `utils/pagination.ts` + `composables/usePagination.ts` | `RelayPagination` + 5 admin pages |
+| `utils/languageMapping.ts` | 2 admin components |
+| `utils/fuzzySearch.ts` | 1 admin component |
+| `utils/unitNameGenerator.ts` | 1 admin page |
+
+The original plan had listed all six as admin-layer files; they were simply
+missed during the move and nothing detected it. That is the point — **auto-imports
+mean a module keeps working wherever it sits**, so there is no error, no warning
+and no failing test for a domain module sitting in the shared base.
+
+**Audited by reference, not by name**, since auto-imported modules have no
+import statement to follow: extract each root module's exported symbols, then
+grep every file in each layer for those symbols as whole words. Two results from
+that pass needed a second look before acting on them, and both were false alarms:
+
+- `useAnalytics` and `utils/analytics` looked user-only (20 user files, 0 admin)
+  but are used by root `useAuth.ts`, `plugins/3.analytics.ts` and
+  `pages/auth0-callback.vue`. The first pass only counted *layer* references.
+  A root reference is what makes a module load-bearing for the shared base.
+- `usePagination` appeared to be referenced by `utils/formatters.ts` — the
+  `Edge` collision already recorded in the plan (`` `Edge ${…}` `` matches the
+  exported `Edge<T>` type name). The real references are admin-only.
+
+**The permission trio stays in root and is now an explicit, documented
+exception**: `adminPermissions`, `permissions` and `usePermissions` are admin by
+content but are called by `02.admin-permission.global.ts`. Moving them would make
+root `app/` import from a layer — the one direction the boundary forbids.
+
+`app/graphql/` also stays whole, including the admin-only documents. Codegen
+globs from the frontend root into a single `app/api/generated.ts`; splitting the
+`.gql` files across layers would separate them from their one output for nothing.
+
+`test/unit/shared-root.test.ts` (new) codifies the audit: it walks root
+`app/utils` and `app/composables`, fails any module reachable from only one
+layer, and names the fix in the assertion message. `PINNED_TO_ROOT` carries the
+exceptions with their reasons, and a companion case fails if a pinned entry stops
+existing, so the exception list cannot outlive what it excuses.
+Mutation-checked by copying `dates.ts` back into root: it fails with
+"app/utils/dates.ts is reachable only from layers/admin".
+
+`usePagination` was also added to `ADMIN_ONLY_COMPOSABLES` in the auto-import
+scanner — it is admin-only and does not start with `useAdmin`, so nothing else
+would have flagged a user-facing caller.
+
+Unit tests 545 → 560.
+
 ### Gate status after the above
 
 | Check           | Before | After                          |
 | --------------- | ------ | ------------------------------ |
 | Lint errors     | 47     | **0**                          |
 | Type errors     | 34     | **0**                          |
-| Unit tests      | 436    | **545**                        |
+| Unit tests      | 436    | **560**                        |
 | Component tests | 149    | 149                            |
 | Build           | ok     | ok                             |
 | Frontend in CI  | none   | lint + typecheck + both suites |

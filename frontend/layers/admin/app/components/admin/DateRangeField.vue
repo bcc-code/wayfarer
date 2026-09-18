@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { parseDate, type DateValue } from '@internationalized/date'
-import { extractDateOnly, formatDateWithTimezone } from '~/utils/dates'
+import { extractDateOnly, formatDateWithTimezone } from '../../utils/dates'
 
 const props = defineProps<{
   placeholder?: string

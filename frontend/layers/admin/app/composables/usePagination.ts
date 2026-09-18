@@ -9,7 +9,7 @@ import {
   validatePageSize,
   type CursorPageInfo,
   type CursorPaginationVariables,
-} from '~/utils/pagination'
+} from '../utils/pagination'
 
 export type PaginationPageInfo = CursorPageInfo
 export type PaginationVariables = CursorPaginationVariables

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { UsePaginationReturn } from '~/composables/usePagination'
+import type { UsePaginationReturn } from '../../composables/usePagination'
 
 const pagination = defineModel<UsePaginationReturn>('pagination', {
   required: true,

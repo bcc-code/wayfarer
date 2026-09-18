@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { TabsItem } from '@nuxt/ui'
 import { VueDraggable } from 'vue-draggable-plus'
-import { generateUniqueNames } from '~/utils/unitNameGenerator'
+import { generateUniqueNames } from '../../../utils/unitNameGenerator'
 
 definePageMeta({
   permission: 'church:manage',

@@ -43,6 +43,7 @@ const ADMIN_ONLY_COMPOSABLES = [
   'useCurrentProject',
   'useConfirm',
   'useGroupedProjects',
+  'usePagination',
 ]
 
 function walk(dir: string): string[] {
