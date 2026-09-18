@@ -421,7 +421,7 @@ about a dozen Nuxt UI components, nearly all `UIcon`, because it runs on the
 Also in this pass:
 
 - **Semantic colours stopped leaking in from the user app.** `assets/styles/user.css`
-  — imported by the *user-facing* `default.vue` — sets `--ui-success` and
+  — imported by the _user-facing_ `default.vue` — sets `--ui-success` and
   `--ui-error` on `:root` from the brand accents (`#9ed63c`, a lime). Those are
   per-layout CSS chunks, so once that layout has been visited the declarations
   stay for the rest of the SPA session and the admin panel renders the user
@@ -430,12 +430,11 @@ Also in this pass:
   `app.config.ts`.
 
   Two things learned while verifying, both non-obvious:
-
   - Nuxt UI injects its generated palette inside `@layer theme`, and **unlayered
     CSS beats any layer**, so plain `:root` declarations in `admin.css` win
     without extra specificity. (The reference template relies on the same thing
     for `--ui-radius`.)
-  - `app.config.ts` cannot choose the *shade* a semantic token resolves to — it
+  - `app.config.ts` cannot choose the _shade_ a semantic token resolves to — it
     is fixed at 500 light / 400 dark (`IC(role, 500)` / `IC(role, 400)` in the
     runtime generator). Changing that needs a CSS token, which is why the shade
     lives in `admin.css` while the palette lives in app.config. Admin uses 600
@@ -482,6 +481,70 @@ the check that matters, since a config referencing an unregistered `@utility`
 would fail silently. **Not verified: appearance.** The admin layout requires an
 Auth0 session, so this needs a human look.
 
+### 2026-09-18 — permission consolidation (`32ecac79`)
+
+Three copies of the admin access rules collapsed into one: `middleware/admin.ts`
+and `middleware/superadmin.ts` are deleted, the `routePermissions` watcher is
+gone from `layouts/admin.vue` (70 lines), and pages now declare
+`definePageMeta({ permission })` enforced by `02.admin-permission.global.ts`.
+
+**The matrix was reconciled against `@requireRole` first**, and the decisive
+finding is how little `project_admin` actually grants:
+
+| Role                | Operations the server accepts it for |
+| ------------------- | ------------------------------------ |
+| `superadmin`        | 130                                  |
+| `admin`             | 120                                  |
+| `church_admin`      | 20                                   |
+| **`project_admin`** | **1 — `updateProject`**              |
+
+So a project admin may edit a project they own and nothing else. Everywhere
+`usePermissions` granted them more — `canAccessTeams`, `canManageScores`,
+`canManageScoresFor`, `canCreateTeamFor` — the server was already returning 403.
+Those gates now match, which fixes the nav-offers-then-bounces bug at its source
+rather than in the guard, because the sidebar and the middleware read the same
+flags. It also closes the long-standing `canManageTeam` TODO: no team mutation
+accepts `project_admin`, so the answer was role-only and never needed the team's
+project.
+
+Behaviour change worth knowing: someone holding **both** church-admin and
+project-admin was previously confined to `/admin/my-church` and locked out of
+the projects they run. `isChurchAdminOnly` now treats `ProjectAdmin` as another
+admin role.
+
+Four things that only surfaced by running it:
+
+- **Global middleware run in alphabetical order.** `admin-permission.global.ts`
+  sorted _before_ `auth.global.ts`, so the guard ran before auth had
+  initialised. The old `admin.ts` was a _named_ middleware, and those always run
+  after globals — making it global silently changed the order. Both are now
+  numerically prefixed (`01.auth`, `02.admin-permission`), matching the
+  convention `plugins/` already uses.
+- **`isLoading` does not mean the user is loaded.** `useAuth` pauses the `me`
+  query until a token exists and runs `watch(fetching, …, { immediate: true })`,
+  so `isLoading` is false on the first tick with `me` still null. A guard that
+  waited on it redirected signed-in superadmins to the front page. It waits on
+  `me` itself now; `!token.value` terminates the unauthenticated case, which is
+  reliable only because `01.auth.global.ts` has already cleared an expired
+  token by then.
+- **Nuxt drops the injection context across an `await`.** `usePermissions()`
+  after the `until()` threw "use\* function must be called within a reactive
+  context" and 500'd the page. Every composable is now resolved before the
+  first await.
+- **Augmenting `RouteMeta` alone does not type `definePageMeta`.** Nuxt's
+  `PageMeta` carries an index signature, so a mistyped permission compiled
+  fine. `app/types/route-meta.d.ts` augments both; a typo now fails typecheck
+  with a "did you mean" suggestion.
+
+Tests: `adminPermissions.test.ts` pins the full role × permission matrix (60
+cases, every allow _and_ deny); `middleware-admin.test.ts` drives the real guard
+against the real `usePermissions` (17). The last two bugs above were each
+reproduced as a failing test before being fixed — the context-loss one needed an
+emulation of Nuxt's context (plain stubs cannot see it), and the redirect one
+needed a real timer delay, since a microtask let it pass on timing luck.
+
+Unit tests 459 → 519.
+
 ### Gate status after the above
 
 | Check           | Before | After                          |
@@ -498,18 +561,14 @@ Auth0 session, so this needs a human look.
 
 Each step is independently shippable.
 
-1. **Permission consolidation.** `definePageMeta({ permission })` + one global
-   middleware reading `to.meta.permission`; delete the `routePermissions`
-   watcher in `layouts/admin.vue:81-117` and the triplication. Reconcile the
-   contradictions above against `@requireRole` first.
-2. **Project context + tabs → routes.** `[projectId].vue` parent with a
+1. **Project context + tabs → routes.** `[projectId].vue` parent with a
    `useCurrentProject()` composable, split the mega-query, add
    `challenges/index.vue`, `achievements/index.vue` (keep the
    `vue-draggable-plus` reorder), `events/index.vue`, move LADD to
    `superteams/distribute.vue` and write the real superteams list.
-3. **Route moves.** `teams`/`scores` under `[projectId]` with redirect stubs;
-   resolve the `canManageTeam` TODO.
-4. **Nuxt layers.** `git mv` into `layers/user/app/**` and `layers/admin/app/**`,
+2. **Route moves.** `teams`/`scores` under `[projectId]` with redirect stubs;
+   the `canManageTeam` TODO is already resolved.
+3. **Nuxt layers.** `git mv` into `layers/user/app/**` and `layers/admin/app/**`,
    keeping the `admin/` directory inside the admin layer's `pages/`. Verified by
    the route-manifest snapshot staying byte-identical. Then widen the `~` alias
    in `vitest.config.ts`, add the layer pages dirs as roots in
