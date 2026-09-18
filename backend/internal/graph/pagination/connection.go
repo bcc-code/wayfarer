@@ -769,3 +769,71 @@ func buildBulkJobPageInfo(params BuildBulkJobConnectionParams, edges []model.Bul
 
 	return pageInfo
 }
+
+// BuildLeaderboardConfigConnectionParams holds parameters for building a leaderboard config connection
+type BuildLeaderboardConfigConnectionParams struct {
+	Configs         []*model.LeaderboardConfig
+	RequestedFirst  *int
+	RequestedLast   *int
+	RequestedAfter  *string
+	RequestedBefore *string
+	TotalCount      int
+	HasMore         bool
+}
+
+// BuildLeaderboardConfigConnection constructs a Relay-style connection from query results.
+// Unlike Challenge (an interface with several concrete types, requiring a caller-supplied
+// parallel timestamp slice), LeaderboardConfig is a single concrete struct that already
+// carries CreatedAt, so the cursor timestamp is read directly off each config.
+func BuildLeaderboardConfigConnection(params BuildLeaderboardConfigConnectionParams) *model.LeaderboardConfigConnection {
+	edges := make([]model.LeaderboardConfigEdge, len(params.Configs))
+	for i, config := range params.Configs {
+		cursor := EncodeLeaderboardConfigCursor(config.CreatedAt.Time, config.ID)
+		edges[i] = model.LeaderboardConfigEdge{
+			Cursor: cursor,
+			Node:   config,
+		}
+	}
+
+	pageInfo := buildLeaderboardConfigPageInfo(params, edges)
+
+	return &model.LeaderboardConfigConnection{
+		Edges:      edges,
+		PageInfo:   pageInfo,
+		TotalCount: params.TotalCount,
+	}
+}
+
+// buildLeaderboardConfigPageInfo constructs the PageInfo for leaderboard configs
+func buildLeaderboardConfigPageInfo(params BuildLeaderboardConfigConnectionParams, edges []model.LeaderboardConfigEdge) *model.PageInfo {
+	pageInfo := &model.PageInfo{
+		HasNextPage:     false,
+		HasPreviousPage: false,
+		StartCursor:     nil,
+		EndCursor:       nil,
+	}
+
+	if len(edges) == 0 {
+		return pageInfo
+	}
+
+	startCursor := edges[0].Cursor
+	endCursor := edges[len(edges)-1].Cursor
+	pageInfo.StartCursor = &startCursor
+	pageInfo.EndCursor = &endCursor
+
+	if params.RequestedFirst != nil {
+		pageInfo.HasNextPage = params.HasMore
+	}
+
+	if params.RequestedLast != nil {
+		pageInfo.HasPreviousPage = params.HasMore
+		if params.RequestedBefore != nil && *params.RequestedBefore != "" {
+			pageInfo.HasNextPage = true
+		}
+	} else if params.RequestedAfter != nil && *params.RequestedAfter != "" {
+		pageInfo.HasPreviousPage = true
+	}
+
+	return pageInfo
+}

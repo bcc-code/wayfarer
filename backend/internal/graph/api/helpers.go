@@ -20,6 +20,61 @@ func timeToDateTime(t *time.Time) *scalars.DateTime {
 	return &scalars.DateTime{Time: *t}
 }
 
+// defaultNearestChurchRivals is used when the client omits the `first`
+// argument on LeaderboardConnection.nearestChurchRivals.
+const defaultNearestChurchRivals = 3
+
+// resolveNearestChurchRivals runs the rivals scan only when a
+// client selects this field — using the lookup context buildLeaderboardConnection
+// stashed on obj. Returns empty for non-PERSONS connections (RivalsUserID unset)
+func resolveNearestChurchRivals(ctx context.Context, svc *services.LeaderboardService, obj *model.LeaderboardConnection, first *int) ([]model.LeaderboardEntry, error) {
+	n := defaultNearestChurchRivals
+	if first != nil {
+		n = *first
+	}
+
+	rivalsParams := services.LeaderboardParams{
+		ContextID: obj.RivalsContextID,
+		Filter:    obj.RivalsFilter,
+		UserID:    obj.RivalsUserID,
+	}
+	rivals, err := svc.NearestChurchRivals(ctx, rivalsParams, obj.RivalsIsEvent, n)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get nearest church rivals: %w", err)
+	}
+
+	result := make([]model.LeaderboardEntry, len(rivals))
+	for i, entry := range rivals {
+		rank := int(entry.Rank)
+		result[i] = model.LeaderboardEntry{
+			ID:          entry.EntityID,
+			Name:        entry.Name,
+			Description: entry.Description,
+			Score:       entry.Score,
+			Rank:        &rank,
+			Tags:        []model.LeaderboardEntryTag{},
+			Image:       entry.Image,
+			LastScoreAt: timeToDateTime(entry.LastScoreAt),
+		}
+	}
+	return result, nil
+}
+
+// rivalsLookupFor returns the rivals lookup context for a LeaderboardConnection
+// populated only for PERSONS boards; zero-valued otherwise, which NearestChurchRivals treats as "skip"
+func rivalsLookupFor(
+	entityType model.LeaderboardEntityType,
+	contextID string,
+	isEvent bool,
+	filter *model.LeaderboardFilter,
+	currentUserID string,
+) (rivalsContextID string, rivalsIsEvent bool, rivalsFilter *model.LeaderboardFilter, rivalsUserID string) {
+	if entityType != model.LeaderboardEntityTypePersons {
+		return "", false, nil, ""
+	}
+	return contextID, isEvent, filter, currentUserID
+}
+
 // resolveProjectByID is a helper function to load a project by ID using the dataloader
 // and applies translations for the requested language
 func resolveProjectByID(ctx context.Context, r *Resolver, projectID string) (*model.Project, error) {
@@ -182,7 +237,6 @@ func preloadViewerContext(
 	return viewerCtx, nil
 }
 
-// buildLeaderboardConnection builds a GraphQL connection from leaderboard entries
 func buildLeaderboardConnection(
 	ctx context.Context,
 	entries []services.LeaderboardEntry,
@@ -196,6 +250,9 @@ func buildLeaderboardConnection(
 	last *int,
 	after *string,
 	before *string,
+	rivalsContextID string,
+	rivalsIsEvent bool,
+	rivalsFilter *model.LeaderboardFilter,
 ) (*model.LeaderboardConnection, error) {
 	// Determine if there are more entries
 	hasMore := false
@@ -275,11 +332,17 @@ func buildLeaderboardConnection(
 		}
 	}
 
+	rivalsCtxID, rivalsEvent, rivalsFlt, rivalsUser := rivalsLookupFor(entityType, rivalsContextID, rivalsIsEvent, rivalsFilter, currentUserID)
+
 	return &model.LeaderboardConnection{
-		Edges:      edges,
-		PageInfo:   pageInfo,
-		TotalCount: totalCount,
-		Me:         me,
+		Edges:           edges,
+		PageInfo:        pageInfo,
+		TotalCount:      totalCount,
+		Me:              me,
+		RivalsContextID: rivalsCtxID,
+		RivalsIsEvent:   rivalsEvent,
+		RivalsFilter:    rivalsFlt,
+		RivalsUserID:    rivalsUser,
 	}, nil
 }
 

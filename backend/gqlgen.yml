@@ -8,6 +8,7 @@ schema:
   - ../gql/achievements.graphqls
   - ../gql/challenges.graphqls
   - ../gql/streaks.graphqls
+  - ../gql/leaderboards.graphqls
   - ../gql/users.graphqls
   - ../gql/roles.graphqls
   - ../gql/churches.graphqls
@@ -197,6 +198,31 @@ models:
     extraFields:
       ProjectID:
         type: string
+
+  LeaderboardConnection:
+    extraFields:
+      RivalsContextID:
+        type: string
+      RivalsIsEvent:
+        type: bool
+      RivalsFilter:
+        type: "*github.com/bcc-media/wayfarer/internal/graph/api/model.LeaderboardFilter"
+      RivalsUserID:
+        type: string
+
+  LeaderboardConfig:
+    fields:
+      project:
+        resolver: true
+      event:
+        resolver: true
+      leaderboard:
+        resolver: true
+    extraFields:
+      ProjectID:
+        type: string
+      EventID:
+        type: "*string"
 
   SimpleAchievement:
     fields:

@@ -27,6 +27,7 @@ const (
 	PrefixTeam               = "team:"
 	PrefixSuperTeam          = "superteam:"
 	PrefixChallenge          = "challenge:"
+	PrefixLeaderboardConfig  = "leaderboardconfig:"
 	PrefixAchievement        = "achievement:"
 	PrefixUserStreakProgress = "userstreakprogress:"
 	PrefixQuiz               = "quiz:"
@@ -228,6 +229,21 @@ func ChallengesByProjectKey(projectID string) string {
 // ChallengesByEventKey builds a cache key for challenges in an event
 func ChallengesByEventKey(eventID string) string {
 	return fmt.Sprintf("%s:event:%s", PrefixChallenge, eventID)
+}
+
+// LeaderboardConfigKey builds a cache key for a leaderboard config by ID
+func LeaderboardConfigKey(configID string) string {
+	return PrefixLeaderboardConfig + configID
+}
+
+// LeaderboardConfigsByProjectKey builds a cache key for leaderboard configs in a project
+func LeaderboardConfigsByProjectKey(projectID string) string {
+	return fmt.Sprintf("%s:project:%s", PrefixLeaderboardConfig, projectID)
+}
+
+// LeaderboardConfigsByEventKey builds a cache key for leaderboard configs in an event
+func LeaderboardConfigsByEventKey(eventID string) string {
+	return fmt.Sprintf("%s:event:%s", PrefixLeaderboardConfig, eventID)
 }
 
 // AchievementKey builds a cache key for an achievement by ID

@@ -496,12 +496,17 @@ func (r *projectResolver) Leaderboard(ctx context.Context, obj *model.Project, e
 	}
 
 	// Build connection
-	connection, err := buildLeaderboardConnection(ctx, entries, meEntry, totalCount, currentUserID, entityType, obj.ID, r.Loaders, first, last, after, before)
+	connection, err := buildLeaderboardConnection(ctx, entries, meEntry, totalCount, currentUserID, entityType, obj.ID, r.Loaders, first, last, after, before, obj.ID, false, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build leaderboard connection: %w", err)
 	}
 
 	return connection, nil
+}
+
+// Leaderboards is the resolver for the leaderboards field.
+func (r *projectResolver) Leaderboards(ctx context.Context, obj *model.Project) ([]model.LeaderboardConfig, error) {
+	return r.getVisibleLeaderboardConfigsByProject(ctx, obj.ID)
 }
 
 // Events is the resolver for the events field.

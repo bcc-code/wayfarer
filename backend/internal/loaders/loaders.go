@@ -36,6 +36,9 @@ type Loaders struct {
 	ChallengeByIDLoader                      *dataloader.Loader[string, model.Challenge]
 	ChallengesByProjectLoader                *dataloader.Loader[string, []model.Challenge]
 	ChallengesByEventLoader                  *dataloader.Loader[string, []model.Challenge]
+	LeaderboardConfigByIDLoader              *dataloader.Loader[string, *model.LeaderboardConfig]
+	LeaderboardConfigsByProjectLoader        *dataloader.Loader[string, []*model.LeaderboardConfig]
+	LeaderboardConfigsByEventLoader          *dataloader.Loader[string, []*model.LeaderboardConfig]
 	StreakItemsByAchievementLoader           *dataloader.Loader[string, []*model.ContentItem]
 	UserStreakProgressLoader                 *dataloader.Loader[UserAchievementKey, []*sqlc.UserStreakProgress]
 	UserContentProgressLoader                *dataloader.Loader[UserAchievementKey, []*sqlc.UserContentProgress]
@@ -110,6 +113,9 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		ChallengeByIDLoader:                      newBatchedLoader(challengeByIDBatchFunc(db, cache)),
 		ChallengesByProjectLoader:                newBatchedLoader(challengesByProjectBatchFunc(db, cache)),
 		ChallengesByEventLoader:                  newBatchedLoader(challengesByEventBatchFunc(db, cache)),
+		LeaderboardConfigByIDLoader:              newBatchedLoader(leaderboardConfigByIDBatchFunc(db, cache)),
+		LeaderboardConfigsByProjectLoader:        newBatchedLoader(leaderboardConfigsByProjectBatchFunc(db, cache)),
+		LeaderboardConfigsByEventLoader:          newBatchedLoader(leaderboardConfigsByEventBatchFunc(db, cache)),
 		StreakItemsByAchievementLoader:           newBatchedLoader(streakItemsByAchievementBatchFunc(db, cache)),
 		UserStreakProgressLoader:                 newBatchedLoader(userStreakProgressBatchFunc(db, cache)),
 		UserContentProgressLoader:                newBatchedLoader(userContentProgressBatchFunc(db, cache)),

@@ -1,0 +1,64 @@
+type: http_request
+model: http_request
+id: rq_4tRqjevUK6
+createdAt: 2026-09-09T11:37:40.159704
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_JDaaFQsGYo
+authentication: {}
+authenticationType: null
+body:
+  operationName: TestNearestChurchRivals
+  query: |
+    query TestNearestChurchRivals($projectId: ID!) {
+      project(id: $projectId) {
+        id
+        name
+        leaderboard(entityType: PERSONS, first: 20) {
+          me {
+            name
+            rank
+            score
+          }
+          nearestChurchRivals(first: 5) {
+            name
+            rank
+            score
+            description
+          }
+        }
+      }
+    }
+  variables: |-
+    {
+      "projectId": "PR01K9VZ8684DP9R4W3ZEV526E5X"
+    }
+bodyType: graphql
+description: 'Uses project(id) instead of currentProject so it does not depend on the global current_project_id setting. Default projectId has real same-church data for testing rivals - swap the TOKEN env var to the user whose rivals you want to see.'
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: ykj3tfsHHJ
+method: POST
+name: TestNearestChurchRivals
+sortPriority: 1500.0
+url: ${[ HOST ]}/graphql
+urlParameters: []
+settingSendCookies:
+  enabled: false
+  value: true
+settingStoreCookies:
+  enabled: false
+  value: true
+settingValidateCertificates:
+  enabled: false
+  value: true
+settingFollowRedirects:
+  enabled: false
+  value: true
+settingRequestTimeout:
+  enabled: false
+  value: 0
+settingHttpVersion:
+  enabled: false
+  value: auto

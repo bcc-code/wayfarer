@@ -104,6 +104,7 @@ WITH ranked_scores AS (
     SELECT
         u.id AS entity_id,
         COALESCE(u.display_name, u.name) AS name,
+        c.id AS church_id,
         c.name AS church_name,
         u.avatar_url AS image,
         lpp.score,
@@ -145,7 +146,7 @@ WITH ranked_scores AS (
           )
       )
 )
-SELECT entity_id, name, church_name, image, score, rank, last_score_at
+SELECT entity_id, name, church_id, church_name, image, score, rank, last_score_at
 FROM ranked_scores
 ORDER BY rank ASC, last_score_at DESC NULLS LAST, name ASC;
 
@@ -565,6 +566,7 @@ WITH ranked_scores AS (
     SELECT
         u.id AS entity_id,
         COALESCE(u.display_name, u.name) AS name,
+        c.id AS church_id,
         c.name AS church_name,
         u.avatar_url AS image,
         lep.score,
@@ -606,7 +608,7 @@ WITH ranked_scores AS (
           )
       )
 )
-SELECT entity_id, name, church_name, image, score, rank, last_score_at
+SELECT entity_id, name, church_id, church_name, image, score, rank, last_score_at
 FROM ranked_scores
 ORDER BY rank ASC, last_score_at DESC NULLS LAST, name ASC;
 

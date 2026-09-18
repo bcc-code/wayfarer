@@ -44,6 +44,7 @@ const (
 	PrefixQuizSession           = "QN" // Quiz Sessions (QS taken by submissions)
 	PrefixQuizSessionAccess     = "QX" // Quiz Session Access
 	PrefixBulkJob               = "BJ" // Bulk Jobs
+	PrefixLeaderboardConfig     = "LC" // Leaderboard Configs
 )
 
 // Total ID length: 2 (prefix) + 26 (ULID) = 28 characters
@@ -179,6 +180,11 @@ func NewQuizResponseID() string {
 // NewFileUploadID generates a new ID for a file upload (FL prefix)
 func NewFileUploadID() string {
 	return newID(PrefixFileUpload)
+}
+
+// NewLeaderboardConfigID generates a new ID for a leaderboard config (LC prefix)
+func NewLeaderboardConfigID() string {
+	return newID(PrefixLeaderboardConfig)
 }
 
 // NewInstanceID generates a new instance ID (no prefix, just raw ULID)
@@ -426,4 +432,9 @@ func NewBulkJobID() string {
 // IsBulkJobID validates a bulk job ID
 func IsBulkJobID(id string) bool {
 	return IsValidID(id, PrefixBulkJob)
+}
+
+// IsLeaderboardConfigID validates a leaderboard config ID
+func IsLeaderboardConfigID(id string) bool {
+	return IsValidID(id, PrefixLeaderboardConfig)
 }

@@ -488,6 +488,16 @@ export type CreateEventInput = {
   startDate: Scalars['DateTime']['input'];
 };
 
+export type CreateLeaderboardConfigInput = {
+  entityType: LeaderboardEntityType;
+  eventId?: InputMaybe<Scalars['ID']['input']>;
+  filter?: InputMaybe<LeaderboardFilter>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  name: Scalars['String']['input'];
+  projectId: Scalars['ID']['input'];
+  sortOrder?: InputMaybe<Scalars['Int']['input']>;
+};
+
 export type CreateOrderingItemInput = {
   correctOrder: Scalars['Int']['input'];
   itemText: Scalars['String']['input'];
@@ -675,7 +685,13 @@ export type Event = {
   description: Scalars['String']['output'];
   endDate: Scalars['DateTime']['output'];
   id: Scalars['ID']['output'];
+  /**
+   * Ad-hoc leaderboard computed directly from the given entityType/filter at request time.
+   * For named, admin-curated leaderboards, see `leaderboards` (LeaderboardConfig) instead.
+   */
   leaderboard: LeaderboardConnection;
+  /** Active leaderboard configs for this event (all configs, including inactive, for admins/superadmins). */
+  leaderboards: Array<LeaderboardConfig>;
   name: Scalars['String']['output'];
   parentProject: Project;
   startDate: Scalars['DateTime']['output'];
@@ -942,12 +958,66 @@ export type JsonResponse = QuizResponse & {
   timeSpentSeconds?: Maybe<Scalars['Int']['output']>;
 };
 
+export type LeaderboardConfig = {
+  __typename?: 'LeaderboardConfig';
+  createdAt: Scalars['DateTime']['output'];
+  entityType: LeaderboardEntityType;
+  event?: Maybe<Event>;
+  filter?: Maybe<LeaderboardFilterView>;
+  id: Scalars['ID']['output'];
+  isActive: Scalars['Boolean']['output'];
+  /** The finished, computed leaderboard for this config. */
+  leaderboard: LeaderboardConnection;
+  name: Scalars['String']['output'];
+  project: Project;
+  sortOrder: Scalars['Int']['output'];
+  updatedAt: Scalars['DateTime']['output'];
+};
+
+
+export type LeaderboardConfigLeaderboardArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type LeaderboardConfigConnection = {
+  __typename?: 'LeaderboardConfigConnection';
+  edges: Array<LeaderboardConfigEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type LeaderboardConfigEdge = {
+  __typename?: 'LeaderboardConfigEdge';
+  cursor: Scalars['String']['output'];
+  node: LeaderboardConfig;
+};
+
+export type LeaderboardConfigFilter = {
+  eventId?: InputMaybe<Scalars['ID']['input']>;
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
+};
+
 export type LeaderboardConnection = {
   __typename?: 'LeaderboardConnection';
   edges: Array<LeaderboardEdge>;
   me?: Maybe<LeaderboardEntry>;
+  /**
+   * Nearest same-church entries ranked above the viewer on a PERSONS leaderboard.
+   * Empty for other entity types or when the viewer isn't on the board.
+   */
+  nearestChurchRivals: Array<LeaderboardEntry>;
   pageInfo: PageInfo;
   totalCount: Scalars['Int']['output'];
+};
+
+
+export type LeaderboardConnectionNearestChurchRivalsArgs = {
+  first?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type LeaderboardEdge = {
@@ -993,6 +1063,24 @@ export type LeaderboardFilter = {
   minScore?: InputMaybe<Scalars['Int']['input']>;
   superTeamId?: InputMaybe<Scalars['ID']['input']>;
   teamId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+/**
+ * Read-only mirror of the `LeaderboardFilter` input, applied to this leaderboard.
+ * Kept as a separate type because GraphQL doesn't allow an `input` type as an output field's
+ * type — mirrors the AgeRange/AgeRangeInput pattern already used elsewhere in this schema.
+ */
+export type LeaderboardFilterView = {
+  __typename?: 'LeaderboardFilterView';
+  ageRange?: Maybe<AgeRange>;
+  churchCategory?: Maybe<ChurchCategory>;
+  churchId?: Maybe<Scalars['ID']['output']>;
+  country?: Maybe<Scalars['String']['output']>;
+  gender?: Maybe<Gender>;
+  maxScore?: Maybe<Scalars['Int']['output']>;
+  minScore?: Maybe<Scalars['Int']['output']>;
+  superTeamId?: Maybe<Scalars['ID']['output']>;
+  teamId?: Maybe<Scalars['ID']['output']>;
 };
 
 export type MarkdownText = {
@@ -1075,6 +1163,7 @@ export type Mutation = {
   createContentAchievement: ContentAchievement;
   createContentAchievementFromExternalContent: ContentAchievement;
   createEvent: Event;
+  createLeaderboardConfig: LeaderboardConfig;
   createProject: Project;
   createQuiz: Quiz;
   createQuizAchievement: QuizAchievement;
@@ -1091,6 +1180,7 @@ export type Mutation = {
   deleteChallenge: Scalars['Boolean']['output'];
   deleteEvent: Scalars['Boolean']['output'];
   deleteFeedback: Scalars['Boolean']['output'];
+  deleteLeaderboardConfig: Scalars['Boolean']['output'];
   deleteProject: Scalars['Boolean']['output'];
   deleteQuiz: Scalars['Boolean']['output'];
   deleteQuizQuestion: Scalars['Boolean']['output'];
@@ -1166,6 +1256,7 @@ export type Mutation = {
   updateContentAchievement: ContentAchievement;
   updateEvent: Event;
   updateFeedbackTags: UserFeedback;
+  updateLeaderboardConfig: LeaderboardConfig;
   updateProject: Project;
   updateQuiz: Quiz;
   updateQuizAchievement: QuizAchievement;
@@ -1375,6 +1466,11 @@ export type MutationCreateEventArgs = {
 };
 
 
+export type MutationCreateLeaderboardConfigArgs = {
+  input: CreateLeaderboardConfigInput;
+};
+
+
 export type MutationCreateProjectArgs = {
   input: CreateProjectInput;
 };
@@ -1456,6 +1552,11 @@ export type MutationDeleteEventArgs = {
 
 
 export type MutationDeleteFeedbackArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteLeaderboardConfigArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -1866,6 +1967,12 @@ export type MutationUpdateFeedbackTagsArgs = {
 };
 
 
+export type MutationUpdateLeaderboardConfigArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateLeaderboardConfigInput;
+};
+
+
 export type MutationUpdateProjectArgs = {
   id: Scalars['ID']['input'];
   input: UpdateProjectInput;
@@ -2076,7 +2183,13 @@ export type Project = {
   infoMessageEnd?: Maybe<Scalars['DateTime']['output']>;
   infoMessageStart?: Maybe<Scalars['DateTime']['output']>;
   journal: ScoreJournalConnection;
+  /**
+   * Ad-hoc leaderboard computed directly from the given entityType/filter at request time.
+   * For named, admin-curated leaderboards, see `leaderboards` (LeaderboardConfig) instead.
+   */
   leaderboard: LeaderboardConnection;
+  /** Active leaderboard configs for this project (all configs, including inactive, for admins/superadmins). */
+  leaderboards: Array<LeaderboardConfig>;
   myChurchTeams: Array<Team>;
   myPoints: Scalars['Int']['output'];
   myTeam?: Maybe<Team>;
@@ -2171,6 +2284,8 @@ export type Query = {
   firebaseToken: FirebaseTokenResponse;
   frontendConfig: Scalars['JSON']['output'];
   instanceID: Scalars['String']['output'];
+  leaderboardConfig: LeaderboardConfig;
+  leaderboardConfigs: LeaderboardConfigConnection;
   me: User;
   myBulkJobs: Array<BulkJob>;
   myCurrentEvent: Event;
@@ -2329,6 +2444,20 @@ export type QueryFeedbackArgs = {
 
 export type QueryFileUploadArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryLeaderboardConfigArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryLeaderboardConfigsArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<LeaderboardConfigFilter>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -3094,6 +3223,14 @@ export type UpdateEventInput = {
   endDate?: InputMaybe<Scalars['DateTime']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   startDate?: InputMaybe<Scalars['DateTime']['input']>;
+};
+
+export type UpdateLeaderboardConfigInput = {
+  entityType: LeaderboardEntityType;
+  filter?: InputMaybe<LeaderboardFilter>;
+  isActive: Scalars['Boolean']['input'];
+  name: Scalars['String']['input'];
+  sortOrder: Scalars['Int']['input'];
 };
 
 export type UpdateProjectInput = {

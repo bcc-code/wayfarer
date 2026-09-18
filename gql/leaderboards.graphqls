@@ -1,0 +1,94 @@
+# Persisted, admin-managed leaderboard definitions
+
+# ==================== LeaderboardConfig Type ====================
+
+type LeaderboardConfig {
+    id: ID!
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    name: String!
+    entityType: LeaderboardEntityType!
+    filter: LeaderboardFilterView
+    sortOrder: Int!
+    isActive: Boolean!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    """
+    The finished, computed leaderboard for this config.
+    """
+    leaderboard(first: Int, after: String, last: Int, before: String): LeaderboardConnection! @goField(forceResolver: true)
+}
+
+# ==================== Filter View (read-side mirror of LeaderboardFilter) ====================
+
+"""
+Read-only mirror of the `LeaderboardFilter` input, applied to this leaderboard.
+Kept as a separate type because GraphQL doesn't allow an `input` type as an output field's
+type — mirrors the AgeRange/AgeRangeInput pattern already used elsewhere in this schema.
+"""
+type LeaderboardFilterView {
+    minScore: Int
+    maxScore: Int
+    churchId: ID
+    country: String
+    churchCategory: ChurchCategory
+    gender: Gender
+    ageRange: AgeRange
+    teamId: ID
+    superTeamId: ID
+}
+
+# ==================== Input Types ====================
+
+input CreateLeaderboardConfigInput {
+    projectId: ID!
+    eventId: ID
+    name: String!
+    entityType: LeaderboardEntityType!
+    filter: LeaderboardFilter
+    sortOrder: Int
+    isActive: Boolean
+}
+
+input UpdateLeaderboardConfigInput {
+    name: String!
+    entityType: LeaderboardEntityType!
+    filter: LeaderboardFilter
+    sortOrder: Int!
+    isActive: Boolean!
+}
+
+input LeaderboardConfigFilter {
+    projectId: ID
+    eventId: ID
+    isActive: Boolean
+    ids: [ID!]
+}
+
+# ==================== Pagination ====================
+
+type LeaderboardConfigEdge {
+    cursor: String!
+    node: LeaderboardConfig!
+}
+
+type LeaderboardConfigConnection {
+    edges: [LeaderboardConfigEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+# ==================== Queries ====================
+
+extend type Query {
+    leaderboardConfig(id: ID!): LeaderboardConfig!
+    leaderboardConfigs(filter: LeaderboardConfigFilter, first: Int, after: String, last: Int, before: String): LeaderboardConfigConnection!
+}
+
+# ==================== Mutations ====================
+
+extend type Mutation {
+    createLeaderboardConfig(input: CreateLeaderboardConfigInput!): LeaderboardConfig! @requireRole(roles: ["admin", "superadmin"])
+    updateLeaderboardConfig(id: ID!, input: UpdateLeaderboardConfigInput!): LeaderboardConfig! @requireRole(roles: ["admin", "superadmin"])
+    deleteLeaderboardConfig(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+}

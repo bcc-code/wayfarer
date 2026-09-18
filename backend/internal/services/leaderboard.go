@@ -19,6 +19,10 @@ import (
 // abandoned request can't hold a DB connection indefinitely.
 const leaderboardFetchTimeout = 30 * time.Second
 
+// maxNearestChurchRivals caps how many nearest-same-church entries are
+// scanned/returned for "me", regardless of what the client requests.
+const maxNearestChurchRivals = 5
+
 // LeaderboardQuerier defines the database operations needed for leaderboards
 type LeaderboardQuerier interface {
 	// Project leaderboards
@@ -102,6 +106,9 @@ type LeaderboardEntry struct {
 	Score       int
 	Rank        int64
 	LastScoreAt *time.Time
+	// ChurchID is only populated for PERSONS entries; it drives
+	// findNearestChurchRivals and is not exposed on the GraphQL type.
+	ChurchID string
 }
 
 // cachedLeaderboard is a decoded full leaderboard as stored in Ristretto.
@@ -121,6 +128,41 @@ func (c *cachedLeaderboard) findMe(entityID string) *LeaderboardEntry {
 		return &entry
 	}
 	return nil
+}
+
+// findNearestChurchRivals walks backward from entityID's position, collecting
+// up to n entries with a strictly better rank that share the same ChurchID.
+// Entries are returned nearest-first (i.e. in descending rank order, from the
+// viewer's position toward the top of the board). Returns nil if entityID is
+// absent from the board, or if it has no ChurchID.
+func (c *cachedLeaderboard) findNearestChurchRivals(entityID string, n int) []LeaderboardEntry {
+	if entityID == "" || n <= 0 {
+		return nil
+	}
+	i, ok := c.IndexByEntityID[entityID]
+	if !ok || i == 0 {
+		return nil
+	}
+
+	me := c.Entries[i]
+	if me.ChurchID == "" {
+		return nil
+	}
+
+	results := make([]LeaderboardEntry, 0, n)
+	for j := i - 1; j >= 0 && len(results) < n; j-- {
+		entry := c.Entries[j]
+		// DENSE_RANK ties sort before "me" by last_score_at/name tiebreak,
+		// so a lower index does not imply a better rank — only true
+		// rank improvements count as "above me".
+		if entry.Rank >= me.Rank {
+			continue
+		}
+		if entry.ChurchID == me.ChurchID {
+			results = append(results, entry)
+		}
+	}
+	return results
 }
 
 // getFullLeaderboardCached returns the full leaderboard for cacheKey, serving
@@ -253,13 +295,42 @@ func (s *LeaderboardService) GetEventLeaderboard(ctx context.Context, params Lea
 	}
 }
 
+// NearestChurchRivals returns the nearest same-church entries ranked above
+// userID on a PERSONS leaderboard. Called lazily, only from the
+// nearestChurchRivals resolver, and reuses the same cached board as the
+// parent query — a cache hit, not a new DB round trip, in the common case
+func (s *LeaderboardService) NearestChurchRivals(ctx context.Context, params LeaderboardParams, isEvent bool, first int) ([]LeaderboardEntry, error) {
+	if params.UserID == "" || first <= 0 {
+		return nil, nil
+	}
+	if first > maxNearestChurchRivals {
+		first = maxNearestChurchRivals
+	}
+
+	var board *cachedLeaderboard
+	var err error
+	if isEvent {
+		board, err = s.eventPersonBoard(ctx, params)
+	} else {
+		board, err = s.projectPersonBoard(ctx, params)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return board.findNearestChurchRivals(params.UserID, first), nil
+}
+
 // Helper functions for project leaderboards
 
-func (s *LeaderboardService) getProjectPersonLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, error) {
+// projectPersonBoard fetches (or serves from cache) the full PERSONS board
+// for a project+filter. Shared by getProjectPersonLeaderboard and
+// NearestChurchRivals so both hit the exact same cache entry.
+func (s *LeaderboardService) projectPersonBoard(ctx context.Context, params LeaderboardParams) (*cachedLeaderboard, error) {
 	filterParams := buildFilterParamsMap(params.Filter)
 	cacheKey := cache.FullLeaderboardKey("project", params.ContextID, "persons", filterParams)
 
-	board, err := s.getFullLeaderboardCached(ctx, cacheKey, func(ctx context.Context) ([]LeaderboardEntry, error) {
+	return s.getFullLeaderboardCached(ctx, cacheKey, func(ctx context.Context) ([]LeaderboardEntry, error) {
 		rows, err := s.queries.GetFullProjectPersonLeaderboard(ctx, s.buildFullProjectPersonParams(params))
 		if err != nil {
 			return nil, fmt.Errorf("failed to get full project person leaderboard: %w", err)
@@ -275,11 +346,16 @@ func (s *LeaderboardService) getProjectPersonLeaderboard(ctx context.Context, pa
 					Score:       int(row.Score),
 					Rank:        row.Rank,
 					LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
+					ChurchID:    row.ChurchID,
 				})
 			}
 		}
 		return entries, nil
 	})
+}
+
+func (s *LeaderboardService) getProjectPersonLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, error) {
+	board, err := s.projectPersonBoard(ctx, params)
 	if err != nil {
 		return nil, nil, 0, err
 	}
@@ -399,11 +475,14 @@ func (s *LeaderboardService) getProjectChurchLeaderboard(ctx context.Context, pa
 
 // Helper functions for event leaderboards
 
-func (s *LeaderboardService) getEventPersonLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, error) {
+// eventPersonBoard fetches (or serves from cache) the full PERSONS board for
+// an event+filter. Shared by getEventPersonLeaderboard and
+// NearestChurchRivals so both hit the exact same cache entry.
+func (s *LeaderboardService) eventPersonBoard(ctx context.Context, params LeaderboardParams) (*cachedLeaderboard, error) {
 	filterParams := buildFilterParamsMap(params.Filter)
 	cacheKey := cache.FullLeaderboardKey("event", params.ContextID, "persons", filterParams)
 
-	board, err := s.getFullLeaderboardCached(ctx, cacheKey, func(ctx context.Context) ([]LeaderboardEntry, error) {
+	return s.getFullLeaderboardCached(ctx, cacheKey, func(ctx context.Context) ([]LeaderboardEntry, error) {
 		rows, err := s.queries.GetFullEventPersonLeaderboard(ctx, s.buildFullEventPersonParams(params))
 		if err != nil {
 			return nil, fmt.Errorf("failed to get full event person leaderboard: %w", err)
@@ -419,11 +498,16 @@ func (s *LeaderboardService) getEventPersonLeaderboard(ctx context.Context, para
 					Score:       int(row.Score),
 					Rank:        row.Rank,
 					LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
+					ChurchID:    row.ChurchID,
 				})
 			}
 		}
 		return entries, nil
 	})
+}
+
+func (s *LeaderboardService) getEventPersonLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, error) {
+	board, err := s.eventPersonBoard(ctx, params)
 	if err != nil {
 		return nil, nil, 0, err
 	}

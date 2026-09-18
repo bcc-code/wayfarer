@@ -24,15 +24,16 @@ const (
 type InvalidationType string
 
 const (
-	InvalidationTypeUser        InvalidationType = "user"
-	InvalidationTypeProject     InvalidationType = "project"
-	InvalidationTypeEvent       InvalidationType = "event"
-	InvalidationTypeTeam        InvalidationType = "team"
-	InvalidationTypeSuperTeam   InvalidationType = "superteam"
-	InvalidationTypeChallenge   InvalidationType = "challenge"
-	InvalidationTypeAchievement InvalidationType = "achievement"
-	InvalidationTypeQuiz        InvalidationType = "quiz"
-	InvalidationTypeClear       InvalidationType = "clear"
+	InvalidationTypeUser              InvalidationType = "user"
+	InvalidationTypeProject           InvalidationType = "project"
+	InvalidationTypeEvent             InvalidationType = "event"
+	InvalidationTypeTeam              InvalidationType = "team"
+	InvalidationTypeSuperTeam         InvalidationType = "superteam"
+	InvalidationTypeChallenge         InvalidationType = "challenge"
+	InvalidationTypeAchievement       InvalidationType = "achievement"
+	InvalidationTypeLeaderboardConfig InvalidationType = "leaderboardconfig"
+	InvalidationTypeQuiz              InvalidationType = "quiz"
+	InvalidationTypeClear             InvalidationType = "clear"
 
 	InvalidationTypeQuizSessionAccess InvalidationType = "quizsessionaccess"
 	InvalidationTypeQuizSession       InvalidationType = "quizsession"
@@ -221,6 +222,12 @@ func (s *CacheSync) applyInvalidation(msg InvalidationMessage) {
 		s.cache.invalidateChallengeLocal(msg.ID, msg.ProjectID, eventID)
 	case InvalidationTypeAchievement:
 		s.cache.invalidateAchievementLocal(msg.ID)
+	case InvalidationTypeLeaderboardConfig:
+		var eventID *string
+		if msg.EventID != "" {
+			eventID = &msg.EventID
+		}
+		s.cache.invalidateLeaderboardConfigLocal(msg.ID, msg.ProjectID, eventID)
 	case InvalidationTypeQuiz:
 		s.cache.invalidateQuizLocal(msg.ID, msg.ChallengeID)
 	case InvalidationTypeUserEnrollment:

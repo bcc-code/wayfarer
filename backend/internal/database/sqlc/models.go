@@ -242,6 +242,19 @@ type LeaderboardApplyQueue struct {
 	ScoreAt     pgtype.Timestamptz `json:"score_at"`
 }
 
+type LeaderboardConfig struct {
+	ID         string             `json:"id"`
+	ProjectID  string             `json:"project_id"`
+	EventID    *string            `json:"event_id"`
+	Name       string             `json:"name"`
+	EntityType string             `json:"entity_type"`
+	Filter     []byte             `json:"filter"`
+	SortOrder  int32              `json:"sort_order"`
+	IsActive   bool               `json:"is_active"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+}
+
 type LeaderboardEventChurch struct {
 	EventID     string             `json:"event_id"`
 	ChurchID    string             `json:"church_id"`

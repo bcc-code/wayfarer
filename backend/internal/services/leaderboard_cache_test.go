@@ -17,9 +17,14 @@ import (
 )
 
 func personRow(userID string, rank int64, score int64) *sqlc.GetFullProjectPersonLeaderboardRow {
+	return personRowWithChurch(userID, rank, score, "")
+}
+
+func personRowWithChurch(userID string, rank int64, score int64, churchID string) *sqlc.GetFullProjectPersonLeaderboardRow {
 	return &sqlc.GetFullProjectPersonLeaderboardRow{
 		EntityID:   userID,
 		Name:       fmt.Sprintf("User %d", rank),
+		ChurchID:   churchID,
 		ChurchName: "Church",
 		Score:      score,
 		Rank:       rank,
