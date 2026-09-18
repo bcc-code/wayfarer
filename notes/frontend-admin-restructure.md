@@ -18,21 +18,20 @@ Branch: `feature/admin-restructure`.
 
 ## What was decided
 
-| Idea                   | Decision                                                                                                                      |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| **1 — Nuxt layers**    | **Deferred.** Stay in one app; avoid new cross-imports so a later split stays cheap.                                          |
-| **2 — project-scoped** | **Yes** — the highest-value item. Includes moving `teams`/`scores` under a project, with redirect stubs so bookmarks survive. |
-| **3 — SaaS sidebar**   | **Yes**, and mostly assembly rather than invention.                                                                           |
-| church-admin layout    | **Stays separate** — gets navigation, stops duplicating shared blocks.                                                        |
+| Idea                   | Decision                                                                                                                                  |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **1 — Nuxt layers**    | **Yes, after the IA work.** Re-examined 2026-09-18 — see the log. For organisation, not enforcement; the boundary is enforced separately. |
+| **2 — project-scoped** | **Yes** — the highest-value item. Includes moving `teams`/`scores` under a project, with redirect stubs so bookmarks survive.             |
+| **3 — SaaS sidebar**   | **Yes**, and mostly assembly rather than invention.                                                                                       |
+| church-admin layout    | **Stays separate** — gets navigation, stops duplicating shared blocks.                                                                    |
 
-**Why layers were deferred.** They are an extension/sharing mechanism, not an
-encapsulation one: components, composables and auto-imports merge into one
-namespace, so the coupling stays. There is no bundle win either — `ssr: false`
+**Why layers come after the IA work.** See the 2026-09-18 re-examination in the
+log for the verified details. In short: layers are a legitimate fit and cheaper
+than first assessed, but they organise files without isolating them, so the
+boundary needs separate enforcement. Sequencing them after the route work avoids
+moving the same files twice. There is no bundle win either way — `ssr: false`
 already splits per route, and the PWA config already sets
-`globIgnores: ['**/admin/**']`. The cost is real: re-pointing typed-pages, i18n
-resolution, codegen globs, both Vitest projects and ESLint. Revisit if admin
-ever becomes a separate deployment; the forced `setLocale('nb')` vs. the user
-app's 18 locales is the signal to watch.
+`globIgnores: ['**/admin/**']`.
 
 ## Why project-scoping is the real win
 
@@ -299,6 +298,73 @@ Verified beyond the gate: `pnpm build` succeeds, and both `UDashboardGroup` and
 `UDashboardSidebar` theme strings appear in the output bundle, confirming the
 components resolved. Unit tests 445 → 457.
 
+### 2026-09-18 — layers re-examined, and a domain boundary that actually holds
+
+Prompted by a second opinion from Nuxt AI arguing that layers are a documented
+fit for exactly this admin/user split. Re-checked against the installed Nuxt
+(4.4.8, `@nuxt/kit` 4.4.6) rather than from memory. It was right on the
+mechanics, and the earlier cost estimate in this note was wrong.
+
+**Confirmed correct:**
+
+- `~/layers/*` really is auto-registered — `@nuxt/kit` globs `layers/*` and
+  pushes them into `_extends` (`kit/dist/index.mjs:793`). No `extends` config.
+- The `#layers/<name>` alias exists (`kit/dist/index.mjs:823`). It is in kit,
+  not `nuxt/dist`, which is why a first grep of `nuxt/dist` came up empty.
+- `layers/*/app/**` is the right Nuxt 4 shape; the kit watches exactly that.
+
+**The cost was overstated here earlier.** Of the five items originally listed,
+three need nothing at all: `codegen.ts` already globs `./**/*.vue` from the
+frontend root so layer files are picked up as-is; ESLint's flat config globs
+everything; typed-pages and tsconfig are generated across layers, and `i18n/`
+stays at the root. Only two real edits remain — `vitest.config.ts`'s
+`'~': resolve(__dirname, './app')` alias (`~` is per-layer in Nuxt), and the
+hardcoded `app/pages` root in `test/unit/routes.test.ts`.
+
+**The one claim that does not hold: layers do not enforce the boundary.**
+Every layer's component dirs are flattened into one registry
+(`nuxt/dist/index.mjs:3558-3565`; layer priority only breaks _name_ collisions),
+and every layer's `composables/` and `utils/` into one `composablesDirs` array
+(`:3843-3860`). A page in `layers/user` can auto-import an admin component with
+zero ceremony and no error. Layers give file locality and per-layer config, not
+import boundaries. This matters more than usual here because `pathPrefix: false`
+already puts all 105 components in one flat namespace — which is _why_
+`ColorModeSelector`/`AdminColorModeSelector` and friends exist as duplicate
+pairs. Layers will not fix that.
+
+**Trap to avoid in the move.** A layer's pages dir merges at the _root_ of the
+route table, so the `admin/` directory must be preserved inside the layer:
+`layers/admin/app/pages/admin/projects/index.vue` → `/admin/projects`, whereas
+`layers/admin/app/pages/projects/index.vue` → `/projects`. The route-manifest
+snapshot in `test/unit/routes.test.ts` is the check: a pure layer move must
+leave it **byte-identical**.
+
+**Decision:** do the layer split after the IA work (permissions, then
+tabs → routes), so the same files are not moved twice, and enforce the boundary
+separately — which landed now, in two halves:
+
+- **`eslint.config.mjs`** gained a `wayfarer/domain-boundary` block:
+  `no-restricted-imports` banning `**/components/admin/*`,
+  `**/composables/useAdminNav`, `**/utils/adminNav` and `#layers/admin/**`
+  (the last is inert until the layer exists) from everything outside the admin
+  domain. Admin → user stays allowed on purpose: the admin panel renders
+  user-facing components to preview the end-user experience
+  (`AdminProjectThemePreview`, `AdminChallengeCardPreview`).
+- **`test/unit/domain-boundary.test.ts`** covers what ESLint structurally
+  cannot. `<AdminUserMenu />` in a template and `useAdminNav()` in a script have
+  no import statement, so `no-restricted-imports` never sees them. The test
+  scans user-facing source for `<Admin*` and `useAdmin*(` instead.
+
+Both were verified to actually fire, not just to pass: a probe file importing
+`~/utils/adminNav` is rejected by ESLint, and a probe component using
+`<AdminUserMenu />` is reported by the test while **ESLint reports nothing** —
+which is the concrete demonstration that the lint rule alone would have given
+false confidence. The boundary is clean today; the only pre-existing hit was
+`useAdminNav.ts` importing its own model, i.e. admin code sitting in a shared
+folder rather than a real leak.
+
+Unit tests 457 → 459.
+
 ### Gate status after the above
 
 | Check           | Before | After                          |
@@ -326,6 +392,11 @@ Each step is independently shippable.
    `superteams/distribute.vue` and write the real superteams list.
 3. **Route moves.** `teams`/`scores` under `[projectId]` with redirect stubs;
    resolve the `canManageTeam` TODO.
+4. **Nuxt layers.** `git mv` into `layers/user/app/**` and `layers/admin/app/**`,
+   keeping the `admin/` directory inside the admin layer's `pages/`. Verified by
+   the route-manifest snapshot staying byte-identical. Then widen the `~` alias
+   in `vitest.config.ts`, add the layer pages dirs as roots in
+   `routes.test.ts`, and tighten the ESLint boundary group to `#layers/admin/**`.
 
 Optional follow-ups, deliberately out of scope: an `AdminPage` scaffold to
 absorb the ~20 copy-pasted inline breadcrumb headers; admin i18n (the nav model
