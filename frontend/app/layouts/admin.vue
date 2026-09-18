@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import type {
-  CommandPaletteGroup,
-  CommandPaletteItem,
-  NavigationMenuItem,
-} from '@nuxt/ui'
 import '~/assets/styles/admin.css'
 
-// Force Norwegian locale in admin
+// Force Norwegian locale in admin.
+// Deliberately kept in this layout rather than a shared composable: the
+// my-church subtree uses the church-admin layout and is the one fully
+// translated admin area, so it must not inherit this.
 const { setLocale } = useI18n()
 setLocale('nb')
 
@@ -77,7 +75,10 @@ const isChurchAdminOnly = computed(() => {
   )
 })
 
-// Redirect unauthorized users after auth loads
+// Redirect unauthorized users after auth loads.
+// TODO: replaced by a `permission` route-meta key plus one global middleware —
+// see notes/frontend-admin-restructure.md. Left as-is here so the shell rewrite
+// and the permission change land in separate, separately revertible commits.
 watch(
   [isLoading, isAuth0Loading, me, token, () => route.path],
   ([loading, auth0Loading, user, hasToken, path]) => {
@@ -116,125 +117,77 @@ watch(
   { immediate: true },
 )
 
-const links = computed<NavigationMenuItem[]>(() => {
-  // Church-admin-only users use a different layout, don't show main admin nav
-  if (isChurchAdminOnly.value) {
-    return []
-  }
+const { navItems, searchGroups } = useAdminNav()
 
-  const items: NavigationMenuItem[] = [
-    {
-      label: 'Hjem',
-      icon: 'lucide:house',
-      to: '/admin',
-    },
-  ]
-
-  if (canAccessProjects.value) {
-    items.push({
-      label: 'Prosjekter',
-      icon: 'lucide:layers',
-      active: route.fullPath.includes('/projects'),
-      to: '/admin/projects',
-    })
-  }
-
-  if (canAccessTeams.value) {
-    items.push({
-      label: 'Lag',
-      icon: 'lucide:users-round',
-      active: route.fullPath.includes('/teams'),
-      to: '/admin/teams',
-    })
-  }
-
-  if (canAccessUsers.value) {
-    items.push({
-      label: 'Brukere',
-      icon: 'lucide:user',
-      active: route.fullPath.includes('/users'),
-      to: '/admin/users',
-    })
-  }
-
-  if (canAccessScores.value) {
-    items.push({
-      label: 'Poeng',
-      icon: 'lucide:trophy',
-      active: route.fullPath.includes('/scores'),
-      to: '/admin/scores',
-    })
-  }
-
-  if (canAccessConsents.value) {
-    items.push({
-      label: 'Samtykker',
-      icon: 'lucide:file-check',
-      active: route.fullPath.includes('/consents'),
-      to: '/admin/consents',
-    })
-  }
-
-  if (canAccessFeedback.value) {
-    items.push({
-      label: 'Tilbakemeldinger',
-      icon: 'lucide:message-square',
-      active: route.fullPath.includes('/feedback'),
-      to: '/admin/feedback',
-    })
-  }
-
-  if (canAccessMaintenance.value) {
-    items.push({
-      label: 'Vedlikehold',
-      icon: 'lucide:wrench',
-      active: route.fullPath.includes('/maintenance'),
-      to: '/admin/maintenance',
-    })
-  }
-
-  return items
-})
-
-const groups = computed<CommandPaletteGroup<CommandPaletteItem>[]>(() => [
-  {
-    id: 'links',
-    label: 'Gå til',
-    // UDashboardSearch takes command-palette items, which are a narrower shape
-    // than NavigationMenuItem -- map across the fields the palette actually uses.
-    items: links.value.flat().map((link) => ({
-      label: link.label,
-      icon: link.icon,
-      to: link.to,
-    })),
-  },
-])
+// Church-admin-only users are redirected to the church-admin layout by the
+// watcher above; suppress the nav in the frame or two before that lands.
+const showNav = computed(() => !isChurchAdminOnly.value)
 </script>
 
 <template>
-  <div class="bg-default h-full">
-    <header class="border-default border-b">
-      <UContainer class="flex items-center gap-6 lg:gap-12">
-        <NuxtLink to="/admin" class="font-serif text-xl">
+  <UDashboardGroup storage="local" storage-key="wayfarer-admin">
+    <UDashboardSidebar
+      id="admin-sidebar"
+      collapsible
+      resizable
+      :default-size="16"
+    >
+      <template #header="{ collapsed }">
+        <NuxtLink to="/admin" class="flex items-center">
           <UColorModeImage
+            v-if="!collapsed"
             light="/images/logo/logo.svg"
             dark="/images/logo/logo-light.svg"
             class="h-6"
           />
         </NuxtLink>
-        <UNavigationMenu
-          :items="links"
-          highlight
-          variant="link"
-          orientation="horizontal"
-        />
-        <div class="ml-auto flex gap-2">
-          <AdminUserMenu />
-        </div>
-      </UContainer>
-    </header>
-    <slot />
-    <UDashboardSearch :groups="groups" />
+        <UDashboardSidebarCollapse class="ms-auto" />
+      </template>
+
+      <template #default="{ collapsed }">
+        <template v-if="showNav">
+          <AdminProjectSwitcher :collapsed />
+          <UNavigationMenu
+            :items="navItems"
+            :collapsed
+            orientation="vertical"
+            highlight
+          />
+        </template>
+      </template>
+
+      <template #footer="{ collapsed }">
+        <AdminUserMenu :collapsed />
+      </template>
+    </UDashboardSidebar>
+
+    <!--
+      Pages still bring their own `UContainer` and vertical padding, so the
+      panel body's default padding is removed here to avoid doubling it. The
+      responsive variants have to be zeroed explicitly: the body default is
+      `p-4 sm:p-6 gap-4 sm:gap-6`, and tailwind-merge is variant-aware, so a
+      bare `p-0` would only override the base and leave `sm:p-6` in place.
+      As pages move onto a shared page header this override goes away.
+    -->
+    <UDashboardPanel
+      id="admin-main"
+      :ui="{ body: 'p-0 sm:p-0 gap-0 sm:gap-0' }"
+    >
+      <template #header>
+        <UDashboardNavbar>
+          <template #right>
+            <AdminUserFeedback />
+          </template>
+        </UDashboardNavbar>
+      </template>
+
+      <template #body>
+        <slot />
+      </template>
+    </UDashboardPanel>
+
+    <UDashboardSearch :groups="searchGroups" />
+    <AdminConfirmDialog />
     <QuickAccess />
-  </div>
+  </UDashboardGroup>
 </template>

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { buildTree, toVueRouter4 } from 'unrouting'
 import { readdirSync, statSync, readFileSync } from 'node:fs'
 import { join, resolve, relative } from 'node:path'
+import { GLOBAL_NAV, PROJECT_NAV } from '../../app/utils/adminNav'
 
 /**
  * Route manifest guards.
@@ -98,6 +99,23 @@ describe('route manifest', () => {
     check(parents)
 
     expect(offenders).toEqual([])
+  })
+
+  // The scan below only sees `name: '...'` literals. `useAdminNav` builds its
+  // route objects dynamically from the nav model, so those names would slip
+  // past it — check them against the manifest directly.
+  it('every admin nav entry targets a route that exists', () => {
+    const names = new Set(manifest.flatMap((r) => (r.name ? [r.name] : [])))
+    const missing = [...GLOBAL_NAV, ...PROJECT_NAV].flatMap((item) => {
+      const bad: string[] = []
+      if (!names.has(item.to)) bad.push(`${item.label} -> to: ${item.to}`)
+      if (item.match && !names.has(item.match)) {
+        bad.push(`${item.label} -> match: ${item.match}`)
+      }
+      return bad
+    })
+
+    expect(missing).toEqual([])
   })
 
   it('every route name referenced in the app resolves to a real route', () => {

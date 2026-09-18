@@ -91,6 +91,7 @@ gql(`
 
 const route = useRoute('admin-projects-projectId-achievements-achievementId')
 const toast = useToast()
+const { confirm } = useConfirm()
 
 const { isAuthReady } = useAuthReady()
 const { data, fetching, error } = useAdminProjectAchievementPageQuery({
@@ -265,9 +266,11 @@ async function handleSubmit(formData: AchievementFormData) {
 }
 
 async function handleDelete() {
-  const confirmed = confirm(
-    `Er du sikker på at du vil slette "${data.value?.achievement.name}"? Denne handlingen kan ikke angres.`,
-  )
+  const confirmed = await confirm({
+    title: `Slette "${data.value?.achievement.name}"?`,
+    description: 'Denne handlingen kan ikke angres.',
+    icon: 'lucide:triangle-alert',
+  })
 
   if (!confirmed) return
 

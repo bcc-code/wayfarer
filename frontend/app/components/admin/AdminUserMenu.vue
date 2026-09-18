@@ -21,7 +21,7 @@ const themes: Record<string, { label: string; icon: string }> = {
   },
 }
 
-const { me } = useAuth()
+const { me, logout } = useAuth()
 
 const items = computed<DropdownMenuItem[][]>(() => [
   [
@@ -48,6 +48,7 @@ const items = computed<DropdownMenuItem[][]>(() => [
     {
       label: 'Logg ut',
       icon: 'lucide:log-out',
+      onSelect: () => logout(),
     },
   ],
 ])

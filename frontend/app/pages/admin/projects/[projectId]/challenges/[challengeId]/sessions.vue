@@ -27,6 +27,7 @@ const route = useRoute(
   'admin-projects-projectId-challenges-challengeId-sessions',
 )
 const toast = useToast()
+const { confirm } = useConfirm()
 
 const { isAuthReady } = useAuthReady()
 const { data, fetching, error } = useAdminChallengeSessionsPageQuery({
@@ -319,9 +320,11 @@ async function handleStateAction(
 }
 
 async function handleDelete(sessionId: string, sessionName?: string | null) {
-  const confirmed = confirm(
-    `Er du sikker på at du vil slette sesjonen "${sessionName ?? sessionId}"? Denne handlingen kan ikke angres.`,
-  )
+  const confirmed = await confirm({
+    title: `Slette sesjonen "${sessionName ?? sessionId}"?`,
+    description: 'Denne handlingen kan ikke angres.',
+    icon: 'lucide:triangle-alert',
+  })
   if (!confirmed) return
 
   const result = await deleteSession({ id: sessionId })

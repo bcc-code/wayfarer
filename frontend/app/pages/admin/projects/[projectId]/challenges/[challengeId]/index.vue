@@ -47,6 +47,7 @@ gql(`
 
 const route = useRoute('admin-projects-projectId-challenges-challengeId')
 const toast = useToast()
+const { confirm } = useConfirm()
 
 const { isAuthReady } = useAuthReady()
 const { data, fetching, error } = useAdminProjectChallengePageQuery({
@@ -145,9 +146,11 @@ async function handleSubmit(formData: ChallengeFormData) {
 }
 
 async function handleDelete() {
-  const confirmed = confirm(
-    `Er du sikker på at du vil slette "${data.value?.challenge.name}"? Denne handlingen kan ikke angres.`,
-  )
+  const confirmed = await confirm({
+    title: `Slette "${data.value?.challenge.name}"?`,
+    description: 'Denne handlingen kan ikke angres.',
+    icon: 'lucide:triangle-alert',
+  })
 
   if (!confirmed) return
 

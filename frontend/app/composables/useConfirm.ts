@@ -21,7 +21,7 @@ interface ConfirmState extends ConfirmOptions {
 }
 
 // Module-level singleton so any page can open the one dialog rendered by the
-// admin layout. See `AdminConfirmDialog.vue`.
+// admin layout (`layouts/admin.vue` mounts `AdminConfirmDialog`).
 const state = reactive<ConfirmState>({
   open: false,
   title: '',

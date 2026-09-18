@@ -36,6 +36,7 @@ gql(`
 
 const route = useRoute('admin-projects-projectId-superteams-superTeamId')
 const toast = useToast()
+const { confirm } = useConfirm()
 
 const { isAuthReady } = useAuthReady()
 const {
@@ -146,7 +147,12 @@ async function handleAssignTeams() {
 }
 
 async function handleDelete() {
-  if (!confirm('Er du sikker på at du vil slette denne superteamen?')) return
+  const confirmed = await confirm({
+    title: 'Slette dette superlaget?',
+    description: 'Denne handlingen kan ikke angres.',
+    icon: 'lucide:triangle-alert',
+  })
+  if (!confirmed) return
 
   const response = await deleteSuperTeam({
     id: route.params.superTeamId,

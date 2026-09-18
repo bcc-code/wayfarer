@@ -66,6 +66,7 @@ watch(
 const { executeMutation } = useUpdateEventMutation()
 const { executeMutation: executeDelete } = useDeleteEventMutation()
 const toast = useToast()
+const { confirm } = useConfirm()
 
 async function updateEvent(event: FormSubmitEvent<Schema>) {
   if (!event.data) {
@@ -99,9 +100,11 @@ async function updateEvent(event: FormSubmitEvent<Schema>) {
 }
 
 async function deleteEvent() {
-  const confirmed = confirm(
-    `Er du sikker på at du vil slette "${state.name}"? Denne handlingen kan ikke angres.`,
-  )
+  const confirmed = await confirm({
+    title: `Slette "${state.name}"?`,
+    description: 'Denne handlingen kan ikke angres.',
+    icon: 'lucide:triangle-alert',
+  })
 
   if (!confirmed) {
     return
@@ -173,10 +176,18 @@ async function deleteEvent() {
           class="flex max-w-md flex-col gap-6"
           @submit.prevent="updateEvent"
         >
-          <AdminTranslatableFormField label="Navn" :translation-status="data?.event.translationStatus" name="name">
+          <AdminTranslatableFormField
+            label="Navn"
+            :translation-status="data?.event.translationStatus"
+            name="name"
+          >
             <UInput v-model="state.name" size="xl" required class="w-full" />
           </AdminTranslatableFormField>
-          <AdminTranslatableFormField label="Beskrivelse" :translation-status="data?.event.translationStatus" name="description">
+          <AdminTranslatableFormField
+            label="Beskrivelse"
+            :translation-status="data?.event.translationStatus"
+            name="description"
+          >
             <UTextarea
               v-model="state.description"
               class="w-full"

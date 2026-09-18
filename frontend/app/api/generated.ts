@@ -3366,6 +3366,11 @@ export type AdminExternalContentEventsQueryVariables = Exact<{
 
 export type AdminExternalContentEventsQuery = { __typename?: 'Query', adminExternalContentEvents: Array<{ __typename?: 'AdminExternalContentEvent', id: string, taskId: string, planId: string, source: string, receivedAt: any, consumedAt?: any | null, contentProgress?: number | null }> };
 
+export type AdminProjectSwitcherQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminProjectSwitcherQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, startDate: any, endDate: any } }> } };
+
 export type PointHistoryQueryVariables = Exact<{
   last?: InputMaybe<Scalars['Int']['input']>;
 }>;
@@ -4870,6 +4875,24 @@ export const AdminExternalContentEventsDocument = gql`
 
 export function useAdminExternalContentEventsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminExternalContentEventsQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminExternalContentEventsQuery, AdminExternalContentEventsQueryVariables | undefined>({ query: AdminExternalContentEventsDocument, variables: undefined, ...options });
+};
+export const AdminProjectSwitcherDocument = gql`
+    query AdminProjectSwitcher {
+  projects(first: 100) {
+    edges {
+      node {
+        id
+        name
+        startDate
+        endDate
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminProjectSwitcherQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectSwitcherQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectSwitcherQuery, AdminProjectSwitcherQueryVariables | undefined>({ query: AdminProjectSwitcherDocument, variables: undefined, ...options });
 };
 export const PointHistoryDocument = gql`
     query PointHistory($last: Int) {
