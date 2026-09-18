@@ -797,7 +797,11 @@ function handleDropMember(
                       <UButton
                         variant="ghost"
                         size="sm"
-                        @click="isBulkCreating = false"
+                        @click="
+                          () => {
+                            isBulkCreating = false
+                          }
+                        "
                       >
                         {{ $t('admin.common.cancel') }}
                       </UButton>

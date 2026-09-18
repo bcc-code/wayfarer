@@ -60,6 +60,8 @@ gql(`
             taskId
             contentType
             title
+            source
+            publishedAt
           }
         }
       }
@@ -162,6 +164,8 @@ const initialData = computed(() => {
           id: item.externalContent.id,
           title: item.externalContent.title,
           contentType: item.externalContent.contentType,
+          source: item.externalContent.source,
+          publishedAt: item.externalContent.publishedAt,
         },
       })),
     }

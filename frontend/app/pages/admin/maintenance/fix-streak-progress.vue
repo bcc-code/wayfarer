@@ -82,7 +82,7 @@ async function pollJobStatus() {
   if (!jobId.value) return
 
   const result = await checkJobStatus()
-  const job = result.data?.bulkJob
+  const job = result.data.value?.bulkJob
   if (!job) return
 
   jobStatus.value = job.status
@@ -108,8 +108,9 @@ async function handleFix() {
   fixComplete.value = false
 
   const result = await fix({})
-  if (result.data?.fixMissingStreakProgressAsync) {
-    const job = result.data.fixMissingStreakProgressAsync
+  // The mutation returns [BulkJob!]!; this screen tracks a single job.
+  const job = result.data?.fixMissingStreakProgressAsync?.[0]
+  if (job) {
     jobId.value = job.id
     jobStatus.value = job.status
     pollJobStatus()
@@ -204,7 +205,10 @@ watch(fixComplete, (complete) => {
         class="bg-info/10 border-info mb-8 rounded-lg border p-4"
       >
         <div class="flex items-center gap-2">
-          <UIcon name="lucide:loader-2" class="text-info h-5 w-5 animate-spin" />
+          <UIcon
+            name="lucide:loader-2"
+            class="text-info h-5 w-5 animate-spin"
+          />
           <span>Behandler... Status: {{ jobStatus }}</span>
         </div>
       </div>
@@ -220,7 +224,12 @@ watch(fixComplete, (complete) => {
       </div>
 
       <div
-        v-if="fixComplete && jobStatus === 'COMPLETED' && jobResult && jobResult.successCount > 0"
+        v-if="
+          fixComplete &&
+          jobStatus === 'COMPLETED' &&
+          jobResult &&
+          jobResult.successCount > 0
+        "
         class="bg-success/10 border-success mb-8 rounded-lg border p-4"
       >
         <div class="flex flex-col gap-2">
@@ -253,7 +262,11 @@ watch(fixComplete, (complete) => {
           v-if="preview && preview.totalUsers > 0"
           :loading="fixing"
           color="primary"
-          @click="showConfirmModal = true"
+          @click="
+            () => {
+              showConfirmModal = true
+            }
+          "
         >
           Reparer
         </UButton>
@@ -291,7 +304,10 @@ watch(fixComplete, (complete) => {
         <UCard>
           <template #header>
             <div class="flex items-center gap-2">
-              <UIcon name="lucide:alert-triangle" class="text-warning h-5 w-5" />
+              <UIcon
+                name="lucide:alert-triangle"
+                class="text-warning h-5 w-5"
+              />
               <span class="font-medium">Bekreft reparasjon</span>
             </div>
           </template>
@@ -306,7 +322,11 @@ watch(fixComplete, (complete) => {
               <UButton
                 variant="ghost"
                 :disabled="fixing"
-                @click="showConfirmModal = false"
+                @click="
+                  () => {
+                    showConfirmModal = false
+                  }
+                "
               >
                 Avbryt
               </UButton>

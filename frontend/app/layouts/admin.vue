@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import type { NavigationMenuItem } from '@nuxt/ui'
+import type {
+  CommandPaletteGroup,
+  CommandPaletteItem,
+  NavigationMenuItem,
+} from '@nuxt/ui'
 import '~/assets/styles/admin.css'
 
 // Force Norwegian locale in admin
@@ -192,11 +196,17 @@ const links = computed<NavigationMenuItem[]>(() => {
   return items
 })
 
-const groups = computed(() => [
+const groups = computed<CommandPaletteGroup<CommandPaletteItem>[]>(() => [
   {
     id: 'links',
     label: 'Gå til',
-    items: links.value.flat(),
+    // UDashboardSearch takes command-palette items, which are a narrower shape
+    // than NavigationMenuItem -- map across the fields the palette actually uses.
+    items: links.value.flat().map((link) => ({
+      label: link.label,
+      icon: link.icon,
+      to: link.to,
+    })),
   },
 ])
 </script>

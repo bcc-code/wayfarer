@@ -60,9 +60,10 @@ const {
 } = useAdminQuizSessionsQuery({
   variables: computed(() => ({
     quizId: quizId.value ?? '',
-    state: stateFilter.value !== 'all'
-      ? (stateFilter.value as QuizSessionState)
-      : undefined,
+    state:
+      stateFilter.value !== 'all'
+        ? (stateFilter.value as QuizSessionState)
+        : undefined,
   })),
   pause: computed(() => !isAuthReady.value || !quizId.value),
 })
@@ -114,7 +115,8 @@ const { executeMutation: openSession } = useOpenQuizSessionMutation()
 const { executeMutation: lockSession } = useLockQuizSessionMutation()
 const { executeMutation: reopenSession } = useReopenQuizSessionMutation()
 const { executeMutation: finishSession } = useFinishQuizSessionMutation()
-const { executeMutation: grantAccess } = useGrantQuizSessionAccessAsyncMutation()
+const { executeMutation: grantAccess } =
+  useGrantQuizSessionAccessAsyncMutation()
 
 // Create/Edit modal
 const editModalOpen = ref(false)
@@ -144,9 +146,11 @@ function openCreateModal() {
 function openEditModal(session: (typeof sessions.value)[number]) {
   editingSession.value = session
   editForm.name = session.name ?? ''
-  editForm.openAt = toLocalDatetimeLocal(session.openAt)
-  editForm.lockAt = toLocalDatetimeLocal(session.lockAt)
-  editForm.finishAt = toLocalDatetimeLocal(session.finishAt)
+  // toLocalDatetimeLocal returns undefined for empty dates; the form fields are
+  // plain strings, and openCreateModal uses '' for the same "unset" state.
+  editForm.openAt = toLocalDatetimeLocal(session.openAt) ?? ''
+  editForm.lockAt = toLocalDatetimeLocal(session.lockAt) ?? ''
+  editForm.finishAt = toLocalDatetimeLocal(session.finishAt) ?? ''
   editModalOpen.value = true
 }
 
@@ -542,7 +546,11 @@ function getDropdownItems(session: (typeof sessions.value)[number]) {
             <UButton
               variant="ghost"
               color="neutral"
-              @click="editModalOpen = false"
+              @click="
+                () => {
+                  editModalOpen = false
+                }
+              "
             >
               Avbryt
             </UButton>
@@ -593,7 +601,11 @@ function getDropdownItems(session: (typeof sessions.value)[number]) {
             <UButton
               variant="ghost"
               color="neutral"
-              @click="accessModalOpen = false"
+              @click="
+                () => {
+                  accessModalOpen = false
+                }
+              "
             >
               Avbryt
             </UButton>

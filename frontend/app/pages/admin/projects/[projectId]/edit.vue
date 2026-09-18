@@ -89,8 +89,10 @@ const schema = z.object({
   }),
   rules: z.string().optional(),
   infoMessage: z.string().optional(),
-  infoMessageStart: z.string().nullish(),
-  infoMessageEnd: z.string().nullish(),
+  // .optional(), not .nullish(): these are only ever set from
+  // toLocalDatetimeLocal (string | undefined) or initialised to undefined.
+  infoMessageStart: z.string().optional(),
+  infoMessageEnd: z.string().optional(),
 })
 type Schema = z.infer<typeof schema>
 const state = reactive<Schema>({
@@ -181,25 +183,23 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
     infoMessageEnd: toISOString(event.data.infoMessageEnd ?? undefined),
   }
 
-  executeMutation({ id: route.params.projectId, input }).then(
-    (response) => {
-      if (response.error) {
-        toast.add({
-          title: response.error.name,
-          description: response.error.message,
-          color: 'error',
-        })
-        return
-      }
-      if (!response.data) {
-        return
-      }
-      navigateTo({
-        name: 'admin-projects-projectId',
-        params: { projectId: response.data.updateProject.id },
+  executeMutation({ id: route.params.projectId, input }).then((response) => {
+    if (response.error) {
+      toast.add({
+        title: response.error.name,
+        description: response.error.message,
+        color: 'error',
       })
-    },
-  )
+      return
+    }
+    if (!response.data) {
+      return
+    }
+    navigateTo({
+      name: 'admin-projects-projectId',
+      params: { projectId: response.data.updateProject.id },
+    })
+  })
 }
 </script>
 
@@ -241,10 +241,20 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
         <UFormField name="branding.banner" label="Banner" hint="(valgfritt)">
           <AdminFileUpload v-model="state.branding.banner" />
         </UFormField>
-        <AdminTranslatableFormField label="Navn" :translation-status="data?.project.translationStatus" name="name">
+        <AdminTranslatableFormField
+          label="Navn"
+          :translation-status="data?.project.translationStatus"
+          name="name"
+        >
           <UInput v-model="state.name" size="xl" required class="w-full" />
         </AdminTranslatableFormField>
-        <AdminTranslatableFormField label="Beskrivelse" :translation-status="data?.project.translationStatus" name="description" hint="(valgfritt)" help="Dette er kun for at admins skal ha bedre kontekst">
+        <AdminTranslatableFormField
+          label="Beskrivelse"
+          :translation-status="data?.project.translationStatus"
+          name="description"
+          hint="(valgfritt)"
+          help="Dette er kun for at admins skal ha bedre kontekst"
+        >
           <UTextarea v-model="state.description" class="w-full" autoresize />
         </AdminTranslatableFormField>
         <UFormField label="Prosjektvarighet">
@@ -259,10 +269,22 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
             :project-name="data?.project.name"
           />
         </UFormField>
-        <AdminTranslatableFormField label="Prosjektregler" :translation-status="data?.project.translationStatus" name="rules" hint="(valgfritt)" help="Forklar hvordan brukere samler poeng">
+        <AdminTranslatableFormField
+          label="Prosjektregler"
+          :translation-status="data?.project.translationStatus"
+          name="rules"
+          hint="(valgfritt)"
+          help="Forklar hvordan brukere samler poeng"
+        >
           <MarkdownEditor v-model="state.rules" />
         </AdminTranslatableFormField>
-        <AdminTranslatableFormField label="Info-melding" :translation-status="data?.project.translationStatus" name="infoMessage" hint="(valgfritt)" help="Vises som banner på forsiden. Brukere kan lukke den.">
+        <AdminTranslatableFormField
+          label="Info-melding"
+          :translation-status="data?.project.translationStatus"
+          name="infoMessage"
+          hint="(valgfritt)"
+          help="Vises som banner på forsiden. Brukere kan lukke den."
+        >
           <MarkdownEditor v-model="state.infoMessage" />
         </AdminTranslatableFormField>
         <UFormField

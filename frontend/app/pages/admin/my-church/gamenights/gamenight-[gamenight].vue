@@ -30,8 +30,7 @@ const quizId = computed(() => {
   if (!frontendConfig) return
   const frontendConfigJson = JSON.parse(frontendConfig)
   return frontendConfigJson[`gamenight_${gamenight.value}_betting_quiz_id`] as
-    | string
-    | undefined
+    string | undefined
 })
 
 const unitLeaders = computed(() =>
@@ -452,7 +451,7 @@ async function enrollUnitLeadersInChallenge() {
                 {{ $t('admin.gamenight.lockBetting') }}
               </UButton>
               <p>
-                {{ $t('admin.gamenight.bettingLockedNotice') }} <br >
+                {{ $t('admin.gamenight.bettingLockedNotice') }} <br />
                 {{ $t('admin.gamenight.reopenBettingHint') }}
               </p>
             </div>
@@ -558,7 +557,11 @@ async function enrollUnitLeadersInChallenge() {
             size="xl"
             :to="cryptexUrl?.url"
             trailing-icon="lucide:arrow-right"
-            @click="state.externalAdminVisited = true"
+            @click="
+              () => {
+                state.externalAdminVisited = true
+              }
+            "
           >
             {{ $t('admin.gamenight.goToUnitTaskAdmin') }}
           </UButton>

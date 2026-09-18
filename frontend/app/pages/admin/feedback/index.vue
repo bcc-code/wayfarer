@@ -509,7 +509,11 @@ async function handleUpdateTags(feedbackId: string, tags: string[]) {
             <UButton
               color="neutral"
               variant="ghost"
-              @click="deleteModal = false"
+              @click="
+                () => {
+                  deleteModal = false
+                }
+              "
             >
               Avbryt
             </UButton>

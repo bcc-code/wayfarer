@@ -676,7 +676,11 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
                 v-if="canAssignRoles"
                 icon="i-lucide-plus"
                 size="sm"
-                @click="showAddRoleModal = true"
+                @click="
+                  () => {
+                    showAddRoleModal = true
+                  }
+                "
               >
                 Legg til rolle
               </UButton>

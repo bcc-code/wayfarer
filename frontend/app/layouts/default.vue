@@ -95,26 +95,28 @@ const hasLeaderboard = computed(
 )
 
 const links = computed<NavigationMenuItem[]>(() =>
-  [
-    {
-      label: t('navigation.profile'),
-      icon: 'IconProfile',
-      to: { name: 'index' },
-    },
-    hasLeaderboard.value
-      ? {
-          label: t('navigation.standings'),
-          icon: 'IconStandings',
-          to: { name: 'standings' },
-        }
-      : null,
-    {
-      label: t('navigation.challenges'),
-      icon: 'IconChallenges',
-      to: { name: 'challenges' },
-      badge: availableChallengesBadge.value,
-    },
-  ].filter((link): link is NavigationMenuItem => link !== null),
+  (
+    [
+      {
+        label: t('navigation.profile'),
+        icon: 'IconProfile',
+        to: { name: 'index' },
+      },
+      hasLeaderboard.value
+        ? {
+            label: t('navigation.standings'),
+            icon: 'IconStandings',
+            to: { name: 'standings' },
+          }
+        : null,
+      {
+        label: t('navigation.challenges'),
+        icon: 'IconChallenges',
+        to: { name: 'challenges' },
+        badge: availableChallengesBadge.value,
+      },
+    ] as (NavigationMenuItem | null)[]
+  ).filter((link): link is NavigationMenuItem => link !== null),
 )
 
 // Current project config

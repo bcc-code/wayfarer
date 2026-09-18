@@ -202,7 +202,14 @@ const { canDeleteScoreEntry, canManageScores } = usePermissions()
             handlingen kan ikke angres.
           </p>
           <div class="flex justify-end gap-3">
-            <UButton variant="ghost" @click="deleteModal = false">
+            <UButton
+              variant="ghost"
+              @click="
+                () => {
+                  deleteModal = false
+                }
+              "
+            >
               Avbryt
             </UButton>
             <UButton color="error" @click="handleDelete">Slett</UButton>

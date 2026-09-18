@@ -26,13 +26,14 @@ const toast = useToast()
 
 // Auth and events query
 const { isAuthReady } = useAuthReady()
-const { data: eventsData, fetching: eventsFetching } = useSuperteamsPageEventsQuery({
-  variables: { projectId: route.params.projectId },
-  pause: computed(() => !isAuthReady.value),
-})
+const { data: eventsData, fetching: eventsFetching } =
+  useSuperteamsPageEventsQuery({
+    variables: { projectId: route.params.projectId },
+    pause: computed(() => !isAuthReady.value),
+  })
 
 // Event selection
-const selectedEventId = ref<string | null>(null)
+const selectedEventId = ref<string | undefined>(undefined)
 
 const eventOptions = computed(() => {
   const events = eventsData.value?.events.edges ?? []
@@ -276,7 +277,7 @@ const churchAnalysis = computed((): ChurchInfo[] => {
         churchMap.set(churchId, {
           churchId,
           label: churchName || 'Unknown',
-          color: churchColors[colorIndex % churchColors.length],
+          color: churchColors[colorIndex % churchColors.length]!,
           superteams: [],
           teamCount: 0,
           totalScore: 0,
@@ -411,11 +412,10 @@ function getTeamsByChurch(st: SuperteamResult): Map<string, TeamInfo[]> {
             <div class="text-muted text-sm">
               {{ st.team_count }} teams,
               <template v-if="selectedEventId">
-                {{ st.attending_count }} attending / {{ st.member_count }} members
-              </template>
-              <template v-else>
+                {{ st.attending_count }} attending /
                 {{ st.member_count }} members
               </template>
+              <template v-else> {{ st.member_count }} members </template>
             </div>
             <div class="mt-2 text-2xl font-bold">
               {{ formatNumber(st.total_score) }}

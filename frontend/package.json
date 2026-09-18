@@ -14,6 +14,7 @@
     "test:watch": "vitest --project=unit",
     "format": "prettier --write .",
     "lint": "eslint . --fix",
+    "typecheck": "nuxt typecheck",
     "pwa-assets-generator": "pwa-assets-generator --preset minimal-2023 public/app-icon.png"
   },
   "dependencies": {
@@ -74,6 +75,7 @@
     "tailwindcss": "^4.3.2",
     "typescript": "^6.0.3",
     "vitest": "^4.1.11",
+    "vue-tsc": "^3.3.11",
     "workbox-build": "^7.4.1",
     "workbox-cacheable-response": "^7.4.1",
     "workbox-core": "^7.4.1",

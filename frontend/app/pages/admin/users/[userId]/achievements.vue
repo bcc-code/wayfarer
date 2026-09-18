@@ -348,7 +348,14 @@ function statusLabel(
 
           <!-- Award button -->
           <div v-if="!progress.alreadyAwarded" class="flex justify-end">
-            <UButton size="lg" @click="showAwardConfirm = true">
+            <UButton
+              size="lg"
+              @click="
+                () => {
+                  showAwardConfirm = true
+                }
+              "
+            >
               Tildel prestasjon
             </UButton>
           </div>
@@ -371,7 +378,11 @@ function statusLabel(
           <UButton
             variant="ghost"
             color="neutral"
-            @click="showAwardConfirm = false"
+            @click="
+              () => {
+                showAwardConfirm = false
+              }
+            "
           >
             Avbryt
           </UButton>
