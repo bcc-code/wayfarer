@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AGE_RANGE_ADULT, AGE_RANGE_YOUNG } from '~/utils/constants'
+import { AGE_RANGE_ADULT, AGE_RANGE_YOUNG } from '../../utils/constants'
 import { getExtraItems } from '~/utils/leaderboard'
 
 const entityType = useLocalStorage<LeaderboardEntityType>(

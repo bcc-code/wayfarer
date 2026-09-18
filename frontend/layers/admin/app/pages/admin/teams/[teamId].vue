@@ -49,7 +49,7 @@ watch(
 
 <template>
   <div>
-    <LoadingState v-if="fetching" />
+    <AdminLoadingState v-if="fetching" />
     <UEmpty
       v-else-if="error || !data?.team"
       icon="lucide:users-round"

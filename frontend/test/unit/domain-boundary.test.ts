@@ -22,12 +22,16 @@ import { join, resolve, relative } from 'node:path'
  */
 
 const FE = resolve(__dirname, '../..')
-const APP = join(FE, 'app')
-/** The admin panel is a directory now, so it is simply not scanned. */
+/**
+ * Everything that must not reach into admin: the shared root and the
+ * user-facing layer. The admin panel is a directory now, so it is simply not
+ * scanned.
+ */
+const SCANNED = [join(FE, 'app'), join(FE, 'layers/user/app')]
 const ADMIN_LAYER = join(FE, 'layers/admin/app')
 
 /** Generated or vendored files that are not hand-written source. */
-const EXCLUDED = ['api/generated.ts']
+const EXCLUDED = ['app/api/generated.ts']
 
 /**
  * Admin-layer composables whose names the `useAdmin*` scan below would miss.
@@ -50,14 +54,21 @@ function walk(dir: string): string[] {
 }
 
 describe('admin/user domain boundary', () => {
-  const userFacingFiles = walk(APP)
-    .map((f) => relative(APP, f))
+  const userFacingFiles = SCANNED.flatMap(walk)
+    .map((f) => relative(FE, f))
     .filter((f) => !EXCLUDED.includes(f))
 
   it('has user-facing files to check', () => {
     // Guards against the walk silently matching nothing and the suite passing
-    // vacuously.
-    expect(userFacingFiles.length).toBeGreaterThan(50)
+    // vacuously. Both roots must contribute: scanning only the shared root
+    // would miss every user-facing page.
+    expect(SCANNED.every((d) => existsSync(d))).toBe(true)
+    expect(
+      userFacingFiles.filter((f) => f.startsWith('app/')).length,
+    ).toBeGreaterThan(20)
+    expect(
+      userFacingFiles.filter((f) => f.startsWith('layers/user/')).length,
+    ).toBeGreaterThan(50)
   })
 
   it('the admin layer is where it is meant to be', () => {
@@ -70,7 +81,7 @@ describe('admin/user domain boundary', () => {
     const violations: string[] = []
 
     for (const relPath of userFacingFiles) {
-      const text = readFileSync(join(APP, relPath), 'utf8')
+      const text = readFileSync(join(FE, relPath), 'utf8')
       const hits = new Set<string>()
 
       // `<AdminFoo ...>` / `<AdminFoo/>` in a template
@@ -90,5 +101,73 @@ describe('admin/user domain boundary', () => {
     }
 
     expect(violations).toEqual([])
+  })
+})
+
+/**
+ * The ESLint half of the boundary, tested against the real config.
+ *
+ * `no-restricted-imports` matches its patterns with gitignore semantics, where
+ * an unescaped leading `#` marks a *comment* — so `'#layers/admin/**'` is
+ * dropped silently, with no config error and no failing lint, and every
+ * alias-form import goes uncaught. That is not hypothetical: it is how the rule
+ * shipped, and nothing detected it. These cases pin both spellings.
+ */
+describe('the eslint import boundary', () => {
+  const IMPORTS = [
+    '#layers/admin/app/utils/adminNav',
+    '../../layers/admin/app/utils/adminNav',
+  ]
+
+  /**
+   * `eslint.config.mjs` exports a Nuxt FlatConfigComposer, not a plain array.
+   * It is thenable, so awaiting it yields the resolved config list. Resolved
+   * once and shared — it is not cheap.
+   */
+  const entry = (async () => {
+    const mod = await import('../../eslint.config.mjs')
+    const configs = (await mod.default) as {
+      name?: string
+      files?: string[]
+      rules?: Record<string, unknown>
+    }[]
+    expect(Array.isArray(configs), 'resolved eslint config is a list').toBe(
+      true,
+    )
+    const found = configs.find((c) => c.name === 'interact/domain-boundary')
+    expect(found, 'the domain-boundary config entry').toBeDefined()
+    return found!
+  })()
+
+  async function lint(code: string) {
+    const { Linter } = await import('eslint')
+    const rule = (await entry).rules!['no-restricted-imports']
+    return new Linter().verify(code, {
+      rules: { 'no-restricted-imports': rule as never },
+    })
+  }
+
+  it.each(IMPORTS)('rejects an import of %s', async (spec) => {
+    const messages = await lint(
+      `import { GLOBAL_NAV } from '${spec}'\nexport const x = GLOBAL_NAV\n`,
+    )
+    expect(messages.map((m) => m.ruleId)).toEqual(['no-restricted-imports'])
+  })
+
+  it('still allows importing shared and user-facing code', async () => {
+    // Admin -> user is the sanctioned direction; the rule must not block it.
+    const messages = await lint(
+      `import { x } from '~/utils/formatters'\nimport { y } from '#layers/user/app/utils/teams'\nexport const z = [x, y]\n`,
+    )
+    expect(messages).toEqual([])
+  })
+
+  it('covers both non-admin roots', async () => {
+    // User-facing code moved into a layer; a rule scoped to `app/**` alone
+    // would no longer see it.
+    expect((await entry).files).toEqual([
+      'app/**/*.{vue,ts}',
+      'layers/user/**/*.{vue,ts}',
+    ])
   })
 })

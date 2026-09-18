@@ -12,7 +12,11 @@ const open = computed({
 </script>
 
 <template>
-  <UModal v-model:open="open" :title="state.title" :ui="{ content: 'max-w-md' }">
+  <UModal
+    v-model:open="open"
+    :title="state.title"
+    :ui="{ content: 'max-w-md' }"
+  >
     <template #body>
       <div class="flex gap-3">
         <UIcon

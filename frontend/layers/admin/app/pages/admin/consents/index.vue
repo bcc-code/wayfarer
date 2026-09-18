@@ -54,7 +54,7 @@ const columns: TableColumn<ConsentRow>[] = [
         Nytt samtykke
       </UButton>
     </div>
-    <ErrorState v-if="error" :error />
+    <AdminErrorState v-if="error" :error />
     <div v-else class="space-y-4">
       <UTable :data="consents" :loading="fetching" :columns>
         <template #key-cell="{ row }">

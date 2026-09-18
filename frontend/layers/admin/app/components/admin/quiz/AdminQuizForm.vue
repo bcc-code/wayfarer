@@ -193,11 +193,19 @@ const questionTypeOptions = [
     >
       <h3 class="text-lg font-semibold">Quiz-innstillinger</h3>
 
-      <AdminTranslatableFormField label="Quiz-navn" :translation-status="translationStatus" name="name">
+      <AdminTranslatableFormField
+        label="Quiz-navn"
+        :translation-status="translationStatus"
+        name="name"
+      >
         <UInput v-model="state.name" size="xl" required class="w-full" />
       </AdminTranslatableFormField>
 
-      <AdminTranslatableFormField label="Beskrivelse" :translation-status="translationStatus" name="description">
+      <AdminTranslatableFormField
+        label="Beskrivelse"
+        :translation-status="translationStatus"
+        name="description"
+      >
         <UTextarea
           v-model="state.description"
           class="w-full"

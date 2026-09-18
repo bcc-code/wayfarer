@@ -2,11 +2,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
-import QuizFreeTextQuestion from '~/components/challenges/quiz/questions/QuizFreeTextQuestion.vue'
+import QuizFreeTextQuestion from '../../layers/user/app/components/challenges/quiz/questions/QuizFreeTextQuestion.vue'
 import type {
   QuizActionState,
   QuizActionHandlers,
-} from '~/components/challenges/quiz/types'
+} from '../../layers/user/app/components/challenges/quiz/types'
 
 const { analyticsMock, submitMock } = vi.hoisted(() => ({
   analyticsMock: vi.fn(),

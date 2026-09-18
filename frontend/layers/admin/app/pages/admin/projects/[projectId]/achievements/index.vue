@@ -102,8 +102,8 @@ async function handleReorder() {
       </UButton>
     </div>
 
-    <LoadingState v-if="fetching" />
-    <ErrorState v-else-if="error" :error />
+    <AdminLoadingState v-if="fetching" />
+    <AdminErrorState v-else-if="error" :error />
     <UEmpty
       v-else-if="!achievements.length"
       icon="lucide:award"

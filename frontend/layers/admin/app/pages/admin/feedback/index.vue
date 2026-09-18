@@ -274,7 +274,7 @@ async function handleUpdateTags(feedbackId: string, tags: string[]) {
     <div class="mb-6 flex items-center gap-6">
       <h1 class="text-3xl">Tilbakemeldinger</h1>
     </div>
-    <ErrorState v-if="error" :error />
+    <AdminErrorState v-if="error" :error />
     <div v-else class="space-y-4">
       <div class="flex items-center justify-between gap-2">
         <USelectMenu

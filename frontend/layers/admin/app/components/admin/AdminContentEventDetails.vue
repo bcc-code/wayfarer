@@ -31,9 +31,7 @@ const { data, fetching } = useAdminExternalContentEventsQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
-const events = computed(
-  () => data.value?.adminExternalContentEvents ?? [],
-)
+const events = computed(() => data.value?.adminExternalContentEvents ?? [])
 </script>
 
 <template>
@@ -52,15 +50,11 @@ const events = computed(
         class="flex flex-wrap items-center gap-x-4 gap-y-1 rounded bg-default px-2 py-1.5 text-xs"
       >
         <span class="font-mono text-muted">{{ event.id.slice(0, 12) }}...</span>
-        <span>
-          <span class="text-muted">task:</span> {{ event.taskId }}
-        </span>
+        <span> <span class="text-muted">task:</span> {{ event.taskId }} </span>
         <span v-if="event.planId">
           <span class="text-muted">plan:</span> {{ event.planId }}
         </span>
-        <span>
-          <span class="text-muted">kilde:</span> {{ event.source }}
-        </span>
+        <span> <span class="text-muted">kilde:</span> {{ event.source }} </span>
         <span>
           <span class="text-muted">mottatt:</span>
           {{ formatDateTime(event.receivedAt) }}

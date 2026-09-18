@@ -2,10 +2,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref } from 'vue'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
-import StandingsUnit from '~/components/standings/StandingsUnit.vue'
-import StandingsListSkeleton from '~/components/standings/StandingsListSkeleton.vue'
-import LeaderboardList from '~/components/leaderboard/LeaderboardList.vue'
-import ErrorState from '~/components/ErrorState.vue'
+import StandingsUnit from '../../layers/user/app/components/standings/StandingsUnit.vue'
+import StandingsListSkeleton from '../../layers/user/app/components/standings/StandingsListSkeleton.vue'
+import LeaderboardList from '../../layers/user/app/components/leaderboard/LeaderboardList.vue'
+import ErrorState from '../../layers/user/app/components/ErrorState.vue'
 import { LeaderboardEntryTag } from '~/api/generated'
 
 const {

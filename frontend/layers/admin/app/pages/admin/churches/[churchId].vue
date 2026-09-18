@@ -120,8 +120,8 @@ async function saveChanges() {
       </UButton>
     </div>
 
-    <LoadingState v-if="fetching" />
-    <ErrorState v-else-if="error" :error />
+    <AdminLoadingState v-if="fetching" />
+    <AdminErrorState v-else-if="error" :error />
     <template v-else-if="data">
       <!-- View Mode -->
       <UCard v-if="!isEditing">

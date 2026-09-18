@@ -26,11 +26,7 @@ const items = computed(() => {
 
 <template>
   <UDropdownMenu v-model="selectedLocale" :items>
-    <UButton
-      square
-      color="neutral"
-      variant="soft"
-    >
+    <UButton square color="neutral" variant="soft">
       {{ localeToFlagEmoji(selectedLocale) }}
     </UButton>
     <template #item="{ item }">

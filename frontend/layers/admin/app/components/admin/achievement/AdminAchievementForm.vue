@@ -232,11 +232,19 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
       </div>
 
       <!-- Common Fields -->
-      <AdminTranslatableFormField label="Navn" :translation-status="translationStatus" name="name">
+      <AdminTranslatableFormField
+        label="Navn"
+        :translation-status="translationStatus"
+        name="name"
+      >
         <UInput v-model="state.name" size="xl" required class="w-full" />
       </AdminTranslatableFormField>
 
-      <AdminTranslatableFormField label="Beskrivelse (ikke oppnådd)" :translation-status="translationStatus" name="descriptionPending">
+      <AdminTranslatableFormField
+        label="Beskrivelse (ikke oppnådd)"
+        :translation-status="translationStatus"
+        name="descriptionPending"
+      >
         <UTextarea
           v-model="state.descriptionPending"
           class="w-full"
@@ -245,7 +253,11 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
         />
       </AdminTranslatableFormField>
 
-      <AdminTranslatableFormField label="Beskrivelse (oppnådd)" :translation-status="translationStatus" name="descriptionCompleted">
+      <AdminTranslatableFormField
+        label="Beskrivelse (oppnådd)"
+        :translation-status="translationStatus"
+        name="descriptionCompleted"
+      >
         <UTextarea
           v-model="state.descriptionCompleted"
           class="w-full"

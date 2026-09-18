@@ -1,5 +1,5 @@
 import type { QuizSessionState } from '~/api/generated'
-import type { QuizActionState } from '~/components/challenges/quiz/types'
+import type { QuizActionState } from '../components/challenges/quiz/types'
 
 export type QuizViewState =
   | 'loading'

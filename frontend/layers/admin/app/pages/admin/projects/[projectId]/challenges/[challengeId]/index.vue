@@ -183,8 +183,8 @@ async function handleDelete() {
 <template>
   <div>
     <div>
-      <LoadingState v-if="fetching" />
-      <ErrorState v-else-if="error" :error />
+      <AdminLoadingState v-if="fetching" />
+      <AdminErrorState v-else-if="error" :error />
       <div v-else-if="initialData" class="space-y-6">
         <div class="flex gap-2">
           <UButton

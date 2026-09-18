@@ -16,6 +16,6 @@ const { error } = useCurrentProject()
 </script>
 
 <template>
-  <ErrorState v-if="error" :error />
+  <AdminErrorState v-if="error" :error />
   <NuxtPage v-else />
 </template>

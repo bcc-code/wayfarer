@@ -224,7 +224,7 @@ const hasActiveFilters = computed(
       </p>
     </div>
 
-    <ErrorState v-if="error" :error />
+    <AdminErrorState v-if="error" :error />
 
     <div v-else class="space-y-4">
       <div class="flex items-center gap-2">

@@ -138,8 +138,8 @@ async function deleteEvent() {
 <template>
   <div>
     <div>
-      <LoadingState v-if="fetching" />
-      <ErrorState v-else-if="error" :error />
+      <AdminLoadingState v-if="fetching" />
+      <AdminErrorState v-else-if="error" :error />
       <template v-else-if="data">
         <UForm
           :state

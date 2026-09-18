@@ -303,8 +303,8 @@ async function handleDelete() {
 <template>
   <div>
     <div>
-      <LoadingState v-if="fetching" />
-      <ErrorState v-else-if="error" :error />
+      <AdminLoadingState v-if="fetching" />
+      <AdminErrorState v-else-if="error" :error />
       <template v-else-if="initialData">
         <h1 class="mb-6 text-2xl font-bold">Rediger utmerkelse</h1>
         <AdminAchievementForm

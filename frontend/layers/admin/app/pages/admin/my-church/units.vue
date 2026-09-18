@@ -732,8 +732,8 @@ function handleDropMember(
         {{ $t('admin.common.back') }}
       </UButton>
 
-      <LoadingState v-if="fetching && !hasLoadedOnce" />
-      <ErrorState v-else-if="error" :error />
+      <AdminLoadingState v-if="fetching && !hasLoadedOnce" />
+      <AdminErrorState v-else-if="error" :error />
       <div v-else-if="data" class="mt-12">
         <!-- No active project message -->
         <div

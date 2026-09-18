@@ -20,7 +20,7 @@ import {
 import {
   resolveQuizViewState,
   resolveFooterState,
-} from '~/composables/useQuizViewState'
+} from '../../composables/useQuizViewState'
 
 const props = defineProps<{
   challenge: QuizChallengeData

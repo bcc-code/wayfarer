@@ -66,8 +66,8 @@ function challengeType(typename?: string) {
       </UButton>
     </div>
 
-    <LoadingState v-if="fetching" />
-    <ErrorState v-else-if="error" :error />
+    <AdminLoadingState v-if="fetching" />
+    <AdminErrorState v-else-if="error" :error />
     <UEmpty
       v-else-if="!challenges.length"
       icon="lucide:swords"

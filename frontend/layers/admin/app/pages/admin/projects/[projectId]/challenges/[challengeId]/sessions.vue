@@ -411,8 +411,8 @@ function getDropdownItems(session: (typeof sessions.value)[number]) {
 <template>
   <div>
     <div>
-      <LoadingState v-if="fetching" />
-      <ErrorState v-else-if="error" :error />
+      <AdminLoadingState v-if="fetching" />
+      <AdminErrorState v-else-if="error" :error />
       <template v-else-if="data">
         <div
           v-if="data.challenge.__typename !== 'QuizChallenge'"
@@ -452,7 +452,7 @@ function getDropdownItems(session: (typeof sessions.value)[number]) {
             />
           </div>
 
-          <LoadingState v-if="sessionsFetching && !sessionsData" />
+          <AdminLoadingState v-if="sessionsFetching && !sessionsData" />
           <div
             v-else-if="sessions.length === 0"
             class="text-muted py-12 text-center"

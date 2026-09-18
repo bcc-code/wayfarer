@@ -1,8 +1,8 @@
 // @vitest-environment nuxt
 import { describe, it, expect } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import QuizBettingModule from '~/components/challenges/quiz/QuizBettingModule.vue'
-import DesignSlider from '~/components/design/DesignSlider.vue'
+import QuizBettingModule from '../../layers/user/app/components/challenges/quiz/QuizBettingModule.vue'
+import DesignSlider from '../../layers/user/app/components/design/DesignSlider.vue'
 
 type Props = InstanceType<typeof QuizBettingModule>['$props']
 

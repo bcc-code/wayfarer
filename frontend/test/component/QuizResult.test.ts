@@ -1,8 +1,8 @@
 // @vitest-environment nuxt
 import { describe, it, expect, beforeEach } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import QuizResult from '~/components/challenges/quiz/QuizResult.vue'
-import QuizProgress from '~/components/challenges/quiz/QuizProgress.vue'
+import QuizResult from '../../layers/user/app/components/challenges/quiz/QuizResult.vue'
+import QuizProgress from '../../layers/user/app/components/challenges/quiz/QuizProgress.vue'
 
 type Props = InstanceType<typeof QuizResult>['$props']
 type Result = { questionId: string; isCorrect: boolean | null }

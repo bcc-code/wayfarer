@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { findTeamLeader, findMemberById, isMemberTeamLead } from '~/utils/teams'
+import { findTeamLeader, findMemberById, isMemberTeamLead } from '../../utils/teams'
 
 const { isTeamLead, me } = useAuth()
 const { isAuthReady } = useAuthReady()

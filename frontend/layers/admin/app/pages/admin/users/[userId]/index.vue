@@ -479,8 +479,8 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
 <template>
   <div>
     <div>
-      <LoadingState v-if="fetching" />
-      <ErrorState v-else-if="error" :error />
+      <AdminLoadingState v-if="fetching" />
+      <AdminErrorState v-else-if="error" :error />
       <div v-else-if="data" class="space-y-6">
         <!-- User Header -->
         <div class="flex items-start justify-between">

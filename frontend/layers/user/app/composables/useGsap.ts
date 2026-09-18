@@ -2,7 +2,7 @@ import { gsap } from 'gsap'
 import {
   prefersReducedMotion,
   calculateStaggerTiming,
-} from '~/utils/animations'
+} from '../utils/animations'
 
 /**
  * Shake animation for error feedback

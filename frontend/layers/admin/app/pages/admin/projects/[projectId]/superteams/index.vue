@@ -72,8 +72,8 @@ const superteams = computed(
       </div>
     </div>
 
-    <LoadingState v-if="fetching" />
-    <ErrorState v-else-if="error" :error />
+    <AdminLoadingState v-if="fetching" />
+    <AdminErrorState v-else-if="error" :error />
     <UEmpty
       v-else-if="!superteams.length"
       icon="lucide:users"

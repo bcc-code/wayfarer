@@ -197,8 +197,8 @@ function toggleTeam(teamId: string) {
 <template>
   <div>
     <div class="max-w-2xl">
-      <LoadingState v-if="fetching" />
-      <ErrorState v-else-if="error" :error class="h-150" />
+      <AdminLoadingState v-if="fetching" />
+      <AdminErrorState v-else-if="error" :error class="h-150" />
       <template v-else-if="data">
         <h1 class="mb-6 text-2xl font-bold">Rediger superteam</h1>
 

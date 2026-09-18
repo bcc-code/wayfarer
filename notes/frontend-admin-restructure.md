@@ -18,12 +18,12 @@ Branch: `feature/admin-restructure`.
 
 ## What was decided
 
-| Idea                   | Decision                                                                                                                                  |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| **1 — Nuxt layers**    | **Yes, after the IA work.** Re-examined 2026-09-18 — see the log. For organisation, not enforcement; the boundary is enforced separately. |
-| **2 — project-scoped** | **Yes** — the highest-value item. Includes moving `teams`/`scores` under a project, with redirect stubs so bookmarks survive.             |
-| **3 — SaaS sidebar**   | **Yes**, and mostly assembly rather than invention.                                                                                       |
-| church-admin layout    | **Stays separate** — gets navigation, stops duplicating shared blocks.                                                                    |
+| Idea                   | Decision                                                                                                                                       |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1 — Nuxt layers**    | **Done — three layers**: root (shared), `layers/user`, `layers/admin`. For organisation, not enforcement; the boundary is enforced separately. |
+| **2 — project-scoped** | **Yes** — the highest-value item. Includes moving `teams`/`scores` under a project, with redirect stubs so bookmarks survive.                  |
+| **3 — SaaS sidebar**   | **Yes**, and mostly assembly rather than invention.                                                                                            |
+| church-admin layout    | **Stays separate** — gets navigation, stops duplicating shared blocks.                                                                         |
 
 **Why layers come after the IA work.** See the 2026-09-18 re-examination in the
 log for the verified details. In short: layers are a legitimate fit and cheaper
@@ -562,7 +562,7 @@ all ~60 named-route bindings keep resolving. Nothing else moved.
 
 **`useCurrentProject()` owns the project**, not the parent page. The consumers
 that need it most — sidebar, project switcher, navbar title — are rendered by
-the *layout*, which is an ancestor of the page, so anything the page provided
+the _layout_, which is an ancestor of the page, so anything the page provided
 would be invisible to them. urql's document cache keys on operation + variables,
 so every caller shares one result. `requestPolicy: 'cache-first'` because the
 client default would otherwise fire an identical request per subscriber on first
@@ -572,18 +572,18 @@ paint.
 This was the single most likely regression: pages passed
 `variables: { projectId: route.params.projectId }` as a plain object, which is
 correct only while each page remounts on navigation. With a persistent parent,
-switching project changes the param *without* a remount and a static object
+switching project changes the param _without_ a remount and a static object
 silently keeps querying the old project.
 
 New routes:
 
-| Route | Source |
-| --- | --- |
-| `challenges/index.vue` | the challenges tab |
-| `achievements/index.vue` | the achievements tab, drag-reorder intact |
-| `events/index.vue` | new — un-orphans `events/new` and `events/[eventId]`, which nothing linked to |
-| `superteams/index.vue` | the superteams tab — a real list at last |
-| `superteams/distribute.vue` | the ladder-to-heaven tool that used to occupy `superteams/index.vue` |
+| Route                       | Source                                                                        |
+| --------------------------- | ----------------------------------------------------------------------------- |
+| `challenges/index.vue`      | the challenges tab                                                            |
+| `achievements/index.vue`    | the achievements tab, drag-reorder intact                                     |
+| `events/index.vue`          | new — un-orphans `events/new` and `events/[eventId]`, which nothing linked to |
+| `superteams/index.vue`      | the superteams tab — a real list at last                                      |
+| `superteams/distribute.vue` | the ladder-to-heaven tool that used to occupy `superteams/index.vue`          |
 
 `[projectId]/index.vue` is now an overview: project header plus a counts-only
 query (`first: 0`, `totalCount`) linking to each section. The old mega-query is
@@ -633,7 +633,7 @@ The user detail page needed no stub: its query already selected
 and there is no single journal to send it to any more.
 
 Two nav tests were updated rather than deleted: the guard one previously
-asserted that the *global* "Lag" entry must not match
+asserted that the _global_ "Lag" entry must not match
 `admin-projects-projectId-teams`. That relationship inverted with the move, so
 it now asserts the project entry matches its own branch and its `:teamId` child
 but not the legacy global route — the same substring-matching bug, guarded from
@@ -649,7 +649,7 @@ persist resize state.
 
 The **project switcher heads the secondary column**, not the primary. Keeping it
 in both printed the same truncated project name twice, side by side, and moving
-it gives the column an identity: this one *is* the project. The trade is that
+it gives the column an identity: this one _is_ the project. The trade is that
 the switcher is unreachable outside a project — the "Prosjekter" list is the way
 in, which is the right order anyway. Below `lg`, where there is no second
 column, the switcher rides in the primary's slideover with the project nav.
@@ -666,7 +666,7 @@ on the wrapping link so cards in a row still match each other via the grid's
 stretch.
 
 **The overview grid moved to container queries.** `lg:grid-cols-4` measured the
-*viewport*, but two sidebars take ~600px out of it, so four cards overflowed the
+_viewport_, but two sidebars take ~600px out of it, so four cards overflowed the
 panel at exactly the widths the breakpoint was meant to cover. It is now
 `@container` with `@md:grid-cols-2 @4xl:grid-cols-4`, measured against the panel.
 Verified in the built CSS as `@container (min-width:28rem)` and `(min-width:56rem)`
@@ -675,7 +675,7 @@ rules rather than `@media`. The same swap was applied to `projects/index.vue`
 sizes in-panel layout off `sm:`/`lg:` has this latent bug — the sidebars take
 ~300-600px out of the window before the panel gets any.
 
-Both sidebars are capped at `max-w-[250px]`. `default-size` is a *percentage* of the
+Both sidebars are capped at `max-w-[250px]`. `default-size` is a _percentage_ of the
 viewport (the dashboard context sets `unit: '%'`), so 16% passes 250px on
 anything wider than ~1560px; a ceiling is the right fix rather than a smaller
 percentage, which would leave the sidebar cramped on a laptop.
@@ -688,7 +688,7 @@ Two things that are not obvious from the markup:
   than everything beside it.
 - **Only one sidebar may be mounted on mobile.** `UDashboardSidebar` registers
   `useRuntimeHook('dashboard:sidebar:toggle', () => open.value = !open.value)`,
-  and that hook is global — *every* mounted sidebar listens. Two of them means
+  and that hook is global — _every_ mounted sidebar listens. Two of them means
   one tap on the hamburger opens two slideovers, stacked. The secondary is
   therefore mounted on desktop only (`useMediaQuery`, safe here because
   `ssr: false`), and below `lg` the project nav rides along in the primary's
@@ -704,7 +704,7 @@ title, so showing both said the same thing twice and cost a second
 `--ui-header-height` row of chrome on every page.
 
 It goes in the navbar's `#left` slot, which replaces the default
-leading/title/trailing group but *not* the mobile toggle — the navbar renders
+leading/title/trailing group but _not_ the mobile toggle — the navbar renders
 that just outside the slot. Routes with no ancestors (`/admin`) fall back to a
 plain heading, since a one-item breadcrumb is a title with extra markup.
 
@@ -716,7 +716,7 @@ which also becomes the navbar title. Nine detail pages set one; the rest need
 nothing.
 
 The label lives in a module-level ref because the layout renders the chrome and
-is an *ancestor* of the page, so provide/inject cannot carry it upward. It is
+is an _ancestor_ of the page, so provide/inject cannot carry it upward. It is
 cleared on scope dispose, or the previous page's name lingers on the next route
 until that page's own query resolves.
 
@@ -741,7 +741,7 @@ It supported only one trailing crumb, so routes nested below a detail page —
 stopped at their section and lost both the entity name and their own. The page
 label is now `string | {label, to} | Array<…>`, so those pages supply two, the
 first linking back to the detail view. `edit.vue` had the opposite problem: it
-set the *project* name as its label, which `PROJECT_NAV`'s "Innstillinger" crumb
+set the _project_ name as its label, which `PROJECT_NAV`'s "Innstillinger" crumb
 already covers, printing the project twice.
 
 Worse, all seven `my-church/**` pages use the `church-admin` layout, which
@@ -809,7 +809,7 @@ reasoning:**
   alias I had added for it was dead weight and was removed.
 - **The breakage is the other direction, and only TypeScript sees it.**
   `.nuxt/tsconfig.json` has a single `~/* -> ../app/*` mapping, so an
-  *intra-layer* `~/utils/adminNav` resolves to the root, where it no longer
+  _intra-layer_ `~/utils/adminNav` resolves to the root, where it no longer
   exists. Vite would have resolved it layer-first and built happily. Eight files
   needed relative imports; `pnpm typecheck` found all of them.
 
@@ -820,11 +820,11 @@ srcDir; it actually points at its rootDir, hence the `app/` segment.)
 
 **Three silent-failure modes, each checked directly rather than assumed:**
 
-| Hazard | Check | Result |
-| --- | --- | --- |
-| A layer without `components: { pathPrefix: false }` renames every component | sorted `export const` list from `.nuxt/components.d.ts`, before vs after | 547 names, identical |
-| Tailwind not scanning the layer | admin-only classes in the built CSS | `bg-glass`, `@container (min-width:56rem)`, `dark:bg-neutral-950` all present |
-| Codegen reordering `generated.ts` | sorted export-symbol set before vs after `pnpm codegen` | 969 symbols, identical set; a 105-line pure permutation |
+| Hazard                                                                      | Check                                                                    | Result                                                                        |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| A layer without `components: { pathPrefix: false }` renames every component | sorted `export const` list from `.nuxt/components.d.ts`, before vs after | 547 names, identical                                                          |
+| Tailwind not scanning the layer                                             | admin-only classes in the built CSS                                      | `bg-glass`, `@container (min-width:56rem)`, `dark:bg-neutral-950` all present |
+| Codegen reordering `generated.ts`                                           | sorted export-symbol set before vs after `pnpm codegen`                  | 969 symbols, identical set; a 105-line pure permutation                       |
 
 `test/unit/layers.test.ts` (new) locks the three that have no other detector: the
 layer must have a `nuxt.config.ts` (a layer without one is silently skipped and
@@ -846,14 +846,83 @@ layout, so a user-facing caller gets a promise that never resolves).
 
 Unit tests 531 → 536.
 
+### 2026-09-18 — user-facing app split into a second layer
+
+`layers/user/` now holds the 12 user pages, `default.vue`, all 11 component
+directories plus 9 top-level components (`Design*`, `ErrorState`,
+`LoadingState`, `EmptyState`, `PageLayout`, `TitleBar`, …), 6 composables, 5
+utils and `user.css`. Root `app/` is now **shared only**: the generated client,
+the auth and permission guards, the plugins, the GraphQL documents, `main.css`,
+`app.config.ts`.
+
+This reverses the "admin layer only" decision recorded in the previous entry.
+That call rested on the user-vs-shared verdict being expensive; with admin
+already extracted the remaining set was small and mostly unambiguous, and the
+three-way split is what actually makes root `app/` mean something.
+
+**Root `app/pages/` keeps exactly three pages** — `auth0-callback.vue`,
+`login.vue`, `logout-callback.vue`. Not an oversight: `01.auth.global.ts`
+hardcodes those paths, so they belong to the auth boundary, not to either domain.
+
+**Severing admin's dependency on the user design system came first.** The admin
+layer reached the user-facing `DesignButton` through the shared `ErrorState` /
+`LoadingState`. New `AdminErrorState` / `AdminLoadingState` (Nuxt UI tokens,
+identical prop and emit surface) took over in 32 admin files, after which
+`DesignButton` is reachable from admin only via `AdminProjectThemePreview` and
+`AdminChallengeCardPreview` — the sanctioned admin→user preview direction.
+Verified by walking the import graph: "via ErrorState: 0 files".
+
+**The routing contract held again.** 61 routes, name and path columns
+byte-identical; only the file column moved. Verified by parsing both snapshots
+and comparing the columns directly — and the comparison asserts a non-zero row
+count first, because an earlier version of that parser matched nothing and
+"passed" vacuously.
+
+**A fourth silent-failure mode, specific to this layer.** `components/global/**`
+loses global registration unless the layer _also_ declares
+`{ path: 'components/global', global: true }` alongside the `pathPrefix: false`
+entry. Three icons are passed as **strings** (`icon="IconSettings"`,
+`IconClose`, `IconChevronRight`) and resolve by name alone, so they would render
+nothing with no error. Checked in the built bundle rather than the source: the
+`nuxt:global-components` plugin chunk registers all 19 icons.
+
+**The ESLint boundary had never worked for the alias form.** A probe import of
+`#layers/admin/app/utils/adminNav` produced no error — in `layers/user/` _or_ in
+`app/`, so this shipped broken with the admin layer. `no-restricted-imports`
+matches patterns with gitignore semantics, where **an unescaped leading `#`
+marks a comment**: `'#layers/admin/**'` was silently dropped, and only the
+relative form `'**/layers/admin/**'` was ever enforced. There is no config error
+and no failing lint for this. Fixed by escaping (`'\\#layers/admin/**'`, which
+does match) and by extending `files` to `layers/user/**`, since the rule scoped
+to `app/**` would no longer see any user-facing code at all.
+
+Both halves are now pinned by tests that lint a synthetic snippet against the
+**real** resolved config (`eslint.config.mjs` exports a thenable
+FlatConfigComposer, not an array). Mutation-checked: reverting the escape fails
+the new case and nothing else.
+
+`test/unit/layers.test.ts` became layer-generic — it iterates the `layers/`
+directory instead of naming admin, and asserts up front that it found
+`['admin', 'user']` so it cannot pass vacuously. Its plugin check was also a
+false positive waiting to happen: matching `/\/plugins\//` anywhere in a path
+flagged `pages/plugins/ladder-to-heaven/excalibur.vue`, which is a page _route_.
+It now checks for `app/plugins/` and `app/middleware/` as directories.
+
+`test/unit/domain-boundary.test.ts` scans both non-admin roots now; its vacuity
+guard asserts each root contributes files, since scanning only the shared root
+would silently miss every user-facing page.
+
+Unit tests 536 → 545.
+
 ### Gate status after the above
 
 | Check           | Before | After                          |
 | --------------- | ------ | ------------------------------ |
 | Lint errors     | 47     | **0**                          |
 | Type errors     | 34     | **0**                          |
-| Unit tests      | 436    | **457**                        |
+| Unit tests      | 436    | **545**                        |
 | Component tests | 149    | 149                            |
+| Build           | ok     | ok                             |
 | Frontend in CI  | none   | lint + typecheck + both suites |
 
 ---
@@ -891,5 +960,8 @@ the 1,000-line outliers (`my-church/units.vue` 1,105, `users/[userId]/index.vue`
   `:root` but is imported from inside `admin.vue` / `church-admin.vue`. In an SPA
   the chunk stays loaded, so the admin theme persists after navigating back to
   the user app. Pre-existing; worth scoping while rewriting the layout.
-- **`ErrorState` / `EmptyState` use user-app design tokens** and will look wrong
-  inside the dashboard chrome.
+- ~~**`ErrorState` / `EmptyState` use user-app design tokens** and will look
+  wrong inside the dashboard chrome.~~ Resolved: the admin layer has its own
+  `AdminErrorState` / `AdminLoadingState` on Nuxt UI tokens. Keeping them
+  separate is also what severs admin's dependency on the user design system, so
+  do not "deduplicate" them back into one shared pair.

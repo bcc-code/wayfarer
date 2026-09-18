@@ -37,7 +37,8 @@ const colorMode = useColorMode()
 const themeStyles = computed(() => {
   if (!props.colors) return {}
 
-  const colors = colorMode.value === 'dark' ? props.colors.dark : props.colors.light
+  const colors =
+    colorMode.value === 'dark' ? props.colors.dark : props.colors.light
 
   return {
     '--color-accent': colors.accent,

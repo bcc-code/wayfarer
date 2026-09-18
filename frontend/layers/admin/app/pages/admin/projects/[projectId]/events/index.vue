@@ -51,8 +51,8 @@ const events = computed(() => data.value?.events.edges.map((e) => e.node) ?? [])
       </UButton>
     </div>
 
-    <LoadingState v-if="fetching" />
-    <ErrorState v-else-if="error" :error />
+    <AdminLoadingState v-if="fetching" />
+    <AdminErrorState v-else-if="error" :error />
     <UEmpty
       v-else-if="!events.length"
       icon="lucide:calendar"

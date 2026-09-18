@@ -85,7 +85,7 @@ const columns: TableColumn<
 <template>
   <div>
     <h1 class="mb-6 text-3xl">Lag</h1>
-    <ErrorState v-if="error" :error />
+    <AdminErrorState v-if="error" :error />
     <div v-else class="space-y-4">
       <div class="flex items-center justify-between gap-2">
         <RelayPagination v-model:pagination="pagination" />

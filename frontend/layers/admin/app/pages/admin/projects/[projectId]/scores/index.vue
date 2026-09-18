@@ -149,7 +149,7 @@ const { canDeleteScoreEntry, canManageScores } = usePermissions()
         Ny justering
       </UButton>
     </div>
-    <ErrorState v-if="error" :error />
+    <AdminErrorState v-if="error" :error />
     <div v-else class="space-y-4">
       <div class="flex items-center justify-between gap-2">
         <RelayPagination v-model:pagination="pagination" />

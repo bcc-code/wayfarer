@@ -304,8 +304,13 @@ function handleSave() {
               class="w-full"
             />
             <AdminTranslationIndicator
-              v-if="props.question.predefinedAnswers?.[index]?.translationStatus?.length"
-              :translation-status="props.question.predefinedAnswers![index]!.translationStatus!"
+              v-if="
+                props.question.predefinedAnswers?.[index]?.translationStatus
+                  ?.length
+              "
+              :translation-status="
+                props.question.predefinedAnswers![index]!.translationStatus!
+              "
               field-name="answerText"
             />
           </div>

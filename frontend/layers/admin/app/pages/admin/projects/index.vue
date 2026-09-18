@@ -55,8 +55,8 @@ const { canCreateProject } = usePermissions()
         Nytt prosjekt
       </UButton>
     </div>
-    <LoadingState v-if="fetching" />
-    <ErrorState v-else-if="error" :error />
+    <AdminLoadingState v-if="fetching" />
+    <AdminErrorState v-else-if="error" :error />
     <!--
       Container query, not viewport: `lg:` measured the window while the cards
       live in a panel the sidebar has already taken ~300px out of.

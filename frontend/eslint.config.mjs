@@ -10,22 +10,27 @@ export default withNuxt([
      * rather than the hand-maintained file list this used to be — which had
      * drifted, missing several admin-only modules.
      *
-     * Root `app/` is the shared layer: the API client, the auth and permission
-     * guards, the shared UI kit. It must not reach into the admin layer.
+     * Two directories must not reach into it: root `app/`, the shared layer
+     * (the API client, the auth and permission guards, the shared UI kit), and
+     * `layers/user/`, the user-facing app.
      *
-     * Admin -> shared stays allowed on purpose: the admin panel renders
-     * user-facing components to preview the end-user experience
+     * Admin -> shared and admin -> user stay allowed on purpose: the admin
+     * panel renders user-facing components to preview the end-user experience
      * (AdminProjectThemePreview, AdminChallengeCardPreview).
      */
     name: 'interact/domain-boundary',
-    files: ['app/**/*.{vue,ts}'],
+    files: ['app/**/*.{vue,ts}', 'layers/user/**/*.{vue,ts}'],
     rules: {
       'no-restricted-imports': [
         'error',
         {
           patterns: [
             {
-              group: ['#layers/admin/**', '**/layers/admin/**'],
+              // The leading `#` MUST stay escaped. These patterns are matched
+              // with gitignore semantics, where an unescaped leading `#` marks
+              // a comment — `'#layers/admin/**'` is silently dropped and the
+              // alias form goes uncaught, which is exactly what happened here.
+              group: ['\\#layers/admin/**', '**/layers/admin/**'],
               message:
                 'User-facing and shared code must not import admin code. Move the shared part into a neutral location instead. See notes/frontend-admin-restructure.md.',
             },

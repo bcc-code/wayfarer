@@ -162,7 +162,7 @@ watch(fixComplete, (complete) => {
       </p>
     </div>
 
-    <ErrorState v-if="error" :error />
+    <AdminErrorState v-if="error" :error />
 
     <template v-else>
       <div class="mb-8 grid gap-4 @xl:grid-cols-3">

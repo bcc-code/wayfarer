@@ -80,8 +80,8 @@ const greeting = computed(() => {
       {{ greeting }}, {{ data.me.name }}
     </h1>
 
-    <LoadingState v-if="fetching" />
-    <ErrorState v-else-if="error" :error />
+    <AdminLoadingState v-if="fetching" />
+    <AdminErrorState v-else-if="error" :error />
 
     <!-- Container query, not viewport: the sidebar has already taken ~300px. -->
     <div v-else-if="data" class="@container space-y-8">

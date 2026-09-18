@@ -56,9 +56,15 @@ const schema = z
     image: z.string().optional(),
     url: z
       .string()
-      .refine((val) => val === '' || val.startsWith('/') || z.string().url().safeParse(val).success, {
-        message: 'Must be a valid URL or a local path starting with /',
-      })
+      .refine(
+        (val) =>
+          val === '' ||
+          val.startsWith('/') ||
+          z.string().url().safeParse(val).success,
+        {
+          message: 'Must be a valid URL or a local path starting with /',
+        },
+      )
       .optional()
       .or(z.literal('')),
     buttonText: z.string().optional(),
@@ -106,7 +112,6 @@ const state = reactive<Schema>({
   pluginChallengeId: props.initialData?.pluginChallengeId,
   notificationText: props.initialData?.notificationText ?? '',
 })
-
 
 // Update state when initialData changes (for edit mode after data loads)
 watch(
@@ -166,10 +171,20 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
             class="w-full"
           />
         </UFormField>
-        <AdminTranslatableFormField label="Navn" :translation-status="translationStatus" name="name">
+        <AdminTranslatableFormField
+          label="Navn"
+          :translation-status="translationStatus"
+          name="name"
+        >
           <UInput v-model="state.name" size="xl" required class="w-full" />
         </AdminTranslatableFormField>
-        <AdminTranslatableFormField label="Beskrivelse" :translation-status="translationStatus" name="description" hint="(valgfritt)" help="Støtter HTML-formatering">
+        <AdminTranslatableFormField
+          label="Beskrivelse"
+          :translation-status="translationStatus"
+          name="description"
+          hint="(valgfritt)"
+          help="Støtter HTML-formatering"
+        >
           <UTextarea v-model="state.description" class="w-full" autoresize />
         </AdminTranslatableFormField>
         <UFormField name="image" label="Bilde" hint="(valgfritt)">
@@ -210,7 +225,9 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
           label="Knappetekst"
           :translation-status="translationStatus"
           name="buttonText"
-          :hint="state.type === ChallengeType.Plugin ? '(valgfritt)' : undefined"
+          :hint="
+            state.type === ChallengeType.Plugin ? '(valgfritt)' : undefined
+          "
         >
           <UInput
             v-model="state.buttonText"
@@ -226,11 +243,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
           hint="(valgfritt)"
           help="Tekst som vises i push-varsler når admin melder bruker på utfordringen. La feltet stå tomt for ingen varsling."
         >
-          <UInput
-            v-model="state.notificationText"
-            size="xl"
-            class="w-full"
-          />
+          <UInput v-model="state.notificationText" size="xl" class="w-full" />
         </AdminTranslatableFormField>
         <UFormField
           name="publishedAt"

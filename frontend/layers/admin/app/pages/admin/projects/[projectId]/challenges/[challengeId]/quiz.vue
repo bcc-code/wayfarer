@@ -375,8 +375,8 @@ const isQuizChallenge = computed(() => {
 <template>
   <div>
     <div>
-      <LoadingState v-if="fetching" />
-      <ErrorState v-else-if="error" :error />
+      <AdminLoadingState v-if="fetching" />
+      <AdminErrorState v-else-if="error" :error />
       <template v-else-if="data">
         <div v-if="!isQuizChallenge" class="text-center py-12">
           <p class="text-text-muted">

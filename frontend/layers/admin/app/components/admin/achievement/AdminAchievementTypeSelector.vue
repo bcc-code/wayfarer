@@ -25,8 +25,7 @@ const typeOptions = [
   {
     value: 'STREAK' as AchievementType,
     label: 'Streak',
-    description:
-      'Krever fullføring av innhold innen frist',
+    description: 'Krever fullføring av innhold innen frist',
   },
   {
     value: 'QUIZ' as AchievementType,

@@ -238,8 +238,8 @@ function handleUserSelect(item: UserItem | undefined) {
         {{ $t('admin.common.back') }}
       </UButton>
 
-      <LoadingState v-if="fetching && !hasLoadedOnce" />
-      <ErrorState v-else-if="error" :error />
+      <AdminLoadingState v-if="fetching && !hasLoadedOnce" />
+      <AdminErrorState v-else-if="error" :error />
       <div v-else-if="data" class="mt-12 max-w-2xl relative">
         <h2 class="text-3xl font-semibold mb-4">
           {{ $t('admin.churchHome.administrators') }}

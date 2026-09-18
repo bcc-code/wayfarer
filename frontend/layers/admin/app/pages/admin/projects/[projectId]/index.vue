@@ -82,8 +82,8 @@ onMounted(() => {
 
 <template>
   <div>
-    <LoadingState v-if="fetchingProject" />
-    <ErrorState v-else-if="error" :error />
+    <AdminLoadingState v-if="fetchingProject" />
+    <AdminErrorState v-else-if="error" :error />
     <template v-else-if="project">
       <header class="mb-8 space-y-2">
         <img

@@ -251,8 +251,8 @@ async function handleToggleLeaderboardExclusion(excluded: boolean) {
 <template>
   <div>
     <div>
-      <LoadingState v-if="fetching" />
-      <ErrorState v-else-if="error" :error />
+      <AdminLoadingState v-if="fetching" />
+      <AdminErrorState v-else-if="error" :error />
       <div v-else-if="data" class="space-y-6">
         <!-- Team Header -->
         <div class="flex items-start justify-between">

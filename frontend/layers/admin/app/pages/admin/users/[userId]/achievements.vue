@@ -241,7 +241,7 @@ function statusLabel(
 
         <!-- Progress display -->
         <div v-if="progressFetching" class="py-8">
-          <LoadingState />
+          <AdminLoadingState />
         </div>
 
         <template v-else-if="progress">

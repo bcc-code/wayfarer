@@ -1,5 +1,5 @@
 import { LeaderboardEntryTag } from '~/api/generated'
-import type { LeaderboardEntryLike } from './leaderboard'
+import type { LeaderboardEntryLike } from '~/utils/leaderboard'
 
 /**
  * Pure functions for team-related data manipulation.
