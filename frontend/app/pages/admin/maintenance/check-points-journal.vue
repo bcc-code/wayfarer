@@ -60,7 +60,8 @@ const columns: TableColumn<UserRow>[] = [
         innholdsoppgaver, men som mangler tilhørende poengjournal-oppforinger.
       </p>
       <p class="text-muted mt-2 text-sm">
-        Prestasjon-ID: <code class="bg-muted rounded px-1">{{ ACHIEVEMENT_ID }}</code>
+        Prestasjon-ID:
+        <code class="bg-muted rounded px-1">{{ ACHIEVEMENT_ID }}</code>
       </p>
     </div>
 
@@ -111,6 +112,10 @@ const columns: TableColumn<UserRow>[] = [
       </div>
 
       <UTable :data="affectedUsers" :loading="fetching" :columns>
+        <!-- UTable names cell slots after the column accessorKey, so a nested
+             key produces "user.name-cell". eslint-plugin-vue reads the dot as
+             a directive modifier; the slot name is correct. -->
+        <!-- eslint-disable-next-line vue/valid-v-slot -->
         <template #user.name-cell="{ row }">
           <NuxtLink
             :to="{

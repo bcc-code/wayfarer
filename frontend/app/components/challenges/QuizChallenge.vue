@@ -311,14 +311,6 @@ const sessionState = computed(() => {
   return props.challenge.quiz.userActiveSession?.state
 })
 
-// Check if session is in a state where we should show the question view (LOCKED or FINISHED)
-const isSessionLockedOrFinished = computed(() => {
-  return (
-    sessionState.value === QuizSessionState.Locked ||
-    sessionState.value === QuizSessionState.Finished
-  )
-})
-
 // Special case for PC26 Game Night betting
 const isSingleOrderingQuestion = computed(() => {
   return (

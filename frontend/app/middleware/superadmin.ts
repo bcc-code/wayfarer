@@ -13,12 +13,12 @@
  * ```
  */
 export default defineNuxtRouteMiddleware(async () => {
-  const me = useState<any>('me', () => null)
+  const me = useState<GetMeQuery['me'] | null>('me', () => null)
 
   // If we have user data, check if superadmin
   if (me.value) {
     const isSuperAdmin = me.value?.roles.some(
-      (role: any) => role.role === 'SUPERADMIN',
+      (role: RoleLike) => role.role === RoleType.Superadmin,
     )
 
     if (!isSuperAdmin) {

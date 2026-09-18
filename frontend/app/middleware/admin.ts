@@ -4,7 +4,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   // Check if we already have user data
-  const me = useState<any>('me', () => null)
+  const me = useState<GetMeQuery['me'] | null>('me', () => null)
 
   // If user data not loaded yet, let page render - layout will handle auth check after loading
   if (!me.value) {

@@ -74,6 +74,7 @@
     "prettier-plugin-tailwindcss": "^0.8.0",
     "tailwindcss": "^4.3.2",
     "typescript": "^6.0.3",
+    "unrouting": "0.1.7",
     "vitest": "^4.1.11",
     "vue-tsc": "^3.3.11",
     "workbox-build": "^7.4.1",

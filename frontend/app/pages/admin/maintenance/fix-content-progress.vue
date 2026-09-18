@@ -290,6 +290,10 @@ watch(fixComplete, (complete) => {
       </div>
 
       <UTable :data="affectedUsers" :loading="fetching" :columns>
+        <!-- UTable names cell slots after the column accessorKey, so a nested
+             key produces "user.name-cell". eslint-plugin-vue reads the dot as
+             a directive modifier; the slot name is correct. -->
+        <!-- eslint-disable-next-line vue/valid-v-slot -->
         <template #user.name-cell="{ row }">
           <NuxtLink
             :to="{

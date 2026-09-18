@@ -100,24 +100,6 @@ function handleContinue() {
   })
 }
 
-const { t } = useI18n()
-const continueText = computed(() => {
-  if (props.currentIndex === props.totalQuestions - 1) {
-    return t('quiz.continue')
-  }
-  return t('quiz.nextQuestion')
-})
-
-// In readonly mode, we use isLastQuestion prop to determine the next button text
-const nextButtonText = computed(() => {
-  if (props.readonly) {
-    return props.isLastQuestion
-      ? t('quiz.finishReview')
-      : t('quiz.nextQuestion')
-  }
-  return continueText.value
-})
-
 function handlePrevious() {
   emit('previous')
 }

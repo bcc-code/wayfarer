@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { D } from '@vite-pwa/assets-generator/dist/shared/assets-generator.DnoqiTld.mjs'
 import { cva } from 'cva'
 
 defineProps<{
@@ -47,7 +46,7 @@ const trackClasses = cva(
     :class="trackClasses({ checked: modelValue, disabled })"
     :data-checked="modelValue"
   >
-    <input v-model="modelValue" :disabled type="checkbox" class="hidden" >
+    <input v-model="modelValue" :disabled type="checkbox" class="hidden" />
     <div :class="thumbClasses({ checked: modelValue, disabled })">
       <Icon
         v-if="loading"

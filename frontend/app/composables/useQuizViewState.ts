@@ -1,5 +1,5 @@
 import type { QuizSessionState } from '~/api/generated'
-import type { QuizActionMode, QuizActionState } from '~/components/challenges/quiz/types'
+import type { QuizActionState } from '~/components/challenges/quiz/types'
 
 export type QuizViewState =
   | 'loading'
@@ -42,9 +42,7 @@ export interface QuizViewStateInput {
  * - FINISHED with single ordering question: show active-question (betting results inline)
  * - FINISHED with multiple questions: show results screen
  */
-export function resolveQuizViewState(
-  input: QuizViewStateInput,
-): QuizViewState {
+export function resolveQuizViewState(input: QuizViewStateInput): QuizViewState {
   if (input.isLoading) return 'loading'
 
   if (input.quizCompleted && input.hasFinalResult) return 'just-completed'
@@ -118,8 +116,7 @@ export function resolveFooterState(input: FooterInput): FooterState {
       }
 
     case 'session-betting': {
-      const showBettingModule =
-        isBettingEnabled && !actionState.isAnswerLocked
+      const showBettingModule = isBettingEnabled && !actionState.isAnswerLocked
       let button: FooterButton
       if (!actionState.isBetSaved || actionState.isEditing) {
         button = {
@@ -151,8 +148,7 @@ export function resolveFooterState(input: FooterInput): FooterState {
     }
 
     case 'session-locked': {
-      const showBettingModule =
-        isBettingEnabled && !actionState.isAnswerLocked
+      const showBettingModule = isBettingEnabled && !actionState.isAnswerLocked
       return {
         bettingModule: showBettingModule
           ? {
