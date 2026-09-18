@@ -125,7 +125,18 @@ const showNav = computed(() => !isChurchAdminOnly.value)
 </script>
 
 <template>
-  <UDashboardGroup storage="local" storage-key="interact-admin">
+  <!--
+    The page sits one step behind the surfaces on it, in both modes and in a
+    single palette. Inheriting the root's `bg-background-default` instead would
+    mix palettes: it is the user app's grey (#efefef / #222222), and #222222 is
+    actually *lighter* than the zinc-900 that UCard and the tables sit on, so
+    panels read as sunk into the page rather than raised off it.
+  -->
+  <UDashboardGroup
+    storage="local"
+    storage-key="interact-admin"
+    class="bg-neutral-100 dark:bg-neutral-950"
+  >
     <!--
       `m-2` floats the sidebar off the chrome, which needs the theme's
       `min-h-svh` undone or it overflows the viewport by that margin, and its

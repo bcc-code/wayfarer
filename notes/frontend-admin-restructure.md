@@ -420,6 +420,22 @@ about a dozen Nuxt UI components, nearly all `UIcon`, because it runs on the
 
 Also in this pass:
 
+- **Admin page background put on one palette.** The shell inherited
+  `bg-background-default` from `nuxt.config`'s `rootAttrs` — the _user app's_
+  grey (`#efefef` / `#222222`) — while `UCard` and the tables sit on Nuxt UI's
+  `--ui-bg` (white / zinc-900). In dark mode that made the page **lighter** than
+  the surfaces on it, so panels read as sunk into it rather than raised off it;
+  in light mode it put three surfaces within ~7% lightness of each other, drawn
+  from two different palettes. The shell now carries
+  `bg-neutral-100 dark:bg-neutral-950`: one step behind the surfaces, in both
+  modes, in the palette Nuxt UI maps `neutral` to.
+
+  Worth knowing for future debugging: `--ui-color-neutral-*` is **not** in the
+  built CSS. Nuxt UI generates the palette at runtime from `app.config`
+  (`--ui-color-${color}-${shade}: var(--color-${name}-${shade}, …)`), so a
+  `bg-neutral-*` class greps as "referenced but never defined" in the bundle and
+  looks broken when it is not.
+
 - **Collapsible sidebar dropped** at the user's request, along with
   `UDashboardSidebarCollapse`.
 - **Search is discoverable.** `UDashboardSearch` was mounted but nothing opened
