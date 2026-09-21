@@ -96,3 +96,54 @@ export function toISOString(datetimeLocal: string | undefined): string | null {
   if (!datetimeLocal) return null
   return dayjs(datetimeLocal).toISOString()
 }
+
+// ==================== Project timing ====================
+
+export type ProjectTiming =
+  | { state: 'upcoming'; days: number }
+  | { state: 'running'; days: number }
+  | { state: 'ended'; days: number }
+
+/**
+ * Where a project sits relative to `now`, in whole calendar days.
+ *
+ * Compared at day granularity on purpose: a camp that ends at 23:59 today is
+ * still running, and "0 dager igjen" should mean "today is the last day"
+ * rather than "it ended a few hours ago". Timestamp maths would put both on
+ * the wrong side of the boundary for most of the final day.
+ */
+export function describeProjectTiming(
+  startDate: string,
+  endDate: string,
+  now: Date = new Date(),
+): ProjectTiming {
+  const today = dayjs(now).startOf('day')
+  const start = dayjs(startDate).startOf('day')
+  const end = dayjs(endDate).startOf('day')
+
+  if (today.isBefore(start)) {
+    return { state: 'upcoming', days: start.diff(today, 'day') }
+  }
+  if (today.isAfter(end)) {
+    return { state: 'ended', days: today.diff(end, 'day') }
+  }
+  return { state: 'running', days: end.diff(today, 'day') }
+}
+
+/** Norwegian countdown label for a timing. Admin is Norwegian-only by decision. */
+export function formatProjectCountdown(timing: ProjectTiming): string {
+  const { state, days } = timing
+  if (state === 'upcoming') {
+    if (days === 0) return 'Starter i dag'
+    if (days === 1) return 'Starter i morgen'
+    return `Starter om ${days} dager`
+  }
+  if (state === 'running') {
+    if (days === 0) return 'Siste dag'
+    if (days === 1) return 'Én dag igjen'
+    return `${days} dager igjen`
+  }
+  if (days === 0) return 'Avsluttet i dag'
+  if (days === 1) return 'Avsluttet i går'
+  return `Avsluttet for ${days} dager siden`
+}

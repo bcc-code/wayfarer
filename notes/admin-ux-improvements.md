@@ -57,6 +57,20 @@ That is a _desktop_ bug, not a mobile one: the two sidebars take ~300-600px out
 of the window before the panel gets any, so a viewport breakpoint fires at the
 wrong width on exactly the wide screens admin is used on.
 
+**Global all-time counters are not wanted on any admin page.** Total users,
+total projects, total challenges, total points awarded — none of these are
+things the people running a project care about, so `adminDashboardStats` has no
+consumer. Confirmed by the user 2026-09-21 after seeing them rendered;
+`AdminDashboardStats.vue` is deleted rather than left orphaned. Anything
+numeric on a dashboard has to be **scoped and current** — about a project that
+is running now — or it does not belong.
+
+**Challenges are episodic, so "no active challenges" is not a problem.** They
+are opened at specific points in a bible study to introduce interactivity;
+stretches with nothing active are the normal state of a running project. Any
+health signal built on challenge counts is therefore wrong by construction —
+absence of activity carries no information here.
+
 **Project events are rarely used.** Do not build anything that assumes they
 are populated. Confirmed by the user 2026-09-21, and consistent with what the
 restructure found: the `events/` subtree was _orphaned_ — nothing linked to
@@ -250,7 +264,7 @@ Because admin is desktop-only and Norwegian-only, this is a straight navigation
 problem: nav model, active state, and a landmark that says which church you are
 administering.
 
-### 6. Archived projects are not filtered out anywhere
+### 6. Archived projects are not filtered out anywhere — ☑ fixed 2026-09-21
 
 `ProjectFilter.archived` exists, but the SQL is
 `archived IS NULL OR archived = sqlc.narg('archived')`
@@ -266,11 +280,12 @@ None of the three places that list projects passes it:
 | `projects/index.vue:9`        | `projects(first: 100)`                                                                                       |
 | `AdminProjectSwitcher.vue:11` | `projects(first: 100)` — archived projects in the sidebar switcher                                           |
 
-Cheap to fix and worth doing before the home dashboard is rebuilt, since the
-"active projects" set is what that page is built on. Check whether an
-`archived: false` default belongs in the resolver instead of at three call
-sites — the switcher and the list want the same thing, and a fourth caller will
-forget.
+**Fixed 2026-09-21** by adding `archived: false` to all three queries, as part
+of the home dashboard work.
+
+Still open, deliberately: whether the default belongs in the **resolver** rather
+than at three call sites. The switcher and the list want the same thing, and a
+fourth caller will forget — nothing detects a missing filter.
 
 ### 7. Bring existing components onto the self-contained rule
 
@@ -310,7 +325,7 @@ the table below.
 
 ### `/admin` — home dashboard
 
-**Status:** planned, nothing implemented. Direction agreed 2026-09-21.
+**Status:** item 1 shipped 2026-09-21 (see the log). Items 2-4 outstanding.
 
 Today it shows two all-time counters (13,477 users / 79,649,728 points), five
 raw feedback entries, and an empty "Aktive prosjekter" block. The counters are
@@ -386,13 +401,16 @@ grid. This is the first real case for the Conventions rule.
   answers "what is breaking" much better; the load complaint visible in the
   current page ("appen ikke fungerer når alle i salen skal bruke den samtidig")
   lines up with the loadtest notes in this repo.
-- **`activeChallengesCount === 0` while a project is running** — the strongest
-  alarm available and free from an existing field. It means participants have
-  nothing to do, and nothing surfaces it today.
+- ~~`activeChallengesCount === 0` while a project is running~~ — **rejected.**
+  Challenges are episodic (see Scope decisions), so zero active is ordinary and
+  the "alarm" fires constantly on healthy projects. It shipped, was seen, and
+  was removed the same day.
 - challenge lifecycle problems, derivable from `publishedAt` / `visibleAt` /
-  `startedAt` / `endTime`: unpublished challenges in a project starting
-  tomorrow, challenges whose window has already closed, challenges that will
-  never become visible because `visibleAt` is unset.
+  `startedAt` / `endTime`. These still hold, because each is a **contradiction**
+  rather than an absence: a challenge published but with `visibleAt` unset will
+  never appear; one whose `endTime` has passed while still marked active is
+  inconsistent. Absence of activity is not a signal here — only incoherent
+  configuration is.
 - **incomplete translations** — `translationStatus` on `Project` and
   `Challenge`. Unlike admin, the user-facing app _is_ translated, so a missing
   translation is a real end-user defect. Queryable today; nothing surfaces it.
@@ -404,9 +422,10 @@ used, so a permanent home-page slot costs attention and returns nothing. They
 stay at `/admin/maintenance`.
 
 **3 — Trend sparklines.** Daily active users and challenge completions over
-14-30 days, with a direction indicator. Wanted partly for the visual weight it
-gives the page — the current layout is two small cards in a wide empty row. A
-flat line in September is informative in a way a cumulative total is not.
+14-30 days, with a direction indicator. Must be **scoped to a running project**,
+not global: the same objection that killed the counters applies to a global
+trend line. A flat line for an active camp is informative; a flat line across
+all projects ever is not.
 **The only item needing backend work** (see below), so it must not block 1 and 2.
 Load the `dataviz` skill before drawing anything.
 
@@ -455,7 +474,11 @@ Three things are not, in rough order of value:
 2. **Per-challenge completion counts** — would give the best detector of the
    set, "this challenge is live and nobody has completed it", which catches a
    broken QR code or a wrong date _during_ a camp rather than after.
-3. **A team member count field**, if the join/team funnel is ever wanted.
+3. ~~`Project.participantCount` / `teamCount`~~ — **not needed.** Resolved on
+   the frontend instead: a per-project component runs its own counts query, so
+   the root `users`/`teams` connections suffice. See the 2026-09-21 section
+   entry. (A `Team.memberCount` would still be needed for the join/team funnel,
+   which is a different thing.)
 
 Each means new SQL in `backend/internal/database/queries/`, new GraphQL fields,
 then `make generate` and `pnpm codegen`.
@@ -541,6 +564,272 @@ then `make generate` and `pnpm codegen`.
 ---
 
 ## Update log
+
+### 2026-09-21 — page width capped; shortcut tiles go horizontal
+
+**The home page is capped at `max-w-6xl`.** This is a deliberate exception to
+the restructure's full-width decision, which swapped `UContainer` for a plain
+div on all 40 admin pages. That call was right for tables and card grids and
+wrong here: this page is a single column of prose-like blocks, and stretched
+across a wide screen the project section became seven tiles spread over
+~1600px above a feedback list of one-line entries. The sweep always preserved
+`max-w-*` on deliberate elements; this is one.
+
+**Shortcut tiles are one line each** — icon, label, count — instead of three
+stacked rows. Denser, and entries with no count (Poeng, Innstillinger) now
+simply have none rather than reserving empty space where a number would go.
+The grid tracks widened to `minmax(10rem,1fr)`, which lands all seven on one
+row at the capped width.
+
+Process note: I first read "the card is very long" as height and made the tiles
+horizontal, which was not what was asked. Corrected to a width fix, reverted the
+tile change as unrequested — then the user said the horizontal tiles were good
+too, so they came back. The width cap was the actual fix; the tile layout was a
+lucky accident, and shipping it was the user's call rather than mine.
+
+### 2026-09-21 — progress bar removed; it measured nothing anyone acts on
+
+**Rejected after seeing it: the project progress bar.** The countdown badge
+already carries the actionable part ("101 dager igjen"), and elapsed-fraction
+informs no decision — being 60% through a project does not change what you do
+next. As an unlabelled bar it also did not read as project length at all, which
+is what prompted the question.
+
+`projectProgressPercent` and its six unit tests are **deleted** rather than left
+behind, along with the four component assertions covering the bar. Dead helpers
+with tests still passing are the most convincing kind of dead code.
+
+Worth being honest about why it was there: I chose it partly for the visual
+weight it gave a sparse page. That is the wrong reason to put something on a
+dashboard, and it is the third design element on this page I added and then
+removed for the same underlying mistake — **decoration standing in for
+information**. The stats cards, the no-challenges alarm and this bar all failed
+the same test.
+
+That space is where the per-project **sparkline** belongs once there is data
+behind it. A real trend line earns it; an elapsed-fraction bar does not.
+
+Two things kept from the removal:
+
+- **The branding accent moved to the card's ring.** It was only there to tint
+  the bar, but it does real work: once two or three sections stack they need to
+  be tellable apart at a glance, and a tinted ring does that without implying a
+  measurement.
+- **The shortcut grid is now `auto-fit`.** The fixed 6-column grid orphaned the
+  7th tile on its own row, and the count varies from 4 to 7 with the viewer's
+  permissions, so no fixed number is right —
+  `grid-cols-[repeat(auto-fit,minmax(9rem,1fr))]` collapses empty tracks and
+  stretches whatever is visible to fill one row.
+
+Gate: typecheck 0, lint 0 errors, **577 unit** (583 → −6) and **159 component**
+(163 → −4), build exit 0.
+
+**One unexplained intermittent failure, recorded rather than hidden.** A single
+unit test failed twice — `1 failed | 576 passed` — and in neither run did vitest
+name it before the summary. Both occurrences were in a shell command that ran
+several `pnpm` invocations back to back, which suggested contention between the
+two vitest projects over `node_modules/.cache/nuxt`.
+
+That hypothesis is **not confirmed**: ~20 subsequent runs, including three
+deliberate reproductions of the exact chained command shape and twelve
+consecutive solo runs, are all clean at 577. So it is real but unreproduced and
+undiagnosed. If it recurs, the thing to capture is the test name — run the unit
+project alone with full output rather than piped through `grep`, which is what
+hid it both times.
+
+### 2026-09-21 — active project becomes a section with shortcuts, not a card
+
+The card was the wrong shape. Each active project now gets **its own section**:
+header (logo, name, dates, participant count, countdown, progress bar) plus a
+grid of **shortcuts into that project's sub-pages, each with a live count**.
+Usually there is exactly one active project, so the page is mostly this.
+
+`AdminProjectSummaryCard.vue` is deleted — two card designs in one day, both
+replaced. Keeping the write-up of them because the reasoning is what carried
+over: the progress bar, the timing helpers and the `UProgress` a11y wiring all
+survived into the section unchanged.
+
+**The finding that made this possible: the per-project count constraint was a
+document constraint, not a schema one.** I had recorded that participants and
+teams could not be counted for N projects and needed new `Project` fields. That
+holds only for a single page-level query — GraphQL has no dynamic aliasing. A
+**component that owns its own query** sidesteps it completely: each mounted
+section asks for its own `projectId`, and urql keys the document cache on
+variables so nothing is fetched twice. So participants, teams, superteams,
+challenges, achievements and events counts are all live now, with **no backend
+work**, and `Project.participantCount`/`teamCount` are off the backend list.
+
+**Shortcuts are `PROJECT_NAV`**, the same model the sidebar renders from, so they
+cannot drift from it and permission gating comes for free — `Lag`, `Poeng` and
+`Innstillinger` are gated behind `canAccessTeams` / `canAccessScores` /
+`canEditProject`. "Oversikt" is filtered out because the section title already
+links to the project root.
+
+That gating is also the one thing the component test caught: with no roles
+mocked, three shortcuts correctly did not render and my first assertion was
+simply wrong. It is now asserted in both directions — granted and denied — which
+is the more useful test than the one I set out to write.
+
+Counts are rendered **plainly, never as health signals**, per the scope
+decisions: episodic challenges mean a zero is ordinary, and there is a test
+asserting a zero count renders as "0" with no warning class.
+
+**Still outstanding: the sparklines.** Nothing changed there — `gql/` has no
+time-series query of any kind, so per-project trends (daily active users,
+completions per day) need new SQL and new GraphQL fields. This is now the only
+part of the home page that needs backend work.
+
+### 2026-09-21 — active-project card redesigned as a hero band
+
+The tile-grid card went too. With the challenge count removed as well (not
+something anyone cares about on the home page), the two-tile grid held one real
+number and one "Åpne prosjekt" link — structure with nothing to structure.
+
+`AdminProjectVitals.vue` is replaced by **`AdminProjectSummaryCard.vue`**: logo,
+name, date range, countdown badge and arrow on one line, with a thin progress
+bar underneath showing how far through the project we are. The whole band is the
+link. Renamed because "vitals" described stats it no longer shows.
+
+Chosen from three sketched options rather than guessed at — the previous two
+design calls on this page were both mine and both wrong, so the direction was
+worth one question.
+
+Three things worth keeping:
+
+- **The card is reused for the "next project" block**, which previously had its
+  own bespoke header. Progress reads 0% for something that has not started,
+  which is correct and meaningful, so one component covers both states and the
+  readiness tiles simply sit below it.
+- **`activeChallengesCount` is out of the query.** Nothing renders it any more,
+  so fetching it was waste.
+- **The bar is `UProgress`, not a hand-rolled div** (the user's suggestion; my
+  first cut was a div, which threw away real semantics for nothing).
+
+**`UProgress`'s accessibility props are not attributes, and this is worth
+knowing before using it anywhere else.** `role="progressbar"` sits on an *inner*
+element (`data-slot="base"`), so an `aria-label` on the `<UProgress>` tag lands
+on the role-less outer wrapper and is silently ignored — while reka-ui's own
+default fills the real element with `aria-label="66%"`, i.e. a percentage as the
+element's *name*. The working levers are the props: `get-value-label` feeds that
+element's `aria-label` and `get-value-text` its `aria-valuetext`. Found by a
+component test failing (`expected '50%' to contain 'Spring Revival'`) and
+confirmed against the rendered markup, not reasoned about — the attribute form
+looks correct in the template and produces no warning.
+
+`projectProgressPercent` is pure and clamped at both ends, and returns 0 rather
+than `NaN` for a zero-length, inverted or unparseable range — bad data renders
+an empty bar instead of `NaN%`. Six unit tests cover exactly those edges.
+
+`test/component/AdminProjectSummaryCard.test.ts` (8 cases) is the first
+component test in the admin layer. Two of its assertions exist because the
+failure mode is silent: the `aria-label`/`aria-valuetext` wiring above, and that
+`:ui="{ indicator: 'bg-(--accent)' }"` actually **merges** — a `ui` override
+that fails to merge leaves the bar on the default colour with no error anywhere.
+
+Gate: typecheck 0, lint 0 errors, **583 unit** (577 → +6) and **159 component**
+(151 → +8), build exit 0.
+
+### 2026-09-21 — stats cards and the challenge alarm removed after review
+
+Both were mine, and both were wrong in the same way: **a number is only useful
+on this page if it is scoped and current.**
+
+**The four stat cards are gone**, and `AdminDashboardStats.vue` is deleted
+rather than left orphaned. Total users, total projects, total challenges, total
+points awarded — nobody running a project cares about any of them. Note that I
+had already written the diagnosis for this: the original page's two counters
+were criticised in this very note as "cumulative totals that never meaningfully
+move". I then fixed the *grid* they sat in and added two more of them. The
+layout bug was real; fixing it was beside the point.
+
+`adminDashboardStats` now has no consumer in the frontend at all. The
+`AdminHomeStats` query and the `canViewGlobalStats` permission added for it are
+both removed. The query split it motivated still stands on `feedback` alone,
+which is also `@requireRole(["admin","superadmin"])` — so the project-admin fix
+survives the removal.
+
+**The "ingen aktive utfordringer" warning is gone.** I had called it "the
+strongest alarm available" and "the best signal on the page". It is not a signal
+at all: challenges are **episodic**, opened at specific points in a bible study
+to introduce interactivity, so a running project with none active is the normal
+state. The alarm would have fired on healthy projects more or less permanently.
+The count stays as plain information, with no warning colour.
+
+Recorded as two scope decisions, because both generalise beyond this page: no
+global all-time counters anywhere in admin, and no health signal built on the
+*absence* of challenge activity. The surviving lifecycle detectors in item 2 are
+the ones that flag a **contradiction** (published but never visible; ended but
+still active) rather than an absence — that distinction is the whole reason they
+are still worth building.
+
+An unexplained observation, noted rather than chased since the card is deleted:
+`adminDashboardStats.activeProjectsCount` rendered **0** while the page's own
+selection logic found one active project. The backend's definition of "active"
+disagrees with `startDate <= now <= endDate`. Worth knowing if that field is
+ever used again.
+
+### 2026-09-21 — home dashboard: bugs fixed, project block shipped (item 1)
+
+Gate: typecheck 0, lint 0 errors, **577 unit** (560 → +17) and 151 component
+tests green, `pnpm build` exit 0.
+
+**Four bugs fixed**, one more than the plan listed:
+
+1. Upcoming projects are no longer discarded. The selection logic is now a pure
+   function, `utils/homeProjects.ts`.
+2. `AdminDashboardStats` is 4 cards in a container-query grid and renders all
+   six fields the schema exposes, instead of 2 cards in a `lg:grid-cols-4` that
+   left half the row empty.
+3. The page no longer breaks for a `project_admin`. **One query per concern**
+   instead of one per page: `adminDashboardStats` and `feedback` are *both*
+   `@requireRole(["admin","superadmin"])`, so the single document had two fields
+   a project admin cannot read — I had only found one when writing the plan.
+   Each is now its own document, paused behind a permission flag.
+4. **New:** `AdminProjectCard` reads `branding.logoImage?.url`, but the home page
+   *and* the projects list both queried the deprecated `branding.logo`. Project
+   logos have therefore never rendered on any card, silently. Both queries now
+   ask for `logoImage { url }`.
+
+**Cross-cutting #6 fixed at the same time** — `archived: false` added to all
+three project queries (home, list, switcher), since the "active projects" set
+this page is built on was including archived projects.
+
+**What shipped for item 1:** `AdminProjectVitals.vue`, one self-contained card
+per active project — `@container` on its own root, so one card at full width and
+three sharing a row both come out right and the page decides only the grid.
+Active projects are ordered by **ending soonest**, capped at three with an
+"N flere aktive" link, and filtered through `canViewProject` so a project admin
+sees only theirs. Zero active falls back to the next upcoming project with its
+countdown and a readiness check (challenges / achievements / teams, zero
+highlighted). `activeChallengesCount === 0` while running renders as a warning
+on the card.
+
+Also landed early from item 2, because the data was already in hand: the
+feedback panel now filters `handled: false`, shows a total count, and renders
+each entry's **tags** as badges.
+
+**A constraint the plan got wrong, worth knowing before item 2.** The note
+listed participants and teams as queryable per project. They are queryable for
+*one* project via the root `users`/`teams` connections, but **not for N projects
+in a single document** — `Project` has no participant or team count field, and
+GraphQL has no dynamic aliasing. So the vitals card ships with
+`activeChallengesCount` (a real `Project` field) plus dates and countdown, and
+the readiness check uses root counts because it only ever runs for one project.
+Participants and teams need `Project.participantCount` / `teamCount` on the
+backend; a tile with a placeholder in it would have been worse than no tile, so
+there is none.
+
+`canViewGlobalStats` was added to `usePermissions` mirroring
+`adminDashboardStats`'s own directive, with the reason in the doc comment — the
+gate has to exist client-side because the directive errors rather than returning
+null.
+
+**Tests:** `test/unit/homeProjects.test.ts`, 17 cases over the two pure modules
+— ordering, tie-break stability, the cap and overflow count, and the day-boundary
+cases (`describeProjectTiming` compares at day granularity so a camp ending at
+23:59 today still reads as running, not ended). Mutation-checked rather than
+assumed: reinstating the original discard-upcoming bug fails exactly two cases
+and nothing else.
 
 ### 2026-09-21 — home plan reworked for N active projects; events ruled out
 

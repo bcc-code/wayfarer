@@ -6,7 +6,7 @@ definePageMeta({
 
 gql(`
   query AdminProjectsPage {
-    projects(first: 100) {
+    projects(first: 100, filter: { archived: false }) {
       edges {
         node {
           id
@@ -15,7 +15,9 @@ gql(`
           endDate
           startDate
           branding {
-            logo
+            logoImage {
+              url
+            }
             colors {
               light {
                 accent
