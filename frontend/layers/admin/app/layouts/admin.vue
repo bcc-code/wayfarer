@@ -193,6 +193,5 @@ const isDesktop = useMediaQuery('(min-width: 1024px)')
 
     <UDashboardSearch :groups="searchGroups" />
     <AdminConfirmDialog />
-    <QuickAccess />
   </UDashboardGroup>
 </template>

@@ -566,6 +566,17 @@ then `make generate` and `pnpm codegen`.
 
 ## Update log
 
+### 2026-09-21 — AdminTopPerformers deleted
+
+The leaderboard panel that was built but rendered nowhere. It was flagged in the
+first pass over this page ("use it here or delete it") and stayed open through
+the whole effort — deleted rather than carried further. No references anywhere
+and it declared no queries of its own, so nothing else moved.
+
+`components/admin/dashboard/` now holds only `AdminRecentActivity.vue`, which
+is itself a misnomer: it renders unhandled feedback, not recent activity. Worth
+renaming when that panel is next touched.
+
 ### 2026-09-21 — sparkline interaction, empty state, accent ring removed
 
 Follow-ups from looking at the rendered chart. Three of the four were only
