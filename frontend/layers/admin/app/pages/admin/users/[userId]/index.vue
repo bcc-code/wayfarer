@@ -15,6 +15,7 @@ gql(`
 	query AdminUserPageCurrentProject {
 		currentProject {
 			id
+			name
 		}
 	}
 `)
@@ -26,6 +27,7 @@ gql(`
       personUuid
       createdAt
 			name
+			email
 			membersId
 			age
 			image
@@ -50,6 +52,20 @@ gql(`
 				scope {
 					id
 					type
+					# RoleScope resolves these itself, so the card can name the
+					# scope instead of printing its ULID.
+					church {
+						id
+						name
+					}
+					project {
+						id
+						name
+					}
+					team {
+						id
+						name
+					}
 				}
 			}
 			consentStatus {
@@ -104,7 +120,10 @@ gql(`
 				}
 			}
 		}
-		feedback(filter: { userId: $id }, first: 100) {
+		# 10, matching the "Viser 10 av N" notice this panel renders. It asked for
+		# 100 and rendered all of them unsliced, so the notice was simply untrue —
+		# and 100 entries inline is a wall in a panel that has a "Vis alle" link.
+		feedback(filter: { userId: $id }, first: 10) {
 			totalCount
 			edges {
 				node {
@@ -190,6 +209,132 @@ const { data: currentProjectData } = useAdminUserPageCurrentProjectQuery({
 
 const currentProjectId = computed(
   () => currentProjectData.value?.currentProject.id,
+)
+type UserRole = NonNullable<AdminUserPageQuery['user']>['roles'][number]
+
+/**
+ * What a role is scoped to, by name.
+ *
+ * `RoleScope` resolves `church`/`project`/`team` server-side, so the card can
+ * say "Østfold" where it used to print `CH01K9VZ865699692N7FVTXYR4AQ`. The id
+ * is the fallback rather than the default: a scope pointing at something
+ * deleted still needs to render, and then the raw id is the only honest thing
+ * left to show.
+ */
+function scopeLabel(scope: UserRole['scope']): string | undefined {
+  if (!scope) return undefined
+  return (
+    scope.church?.name ?? scope.project?.name ?? scope.team?.name ?? scope.id
+  )
+}
+
+/**
+ * A readable language, not a bare code. The DB stores `no` where the app uses
+ * `nb`, so it goes through the existing mapping before being named.
+ */
+const LANGUAGE_NAMES = new Intl.DisplayNames(['nb'], { type: 'language' })
+const languageLabel = computed(() => {
+  const code = data.value?.user.language
+  if (!code) return undefined
+  const locale = dbLanguageToLocale(code)
+  try {
+    return LANGUAGE_NAMES.of(locale) ?? locale
+  } catch {
+    // Intl throws on a malformed tag; the raw code is better than nothing.
+    return locale
+  }
+})
+
+/**
+ * The three consent lists as one, grouped by sorting rather than by heading.
+ *
+ * Each row already carries a status badge, so the "Ventende / Akseptert /
+ * Avvist" sub-headings said the same word twice. Sorting on status keeps the
+ * grouping — pending first, because it is the only one that wants an admin to
+ * do something — while dropping the duplication, and it normalises the two
+ * different shapes the API returns: `pendingConsents` are bare `Consent`s,
+ * while accepted and rejected are `UserConsent`s wrapping one.
+ */
+type ConsentRowStatus = 'pending' | 'accepted' | 'rejected'
+
+interface ConsentRow {
+  /** Unique across the three source lists, which can share ids. */
+  rowKey: string
+  status: ConsentRowStatus
+  title: string
+  version: number
+  consentKey: string
+  /** Only accepted/rejected rows have a decision date. */
+  actionDate?: string
+  /** Only locally-managed accepted consents can be withdrawn here. */
+  removableConsentId?: string
+}
+
+const CONSENT_STATUS_ORDER: Record<ConsentRowStatus, number> = {
+  pending: 0,
+  accepted: 1,
+  rejected: 2,
+}
+
+const CONSENT_STATUS_LABELS: Record<ConsentRowStatus, string> = {
+  pending: 'Ventende',
+  accepted: 'Akseptert',
+  rejected: 'Avvist',
+}
+
+const CONSENT_STATUS_COLORS: Record<
+  ConsentRowStatus,
+  'warning' | 'success' | 'error'
+> = {
+  pending: 'warning',
+  accepted: 'success',
+  rejected: 'error',
+}
+
+const consentRows = computed<ConsentRow[]>(() => {
+  const status = data.value?.user.consentStatus
+  if (!status) return []
+
+  const rows: ConsentRow[] = [
+    ...status.pendingConsents.map((consent) => ({
+      rowKey: `pending-${consent.id}`,
+      status: 'pending' as const,
+      title: consent.title,
+      version: consent.version,
+      consentKey: consent.key,
+    })),
+    ...status.acceptedConsents.map((item) => ({
+      rowKey: `accepted-${item.id}`,
+      status: 'accepted' as const,
+      title: item.consent.title,
+      version: item.consent.version,
+      consentKey: item.consent.key,
+      actionDate: item.actionDate,
+      removableConsentId:
+        item.consent.managementType === ConsentManagementType.Local
+          ? item.consent.id
+          : undefined,
+    })),
+    ...status.rejectedConsents.map((item) => ({
+      rowKey: `rejected-${item.id}`,
+      status: 'rejected' as const,
+      title: item.consent.title,
+      version: item.consent.version,
+      consentKey: item.consent.key,
+      actionDate: item.actionDate,
+    })),
+  ]
+
+  return rows.sort(
+    (a, b) =>
+      CONSENT_STATUS_ORDER[a.status] - CONSENT_STATUS_ORDER[b.status] ||
+      a.title.localeCompare(b.title, 'nb'),
+  )
+})
+
+/** Names the project the points panel is scoped to. */
+const currentProjectName = computed(
+  () => currentProjectData.value?.currentProject.name,
 )
 
 // Main query that depends on having the project ID
@@ -478,16 +623,65 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
 </script>
 
 <template>
-  <div>
+  <!--
+    Capped at the same `max-w-6xl` as the home dashboard, for the same reason.
+    Full panel width stretched every card to ~1640px while its content sat in
+    the left third — and it left each role row's delete button orphaned about
+    1500px from the label it deletes, so you had to track across empty space to
+    see what you were removing.
+  -->
+  <div class="max-w-6xl">
     <div>
       <AdminQueryState :fetching :error>
         <div v-if="data" class="space-y-6">
-          <!-- User Header -->
-          <div class="flex items-start justify-between">
-            <div>
-              <h1 class="text-3xl font-bold">{{ data.user.name }}</h1>
+          <!--
+            Identity card rather than a bare name. The header used to carry the
+            least information on the page — everything identifying (church,
+            roles, teams, points) sat below the fold, while the one prominent
+            element held a single string. The avatar was already being fetched
+            and thrown away.
+          -->
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div class="flex items-start gap-4">
+              <UAvatar
+                :src="data.user.image ?? undefined"
+                :alt="data.user.name"
+                size="3xl"
+              />
+              <div class="min-w-0">
+                <h1 class="text-3xl font-bold">{{ data.user.name }}</h1>
+                <p v-if="data.user.email" class="text-muted text-sm">
+                  {{ data.user.email }}
+                </p>
+                <!--
+                  Separated and spelled out: "Østfold 25 år nb" ran together as
+                  one string, and a bare language code says nothing to a reader
+                  who does not already know it.
+                -->
+                <div
+                  class="text-muted mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm"
+                >
+                  <NuxtLink
+                    :to="{
+                      name: 'admin-churches-churchId',
+                      params: { churchId: data.user.church.id },
+                    }"
+                    class="hover:underline"
+                  >
+                    {{ data.user.church.name }}
+                  </NuxtLink>
+                  <template v-if="data.user.age">
+                    <span aria-hidden="true">·</span>
+                    <span>{{ data.user.age }} år</span>
+                  </template>
+                  <template v-if="data.user.language">
+                    <span aria-hidden="true">·</span>
+                    <span>{{ languageLabel }}</span>
+                  </template>
+                </div>
+              </div>
             </div>
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2">
               <UButton
                 v-if="canCheckAchievements"
                 icon="i-lucide-trophy"
@@ -510,115 +704,81 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
             </div>
           </div>
 
-          <!-- User Info -->
-          <div class="space-y-6">
-            <!-- Identity -->
-            <div>
-              <h3 class="mb-2 text-xs font-medium uppercase tracking-wide">
-                Identitet
-              </h3>
-              <dl
-                class="text-sm grid grid-cols-[auto_1fr] gap-x-6 divide-y divide-default"
-              >
-                <div class="py-2 grid grid-cols-subgrid col-span-full">
-                  <dt class="text-muted w-36 shrink-0">ID</dt>
-                  <dd class="font-mono">{{ data.user.id }}</dd>
-                </div>
-                <div class="py-2 grid grid-cols-subgrid col-span-full">
-                  <dt class="text-muted w-36 shrink-0">Members-ID</dt>
-                  <dd class="font-medium">{{ data.user.membersId }}</dd>
-                </div>
-                <div class="py-2 grid grid-cols-subgrid col-span-full">
-                  <dt class="text-muted w-36 shrink-0">Members-UUID</dt>
-                  <dd class="font-medium">{{ data.user.personUuid }}</dd>
-                </div>
-                <div class="py-2 grid grid-cols-subgrid col-span-full">
-                  <dt class="text-muted w-36 shrink-0">Bruker opprettet</dt>
-                  <dd class="font-medium">
-                    {{ formatDateTime(data.user.createdAt) }}
-                  </dd>
-                </div>
-              </dl>
-            </div>
+          <!--
+            Sync-lock and the technical identifiers share one quiet row. The
+            lock was buried inside a definition list about the church, which
+            hid a consequential action; promoting it to a full-width card then
+            overstated it — it is the rarest thing anyone does here. A labelled
+            row with the state spelled out is the middle ground.
+          -->
+          <div
+            class="border-default flex flex-wrap items-center gap-x-6 gap-y-2 border-y py-2 text-sm"
+          >
+            <UCollapsible>
+              <UButton
+                variant="link"
+                color="neutral"
+                size="sm"
+                class="px-0"
+                trailing-icon="i-lucide-chevron-down"
+                label="Tekniske detaljer"
+              />
+              <template #content>
+                <dl
+                  class="divide-default mt-2 grid grid-cols-[auto_1fr] gap-x-6 divide-y text-sm"
+                >
+                  <div class="col-span-full grid grid-cols-subgrid py-2">
+                    <dt class="text-muted w-36 shrink-0">Bruker-ID</dt>
+                    <dd class="font-mono">{{ data.user.id }}</dd>
+                  </div>
+                  <div class="col-span-full grid grid-cols-subgrid py-2">
+                    <dt class="text-muted w-36 shrink-0">Members-ID</dt>
+                    <dd class="font-mono">{{ data.user.membersId }}</dd>
+                  </div>
+                  <div class="col-span-full grid grid-cols-subgrid py-2">
+                    <dt class="text-muted w-36 shrink-0">Members-UUID</dt>
+                    <dd class="font-mono">{{ data.user.personUuid }}</dd>
+                  </div>
+                  <div class="col-span-full grid grid-cols-subgrid py-2">
+                    <dt class="text-muted w-36 shrink-0">Menighets-ID</dt>
+                    <dd class="font-mono">{{ data.user.church.id }}</dd>
+                  </div>
+                  <div class="col-span-full grid grid-cols-subgrid py-2">
+                    <dt class="text-muted w-36 shrink-0">Bruker opprettet</dt>
+                    <dd>{{ formatDateTime(data.user.createdAt) }}</dd>
+                  </div>
+                </dl>
+              </template>
+            </UCollapsible>
 
-            <!-- Personal -->
-            <div>
-              <h3 class="mb-2 text-xs font-medium uppercase tracking-wide">
-                Personlig
-              </h3>
-              <dl
-                class="text-sm grid grid-cols-[auto_1fr] gap-x-6 divide-y divide-default"
-              >
-                <div class="py-2 grid grid-cols-subgrid col-span-full">
-                  <dt class="text-muted w-36 shrink-0">Alder</dt>
-                  <dd class="font-medium">{{ data.user.age }} år</dd>
-                </div>
-                <div class="py-2 grid grid-cols-subgrid col-span-full">
-                  <dt class="text-muted w-36 shrink-0">Språk</dt>
-                  <dd class="font-medium">{{ data.user.language }}</dd>
-                </div>
-              </dl>
-            </div>
-
-            <!-- Church -->
-            <div>
-              <h3 class="mb-2 text-xs font-medium uppercase tracking-wide">
-                Menighet
-              </h3>
-              <dl
-                class="text-sm grid grid-cols-[auto_1fr] gap-x-6 divide-y divide-default"
-              >
-                <div class="py-2 grid grid-cols-subgrid col-span-full">
-                  <dt class="text-muted w-36 shrink-0">Navn</dt>
-                  <dd>
-                    <NuxtLink
-                      :to="{
-                        name: 'admin-churches-churchId',
-                        params: { churchId: data.user.church.id },
-                      }"
-                      class="font-medium hover:underline"
-                    >
-                      {{ data.user.church.name }}
-                    </NuxtLink>
-                  </dd>
-                </div>
-                <div class="py-2 grid grid-cols-subgrid col-span-full">
-                  <dt class="text-muted w-36 shrink-0">ID</dt>
-                  <dd class="font-mono">{{ data.user.church.id }}</dd>
-                </div>
-                <div class="py-2 grid grid-cols-subgrid col-span-full">
-                  <dt class="text-muted w-36 shrink-0">Synk-lås</dt>
-                  <dd class="flex items-center gap-2">
-                    <template v-if="isChurchLocked">
-                      <UBadge color="warning" variant="soft">
-                        Låst til
-                        {{ formatDateTime(data.user.churchLockedUntil!) }}
-                      </UBadge>
-                      <UButton
-                        size="xs"
-                        variant="soft"
-                        color="neutral"
-                        :loading="unlocking"
-                        @click="handleUnlockChurch"
-                      >
-                        Lås opp
-                      </UButton>
-                    </template>
-                    <template v-else>
-                      <span class="text-dimmed text-sm">Ikke låst</span>
-                      <UButton
-                        size="xs"
-                        variant="soft"
-                        color="neutral"
-                        :loading="locking"
-                        @click="handleLockChurch"
-                      >
-                        Lås i 6 måneder
-                      </UButton>
-                    </template>
-                  </dd>
-                </div>
-              </dl>
+            <div v-if="canAssignRoles" class="flex items-center gap-2">
+              <span class="text-muted">Menighetslås:</span>
+              <template v-if="isChurchLocked">
+                <UBadge color="warning" variant="soft">
+                  Låst til {{ formatDateTime(data.user.churchLockedUntil!) }}
+                </UBadge>
+                <UButton
+                  size="xs"
+                  variant="soft"
+                  color="neutral"
+                  :loading="unlocking"
+                  @click="handleUnlockChurch"
+                >
+                  Lås opp
+                </UButton>
+              </template>
+              <template v-else>
+                <span class="text-dimmed">Ikke låst</span>
+                <UButton
+                  size="xs"
+                  variant="soft"
+                  color="neutral"
+                  :loading="locking"
+                  @click="handleLockChurch"
+                >
+                  Lås i 6 måneder
+                </UButton>
+              </template>
             </div>
           </div>
 
@@ -691,13 +851,12 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
                   <UBadge variant="soft" size="lg">
                     {{ roleLabels[role.role] ?? role.role }}
                   </UBadge>
-                  <div v-if="role.scope">
-                    <span class="text-dimmed text-sm">Omfang: </span>
-                    <span class="text-sm font-medium">
-                      {{ capitalizeFirst(role.scope.type) }}
-                    </span>
-                    <span class="text-dimmed ml-2 text-xs">
-                      ({{ role.scope.id }})
+                  <div v-if="role.scope" class="text-sm">
+                    <span class="text-dimmed">{{
+                      capitalizeFirst(role.scope.type)
+                    }}</span>
+                    <span class="ml-2 font-medium">
+                      {{ scopeLabel(role.scope) }}
                     </span>
                   </div>
                 </div>
@@ -724,127 +883,69 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
           <!-- Consents Card -->
           <UCard>
             <template #header>
-              <h2 class="text-xl font-semibold">Samtykker</h2>
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <h2 class="text-xl font-semibold">
+                  Samtykker
+                  <span
+                    v-if="consentRows.length"
+                    class="text-dimmed text-sm font-normal"
+                  >
+                    ({{ consentRows.length }})
+                  </span>
+                </h2>
+              </div>
             </template>
 
-            <div class="space-y-4">
-              <!-- Pending Consents -->
-              <div v-if="data.user.consentStatus.pendingConsents.length > 0">
-                <h3 class="text-muted mb-2 text-sm font-medium">Ventende</h3>
-                <div class="space-y-2">
-                  <div
-                    v-for="consent in data.user.consentStatus.pendingConsents"
-                    :key="consent.id"
-                    class="border-default flex items-center justify-between rounded-md border p-3"
-                  >
-                    <div class="flex items-center gap-3">
-                      <UBadge variant="soft" color="warning">Ventende</UBadge>
-                      <div>
-                        <span class="font-medium">{{ consent.title }}</span>
-                        <span class="text-dimmed ml-2 text-xs"
-                          >v{{ consent.version }}</span
-                        >
-                      </div>
-                    </div>
-                    <code class="text-dimmed text-xs">{{ consent.key }}</code>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Accepted Consents -->
-              <div v-if="data.user.consentStatus.acceptedConsents.length > 0">
-                <h3 class="text-muted mb-2 text-sm font-medium">Akseptert</h3>
-                <div class="space-y-2">
-                  <div
-                    v-for="item in data.user.consentStatus.acceptedConsents"
-                    :key="item.id"
-                    class="border-default flex items-center justify-between gap-4 rounded-md border p-3"
-                  >
-                    <div class="flex items-center gap-3">
-                      <UBadge variant="soft" color="success">Akseptert</UBadge>
-                      <div>
-                        <span class="font-medium">{{
-                          item.consent.title
-                        }}</span>
-                        <span class="text-dimmed ml-2 text-xs">
-                          v{{ item.consent.version }}
-                        </span>
-                      </div>
-                    </div>
-                    <UButton
-                      v-if="
-                        item.consent.managementType ===
-                        ConsentManagementType.Local
-                      "
-                      color="neutral"
-                      variant="soft"
-                      size="sm"
-                      class="ml-auto"
-                      @click="
-                        openRemoveConsentModal(
-                          item.consent.id,
-                          item.consent.title,
-                        )
-                      "
-                    >
-                      Fjern samtykke
-                    </UButton>
-                    <div class="text-right">
-                      <code class="text-dimmed text-xs">
-                        {{ item.consent.key }}
-                      </code>
-                      <div class="text-dimmed text-xs">
-                        {{ formatDateTime(item.actionDate) }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Rejected Consents -->
-              <div v-if="data.user.consentStatus.rejectedConsents.length > 0">
-                <h3 class="text-muted mb-2 text-sm font-medium">Avvist</h3>
-                <div class="space-y-2">
-                  <div
-                    v-for="item in data.user.consentStatus.rejectedConsents"
-                    :key="item.id"
-                    class="border-default flex items-center justify-between rounded-md border p-3"
-                  >
-                    <div class="flex items-center gap-3">
-                      <UBadge variant="soft" color="error">Avvist</UBadge>
-                      <div>
-                        <span class="font-medium">{{
-                          item.consent.title
-                        }}</span>
-                        <span class="text-dimmed ml-2 text-xs"
-                          >v{{ item.consent.version }}</span
-                        >
-                      </div>
-                    </div>
-                    <div class="text-right">
-                      <code class="text-dimmed text-xs">{{
-                        item.consent.key
-                      }}</code>
-                      <div class="text-dimmed text-xs">
-                        {{ formatDateTime(item.actionDate) }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- No consents -->
+            <!--
+              One list, grouped by sorting: pending first, then accepted, then
+              rejected, alphabetical within each. The badge carries the status,
+              so the old sub-headings repeated it.
+            -->
+            <div v-if="consentRows.length" class="space-y-2">
               <div
-                v-if="
-                  data.user.consentStatus.pendingConsents.length === 0 &&
-                  data.user.consentStatus.acceptedConsents.length === 0 &&
-                  data.user.consentStatus.rejectedConsents.length === 0
-                "
-                class="text-dimmed"
+                v-for="row in consentRows"
+                :key="row.rowKey"
+                class="border-default flex flex-wrap items-center justify-between gap-3 rounded-md border p-3"
               >
-                Ingen samtykkeaktivitet
+                <div class="flex min-w-0 items-center gap-3">
+                  <UBadge
+                    variant="soft"
+                    :color="CONSENT_STATUS_COLORS[row.status]"
+                  >
+                    {{ CONSENT_STATUS_LABELS[row.status] }}
+                  </UBadge>
+                  <div class="min-w-0">
+                    <span class="font-medium">{{ row.title }}</span>
+                    <span class="text-dimmed ml-2 text-xs">
+                      v{{ row.version }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="ms-auto flex items-center gap-3">
+                  <UButton
+                    v-if="row.removableConsentId"
+                    color="neutral"
+                    variant="soft"
+                    size="sm"
+                    @click="
+                      openRemoveConsentModal(row.removableConsentId, row.title)
+                    "
+                  >
+                    Fjern samtykke
+                  </UButton>
+                  <div class="text-right">
+                    <code class="text-dimmed text-xs">
+                      {{ row.consentKey }}
+                    </code>
+                    <div v-if="row.actionDate" class="text-dimmed text-xs">
+                      {{ formatDateTime(row.actionDate) }}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
+            <div v-else class="text-dimmed">Ingen samtykkeaktivitet</div>
           </UCard>
 
           <!-- Feedback Card -->
@@ -910,12 +1011,23 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
             <div v-else class="text-dimmed">Ingen tilbakemeldinger</div>
           </UCard>
 
-          <!-- Score Journal Card -->
+          <!--
+            Both the total and the journal are filtered to the *current*
+            project (`points(projectId:)`, `adminScoreJournal(filter:)`), but
+            the panel said only "Poenglogg" and "N poeng" — which reads as the
+            user's lifetime total. Naming the project is the whole fix.
+          -->
           <UCard>
             <template #header>
-              <div class="flex items-center justify-between">
+              <div class="flex flex-wrap items-center justify-between gap-2">
                 <h2 class="text-xl font-semibold">
                   Poenglogg
+                  <span
+                    v-if="currentProjectName"
+                    class="text-muted text-sm font-normal"
+                  >
+                    i {{ currentProjectName }}
+                  </span>
                   <UBadge color="neutral" variant="soft">
                     {{ data.user.points }} poeng
                   </UBadge>

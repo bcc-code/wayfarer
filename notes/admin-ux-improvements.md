@@ -204,7 +204,7 @@ re-litigated.
 | `projects/[projectId]/superteams/[superTeamId].vue` | `first: 200` (teams)    | open — **picker**; wants a searchable select, not pages                                 |
 | `users/[userId]/achievements.vue`                   | `first: 200`            | open — **picker**, as above                                                             |
 | `projects/index.vue`                                | `first: 100`            | open — card grid                                                                        |
-| `users/[userId]/index.vue`                          | `first: 100` (feedback) | open — panel inside a detail page                                                       |
+| `users/[userId]/index.vue` | ~~`first: 100`~~ (feedback) | ☑ **done** — `first: 10`, matching the panel's own notice |
 | `projects/[projectId]/challenges/new.vue`           | `first: 100` (events)   | open — **dropdown**                                                                     |
 | `projects/[projectId]/superteams/distribute.vue`    | `first: 100` (events)   | open — **dropdown**                                                                     |
 | `maintenance/check-points-journal.vue`              | `first: 50`             | open — table                                                                            |
@@ -533,7 +533,7 @@ then `make generate` and `pnpm codegen`.
 | `projects/index.vue`              | `/admin/projects`           | 119      | ☐   | Card grid, container queries done. No search; `first: 100`.                                                   |
 | `projects/new.vue`                | `/admin/projects/new`       | 167      | ☐   |                                                                                                               |
 | `users/index.vue`                 | `/admin/users`              | 199      | ◐   | **On `AdminListView`** — the reference conversion. Search + church filter + URL state.                        |
-| `users/[userId]/index.vue`        | `/admin/users/:userId`      | **1063** | ☐   | Outlier, see #4. Feedback panel `first: 100`.                                                                 |
+| `users/[userId]/index.vue`        | `/admin/users/:userId`      | **1182** | ◐   | Identity header + 4 bugs fixed; still the #4 outlier, logs hand-rolled, actions scattered.                    |
 | `users/[userId]/achievements.vue` | `…/achievements`            | 389      | ☐   | `first: 200` picker — see #1, wants a searchable select, not pagination.                                      |
 | `churches/[churchId].vue`         | `/admin/churches/:churchId` | 175      | ☐   | Drill-down leaf by design — no list page, no nav entry (decision recorded in restructure note).               |
 | `consents/index.vue`              | `/admin/consents`           | 109      | ☐   | Plain list (`[Consent!]!`), not a connection — off `AdminListView` by decision, see log. Sibling empty state. |
@@ -602,6 +602,120 @@ then `make generate` and `pnpm codegen`.
 ---
 
 ## Update log
+
+### 2026-09-21 — user page: scope names, width cap, consents sorted
+
+**1. The roles card names its scope instead of printing a ULID.**
+`RoleScope` (`gql/roles.graphqls:5`) already resolves `church`, `project` and
+`team` server-side — the query only asked for `{ id type }`, so the card showed
+`Omfang: Church (CH01K9VZ865699692N7FVTXYR4AQ)`. It now reads
+`Church — Østfold`. The id survives as the *fallback*, not the default: a scope
+pointing at something deleted still has to render, and then the raw id is the
+only honest thing left.
+
+This also closed an inconsistency the same page had just created — machine ids
+were collapsed into "Tekniske detaljer" as support aids, while two of them stayed
+inline in the most human-readable panel on the page.
+
+**2. Capped at `max-w-6xl`**, the same as the home dashboard. Full panel width
+stretched every card to ~1640px with its content in the left third, and left
+each role row's delete button orphaned ~1500px from the label it deletes — you
+had to track across empty space to see what you were about to remove. That
+distance was the real cost, not the emptiness.
+
+**3. Consents are one list, grouped by sorting.** Three sub-headings
+(Ventende / Akseptert / Avvist) each wrapped rows that *already* carried a badge
+saying the same word. Now sorted by status — pending first, since it is the only
+one wanting an admin to act — then alphabetically within each.
+
+The normalisation is the interesting part: the API returns **two different
+shapes**. `pendingConsents` are bare `Consent`s, while `acceptedConsents` and
+`rejectedConsents` are `UserConsent`s wrapping one, with an `actionDate` and a
+`managementType` that decides whether the consent can be withdrawn here. A
+`ConsentRow` type flattens all three, and `rowKey` is prefixed per source
+because ids can collide across the lists.
+
+**Worth being honest about size:** the template lost ~50 lines and the script
+gained ~115, so the file went **1,115 → 1,182**. Flattening three copy-pasted
+blocks into one is still the right trade, but the normalisation logic belongs in
+an `AdminUserConsents` component rather than in a page that is already the #4
+outlier. This is the third change to make that split more attractive rather than
+less.
+
+### 2026-09-21 — user header, second pass: three things I got wrong
+
+Shown the before/after, the user's verdict was "I don't know if it is better".
+Fair — the four bug fixes were wins, but the layout had two regressions I
+introduced and one thing I made worse. Recorded because the pattern is the same
+each time: **adding something prominent is not the same as adding something
+useful.**
+
+- **Role badges in the header were strictly redundant, and worse than what they
+  duplicated.** They rendered raw enums (`CHURCH_ADMIN`, `TEAM_LEAD`) while the
+  "Roller og tillatelser" card one screen below shows the same roles with proper
+  Norwegian labels *plus* their scope and a delete action. The page already had
+  a `roleLabels` map I did not use. Removed.
+- **"Østfold 25 år nb" ran together as one string.** The old labelled rows were
+  scannable and I traded that for compactness; a bare `nb` also says nothing to
+  a reader who does not already know it. Now separated with `·`, and the code
+  goes through the existing `dbLanguageToLocale` (the DB stores `no` where the
+  app uses `nb`) into `Intl.DisplayNames`, so it reads "norsk bokmål".
+- **Menighetslås was over-promoted.** It had been hiding as the third `dt`
+  inside a definition list, so I gave it a full-width card — which put the
+  *rarest* action on the page in its second-most prominent slot. It is now a
+  compact labelled row sharing a quiet line with "Tekniske detaljer", with the
+  state still spelled out rather than reading "Synk-lås: Ikke låst".
+
+The middle position was the right one both times and I overshot it in each
+direction before finding it.
+
+### 2026-09-21 — user detail page: identity first, four bugs fixed
+
+Analysis of `users/[userId]/index.vue` found **four things that were simply
+wrong**, separate from any layout opinion. All four are fixed; the layout
+changes are the first three items of the agreed plan.
+
+1. **`image` was fetched and never rendered.** The query asked for the avatar
+   URL and no `UAvatar` existed on the page. Same class as the `logoImage` bug
+   on the project cards: paid for, dropped. On a page about a person it is the
+   fastest identity cue available.
+2. **`email` was not fetched at all** — while the users *list* shows it under
+   every name. The detail page therefore displayed **less** identifying
+   information than the row that links to it.
+3. **Points were project-scoped and presented as global.** Both
+   `points(projectId:)` and `adminScoreJournal(filter:)` are filtered to the
+   current project, but the panel said only "Poenglogg" and "N poeng" — which
+   any reader takes as a lifetime total. The header now names the project.
+4. **The feedback panel's own notice was untrue.** It rendered
+   `Viser 10 av N oppføringer` while `feedbackEntries` was unsliced over a
+   `first: 100` query — so it showed up to 100 rows and claimed 10. The query is
+   `first: 10` now, which makes the notice true *and* removes a 100-row wall
+   from a panel that already links to the full feedback page. A label that lies
+   is worse than a missing one.
+
+**Layout changes:**
+
+- **The header is an identity card**: avatar, name, email, linked church,
+  age/language, role badges. It previously carried the least information on the
+  page — a single string — while church, roles, teams and points all sat below
+  the fold.
+- **Machine identifiers are collapsed** behind "Tekniske detaljer" (user ULID,
+  Members-ID, Members-UUID, church ID, created-at). They had been the *first*
+  block on the page, above age, language and church: support aids in the prime
+  position, the same irrelevant-first pattern as the old dashboard counters.
+  Still one click away.
+- **Church sync-lock got its own row.** It was the third `dt` inside a
+  definition list about the church — a real, consequential admin action hiding
+  in reference data. It now states what the lock *means* ("synk fra Members
+  endrer ikke menighet") rather than just "Synk-lås: Ikke låst", and is gated on
+  `canAssignRoles`.
+
+**Still open on this page**, from the same analysis: the two logs are
+hand-rolled lists of bordered divs rather than the standardised table
+machinery, actions remain spread across four places, two heading scales
+disagree (`h3 text-xs uppercase` for info groups vs `h2 text-xl` for cards),
+and the file is 1,108 lines with no component extraction — cross-cutting #4.
+Splitting it is the prerequisite for the rest.
 
 ### 2026-09-21 — fixed: every user detail page was a 500
 
