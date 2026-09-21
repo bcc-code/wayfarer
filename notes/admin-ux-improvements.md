@@ -28,8 +28,8 @@ stubs.
 
 ## Scope decisions
 
-Settled, so they do not get re-raised. Both of these remove work the inventory
-had flagged.
+Settled, so they do not get re-raised. All three remove or redirect work the
+inventory had flagged.
 
 **No i18n in the admin panel.** Everyone who works in admin is Norwegian, so
 hardcoded Norwegian strings are the intended end state, not debt. The 37
@@ -52,10 +52,25 @@ narrow-viewport layout is out of scope everywhere in this note. (The dashboard
 shell still gets mobile nav for free from `UDashboardNavbar`; nothing needs to
 be removed, it just is not a target.)
 
-**This does not excuse `sm:`/`lg:` grid breakpoints inside the panel** — see #6.
+**This does not excuse `sm:`/`lg:` grid breakpoints inside the panel** — see #7.
 That is a _desktop_ bug, not a mobile one: the two sidebars take ~300-600px out
 of the window before the panel gets any, so a viewport breakpoint fires at the
 wrong width on exactly the wide screens admin is used on.
+
+**Project events are rarely used.** Do not build anything that assumes they
+are populated. Confirmed by the user 2026-09-21, and consistent with what the
+restructure found: the `events/` subtree was _orphaned_ — nothing linked to
+`events/new` or `events/[eventId]`, they were reachable only by typing the URL.
+
+Consequences, since this is easy to design around by accident:
+
+- In practice **the project is the camp**, so `Project.startDate`/`endDate` are
+  the real camp dates and nothing needs an intermediate layer to be time-aware.
+- The fine-grained "what is happening now" signal comes from **challenges**, not
+  events — `Challenge` has `publishedAt`, `visibleAt`, `startedAt`, `endTime`.
+- The three `events/**` pages stay in the inventory but rank last for UX work.
+- `Event.translationStatus` is not worth surfacing; `Project` and `Challenge`
+  are.
 
 ---
 
@@ -132,22 +147,22 @@ that anything was cut off. `projects/[projectId]/index.vue`'s old mega-query had
 exactly this bug and lost its `first: 50` during the restructure; these are the
 remainder.
 
-| Page                                                | Limit                   | Shape                          |
-| --------------------------------------------------- | ----------------------- | ------------------------------ |
-| `my-church/units.vue`                               | `first: 1000`           | list, also an outlier (see #4) |
-| `my-church/admins.vue`                              | `first: 500`            | list + client fuzzy search     |
-| `projects/[projectId]/superteams/[superTeamId].vue` | `first: 200` (teams)    | picker                         |
-| `users/[userId]/achievements.vue`                   | `first: 200`            | picker                         |
-| `projects/index.vue`                                | `first: 100`            | card grid                      |
-| `users/[userId]/index.vue`                          | `first: 100` (feedback) | panel in a detail page         |
-| `projects/[projectId]/challenges/new.vue`           | `first: 100` (events)   | dropdown                       |
-| `projects/[projectId]/superteams/distribute.vue`    | `first: 100` (events)   | dropdown                       |
-| `projects/[projectId]/challenges/index.vue`         | `first: 50`             | list                           |
-| `projects/[projectId]/achievements/index.vue`       | `first: 50`             | list, drag-reorder             |
-| `projects/[projectId]/events/index.vue`             | `first: 50`             | list                           |
-| `projects/[projectId]/superteams/index.vue`         | `first: 50`             | list                           |
-| `maintenance/check-points-journal.vue`              | `first: 50`             | table                          |
-| `maintenance/fix-content-progress.vue`              | `first: 50`             | table                          |
+| Page                                                | Limit                   | Shape                                   |
+| --------------------------------------------------- | ----------------------- | --------------------------------------- |
+| `my-church/units.vue`                               | `first: 1000`           | list, also an outlier (see #4)          |
+| `my-church/admins.vue`                              | `first: 500`            | list + client fuzzy search              |
+| `projects/[projectId]/superteams/[superTeamId].vue` | `first: 200` (teams)    | picker                                  |
+| `users/[userId]/achievements.vue`                   | `first: 200`            | picker                                  |
+| `projects/index.vue`                                | `first: 100`            | card grid                               |
+| `users/[userId]/index.vue`                          | `first: 100` (feedback) | panel in a detail page                  |
+| `projects/[projectId]/challenges/new.vue`           | `first: 100` (events)   | dropdown                                |
+| `projects/[projectId]/superteams/distribute.vue`    | `first: 100` (events)   | dropdown                                |
+| `projects/[projectId]/challenges/index.vue`         | `first: 50`             | list                                    |
+| `projects/[projectId]/achievements/index.vue`       | `first: 50`             | list, drag-reorder                      |
+| `projects/[projectId]/events/index.vue`             | `first: 50`             | list — low priority, events rarely used |
+| `projects/[projectId]/superteams/index.vue`         | `first: 50`             | list                                    |
+| `maintenance/check-points-journal.vue`              | `first: 50`             | table                                   |
+| `maintenance/fix-content-progress.vue`              | `first: 50`             | table                                   |
 
 `RelayPagination` + `usePagination` already exist and are proven on four pages:
 `users/index.vue`, `feedback/index.vue` and
@@ -235,7 +250,29 @@ Because admin is desktop-only and Norwegian-only, this is a straight navigation
 problem: nav model, active state, and a landmark that says which church you are
 administering.
 
-### 6. Bring existing components onto the self-contained rule
+### 6. Archived projects are not filtered out anywhere
+
+`ProjectFilter.archived` exists, but the SQL is
+`archived IS NULL OR archived = sqlc.narg('archived')`
+(`backend/internal/database/queries/projects.sql:102,119`) — so **omitting the
+filter includes archived projects**. The resolver passes the filter straight
+through (`internal/graph/api/projects.go:21`) and adds no default.
+
+None of the three places that list projects passes it:
+
+| Site                          | Query                                                                                                        |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `admin/index.vue:56`          | `projects(filter: { endDateAfter: $now })` — an archived project with a future end date counts as **active** |
+| `projects/index.vue:9`        | `projects(first: 100)`                                                                                       |
+| `AdminProjectSwitcher.vue:11` | `projects(first: 100)` — archived projects in the sidebar switcher                                           |
+
+Cheap to fix and worth doing before the home dashboard is rebuilt, since the
+"active projects" set is what that page is built on. Check whether an
+`archived: false` default belongs in the resolver instead of at three call
+sites — the switcher and the list want the same thing, and a fourth caller will
+forget.
+
+### 7. Bring existing components onto the self-contained rule
 
 The convention above is the target; this is the backlog of what does not meet it
 yet. Small, and smaller than expected.
@@ -316,35 +353,81 @@ user-visible breakage.
 
 #### Agreed direction, in priority order
 
-**1 — Current / next project block.** The highest-value item. The active project
-becomes the hero of the page, not a card in a grid below the fold: participants,
-teams, active challenges, and the project's own dates. When nothing is active,
-the same block shows the **next** project with a countdown and a readiness
-check — challenges, achievements, events, teams, branding — which turns today's
-dead-end empty state into the most useful thing on the page. This is the fix for
-bug 1 done properly rather than separately.
+**1 — Active / next project block.** The highest-value item, and the one that
+has to handle **multiple simultaneously active projects** — theoretically
+supported, so the block is designed for `N`, not for one.
+
+- Each active project gets a vitals card: name, dates and countdown,
+  participants, teams, active challenges.
+- **Ordered by ending soonest.** A camp ending tomorrow needs attention more
+  than one that runs for three months; start date is the tiebreak.
+- **Capped at three, plus an "N more" link.** Rendering an unbounded number of
+  heroes stops the page being answerable at a glance — the
+  `projects/[projectId]/index.vue` UTabs kitchen sink is the in-repo cautionary
+  tale.
+- **Scoped by role.** `getProjectAdminIds` already exists, so a `project_admin`
+  sees only their own projects. This is also the cleanest fix for bug 3: they
+  get a dashboard that works rather than an error.
+- **Zero active** falls back to the next upcoming project with its countdown and
+  a readiness check — challenges, achievements, teams, branding. That turns
+  today's dead-end empty state into the most useful thing on the page, and is
+  bug 1 fixed properly rather than separately.
+- **Exclude archived** — see #6; nothing filters them today, so the "active" set
+  is currently wrong.
+
+One self-contained `AdminProjectVitals` component covers every count: full width
+with one active project, sharing a row with three, the page deciding only the
+grid. This is the first real case for the Conventions rule.
 
 **2 — "What needs me".** Replaces the raw feedback list with a triage queue:
 
-- unhandled feedback, as a count plus the newest few, actionable in place
-- projects starting soon with incomplete setup
-- projects with zero published challenges or achievements
-- consents needing attention
+- unhandled feedback — a count plus the newest few, actionable in place, and
+  **broken down by tag** rather than five truncated messages. A tag summary
+  answers "what is breaking" much better; the load complaint visible in the
+  current page ("appen ikke fungerer når alle i salen skal bruke den samtidig")
+  lines up with the loadtest notes in this repo.
+- **`activeChallengesCount === 0` while a project is running** — the strongest
+  alarm available and free from an existing field. It means participants have
+  nothing to do, and nothing surfaces it today.
+- challenge lifecycle problems, derivable from `publishedAt` / `visibleAt` /
+  `startedAt` / `endTime`: unpublished challenges in a project starting
+  tomorrow, challenges whose window has already closed, challenges that will
+  never become visible because `visibleAt` is unset.
+- **incomplete translations** — `translationStatus` on `Project` and
+  `Challenge`. Unlike admin, the user-facing app _is_ translated, so a missing
+  translation is a real end-user defect. Queryable today; nothing surfaces it.
+- projects with zero published challenges or achievements; consents needing
+  attention.
 
 **Maintenance jobs are deliberately not in this queue** — those tools are rarely
-used, so surfacing them on the home page every day costs attention and returns
-nothing. They stay at `/admin/maintenance`.
+used, so a permanent home-page slot costs attention and returns nothing. They
+stay at `/admin/maintenance`.
 
 **3 — Trend sparklines.** Daily active users and challenge completions over
-14–30 days, with a direction indicator. Wanted partly for the visual weight it
-gives the page — the current layout is two small cards in a wide empty row.
-A flat line in September is informative in a way that a cumulative total is not.
-**This is the only item that needs backend work** (see below), so it should not
-block 1 and 2.
+14-30 days, with a direction indicator. Wanted partly for the visual weight it
+gives the page — the current layout is two small cards in a wide empty row. A
+flat line in September is informative in a way a cumulative total is not.
+**The only item needing backend work** (see below), so it must not block 1 and 2.
+Load the `dataviz` skill before drawing anything.
 
 **4 — Quick actions.** New project, new challenge, award points. Useful, low
 priority; each is currently 2-3 navigations away. Cheap to add once the blocks
 above settle, and easy to leave out.
+
+#### Considered and rejected
+
+- **An event timeline.** Would have been inherently multi-project, and was the
+  first answer to the `N` active projects problem. Dropped: project events are
+  rarely used (see Scope decisions), so it would be a prominent block over an
+  empty table. Challenge lifecycle fields give the same "what is happening now"
+  signal from the entity that _is_ used.
+- **A join/team funnel** (joined vs. actually in a team) — genuinely useful at
+  kickoff, but `Team` has no member-count field, only `members: [TeamMember!]!`,
+  so counting means fetching every member of every team. Needs a schema addition
+  first; not free.
+- **Push-send as a quick action.** `sendPushNotification` exists and is
+  admin-only, but a button that messages every participant does not belong on a
+  dashboard without a deliberate confirm step. Revisit with quick actions.
 
 #### What is queryable today
 
@@ -364,10 +447,18 @@ Verified against `gql/` — 1, 2 and 4 need no schema changes.
 
 #### What needs backend work
 
-Only the sparklines. `AdminDashboardStats` is six scalar counters and there is no
-time-series query anywhere in `gql/`, so item 3 means new SQL in
-`backend/internal/database/queries/`, new GraphQL fields, then `make generate`
-and `pnpm codegen`. Load the `dataviz` skill before drawing anything.
+Everything in items 1, 2 and 4 is frontend-only on data that already exists.
+Three things are not, in rough order of value:
+
+1. **Time-series for the sparklines** (item 3). `AdminDashboardStats` is six
+   scalar counters and there is no time-series query anywhere in `gql/`.
+2. **Per-challenge completion counts** — would give the best detector of the
+   set, "this challenge is live and nobody has completed it", which catches a
+   broken QR code or a wrong date _during_ a camp rather than after.
+3. **A team member count field**, if the join/team funnel is ever wanted.
+
+Each means new SQL in `backend/internal/database/queries/`, new GraphQL fields,
+then `make generate` and `pnpm codegen`.
 
 ---
 
@@ -391,30 +482,30 @@ and `pnpm codegen`. Load the `dataviz` skill before drawing anything.
 
 ### Project-scoped (`/admin/projects/:projectId/…`)
 
-| Page                                    | Route                     | LOC | St. | Notes                                                                                                              |
-| --------------------------------------- | ------------------------- | --- | --- | ------------------------------------------------------------------------------------------------------------------ |
-| `[projectId].vue`                       | (parent shell)            | 21  | –   | Deliberately thin; project lives in `useCurrentProject()`. Do not delete `index.vue` beneath it — blank-page trap. |
-| `[projectId]/index.vue`                 | `…/:projectId`            | 143 | ☐   | Overview: counts-only query + section links. Redirects legacy `?tab=`.                                             |
-| `[projectId]/edit.vue`                  | `…/edit`                  | 297 | ☐   | "Innstillinger". Only route a `project_admin` can actually use.                                                    |
-| `challenges/index.vue`                  | `…/challenges`            | 119 | ☐   | `first: 50`, no search.                                                                                            |
-| `challenges/new.vue`                    | `…/challenges/new`        | 171 | ☐   | Events dropdown `first: 100`.                                                                                      |
-| `challenges/[challengeId]/index.vue`    | `…/challenges/:id`        | 222 | ☐   |                                                                                                                    |
-| `challenges/[challengeId]/quiz.vue`     | `…/:id/quiz`              | 417 | ☐   | Two-crumb page.                                                                                                    |
-| `challenges/[challengeId]/sessions.vue` | `…/:id/sessions`          | 602 | ☐   | Two-crumb page. 13 toast calls — likely the noisiest page in the app.                                              |
-| `achievements/index.vue`                | `…/achievements`          | 169 | ☐   | Drag-reorder. `first: 50`.                                                                                         |
-| `achievements/new.vue`                  | `…/achievements/new`      | 134 | ☐   |                                                                                                                    |
-| `achievements/[achievementId].vue`      | `…/achievements/:id`      | 324 | ☐   |                                                                                                                    |
-| `events/index.vue`                      | `…/events`                | 94  | ☐   | Created during restructure to un-orphan the two below. `first: 50`.                                                |
-| `events/new.vue`                        | `…/events/new`            | 94  | ☐   |                                                                                                                    |
-| `events/[eventId].vue`                  | `…/events/:id`            | 188 | ☐   |                                                                                                                    |
-| `superteams/index.vue`                  | `…/superteams`            | 132 | ☐   | The real list (was a tab). `first: 50`.                                                                            |
-| `superteams/new.vue`                    | `…/superteams/new`        | 103 | ☐   |                                                                                                                    |
-| `superteams/[superTeamId].vue`          | `…/superteams/:id`        | 278 | ☐   | Teams `first: 200`.                                                                                                |
-| `superteams/distribute.vue`             | `…/superteams/distribute` | 657 | ☐   | Ladder-to-heaven tool. `@unovis/vue` charts, raw `fetch` to two plugin endpoints — not GraphQL.                    |
-| `teams/index.vue`                       | `…/teams`                 | 132 | ☐   | Paginated. No search.                                                                                              |
-| `teams/[teamId].vue`                    | `…/teams/:id`             | 428 | ☐   | 14 toast calls.                                                                                                    |
-| `scores/index.vue`                      | `…/scores`                | 233 | ☐   | Paginated. No search/date filter.                                                                                  |
-| `scores/new.vue`                        | `…/scores/new`            | 131 | ☐   | Project picker removed — route supplies it.                                                                        |
+| Page                                    | Route                     | LOC | St. | Notes                                                                                                                           |
+| --------------------------------------- | ------------------------- | --- | --- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `[projectId].vue`                       | (parent shell)            | 21  | –   | Deliberately thin; project lives in `useCurrentProject()`. Do not delete `index.vue` beneath it — blank-page trap.              |
+| `[projectId]/index.vue`                 | `…/:projectId`            | 143 | ☐   | Overview: counts-only query + section links. Redirects legacy `?tab=`.                                                          |
+| `[projectId]/edit.vue`                  | `…/edit`                  | 297 | ☐   | "Innstillinger". Only route a `project_admin` can actually use.                                                                 |
+| `challenges/index.vue`                  | `…/challenges`            | 119 | ☐   | `first: 50`, no search.                                                                                                         |
+| `challenges/new.vue`                    | `…/challenges/new`        | 171 | ☐   | Events dropdown `first: 100`.                                                                                                   |
+| `challenges/[challengeId]/index.vue`    | `…/challenges/:id`        | 222 | ☐   |                                                                                                                                 |
+| `challenges/[challengeId]/quiz.vue`     | `…/:id/quiz`              | 417 | ☐   | Two-crumb page.                                                                                                                 |
+| `challenges/[challengeId]/sessions.vue` | `…/:id/sessions`          | 602 | ☐   | Two-crumb page. 13 toast calls — likely the noisiest page in the app.                                                           |
+| `achievements/index.vue`                | `…/achievements`          | 169 | ☐   | Drag-reorder. `first: 50`.                                                                                                      |
+| `achievements/new.vue`                  | `…/achievements/new`      | 134 | ☐   |                                                                                                                                 |
+| `achievements/[achievementId].vue`      | `…/achievements/:id`      | 324 | ☐   |                                                                                                                                 |
+| `events/index.vue`                      | `…/events`                | 94  | ☐   | **Low priority** — events rarely used, see Scope decisions. Created during restructure to un-orphan the two below. `first: 50`. |
+| `events/new.vue`                        | `…/events/new`            | 94  | ☐   | **Low priority** — events rarely used.                                                                                          |
+| `events/[eventId].vue`                  | `…/events/:id`            | 188 | ☐   | **Low priority** — events rarely used.                                                                                          |
+| `superteams/index.vue`                  | `…/superteams`            | 132 | ☐   | The real list (was a tab). `first: 50`.                                                                                         |
+| `superteams/new.vue`                    | `…/superteams/new`        | 103 | ☐   |                                                                                                                                 |
+| `superteams/[superTeamId].vue`          | `…/superteams/:id`        | 278 | ☐   | Teams `first: 200`.                                                                                                             |
+| `superteams/distribute.vue`             | `…/superteams/distribute` | 657 | ☐   | Ladder-to-heaven tool. `@unovis/vue` charts, raw `fetch` to two plugin endpoints — not GraphQL.                                 |
+| `teams/index.vue`                       | `…/teams`                 | 132 | ☐   | Paginated. No search.                                                                                                           |
+| `teams/[teamId].vue`                    | `…/teams/:id`             | 428 | ☐   | 14 toast calls.                                                                                                                 |
+| `scores/index.vue`                      | `…/scores`                | 233 | ☐   | Paginated. No search/date filter.                                                                                               |
+| `scores/new.vue`                        | `…/scores/new`            | 131 | ☐   | Project picker removed — route supplies it.                                                                                     |
 
 ### My church (`church-admin` layout — no navigation, see #5)
 
@@ -450,6 +541,51 @@ and `pnpm codegen`. Load the `dataviz` skill before drawing anything.
 ---
 
 ## Update log
+
+### 2026-09-21 — home plan reworked for N active projects; events ruled out
+
+Two corrections from the user, both of which changed the design rather than
+just annotating it.
+
+**Multiple projects can be active at once**, so the "hero project" framing was
+wrong. The block is now designed for `N`: vitals cards ordered by ending
+soonest, capped at three plus "N more", role-scoped via the existing
+`getProjectAdminIds`, falling back to the next upcoming project when none are
+active. One self-contained `AdminProjectVitals` sized by its container covers
+every count — the first real use of the Conventions rule, which is why that rule
+landing first was useful.
+
+**Project events are rarely used**, which killed the event-timeline idea I had
+just proposed as the answer to the multi-project problem. Recorded as a scope
+decision, since it is easy to design around by accident. I should have weighted
+this from the note's own evidence: the restructure recorded the `events/` subtree
+as _orphaned_, with nothing linking to `events/new` or `events/[eventId]`. Low
+usage was the obvious reading and I proposed building a headline feature on it
+anyway.
+
+The replacement is better than what it replaced. If events are unused then **the
+project is the camp**, so project dates are the real camp dates and the
+current/next block needs no intermediate layer; and the fine-grained "what is
+happening now" signal comes from **challenges**, which are the core unit and
+carry `publishedAt` / `visibleAt` / `startedAt` / `endTime`. That yields the best
+alarm on the page for free: `activeChallengesCount === 0` while a project is
+running means participants have nothing to do, and nothing surfaces it today.
+
+**A third bug found while checking the multi-project case** — archived projects
+are filtered nowhere (new cross-cutting #6). The SQL is
+`archived IS NULL OR archived = $x`, so omitting the filter _includes_ them, and
+none of the three project-listing sites passes it. It is cross-cutting rather
+than home-specific, but it matters here first: the "active projects" set this
+page is built on is currently wrong.
+
+Also folded in: feedback **tag breakdown** instead of five truncated messages
+(`feedbackTags` exists), and **`translationStatus` on Project and Challenge** as
+a detector — the user app is translated even though admin is not, so a missing
+translation is a real end-user defect that nothing surfaces.
+
+Rejected ideas are recorded with their reasons in the plan, so they do not get
+re-proposed: the event timeline, the join/team funnel (no `Team` member count
+field), and push-send as a quick action (needs a confirm step).
 
 ### 2026-09-21 — home dashboard planned
 
