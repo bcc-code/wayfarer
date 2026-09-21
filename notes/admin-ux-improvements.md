@@ -516,19 +516,19 @@ then `make generate` and `pnpm codegen`.
 
 ### Top level
 
-| Page                              | Route                       | LOC      | St. | Notes                                                                                                     |
-| --------------------------------- | --------------------------- | -------- | --- | --------------------------------------------------------------------------------------------------------- |
-| `index.vue`                       | `/admin`                    | 134      | ◐   | **Plan agreed — see Page plans.** Three bugs to fix first. No breadcrumb by design (one crumb = a title). |
-| `projects/index.vue`              | `/admin/projects`           | 119      | ☐   | Card grid, container queries done. No search; `first: 100`.                                               |
-| `projects/new.vue`                | `/admin/projects/new`       | 167      | ☐   |                                                                                                           |
-| `users/index.vue`                 | `/admin/users`              | 199      | ◐   | **On `AdminListView`** — the reference conversion. Search + church filter + URL state.                    |
-| `users/[userId]/index.vue`        | `/admin/users/:userId`      | **1063** | ☐   | Outlier, see #4. Feedback panel `first: 100`.                                                             |
-| `users/[userId]/achievements.vue` | `…/achievements`            | 389      | ☐   | `first: 200` picker — see #1, wants a searchable select, not pagination.                                  |
-| `churches/[churchId].vue`         | `/admin/churches/:churchId` | 175      | ☐   | Drill-down leaf by design — no list page, no nav entry (decision recorded in restructure note).           |
-| `consents/index.vue`              | `/admin/consents`           | 109      | ☐   | Table, no search, no pagination, no loading state.                                                        |
-| `consents/[consentId].vue`        | `/admin/consents/:id`       | 305      | ☐   |                                                                                                           |
-| `consents/new.vue`                | `/admin/consents/new`       | 187      | ☐   |                                                                                                           |
-| `feedback/index.vue`              | `/admin/feedback`           | 601      | ◐   | **On `AdminListView`.** Three facets + URL state; realtime via Firestore. Largest list page.              |
+| Page                              | Route                       | LOC      | St. | Notes                                                                                                         |
+| --------------------------------- | --------------------------- | -------- | --- | ------------------------------------------------------------------------------------------------------------- |
+| `index.vue`                       | `/admin`                    | 134      | ◐   | **Plan agreed — see Page plans.** Three bugs to fix first. No breadcrumb by design (one crumb = a title).     |
+| `projects/index.vue`              | `/admin/projects`           | 119      | ☐   | Card grid, container queries done. No search; `first: 100`.                                                   |
+| `projects/new.vue`                | `/admin/projects/new`       | 167      | ☐   |                                                                                                               |
+| `users/index.vue`                 | `/admin/users`              | 199      | ◐   | **On `AdminListView`** — the reference conversion. Search + church filter + URL state.                        |
+| `users/[userId]/index.vue`        | `/admin/users/:userId`      | **1063** | ☐   | Outlier, see #4. Feedback panel `first: 100`.                                                                 |
+| `users/[userId]/achievements.vue` | `…/achievements`            | 389      | ☐   | `first: 200` picker — see #1, wants a searchable select, not pagination.                                      |
+| `churches/[churchId].vue`         | `/admin/churches/:churchId` | 175      | ☐   | Drill-down leaf by design — no list page, no nav entry (decision recorded in restructure note).               |
+| `consents/index.vue`              | `/admin/consents`           | 109      | ☐   | Plain list (`[Consent!]!`), not a connection — off `AdminListView` by decision, see log. Sibling empty state. |
+| `consents/[consentId].vue`        | `/admin/consents/:id`       | 305      | ☐   |                                                                                                               |
+| `consents/new.vue`                | `/admin/consents/new`       | 187      | ☐   |                                                                                                               |
+| `feedback/index.vue`              | `/admin/feedback`           | 601      | ◐   | **On `AdminListView`.** Three facets + URL state; realtime via Firestore. Largest list page.                  |
 
 ### Project-scoped (`/admin/projects/:projectId/…`)
 
@@ -552,9 +552,9 @@ then `make generate` and `pnpm codegen`.
 | `superteams/new.vue`                    | `…/superteams/new`        | 103 | ☐   |                                                                                                                                 |
 | `superteams/[superTeamId].vue`          | `…/superteams/:id`        | 278 | ☐   | Teams `first: 200`.                                                                                                             |
 | `superteams/distribute.vue`             | `…/superteams/distribute` | 657 | ☐   | Ladder-to-heaven tool. `@unovis/vue` charts, raw `fetch` to two plugin endpoints — not GraphQL.                                 |
-| `teams/index.vue`                       | `…/teams`                 | 231 | ◐   | **On `AdminListView`** + superteam filter. Slot-name bug fixed.                                                                                                           |
+| `teams/index.vue`                       | `…/teams`                 | 231 | ◐   | **On `AdminListView`** + superteam filter. Slot-name bug fixed.                                                                 |
 | `teams/[teamId].vue`                    | `…/teams/:id`             | 428 | ☐   | 14 toast calls.                                                                                                                 |
-| `scores/index.vue`                      | `…/scores`                | 271 | ◐   | **On `AdminListView`** + source-type filter.                                                                                               |
+| `scores/index.vue`                      | `…/scores`                | 271 | ◐   | **On `AdminListView`** + source-type filter.                                                                                    |
 | `scores/new.vue`                        | `…/scores/new`            | 131 | ☐   | Project picker removed — route supplies it.                                                                                     |
 
 ### My church (`church-admin` layout — no navigation, see #5)
@@ -592,17 +592,40 @@ then `make generate` and `pnpm codegen`.
 
 ## Update log
 
+### 2026-09-21 — consents stays off AdminListView
+
+`consents: [Consent!]!` is a **plain list**, not a connection — no args, no
+`pageInfo`, no `totalCount` (`gql/consents.graphqls:45`). `AdminListView`
+requires a pagination, so adopting it there meant making `pagination` optional
+in both the component and `useListState`, with a count-only footer for the
+unpaginated case.
+
+That was built, then **reverted** on the user's call once the reason was clear.
+Worth recording why the revert was the right move rather than keeping the
+flexibility "for later": consents is the only genuinely unpaginated admin list,
+and the four that are unpaginated today (`challenges`, `achievements`,
+`events`, `superteams` at `first: 50`) are slated to _gain_ pagination, so they
+will take the paginated path. Optional-pagination support would have been an
+unused branch in a shared component — the same thing as `AdminTopPerformers`,
+the placeholder tile and the dead `actions` column, all of which this effort
+deleted.
+
+If consents ever wants the toolbar, the cheaper route is to give
+`consents` a proper connection server-side, which fixes the truncation question
+at the same time. Making the shared component tolerate two shapes is the more
+expensive option, not the less.
+
 ### 2026-09-21 — teams, scores and bulk-jobs converted; RelayPagination retired
 
 All four previously-paginated lists are now on `AdminListView`, so
 `RelayPagination.vue` is **deleted**. Each page also gained a filter it did not
 have, chosen from what its own filter input already supported:
 
-| Page | Filter added | Source |
-| --- | --- | --- |
-| teams | superteam, with an "Uten superlag" option | `TeamFilter.superTeamId` + `noSuperTeam` |
-| scores | source type | `ScoreJournalFilter.sourceType` |
-| bulk-jobs | (kept its two) now URL-synced | `BulkJobFilter` |
+| Page      | Filter added                              | Source                                   |
+| --------- | ----------------------------------------- | ---------------------------------------- |
+| teams     | superteam, with an "Uten superlag" option | `TeamFilter.superTeamId` + `noSuperTeam` |
+| scores    | source type                               | `ScoreJournalFilter.sourceType`          |
+| bulk-jobs | (kept its two) now URL-synced             | `BulkJobFilter`                          |
 
 None of the three has a free-text field in its filter input, so all are
 `:searchable="false"` — a search box that cannot work is worse than none.
@@ -644,7 +667,7 @@ and **no free-text search at all** — `FeedbackFilter` exposes only `userId`,
 `tags`, `handled` and `platform`, so `:searchable="false"` rather than a search
 box that cannot work.
 
-**`useListState` stays string-only and the page bridges.** URL params *are*
+**`useListState` stays string-only and the page bridges.** URL params _are_
 strings, so teaching the composable about arrays and booleans would push URL
 encoding into it. Instead two `computed` with getters/setters adapt:
 `tags` ⇄ comma-joined string, and `handled` ⇄ a tri-state where unset means "no
@@ -659,7 +682,7 @@ three filters in that watcher's dependency array and a fourth would have been
 easy to miss.
 
 **A double empty state, found while converting.** The page rendered
-`<UEmpty v-if="!fetching && feedbacks?.length === 0">` as a *sibling* of
+`<UEmpty v-if="!fetching && feedbacks?.length === 0">` as a _sibling_ of
 `<UTable>`, so an empty list showed Nuxt UI's own empty row **and** that block
 beneath it. Folded into the table's `#empty` slot, where it also gained the
 filtered-miss/truly-empty distinction.
