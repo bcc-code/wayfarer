@@ -4793,7 +4793,12 @@ export type AdminUsersPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminUsersPageQuery = { __typename?: 'Query', users: { __typename?: 'UserConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'UserEdge', cursor: string, node: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, church: { __typename?: 'Church', name: string }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType }> } }> } };
+export type AdminUsersPageQuery = { __typename?: 'Query', users: { __typename?: 'UserConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'UserEdge', cursor: string, node: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, church: { __typename?: 'Church', id: string, name: string }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType }> } }> } };
+
+export type AdminUsersPageChurchesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminUsersPageChurchesQuery = { __typename?: 'Query', churches: { __typename?: 'ChurchConnection', edges: Array<{ __typename?: 'ChurchEdge', node: { __typename?: 'Church', id: string, name: string } }> } };
 
 export type PointHistoryQueryVariables = Exact<{
   last?: InputMaybe<Scalars['Int']['input']>;
@@ -7905,6 +7910,7 @@ export const AdminUsersPageDocument = gql`
         email
         image
         church {
+          id
           name
         }
         roles {
@@ -7919,6 +7925,22 @@ export const AdminUsersPageDocument = gql`
 
 export function useAdminUsersPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminUsersPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminUsersPageQuery, AdminUsersPageQueryVariables | undefined>({ query: AdminUsersPageDocument, variables: undefined, ...options });
+};
+export const AdminUsersPageChurchesDocument = gql`
+    query AdminUsersPageChurches {
+  churches(first: 500) {
+    edges {
+      node {
+        id
+        name
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminUsersPageChurchesQuery(options?: Omit<Urql.UseQueryArgs<never, AdminUsersPageChurchesQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminUsersPageChurchesQuery, AdminUsersPageChurchesQueryVariables | undefined>({ query: AdminUsersPageChurchesDocument, variables: undefined, ...options });
 };
 export const PointHistoryDocument = gql`
     query PointHistory($last: Int) {
