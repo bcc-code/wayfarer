@@ -452,14 +452,19 @@ function getDropdownItems(session: (typeof sessions.value)[number]) {
             />
           </div>
 
-          <AdminLoadingState v-if="sessionsFetching && !sessionsData" />
-          <div
-            v-else-if="sessions.length === 0"
-            class="text-muted py-12 text-center"
-          >
-            Ingen sesjoner funnet.
-          </div>
-          <UTable v-else :data="sessions" :columns>
+          <UTable :data="sessions" :loading="sessionsFetching" :columns>
+            <template #empty>
+              <AdminTableEmpty
+                :filtered="stateFilter !== 'all'"
+                title="Ingen sesjoner ennå"
+                filtered-title="Ingen sesjoner med denne statusen"
+                clear-label="Vis alle"
+                @clear="stateFilter = 'all'"
+              />
+            </template>
+            <template #loading>
+              <AdminTableLoading />
+            </template>
             <template #name-cell="{ row }">
               {{ row.original.name || '(uten navn)' }}
             </template>

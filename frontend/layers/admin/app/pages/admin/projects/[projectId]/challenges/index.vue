@@ -203,23 +203,15 @@ function challengeType(typename?: string) {
           </div>
         </template>
         <template #empty>
-          <div class="py-6 text-center">
-            <p class="text-muted text-sm">
-              {{
-                activeFilters.length
-                  ? 'Ingen utfordringer av denne typen'
-                  : 'Ingen utfordringer ennå'
-              }}
-            </p>
-            <UButton
-              v-if="activeFilters.length"
-              variant="link"
-              size="sm"
-              @click="list.clearAll()"
-            >
-              Nullstill filter
-            </UButton>
-          </div>
+          <AdminTableEmpty
+            :filtered="!!activeFilters.length"
+            title="Ingen utfordringer ennå"
+            filtered-title="Ingen utfordringer av denne typen"
+            @clear="list.clearAll()"
+          />
+        </template>
+        <template #loading>
+          <AdminTableLoading :rows="pagination.pageSize.value" />
         </template>
       </UTable>
     </AdminListView>

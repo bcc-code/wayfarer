@@ -314,14 +314,15 @@ watch(fixComplete, (complete) => {
             {{ row.original.eventCount }}
           </UBadge>
         </template>
+        <template #empty>
+          <AdminTableEmpty
+            title="Ingen brukere med manglende fremgangsregistreringer funnet"
+          />
+        </template>
+        <template #loading>
+          <AdminTableLoading />
+        </template>
       </UTable>
-
-      <div
-        v-if="affectedUsers.length === 0 && !fetching"
-        class="text-muted py-12 text-center"
-      >
-        Ingen brukere med manglende fremgangsregistreringer funnet.
-      </div>
     </template>
 
     <UModal v-model:open="showConfirmModal">

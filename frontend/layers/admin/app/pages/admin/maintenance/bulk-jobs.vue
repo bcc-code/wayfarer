@@ -394,23 +394,15 @@ const activeFilters = computed(() => {
           />
         </template>
         <template #empty>
-          <div class="py-6 text-center">
-            <p class="text-muted text-sm">
-              {{
-                activeFilters.length
-                  ? 'Ingen massejobber passer filteret'
-                  : 'Ingen massejobber'
-              }}
-            </p>
-            <UButton
-              v-if="activeFilters.length"
-              variant="link"
-              size="sm"
-              @click="list.clearAll()"
-            >
-              Nullstill filtre
-            </UButton>
-          </div>
+          <AdminTableEmpty
+            :filtered="!!activeFilters.length"
+            title="Ingen massejobber"
+            filtered-title="Ingen massejobber passer filteret"
+            @clear="list.clearAll()"
+          />
+        </template>
+        <template #loading>
+          <AdminTableLoading :rows="pagination.pageSize.value" />
         </template>
       </UTable>
     </AdminListView>

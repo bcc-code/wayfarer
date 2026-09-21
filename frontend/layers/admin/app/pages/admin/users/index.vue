@@ -175,23 +175,15 @@ const columns: TableColumn<
           common case on a searchable list and needs a way back out.
         -->
         <template #empty>
-          <div class="py-6 text-center">
-            <p class="text-muted text-sm">
-              {{
-                list.hasActiveQuery.value
-                  ? 'Ingen brukere passer søket'
-                  : 'Ingen brukere'
-              }}
-            </p>
-            <UButton
-              v-if="list.hasActiveQuery.value"
-              variant="link"
-              size="sm"
-              @click="list.clearAll()"
-            >
-              Nullstill søk og filtre
-            </UButton>
-          </div>
+          <AdminTableEmpty
+            :filtered="list.hasActiveQuery.value"
+            title="Ingen brukere"
+            filtered-title="Ingen brukere passer søket"
+            @clear="list.clearAll()"
+          />
+        </template>
+        <template #loading>
+          <AdminTableLoading :rows="pagination.pageSize.value" />
         </template>
       </UTable>
     </AdminListView>

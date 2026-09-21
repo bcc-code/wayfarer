@@ -548,23 +548,15 @@ async function handleUpdateTags(feedbackId: string, tags: string[]) {
           list.
         -->
         <template #empty>
-          <div class="py-6 text-center">
-            <p class="text-muted text-sm">
-              {{
-                activeFilters.length
-                  ? 'Ingen tilbakemeldinger passer filteret'
-                  : 'Ingen tilbakemeldinger ennå'
-              }}
-            </p>
-            <UButton
-              v-if="activeFilters.length"
-              variant="link"
-              size="sm"
-              @click="list.clearAll()"
-            >
-              Nullstill filtre
-            </UButton>
-          </div>
+          <AdminTableEmpty
+            :filtered="!!activeFilters.length"
+            title="Ingen tilbakemeldinger ennå"
+            filtered-title="Ingen tilbakemeldinger passer filteret"
+            @clear="list.clearAll()"
+          />
+        </template>
+        <template #loading>
+          <AdminTableLoading :rows="pagination.pageSize.value" />
         </template>
       </UTable>
     </AdminListView>

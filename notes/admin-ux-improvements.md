@@ -243,11 +243,15 @@ individually is the expensive way to do this:
 | Detail           | skeleton matching the layout               | n/a                                            | `AdminErrorState`; 404 distinct from failure |
 | Form (`new.vue`) | only if it loads options                   | n/a                                            | inline field errors + submit failure         |
 
-Known gaps: `consents/index.vue`, `feedback/index.vue`,
-`projects/[projectId]/{scores,teams}/index.vue` and all four maintenance tools
-have an error state but **no loading state** — they lean on `UTable :loading`,
-which shows an empty table rather than a loading one. `teams/index.vue` and
-`projects/index.vue` have no empty state at all.
+**List half: done 2026-09-21.** All 13 admin tables now have `#empty`
+(`AdminTableEmpty`) and `#loading` (`AdminTableLoading`) — see the log entry.
+`UTable`'s `#loading` slot turned out to exist and be unused everywhere, so
+skeleton rows cost nothing.
+
+**Detail and form pages are the remaining half.** 30 pages use
+`AdminErrorState` and 21 use `AdminLoadingState`, mostly as the same
+`v-if error / v-else-if fetching` chain — the candidate for an `AdminQueryState`
+wrapper.
 
 Do not "deduplicate" `AdminErrorState`/`AdminLoadingState` back into the shared
 `ErrorState`/`LoadingState`: keeping them separate is what severs admin's
@@ -598,6 +602,53 @@ then `make generate` and `pnpm codegen`.
 ---
 
 ## Update log
+
+### 2026-09-21 — table states standardised (#2, list half)
+
+Two components, and **all 13 admin tables now carry both states** — up from
+10 with `#empty` and **0** with `#loading`.
+
+**`AdminTableEmpty`** goes in `UTable`'s `#empty` slot. Justified by repetition
+rather than taste: I had written a near-identical 12-line block six times
+(users, feedback, teams, scores, challenges, bulk-jobs) before extracting it.
+It separates the two cases a list actually has — nothing exists yet vs. nothing
+matched — because telling someone "no challenges yet" when they have filtered
+them all away is actively misleading and leaves no way back. An icon decorates
+only the genuinely-empty case; a filtered miss is transient and decorating it
+overstates it.
+
+**`AdminTableLoading`** goes in `#loading`. **`UTable` has had a `#loading`
+slot all along and no page used it** — so `:loading` drew a thin progress bar
+over an _empty_ table, which looks exactly like an empty list until data lands.
+Skeleton rows say "something is coming" and hold the height. The slot renders
+inside one cell spanning every column, so it stacks bars rather than faking a
+column grid — a fake layout that disagrees with the real one is worse than
+honest bars.
+
+**The sibling-empty-state bug is now extinct: six instances, all fixed.**
+feedback and bulk-jobs were caught during their conversions; `consents` and the
+three `maintenance/fix-*`/`check-*` tools were found by a scan for an empty
+block following `</UTable>`. Rendered as a sibling it appears _below_ the
+table's own empty row, so an empty list showed two empty states. Six
+independent occurrences is a pattern, not carelessness — which is exactly why
+it is a component now.
+
+**Two pages moved off a correct-but-worse pattern.** `events/index.vue` and
+`superteams/index.vue` used a `v-if` chain (loading → error → empty → table).
+That is not the sibling bug and it renders correctly, but `v-if="fetching"`
+unmounts the whole table on _any_ refetch, so the page blanks rather than
+showing stale rows under a loading indicator. They now use `:loading` plus the
+slots, keeping their icons via the new `icon` prop.
+`challenges/[challengeId]/sessions.vue` had the same shape with a hand-rolled
+empty div and a `'all'` filter sentinel, now wired to the component's `clear`.
+
+Tests: 8 component cases, including the two that encode the intent — a filtered
+miss must say something different from an empty list, and the way out must exist
+only in the filtered case. Component 199 → 207.
+
+**Still open in #2:** detail and form pages. 30 pages use `AdminErrorState` and
+21 use `AdminLoadingState`, largely as the same `v-if error / v-else-if fetching`
+chain — the candidate for an `AdminQueryState` wrapper, not yet built.
 
 ### 2026-09-21 — challenges paginated; the other three project lists left alone
 

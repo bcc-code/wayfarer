@@ -51,17 +51,11 @@ const events = computed(() => data.value?.events.edges.map((e) => e.node) ?? [])
       </UButton>
     </div>
 
-    <AdminLoadingState v-if="fetching" />
-    <AdminErrorState v-else-if="error" :error />
-    <UEmpty
-      v-else-if="!events.length"
-      icon="lucide:calendar"
-      title="Ingen arrangement ennå"
-      description="Opprett det første arrangementet for dette prosjektet."
-    />
+    <AdminErrorState v-if="error" :error />
     <UTable
       v-else
       :data="events"
+      :loading="fetching"
       :columns="[
         { accessorKey: 'name', header: 'Navn' },
         { accessorKey: 'description', header: 'Beskrivelse' },
@@ -88,6 +82,16 @@ const events = computed(() => data.value?.events.edges.map((e) => e.node) ?? [])
             Rediger
           </UButton>
         </div>
+      </template>
+      <template #empty>
+        <AdminTableEmpty
+          icon="lucide:calendar"
+          title="Ingen arrangement ennå"
+          description="Opprett det første arrangementet for dette prosjektet."
+        />
+      </template>
+      <template #loading>
+        <AdminTableLoading />
       </template>
     </UTable>
   </div>

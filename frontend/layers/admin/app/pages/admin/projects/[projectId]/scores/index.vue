@@ -255,23 +255,15 @@ const { canDeleteScoreEntry, canManageScores } = usePermissions()
           </div>
         </template>
         <template #empty>
-          <div class="py-6 text-center">
-            <p class="text-muted text-sm">
-              {{
-                activeFilters.length
-                  ? 'Ingen oppføringer passer filteret'
-                  : 'Ingen poengoppføringer i dette prosjektet'
-              }}
-            </p>
-            <UButton
-              v-if="activeFilters.length"
-              variant="link"
-              size="sm"
-              @click="list.clearAll()"
-            >
-              Nullstill filter
-            </UButton>
-          </div>
+          <AdminTableEmpty
+            :filtered="!!activeFilters.length"
+            title="Ingen poengoppføringer i dette prosjektet"
+            filtered-title="Ingen oppføringer passer filteret"
+            @clear="list.clearAll()"
+          />
+        </template>
+        <template #loading>
+          <AdminTableLoading :rows="pagination.pageSize.value" />
         </template>
       </UTable>
     </AdminListView>
