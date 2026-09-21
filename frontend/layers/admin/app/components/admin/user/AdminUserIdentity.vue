@@ -256,8 +256,12 @@ async function handleUnlock() {
       — it is the rarest thing anyone does here. A labelled row with the state
       spelled out is the middle ground.
     -->
+    <!--
+      `border-t` only: every section below draws its own top rule, so a bottom
+      border here would put two rules a short gap apart.
+    -->
     <div
-      class="border-default flex flex-wrap items-center gap-x-6 gap-y-2 border-y py-2 text-sm"
+      class="border-default flex flex-wrap items-center gap-x-6 gap-y-2 border-t py-3 text-sm"
     >
       <UCollapsible>
         <UButton

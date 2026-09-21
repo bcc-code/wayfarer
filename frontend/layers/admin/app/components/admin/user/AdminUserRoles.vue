@@ -267,26 +267,23 @@ async function handleRevoke(role: UserRole) {
 </script>
 
 <template>
-  <UCard>
-    <template #header>
-      <div class="flex items-center justify-between">
-        <h2 class="text-xl font-semibold">Roller og tillatelser</h2>
-        <UButton
-          v-if="canManage"
-          icon="i-lucide-plus"
-          size="sm"
-          @click="showAddModal = true"
-        >
-          Legg til rolle
-        </UButton>
-      </div>
+  <AdminSection title="Roller og tillatelser" :count="roles.length">
+    <template #actions>
+      <UButton
+        v-if="canManage"
+        icon="i-lucide-plus"
+        size="sm"
+        @click="showAddModal = true"
+      >
+        Legg til rolle
+      </UButton>
     </template>
 
-    <div v-if="roles.length" class="space-y-3">
+    <div v-if="roles.length" class="space-y-1">
       <div
         v-for="role in roles"
         :key="role.id"
-        class="border-default flex items-center justify-between rounded-md border p-3"
+        class="flex items-center justify-between gap-4 py-3"
       >
         <div class="flex items-center gap-3">
           <UBadge variant="soft" size="lg">
@@ -310,7 +307,7 @@ async function handleRevoke(role: UserRole) {
         />
       </div>
     </div>
-    <div v-else class="text-dimmed">Ingen roller tildelt</div>
+    <p v-else class="text-dimmed text-sm">Ingen roller tildelt</p>
 
     <UModal v-model:open="showAddModal">
       <template #header>
@@ -406,5 +403,5 @@ async function handleRevoke(role: UserRole) {
         </div>
       </template>
     </UModal>
-  </UCard>
+  </AdminSection>
 </template>

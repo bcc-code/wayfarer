@@ -29,27 +29,23 @@ function formatSourceType(type: string) {
 </script>
 
 <template>
-  <UCard>
-    <template #header>
-      <div class="flex flex-wrap items-center gap-2">
-        <h2 class="text-xl font-semibold">
-          Poenglogg
-          <span v-if="projectName" class="text-muted text-sm font-normal">
-            i {{ projectName }}
-          </span>
-          <UBadge color="neutral" variant="soft">{{ points }} poeng</UBadge>
-          <span v-if="totalCount" class="text-dimmed text-sm font-normal">
-            ({{ totalCount }} oppføringer)
-          </span>
-        </h2>
+  <AdminSection title="Poenglogg" :count="totalCount">
+    <template #actions>
+      <div class="flex items-center gap-2 text-sm">
+        <span v-if="projectName" class="text-muted">i {{ projectName }}</span>
+        <UBadge color="neutral" variant="soft">{{ points }} poeng</UBadge>
       </div>
     </template>
 
-    <div v-if="entries.length" class="space-y-2">
+    <!--
+      Dividers only in the long lists, and faint: they guide a scan down 24
+      rows, they are not structure.
+    -->
+    <div v-if="entries.length" class="divide-default/60 divide-y">
       <div
         v-for="entry in entries"
         :key="entry.id"
-        class="border-default flex items-center justify-between rounded-md border p-3"
+        class="flex items-center justify-between gap-4 py-3"
       >
         <div class="flex items-center gap-3">
           <UBadge
@@ -77,10 +73,10 @@ function formatSourceType(type: string) {
           </div>
         </div>
       </div>
-      <div v-if="isTruncated" class="text-dimmed pt-2 text-center text-sm">
+      <p v-if="isTruncated" class="text-dimmed pt-3 text-center text-sm">
         Viser {{ entries.length }} av {{ totalCount }} oppføringer
-      </div>
+      </p>
     </div>
-    <div v-else class="text-dimmed">Ingen poengoppføringer</div>
-  </UCard>
+    <p v-else class="text-dimmed text-sm">Ingen poengoppføringer</p>
+  </AdminSection>
 </template>

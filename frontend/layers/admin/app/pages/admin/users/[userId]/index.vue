@@ -200,7 +200,7 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
   -->
   <div class="max-w-6xl">
     <AdminQueryState :fetching :error>
-      <div v-if="data" class="space-y-6">
+      <div v-if="data" class="space-y-10">
         <AdminUserIdentity
           :user="data.user"
           :can-manage="canAssignRoles"

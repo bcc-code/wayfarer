@@ -172,21 +172,12 @@ async function handleRemove() {
 </script>
 
 <template>
-  <UCard>
-    <template #header>
-      <h2 class="text-xl font-semibold">
-        Samtykker
-        <span v-if="rows.length" class="text-dimmed text-sm font-normal">
-          ({{ rows.length }})
-        </span>
-      </h2>
-    </template>
-
-    <div v-if="rows.length" class="space-y-2">
+  <AdminSection title="Samtykker" :count="rows.length">
+    <div v-if="rows.length" class="space-y-1">
       <div
         v-for="row in rows"
         :key="row.rowKey"
-        class="border-default flex flex-wrap items-center justify-between gap-3 rounded-md border p-3"
+        class="flex flex-wrap items-center justify-between gap-3 py-3"
       >
         <div class="flex min-w-0 items-center gap-3">
           <UBadge variant="soft" :color="STATUS_COLORS[row.status]">
@@ -217,7 +208,7 @@ async function handleRemove() {
         </div>
       </div>
     </div>
-    <div v-else class="text-dimmed">Ingen samtykkeaktivitet</div>
+    <p v-else class="text-dimmed text-sm">Ingen samtykkeaktivitet</p>
 
     <UModal v-model:open="showRemoveModal">
       <template #header>
@@ -244,5 +235,5 @@ async function handleRemove() {
         </div>
       </template>
     </UModal>
-  </UCard>
+  </AdminSection>
 </template>

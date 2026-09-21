@@ -30,28 +30,19 @@ const isTruncated = computed(() => props.totalCount > props.entries.length)
 </script>
 
 <template>
-  <UCard>
-    <template #header>
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <h2 class="text-xl font-semibold">
-          Tilbakemeldinger
-          <span v-if="totalCount" class="text-dimmed text-sm font-normal">
-            ({{ totalCount }}
-            {{ totalCount === 1 ? 'oppføring' : 'oppføringer' }})
-          </span>
-        </h2>
-        <UButton variant="ghost" size="sm" :to="{ name: 'admin-feedback' }">
-          Vis alle
-        </UButton>
-      </div>
+  <AdminSection title="Tilbakemeldinger" :count="totalCount">
+    <template #actions>
+      <UButton variant="link" size="sm" :to="{ name: 'admin-feedback' }">
+        Vis alle
+      </UButton>
     </template>
 
-    <div v-if="entries.length" class="space-y-3">
-      <div
-        v-for="entry in entries"
-        :key="entry.id"
-        class="border-default rounded-md border p-3"
-      >
+    <!--
+      Dividers only in the long lists, and faint: they guide a scan down 24
+      rows, they are not structure.
+    -->
+    <div v-if="entries.length" class="divide-default/60 divide-y">
+      <div v-for="entry in entries" :key="entry.id" class="py-3">
         <div class="flex items-start justify-between gap-4">
           <p class="text-sm whitespace-pre-wrap">{{ entry.message }}</p>
           <UBadge
@@ -73,10 +64,10 @@ const isTruncated = computed(() => props.totalCount > props.entries.length)
           <code v-if="entry.appVersion">v{{ entry.appVersion }}</code>
         </div>
       </div>
-      <div v-if="isTruncated" class="text-dimmed pt-2 text-center text-sm">
+      <p v-if="isTruncated" class="text-dimmed pt-3 text-center text-sm">
         Viser {{ entries.length }} av {{ totalCount }} oppføringer
-      </div>
+      </p>
     </div>
-    <div v-else class="text-dimmed">Ingen tilbakemeldinger</div>
-  </UCard>
+    <p v-else class="text-dimmed text-sm">Ingen tilbakemeldinger</p>
+  </AdminSection>
 </template>
