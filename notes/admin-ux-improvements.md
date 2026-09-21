@@ -566,6 +566,81 @@ then `make generate` and `pnpm codegen`.
 
 ## Update log
 
+### 2026-09-21 — AdminListView + useListState; page position in the URL
+
+A standardised list toolbar and footer, plus URL-synced list state, built
+against the users page. Four reference dashboards the user supplied all agree
+on the same anatomy: **toolbar above** (primary action · search · filters),
+**footer below** (position + page size left, pagination right).
+
+**`AdminListView`** renders toolbar → the page's own table in the default slot
+→ footer, with `#filters` and `#actions` slots. Slot-based rather than a
+config-driven table, so an odd page composes instead of fighting it.
+
+**`useListState`** owns search, filters and position, synced to the URL. It also
+owns the **pagination reset**, which is the correctness half: each list page
+currently wires its own `watch(debouncedSearch, () => pagination.reset())`, and
+a page that adds a second filter and forgets to extend that watch asks for page
+4 of a one-page result and gets an empty table with no error. Mutation-checked —
+disabling the reset fails exactly the two reset cases.
+
+**The page position *is* in the URL, and my first answer that it should not be
+was wrong.** I told the user a cursor "shifts as data changes" and would
+"silently land somewhere else later". That is backwards. The cursor is
+`base64(id)` (`internal/graph/pagination/cursor.go:15`) and the SQL is
+`WHERE u.id > @aftercursor` — a **comparison, not a lookup**. So a keyset cursor
+means "the rows after user X" regardless of inserts or deletes before it, and it
+still resolves if user X is deleted. A page *number* is the thing that shifts.
+
+What a cursor genuinely cannot carry is the position *label*, which is the real
+obstacle and a much smaller one: `from=<offset>` rides along for the "Viser
+16–30" text, and a stale `from` mislabels a correct page rather than showing the
+wrong rows.
+
+The shape that made it exact: **persist the pagination variables, not a page
+number.** With keyset pagination the variables *are* the position, so
+`?after=<cursor>&from=15` (or `before` for backward) round-trips precisely, with
+no cursor stack and no walking. `usePagination.restore()` applies it before the
+first query, so a deep link fetches the right page once rather than fetching
+page 1 and jumping.
+
+URL params are split into two groups because they behave oppositely: `q` and
+filters **must** reset the position; `after`/`before`/`from`/`size` **must not**,
+or the list could never leave page 1. Both directions are pinned by tests.
+
+**Position display needed no backend change either** — another thing I had
+assumed. Keyset cannot *report* a position, but it can be counted: `nextOffset`
+/ `previousOffset` track steps, and `pageRange` derives "Viser 16–30 av 13 477"
+from the offset plus the rows actually returned (so a short final page does not
+overshoot). Only *jumping* to an arbitrary page needs `OFFSET` on the backend.
+
+**Still not possible without backend work**, and worth stating plainly since all
+four references show both: **numbered pages** (needs `OFFSET`) and **column
+sorting** (nothing in `gql/` takes a sort argument for these entities). The
+in-repo precedent is `external_content`, which has `queryoffset` and an
+`ExternalContentSortBy` enum — so extending the pattern, not inventing one.
+
+**A bug in my own code that a test caught:** `useListState` compared page size
+against `pageSizes[0]` rather than the pagination's own default, so any list
+defaulting to 20 while offering 15 first would have carried `?size=20` on every
+URL forever. It now captures the default before the URL can override it.
+
+**Users page, converted.** Gains `?q=`/`?churchId=`/position in the URL, a
+searchable church filter (the first of `UserFilter`'s seven unused dimensions),
+filter chips with a reset, the position readout, a page-size selector, labelled
+Forrige/Neste below the table, a "nothing matched" empty state distinct from
+"no users", and the dead `actions` column removed (it declared
+`{ id: 'actions' }` with no cell template — unique among admin tables).
+
+On the consumer filter-panel reference: pills, segmented controls and the live
+result count transfer; the **Cancel/Apply panel does not**. It hides filter
+state behind a step and fights the linkable-URL goal. If a list outgrows an
+inline toolbar, the data-table pattern is a "Filtre" popover with the chips
+still visible — not a modal.
+
+Tests: 10 unit (`pagination-range.test.ts`), 9 component (`AdminListView`),
+15 component (`useListState`). Unit 594 → 604, component 175 → 199.
+
 ### 2026-09-21 — AdminTopPerformers deleted
 
 The leaderboard panel that was built but rendered nowhere. It was flagged in the

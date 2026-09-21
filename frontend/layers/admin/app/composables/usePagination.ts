@@ -68,6 +68,21 @@ export interface UsePaginationReturn {
   reset: () => void
   /** Set a new page size */
   setPageSize: (size: number) => void
+  /**
+   * Jump straight to a known position, for restoring from the URL.
+   *
+   * Takes the query variables rather than a page number on purpose: with
+   * keyset pagination the variables *are* the position, so round-tripping them
+   * is exact. There is no page number to restore — see `restore` in
+   * useListState.
+   */
+  restore: (state: {
+    after?: string | null
+    before?: string | null
+    offset?: number
+  }) => void
+  /** Rows stepped past, for persisting the position label. */
+  offset: Ref<number>
 }
 
 /**
@@ -200,6 +215,39 @@ export function usePagination(
     firstPage()
   }
 
+  /**
+   * Restore an exact position. `offset` only feeds the "Viser 16–30" label; the
+   * cursor is what actually selects the rows, so a stale offset mislabels a
+   * correct page rather than showing the wrong one.
+   */
+  function restore(state: {
+    after?: string | null
+    before?: string | null
+    offset?: number
+  }) {
+    if (state.after) {
+      variables.value = {
+        first: pageSize.value,
+        after: state.after,
+        last: null,
+        before: null,
+      }
+    } else if (state.before) {
+      variables.value = {
+        first: null,
+        after: null,
+        last: pageSize.value,
+        before: state.before,
+      }
+    } else {
+      return
+    }
+
+    offset.value = Math.max(0, state.offset ?? 0)
+    pageInfo.value = null
+    rowsOnPage.value = 0
+  }
+
   const range = computed(() =>
     pageRange(offset.value, rowsOnPage.value, totalCount.value),
   )
@@ -218,5 +266,7 @@ export function usePagination(
     updateConnection,
     reset,
     setPageSize,
+    restore,
+    offset,
   }
 }

@@ -39,10 +39,21 @@ export interface UseListStateReturn<F extends Record<string, string>> {
  * here means no page can forget it.
  *
  * **State lives in the URL**, so a refresh keeps context, browser back works,
- * and a filtered list can be sent to someone. Deliberately excluded: the cursor.
- * Relay cursors are opaque and shift as data changes, so `?after=…` produces an
- * ugly link that silently lands somewhere else later. The valuable thing to
- * share is the query, not the page number.
+ * and a filtered list can be sent to someone.
+ *
+ * **The page position is included**, as the pagination variables rather than a
+ * page number. With keyset pagination the variables *are* the position, so
+ * round-tripping `after`/`before` restores the exact same rows — and a keyset
+ * cursor is more stable than a page number would be: it means "the rows after
+ * user X" whatever is inserted or deleted before it, and it survives user X
+ * being deleted (the SQL compares, it does not look up). What a cursor cannot
+ * carry is the *position label*, so `from` rides along for that; a stale
+ * `from` mislabels a correct page rather than showing the wrong one.
+ *
+ * Params are split into two groups because they behave differently: changing
+ * what you are querying (`q`, filters) must reset the position, while changing
+ * where you are (`after`, `before`, `from`, `size`) must not — resetting on a
+ * position change would make paging impossible.
  */
 export function useListState<F extends Record<string, string>>(
   options: UseListStateOptions<F>,
@@ -85,12 +96,33 @@ export function useListState<F extends Record<string, string>>(
     pagination.setPageSize(sizeFromUrl)
   }
 
-  /** Everything that changes the result set, as URL params. */
+  // Restore the position before the first query runs, so a deep link fetches
+  // the right page once rather than fetching page 1 and then jumping.
+  pagination.restore({
+    after: readParam('after') || null,
+    before: readParam('before') || null,
+    offset: Number(readParam('from')) || 0,
+  })
+
+  /** What is being queried. A change here invalidates the position. */
   const queryParams = computed(() => {
     const params: Record<string, string> = {}
     if (debouncedSearch.value) params.q = debouncedSearch.value
     for (const key of filterKeys) {
       if (filters[key]) params[key] = filters[key]
+    }
+    return params
+  })
+
+  /** Where in the result set we are. Changing these must not reset anything. */
+  const positionParams = computed(() => {
+    const params: Record<string, string> = {}
+    const { after, before } = pagination.variables.value
+
+    if (after) params.after = after
+    if (before) params.before = before
+    if (pagination.offset.value > 0) {
+      params.from = String(pagination.offset.value)
     }
     if (pagination.pageSize.value !== defaultPageSize) {
       params.size = String(pagination.pageSize.value)
@@ -98,22 +130,29 @@ export function useListState<F extends Record<string, string>>(
     return params
   })
 
+  const writeUrl = () => {
+    // `replace`, not `push`: typing into a search box should not fill the
+    // history with a step per keystroke-batch.
+    void router.replace({
+      query: { ...queryParams.value, ...positionParams.value },
+    })
+  }
+
   watch(
     queryParams,
     (params, previous) => {
-      // `replace`, not `push`: typing into a search box should not fill the
-      // history with a step per keystroke-batch.
-      void router.replace({ query: { ...params } })
-
-      // Only reset when the *result set* changed. Page size resets itself via
-      // `setPageSize`, and resetting again here would double-fire the query.
       const changed = Object.keys({ ...params, ...previous }).some(
-        (key) => key !== 'size' && params[key] !== previous?.[key],
+        (key) => params[key] !== previous?.[key],
       )
+      // Reset first, so the position params written below are the reset ones
+      // rather than a cursor into the previous result set.
       if (changed) pagination.reset()
+      writeUrl()
     },
     { deep: true },
   )
+
+  watch(positionParams, writeUrl, { deep: true })
 
   const activeFilters = computed(() =>
     filterKeys

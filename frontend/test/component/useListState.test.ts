@@ -29,8 +29,8 @@ mockNuxtImport('useRouter', () => () => ({
   options: {},
 }))
 
-/** Put the pagination somewhere other than page 1 so a reset is observable. */
-function pageTwo() {
+/** A pagination with page 1 loaded, ready to navigate. */
+function loadedPageOne() {
   const pagination = usePagination({ defaultPageSize: 15 })
   pagination.updateConnection({
     edges: Array.from({ length: 15 }, (_, i) => ({
@@ -45,6 +45,12 @@ function pageTwo() {
     },
     totalCount: 100,
   })
+  return pagination
+}
+
+/** Page 1 loaded and then stepped forward, so a reset is observable. */
+function pageTwo() {
+  const pagination = loadedPageOne()
   pagination.nextPage()
   return pagination
 }
@@ -143,6 +149,86 @@ describe('useListState', () => {
     await vi.waitFor(() =>
       expect(replace.mock.calls.at(-1)?.[0]).toEqual({ query: {} }),
     )
+  })
+
+  // The position is persisted as the pagination variables, not a page number:
+  // with keyset pagination the variables *are* the position, so the round trip
+  // is exact.
+  it('restores a forward position from the URL', () => {
+    route.query = { after: 'Y3Vyc29yLTE0', from: '15' }
+    const pagination = usePagination({ defaultPageSize: 15 })
+    useListState({ pagination })
+
+    expect(pagination.variables.value).toMatchObject({
+      first: 15,
+      after: 'Y3Vyc29yLTE0',
+    })
+    expect(pagination.offset.value).toBe(15)
+  })
+
+  it('restores a backward position from the URL', () => {
+    route.query = { before: 'Y3Vyc29yLTAw', from: '30' }
+    const pagination = usePagination({ defaultPageSize: 15 })
+    useListState({ pagination })
+
+    expect(pagination.variables.value).toMatchObject({
+      last: 15,
+      before: 'Y3Vyc29yLTAw',
+    })
+    expect(pagination.offset.value).toBe(30)
+  })
+
+  it('starts at the beginning when the URL carries no position', () => {
+    const pagination = usePagination({ defaultPageSize: 15 })
+    useListState({ pagination })
+
+    expect(pagination.variables.value.after).toBeFalsy()
+    expect(pagination.offset.value).toBe(0)
+  })
+
+  it('writes the position to the URL as you page', async () => {
+    const pagination = loadedPageOne()
+    useListState({ pagination, debounceMs: 0 })
+
+    pagination.nextPage()
+
+    await vi.waitFor(() => {
+      const query = replace.mock.calls.at(-1)?.[0]?.query
+      expect(query?.after).toBe('c14')
+      expect(query?.from).toBe('15')
+    })
+  })
+
+  // Paging must not trip the reset, or the list could never leave page 1.
+  it('does not reset when only the position changes', async () => {
+    const pagination = loadedPageOne()
+    useListState({ pagination, debounceMs: 0 })
+
+    pagination.nextPage()
+    await vi.waitFor(() => expect(replace).toHaveBeenCalled())
+
+    expect(pagination.variables.value.after).toBe('c14')
+    expect(pagination.offset.value).toBe(15)
+  })
+
+  // A cursor into the previous result set would be meaningless.
+  it('drops the position when the query changes', async () => {
+    const pagination = loadedPageOne()
+    const list = useListState({ pagination, debounceMs: 0 })
+
+    pagination.nextPage()
+    await vi.waitFor(() =>
+      expect(replace.mock.calls.at(-1)?.[0]?.query?.after).toBe('c14'),
+    )
+
+    list.search.value = 'sigve'
+
+    await vi.waitFor(() => {
+      const query = replace.mock.calls.at(-1)?.[0]?.query
+      expect(query?.q).toBe('sigve')
+      expect(query?.after).toBeUndefined()
+      expect(query?.from).toBeUndefined()
+    })
   })
 
   it('reports active filters for chips, excluding the free-text search', () => {
