@@ -180,47 +180,54 @@ In practice:
 Ordered by priority. These are sweeps — do them once across every affected page
 rather than page by page.
 
-### 1. Replace hardcoded query limits with pagination — 12 pages
+### 1. Replace hardcoded query limits with pagination — 13 sites, 1 done
 
 Every list below renders at most N rows, with no pagination and no indication
 that anything was cut off. `projects/[projectId]/index.vue`'s old mega-query had
 exactly this bug and lost its `first: 50` during the restructure; these are the
 remainder.
 
-| Page                                                | Limit                   | Shape                                   |
-| --------------------------------------------------- | ----------------------- | --------------------------------------- |
-| `my-church/units.vue`                               | `first: 1000`           | list, also an outlier (see #4)          |
-| `my-church/admins.vue`                              | `first: 500`            | list + client fuzzy search              |
-| `projects/[projectId]/superteams/[superTeamId].vue` | `first: 200` (teams)    | picker                                  |
-| `users/[userId]/achievements.vue`                   | `first: 200`            | picker                                  |
-| `projects/index.vue`                                | `first: 100`            | card grid                               |
-| `users/[userId]/index.vue`                          | `first: 100` (feedback) | panel in a detail page                  |
-| `projects/[projectId]/challenges/new.vue`           | `first: 100` (events)   | dropdown                                |
-| `projects/[projectId]/superteams/distribute.vue`    | `first: 100` (events)   | dropdown                                |
-| `projects/[projectId]/challenges/index.vue`         | `first: 50`             | list                                    |
-| `projects/[projectId]/achievements/index.vue`       | `first: 50`             | list, drag-reorder                      |
-| `projects/[projectId]/events/index.vue`             | `first: 50`             | list — low priority, events rarely used |
-| `projects/[projectId]/superteams/index.vue`         | `first: 50`             | list                                    |
-| `maintenance/check-points-journal.vue`              | `first: 50`             | table                                   |
-| `maintenance/fix-content-progress.vue`              | `first: 50`             | table                                   |
+**Not all of them should be paginated**, which only became clear once the
+component existed. A toolbar and a pagination footer over five rows is worse
+than a plain grid, and a picker or dropdown wants a searchable select rather
+than pages. The `Verdict` column records the call per site so it is not
+re-litigated.
 
-`RelayPagination` + `usePagination` already exist and are proven on four pages:
-`users/index.vue`, `feedback/index.vue` and
-`projects/[projectId]/{teams,scores}/index.vue`. `users/index.vue` is the
-reference — debounced server-side filter plus relay cursors.
+| Page                                                | Limit                   | Verdict                                                                                 |
+| --------------------------------------------------- | ----------------------- | --------------------------------------------------------------------------------------- |
+| `projects/[projectId]/challenges/index.vue`         | ~~`first: 50`~~         | ☑ **done** — paginated + type filter                                                    |
+| `projects/[projectId]/achievements/index.vue`       | `first: 50`             | **left alone** — reorder does not compose with paging; **highest truncation risk left** |
+| `projects/[projectId]/superteams/index.vue`         | `first: 50`             | **left** — no categorical facet in `SuperTeamFilter`, ~5 per project                    |
+| `projects/[projectId]/events/index.vue`             | `first: 50`             | **left** — as above, plus events are barely used                                        |
+| `my-church/units.vue`                               | `first: 1000`           | open — also an outlier (#4), on the `church-admin` layout                               |
+| `my-church/admins.vue`                              | `first: 500`            | open — has client-side fuzzy search                                                     |
+| `projects/[projectId]/superteams/[superTeamId].vue` | `first: 200` (teams)    | open — **picker**; wants a searchable select, not pages                                 |
+| `users/[userId]/achievements.vue`                   | `first: 200`            | open — **picker**, as above                                                             |
+| `projects/index.vue`                                | `first: 100`            | open — card grid                                                                        |
+| `users/[userId]/index.vue`                          | `first: 100` (feedback) | open — panel inside a detail page                                                       |
+| `projects/[projectId]/challenges/new.vue`           | `first: 100` (events)   | open — **dropdown**                                                                     |
+| `projects/[projectId]/superteams/distribute.vue`    | `first: 100` (events)   | open — **dropdown**                                                                     |
+| `maintenance/check-points-journal.vue`              | `first: 50`             | open — table                                                                            |
+| `maintenance/fix-content-progress.vue`              | `first: 50`             | open — table                                                                            |
+
+**`AdminListView` + `useListState` are the tool** — see the 2026-09-21 log
+entries. `RelayPagination` was folded into them and deleted. Five pages are on
+it: `users`, `feedback`, `challenges`, `projects/[projectId]/{teams,scores}` and
+`maintenance/bulk-jobs`; `users/index.vue` is the reference, with a debounced
+server-side filter, a facet and full URL state.
 
 **Not every row here wants the same fix.** Three shapes, three answers:
 
-- **Lists** — straight `RelayPagination`, following `users/index.vue`.
+- **Lists** — `AdminListView`, following `users/index.vue`.
 - **Dropdowns and pickers** (`challenges/new.vue`, `distribute.vue`,
   `users/[userId]/achievements.vue`, `superteams/[superTeamId].vue`) — a paginated
   dropdown is worse UX, not better. These want a searchable select backed by a
   server-side query, or a justified limit with an explicit "showing first N"
   affordance.
 - **`achievements/index.vue` has drag-to-reorder**, which does not compose with
-  pagination — reordering across a page boundary has no meaning. Decide the
-  interaction before the query: either the order is page-local, or reordering
-  moves to a dedicated mode that loads everything.
+  pagination — reordering across a page boundary has no meaning. **Left alone
+  2026-09-21**; when picked up, prefer a dedicated reorder mode that loads
+  everything over page-local ordering, which is cheaper and semantically wrong.
 
 ### 2. Loading, empty and error states everywhere they belong
 
@@ -542,7 +549,7 @@ then `make generate` and `pnpm codegen`.
 | `challenges/[challengeId]/index.vue`    | `…/challenges/:id`        | 222 | ☐   |                                                                                                                                 |
 | `challenges/[challengeId]/quiz.vue`     | `…/:id/quiz`              | 417 | ☐   | Two-crumb page.                                                                                                                 |
 | `challenges/[challengeId]/sessions.vue` | `…/:id/sessions`          | 602 | ☐   | Two-crumb page. 13 toast calls — likely the noisiest page in the app.                                                           |
-| `achievements/index.vue`                | `…/achievements`          | 169 | ☐   | Drag-reorder. `first: 50`.                                                                                                      |
+| `achievements/index.vue`                | `…/achievements`          | 169 | ☐   | Drag-reorder blocks paging — left alone by decision; **highest truncation risk left**. `first: 50`.                             |
 | `achievements/new.vue`                  | `…/achievements/new`      | 134 | ☐   |                                                                                                                                 |
 | `achievements/[achievementId].vue`      | `…/achievements/:id`      | 324 | ☐   |                                                                                                                                 |
 | `events/index.vue`                      | `…/events`                | 94  | ☐   | **Low priority** — events rarely used, see Scope decisions. Created during restructure to un-orphan the two below. `first: 50`. |
@@ -622,13 +629,20 @@ maps to the enum and there is a single set of labels. The old "unknown typename
 falls back to Enkel" behaviour is kept, so a challenge kind added server-side
 degrades instead of rendering blank.
 
-**Achievements is the open decision.** It has `first: 50` — a real truncation
-risk, since reading achievements multiply with articles — but `VueDraggable`
-reorder over a paginated list has no meaning: dragging an item to the top of
-page 3 cannot express "make this first overall", and `reorderAchievements` takes
-the full ordered id list. The two options are page-local ordering (cheap,
-semantically odd) or a dedicated reorder mode that loads everything (honest,
-more work). Not guessed at.
+**Achievements: left alone**, on the user's call the same day. The conflict is
+real — `VueDraggable` reorder over a paginated list has no meaning, because
+dragging an item to the top of page 3 cannot express "make this first overall",
+and `reorderAchievements` takes the full ordered id list.
+
+It remains the **highest truncation risk left in the admin panel**: reading
+achievements multiply with articles, so a large project is likelier to pass 50
+here than anywhere else, and the 51st achievement silently does not render.
+Recorded so that the day it bites, the cause is already written down rather
+than rediscovered.
+
+Whenever it is picked up, the shape to prefer is a **dedicated reorder mode**:
+the list pages normally, and a "Endre rekkefølge" toggle loads the full set and
+enables dragging. Page-local ordering is cheaper and semantically wrong.
 
 ### 2026-09-21 — consents stays off AdminListView
 
