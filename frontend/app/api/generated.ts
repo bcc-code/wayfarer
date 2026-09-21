@@ -4580,11 +4580,15 @@ export type AdminChallengeSessionsPageQuery = { __typename?: 'Query', challenge:
    };
 
 export type AdminProjectChallengesQueryVariables = Exact<{
-  projectId: Scalars['ID']['input'];
+  filter?: InputMaybe<ChallengeFilter>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  after?: InputMaybe<Scalars['String']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
-export type AdminProjectChallengesQuery = { __typename?: 'Query', challenges: { __typename?: 'ChallengeConnection', edges: Array<{ __typename?: 'ChallengeEdge', node:
+export type AdminProjectChallengesQuery = { __typename?: 'Query', challenges: { __typename?: 'ChallengeConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'ChallengeEdge', cursor: string, node:
         | { __typename: 'ExternalChallenge', id: string, name: string, description: any, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
         | { __typename: 'PluginChallenge', id: string, name: string, description: any, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
         | { __typename: 'QuizChallenge', id: string, name: string, description: any, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
@@ -7228,9 +7232,23 @@ export function useAdminChallengeSessionsPageQuery(options?: Omit<Urql.UseQueryA
   return Urql.useQuery<AdminChallengeSessionsPageQuery, AdminChallengeSessionsPageQueryVariables | undefined>({ query: AdminChallengeSessionsPageDocument, variables: undefined, ...options });
 };
 export const AdminProjectChallengesDocument = gql`
-    query AdminProjectChallenges($projectId: ID!) {
-  challenges(first: 50, filter: {projectId: $projectId}) {
+    query AdminProjectChallenges($filter: ChallengeFilter, $first: Int, $after: String, $last: Int, $before: String) {
+  challenges(
+    filter: $filter
+    first: $first
+    after: $after
+    last: $last
+    before: $before
+  ) {
+    totalCount
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
     edges {
+      cursor
       node {
         __typename
         id

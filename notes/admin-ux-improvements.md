@@ -537,7 +537,7 @@ then `make generate` and `pnpm codegen`.
 | `[projectId].vue`                       | (parent shell)            | 21  | –   | Deliberately thin; project lives in `useCurrentProject()`. Do not delete `index.vue` beneath it — blank-page trap.              |
 | `[projectId]/index.vue`                 | `…/:projectId`            | 143 | ☐   | Overview: counts-only query + section links. Redirects legacy `?tab=`.                                                          |
 | `[projectId]/edit.vue`                  | `…/edit`                  | 297 | ☐   | "Innstillinger". Only route a `project_admin` can actually use.                                                                 |
-| `challenges/index.vue`                  | `…/challenges`            | 119 | ☐   | `first: 50`, no search.                                                                                                         |
+| `challenges/index.vue`                  | `…/challenges`            | 227 | ◐   | **On `AdminListView`** + type filter; `first: 50` replaced by real pagination.                                                  |
 | `challenges/new.vue`                    | `…/challenges/new`        | 171 | ☐   | Events dropdown `first: 100`.                                                                                                   |
 | `challenges/[challengeId]/index.vue`    | `…/challenges/:id`        | 222 | ☐   |                                                                                                                                 |
 | `challenges/[challengeId]/quiz.vue`     | `…/:id/quiz`              | 417 | ☐   | Two-crumb page.                                                                                                                 |
@@ -591,6 +591,44 @@ then `make generate` and `pnpm codegen`.
 ---
 
 ## Update log
+
+### 2026-09-21 — challenges paginated; the other three project lists left alone
+
+Of the four project-scoped lists stuck on `first: 50`, **only challenges was
+worth converting.** The decision came from each entity's filter input and its
+real cardinality, not from consistency for its own sake.
+
+| List         | Verdict       | Why                                                                                                                              |
+| ------------ | ------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| challenges   | **converted** | Core entity, grows over a long study; `ChallengeFilter.challengeType` is a real facet                                            |
+| superteams   | left          | `SuperTeamFilter` offers only min/max teams/members — no categorical facet — and a project has a handful (5 in the live project) |
+| events       | left          | Same, plus events are barely used (scope decisions); a date-range facet on an empty list is chrome                               |
+| achievements | **blocked**   | Drag-to-reorder does not compose with pagination; needs a product decision, see below                                            |
+
+A toolbar with no filter and a pagination footer over five rows is worse than
+what is already there, so superteams and events keep their plain grids. Both
+still carry `first: 50`; the risk is low but not zero, and the honest fix if it
+ever bites is a count in the header rather than paging five items.
+
+**Challenges** now paginates properly and filters by type. `eventId` was
+available as a second facet and deliberately not offered — events are barely
+used, so it would be a permanently empty control.
+
+**One duplication collapsed while converting.** The table labels a challenge
+from its GraphQL `__typename` (`QuizChallenge` → "Quiz") and the new filter
+labels the same four kinds from the `ChallengeType` enum (`QUIZ` → "Quiz").
+Two label maps for one concept is a drift waiting to happen, so the typename now
+maps to the enum and there is a single set of labels. The old "unknown typename
+falls back to Enkel" behaviour is kept, so a challenge kind added server-side
+degrades instead of rendering blank.
+
+**Achievements is the open decision.** It has `first: 50` — a real truncation
+risk, since reading achievements multiply with articles — but `VueDraggable`
+reorder over a paginated list has no meaning: dragging an item to the top of
+page 3 cannot express "make this first overall", and `reorderAchievements` takes
+the full ordered id list. The two options are page-local ordering (cheap,
+semantically odd) or a dedicated reorder mode that loads everything (honest,
+more work). Not guessed at.
 
 ### 2026-09-21 — consents stays off AdminListView
 
