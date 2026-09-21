@@ -4384,6 +4384,18 @@ export type UnlockUserChurchMutationVariables = Exact<{
 
 export type UnlockUserChurchMutation = { __typename?: 'Mutation', unlockUserChurch: { __typename?: 'User', id: string, churchLockedUntil?: any | null, church: { __typename?: 'Church', id: string, name: string } } };
 
+export type AdminUserRoleScopeOptionsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminUserRoleScopeOptionsQuery = { __typename?: 'Query', churches: { __typename?: 'ChurchConnection', edges: Array<{ __typename?: 'ChurchEdge', node: { __typename?: 'Church', id: string, name: string } }> }, projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string } }> } };
+
+export type AdminUserRoleTeamOptionsQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminUserRoleTeamOptionsQuery = { __typename?: 'Query', teams: { __typename?: 'TeamConnection', edges: Array<{ __typename?: 'TeamEdge', node: { __typename?: 'Team', id: string, name: string } }> } };
+
 export type AdminProjectShellQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
 }>;
@@ -6566,6 +6578,46 @@ export const UnlockUserChurchDocument = gql`
 
 export function useUnlockUserChurchMutation() {
   return Urql.useMutation<UnlockUserChurchMutation, UnlockUserChurchMutationVariables>(UnlockUserChurchDocument);
+};
+export const AdminUserRoleScopeOptionsDocument = gql`
+    query AdminUserRoleScopeOptions {
+  churches(first: 500) {
+    edges {
+      node {
+        id
+        name
+      }
+    }
+  }
+  projects(first: 200, filter: {archived: false}) {
+    edges {
+      node {
+        id
+        name
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminUserRoleScopeOptionsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminUserRoleScopeOptionsQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminUserRoleScopeOptionsQuery, AdminUserRoleScopeOptionsQueryVariables | undefined>({ query: AdminUserRoleScopeOptionsDocument, variables: undefined, ...options });
+};
+export const AdminUserRoleTeamOptionsDocument = gql`
+    query AdminUserRoleTeamOptions($projectId: ID!) {
+  teams(first: 500, filter: {projectId: $projectId}) {
+    edges {
+      node {
+        id
+        name
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminUserRoleTeamOptionsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminUserRoleTeamOptionsQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminUserRoleTeamOptionsQuery, AdminUserRoleTeamOptionsQueryVariables | undefined>({ query: AdminUserRoleTeamOptionsDocument, variables: undefined, ...options });
 };
 export const AdminProjectShellDocument = gql`
     query AdminProjectShell($projectId: ID!) {

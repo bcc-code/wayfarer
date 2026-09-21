@@ -1,6 +1,44 @@
 <script setup lang="ts">
 import { RoleType, ScopeType } from '~/api/generated'
 
+/**
+ * Pickers for the scope a role needs. Loaded only while the dialog is open —
+ * there is no reason to fetch every church on a page view.
+ */
+gql(`
+  query AdminUserRoleScopeOptions {
+    churches(first: 500) {
+      edges {
+        node {
+          id
+          name
+        }
+      }
+    }
+    projects(first: 200, filter: { archived: false }) {
+      edges {
+        node {
+          id
+          name
+        }
+      }
+    }
+  }
+`)
+
+gql(`
+  query AdminUserRoleTeamOptions($projectId: ID!) {
+    teams(first: 500, filter: { projectId: $projectId }) {
+      edges {
+        node {
+          id
+          name
+        }
+      }
+    }
+  }
+`)
+
 interface RoleScope {
   id: string
   type: ScopeType
@@ -39,12 +77,21 @@ const roleOptions = Object.entries(roleLabels).map(([value, label]) => ({
   value: value as RoleType,
 }))
 
-const scopeTypeOptions = [
-  { label: 'Ingen (Global)', value: null },
-  { label: 'Menighet', value: ScopeType.Church },
-  { label: 'Prosjekt', value: ScopeType.Project },
-  { label: 'Lag', value: ScopeType.Team },
-]
+/**
+ * The scope a role takes, derived from the role itself.
+ *
+ * It was a second dropdown the admin had to answer, with exactly one correct
+ * answer per role — and nothing stopped them picking a wrong one, so
+ * "Menighetsadmin scoped to a Prosjekt" was expressible and would have been
+ * stored. The pairing comes from the service: its own tests assign
+ * `ChurchAdmin` with a church id, `ProjectAdmin` with a project id, `TeamLead`
+ * with a team id and `Admin` with none (`internal/services/roles_test.go`).
+ */
+const ROLE_SCOPE: Partial<Record<RoleType, ScopeType>> = {
+  [RoleType.ChurchAdmin]: ScopeType.Church,
+  [RoleType.ProjectAdmin]: ScopeType.Project,
+  [RoleType.TeamLead]: ScopeType.Team,
+}
 
 /**
  * What a role is scoped to, by name. `RoleScope` resolves `church`/`project`/
@@ -68,15 +115,91 @@ const toast = useToast()
 const showAddModal = ref(false)
 const newRole = reactive({
   role: RoleType.User as RoleType,
-  scopeType: null as ScopeType | null,
-  scopeId: '',
+  churchId: '',
+  projectId: '',
+  teamId: '',
 })
+
+const requiredScope = computed(() => ROLE_SCOPE[newRole.role])
 
 function resetForm() {
   newRole.role = RoleType.User
-  newRole.scopeType = null
-  newRole.scopeId = ''
+  newRole.churchId = ''
+  newRole.projectId = ''
+  newRole.teamId = ''
 }
+
+// Changing the role changes which scope applies, so a half-filled one from the
+// previous role must not travel with it.
+watch(
+  () => newRole.role,
+  () => {
+    newRole.churchId = ''
+    newRole.projectId = ''
+    newRole.teamId = ''
+  },
+)
+
+const { isAuthReady } = useAuthReady()
+
+const { data: scopeOptions } = useAdminUserRoleScopeOptionsQuery({
+  pause: computed(() => !isAuthReady.value || !showAddModal.value),
+  requestPolicy: 'cache-first',
+})
+
+const churchItems = computed(() =>
+  (scopeOptions.value?.churches.edges ?? []).map((edge) => ({
+    label: edge.node.name,
+    value: edge.node.id,
+  })),
+)
+
+const projectItems = computed(() =>
+  (scopeOptions.value?.projects.edges ?? []).map((edge) => ({
+    label: edge.node.name,
+    value: edge.node.id,
+  })),
+)
+
+/**
+ * Teams are picked through their project rather than from one global list:
+ * `TeamFilter` has no free-text field, so a flat list of every team could not
+ * be searched server-side, and a single project can hold over a thousand.
+ */
+const { data: teamOptions } = useAdminUserRoleTeamOptionsQuery({
+  variables: computed(() => ({ projectId: newRole.projectId })),
+  pause: computed(
+    () =>
+      !isAuthReady.value ||
+      !showAddModal.value ||
+      requiredScope.value !== ScopeType.Team ||
+      !newRole.projectId,
+  ),
+})
+
+const teamItems = computed(() =>
+  (teamOptions.value?.teams.edges ?? []).map((edge) => ({
+    label: edge.node.name,
+    value: edge.node.id,
+  })),
+)
+
+/** The id the mutation should carry, for whichever scope the role needs. */
+const scopeId = computed(() => {
+  switch (requiredScope.value) {
+    case ScopeType.Church:
+      return newRole.churchId
+    case ScopeType.Project:
+      return newRole.projectId
+    case ScopeType.Team:
+      return newRole.teamId
+    default:
+      return ''
+  }
+})
+
+/** A scoped role without its scope would be assigned globally by mistake. */
+const canSubmit = computed(() => !requiredScope.value || !!scopeId.value)
 
 function closeAddModal() {
   showAddModal.value = false
@@ -84,13 +207,14 @@ function closeAddModal() {
 }
 
 async function handleAssign() {
+  if (!canSubmit.value) return
+
   const result = await assignRole({
     input: {
       userId: props.userId,
       role: newRole.role,
-      scopeType: newRole.scopeType,
-      scopeId:
-        newRole.scopeType && newRole.scopeId ? newRole.scopeId : undefined,
+      scopeType: requiredScope.value ?? null,
+      scopeId: scopeId.value || undefined,
     },
   })
 
@@ -194,6 +318,12 @@ async function handleRevoke(role: UserRole) {
       </template>
 
       <template #body>
+        <!--
+          One question, then the scope it implies. The dialog used to ask for a
+          scope *type* the role already determines, and then for the scope's
+          **ULID as free text** — "Skriv inn church-ID" — which meant leaving
+          the page to find an id and pasting it back.
+        -->
         <div class="space-y-4">
           <UFormField label="Rolle">
             <USelect
@@ -204,22 +334,59 @@ async function handleRevoke(role: UserRole) {
             />
           </UFormField>
 
-          <UFormField label="Omfangstype">
-            <USelect
-              v-model="newRole.scopeType"
-              :items="scopeTypeOptions"
+          <UFormField
+            v-if="requiredScope === ScopeType.Church"
+            label="Menighet"
+          >
+            <USelectMenu
+              v-model="newRole.churchId"
+              :items="churchItems"
               value-key="value"
+              placeholder="Velg menighet"
+              searchable
               class="w-full"
             />
           </UFormField>
 
-          <UFormField v-if="newRole.scopeType" label="Omfangs-ID">
-            <UInput
-              v-model="newRole.scopeId"
-              :placeholder="`Skriv inn ${newRole.scopeType.toLowerCase()}-ID`"
+          <UFormField
+            v-if="
+              requiredScope === ScopeType.Project ||
+              requiredScope === ScopeType.Team
+            "
+            label="Prosjekt"
+          >
+            <USelectMenu
+              v-model="newRole.projectId"
+              :items="projectItems"
+              value-key="value"
+              placeholder="Velg prosjekt"
+              searchable
               class="w-full"
             />
           </UFormField>
+
+          <!--
+            Teams are reached through their project: `TeamFilter` has no
+            free-text field, so one global list could not be searched
+            server-side, and a single project can hold over a thousand teams.
+          -->
+          <UFormField v-if="requiredScope === ScopeType.Team" label="Lag">
+            <USelectMenu
+              v-model="newRole.teamId"
+              :items="teamItems"
+              value-key="value"
+              :disabled="!newRole.projectId"
+              :placeholder="
+                newRole.projectId ? 'Velg lag' : 'Velg prosjekt først'
+              "
+              searchable
+              class="w-full"
+            />
+          </UFormField>
+
+          <p v-if="!requiredScope" class="text-muted text-sm">
+            Denne rollen gjelder globalt og trenger ikke noe omfang.
+          </p>
         </div>
       </template>
 
@@ -228,7 +395,14 @@ async function handleRevoke(role: UserRole) {
           <UButton variant="ghost" color="neutral" @click="closeAddModal">
             Avbryt
           </UButton>
-          <UButton @click="handleAssign">Tildel rolle</UButton>
+          <!--
+            Disabled until the scope is chosen: a scoped role submitted without
+            one would be assigned globally, which is a much larger grant than
+            the admin asked for.
+          -->
+          <UButton :disabled="!canSubmit" @click="handleAssign">
+            Tildel rolle
+          </UButton>
         </div>
       </template>
     </UModal>

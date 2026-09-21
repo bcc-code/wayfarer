@@ -24,6 +24,32 @@ stubs.
 - Update the log at the bottom as work lands, same convention as the
   restructure note.
 
+## Where this stands (2026-09-21)
+
+| # | Item | State |
+| --- | --- | --- |
+| 1 | Hardcoded query limits | 1 done, 3 deliberately left, 10 open — 4 of those are pickers/dropdowns wanting a searchable select, not pages |
+| 2 | Loading / empty / error states | **done** — 13 tables + 17 pages |
+| 3 | Search, filter, sort | filtering on 6 lists; **sorting untouched** |
+| 4 | The 1,000-line outliers | half — `users/[userId]` split into 6 components; `my-church/units.vue` remains |
+| 5 | `church-admin` navigation | **untouched** — the biggest single-surface gap left |
+| 6 | Archived projects | **done** |
+| 7 | Container queries in components | **done** |
+
+Shared machinery built along the way, all with tests:
+`AdminListView` + `useListState` (toolbar, footer, URL state, pagination reset),
+`AdminQueryState` (loading/error/content, refetch-safe), `AdminTableEmpty` /
+`AdminTableLoading`, `AdminSparkline`. `RelayPagination` was folded into
+`AdminListView` and deleted.
+
+Pages given real work: `/admin` (rebuilt), `users/index`, `users/[userId]`
+(+ 6 components), `feedback`, `challenges`, `teams`, `scores`,
+`maintenance/bulk-jobs`.
+
+**If you are picking this up:** #5 is the obvious next move — seven
+`my-church/**` pages on a layout with no navigation at all, and it brings
+`units.vue` (the last #4 outlier) with it.
+
 ---
 
 ## Scope decisions
@@ -257,18 +283,33 @@ Do not "deduplicate" `AdminErrorState`/`AdminLoadingState` back into the shared
 `ErrorState`/`LoadingState`: keeping them separate is what severs admin's
 dependency on the user design system (see the restructure note).
 
-### 3. Search, filter and sort on lists
+### 3. Search, filter and sort on lists — filtering largely done; sorting open
 
-Only three of roughly fifteen lists can be narrowed at all: `users/index.vue`
-(debounced server-side `filter.query`), `feedback/index.vue` (three
-`USelectMenu` facets) and `my-church/admins.vue` (client-side fuzzy).
+**Filtering: six lists now have it**, each taking a facet from what its own
+filter input already supported (2026-09-21):
 
-Nothing for challenges, achievements, events, superteams, teams, scores,
-consents or the maintenance tables. No list has column sorting either — all nine
-`UTable` pages pass a static `:columns`.
+| List | Filter |
+| --- | --- |
+| `users/index.vue` | debounced server-side `query` + church |
+| `feedback/index.vue` | tags, platform, handled (tri-state) |
+| `challenges/index.vue` | challenge type |
+| `teams/index.vue` | superteam, incl. "uten superlag" |
+| `scores/index.vue` | source type |
+| `maintenance/bulk-jobs.vue` | status, operation type |
 
-Pairs naturally with #1: a server-side filter and relay pagination are the same
-query change, and doing them together avoids touching each page twice.
+All six are on `AdminListView` + `useListState`, so their state is URL-synced.
+`my-church/admins.vue` keeps its own client-side fuzzy search (different
+layout, unconverted).
+
+**Still unfiltered:** `consents` (plain list, not a connection — see the log),
+`achievements`, `events`, `superteams` (no categorical facet worth a toolbar,
+handful of rows each), and the maintenance preview tables.
+
+**Sorting: still none, anywhere.** All `UTable` pages pass a static `:columns`
+and nothing in `gql/` takes a sort argument for these entities. It is **not**
+blocked on the cursor decision: sorting needs the cursor to encode the sort key
+plus a stable tiebreaker — `(name, id)` rather than `id` alone — which widens
+the cursor rather than requiring `OFFSET`. See Scope decisions.
 
 ### 4. Refactor the two outliers — half done
 
@@ -330,7 +371,7 @@ Still open, deliberately: whether the default belongs in the **resolver** rather
 than at three call sites. The switcher and the list want the same thing, and a
 fourth caller will forget — nothing detects a missing filter.
 
-### 7. Bring existing components onto the self-contained rule
+### 7. Bring existing components onto the self-contained rule — ☑ done 2026-09-21
 
 The convention above is the target; this is the backlog of what does not meet it
 yet. Small, and smaller than expected.
@@ -608,6 +649,39 @@ then `make generate` and `pnpm codegen`.
 ---
 
 ## Update log
+
+### 2026-09-21 — role-assignment dialog: pick the scope, don't type its ULID
+
+The dialog asked for a scope **type** the role already determines, and then for
+the scope's **id as free text** — placeholder "Skriv inn church-ID". Assigning
+a church admin meant leaving the page, finding a ULID, and pasting it back.
+
+**The role determines the scope, so the type question is gone.** The pairing is
+not a guess: the role service's own tests assign `ChurchAdmin` with a church id,
+`ProjectAdmin` with a project id, `TeamLead` with a team id and `Admin` with
+none (`internal/services/roles_test.go`). Nothing validated the combination
+server-side, so the old form could express "Menighetsadmin scoped to a
+Prosjekt" and it would have been stored.
+
+**The id field is now a searchable picker** of the right entity, loaded only
+while the dialog is open. Roles needing no scope say so in words rather than
+leaving an empty field.
+
+**Teams are reached through their project**, not from one flat list.
+`TeamFilter` has no free-text field, so a global team list could not be searched
+server-side — and a single project can hold over a thousand teams (1,125 in the
+live one). Project first, then its teams.
+
+**A new guard, and the reason it matters:** submit is disabled until a scoped
+role has its scope. Previously a scoped role submitted with an empty id sent
+`scopeId: undefined` and was assigned **globally** — a far larger grant than the
+admin asked for, with no warning. Mutation-checked: removing the guard fails
+exactly that case.
+
+Tests: `test/component/AdminUserRoles.test.ts`, 7 cases, including the
+scope-name resolution and its id fallback. `UModal` needed stubbing because it
+teleports its content — the one case the repo's testing notes say requires a
+stub. Component 218 → 225.
 
 ### 2026-09-21 — user detail page split into six components (#4, half)
 
