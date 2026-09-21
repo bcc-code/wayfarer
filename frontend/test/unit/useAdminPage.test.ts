@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   computed,
+  nextTick,
   ref,
   shallowRef,
   watchEffect,
@@ -15,6 +16,10 @@ import {
  * The structure comes from the route plus the nav model, so it is worth pinning
  * exactly: these are the shapes that ~25 hand-written breadcrumb blocks used to
  * express by copy-paste, and which drifted from each other.
+ *
+ * Setting a page label needs an `await nextTick()` before it is observable: the
+ * label effect runs with `flush: 'post'` so it cannot evaluate a page's getter
+ * during setup, which was 500ing every user detail view. See useAdminPage.
  */
 
 let routeName: Ref<string>
@@ -102,6 +107,8 @@ describe('admin breadcrumb', () => {
 
     useAdminPage(() => 'Bibelquiz')
 
+    await nextTick()
+
     expect(crumbs(useAdminPage().breadcrumb.value)).toEqual([
       ['Prosjekter', 'link'],
       ['Sommerleir', 'link'],
@@ -120,6 +127,8 @@ describe('admin breadcrumb', () => {
 
     useAdminPage(() => [{ label: 'Bibelquiz', to: { name: 'x' } }, 'Quiz'])
 
+    await nextTick()
+
     expect(crumbs(useAdminPage().breadcrumb.value)).toEqual([
       ['Prosjekter', 'link'],
       ['Sommerleir', 'link'],
@@ -135,6 +144,8 @@ describe('admin breadcrumb', () => {
     projectId.value = 'PR01'
 
     useAdminPage(() => [{ label: '' }, 'Quiz'])
+
+    await nextTick()
 
     expect(useAdminPage().breadcrumb.value.map((c) => c.label)).not.toContain(
       '',
@@ -182,6 +193,8 @@ describe('admin navbar title', () => {
     projectId.value = 'PR01'
 
     useAdminPage(() => 'Bibelquiz')
+
+    await nextTick()
 
     expect(useAdminPage().title.value).toBe('Bibelquiz')
   })

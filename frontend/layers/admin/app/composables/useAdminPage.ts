@@ -50,9 +50,30 @@ export function useAdminPage(
   // to read.
   if (label !== undefined) {
     const source = toRef(label)
-    watchEffect(() => {
-      pageCrumbs.value = normalise(source.value)
-    })
+    /**
+     * `flush: 'post'` so the getter is never called during the caller's setup.
+     *
+     * A plain `watchEffect` runs its effect **synchronously on creation**, which
+     * evaluates the page's getter mid-setup. Pages pass
+     * `() => data.value?.user.name`, and `data` is very often declared *below*
+     * this call — the query it comes from needs an id the lines above compute.
+     * Reading it then hits the temporal dead zone and throws
+     * `can't access lexical declaration 'data' before initialization`, which
+     * Nuxt renders as a **500 page**, not a blank breadcrumb.
+     *
+     * Two pages did exactly that (`users/[userId]/index.vue` and
+     * `users/[userId]/achievements.vue`), so every user detail view was a 500.
+     * Deferring the first run to after render makes call order irrelevant, so
+     * the next page to be written this way cannot reintroduce it. The cost is
+     * that the crumb appears one tick late, which is invisible — the data it
+     * names has not loaded yet either.
+     */
+    watchEffect(
+      () => {
+        pageCrumbs.value = normalise(source.value)
+      },
+      { flush: 'post' },
+    )
     // Without this the previous page's name lingers on the next route until its
     // own query resolves.
     onScopeDispose(() => {

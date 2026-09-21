@@ -78,17 +78,6 @@ const { data: currentProjectData } = useAdminUserPageCurrentProjectQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
-// Trailing breadcrumb crumbs; the path above them is derived from the route.
-useAdminPage(() => [
-  {
-    label: userData.value?.user.name ?? 'Bruker',
-    to: {
-      name: 'admin-users-userId',
-      params: { userId: route.params.userId },
-    } as RouteLocationRaw,
-  },
-  'Utmerkelser',
-])
 const currentProjectId = computed(
   () => currentProjectData.value?.currentProject.id,
 )
@@ -101,6 +90,19 @@ const { data: userData } = useAdminUserPageQuery({
   })),
   pause: computed(() => !isAuthReady.value || !currentProjectId.value),
 })
+
+// Trailing breadcrumb crumbs; the path above them is derived from the route.
+// Placed after `userData` — see the `flush: 'post'` note in useAdminPage.
+useAdminPage(() => [
+  {
+    label: userData.value?.user.name ?? 'Bruker',
+    to: {
+      name: 'admin-users-userId',
+      params: { userId: route.params.userId },
+    } as RouteLocationRaw,
+  },
+  'Utmerkelser',
+])
 
 // Achievement picker
 const { data: achievementsData } = useAdminAchievementsForPickerQuery({

@@ -188,10 +188,6 @@ const { data: currentProjectData } = useAdminUserPageCurrentProjectQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
-// Supplies the trailing breadcrumb crumb and the navbar title; everything
-// above it is derived from the route.
-useAdminPage(() => data.value?.user.name)
-
 const currentProjectId = computed(
   () => currentProjectData.value?.currentProject.id,
 )
@@ -209,6 +205,11 @@ const {
   })),
   pause: computed(() => !isAuthReady.value || !currentProjectId.value),
 })
+
+// Supplies the trailing breadcrumb crumb and the navbar title; everything above
+// it is derived from the route. Must come after `data` exists — see the
+// `flush: 'post'` note in useAdminPage, which makes this safe either way.
+useAdminPage(() => data.value?.user.name)
 
 const { executeMutation: assignRole } = useAssignRoleMutation()
 const { executeMutation: revokeRole } = useRevokeRoleMutation()

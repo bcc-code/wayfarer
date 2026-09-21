@@ -603,6 +603,60 @@ then `make generate` and `pnpm codegen`.
 
 ## Update log
 
+### 2026-09-21 — fixed: every user detail page was a 500
+
+`/admin/users/<id>` and `/admin/users/<id>/achievements` both returned
+**500 — can't access lexical declaration 'data' before initialization**.
+
+**Cause.** `useAdminPage` set the page label with a plain `watchEffect`, which
+runs its effect **synchronously on creation**. Both pages call
+
+```ts
+useAdminPage(() => data.value?.user.name)
+```
+
+*above* the query that declares `data` — not carelessly: the main query needs a
+project id computed from a first query, so the natural reading order puts the
+breadcrumb line before it. Evaluating the getter mid-setup reads `data` in its
+temporal dead zone and throws, and Nuxt renders that as a 500 page rather than
+a missing breadcrumb.
+
+**Not caused by this session's work.** The hazard arrived with `useAdminPage` in
+the 2026-09-18 breadcrumbs change and had been latent since; it needed someone
+to open a user detail page. Checked by diffing the script region across commits
+— the declaration order is untouched by the `AdminQueryState` conversion, which
+only rewrote templates.
+
+**Fixed at two levels, deliberately.**
+
+- `watchEffect(..., { flush: 'post' })` in the composable, so the getter is
+  never called during a caller's setup. This is the fix that matters: **23 pages
+  call `useAdminPage`**, 8 of them with a getter over query data, and the next
+  one written in the natural order would have reintroduced it. Call order is now
+  irrelevant. The crumb appears one tick later, which is invisible — the data it
+  names has not loaded yet either.
+- Both call sites moved below their query anyway, so the correct order is what a
+  reader sees.
+
+**Two things this exposed about my own detection.** A first scan for
+use-before-declare reported only `achievements.vue`, missing `index.vue`
+entirely, because `data` is bound in a multi-line destructure. A second,
+broader scan reported *zero* — it matched
+`const { data: currentProjectData } = …` and concluded `data` was declared
+above, when that line binds `currentProjectData`. The bug was found by reading
+the file, not by either scan. Renaming destructures defeat naive
+declaration-order greps; worth remembering before trusting one.
+
+**Tests.** `test/component/useAdminPage.test.ts` reproduces the fault with a
+getter that throws until "initialized", standing in for a TDZ binding — it
+fails with the user's exact error message when `flush: 'post'` is removed.
+Mutation-checked in both directions.
+
+Three cases in the existing `test/unit/useAdminPage.test.ts` needed an
+`await nextTick()`, which is the honest consequence of the deferral rather than
+a workaround, and is documented at the top of that file. Unit 604 (unchanged),
+component 214 → 218.
+
 ### 2026-09-21 — AdminQueryState; #2 complete
 
 **`AdminQueryState`** replaces the
