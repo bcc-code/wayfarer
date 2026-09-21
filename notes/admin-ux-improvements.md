@@ -521,14 +521,14 @@ then `make generate` and `pnpm codegen`.
 | `index.vue`                       | `/admin`                    | 134      | ◐   | **Plan agreed — see Page plans.** Three bugs to fix first. No breadcrumb by design (one crumb = a title). |
 | `projects/index.vue`              | `/admin/projects`           | 119      | ☐   | Card grid, container queries done. No search; `first: 100`.                                               |
 | `projects/new.vue`                | `/admin/projects/new`       | 167      | ☐   |                                                                                                           |
-| `users/index.vue`                 | `/admin/users`              | 129      | ☐   | Best-in-class list: debounced server search + relay pagination. Use as the reference pattern.             |
+| `users/index.vue`                 | `/admin/users`              | 199      | ◐   | **On `AdminListView`** — the reference conversion. Search + church filter + URL state.                    |
 | `users/[userId]/index.vue`        | `/admin/users/:userId`      | **1063** | ☐   | Outlier, see #4. Feedback panel `first: 100`.                                                             |
 | `users/[userId]/achievements.vue` | `…/achievements`            | 389      | ☐   | `first: 200` picker — see #1, wants a searchable select, not pagination.                                  |
 | `churches/[churchId].vue`         | `/admin/churches/:churchId` | 175      | ☐   | Drill-down leaf by design — no list page, no nav entry (decision recorded in restructure note).           |
 | `consents/index.vue`              | `/admin/consents`           | 109      | ☐   | Table, no search, no pagination, no loading state.                                                        |
 | `consents/[consentId].vue`        | `/admin/consents/:id`       | 305      | ☐   |                                                                                                           |
 | `consents/new.vue`                | `/admin/consents/new`       | 187      | ☐   |                                                                                                           |
-| `feedback/index.vue`              | `/admin/feedback`           | 528      | ☐   | Three filter facets + pagination; realtime via Firestore. Largest list page.                              |
+| `feedback/index.vue`              | `/admin/feedback`           | 601      | ◐   | **On `AdminListView`.** Three facets + URL state; realtime via Firestore. Largest list page.              |
 
 ### Project-scoped (`/admin/projects/:projectId/…`)
 
@@ -591,6 +591,44 @@ then `make generate` and `pnpm codegen`.
 ---
 
 ## Update log
+
+### 2026-09-21 — feedback list converted to AdminListView
+
+Second adopter, and the one that proved the component generalises: feedback has
+three filters where users has one, a multi-select and a tri-state among them,
+and **no free-text search at all** — `FeedbackFilter` exposes only `userId`,
+`tags`, `handled` and `platform`, so `:searchable="false"` rather than a search
+box that cannot work.
+
+**`useListState` stays string-only and the page bridges.** URL params *are*
+strings, so teaching the composable about arrays and booleans would push URL
+encoding into it. Instead two `computed` with getters/setters adapt:
+`tags` ⇄ comma-joined string, and `handled` ⇄ a tri-state where unset means "no
+filter" and is distinct from `handled: false` — collapsing those two would
+silently turn "show me everything" into "show me unhandled".
+
+Removed from the page: its own reset watcher (`watch([selectedTags,
+selectedPlatform, handledFilter], …)`), its hand-rolled "Nullstill" button, and
+`RelayPagination`. All three are now the component's job, and the reset in
+particular is exactly the bug the composable exists to prevent — this page had
+three filters in that watcher's dependency array and a fourth would have been
+easy to miss.
+
+**A double empty state, found while converting.** The page rendered
+`<UEmpty v-if="!fetching && feedbacks?.length === 0">` as a *sibling* of
+`<UTable>`, so an empty list showed Nuxt UI's own empty row **and** that block
+beneath it. Folded into the table's `#empty` slot, where it also gained the
+filtered-miss/truly-empty distinction.
+
+**One limitation recorded rather than engineered around:** tags are
+comma-joined in the URL, so a tag containing a comma splits into two filter
+values. Tags are admin-authored via `UInputTags` and the breakage is visible in
+the chip rather than silent. Repeatable `?tags=a&tags=b` params are the robust
+fix if tags ever become user-authored.
+
+Gate: typecheck 0, lint 0 errors, 604 unit + 199 component, build exit 0. No new
+tests — the conversion added no logic of its own, and the composable and
+component are already covered.
 
 ### 2026-09-21 — AdminListView + useListState; page position in the URL
 
