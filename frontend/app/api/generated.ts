@@ -4691,6 +4691,13 @@ export type AdminTeamsPageQueryVariables = Exact<{
 
 export type AdminTeamsPageQuery = { __typename?: 'Query', teams: { __typename?: 'TeamConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'TeamEdge', cursor: string, node: { __typename?: 'Team', id: string, name: string, description: string, members: Array<{ __typename?: 'TeamMember', id: string }>, parentProject: { __typename?: 'Project', id: string, name: string }, superTeam?: { __typename?: 'SuperTeam', id: string, name: string } | null } }> } };
 
+export type AdminTeamsPageSuperTeamsQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminTeamsPageSuperTeamsQuery = { __typename?: 'Query', superteams: { __typename?: 'SuperTeamConnection', edges: Array<{ __typename?: 'SuperTeamEdge', node: { __typename?: 'SuperTeam', id: string, name: string } }> } };
+
 export type AdminProjectsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -7581,6 +7588,22 @@ export const AdminTeamsPageDocument = gql`
 
 export function useAdminTeamsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminTeamsPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminTeamsPageQuery, AdminTeamsPageQueryVariables | undefined>({ query: AdminTeamsPageDocument, variables: undefined, ...options });
+};
+export const AdminTeamsPageSuperTeamsDocument = gql`
+    query AdminTeamsPageSuperTeams($projectId: ID!) {
+  superteams(first: 100, filter: {projectId: $projectId}) {
+    edges {
+      node {
+        id
+        name
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminTeamsPageSuperTeamsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminTeamsPageSuperTeamsQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminTeamsPageSuperTeamsQuery, AdminTeamsPageSuperTeamsQueryVariables | undefined>({ query: AdminTeamsPageSuperTeamsDocument, variables: undefined, ...options });
 };
 export const AdminProjectsPageDocument = gql`
     query AdminProjectsPage {

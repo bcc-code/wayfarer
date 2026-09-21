@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
+import { ScoreSourceType } from '~/api/generated'
 
 definePageMeta({
   permission: 'scores:view',
@@ -61,16 +62,56 @@ const pagination = usePagination({
 
 const route = useRoute('admin-projects-projectId-scores')
 
+/**
+ * `ScoreJournalFilter` has no free-text field. Its useful facet is the source:
+ * separating manual adjustments from automatic awards is the common question
+ * of a points journal, and `MANUAL` is the one an admin is answerable for.
+ */
+function formatSourceType(type: string) {
+  return type.charAt(0) + type.slice(1).toLowerCase()
+}
+
+// Codegen emits a real TS enum, so the members are the values — a string
+// literal list would not typecheck against it.
+const sourceTypes = Object.values(ScoreSourceType)
+
+const list = useListState({
+  pagination,
+  filters: { sourceType: '' },
+})
+
 const { isAuthReady } = useAuthReady()
 const { data, fetching, error, executeQuery } = useAdminScoresPageQuery({
   // Merged with the pagination cursor, and computed so the journal repoints
   // when the project switcher changes the param.
   variables: computed(() => ({
     ...pagination.variables.value,
-    filter: { projectId: route.params.projectId },
+    filter: {
+      projectId: route.params.projectId,
+      ...(list.filters.sourceType
+        ? { sourceType: list.filters.sourceType as ScoreSourceType }
+        : {}),
+    },
   })),
   pause: computed(() => !isAuthReady.value),
 })
+
+// `value` stays a plain string: `useListState` holds URL params, which are
+// strings, and typing the items as the enum would make USelect demand a
+// `ScoreSourceType` model. The cast back to the enum happens at the query.
+const sourceTypeItems = computed(() =>
+  sourceTypes.map((type) => ({
+    label: formatSourceType(type),
+    value: String(type),
+  })),
+)
+
+const activeFilters = computed(() =>
+  list.activeFilters.value.map((filter) => ({
+    ...filter,
+    label: `Kilde: ${formatSourceType(filter.value)}`,
+  })),
+)
 
 watch(
   () => data.value?.adminScoreJournal,
@@ -128,10 +169,6 @@ async function handleDelete() {
   entryToDelete.value = null
 }
 
-function formatSourceType(type: string) {
-  return type.charAt(0) + type.slice(1).toLowerCase()
-}
-
 const { canDeleteScoreEntry, canManageScores } = usePermissions()
 </script>
 
@@ -150,10 +187,26 @@ const { canDeleteScoreEntry, canManageScores } = usePermissions()
       </UButton>
     </div>
     <AdminErrorState v-if="error" :error />
-    <div v-else class="space-y-4">
-      <div class="flex items-center justify-between gap-2">
-        <RelayPagination v-model:pagination="pagination" />
-      </div>
+    <AdminListView
+      v-else
+      :pagination
+      :active-filters="activeFilters"
+      :searchable="false"
+      item-label="oppføringer"
+      @clear-filter="list.clearFilter($event as 'sourceType')"
+      @clear-all="list.clearAll()"
+    >
+      <template #filters>
+        <USelect
+          v-model="list.filters.sourceType"
+          :items="sourceTypeItems"
+          value-key="value"
+          placeholder="Alle kilder"
+          icon="lucide:filter"
+          class="w-48"
+        />
+      </template>
+
       <UTable :data="entries" :loading="fetching" :columns>
         <template #user-cell="{ row }">
           <NuxtLink
@@ -201,8 +254,27 @@ const { canDeleteScoreEntry, canManageScores } = usePermissions()
             />
           </div>
         </template>
+        <template #empty>
+          <div class="py-6 text-center">
+            <p class="text-muted text-sm">
+              {{
+                activeFilters.length
+                  ? 'Ingen oppføringer passer filteret'
+                  : 'Ingen poengoppføringer i dette prosjektet'
+              }}
+            </p>
+            <UButton
+              v-if="activeFilters.length"
+              variant="link"
+              size="sm"
+              @click="list.clearAll()"
+            >
+              Nullstill filter
+            </UButton>
+          </div>
+        </template>
       </UTable>
-    </div>
+    </AdminListView>
 
     <UModal v-model:open="deleteModal">
       <template #content>

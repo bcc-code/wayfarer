@@ -552,9 +552,9 @@ then `make generate` and `pnpm codegen`.
 | `superteams/new.vue`                    | `…/superteams/new`        | 103 | ☐   |                                                                                                                                 |
 | `superteams/[superTeamId].vue`          | `…/superteams/:id`        | 278 | ☐   | Teams `first: 200`.                                                                                                             |
 | `superteams/distribute.vue`             | `…/superteams/distribute` | 657 | ☐   | Ladder-to-heaven tool. `@unovis/vue` charts, raw `fetch` to two plugin endpoints — not GraphQL.                                 |
-| `teams/index.vue`                       | `…/teams`                 | 132 | ☐   | Paginated. No search.                                                                                                           |
+| `teams/index.vue`                       | `…/teams`                 | 231 | ◐   | **On `AdminListView`** + superteam filter. Slot-name bug fixed.                                                                                                           |
 | `teams/[teamId].vue`                    | `…/teams/:id`             | 428 | ☐   | 14 toast calls.                                                                                                                 |
-| `scores/index.vue`                      | `…/scores`                | 233 | ☐   | Paginated. No search/date filter.                                                                                               |
+| `scores/index.vue`                      | `…/scores`                | 271 | ◐   | **On `AdminListView`** + source-type filter.                                                                                               |
 | `scores/new.vue`                        | `…/scores/new`            | 131 | ☐   | Project picker removed — route supplies it.                                                                                     |
 
 ### My church (`church-admin` layout — no navigation, see #5)
@@ -591,6 +591,50 @@ then `make generate` and `pnpm codegen`.
 ---
 
 ## Update log
+
+### 2026-09-21 — teams, scores and bulk-jobs converted; RelayPagination retired
+
+All four previously-paginated lists are now on `AdminListView`, so
+`RelayPagination.vue` is **deleted**. Each page also gained a filter it did not
+have, chosen from what its own filter input already supported:
+
+| Page | Filter added | Source |
+| --- | --- | --- |
+| teams | superteam, with an "Uten superlag" option | `TeamFilter.superTeamId` + `noSuperTeam` |
+| scores | source type | `ScoreJournalFilter.sourceType` |
+| bulk-jobs | (kept its two) now URL-synced | `BulkJobFilter` |
+
+None of the three has a free-text field in its filter input, so all are
+`:searchable="false"` — a search box that cannot work is worse than none.
+
+**The teams superteam filter folds two API fields into one control.**
+`superTeamId` and `noSuperTeam: Boolean` are separate inputs; a single select
+with a `__none__` sentinel gives three states — all / a specific superteam /
+unassigned. The third is the question worth asking before running the
+distribution tool, and it had no UI at all.
+
+**Two bugs found while converting:**
+
+- **`teams/index.vue` had a slot that never rendered.** The column declares
+  `id: 'superTeam'` and the template was `#superTeam`, but Nuxt UI's UTable
+  looks for `<id>-cell`. So the custom cell — whose only job is an em-dash
+  fallback for teams with no superteam — was dead, and those teams rendered
+  blank. Every other slot on that page was correctly suffixed, which is why it
+  went unnoticed.
+- **`bulk-jobs.vue` had the same double empty state as feedback**: a sibling
+  `<UEmpty v-if="!fetching && jobs?.length === 0">` below `<UTable>`, so an
+  empty list showed two. Both are now in the table's `#empty` slot with the
+  filtered-miss distinction.
+
+**Two typing details worth knowing for the next conversion.** Codegen emits
+**real TS enums**, not string unions, so a list of string literals does not
+typecheck against `ScoreSourceType` — use `Object.values(...)`. And filter
+values must stay plain `string` in the items passed to `USelect`: typing them
+as the enum makes the component demand an enum-typed model, which fights
+`useListState`'s string-only contract. The cast back to the enum belongs at the
+query, not in the control.
+
+Gate: typecheck 0, lint 0 errors, 604 unit + 199 component, build exit 0.
 
 ### 2026-09-21 — feedback list converted to AdminListView
 

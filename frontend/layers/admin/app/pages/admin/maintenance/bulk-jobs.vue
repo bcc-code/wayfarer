@@ -49,9 +49,29 @@ const pagination = usePagination({
   direction: 'backward',
 })
 
-// Filters
-const selectedStatus = ref<BulkJobStatus | undefined>()
-const selectedOperationType = ref<string | undefined>()
+/**
+ * Filters through `useListState`, so they land in the URL and reset pagination
+ * without this page owning a watcher. It stores strings; `status` bridges back
+ * to its enum at the query.
+ */
+const list = useListState({
+  pagination,
+  filters: { status: '', operationType: '' },
+})
+
+const selectedStatus = computed<BulkJobStatus | undefined>({
+  get: () => (list.filters.status as BulkJobStatus) || undefined,
+  set: (status) => {
+    list.filters.status = status ?? ''
+  },
+})
+
+const selectedOperationType = computed<string | undefined>({
+  get: () => list.filters.operationType || undefined,
+  set: (operationType) => {
+    list.filters.operationType = operationType ?? ''
+  },
+})
 
 const filter = computed(() => ({
   status: selectedStatus.value,
@@ -67,11 +87,6 @@ const { isAuthReady } = useAuthReady()
 const { data, fetching, error, executeQuery } = useAdminBulkJobsPageQuery({
   variables: queryVariables,
   pause: computed(() => !isAuthReady.value),
-})
-
-// Reset pagination when filter changes
-watch([selectedStatus, selectedOperationType], () => {
-  pagination.reset()
 })
 
 watch(
@@ -196,16 +211,33 @@ function handleRefresh() {
   executeQuery({ requestPolicy: 'network-only' })
 }
 
-function clearFilters() {
-  selectedStatus.value = undefined
-  selectedOperationType.value = undefined
-}
+/** Readable chips: the option labels, not the raw enum values. */
+const activeFilters = computed(() => {
+  const chips: Array<{ key: string; value: string; label: string }> = []
 
-const hasActiveFilters = computed(
-  () =>
-    selectedStatus.value !== undefined ||
-    selectedOperationType.value !== undefined,
-)
+  if (selectedStatus.value) {
+    chips.push({
+      key: 'status',
+      value: list.filters.status,
+      label: `Status: ${
+        statusOptions.find((o) => o.value === selectedStatus.value)?.label ??
+        selectedStatus.value
+      }`,
+    })
+  }
+  if (selectedOperationType.value) {
+    chips.push({
+      key: 'operationType',
+      value: list.filters.operationType,
+      label: `Operasjon: ${
+        operationTypes.find((o) => o.value === selectedOperationType.value)
+          ?.label ?? selectedOperationType.value
+      }`,
+    })
+  }
+
+  return chips
+})
 </script>
 
 <template>
@@ -226,54 +258,46 @@ const hasActiveFilters = computed(
 
     <AdminErrorState v-if="error" :error />
 
-    <div v-else class="space-y-4">
-      <div class="flex items-center gap-2">
+    <AdminListView
+      v-else
+      :pagination
+      :active-filters="activeFilters"
+      :searchable="false"
+      item-label="jobber"
+      @clear-filter="list.clearFilter($event as 'status')"
+      @clear-all="list.clearAll()"
+    >
+      <template #filters>
         <USelectMenu
-          :model-value="
-            statusOptions.find((o) => o.value === selectedStatus)?.value
-          "
+          v-model="selectedStatus"
           :items="statusOptions"
           value-key="value"
           label-key="label"
           placeholder="Status..."
           icon="lucide:circle-dot"
-          size="sm"
           class="min-w-40"
-          @update:model-value="selectedStatus = $event"
         />
         <USelectMenu
-          :model-value="
-            operationTypes.find((o) => o.value === selectedOperationType)?.value
-          "
+          v-model="selectedOperationType"
           :items="operationTypes"
           value-key="value"
           label-key="label"
           placeholder="Operasjon..."
           icon="lucide:layers"
-          size="sm"
           class="min-w-52"
-          @update:model-value="selectedOperationType = $event"
         />
+      </template>
+
+      <template #actions>
         <UButton
-          v-if="hasActiveFilters"
-          variant="ghost"
+          variant="soft"
           size="sm"
-          color="neutral"
-          label="Nullstill"
-          @click="clearFilters"
+          icon="lucide:refresh-cw"
+          label="Oppdater"
+          :loading="fetching"
+          @click="handleRefresh"
         />
-        <div class="ml-auto flex items-center gap-2">
-          <UButton
-            variant="soft"
-            size="sm"
-            icon="lucide:refresh-cw"
-            label="Oppdater"
-            :loading="fetching"
-            @click="handleRefresh"
-          />
-          <RelayPagination v-model:pagination="pagination" />
-        </div>
-      </div>
+      </template>
 
       <UTable :data="jobs" :loading="fetching" :columns>
         <template #operationType-cell="{ row }">
@@ -369,13 +393,26 @@ const hasActiveFilters = computed(
             @click="handleRetry(row.original.id)"
           />
         </template>
+        <template #empty>
+          <div class="py-6 text-center">
+            <p class="text-muted text-sm">
+              {{
+                activeFilters.length
+                  ? 'Ingen massejobber passer filteret'
+                  : 'Ingen massejobber'
+              }}
+            </p>
+            <UButton
+              v-if="activeFilters.length"
+              variant="link"
+              size="sm"
+              @click="list.clearAll()"
+            >
+              Nullstill filtre
+            </UButton>
+          </div>
+        </template>
       </UTable>
-
-      <UEmpty
-        v-if="!fetching && jobs?.length === 0"
-        title="Ingen massejobber funnet"
-        description="Det finnes ingen jobber som matcher de valgte filtrene."
-      />
-    </div>
+    </AdminListView>
   </div>
 </template>
