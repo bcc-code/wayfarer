@@ -5,6 +5,7 @@ import {
   describeProjectTiming,
   formatProjectCountdown,
 } from '../../../utils/dates'
+import { dailyAverage } from '../../../utils/sparkline'
 import type { RouteLocationRaw } from 'vue-router'
 import {
   PROJECT_NAV,
@@ -40,7 +41,17 @@ const props = defineProps<{
  * urql keys the document cache on variables so nothing is fetched twice.
  */
 gql(`
-  query AdminProjectSectionCounts($projectId: ID!) {
+  query AdminProjectSectionCounts($projectId: ID!, $withTrend: Boolean!) {
+    project(id: $projectId) {
+      id
+      # Skipped entirely for a project that has not started: its trend is 14
+      # empty days, which reads as a broken chart rather than as "not yet".
+      activityTrend(days: 14) @include(if: $withTrend) {
+        date
+        points
+        activeUsers
+      }
+    }
     challenges(first: 0, filter: { projectId: $projectId }) {
       totalCount
     }
@@ -62,9 +73,16 @@ gql(`
   }
 `)
 
+const timing = computed(() =>
+  describeProjectTiming(props.project.startDate, props.project.endDate),
+)
+
 const { isAuthReady } = useAuthReady()
 const { data, fetching } = useAdminProjectSectionCountsQuery({
-  variables: computed(() => ({ projectId: props.project.id })),
+  variables: computed(() => ({
+    projectId: props.project.id,
+    withTrend: timing.value.state === 'running',
+  })),
   pause: computed(() => !isAuthReady.value),
 })
 
@@ -75,9 +93,6 @@ const accentColor = computed(() =>
     : props.project.branding.colors.light.accent,
 )
 
-const timing = computed(() =>
-  describeProjectTiming(props.project.startDate, props.project.endDate),
-)
 const countdown = computed(() => formatProjectCountdown(timing.value))
 
 const projectRoute = computed(() => ({
@@ -125,6 +140,46 @@ const shortcuts = computed(() =>
 )
 
 const participants = computed(() => data.value?.users.totalCount)
+
+const trend = computed(() => data.value?.project?.activityTrend ?? [])
+
+/**
+ * Two tiles, not one chart with two axes: points run to thousands and active
+ * users to dozens, and a shared scale would flatten one of them into the
+ * baseline. A second y-axis is never the answer.
+ *
+ * The aggregates differ on purpose. Points are additive, so the window total is
+ * meaningful. Active users is a distinct count **per day** — summing it would
+ * count the same person once per day they appeared — so it is shown as a daily
+ * average.
+ */
+const trendTiles = computed(() => {
+  if (trend.value.length === 0) return []
+  return [
+    {
+      key: 'points',
+      label: 'Poeng siste 14 dager',
+      value: formatNumber(
+        trend.value.reduce((sum, point) => sum + point.points, 0),
+      ),
+      points: trend.value.map((point) => ({
+        date: point.date,
+        value: point.points,
+      })),
+    },
+    {
+      key: 'activeUsers',
+      label: 'Aktive deltakere per dag',
+      value: formatNumber(
+        dailyAverage(trend.value.map((point) => point.activeUsers)),
+      ),
+      points: trend.value.map((point) => ({
+        date: point.date,
+        value: point.activeUsers,
+      })),
+    },
+  ]
+})
 </script>
 
 <template>
@@ -173,6 +228,27 @@ const participants = computed(() => data.value?.users.totalCount)
         >
           {{ countdown }}
         </UBadge>
+      </div>
+
+      <!--
+        Stat tile per measure — label, aggregate, sparkline. Rendered only for a
+        running project; `withTrend` skips the field otherwise.
+      -->
+      <div v-if="trendTiles.length" class="grid gap-3 @2xl:grid-cols-2">
+        <div
+          v-for="tile in trendTiles"
+          :key="tile.key"
+          class="bg-elevated/50 rounded-lg p-3"
+        >
+          <p class="text-muted text-xs">{{ tile.label }}</p>
+          <p class="mb-2 text-xl font-semibold">{{ tile.value }}</p>
+          <AdminSparkline
+            :points="tile.points"
+            :label="tile.label"
+            :height="36"
+            empty-label="Ingen aktivitet siste 14 dager"
+          />
+        </div>
       </div>
 
       <!--

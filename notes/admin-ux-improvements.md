@@ -325,7 +325,8 @@ the table below.
 
 ### `/admin` — home dashboard
 
-**Status:** item 1 shipped 2026-09-21 (see the log). Items 2-4 outstanding.
+**Status:** items 1 and 3 shipped 2026-09-21 (see the log). Item 2 ("what needs
+me") and item 4 (quick actions) outstanding.
 
 Today it shows two all-time counters (13,477 users / 79,649,728 points), five
 raw feedback entries, and an empty "Aktive prosjekter" block. The counters are
@@ -469,8 +470,8 @@ Verified against `gql/` — 1, 2 and 4 need no schema changes.
 Everything in items 1, 2 and 4 is frontend-only on data that already exists.
 Three things are not, in rough order of value:
 
-1. **Time-series for the sparklines** (item 3). `AdminDashboardStats` is six
-   scalar counters and there is no time-series query anywhere in `gql/`.
+1. ~~Time-series for the sparklines~~ — **done 2026-09-21.**
+   `Project.activityTrend(days:)` over `score_journal`.
 2. **Per-challenge completion counts** — would give the best detector of the
    set, "this challenge is live and nobody has completed it", which catches a
    broken QR code or a wrong date _during_ a camp rather than after.
@@ -564,6 +565,93 @@ then `make generate` and `pnpm codegen`.
 ---
 
 ## Update log
+
+### 2026-09-21 — sparklines shipped (item 3), backend included
+
+The last outstanding item on this page. Two stat tiles per running project —
+label, aggregate, 14-day bar sparkline — sitting between the header and the
+shortcuts.
+
+**Backend.** `Project.activityTrend(days: Int = 14): [ProjectActivityPoint!]!`,
+fed by a new `GetProjectActivityTrend` query over **`score_journal`**. That table
+is the right source: it has `project_id` directly (no join), an index on
+`created_at`, and it records *every* point award — achievements, quizzes, manual
+adjustments — so it reflects all activity rather than challenge completions
+alone.
+
+Design choices worth keeping:
+
+- **The SQL returns only days that have rows; Go fills the gaps.** A sparse
+  series plotted as adjacent bars lies — three days a week apart read as steady
+  activity rather than three isolated spikes. Filling in Go instead of with a
+  `generate_series` join keeps the query a plain grouped scan and makes the
+  windowing unit-testable without a database.
+- **`days` is clamped to 1-90**, and a non-positive value falls back to the
+  default rather than erroring: an unbounded window is an easy way to make the
+  server do work proportional to whatever a caller types.
+- **`trendWindowStart` is shared** between the query's `since` bound and the
+  series construction, so the two cannot disagree about the window and the
+  query cannot return a day the series has no slot for.
+- **Rows outside the window are dropped rather than trusted**, so a stale bound
+  or clock skew cannot stretch the series past `days` points.
+- **The resolver body lives in `projects.go`, not `projects.resolvers.go`.** The
+  generated file holds a one-line delegation, so `make generate` has nothing of
+  ours to preserve and its import list stays as gqlgen wrote it.
+- Buckets by **UTC day**. Converting to a fixed local zone only moves activity
+  between 00:00 and 02:00 local onto the adjacent day — invisible at sparkline
+  resolution and not worth hardcoding a timezone in SQL for.
+- Ungated, like every other `Project` field. It is aggregate, not per-user.
+
+**Frontend.** Form picked from the `dataviz` skill: this is a *stat tile with a
+sparkline*, not a chart. Three of its rules changed what got built:
+
+- **Two tiles, never one chart with two y-axes.** Points run to thousands and
+  active users to dozens; a shared scale flattens one into the baseline. A
+  second axis is the single most common charting mistake and is never the answer.
+- **Bars, not a line.** The data is one discrete bucket per day, and a bar is
+  its own hit target — a 2px polyline needs a crosshair layer to be hoverable,
+  more machinery than a tile-sized chart earns.
+- **The tooltip is not the only path to a value.** Native `<title>` tooltips do
+  not appear on keyboard focus, so each sparkline ships a visually-hidden table
+  of its daily values and the plot itself is `aria-hidden`.
+
+No palette validation was run, deliberately: the validator checks categorical
+palettes for colour-vision separation, and this is a single series in one hue at
+two emphasis levels (most recent day accented, the rest de-emphasised). Both are
+design-system tokens rather than project branding — branding accent is arbitrary
+per project and cannot be contrast-checked up front, which is why the chart does
+not use it even though the card's ring does.
+
+**The aggregates differ, and that is a correctness point, not a style one.**
+Points are additive so the window total is meaningful. Active users is a
+distinct count *per day* — summing it would count the same person once per day
+they appeared — so it is shown as a daily average. `dailyAverage` exists only to
+make that impossible to get wrong by reflex, and a test pins it.
+
+**The trend is skipped entirely for a project that has not started**, via
+`@include(if: $withTrend)`. Fourteen empty days read as a broken chart rather
+than as "not yet".
+
+Two bugs caught by looking at the rendered page rather than by the gate:
+
+- **`sr-only` on a `<table>` does not hide its `<caption>`.** Tailwind's
+  `sr-only` sets no `display`, so the element keeps `display: table` and the
+  caption is laid out outside the 1px clip box — it rendered as visible text
+  under the chart. The class has to go on a wrapping div. Pinned by a test that
+  asserts no `table.sr-only` exists.
+- **An all-zero window painted nothing**, so the tile looked like a chart that
+  had failed to load. There is now a baseline rule, which is also the honest
+  reading: flat at zero. A quiet stretch is normal for this domain, so this is
+  the common case, not an edge case.
+
+Tests: 13 unit (`sparkline.test.ts`), 8 Go (`projects_activity_trend_test.go`),
+7 component (`AdminSparkline.test.ts`) plus 5 more on the section. Unit 577 →
+590, component 159 → 171, backend 27 packages green.
+
+One test had to be loosened correctly rather than fixed: the permission-gating
+assertion checked page text for "Poeng" and now collides with the "Poeng siste
+14 dager" tile label. It is scoped to the `<nav>`, which is what it always
+meant.
 
 ### 2026-09-21 — page width capped; shortcut tiles go horizontal
 

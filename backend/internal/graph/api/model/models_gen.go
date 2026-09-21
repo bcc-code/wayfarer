@@ -1426,8 +1426,23 @@ type Project struct {
 	MyPoints          int                      `json:"myPoints"`
 	ArchivedAt        *bool                    `json:"archivedAt,omitempty"`
 	TranslationStatus []TranslationFieldStatus `json:"translationStatus"`
-	InfoMessageRaw    *string                  `json:"-"`
-	RulesRaw          *string                  `json:"-"`
+	// Daily activity for the last `days` days, oldest first, for trend display.
+	// Every day in the window is present, including days with no activity, so the
+	// result can be plotted directly without gap-filling on the client.
+	ActivityTrend  []ProjectActivityPoint `json:"activityTrend"`
+	InfoMessageRaw *string                `json:"-"`
+	RulesRaw       *string                `json:"-"`
+}
+
+// One day of aggregate activity in a project, derived from the score journal —
+// which covers every point award regardless of source, so it reflects challenge
+// completions, achievements, quizzes and manual adjustments alike.
+type ProjectActivityPoint struct {
+	Date scalars.Date `json:"date"`
+	// Points awarded that day.
+	Points int `json:"points"`
+	// Distinct users who were awarded points that day.
+	ActiveUsers int `json:"activeUsers"`
 }
 
 type ProjectConnection struct {

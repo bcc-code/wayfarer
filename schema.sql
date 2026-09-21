@@ -347,6 +347,51 @@ CREATE TABLE user_streak_progress (
 
 -- ==================== Audit/Activity Log ====================
 
+-- Every point award, from any source. Scores are derived from this table plus
+-- score_adjustments; there are no pre-aggregated score columns.
+-- Transcribed from migrations 00017 (create) + 00036/00061/00092, which each
+-- replaced the source_type CHECK — the list below is the current one. Note that
+-- 00061's filename says "deadline_bonus" but it adds PLUGIN.
+CREATE TABLE score_journal (
+    id CHAR(28) PRIMARY KEY CHECK (id ~ '^SJ[0-9A-Z]{26}$'),
+
+    -- Required relationships
+    project_id CHAR(28) NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    user_id CHAR(28) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+
+    -- Optional relationships
+    event_id CHAR(28) REFERENCES events(id) ON DELETE SET NULL,
+    challenge_id CHAR(28) REFERENCES challenges(id) ON DELETE SET NULL,
+
+    -- Points and source tracking
+    points INT NOT NULL,
+    source_type VARCHAR(50) NOT NULL CHECK (source_type IN ('ACHIEVEMENT', 'MANUAL', 'QUIZ', 'PLUGIN', 'BET')),
+    source_id CHAR(28),  -- achievement_id when source_type is ACHIEVEMENT
+
+    -- Metadata
+    reason TEXT,
+    awarded_by CHAR(28) REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT now(),
+
+    INDEX idx_score_journal_project (project_id),
+    INDEX idx_score_journal_user (user_id),
+    INDEX idx_score_journal_event (event_id),
+    INDEX idx_score_journal_challenge (challenge_id),
+    INDEX idx_score_journal_source (source_type, source_id),
+    INDEX idx_score_journal_time (created_at)
+);
+
+-- Covering indexes for leaderboard aggregation (migrations 00045, 00100).
+-- Kept as standalone statements because the inline INDEX syntax used above has
+-- no place for INCLUDE.
+CREATE INDEX idx_score_journal_project_user
+    ON score_journal(project_id, user_id) INCLUDE (points);
+CREATE INDEX idx_score_journal_user_project_event
+    ON score_journal(user_id, project_id, event_id) INCLUDE (points);
+
+-- A trigger (create_score_journal_entry_for_achievement, migration 00017)
+-- inserts a row here automatically when a user achievement is awarded.
+
 CREATE TABLE score_adjustments (
     id CHAR(28) PRIMARY KEY CHECK (id ~ '^SA[0-9A-Z]{26}$'),
     entity_type VARCHAR(50) NOT NULL CHECK (entity_type IN ('USER', 'TEAM', 'SUPER_TEAM')),

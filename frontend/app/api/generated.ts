@@ -2171,6 +2171,12 @@ export type Project = {
   achievements: Array<Achievement>;
   activeChallenges: Array<Challenge>;
   activeChallengesCount: Scalars['Int']['output'];
+  /**
+   * Daily activity for the last `days` days, oldest first, for trend display.
+   * Every day in the window is present, including days with no activity, so the
+   * result can be plotted directly without gap-filling on the client.
+   */
+  activityTrend: Array<ProjectActivityPoint>;
   archivedAt?: Maybe<Scalars['Boolean']['output']>;
   branding: Branding;
   challenges: Array<Challenge>;
@@ -2201,6 +2207,11 @@ export type Project = {
 };
 
 
+export type ProjectActivityTrendArgs = {
+  days?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
 export type ProjectJournalArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
@@ -2217,6 +2228,20 @@ export type ProjectLeaderboardArgs = {
   filter?: InputMaybe<LeaderboardFilter>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+};
+
+/**
+ * One day of aggregate activity in a project, derived from the score journal —
+ * which covers every point award regardless of source, so it reflects challenge
+ * completions, achievements, quizzes and manual adjustments alike.
+ */
+export type ProjectActivityPoint = {
+  __typename?: 'ProjectActivityPoint';
+  /** Distinct users who were awarded points that day. */
+  activeUsers: Scalars['Int']['output'];
+  date: Scalars['Date']['output'];
+  /** Points awarded that day. */
+  points: Scalars['Int']['output'];
 };
 
 export type ProjectConnection = {
@@ -4323,10 +4348,11 @@ export type AdminProjectSwitcherQuery = { __typename?: 'Query', projects: { __ty
 
 export type AdminProjectSectionCountsQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
+  withTrend: Scalars['Boolean']['input'];
 }>;
 
 
-export type AdminProjectSectionCountsQuery = { __typename?: 'Query', challenges: { __typename?: 'ChallengeConnection', totalCount: number }, achievements: { __typename?: 'AchievementConnection', totalCount: number }, events: { __typename?: 'EventConnection', totalCount: number }, superteams: { __typename?: 'SuperTeamConnection', totalCount: number }, teams: { __typename?: 'TeamConnection', totalCount: number }, users: { __typename?: 'UserConnection', totalCount: number } };
+export type AdminProjectSectionCountsQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, activityTrend?: Array<{ __typename?: 'ProjectActivityPoint', date: any, points: number, activeUsers: number }> }, challenges: { __typename?: 'ChallengeConnection', totalCount: number }, achievements: { __typename?: 'AchievementConnection', totalCount: number }, events: { __typename?: 'EventConnection', totalCount: number }, superteams: { __typename?: 'SuperTeamConnection', totalCount: number }, teams: { __typename?: 'TeamConnection', totalCount: number }, users: { __typename?: 'UserConnection', totalCount: number } };
 
 export type AdminProjectShellQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
@@ -6424,7 +6450,15 @@ export function useAdminProjectSwitcherQuery(options?: Omit<Urql.UseQueryArgs<ne
   return Urql.useQuery<AdminProjectSwitcherQuery, AdminProjectSwitcherQueryVariables | undefined>({ query: AdminProjectSwitcherDocument, variables: undefined, ...options });
 };
 export const AdminProjectSectionCountsDocument = gql`
-    query AdminProjectSectionCounts($projectId: ID!) {
+    query AdminProjectSectionCounts($projectId: ID!, $withTrend: Boolean!) {
+  project(id: $projectId) {
+    id
+    activityTrend(days: 14) @include(if: $withTrend) {
+      date
+      points
+      activeUsers
+    }
+  }
   challenges(first: 0, filter: {projectId: $projectId}) {
     totalCount
   }

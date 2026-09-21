@@ -522,6 +522,62 @@ func (q *Queries) GetAllProjects(ctx context.Context) ([]*GetAllProjectsRow, err
 	return items, nil
 }
 
+const GetProjectActivityTrend = `-- name: GetProjectActivityTrend :many
+SELECT
+    created_at::date AS day,
+    COALESCE(SUM(points), 0)::bigint AS points,
+    COUNT(DISTINCT user_id)::int AS active_users
+FROM score_journal
+WHERE project_id = $1::char(28)
+    AND created_at >= $2::timestamptz
+GROUP BY day
+ORDER BY day
+`
+
+type GetProjectActivityTrendParams struct {
+	ProjectID string             `json:"project_id"`
+	Since     pgtype.Timestamptz `json:"since"`
+}
+
+type GetProjectActivityTrendRow struct {
+	Day         pgtype.Date `json:"day"`
+	Points      int64       `json:"points"`
+	ActiveUsers int32       `json:"active_users"`
+}
+
+// Daily point/participant aggregates for a project's recent activity.
+//
+// Only days that actually have rows come back; the caller fills the gaps, so
+// the query stays a plain grouped scan rather than a generate_series join.
+//
+// Buckets by UTC day. The alternative is converting to a fixed local zone,
+// which only moves activity between 00:00 and 02:00 local onto the adjacent
+// day — invisible at sparkline resolution and not worth hardcoding a timezone
+// in SQL for.
+//
+// Uses idx_score_journal_time for the range and filters on project; the window
+// is a handful of recent days, so this touches a small tail of the table. If it
+// ever shows up slow, the index to add is (project_id, created_at).
+func (q *Queries) GetProjectActivityTrend(ctx context.Context, arg GetProjectActivityTrendParams) ([]*GetProjectActivityTrendRow, error) {
+	rows, err := q.db.Query(ctx, GetProjectActivityTrend, arg.ProjectID, arg.Since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetProjectActivityTrendRow{}
+	for rows.Next() {
+		var i GetProjectActivityTrendRow
+		if err := rows.Scan(&i.Day, &i.Points, &i.ActiveUsers); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetProjectByID = `-- name: GetProjectByID :one
 SELECT id, name, description, rules, info_message, info_message_start, info_message_end, start_date, end_date, logo_url, banner_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,

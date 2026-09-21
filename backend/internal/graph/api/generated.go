@@ -835,6 +835,7 @@ type ComplexityRoot struct {
 		Achievements          func(childComplexity int) int
 		ActiveChallenges      func(childComplexity int) int
 		ActiveChallengesCount func(childComplexity int) int
+		ActivityTrend         func(childComplexity int, days *int) int
 		ArchivedAt            func(childComplexity int) int
 		Branding              func(childComplexity int) int
 		Challenges            func(childComplexity int) int
@@ -857,6 +858,12 @@ type ComplexityRoot struct {
 		StartDate             func(childComplexity int) int
 		Teams                 func(childComplexity int) int
 		TranslationStatus     func(childComplexity int) int
+	}
+
+	ProjectActivityPoint struct {
+		ActiveUsers func(childComplexity int) int
+		Date        func(childComplexity int) int
+		Points      func(childComplexity int) int
 	}
 
 	ProjectConnection struct {
@@ -1683,6 +1690,7 @@ type ProjectResolver interface {
 	MyPoints(ctx context.Context, obj *model.Project) (int, error)
 
 	TranslationStatus(ctx context.Context, obj *model.Project) ([]model.TranslationFieldStatus, error)
+	ActivityTrend(ctx context.Context, obj *model.Project, days *int) ([]model.ProjectActivityPoint, error)
 }
 type QueryResolver interface {
 	Me(ctx context.Context) (*model.User, error)
@@ -5975,6 +5983,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Project.ActiveChallengesCount(childComplexity), true
+	case "Project.activityTrend":
+		if e.complexity.Project.ActivityTrend == nil {
+			break
+		}
+
+		args, err := ec.field_Project_activityTrend_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Project.ActivityTrend(childComplexity, args["days"].(*int)), true
 	case "Project.archivedAt":
 		if e.complexity.Project.ArchivedAt == nil {
 			break
@@ -6117,6 +6136,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Project.TranslationStatus(childComplexity), true
+
+	case "ProjectActivityPoint.activeUsers":
+		if e.complexity.ProjectActivityPoint.ActiveUsers == nil {
+			break
+		}
+
+		return e.complexity.ProjectActivityPoint.ActiveUsers(childComplexity), true
+	case "ProjectActivityPoint.date":
+		if e.complexity.ProjectActivityPoint.Date == nil {
+			break
+		}
+
+		return e.complexity.ProjectActivityPoint.Date(childComplexity), true
+	case "ProjectActivityPoint.points":
+		if e.complexity.ProjectActivityPoint.Points == nil {
+			break
+		}
+
+		return e.complexity.ProjectActivityPoint.Points(childComplexity), true
 
 	case "ProjectConnection.edges":
 		if e.complexity.ProjectConnection.Edges == nil {
@@ -9253,6 +9291,25 @@ type Project {
     myPoints: Int! @goField(forceResolver: true)
     archivedAt: Boolean
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
+    """
+    Daily activity for the last ` + "`" + `days` + "`" + ` days, oldest first, for trend display.
+    Every day in the window is present, including days with no activity, so the
+    result can be plotted directly without gap-filling on the client.
+    """
+    activityTrend(days: Int = 14): [ProjectActivityPoint!]! @goField(forceResolver: true)
+}
+
+"""
+One day of aggregate activity in a project, derived from the score journal —
+which covers every point award regardless of source, so it reflects challenge
+completions, achievements, quizzes and manual adjustments alike.
+"""
+type ProjectActivityPoint {
+    date: Date!
+    """Points awarded that day."""
+    points: Int!
+    """Distinct users who were awarded points that day."""
+    activeUsers: Int!
 }
 
 # ==================== Project Input Types ====================
@@ -10227,8 +10284,6 @@ type LeaderboardConfigConnection {
 # ==================== Queries ====================
 
 extend type Query {
-    # Admin management — includes inactive/draft configs. Authorization enforced in the resolver
-    # (admin/superadmin only) — @requireRole is reserved for mutations in this schema.
     leaderboardConfig(id: ID!): LeaderboardConfig!
     leaderboardConfigs(filter: LeaderboardConfigFilter, first: Int, after: String, last: Int, before: String): LeaderboardConfigConnection!
 }
@@ -13808,6 +13863,17 @@ func (ec *executionContext) field_Mutation_updateWebhook_args(ctx context.Contex
 		return nil, err
 	}
 	args["input"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Project_activityTrend_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "days", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["days"] = arg0
 	return args, nil
 }
 
@@ -18613,6 +18679,8 @@ func (ec *executionContext) fieldContext_ContentAchievement_project(_ context.Co
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -19518,6 +19586,8 @@ func (ec *executionContext) fieldContext_Event_parentProject(_ context.Context, 
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -19972,6 +20042,8 @@ func (ec *executionContext) fieldContext_ExternalChallenge_project(_ context.Con
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -23328,6 +23400,8 @@ func (ec *executionContext) fieldContext_LeaderboardConfig_project(_ context.Con
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -25429,6 +25503,8 @@ func (ec *executionContext) fieldContext_Mutation_joinProject(ctx context.Contex
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -25540,6 +25616,8 @@ func (ec *executionContext) fieldContext_Mutation_createProject(ctx context.Cont
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -25651,6 +25729,8 @@ func (ec *executionContext) fieldContext_Mutation_updateProject(ctx context.Cont
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -37278,6 +37358,8 @@ func (ec *executionContext) fieldContext_PluginChallenge_project(_ context.Conte
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -39464,6 +39546,142 @@ func (ec *executionContext) fieldContext_Project_translationStatus(_ context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _Project_activityTrend(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Project_activityTrend,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Project().ActivityTrend(ctx, obj, fc.Args["days"].(*int))
+		},
+		nil,
+		ec.marshalNProjectActivityPoint2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐProjectActivityPointᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Project_activityTrend(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Project",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "date":
+				return ec.fieldContext_ProjectActivityPoint_date(ctx, field)
+			case "points":
+				return ec.fieldContext_ProjectActivityPoint_points(ctx, field)
+			case "activeUsers":
+				return ec.fieldContext_ProjectActivityPoint_activeUsers(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ProjectActivityPoint", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Project_activityTrend_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ProjectActivityPoint_date(ctx context.Context, field graphql.CollectedField, obj *model.ProjectActivityPoint) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ProjectActivityPoint_date,
+		func(ctx context.Context) (any, error) {
+			return obj.Date, nil
+		},
+		nil,
+		ec.marshalNDate2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDate,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ProjectActivityPoint_date(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProjectActivityPoint",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Date does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ProjectActivityPoint_points(ctx context.Context, field graphql.CollectedField, obj *model.ProjectActivityPoint) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ProjectActivityPoint_points,
+		func(ctx context.Context) (any, error) {
+			return obj.Points, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ProjectActivityPoint_points(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProjectActivityPoint",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ProjectActivityPoint_activeUsers(ctx context.Context, field graphql.CollectedField, obj *model.ProjectActivityPoint) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ProjectActivityPoint_activeUsers,
+		func(ctx context.Context) (any, error) {
+			return obj.ActiveUsers, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ProjectActivityPoint_activeUsers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProjectActivityPoint",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ProjectConnection_edges(ctx context.Context, field graphql.CollectedField, obj *model.ProjectConnection) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -39670,6 +39888,8 @@ func (ec *executionContext) fieldContext_ProjectEdge_node(_ context.Context, fie
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -40036,6 +40256,8 @@ func (ec *executionContext) fieldContext_Query_project(ctx context.Context, fiel
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -40177,6 +40399,8 @@ func (ec *executionContext) fieldContext_Query_myProjects(_ context.Context, fie
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -40258,6 +40482,8 @@ func (ec *executionContext) fieldContext_Query_myCurrentProject(_ context.Contex
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -40339,6 +40565,8 @@ func (ec *executionContext) fieldContext_Query_currentProject(_ context.Context,
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -43970,6 +44198,8 @@ func (ec *executionContext) fieldContext_Quiz_project(_ context.Context, field g
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -44937,6 +45167,8 @@ func (ec *executionContext) fieldContext_QuizAchievement_project(_ context.Conte
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -45564,6 +45796,8 @@ func (ec *executionContext) fieldContext_QuizChallenge_project(_ context.Context
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -48028,6 +48262,8 @@ func (ec *executionContext) fieldContext_RoleScope_project(_ context.Context, fi
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -48189,6 +48425,8 @@ func (ec *executionContext) fieldContext_ScoreJournal_project(_ context.Context,
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -49227,6 +49465,8 @@ func (ec *executionContext) fieldContext_SimpleAchievement_project(_ context.Con
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -49723,6 +49963,8 @@ func (ec *executionContext) fieldContext_SimpleChallenge_project(_ context.Conte
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -50490,6 +50732,8 @@ func (ec *executionContext) fieldContext_StreakAchievement_project(_ context.Con
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -51204,6 +51448,8 @@ func (ec *executionContext) fieldContext_SuperTeam_parentProject(_ context.Conte
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -52001,6 +52247,8 @@ func (ec *executionContext) fieldContext_Team_parentProject(_ context.Context, f
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -52997,6 +53245,8 @@ func (ec *executionContext) fieldContext_User_projects(_ context.Context, field 
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -54809,6 +55059,8 @@ func (ec *executionContext) fieldContext_Webhook_project(_ context.Context, fiel
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -69486,6 +69738,91 @@ func (ec *executionContext) _Project(ctx context.Context, sel ast.SelectionSet, 
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "activityTrend":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Project_activityTrend(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var projectActivityPointImplementors = []string{"ProjectActivityPoint"}
+
+func (ec *executionContext) _ProjectActivityPoint(ctx context.Context, sel ast.SelectionSet, obj *model.ProjectActivityPoint) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, projectActivityPointImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ProjectActivityPoint")
+		case "date":
+			out.Values[i] = ec._ProjectActivityPoint_date(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "points":
+			out.Values[i] = ec._ProjectActivityPoint_points(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "activeUsers":
+			out.Values[i] = ec._ProjectActivityPoint_activeUsers(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -78524,6 +78861,16 @@ func (ec *executionContext) unmarshalNCreateWebhookInput2githubᚗcomᚋbccᚑme
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNDate2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDate(ctx context.Context, v any) (scalars.Date, error) {
+	var res scalars.Date
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDate2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDate(ctx context.Context, sel ast.SelectionSet, v scalars.Date) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx context.Context, v any) (scalars.DateTime, error) {
 	var res scalars.DateTime
 	err := res.UnmarshalGQL(v)
@@ -79622,6 +79969,54 @@ func (ec *executionContext) marshalNProject2ᚖgithubᚗcomᚋbccᚑmediaᚋwayf
 		return graphql.Null
 	}
 	return ec._Project(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNProjectActivityPoint2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐProjectActivityPoint(ctx context.Context, sel ast.SelectionSet, v model.ProjectActivityPoint) graphql.Marshaler {
+	return ec._ProjectActivityPoint(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNProjectActivityPoint2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐProjectActivityPointᚄ(ctx context.Context, sel ast.SelectionSet, v []model.ProjectActivityPoint) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNProjectActivityPoint2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐProjectActivityPoint(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalNProjectConnection2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐProjectConnection(ctx context.Context, sel ast.SelectionSet, v model.ProjectConnection) graphql.Marshaler {

@@ -7,7 +7,14 @@ import AdminProjectSection from '../../layers/admin/app/components/admin/project
 
 type Permissions = ReturnType<typeof usePermissions>
 
+const trendDays = [
+  { date: '2026-09-15', points: 0, activeUsers: 0 },
+  { date: '2026-09-16', points: 120, activeUsers: 12 },
+  { date: '2026-09-17', points: 0, activeUsers: 0 },
+]
+
 const counts = {
+  project: { id: 'PR01ARZ3NDEKTSV4RRFFQ69G5FAV', activityTrend: trendDays },
   challenges: { totalCount: 12 },
   achievements: { totalCount: 8 },
   events: { totalCount: 0 },
@@ -95,13 +102,13 @@ describe('AdminProjectSection', () => {
       props: { project: project() },
     })
 
-    const text = wrapper.text()
-    expect(text).toContain('Utfordringer')
-    expect(text).toContain('12')
-    expect(text).toContain('Utmerkelser')
-    expect(text).toContain('8')
-    expect(text).toContain('Lag')
-    expect(text).toContain('24')
+    const nav = wrapper.find('nav').text()
+    expect(nav).toContain('Utfordringer')
+    expect(nav).toContain('12')
+    expect(nav).toContain('Utmerkelser')
+    expect(nav).toContain('8')
+    expect(nav).toContain('Lag')
+    expect(nav).toContain('24')
   })
 
   // Gating is PROJECT_NAV's, shared with the sidebar — so a role that cannot
@@ -115,11 +122,13 @@ describe('AdminProjectSection', () => {
       props: { project: project() },
     })
 
-    const text = wrapper.text()
-    expect(text).toContain('Utfordringer')
-    expect(text).not.toContain('Lag')
-    expect(text).not.toContain('Poeng')
-    expect(text).not.toContain('Innstillinger')
+    // Scoped to the nav on purpose: the page text also contains "Poeng siste
+    // 14 dager" from the trend tile, which is not a shortcut.
+    const nav = wrapper.find('nav').text()
+    expect(nav).toContain('Utfordringer')
+    expect(nav).not.toContain('Lag')
+    expect(nav).not.toContain('Poeng')
+    expect(nav).not.toContain('Innstillinger')
   })
 
   it('does not repeat the overview as a shortcut', async () => {
@@ -128,7 +137,7 @@ describe('AdminProjectSection', () => {
     })
 
     // The title already links to the project root.
-    expect(wrapper.text()).not.toContain('Oversikt')
+    expect(wrapper.find('nav').text()).not.toContain('Oversikt')
   })
 
   it('points every shortcut at this project', async () => {
@@ -157,6 +166,74 @@ describe('AdminProjectSection', () => {
       .find((link) => link.text().includes('Arrangement'))
     expect(events?.text()).toContain('0')
     expect(events?.html()).not.toContain('text-warning')
+  })
+
+  it('renders a stat tile per trend measure', async () => {
+    const wrapper = await mountSuspended(AdminProjectSection, {
+      props: { project: project() },
+    })
+
+    const text = wrapper.text()
+    expect(text).toContain('Poeng siste 14 dager')
+    expect(text).toContain('Aktive deltakere per dag')
+  })
+
+  // Points are additive; a distinct-users-per-day count is not. Summing the
+  // second would count the same person once per day they appeared.
+  it('sums points but averages active users', async () => {
+    const wrapper = await mountSuspended(AdminProjectSection, {
+      props: { project: project() },
+    })
+
+    const tiles = wrapper.findAll('.grid > div')
+    const pointsTile = tiles.find((tile) =>
+      tile.text().includes('Poeng siste 14 dager'),
+    )
+    const usersTile = tiles.find((tile) =>
+      tile.text().includes('Aktive deltakere per dag'),
+    )
+
+    expect(pointsTile?.text()).toContain('120')
+    // (0 + 12 + 0) / 3 = 4, not 12.
+    expect(usersTile?.text()).toContain('4')
+  })
+
+  // Two measures of very different scale must never share one y-axis, so they
+  // are two charts. Each sparkline is its own svg.
+  it('plots each measure in its own chart', async () => {
+    const wrapper = await mountSuspended(AdminProjectSection, {
+      props: { project: project() },
+    })
+
+    expect(wrapper.findAll('svg').length).toBeGreaterThanOrEqual(2)
+  })
+
+  // The tooltip must not be the only way to reach a value.
+  it('exposes the daily values as a table, not only on hover', async () => {
+    const wrapper = await mountSuspended(AdminProjectSection, {
+      props: { project: project() },
+    })
+
+    const tables = wrapper.findAll('.sr-only table')
+    expect(tables.length).toBeGreaterThanOrEqual(2)
+    expect(tables[0]!.text()).toContain('120')
+  })
+
+  // An upcoming project's trend is 14 empty days, which reads as a broken
+  // chart; the field is skipped for it entirely.
+  it('omits the trend when the project has not started', async () => {
+    data.value = { ...counts, project: { id: 'PR1', activityTrend: undefined } }
+
+    const wrapper = await mountSuspended(AdminProjectSection, {
+      props: {
+        project: project({
+          startDate: '2026-10-01T10:00:00.000Z',
+          endDate: '2026-10-10T10:00:00.000Z',
+        }),
+      },
+    })
+
+    expect(wrapper.text()).not.toContain('Poeng siste 14 dager')
   })
 
   it('holds the layout with skeletons while counts load', async () => {

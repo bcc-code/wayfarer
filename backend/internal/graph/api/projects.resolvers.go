@@ -669,6 +669,11 @@ func (r *projectResolver) TranslationStatus(ctx context.Context, obj *model.Proj
 	return r.projectTranslationStatus(ctx, obj.ID)
 }
 
+// ActivityTrend is the resolver for the activityTrend field.
+func (r *projectResolver) ActivityTrend(ctx context.Context, obj *model.Project, days *int) ([]model.ProjectActivityPoint, error) {
+	return r.activityTrend(ctx, obj.ID, days)
+}
+
 // Project is the resolver for the project field.
 func (r *queryResolver) Project(ctx context.Context, id string) (*model.Project, error) {
 	// Use translation-aware wrapper to fetch project
