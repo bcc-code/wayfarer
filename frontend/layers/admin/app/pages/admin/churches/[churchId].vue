@@ -123,17 +123,13 @@ async function saveChanges() {
     <AdminQueryState :fetching :error>
       <template v-if="data">
         <!-- View Mode -->
-        <UCard v-if="!isEditing">
-          <dl class="space-y-4">
-            <div class="flex gap-6 border-b border-default py-2">
-              <dt class="text-muted w-24 shrink-0">ID</dt>
-              <dd class="font-mono text-sm">{{ data.church.id }}</dd>
-            </div>
-            <div class="flex gap-6 border-b border-default py-2">
+        <AdminSection v-if="!isEditing" title="Detaljer">
+          <dl class="divide-default divide-y">
+            <div class="flex gap-6 py-2">
               <dt class="text-muted w-24 shrink-0">Navn</dt>
               <dd class="font-medium">{{ data.church.name }}</dd>
             </div>
-            <div class="flex gap-6 border-b border-default py-2">
+            <div class="flex gap-6 py-2">
               <dt class="text-muted w-24 shrink-0">Land</dt>
               <dd>{{ data.church.country }}</dd>
             </div>
@@ -141,11 +137,19 @@ async function saveChanges() {
               <dt class="text-muted w-24 shrink-0">Kategori</dt>
               <dd>{{ data.church.category }}</dd>
             </div>
+            <!--
+              The ULID last rather than first, matching the user detail page:
+              it is a support aid, not the first thing a reader wants.
+            -->
+            <div class="flex gap-6 py-2">
+              <dt class="text-muted w-24 shrink-0">ID</dt>
+              <dd class="font-mono text-sm">{{ data.church.id }}</dd>
+            </div>
           </dl>
-        </UCard>
+        </AdminSection>
 
         <!-- Edit Mode -->
-        <UCard v-else>
+        <AdminSection v-else title="Rediger menighet">
           <div class="space-y-4">
             <UFormField label="Navn">
               <UInput v-model="editState.name" class="w-full" />
@@ -168,7 +172,7 @@ async function saveChanges() {
               <UButton @click="saveChanges">Lagre endringer</UButton>
             </div>
           </div>
-        </UCard>
+        </AdminSection>
       </template>
     </AdminQueryState>
   </div>

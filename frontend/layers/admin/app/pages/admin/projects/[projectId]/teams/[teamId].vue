@@ -270,10 +270,7 @@ async function handleToggleLeaderboardExclusion(excluded: boolean) {
           </div>
 
           <!-- Edit Form -->
-          <UCard v-if="isEditing">
-            <template #header>
-              <h2 class="text-xl font-semibold">Rediger lag</h2>
-            </template>
+          <AdminSection v-if="isEditing" title="Rediger lag">
             <div class="space-y-4">
               <UFormField label="Navn">
                 <UInput v-model="editState.name" class="w-full" />
@@ -286,13 +283,13 @@ async function handleToggleLeaderboardExclusion(excluded: boolean) {
                 />
               </UFormField>
             </div>
-            <template #footer>
-              <div class="flex justify-end gap-3">
-                <UButton variant="ghost" @click="cancelEditing">Avbryt</UButton>
-                <UButton @click="saveChanges">Lagre endringer</UButton>
-              </div>
-            </template>
-          </UCard>
+            <!-- `AdminSection` has no footer slot; the actions sit at the end
+                 of the section instead. -->
+            <div class="flex justify-end gap-3 pt-4">
+              <UButton variant="ghost" @click="cancelEditing">Avbryt</UButton>
+              <UButton @click="saveChanges">Lagre endringer</UButton>
+            </div>
+          </AdminSection>
 
           <!-- Team Info -->
           <dl class="text-sm">
@@ -360,21 +357,15 @@ async function handleToggleLeaderboardExclusion(excluded: boolean) {
             </div>
           </dl>
 
-          <!-- Members Card -->
-          <UCard>
-            <template #header>
-              <div class="flex items-center justify-between">
-                <h2 class="text-xl font-semibold">
-                  Medlemmer ({{ data.team.members.length }})
-                </h2>
-              </div>
-            </template>
-
-            <div v-if="data.team.members.length > 0" class="space-y-2">
+          <!-- Members -->
+          <AdminSection title="Medlemmer" :count="data.team.members.length">
+            <!-- Rows carry no border of their own: they sit on the section's
+                 surface, not in boxes within it. -->
+            <div v-if="data.team.members.length > 0" class="space-y-1">
               <div
                 v-for="member in data.team.members"
                 :key="member.id"
-                class="border-default flex items-center justify-between rounded-md border p-3"
+                class="flex items-center justify-between py-2"
               >
                 <div>
                   <div class="flex items-center gap-2">
@@ -419,8 +410,8 @@ async function handleToggleLeaderboardExclusion(excluded: boolean) {
                 </div>
               </div>
             </div>
-            <div v-else class="text-dimmed">Ingen medlemmer</div>
-          </UCard>
+            <p v-else class="text-dimmed text-sm">Ingen medlemmer</p>
+          </AdminSection>
         </div>
       </AdminQueryState>
     </div>

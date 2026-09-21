@@ -43,9 +43,35 @@ Shared machinery built along the way, all with tests:
 for page content), `AdminSparkline`. `RelayPagination` was folded into
 `AdminListView` and deleted.
 
-**Open sweep, not yet started:** nine admin pages still use `UCard` as a section
-container and could move to `AdminSection` — `churches/[churchId]`,
-`consents/[consentId]`, the project detail pages, the maintenance tools.
+**`AdminSection` sweep: done 2026-09-21.** Four detail pages converted —
+`churches/[churchId]`, `consents/[consentId]`,
+`projects/[projectId]/teams/[teamId]`, `users/[userId]/achievements` — plus the
+six `AdminUser*` panels. Nine admin pages _contain_ `UCard`; only these four
+were using it as a section container.
+
+**Five pages keep `UCard`, correctly** — they are discrete objects on a surface,
+which is what cards are still for: `maintenance/index.vue` and
+`projects/[projectId]/index.vue` (clickable cards in a grid), three stat tiles
+each in `check-points-journal` / `fix-content-progress` / `fix-streak-progress`,
+and the warning callout in the two `fix-*` tools (it has a `#header` but is an
+alert, not a page section).
+
+Three things the conversion needed that the component did not have:
+
+- **No `#footer` slot.** Two edit forms put their Avbryt/Lagre buttons there;
+  they now sit at the end of the section body. A footer slot would have been the
+  lazier fix — the buttons belong _to the form_, not to the section chrome.
+- **A plain-string title.** The achievements page's card header held a title, a
+  type badge, a tally and an awarded badge. Everything but the title moved to
+  `#actions`, which keeps the same title-left / meta-right arrangement.
+- **A title where there had been none.** `churches/[churchId]`'s field list was
+  a headerless card; it is "Detaljer" now. Its ULID also moved from _first_ row
+  to last, matching the user detail page — a support aid, not the first thing a
+  reader wants.
+
+Rows inside converted sections lost their own borders (`border rounded-md p-3`
+→ `py-2`): they sit _on_ the section surface rather than in boxes within it,
+which was the original complaint.
 
 Pages given real work: `/admin` (rebuilt), `users/index`, `users/[userId]`
 (+ 6 components), `feedback`, `challenges`, `teams`, `scores`,

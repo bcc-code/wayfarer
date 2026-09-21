@@ -166,10 +166,7 @@ async function publishConsent() {
           </div>
 
           <!-- Edit Form -->
-          <UCard v-if="isEditing">
-            <template #header>
-              <h2 class="text-xl font-semibold">Rediger samtykke</h2>
-            </template>
+          <AdminSection v-if="isEditing" title="Rediger samtykke">
             <div class="space-y-4">
               <AdminTranslatableFormField
                 label="Tittel"
@@ -218,13 +215,13 @@ async function publishConsent() {
                 />
               </UFormField>
             </div>
-            <template #footer>
-              <div class="flex justify-end gap-3">
-                <UButton variant="ghost" @click="cancelEditing">Avbryt</UButton>
-                <UButton @click="saveChanges">Lagre endringer</UButton>
-              </div>
-            </template>
-          </UCard>
+            <!-- `AdminSection` has no footer slot; the actions sit at the end
+                 of the section instead. -->
+            <div class="flex justify-end gap-3 pt-4">
+              <UButton variant="ghost" @click="cancelEditing">Avbryt</UButton>
+              <UButton @click="saveChanges">Lagre endringer</UButton>
+            </div>
+          </AdminSection>
 
           <!-- Consent Info -->
           <dl class="text-sm">
@@ -289,15 +286,12 @@ async function publishConsent() {
           </dl>
 
           <!-- Body Preview -->
-          <UCard>
-            <template #header>
-              <h2 class="text-xl font-semibold">Forhåndsvisning av innhold</h2>
-            </template>
+          <AdminSection title="Forhåndsvisning av innhold">
             <div
               class="prose prose-sm dark:prose-invert max-w-none"
               v-html="data.consent.body.html"
             />
-          </UCard>
+          </AdminSection>
         </div>
       </AdminQueryState>
     </div>

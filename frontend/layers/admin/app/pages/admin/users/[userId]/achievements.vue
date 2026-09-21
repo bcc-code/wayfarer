@@ -226,10 +226,7 @@ function statusLabel(
         </p>
 
         <!-- Achievement selector -->
-        <UCard>
-          <template #header>
-            <h2 class="text-xl font-semibold">Velg prestasjon</h2>
-          </template>
+        <AdminSection title="Velg prestasjon">
           <UFormField label="Prestasjon">
             <USelect
               v-model="selectedAchievementId"
@@ -239,7 +236,7 @@ function statusLabel(
               class="w-full"
             />
           </UFormField>
-        </UCard>
+        </AdminSection>
 
         <!-- Progress display -->
         <div v-if="progressFetching" class="py-8">
@@ -248,29 +245,29 @@ function statusLabel(
 
         <template v-else-if="progress">
           <!-- Status summary -->
-          <UCard>
-            <template #header>
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                  <h2 class="text-xl font-semibold">Fremgang</h2>
-                  <UBadge variant="subtle">{{ achievementTypeLabel }}</UBadge>
-                </div>
-                <div class="flex items-center gap-3">
-                  <span class="text-sm font-medium">
-                    {{ progress.completedCount }} av
-                    {{ progress.totalCount }} fullfort
-                  </span>
-                  <UBadge
-                    v-if="progress.alreadyAwarded"
-                    color="info"
-                    variant="soft"
-                  >
-                    Allerede tildelt
-                    <template v-if="progress.awardedAt">
-                      {{ formatDateTime(progress.awardedAt) }}
-                    </template>
-                  </UBadge>
-                </div>
+          <AdminSection title="Fremgang">
+            <!--
+              The type, the tally and the awarded state all move to `#actions`:
+              `AdminSection`'s title is a plain string, and title-left /
+              meta-right is the same arrangement the card header had.
+            -->
+            <template #actions>
+              <div class="flex flex-wrap items-center gap-3">
+                <UBadge variant="subtle">{{ achievementTypeLabel }}</UBadge>
+                <span class="text-sm font-medium">
+                  {{ progress.completedCount }} av
+                  {{ progress.totalCount }} fullfort
+                </span>
+                <UBadge
+                  v-if="progress.alreadyAwarded"
+                  color="info"
+                  variant="soft"
+                >
+                  Allerede tildelt
+                  <template v-if="progress.awardedAt">
+                    {{ formatDateTime(progress.awardedAt) }}
+                  </template>
+                </UBadge>
               </div>
             </template>
 
@@ -341,7 +338,7 @@ function statusLabel(
                 </div>
               </div>
             </div>
-          </UCard>
+          </AdminSection>
 
           <!-- Award button -->
           <div v-if="!progress.alreadyAwarded" class="flex justify-end">
