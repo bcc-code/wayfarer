@@ -4422,7 +4422,7 @@ export type AdminHomeProjectsQueryVariables = Exact<{
 }>;
 
 
-export type AdminHomeProjectsQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string }, projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', logoImage?: { __typename?: 'Image', url: string } | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string }, dark: { __typename?: 'ColorSet', accent: string } } } } }> } };
+export type AdminHomeProjectsQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string }, projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', logoImage?: { __typename?: 'Image', url: string } | null } } }> } };
 
 export type AdminHomeFeedbackQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -6678,14 +6678,6 @@ export const AdminHomeProjectsDocument = gql`
         branding {
           logoImage {
             url
-          }
-          colors {
-            light {
-              accent
-            }
-            dark {
-              accent
-            }
           }
         }
       }

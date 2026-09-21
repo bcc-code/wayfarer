@@ -92,6 +92,50 @@ describe('sparklineBars', () => {
   })
 })
 
+describe('sparklineBars hit columns', () => {
+  const opts = { width: 140, height: 40 }
+
+  // The painted bar is a 2px sliver on a quiet day. Hovering that is not
+  // realistic, so pointer handling attaches to a full-height column instead.
+  it('gives every day a full-height hit column', () => {
+    const bars = sparklineBars([0, 5, 0], opts)
+
+    for (const bar of bars) {
+      expect(bar.hitWidth).toBeGreaterThan(bar.width)
+      expect(bar.hitWidth).toBeCloseTo(140 / 3)
+    }
+  })
+
+  it('tiles the hit columns edge to edge with no dead gaps', () => {
+    const bars = sparklineBars([1, 2, 3, 4], opts)
+
+    expect(bars[0]!.hitX).toBe(0)
+    for (let i = 1; i < bars.length; i++) {
+      expect(bars[i]!.hitX).toBeCloseTo(
+        bars[i - 1]!.hitX + bars[i - 1]!.hitWidth,
+      )
+    }
+    const last = bars[bars.length - 1]!
+    expect(last.hitX + last.hitWidth).toBeCloseTo(140)
+  })
+
+  it('reports each slot centre as a fraction for tooltip placement', () => {
+    const bars = sparklineBars([1, 1], opts)
+
+    expect(bars[0]!.centerRatio).toBeCloseTo(0.25)
+    expect(bars[1]!.centerRatio).toBeCloseTo(0.75)
+  })
+
+  it('keeps the hit column over its own bar', () => {
+    const bars = sparklineBars([1, 2, 3], opts)
+
+    for (const bar of bars) {
+      expect(bar.x).toBeGreaterThanOrEqual(bar.hitX)
+      expect(bar.x + bar.width).toBeLessThanOrEqual(bar.hitX + bar.hitWidth)
+    }
+  })
+})
+
 describe('dailyAverage', () => {
   // This exists because a distinct-users-per-day count is not additive.
   it('averages rather than sums', () => {

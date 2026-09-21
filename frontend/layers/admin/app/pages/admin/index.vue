@@ -33,14 +33,6 @@ gql(`
             logoImage {
               url
             }
-            colors {
-              light {
-                accent
-              }
-              dark {
-                accent
-              }
-            }
           }
         }
       }

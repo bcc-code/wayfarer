@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 import { readdirSync, statSync, readFileSync, existsSync } from 'node:fs'
 import { join, resolve, relative } from 'node:path'
 
@@ -139,6 +139,20 @@ describe('the eslint import boundary', () => {
     expect(found, 'the domain-boundary config entry').toBeDefined()
     return found!
   })()
+
+  /**
+   * Resolve the config before any case runs, with a timeout of its own.
+   *
+   * Importing `eslint.config.mjs` resolves the whole Nuxt flat config and takes
+   * ~5s on a warm machine — right on vitest's 5s default. Whichever case
+   * awaited `entry` first paid that cost inside its own budget and timed out
+   * intermittently under load (e.g. straight after a component-test run), which
+   * presented as a nameless `1 failed` that passed on every retry. Warming it
+   * here makes each case cheap and the cost explicit.
+   */
+  beforeAll(async () => {
+    await entry
+  }, 60_000)
 
   async function lint(code: string) {
     const { Linter } = await import('eslint')

@@ -56,10 +56,7 @@ const project = (
   name: 'Spring Revival',
   startDate: '2026-09-01T10:00:00.000Z',
   endDate: '2026-10-01T10:00:00.000Z',
-  branding: {
-    logoImage: null,
-    colors: { light: { accent: '#00ff00' }, dark: { accent: '#00aa00' } },
-  },
+  branding: { logoImage: null },
   ...overrides,
 })
 

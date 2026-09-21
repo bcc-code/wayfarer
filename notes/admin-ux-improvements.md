@@ -566,6 +566,48 @@ then `make generate` and `pnpm codegen`.
 
 ## Update log
 
+### 2026-09-21 — sparkline interaction, empty state, accent ring removed
+
+Follow-ups from looking at the rendered chart. Three of the four were only
+findable by looking; the gate was green throughout.
+
+**Hover did not work at all.** Two causes, and the second was the user's.
+
+- The hit target was the painted bar, which on a quiet day is a 2px sliver with
+  nothing to aim at. Each day now has a transparent full-height column spanning
+  its whole slot, painted above the bars, so the reader only has to be over the
+  right column — a zero-value day is hoverable for the first time. The dataviz
+  guidance says this outright ("the hit target is bigger than the mark"); I
+  had read it and still shipped bar-only hit areas.
+- The native SVG `<title>` was the wrong mechanism: ~1s delay, unstyleable, and
+  never shown on keyboard focus, so it reads as nothing happening. Replaced with
+  a styled tooltip carrying value + date, positioned by the slot centre as a
+  percentage so it tracks the column at any container width, with the hovered
+  bar lifting to full opacity.
+
+Deliberately pointer-only. Adding `tabindex` to 14 columns per chart is 28 tab
+stops on this page; the visually-hidden table is the keyboard and screen-reader
+path, which is why it exists.
+
+**An all-zero window now says so in words.** A flat series still occupies the
+plot's full height, so it rendered as a tall empty box with a lone baseline
+adrift in it — reading as a broken chart, the exact thing the baseline was added
+to prevent. It is a sentence now ("Ingen aktivitet siste 14 dager"). Quiet
+stretches are normal here, so this is the common state, not an edge case.
+
+**The branding accent ring is gone from the project card.** It was meant to tell
+stacked sections apart, but with one active project there is nothing to tell
+apart and an arbitrary per-project hue on a border just reads as random — the
+logo already carries identity. Removing it made `branding.colors` dead, so it
+came out of the query and the prop type too.
+
+**A test-assertion habit worth naming, because it went wrong twice.** Both the
+permission-gating case and the first tooltip cases asserted against
+`wrapper.text()` — but the `sr-only` table lists every date and value, so page
+text always contains them and the tooltip tests would have passed with the
+tooltip completely broken. Assertions are now scoped to the element that owns
+the claim: `<nav>` for shortcuts, `[data-slot="tooltip"]` for the tooltip.
+
 ### 2026-09-21 — sparklines shipped (item 3), backend included
 
 The last outstanding item on this page. Two stat tiles per running project —

@@ -32,6 +32,15 @@ const bars = computed(() =>
 
 const lastIndex = computed(() => props.points.length - 1)
 
+/** Day the pointer is over, or null. Drives both the tooltip and the lift. */
+const hovered = ref<number | null>(null)
+const hoveredBar = computed(() =>
+  hovered.value === null ? null : (bars.value[hovered.value] ?? null),
+)
+const hoveredPoint = computed(() =>
+  hovered.value === null ? null : (props.points[hovered.value] ?? null),
+)
+
 /**
  * A window where nothing happened gets a sentence, not a chart.
  *
@@ -54,68 +63,101 @@ const dayLabel = (date: string) =>
     </p>
 
     <!--
-      `aria-hidden` on the plot with a real table beside it, rather than a
-      `role="img"` summary: the tooltip must not be the only way to reach a
-      value, and native `<title>` tooltips do not appear on keyboard focus. The
-      table is the accessible path and costs nothing visually.
-    -->
-    <svg
-      v-if="hasActivity"
-      :viewBox="`0 0 ${VIEW_WIDTH} ${height}`"
-      :height="height"
-      class="w-full"
-      preserveAspectRatio="none"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <!--
-        Baseline. Without it an all-zero window — a normal state for a project
-        between bursts of activity — paints nothing at all, and the tile reads
-        as a chart that failed to load rather than as zero.
-      -->
-      <rect
-        :x="0"
-        :y="height - 1"
-        :width="VIEW_WIDTH"
-        height="1"
-        class="fill-current text-dimmed opacity-40"
-      />
+      A styled tooltip, not a native SVG `<title>`: the browser's own tooltip
+      takes about a second to appear, cannot be styled, and never shows on
+      keyboard focus — it reads as nothing happening.
 
-      <rect
-        v-for="bar in bars"
-        :key="bar.index"
-        :x="bar.x"
-        :y="bar.y"
-        :width="bar.width"
-        :height="bar.height"
-        rx="1"
-        class="fill-current"
-        :class="
-          bar.index === lastIndex ? 'text-primary' : 'text-dimmed opacity-60'
-        "
+      `aria-hidden` on the plot with a real table beside it, rather than a
+      `role="img"` summary. The tooltip is a pointer affordance; the table is
+      the path for keyboard and screen-reader users, which is why the tooltip
+      does not need its own focus handling and the chart does not add 14 tab
+      stops per tile.
+    -->
+    <div v-if="hasActivity" class="relative">
+      <svg
+        :viewBox="`0 0 ${VIEW_WIDTH} ${height}`"
+        :height="height"
+        class="w-full"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+        focusable="false"
+        @pointerleave="hovered = null"
       >
         <!--
+          Baseline. Without it an all-zero window — a normal state for a project
+          between bursts of activity — paints nothing at all, and the tile reads
+          as a chart that failed to load rather than as zero.
+        -->
+        <rect
+          :x="0"
+          :y="height - 1"
+          :width="VIEW_WIDTH"
+          height="1"
+          class="fill-current text-dimmed opacity-40"
+        />
+
+        <!--
           The most recent day carries the accent; the rest are the de-emphasis
-          hue. One series, so there is no categorical palette to validate for
-          colour-vision separation — the two states are the same hue at
-          different emphasis, and both are design-system tokens rather than
+          hue, and the hovered one lifts to full opacity so the chart is seen to
+          respond. One series, so there is no categorical palette to validate
+          for colour-vision separation — the states are the same hue at
+          different emphasis, and all are design-system tokens rather than
           project branding, which is arbitrary per project and cannot be
           contrast-checked up front.
         -->
-        <title>
-          {{ dayLabel(points[bar.index]!.date) }}:
-          {{ format(points[bar.index]!.value) }}
-        </title>
-      </rect>
-    </svg>
+        <rect
+          v-for="bar in bars"
+          :key="`bar-${bar.index}`"
+          :x="bar.x"
+          :y="bar.y"
+          :width="bar.width"
+          :height="bar.height"
+          rx="1"
+          class="fill-current transition-opacity"
+          :class="[
+            bar.index === lastIndex ? 'text-primary' : 'text-dimmed',
+            hovered === bar.index
+              ? 'opacity-100'
+              : bar.index === lastIndex
+                ? 'opacity-100'
+                : 'opacity-60',
+          ]"
+        />
 
-    <!--
-      The `sr-only` class goes on a wrapping div, not on the <table>. Applied to
-      the table itself its <caption> escapes the clipping rect and renders as
-      visible text under the chart — Tailwind's `sr-only` sets no `display`, so
-      the element keeps `display: table` and the caption is laid out outside the
-      1px clip box.
-    -->
+        <!--
+          Hit columns, painted last so they sit above the bars. Full plot
+          height and the full slot width including the gap: the bar itself is a
+          2px sliver on a quiet day, which no one can hover, so the reader only
+          has to be over the right column.
+        -->
+        <rect
+          v-for="bar in bars"
+          :key="`hit-${bar.index}`"
+          :x="bar.hitX"
+          :y="0"
+          :width="bar.hitWidth"
+          :height="height"
+          fill="transparent"
+          @pointerenter="hovered = bar.index"
+        />
+      </svg>
+
+      <!--
+        Positioned by the slot centre as a percentage, so it tracks the column
+        however wide the container is — the svg stretches via
+        `preserveAspectRatio="none"` rather than being re-measured.
+      -->
+      <div
+        v-if="hoveredBar && hoveredPoint"
+        data-slot="tooltip"
+        class="bg-inverted text-inverted pointer-events-none absolute bottom-full z-10 mb-1 -translate-x-1/2 rounded px-2 py-1 text-xs whitespace-nowrap shadow"
+        :style="{ left: `${hoveredBar.centerRatio * 100}%` }"
+      >
+        <span class="font-semibold">{{ format(hoveredPoint.value) }}</span>
+        <span class="opacity-75"> · {{ dayLabel(hoveredPoint.date) }}</span>
+      </div>
+    </div>
+
     <div v-if="hasActivity" class="sr-only">
       <table>
         <caption>

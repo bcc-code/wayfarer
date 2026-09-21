@@ -20,10 +20,6 @@ interface SectionProject {
   endDate: string
   branding: {
     logoImage?: { url: string } | null
-    colors: {
-      light: { accent: string }
-      dark: { accent: string }
-    }
   }
 }
 
@@ -85,13 +81,6 @@ const { data, fetching } = useAdminProjectSectionCountsQuery({
   })),
   pause: computed(() => !isAuthReady.value),
 })
-
-const colorMode = useColorMode()
-const accentColor = computed(() =>
-  colorMode.value === 'dark'
-    ? props.project.branding.colors.dark.accent
-    : props.project.branding.colors.light.accent,
-)
 
 const countdown = computed(() => formatProjectCountdown(timing.value))
 
@@ -188,15 +177,12 @@ const trendTiles = computed(() => {
     width the section is *given*, not the window's. See Conventions in
     notes/admin-ux-improvements.md.
 
-    The branding accent identifies the project on the card itself. It matters
-    once two or three sections stack: they need to be tellable apart at a
-    glance, and a tinted ring does that without implying a measurement.
+    No accent ring. Tinting the card border with the project's branding colour
+    was meant to tell stacked sections apart, but with one active project there
+    is nothing to tell apart and an arbitrary per-project hue on the border just
+    reads as random. The logo already carries the project's identity.
   -->
-  <UCard
-    class="@container"
-    :style="{ '--accent': accentColor }"
-    :ui="{ root: 'ring-(--accent)/30' }"
-  >
+  <UCard class="@container">
     <div class="space-y-4">
       <div class="flex items-center gap-3">
         <img

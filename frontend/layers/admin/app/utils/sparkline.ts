@@ -17,6 +17,16 @@ export interface SparklineBar {
   height: number
   /** Index in the input series, so callers can style the last bar. */
   index: number
+  /**
+   * Full-height hit column for this day, spanning the whole slot including the
+   * gap. The painted bar is a poor hit target — a quiet day is a 2px sliver,
+   * which is unhoverable in practice — so pointer handling attaches here
+   * instead, and the reader only has to be over the right column.
+   */
+  hitX: number
+  hitWidth: number
+  /** Slot centre as a fraction of total width, for positioning a tooltip. */
+  centerRatio: number
 }
 
 export interface SparklineOptions {
@@ -47,12 +57,17 @@ export function sparklineBars(
     const ratio = max > 0 ? Math.max(0, value) / max : 0
     const barHeight = ratio === 0 ? 0 : Math.max(minBarHeight, ratio * height)
 
+    const hitX = index * slot
+
     return {
-      x: index * slot + gap / 2,
+      x: hitX + gap / 2,
       y: height - barHeight,
       width: barWidth,
       height: barHeight,
       index,
+      hitX,
+      hitWidth: slot,
+      centerRatio: (hitX + slot / 2) / width,
     }
   })
 }

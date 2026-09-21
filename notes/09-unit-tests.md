@@ -116,3 +116,35 @@ The tests use:
 - Tests are deterministic and don't rely on system time for most cases
 - Edge cases like leap years and birthday timing are thoroughly covered
 - Gender normalization handles all realistic input variations
+
+## A flaky frontend unit test, diagnosed (2026-09-21)
+
+`test/unit/domain-boundary.test.ts` failed intermittently as a nameless
+`1 failed | 576 passed`, roughly one run in five, and passed on every retry.
+
+**Cause:** the ESLint half of that suite imports `eslint.config.mjs`, which
+resolves the whole Nuxt flat config and takes **~5.8s** on a warm machine —
+against vitest's **5s default `testTimeout`**. The config is resolved once and
+shared, so whichever case awaited it first paid the entire cost inside its own
+budget. Under load — notably straight after a component-test run in the same
+shell — it tipped over.
+
+It was hard to catch for two reasons worth remembering:
+
+- The cost landed on an `it.each` case, so the failure surfaced with no test
+  name in the summary.
+- Every attempt to inspect it piped vitest through `grep`, which dropped the
+  line naming the test. **Run the failing project alone with full output**; the
+  name is there.
+
+**Fix:** warm the config in a `beforeAll` with its own 60s timeout, so each case
+is cheap and the cost is explicit rather than charged to whichever test happens
+to run first.
+
+Verified under the condition that reproduced it: five consecutive
+component-then-unit runs clean, where the same loop hit the failure on its first
+attempt beforehand.
+
+**The general lesson:** a test that does real work near the default timeout is
+not "slow", it is flaky. Hoist expensive shared setup into `beforeAll` with an
+explicit timeout rather than letting an arbitrary case absorb it.

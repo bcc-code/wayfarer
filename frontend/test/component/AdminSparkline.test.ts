@@ -15,8 +15,12 @@ describe('AdminSparkline', () => {
       props: { points: series, label: 'Poeng' },
     })
 
-    // 3 bars + 1 baseline.
-    expect(wrapper.findAll('svg rect')).toHaveLength(4)
+    // Painted marks only: 3 bars + 1 baseline. The transparent hit columns are
+    // counted separately by the hover tests.
+    const painted = wrapper
+      .findAll('svg rect')
+      .filter((rect) => rect.attributes('fill') !== 'transparent')
+    expect(painted).toHaveLength(4)
   })
 
   // An all-zero window is normal for a project between bursts of activity. A
@@ -71,6 +75,57 @@ describe('AdminSparkline', () => {
     expect(table.text()).toContain('Poeng siste 14 dager')
     expect(table.findAll('tbody tr')).toHaveLength(3)
     expect(table.text()).toContain('120')
+  })
+
+  // The native SVG <title> this replaced took ~1s to appear, could not be
+  // styled, and never showed on keyboard focus — it read as nothing happening.
+  it('shows a styled tooltip on hover, not a native title', async () => {
+    const wrapper = await mountSuspended(AdminSparkline, {
+      props: { points: series, label: 'Poeng' },
+    })
+
+    expect(wrapper.find('svg title').exists()).toBe(false)
+    // Asserted on the tooltip element, never on wrapper.text(): the sr-only
+    // table lists every date and value, so page text always contains them.
+    expect(wrapper.find('[data-slot="tooltip"]').exists()).toBe(false)
+
+    const columns = wrapper.findAll('svg rect[fill="transparent"]')
+    expect(columns.length).toBe(series.length)
+
+    await columns[1]!.trigger('pointerenter')
+
+    const tooltip = wrapper.find('[data-slot="tooltip"]')
+    expect(tooltip.exists()).toBe(true)
+    expect(tooltip.text()).toContain('120')
+    expect(tooltip.text()).toContain('20. sep.')
+  })
+
+  it('hides the tooltip when the pointer leaves the chart', async () => {
+    const wrapper = await mountSuspended(AdminSparkline, {
+      props: { points: series, label: 'Poeng' },
+    })
+
+    await wrapper
+      .findAll('svg rect[fill="transparent"]')[1]!
+      .trigger('pointerenter')
+    expect(wrapper.find('[data-slot="tooltip"]').exists()).toBe(true)
+
+    await wrapper.find('svg').trigger('pointerleave')
+    expect(wrapper.find('[data-slot="tooltip"]').exists()).toBe(false)
+  })
+
+  // A quiet day's bar is a 2px sliver; hovering it is not realistic, so the hit
+  // area is the whole column.
+  it('makes a zero day hoverable', async () => {
+    const wrapper = await mountSuspended(AdminSparkline, {
+      props: { points: series, label: 'Poeng' },
+    })
+
+    await wrapper
+      .findAll('svg rect[fill="transparent"]')[0]!
+      .trigger('pointerenter')
+
+    expect(wrapper.text()).toContain('19. sep.')
   })
 
   it('applies the caller format to values', async () => {
