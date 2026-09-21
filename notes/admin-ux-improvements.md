@@ -270,9 +270,15 @@ consents or the maintenance tables. No list has column sorting either — all ni
 Pairs naturally with #1: a server-side filter and relay pagination are the same
 query change, and doing them together avoids touching each page twice.
 
-### 4. Refactor the two outliers
+### 4. Refactor the two outliers — half done
 
-`my-church/units.vue` (1,109 lines) and `users/[userId]/index.vue` (1,063).
+`users/[userId]/index.vue` is **done** (2026-09-21): 1,182 → 240 lines across six
+`AdminUser*` components, each owning its own mutations and modals.
+`my-church/units.vue` (1,109 lines) remains — and note it is on the
+`church-admin` layout, so it lands naturally with #5.
+
+Originally: `my-church/units.vue` (1,109 lines) and `users/[userId]/index.vue`
+(1,063).
 Both are worth breaking up — extract the panels into components, lift the
 queries out of the template. They are the hardest pages to change safely, so
 this is a prerequisite for the other sweeps landing on them rather than a
@@ -533,7 +539,7 @@ then `make generate` and `pnpm codegen`.
 | `projects/index.vue`              | `/admin/projects`           | 119      | ☐   | Card grid, container queries done. No search; `first: 100`.                                                   |
 | `projects/new.vue`                | `/admin/projects/new`       | 167      | ☐   |                                                                                                               |
 | `users/index.vue`                 | `/admin/users`              | 199      | ◐   | **On `AdminListView`** — the reference conversion. Search + church filter + URL state.                        |
-| `users/[userId]/index.vue`        | `/admin/users/:userId`      | **1182** | ◐   | Identity header + 4 bugs fixed; still the #4 outlier, logs hand-rolled, actions scattered.                    |
+| `users/[userId]/index.vue`        | `/admin/users/:userId`      | 240      | ◐   | Split into 6 `AdminUser*` components; identity header; 4 bugs fixed. No longer an outlier.                     |
 | `users/[userId]/achievements.vue` | `…/achievements`            | 389      | ☐   | `first: 200` picker — see #1, wants a searchable select, not pagination.                                      |
 | `churches/[churchId].vue`         | `/admin/churches/:churchId` | 175      | ☐   | Drill-down leaf by design — no list page, no nav entry (decision recorded in restructure note).               |
 | `consents/index.vue`              | `/admin/consents`           | 109      | ☐   | Plain list (`[Consent!]!`), not a connection — off `AdminListView` by decision, see log. Sibling empty state. |
@@ -602,6 +608,53 @@ then `make generate` and `pnpm codegen`.
 ---
 
 ## Update log
+
+### 2026-09-21 — user detail page split into six components (#4, half)
+
+`users/[userId]/index.vue`: **1,182 → 240 lines**, and the template is now a
+list of six panels with nothing else in it.
+
+| Component | Lines | Owns |
+| --- | --- | --- |
+| `AdminUserIdentity` | 330 | header, technical details, sync + church lock (3 mutations) |
+| `AdminUserConsents` | 248 | the three-shape normalisation, withdrawal modal (1 mutation) |
+| `AdminUserRoles` | 236 | role list, scope naming, add/revoke modal (2 mutations) |
+| `AdminUserScoreJournal` | 86 | journal list, source-type labels |
+| `AdminUserFeedbackPanel` | 82 | feedback list |
+| `AdminUserTeams` | 41 | team list |
+| the page | 240 | two queries, the breadcrumb, and wiring |
+
+**Each panel owns its own mutations and modals, and emits `changed`** for the
+page to refetch. That is what made the split worth doing rather than cosmetic:
+the page previously held six mutations, four `ref` flags, two modals and nine
+handlers for things it did not otherwise care about. `AdminUserRoles` is now the
+only file that knows what a role scope is; `AdminUserConsents` the only one that
+knows consents come back in two shapes.
+
+**Three naming and placement details worth recording:**
+
+- **`AdminUserFeedbackPanel`, not `AdminUserFeedback`** — that name is already
+  taken by the "Gi oss tilbakemelding" widget in the admin shell. Components
+  register in one flat namespace (`pathPrefix: false`), so the directory does
+  **not** disambiguate them; a collision would have silently shadowed one.
+- **The `gql()` mutation definitions travelled with their callers.** Codegen
+  globs the whole frontend, so they generate from anywhere — but leaving
+  `SyncUser` in a page that no longer calls it is the same dead-reference
+  problem as any other orphan.
+- **The two "showing N of M" notices are now derived** from the rows actually
+  present rather than hardcoded. That is what made the feedback panel's old
+  claim of "Viser 10" wrong while it rendered up to 100; the component cannot
+  restate a number it does not have.
+
+The truncation notices also fixed the score journal's inherited-by-copy version,
+which said "Viser 100" for the same reason.
+
+Gate: typecheck 0, lint 0 errors, 604 unit + 218 component, build exit 0. The
+boundary tests (`domain-boundary`, `shared-root`, `layers`) pass unchanged —
+worth checking explicitly, since six new components in a layer is exactly the
+shape those tests police.
+
+**`my-church/units.vue` (1,109) is now the only remaining #4 outlier.**
 
 ### 2026-09-21 — user page: scope names, width cap, consents sorted
 
