@@ -26,21 +26,26 @@ stubs.
 
 ## Where this stands (2026-09-21)
 
-| # | Item | State |
-| --- | --- | --- |
-| 1 | Hardcoded query limits | 1 done, 3 deliberately left, 10 open — 4 of those are pickers/dropdowns wanting a searchable select, not pages |
-| 2 | Loading / empty / error states | **done** — 13 tables + 17 pages |
-| 3 | Search, filter, sort | filtering on 6 lists; **sorting untouched** |
-| 4 | The 1,000-line outliers | half — `users/[userId]` split into 6 components; `my-church/units.vue` remains |
-| 5 | `church-admin` navigation | **untouched** — the biggest single-surface gap left |
-| 6 | Archived projects | **done** |
-| 7 | Container queries in components | **done** |
+| #   | Item                            | State                                                                                                          |
+| --- | ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| 1   | Hardcoded query limits          | 1 done, 3 deliberately left, 10 open — 4 of those are pickers/dropdowns wanting a searchable select, not pages |
+| 2   | Loading / empty / error states  | **done** — 13 tables + 17 pages                                                                                |
+| 3   | Search, filter, sort            | filtering on 6 lists; **sorting untouched**                                                                    |
+| 4   | The 1,000-line outliers         | half — `users/[userId]` split into 6 components; `my-church/units.vue` remains                                 |
+| 5   | `church-admin` navigation       | **untouched** — the biggest single-surface gap left                                                            |
+| 6   | Archived projects               | **done**                                                                                                       |
+| 7   | Container queries in components | **done**                                                                                                       |
 
 Shared machinery built along the way, all with tests:
 `AdminListView` + `useListState` (toolbar, footer, URL state, pagination reset),
 `AdminQueryState` (loading/error/content, refetch-safe), `AdminTableEmpty` /
-`AdminTableLoading`, `AdminSparkline`. `RelayPagination` was folded into
+`AdminTableLoading`, `AdminSection` (heading + raised surface, replaces `UCard`
+for page content), `AdminSparkline`. `RelayPagination` was folded into
 `AdminListView` and deleted.
+
+**Open sweep, not yet started:** nine admin pages still use `UCard` as a section
+container and could move to `AdminSection` — `churches/[churchId]`,
+`consents/[consentId]`, the project detail pages, the maintenance tools.
 
 Pages given real work: `/admin` (rebuilt), `users/index`, `users/[userId]`
 (+ 6 components), `feedback`, `challenges`, `teams`, `scores`,
@@ -49,6 +54,38 @@ Pages given real work: `/admin` (rebuilt), `users/index`, `users/[userId]`
 **If you are picking this up:** #5 is the obvious next move — seven
 `my-church/**` pages on a layout with no navigation at all, and it brings
 `units.vue` (the last #4 outlier) with it.
+
+### Unverified by the author, needs a human
+
+Written down because the admin panel requires an Auth0 session, so none of it
+could be exercised from the terminal:
+
+- **The user detail page's mutations.** Add/revoke a role, withdraw a consent,
+  sync, church lock. During the six-component split these moved from direct
+  `refetch()` calls to emitted `changed` events, so the wiring is new even
+  though the handlers are not.
+- **The sparklines against real data.** Every screenshot of them was a local
+  stub. `Project.activityTrend` and the gap-filling are unit-tested, but the
+  path from SQL through the resolver into the chart has only run against a
+  project with _no_ recent activity, where the component takes the empty branch
+  and the plot is never drawn.
+- **Light mode generally.** It was checked for the section surfaces after the
+  fact, and not at all for the home dashboard, the list toolbars or the
+  sparkline colours.
+
+### Known open risks
+
+- **`achievements/index.vue` truncates silently at `first: 50`** and is the
+  highest such risk left, since reading achievements multiply with articles.
+  Cause and preferred fix (a dedicated reorder mode) are in #1.
+- **`adminDashboardStats.activeProjectsCount` disagreed with the frontend's own
+  "is this project running" logic** — it rendered 0 while a project was active.
+  The card using it was deleted, so this is latent rather than visible.
+- **`schema.sql` documents 46 of 83 tables.** See `notes/04-database.md`; the
+  fix is generating it, not hand-patching.
+- **`setLocale('nb')` in `layouts/admin.vue`** permanently switches a
+  non-Norwegian end user's _consumer_ app language. Survives the no-i18n
+  decision because it is a consumer-app bug.
 
 ---
 
@@ -199,6 +236,27 @@ In practice:
    unnamed queries. That is usually what you want; when it is not, name them
    (`@container/card` + `@md/card:`).
 
+### Raised surfaces are white in light mode, tinted in dark
+
+The admin shell sets the page ground to `bg-neutral-100 dark:bg-neutral-950`
+(`layouts/admin.vue`) — deliberately **one step behind the surfaces in both
+modes**, a decision from the restructure work. So "raised" means the _opposite
+direction_ per mode:
+
+| Mode  | Page ground                | A raised surface             |
+| ----- | -------------------------- | ---------------------------- |
+| light | `neutral-100` (grey)       | `bg-default` — **white**     |
+| dark  | `neutral-950` (near black) | `bg-elevated` — lighter grey |
+
+A grey tint on light is therefore _darker_ than the page and reads as **sunk
+into** it rather than lifted off it. `bg-elevated/40` alone looks right in dark
+and wrong in light, which is exactly the mistake `AdminSection` made — see the
+log.
+
+**Check both modes before judging any surface treatment.** Nothing about
+"a subtle background" is mode-independent when the ground sits behind the
+surfaces by design.
+
 ---
 
 ## Cross-cutting work
@@ -219,22 +277,22 @@ than a plain grid, and a picker or dropdown wants a searchable select rather
 than pages. The `Verdict` column records the call per site so it is not
 re-litigated.
 
-| Page                                                | Limit                   | Verdict                                                                                 |
-| --------------------------------------------------- | ----------------------- | --------------------------------------------------------------------------------------- |
-| `projects/[projectId]/challenges/index.vue`         | ~~`first: 50`~~         | ☑ **done** — paginated + type filter                                                    |
-| `projects/[projectId]/achievements/index.vue`       | `first: 50`             | **left alone** — reorder does not compose with paging; **highest truncation risk left** |
-| `projects/[projectId]/superteams/index.vue`         | `first: 50`             | **left** — no categorical facet in `SuperTeamFilter`, ~5 per project                    |
-| `projects/[projectId]/events/index.vue`             | `first: 50`             | **left** — as above, plus events are barely used                                        |
-| `my-church/units.vue`                               | `first: 1000`           | open — also an outlier (#4), on the `church-admin` layout                               |
-| `my-church/admins.vue`                              | `first: 500`            | open — has client-side fuzzy search                                                     |
-| `projects/[projectId]/superteams/[superTeamId].vue` | `first: 200` (teams)    | open — **picker**; wants a searchable select, not pages                                 |
-| `users/[userId]/achievements.vue`                   | `first: 200`            | open — **picker**, as above                                                             |
-| `projects/index.vue`                                | `first: 100`            | open — card grid                                                                        |
-| `users/[userId]/index.vue` | ~~`first: 100`~~ (feedback) | ☑ **done** — `first: 10`, matching the panel's own notice |
-| `projects/[projectId]/challenges/new.vue`           | `first: 100` (events)   | open — **dropdown**                                                                     |
-| `projects/[projectId]/superteams/distribute.vue`    | `first: 100` (events)   | open — **dropdown**                                                                     |
-| `maintenance/check-points-journal.vue`              | `first: 50`             | open — table                                                                            |
-| `maintenance/fix-content-progress.vue`              | `first: 50`             | open — table                                                                            |
+| Page                                                | Limit                       | Verdict                                                                                 |
+| --------------------------------------------------- | --------------------------- | --------------------------------------------------------------------------------------- |
+| `projects/[projectId]/challenges/index.vue`         | ~~`first: 50`~~             | ☑ **done** — paginated + type filter                                                    |
+| `projects/[projectId]/achievements/index.vue`       | `first: 50`                 | **left alone** — reorder does not compose with paging; **highest truncation risk left** |
+| `projects/[projectId]/superteams/index.vue`         | `first: 50`                 | **left** — no categorical facet in `SuperTeamFilter`, ~5 per project                    |
+| `projects/[projectId]/events/index.vue`             | `first: 50`                 | **left** — as above, plus events are barely used                                        |
+| `my-church/units.vue`                               | `first: 1000`               | open — also an outlier (#4), on the `church-admin` layout                               |
+| `my-church/admins.vue`                              | `first: 500`                | open — has client-side fuzzy search                                                     |
+| `projects/[projectId]/superteams/[superTeamId].vue` | `first: 200` (teams)        | open — **picker**; wants a searchable select, not pages                                 |
+| `users/[userId]/achievements.vue`                   | `first: 200`                | open — **picker**, as above                                                             |
+| `projects/index.vue`                                | `first: 100`                | open — card grid                                                                        |
+| `users/[userId]/index.vue`                          | ~~`first: 100`~~ (feedback) | ☑ **done** — `first: 10`, matching the panel's own notice                               |
+| `projects/[projectId]/challenges/new.vue`           | `first: 100` (events)       | open — **dropdown**                                                                     |
+| `projects/[projectId]/superteams/distribute.vue`    | `first: 100` (events)       | open — **dropdown**                                                                     |
+| `maintenance/check-points-journal.vue`              | `first: 50`                 | open — table                                                                            |
+| `maintenance/fix-content-progress.vue`              | `first: 50`                 | open — table                                                                            |
 
 **`AdminListView` + `useListState` are the tool** — see the 2026-09-21 log
 entries. `RelayPagination` was folded into them and deleted. Five pages are on
@@ -288,14 +346,14 @@ dependency on the user design system (see the restructure note).
 **Filtering: six lists now have it**, each taking a facet from what its own
 filter input already supported (2026-09-21):
 
-| List | Filter |
-| --- | --- |
-| `users/index.vue` | debounced server-side `query` + church |
-| `feedback/index.vue` | tags, platform, handled (tri-state) |
-| `challenges/index.vue` | challenge type |
-| `teams/index.vue` | superteam, incl. "uten superlag" |
-| `scores/index.vue` | source type |
-| `maintenance/bulk-jobs.vue` | status, operation type |
+| List                        | Filter                                 |
+| --------------------------- | -------------------------------------- |
+| `users/index.vue`           | debounced server-side `query` + church |
+| `feedback/index.vue`        | tags, platform, handled (tri-state)    |
+| `challenges/index.vue`      | challenge type                         |
+| `teams/index.vue`           | superteam, incl. "uten superlag"       |
+| `scores/index.vue`          | source type                            |
+| `maintenance/bulk-jobs.vue` | status, operation type                 |
 
 All six are on `AdminListView` + `useListState`, so their state is URL-synced.
 `my-church/admins.vue` keeps its own client-side fuzzy search (different
@@ -574,19 +632,19 @@ then `make generate` and `pnpm codegen`.
 
 ### Top level
 
-| Page                              | Route                       | LOC      | St. | Notes                                                                                                         |
-| --------------------------------- | --------------------------- | -------- | --- | ------------------------------------------------------------------------------------------------------------- |
-| `index.vue`                       | `/admin`                    | 134      | ◐   | **Plan agreed — see Page plans.** Three bugs to fix first. No breadcrumb by design (one crumb = a title).     |
-| `projects/index.vue`              | `/admin/projects`           | 119      | ☐   | Card grid, container queries done. No search; `first: 100`.                                                   |
-| `projects/new.vue`                | `/admin/projects/new`       | 167      | ☐   |                                                                                                               |
-| `users/index.vue`                 | `/admin/users`              | 199      | ◐   | **On `AdminListView`** — the reference conversion. Search + church filter + URL state.                        |
-| `users/[userId]/index.vue`        | `/admin/users/:userId`      | 240      | ◐   | Split into 6 `AdminUser*` components; identity header; 4 bugs fixed. No longer an outlier.                     |
-| `users/[userId]/achievements.vue` | `…/achievements`            | 389      | ☐   | `first: 200` picker — see #1, wants a searchable select, not pagination.                                      |
-| `churches/[churchId].vue`         | `/admin/churches/:churchId` | 175      | ☐   | Drill-down leaf by design — no list page, no nav entry (decision recorded in restructure note).               |
-| `consents/index.vue`              | `/admin/consents`           | 109      | ☐   | Plain list (`[Consent!]!`), not a connection — off `AdminListView` by decision, see log. Sibling empty state. |
-| `consents/[consentId].vue`        | `/admin/consents/:id`       | 305      | ☐   |                                                                                                               |
-| `consents/new.vue`                | `/admin/consents/new`       | 187      | ☐   |                                                                                                               |
-| `feedback/index.vue`              | `/admin/feedback`           | 601      | ◐   | **On `AdminListView`.** Three facets + URL state; realtime via Firestore. Largest list page.                  |
+| Page                              | Route                       | LOC | St. | Notes                                                                                                         |
+| --------------------------------- | --------------------------- | --- | --- | ------------------------------------------------------------------------------------------------------------- |
+| `index.vue`                       | `/admin`                    | 134 | ◐   | **Plan agreed — see Page plans.** Three bugs to fix first. No breadcrumb by design (one crumb = a title).     |
+| `projects/index.vue`              | `/admin/projects`           | 119 | ☐   | Card grid, container queries done. No search; `first: 100`.                                                   |
+| `projects/new.vue`                | `/admin/projects/new`       | 167 | ☐   |                                                                                                               |
+| `users/index.vue`                 | `/admin/users`              | 199 | ◐   | **On `AdminListView`** — the reference conversion. Search + church filter + URL state.                        |
+| `users/[userId]/index.vue`        | `/admin/users/:userId`      | 240 | ◐   | Split into 6 `AdminUser*` components; identity header; 4 bugs fixed. No longer an outlier.                    |
+| `users/[userId]/achievements.vue` | `…/achievements`            | 389 | ☐   | `first: 200` picker — see #1, wants a searchable select, not pagination.                                      |
+| `churches/[churchId].vue`         | `/admin/churches/:churchId` | 175 | ☐   | Drill-down leaf by design — no list page, no nav entry (decision recorded in restructure note).               |
+| `consents/index.vue`              | `/admin/consents`           | 109 | ☐   | Plain list (`[Consent!]!`), not a connection — off `AdminListView` by decision, see log. Sibling empty state. |
+| `consents/[consentId].vue`        | `/admin/consents/:id`       | 305 | ☐   |                                                                                                               |
+| `consents/new.vue`                | `/admin/consents/new`       | 187 | ☐   |                                                                                                               |
+| `feedback/index.vue`              | `/admin/feedback`           | 601 | ◐   | **On `AdminListView`.** Three facets + URL state; realtime via Firestore. Largest list page.                  |
 
 ### Project-scoped (`/admin/projects/:projectId/…`)
 
@@ -650,6 +708,44 @@ then `make generate` and `pnpm codegen`.
 
 ## Update log
 
+### 2026-09-21 — `AdminSection` replaces `UCard` for page content (5 attempts)
+
+The user's observation: "everything boxed in a card / box… would it be better to
+have simple sections with headers instead?" Correct — and the rows inside those
+cards were _themselves_ boxed, so every item wore chrome twice and five stacked
+cards read as five competing panels rather than one page.
+
+**`AdminSection`** is a heading (with optional count and `#actions`) above a
+soft surface holding the content. All six `AdminUser*` panels use it; no `UCard`
+remains in them.
+
+**It took five attempts, and the record is the useful part:**
+
+1. `UCard` per section, boxed rows inside — box chrome twice over.
+2. A rule _above_ each heading plus a divider per row — **~35 horizontal lines**
+   on a user with a full points journal. I had replaced box chrome with line
+   chrome.
+3. No lines at all — defensible in dark mode, **completely flat in light**,
+   where everything sits on white and nothing groups a section.
+4. A hairline under each heading — better, still thin grouping on white.
+5. A soft surface behind the content, heading outside it — with the surface
+   **white in light** and tinted in dark, per the new Conventions rule.
+
+**The thing I should have done differently: I judged versions 1–4 in dark mode
+only.** The light-mode screenshot was the first time the actual constraint was
+visible, and that constraint is what decided the answer. Four of the five
+iterations were avoidable. The convention above is written so the next person
+starts from the relationship rather than from a colour.
+
+Dividers survive _inside_ the two long logs only (`divide-default/60`), where
+they help scan 24 rows. Short lists — teams, roles, consents at 1-4 rows — have
+none.
+
+`AdminSection` is shared, and **nine admin pages still use `UCard` as a section
+container** (`churches/[churchId]`, `consents/[consentId]`, the project detail
+pages, the maintenance tools). Not swept: worth confirming the treatment reads
+right on one page first, which it now does.
+
 ### 2026-09-21 — role-assignment dialog: pick the scope, don't type its ULID
 
 The dialog asked for a scope **type** the role already determines, and then for
@@ -688,15 +784,15 @@ stub. Component 218 → 225.
 `users/[userId]/index.vue`: **1,182 → 240 lines**, and the template is now a
 list of six panels with nothing else in it.
 
-| Component | Lines | Owns |
-| --- | --- | --- |
-| `AdminUserIdentity` | 330 | header, technical details, sync + church lock (3 mutations) |
-| `AdminUserConsents` | 248 | the three-shape normalisation, withdrawal modal (1 mutation) |
-| `AdminUserRoles` | 236 | role list, scope naming, add/revoke modal (2 mutations) |
-| `AdminUserScoreJournal` | 86 | journal list, source-type labels |
-| `AdminUserFeedbackPanel` | 82 | feedback list |
-| `AdminUserTeams` | 41 | team list |
-| the page | 240 | two queries, the breadcrumb, and wiring |
+| Component                | Lines | Owns                                                         |
+| ------------------------ | ----- | ------------------------------------------------------------ |
+| `AdminUserIdentity`      | 330   | header, technical details, sync + church lock (3 mutations)  |
+| `AdminUserConsents`      | 248   | the three-shape normalisation, withdrawal modal (1 mutation) |
+| `AdminUserRoles`         | 236   | role list, scope naming, add/revoke modal (2 mutations)      |
+| `AdminUserScoreJournal`  | 86    | journal list, source-type labels                             |
+| `AdminUserFeedbackPanel` | 82    | feedback list                                                |
+| `AdminUserTeams`         | 41    | team list                                                    |
+| the page                 | 240   | two queries, the breadcrumb, and wiring                      |
 
 **Each panel owns its own mutations and modals, and emits `changed`** for the
 page to refetch. That is what made the split worth doing rather than cosmetic:
@@ -736,7 +832,7 @@ shape those tests police.
 `RoleScope` (`gql/roles.graphqls:5`) already resolves `church`, `project` and
 `team` server-side — the query only asked for `{ id type }`, so the card showed
 `Omfang: Church (CH01K9VZ865699692N7FVTXYR4AQ)`. It now reads
-`Church — Østfold`. The id survives as the *fallback*, not the default: a scope
+`Church — Østfold`. The id survives as the _fallback_, not the default: a scope
 pointing at something deleted still has to render, and then the raw id is the
 only honest thing left.
 
@@ -751,7 +847,7 @@ had to track across empty space to see what you were about to remove. That
 distance was the real cost, not the emptiness.
 
 **3. Consents are one list, grouped by sorting.** Three sub-headings
-(Ventende / Akseptert / Avvist) each wrapped rows that *already* carried a badge
+(Ventende / Akseptert / Avvist) each wrapped rows that _already_ carried a badge
 saying the same word. Now sorted by status — pending first, since it is the only
 one wanting an admin to act — then alphabetically within each.
 
@@ -780,7 +876,7 @@ useful.**
 - **Role badges in the header were strictly redundant, and worse than what they
   duplicated.** They rendered raw enums (`CHURCH_ADMIN`, `TEAM_LEAD`) while the
   "Roller og tillatelser" card one screen below shows the same roles with proper
-  Norwegian labels *plus* their scope and a delete action. The page already had
+  Norwegian labels _plus_ their scope and a delete action. The page already had
   a `roleLabels` map I did not use. Removed.
 - **"Østfold 25 år nb" ran together as one string.** The old labelled rows were
   scannable and I traded that for compactness; a bare `nb` also says nothing to
@@ -789,7 +885,7 @@ useful.**
   app uses `nb`) into `Intl.DisplayNames`, so it reads "norsk bokmål".
 - **Menighetslås was over-promoted.** It had been hiding as the third `dt`
   inside a definition list, so I gave it a full-width card — which put the
-  *rarest* action on the page in its second-most prominent slot. It is now a
+  _rarest_ action on the page in its second-most prominent slot. It is now a
   compact labelled row sharing a quiet line with "Tekniske detaljer", with the
   state still spelled out rather than reading "Synk-lås: Ikke låst".
 
@@ -806,7 +902,7 @@ changes are the first three items of the agreed plan.
    URL and no `UAvatar` existed on the page. Same class as the `logoImage` bug
    on the project cards: paid for, dropped. On a page about a person it is the
    fastest identity cue available.
-2. **`email` was not fetched at all** — while the users *list* shows it under
+2. **`email` was not fetched at all** — while the users _list_ shows it under
    every name. The detail page therefore displayed **less** identifying
    information than the row that links to it.
 3. **Points were project-scoped and presented as global.** Both
@@ -816,7 +912,7 @@ changes are the first three items of the agreed plan.
 4. **The feedback panel's own notice was untrue.** It rendered
    `Viser 10 av N oppføringer` while `feedbackEntries` was unsliced over a
    `first: 100` query — so it showed up to 100 rows and claimed 10. The query is
-   `first: 10` now, which makes the notice true *and* removes a 100-row wall
+   `first: 10` now, which makes the notice true _and_ removes a 100-row wall
    from a panel that already links to the full feedback page. A label that lies
    is worse than a missing one.
 
@@ -827,13 +923,13 @@ changes are the first three items of the agreed plan.
   page — a single string — while church, roles, teams and points all sat below
   the fold.
 - **Machine identifiers are collapsed** behind "Tekniske detaljer" (user ULID,
-  Members-ID, Members-UUID, church ID, created-at). They had been the *first*
+  Members-ID, Members-UUID, church ID, created-at). They had been the _first_
   block on the page, above age, language and church: support aids in the prime
   position, the same irrelevant-first pattern as the old dashboard counters.
   Still one click away.
 - **Church sync-lock got its own row.** It was the third `dt` inside a
   definition list about the church — a real, consequential admin action hiding
-  in reference data. It now states what the lock *means* ("synk fra Members
+  in reference data. It now states what the lock _means_ ("synk fra Members
   endrer ikke menighet") rather than just "Synk-lås: Ikke låst", and is gated on
   `canAssignRoles`.
 
@@ -853,10 +949,10 @@ Splitting it is the prerequisite for the rest.
 runs its effect **synchronously on creation**. Both pages call
 
 ```ts
-useAdminPage(() => data.value?.user.name)
+useAdminPage(() => data.value?.user.name);
 ```
 
-*above* the query that declares `data` — not carelessly: the main query needs a
+_above_ the query that declares `data` — not carelessly: the main query needs a
 project id computed from a first query, so the natural reading order puts the
 breadcrumb line before it. Evaluating the getter mid-setup reads `data` in its
 temporal dead zone and throws, and Nuxt renders that as a 500 page rather than
@@ -882,7 +978,7 @@ only rewrote templates.
 **Two things this exposed about my own detection.** A first scan for
 use-before-declare reported only `achievements.vue`, missing `index.vue`
 entirely, because `data` is bound in a multi-line destructure. A second,
-broader scan reported *zero* — it matched
+broader scan reported _zero_ — it matched
 `const { data: currentProjectData } = …` and concluded `data` was declared
 above, when that line binds `currentProjectData`. The bug was found by reading
 the file, not by either scan. Renaming destructures defeat naive
