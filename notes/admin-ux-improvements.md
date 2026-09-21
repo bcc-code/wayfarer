@@ -28,7 +28,7 @@ stubs.
 
 ## Scope decisions
 
-Settled, so they do not get re-raised. All three remove or redirect work the
+Settled, so they do not get re-raised. Each one removes or redirects work the
 inventory had flagged.
 
 **No i18n in the admin panel.** Everyone who works in admin is Norwegian, so
@@ -70,6 +70,32 @@ are opened at specific points in a bible study to introduce interactivity;
 stretches with nothing active are the normal state of a running project. Any
 health signal built on challenge counts is therefore wrong by construction —
 absence of activity carries no information here.
+
+**Pagination is cursor-based, and stays that way.** Keyset/Relay cursors are the
+convention; offset pagination is not wanted. Confirmed by the user 2026-09-21,
+which closes this as a decision rather than a deferred option.
+
+Consequences, since two of them are easy to get wrong:
+
+- **Numbered pages are out permanently.** Every data-table reference we looked
+  at shows `1 2 3 … 7`, and jumping to page 5 requires an `OFFSET` the
+  convention rules out. `AdminListView`'s Forrige/Neste plus a position readout
+  is the end state, not a placeholder.
+- **The `from` URL param is a display-only offset.** It feeds the
+  "Viser 16–30 av 13 477" label and is **never sent to the API** — the query
+  variables remain `first`/`after` or `last`/`before`. Counting steps
+  client-side is what makes the label possible at all; it is not offset
+  pagination sneaking in.
+- **Sorting is still possible, but it is a compound-cursor change, not an
+  offset one.** Ordering by name means the cursor has to encode `(name, id)` —
+  the sort key plus a stable tiebreaker — because "after this row" is only
+  well-defined relative to the ordering. Today's cursor is `base64(id)` alone
+  (`internal/graph/pagination/cursor.go:15`), so adding sort means widening the
+  cursor, not adding `OFFSET`. Worth knowing before starting.
+- **Do not cite `external_content` as precedent.** Its SQL has `queryoffset`
+  and it has an `ExternalContentSortBy` enum, but no admin page drives either —
+  `AdminContentItemSelector` just asks for `first: 500`. It is the exception,
+  not the pattern to follow.
 
 **Project events are rarely used.** Do not build anything that assumes they
 are populated. Confirmed by the user 2026-09-21, and consistent with what the
@@ -584,21 +610,21 @@ a page that adds a second filter and forgets to extend that watch asks for page
 4 of a one-page result and gets an empty table with no error. Mutation-checked —
 disabling the reset fails exactly the two reset cases.
 
-**The page position *is* in the URL, and my first answer that it should not be
+**The page position _is_ in the URL, and my first answer that it should not be
 was wrong.** I told the user a cursor "shifts as data changes" and would
 "silently land somewhere else later". That is backwards. The cursor is
 `base64(id)` (`internal/graph/pagination/cursor.go:15`) and the SQL is
 `WHERE u.id > @aftercursor` — a **comparison, not a lookup**. So a keyset cursor
 means "the rows after user X" regardless of inserts or deletes before it, and it
-still resolves if user X is deleted. A page *number* is the thing that shifts.
+still resolves if user X is deleted. A page _number_ is the thing that shifts.
 
-What a cursor genuinely cannot carry is the position *label*, which is the real
+What a cursor genuinely cannot carry is the position _label_, which is the real
 obstacle and a much smaller one: `from=<offset>` rides along for the "Viser
 16–30" text, and a stale `from` mislabels a correct page rather than showing the
 wrong rows.
 
 The shape that made it exact: **persist the pagination variables, not a page
-number.** With keyset pagination the variables *are* the position, so
+number.** With keyset pagination the variables _are_ the position, so
 `?after=<cursor>&from=15` (or `before` for backward) round-trips precisely, with
 no cursor stack and no walking. `usePagination.restore()` applies it before the
 first query, so a deep link fetches the right page once rather than fetching
@@ -609,16 +635,15 @@ filters **must** reset the position; `after`/`before`/`from`/`size` **must not**
 or the list could never leave page 1. Both directions are pinned by tests.
 
 **Position display needed no backend change either** — another thing I had
-assumed. Keyset cannot *report* a position, but it can be counted: `nextOffset`
+assumed. Keyset cannot _report_ a position, but it can be counted: `nextOffset`
 / `previousOffset` track steps, and `pageRange` derives "Viser 16–30 av 13 477"
 from the offset plus the rows actually returned (so a short final page does not
-overshoot). Only *jumping* to an arbitrary page needs `OFFSET` on the backend.
+overshoot). Only _jumping_ to an arbitrary page needs `OFFSET` on the backend.
 
-**Still not possible without backend work**, and worth stating plainly since all
-four references show both: **numbered pages** (needs `OFFSET`) and **column
-sorting** (nothing in `gql/` takes a sort argument for these entities). The
-in-repo precedent is `external_content`, which has `queryoffset` and an
-`ExternalContentSortBy` enum — so extending the pattern, not inventing one.
+**Numbered pages and column sorting were left open here and have since been
+settled** — see Scope decisions. Numbered pages are **out**: they need `OFFSET`,
+and cursor pagination is the convention. Sorting remains possible but requires
+widening the cursor to encode the sort key, not adding `OFFSET`.
 
 **A bug in my own code that a test caught:** `useListState` compared page size
 against `pageSizes[0]` rather than the pagination's own default, so any list
@@ -703,7 +728,7 @@ shortcuts.
 **Backend.** `Project.activityTrend(days: Int = 14): [ProjectActivityPoint!]!`,
 fed by a new `GetProjectActivityTrend` query over **`score_journal`**. That table
 is the right source: it has `project_id` directly (no join), an index on
-`created_at`, and it records *every* point award — achievements, quizzes, manual
+`created_at`, and it records _every_ point award — achievements, quizzes, manual
 adjustments — so it reflects all activity rather than challenge completions
 alone.
 
@@ -730,8 +755,8 @@ Design choices worth keeping:
   resolution and not worth hardcoding a timezone in SQL for.
 - Ungated, like every other `Project` field. It is aggregate, not per-user.
 
-**Frontend.** Form picked from the `dataviz` skill: this is a *stat tile with a
-sparkline*, not a chart. Three of its rules changed what got built:
+**Frontend.** Form picked from the `dataviz` skill: this is a _stat tile with a
+sparkline_, not a chart. Three of its rules changed what got built:
 
 - **Two tiles, never one chart with two y-axes.** Points run to thousands and
   active users to dozens; a shared scale flattens one into the baseline. A
@@ -752,7 +777,7 @@ not use it even though the card's ring does.
 
 **The aggregates differ, and that is a correctness point, not a style one.**
 Points are additive so the window total is meaningful. Active users is a
-distinct count *per day* — summing it would count the same person once per day
+distinct count _per day_ — summing it would count the same person once per day
 they appeared — so it is shown as a daily average. `dailyAverage` exists only to
 make that impossible to get wrong by reflex, and a test pins it.
 
@@ -922,11 +947,11 @@ Three things worth keeping:
   first cut was a div, which threw away real semantics for nothing).
 
 **`UProgress`'s accessibility props are not attributes, and this is worth
-knowing before using it anywhere else.** `role="progressbar"` sits on an *inner*
+knowing before using it anywhere else.** `role="progressbar"` sits on an _inner_
 element (`data-slot="base"`), so an `aria-label` on the `<UProgress>` tag lands
 on the role-less outer wrapper and is silently ignored — while reka-ui's own
 default fills the real element with `aria-label="66%"`, i.e. a percentage as the
-element's *name*. The working levers are the props: `get-value-label` feeds that
+element's _name_. The working levers are the props: `get-value-label` feeds that
 element's `aria-label` and `get-value-text` its `aria-valuetext`. Found by a
 component test failing (`expected '50%' to contain 'Spring Revival'`) and
 confirmed against the rendered markup, not reasoned about — the attribute form
@@ -955,7 +980,7 @@ rather than left orphaned. Total users, total projects, total challenges, total
 points awarded — nobody running a project cares about any of them. Note that I
 had already written the diagnosis for this: the original page's two counters
 were criticised in this very note as "cumulative totals that never meaningfully
-move". I then fixed the *grid* they sat in and added two more of them. The
+move". I then fixed the _grid_ they sat in and added two more of them. The
 layout bug was real; fixing it was beside the point.
 
 `adminDashboardStats` now has no consumer in the frontend at all. The
@@ -973,7 +998,7 @@ The count stays as plain information, with no warning colour.
 
 Recorded as two scope decisions, because both generalise beyond this page: no
 global all-time counters anywhere in admin, and no health signal built on the
-*absence* of challenge activity. The surviving lifecycle detectors in item 2 are
+_absence_ of challenge activity. The surviving lifecycle detectors in item 2 are
 the ones that flag a **contradiction** (published but never visible; ended but
 still active) rather than an absence — that distinction is the whole reason they
 are still worth building.
@@ -997,12 +1022,12 @@ tests green, `pnpm build` exit 0.
    six fields the schema exposes, instead of 2 cards in a `lg:grid-cols-4` that
    left half the row empty.
 3. The page no longer breaks for a `project_admin`. **One query per concern**
-   instead of one per page: `adminDashboardStats` and `feedback` are *both*
+   instead of one per page: `adminDashboardStats` and `feedback` are _both_
    `@requireRole(["admin","superadmin"])`, so the single document had two fields
    a project admin cannot read — I had only found one when writing the plan.
    Each is now its own document, paused behind a permission flag.
 4. **New:** `AdminProjectCard` reads `branding.logoImage?.url`, but the home page
-   *and* the projects list both queried the deprecated `branding.logo`. Project
+   _and_ the projects list both queried the deprecated `branding.logo`. Project
    logos have therefore never rendered on any card, silently. Both queries now
    ask for `logoImage { url }`.
 
@@ -1026,7 +1051,7 @@ each entry's **tags** as badges.
 
 **A constraint the plan got wrong, worth knowing before item 2.** The note
 listed participants and teams as queryable per project. They are queryable for
-*one* project via the root `users`/`teams` connections, but **not for N projects
+_one_ project via the root `users`/`teams` connections, but **not for N projects
 in a single document** — `Project` has no participant or team count field, and
 GraphQL has no dynamic aliasing. So the vitals card ships with
 `activeChallengesCount` (a real `Project` field) plus dates and countdown, and
