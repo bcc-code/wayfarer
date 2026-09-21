@@ -132,174 +132,174 @@ async function publishConsent() {
 <template>
   <div>
     <div>
-      <AdminLoadingState v-if="fetching" />
-      <AdminErrorState v-else-if="error" :error />
-      <div v-else-if="data" class="space-y-6">
-        <!-- Consent Header -->
-        <div class="flex items-start justify-between">
-          <div>
-            <div class="mb-2 flex items-center gap-3">
-              <h1 class="text-3xl font-bold">{{ data.consent.title }}</h1>
-              <UBadge variant="soft"> v{{ data.consent.version }} </UBadge>
-              <UBadge
+      <AdminQueryState :fetching :error>
+        <div v-if="data" class="space-y-6">
+          <!-- Consent Header -->
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="mb-2 flex items-center gap-3">
+                <h1 class="text-3xl font-bold">{{ data.consent.title }}</h1>
+                <UBadge variant="soft"> v{{ data.consent.version }} </UBadge>
+                <UBadge
+                  v-if="!data.consent.publishedAt"
+                  variant="soft"
+                  color="warning"
+                >
+                  Utkast
+                </UBadge>
+              </div>
+              <p class="text-dimmed">{{ data.consent.shortText }}</p>
+            </div>
+            <div class="flex gap-2">
+              <UButton
                 v-if="!data.consent.publishedAt"
                 variant="soft"
-                color="warning"
+                color="success"
+                @click="publishConsent"
               >
-                Utkast
-              </UBadge>
+                Publiser
+              </UButton>
+              <UButton v-if="!isEditing" variant="soft" @click="startEditing">
+                Rediger
+              </UButton>
             </div>
-            <p class="text-dimmed">{{ data.consent.shortText }}</p>
           </div>
-          <div class="flex gap-2">
-            <UButton
-              v-if="!data.consent.publishedAt"
-              variant="soft"
-              color="success"
-              @click="publishConsent"
+
+          <!-- Edit Form -->
+          <UCard v-if="isEditing">
+            <template #header>
+              <h2 class="text-xl font-semibold">Rediger samtykke</h2>
+            </template>
+            <div class="space-y-4">
+              <AdminTranslatableFormField
+                label="Tittel"
+                :translation-status="data?.consent.translationStatus"
+                name="title"
+              >
+                <UInput v-model="editState.title" class="w-full" />
+              </AdminTranslatableFormField>
+              <AdminTranslatableFormField
+                label="Kort tekst"
+                :translation-status="data?.consent.translationStatus"
+                name="shortText"
+              >
+                <UTextarea
+                  v-model="editState.shortText"
+                  class="w-full"
+                  autoresize
+                  placeholder="En kort beskrivelse som vises før brukere leser hele samtykket"
+                />
+              </AdminTranslatableFormField>
+              <AdminTranslatableFormField
+                label="Innhold (Markdown)"
+                :translation-status="data?.consent.translationStatus"
+                name="body"
+              >
+                <UTextarea
+                  v-model="editState.body"
+                  class="w-full font-mono"
+                  :rows="10"
+                  autoresize
+                />
+              </AdminTranslatableFormField>
+              <UFormField label="URL (valgfritt)">
+                <UInput
+                  v-model="editState.url"
+                  class="w-full"
+                  type="url"
+                  placeholder="https://..."
+                />
+              </UFormField>
+              <UFormField label="Administreres av (valgfritt)">
+                <UInput
+                  v-model="editState.managedBy"
+                  class="w-full"
+                  placeholder="Ekstern systemidentifikator"
+                />
+              </UFormField>
+            </div>
+            <template #footer>
+              <div class="flex justify-end gap-3">
+                <UButton variant="ghost" @click="cancelEditing">Avbryt</UButton>
+                <UButton @click="saveChanges">Lagre endringer</UButton>
+              </div>
+            </template>
+          </UCard>
+
+          <!-- Consent Info -->
+          <dl class="text-sm">
+            <div class="border-default flex gap-6 border-b py-2">
+              <dt class="text-muted w-24 shrink-0">Samtykke-ID</dt>
+              <dd class="font-mono">{{ data.consent.id }}</dd>
+            </div>
+            <div class="border-default flex gap-6 border-b py-2">
+              <dt class="text-muted w-24 shrink-0">Nøkkel</dt>
+              <dd>
+                <code class="bg-background-indent rounded px-2 py-1">
+                  {{ data.consent.key }}
+                </code>
+              </dd>
+            </div>
+            <div class="border-default flex gap-6 border-b py-2">
+              <dt class="text-muted w-24 shrink-0">Versjon</dt>
+              <dd class="font-medium">{{ data.consent.version }}</dd>
+            </div>
+            <div class="border-default flex gap-6 border-b py-2">
+              <dt class="text-muted w-24 shrink-0">Publisert</dt>
+              <dd v-if="data.consent.publishedAt" class="font-medium">
+                {{ formatDateTime(data.consent.publishedAt) }}
+              </dd>
+              <dd v-else class="text-muted">Ikke publisert</dd>
+            </div>
+            <div class="border-default flex gap-6 border-b py-2">
+              <dt class="text-muted w-24 shrink-0">Type</dt>
+              <dd>
+                <UBadge
+                  :color="
+                    data.consent.managementType === 'LOCAL'
+                      ? 'primary'
+                      : 'neutral'
+                  "
+                  variant="soft"
+                >
+                  {{ data.consent.managementType }}
+                </UBadge>
+              </dd>
+            </div>
+            <div
+              v-if="data.consent.managedBy"
+              class="border-default flex gap-6 border-b py-2"
             >
-              Publiser
-            </UButton>
-            <UButton v-if="!isEditing" variant="soft" @click="startEditing">
-              Rediger
-            </UButton>
-          </div>
+              <dt class="text-muted w-24 shrink-0">Administrert av</dt>
+              <dd class="font-medium">{{ data.consent.managedBy }}</dd>
+            </div>
+            <div v-if="data.consent.url" class="flex gap-6 py-2">
+              <dt class="text-muted w-24 shrink-0">URL</dt>
+              <dd>
+                <a
+                  :href="data.consent.url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-primary hover:underline"
+                >
+                  {{ data.consent.url }}
+                </a>
+              </dd>
+            </div>
+          </dl>
+
+          <!-- Body Preview -->
+          <UCard>
+            <template #header>
+              <h2 class="text-xl font-semibold">Forhåndsvisning av innhold</h2>
+            </template>
+            <div
+              class="prose prose-sm dark:prose-invert max-w-none"
+              v-html="data.consent.body.html"
+            />
+          </UCard>
         </div>
-
-        <!-- Edit Form -->
-        <UCard v-if="isEditing">
-          <template #header>
-            <h2 class="text-xl font-semibold">Rediger samtykke</h2>
-          </template>
-          <div class="space-y-4">
-            <AdminTranslatableFormField
-              label="Tittel"
-              :translation-status="data?.consent.translationStatus"
-              name="title"
-            >
-              <UInput v-model="editState.title" class="w-full" />
-            </AdminTranslatableFormField>
-            <AdminTranslatableFormField
-              label="Kort tekst"
-              :translation-status="data?.consent.translationStatus"
-              name="shortText"
-            >
-              <UTextarea
-                v-model="editState.shortText"
-                class="w-full"
-                autoresize
-                placeholder="En kort beskrivelse som vises før brukere leser hele samtykket"
-              />
-            </AdminTranslatableFormField>
-            <AdminTranslatableFormField
-              label="Innhold (Markdown)"
-              :translation-status="data?.consent.translationStatus"
-              name="body"
-            >
-              <UTextarea
-                v-model="editState.body"
-                class="w-full font-mono"
-                :rows="10"
-                autoresize
-              />
-            </AdminTranslatableFormField>
-            <UFormField label="URL (valgfritt)">
-              <UInput
-                v-model="editState.url"
-                class="w-full"
-                type="url"
-                placeholder="https://..."
-              />
-            </UFormField>
-            <UFormField label="Administreres av (valgfritt)">
-              <UInput
-                v-model="editState.managedBy"
-                class="w-full"
-                placeholder="Ekstern systemidentifikator"
-              />
-            </UFormField>
-          </div>
-          <template #footer>
-            <div class="flex justify-end gap-3">
-              <UButton variant="ghost" @click="cancelEditing">Avbryt</UButton>
-              <UButton @click="saveChanges">Lagre endringer</UButton>
-            </div>
-          </template>
-        </UCard>
-
-        <!-- Consent Info -->
-        <dl class="text-sm">
-          <div class="border-default flex gap-6 border-b py-2">
-            <dt class="text-muted w-24 shrink-0">Samtykke-ID</dt>
-            <dd class="font-mono">{{ data.consent.id }}</dd>
-          </div>
-          <div class="border-default flex gap-6 border-b py-2">
-            <dt class="text-muted w-24 shrink-0">Nøkkel</dt>
-            <dd>
-              <code class="bg-background-indent rounded px-2 py-1">
-                {{ data.consent.key }}
-              </code>
-            </dd>
-          </div>
-          <div class="border-default flex gap-6 border-b py-2">
-            <dt class="text-muted w-24 shrink-0">Versjon</dt>
-            <dd class="font-medium">{{ data.consent.version }}</dd>
-          </div>
-          <div class="border-default flex gap-6 border-b py-2">
-            <dt class="text-muted w-24 shrink-0">Publisert</dt>
-            <dd v-if="data.consent.publishedAt" class="font-medium">
-              {{ formatDateTime(data.consent.publishedAt) }}
-            </dd>
-            <dd v-else class="text-muted">Ikke publisert</dd>
-          </div>
-          <div class="border-default flex gap-6 border-b py-2">
-            <dt class="text-muted w-24 shrink-0">Type</dt>
-            <dd>
-              <UBadge
-                :color="
-                  data.consent.managementType === 'LOCAL'
-                    ? 'primary'
-                    : 'neutral'
-                "
-                variant="soft"
-              >
-                {{ data.consent.managementType }}
-              </UBadge>
-            </dd>
-          </div>
-          <div
-            v-if="data.consent.managedBy"
-            class="border-default flex gap-6 border-b py-2"
-          >
-            <dt class="text-muted w-24 shrink-0">Administrert av</dt>
-            <dd class="font-medium">{{ data.consent.managedBy }}</dd>
-          </div>
-          <div v-if="data.consent.url" class="flex gap-6 py-2">
-            <dt class="text-muted w-24 shrink-0">URL</dt>
-            <dd>
-              <a
-                :href="data.consent.url"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="text-primary hover:underline"
-              >
-                {{ data.consent.url }}
-              </a>
-            </dd>
-          </div>
-        </dl>
-
-        <!-- Body Preview -->
-        <UCard>
-          <template #header>
-            <h2 class="text-xl font-semibold">Forhåndsvisning av innhold</h2>
-          </template>
-          <div
-            class="prose prose-sm dark:prose-invert max-w-none"
-            v-html="data.consent.body.html"
-          />
-        </UCard>
-      </div>
+      </AdminQueryState>
     </div>
   </div>
 </template>

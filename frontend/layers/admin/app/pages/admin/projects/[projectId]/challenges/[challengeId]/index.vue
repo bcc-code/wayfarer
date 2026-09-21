@@ -183,40 +183,40 @@ async function handleDelete() {
 <template>
   <div>
     <div>
-      <AdminLoadingState v-if="fetching" />
-      <AdminErrorState v-else-if="error" :error />
-      <div v-else-if="initialData" class="space-y-6">
-        <div class="flex gap-2">
-          <UButton
-            v-if="data?.challenge.__typename === 'QuizChallenge'"
-            variant="soft"
-            :to="{
-              name: 'admin-projects-projectId-challenges-challengeId-sessions',
-              params: {
-                projectId: route.params.projectId,
-                challengeId: route.params.challengeId,
-              },
-            }"
-          >
-            Sesjoner
-          </UButton>
-          <AdminChallengeQrModal
+      <AdminQueryState :fetching :error>
+        <div v-if="initialData" class="space-y-6">
+          <div class="flex gap-2">
+            <UButton
+              v-if="data?.challenge.__typename === 'QuizChallenge'"
+              variant="soft"
+              :to="{
+                name: 'admin-projects-projectId-challenges-challengeId-sessions',
+                params: {
+                  projectId: route.params.projectId,
+                  challengeId: route.params.challengeId,
+                },
+              }"
+            >
+              Sesjoner
+            </UButton>
+            <AdminChallengeQrModal
+              :challenge-id="route.params.challengeId"
+              :challenge-name="data?.challenge.name ?? ''"
+            />
+          </div>
+          <AdminChallengeForm
+            :initial-data="initialData"
+            :project-id="route.params.projectId"
             :challenge-id="route.params.challengeId"
-            :challenge-name="data?.challenge.name ?? ''"
+            :colors="data?.challenge.project.branding.colors"
+            :translation-status="data?.challenge.translationStatus ?? []"
+            submit-label="Lagre endringer"
+            is-edit-mode
+            :on-delete="handleDelete"
+            @submit="handleSubmit"
           />
         </div>
-        <AdminChallengeForm
-          :initial-data="initialData"
-          :project-id="route.params.projectId"
-          :challenge-id="route.params.challengeId"
-          :colors="data?.challenge.project.branding.colors"
-          :translation-status="data?.challenge.translationStatus ?? []"
-          submit-label="Lagre endringer"
-          is-edit-mode
-          :on-delete="handleDelete"
-          @submit="handleSubmit"
-        />
-      </div>
+      </AdminQueryState>
     </div>
   </div>
 </template>

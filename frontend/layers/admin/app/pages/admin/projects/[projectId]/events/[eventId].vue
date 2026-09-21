@@ -138,51 +138,51 @@ async function deleteEvent() {
 <template>
   <div>
     <div>
-      <AdminLoadingState v-if="fetching" />
-      <AdminErrorState v-else-if="error" :error />
-      <template v-else-if="data">
-        <UForm
-          :state
-          :schema="schema"
-          loading-auto
-          class="flex max-w-md flex-col gap-6"
-          @submit.prevent="updateEvent"
-        >
-          <AdminTranslatableFormField
-            label="Navn"
-            :translation-status="data?.event.translationStatus"
-            name="name"
+      <AdminQueryState :fetching :error>
+        <template v-if="data">
+          <UForm
+            :state
+            :schema="schema"
+            loading-auto
+            class="flex max-w-md flex-col gap-6"
+            @submit.prevent="updateEvent"
           >
-            <UInput v-model="state.name" size="xl" required class="w-full" />
-          </AdminTranslatableFormField>
-          <AdminTranslatableFormField
-            label="Beskrivelse"
-            :translation-status="data?.event.translationStatus"
-            name="description"
-          >
-            <UTextarea
-              v-model="state.description"
-              class="w-full"
-              autoresize
-              required
+            <AdminTranslatableFormField
+              label="Navn"
+              :translation-status="data?.event.translationStatus"
+              name="name"
+            >
+              <UInput v-model="state.name" size="xl" required class="w-full" />
+            </AdminTranslatableFormField>
+            <AdminTranslatableFormField
+              label="Beskrivelse"
+              :translation-status="data?.event.translationStatus"
+              name="description"
+            >
+              <UTextarea
+                v-model="state.description"
+                class="w-full"
+                autoresize
+                required
+              />
+            </AdminTranslatableFormField>
+            <DateRangeField
+              v-model:start="state.startDate"
+              v-model:end="state.endDate"
             />
-          </AdminTranslatableFormField>
-          <DateRangeField
-            v-model:start="state.startDate"
-            v-model:end="state.endDate"
-          />
-          <UButton type="submit" size="lg" block>Lagre endringer</UButton>
-          <UButton
-            color="error"
-            variant="ghost"
-            size="lg"
-            block
-            @click="deleteEvent"
-          >
-            Slett arrangement
-          </UButton>
-        </UForm>
-      </template>
+            <UButton type="submit" size="lg" block>Lagre endringer</UButton>
+            <UButton
+              color="error"
+              variant="ghost"
+              size="lg"
+              block
+              @click="deleteEvent"
+            >
+              Slett arrangement
+            </UButton>
+          </UForm>
+        </template>
+      </AdminQueryState>
     </div>
   </div>
 </template>

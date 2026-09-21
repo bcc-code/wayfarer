@@ -375,43 +375,43 @@ const isQuizChallenge = computed(() => {
 <template>
   <div>
     <div>
-      <AdminLoadingState v-if="fetching" />
-      <AdminErrorState v-else-if="error" :error />
-      <template v-else-if="data">
-        <div v-if="!isQuizChallenge" class="text-center py-12">
-          <p class="text-text-muted">
-            Denne utfordringen er ikke en quiz-utfordring.
-          </p>
-          <UButton
-            class="mt-4"
-            :to="{
-              name: 'admin-projects-projectId-challenges-challengeId',
-              params: {
-                projectId: route.params.projectId,
-                challengeId: route.params.challengeId,
-              },
-            }"
-          >
-            Tilbake til utfordring
-          </UButton>
-        </div>
-        <template v-else>
-          <h1 class="mb-6 text-2xl font-bold">
-            {{ isNewQuiz ? 'Opprett quiz' : 'Rediger quiz' }}
-          </h1>
-          <AdminQuizForm
-            :quiz-data="quizData"
-            :translation-status="
-              data?.challenge.__typename === 'QuizChallenge'
-                ? (data.challenge.quiz?.translationStatus ?? [])
-                : []
-            "
-            :project-id="route.params.projectId"
-            :challenge-id="route.params.challengeId"
-            @save="saveQuiz"
-          />
+      <AdminQueryState :fetching :error>
+        <template v-if="data">
+          <div v-if="!isQuizChallenge" class="text-center py-12">
+            <p class="text-text-muted">
+              Denne utfordringen er ikke en quiz-utfordring.
+            </p>
+            <UButton
+              class="mt-4"
+              :to="{
+                name: 'admin-projects-projectId-challenges-challengeId',
+                params: {
+                  projectId: route.params.projectId,
+                  challengeId: route.params.challengeId,
+                },
+              }"
+            >
+              Tilbake til utfordring
+            </UButton>
+          </div>
+          <template v-else>
+            <h1 class="mb-6 text-2xl font-bold">
+              {{ isNewQuiz ? 'Opprett quiz' : 'Rediger quiz' }}
+            </h1>
+            <AdminQuizForm
+              :quiz-data="quizData"
+              :translation-status="
+                data?.challenge.__typename === 'QuizChallenge'
+                  ? (data.challenge.quiz?.translationStatus ?? [])
+                  : []
+              "
+              :project-id="route.params.projectId"
+              :challenge-id="route.params.challengeId"
+              @save="saveQuiz"
+            />
+          </template>
         </template>
-      </template>
+      </AdminQueryState>
     </div>
   </div>
 </template>

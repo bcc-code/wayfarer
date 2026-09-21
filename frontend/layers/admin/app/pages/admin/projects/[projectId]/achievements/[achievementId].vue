@@ -303,22 +303,22 @@ async function handleDelete() {
 <template>
   <div>
     <div>
-      <AdminLoadingState v-if="fetching" />
-      <AdminErrorState v-else-if="error" :error />
-      <template v-else-if="initialData">
-        <h1 class="mb-6 text-2xl font-bold">Rediger utmerkelse</h1>
-        <AdminAchievementForm
-          :project-id="route.params.projectId"
-          :initial-data="initialData"
-          :translation-status="data?.achievement.translationStatus ?? []"
-          :achievement-type="achievementType"
-          :is-edit-mode="true"
-          :colors="data?.achievement.project.branding.colors"
-          submit-label="Lagre endringer"
-          :on-delete="handleDelete"
-          @submit="handleSubmit"
-        />
-      </template>
+      <AdminQueryState :fetching :error>
+        <template v-if="initialData">
+          <h1 class="mb-6 text-2xl font-bold">Rediger utmerkelse</h1>
+          <AdminAchievementForm
+            :project-id="route.params.projectId"
+            :initial-data="initialData"
+            :translation-status="data?.achievement.translationStatus ?? []"
+            :achievement-type="achievementType"
+            :is-edit-mode="true"
+            :colors="data?.achievement.project.branding.colors"
+            submit-label="Lagre endringer"
+            :on-delete="handleDelete"
+            @submit="handleSubmit"
+          />
+        </template>
+      </AdminQueryState>
     </div>
   </div>
 </template>

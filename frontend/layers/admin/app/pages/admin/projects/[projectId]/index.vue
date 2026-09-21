@@ -82,62 +82,62 @@ onMounted(() => {
 
 <template>
   <div>
-    <AdminLoadingState v-if="fetchingProject" />
-    <AdminErrorState v-else-if="error" :error />
-    <template v-else-if="project">
-      <header class="mb-8 space-y-2">
-        <img
-          v-if="project.branding.logoImage?.url"
-          :src="project.branding.logoImage.url"
-          width="64"
-          class="mb-4 rounded"
-        />
-        <h1 class="text-3xl">{{ project.name }}</h1>
-        <p v-if="project.description" class="text-muted max-w-2xl">
-          {{ project.description }}
-        </p>
-        <p class="text-dimmed text-sm">
-          {{ formatDateRange(project.startDate, project.endDate) }}
-        </p>
-        <div v-if="canEdit" class="pt-2">
-          <UButton
-            variant="soft"
-            icon="lucide:pencil"
-            :to="{
-              name: 'admin-projects-projectId-edit',
-              params: { projectId: route.params.projectId },
-            }"
-          >
-            Rediger prosjekt
-          </UButton>
-        </div>
-      </header>
+    <AdminQueryState :fetching="fetchingProject" :error>
+      <template v-if="project">
+        <header class="mb-8 space-y-2">
+          <img
+            v-if="project.branding.logoImage?.url"
+            :src="project.branding.logoImage.url"
+            width="64"
+            class="mb-4 rounded"
+          />
+          <h1 class="text-3xl">{{ project.name }}</h1>
+          <p v-if="project.description" class="text-muted max-w-2xl">
+            {{ project.description }}
+          </p>
+          <p class="text-dimmed text-sm">
+            {{ formatDateRange(project.startDate, project.endDate) }}
+          </p>
+          <div v-if="canEdit" class="pt-2">
+            <UButton
+              variant="soft"
+              icon="lucide:pencil"
+              :to="{
+                name: 'admin-projects-projectId-edit',
+                params: { projectId: route.params.projectId },
+              }"
+            >
+              Rediger prosjekt
+            </UButton>
+          </div>
+        </header>
 
-      <!--
-        Container query, not viewport. `lg:grid-cols-4` measured the window, but
-        two sidebars take ~600px out of it, so four cards overflowed the panel
-        on exactly the widths the breakpoint was meant to cover.
-      -->
-      <div class="@container">
-        <div class="grid gap-4 @md:grid-cols-2 @4xl:grid-cols-4">
-          <NuxtLink
-            v-for="section in sections"
-            :key="section.label"
-            :to="projectRoute(section.to)"
-          >
-            <UCard class="hover:bg-elevated/50 h-full transition-colors">
-              <div class="flex items-center gap-3">
-                <UIcon :name="section.icon" class="text-muted size-5" />
-                <span class="font-medium">{{ section.label }}</span>
-              </div>
-              <div class="mt-2 text-2xl tabular-nums">
-                <USkeleton v-if="fetching" class="h-8 w-12" />
-                <template v-else>{{ section.count ?? 0 }}</template>
-              </div>
-            </UCard>
-          </NuxtLink>
+        <!--
+          Container query, not viewport. `lg:grid-cols-4` measured the window, but
+          two sidebars take ~600px out of it, so four cards overflowed the panel
+          on exactly the widths the breakpoint was meant to cover.
+        -->
+        <div class="@container">
+          <div class="grid gap-4 @md:grid-cols-2 @4xl:grid-cols-4">
+            <NuxtLink
+              v-for="section in sections"
+              :key="section.label"
+              :to="projectRoute(section.to)"
+            >
+              <UCard class="hover:bg-elevated/50 h-full transition-colors">
+                <div class="flex items-center gap-3">
+                  <UIcon :name="section.icon" class="text-muted size-5" />
+                  <span class="font-medium">{{ section.label }}</span>
+                </div>
+                <div class="mt-2 text-2xl tabular-nums">
+                  <USkeleton v-if="fetching" class="h-8 w-12" />
+                  <template v-else>{{ section.count ?? 0 }}</template>
+                </div>
+              </UCard>
+            </NuxtLink>
+          </div>
         </div>
-      </div>
-    </template>
+      </template>
+    </AdminQueryState>
   </div>
 </template>

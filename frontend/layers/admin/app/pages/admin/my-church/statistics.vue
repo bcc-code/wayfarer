@@ -33,13 +33,6 @@ const { t } = useI18n()
 
 const { data, fetching, error } = useChurchAdminStatisticsPageQuery({})
 
-// Track initial load
-const hasLoadedOnce = ref(false)
-watch(data, (newData) => {
-  if (!newData) return
-  hasLoadedOnce.value = true
-})
-
 // All age groups in order
 const allAgeGroups = ['13 - 18', '19 - 25', '26 - 36', '37 - 59', '60+']
 
@@ -118,71 +111,71 @@ const lastUpdatedFormatted = computed(() => {
         <Icon name="lucide:arrow-left" />
         {{ $t('admin.common.back') }}
       </UButton>
-      <AdminLoadingState v-if="fetching && !hasLoadedOnce" />
-      <AdminErrorState v-else-if="error" :error />
-      <div v-else-if="data?.churchAdminStatistics" class="mt-12 w-full">
-        <h2 class="text-3xl font-semibold mb-2">
-          {{ $t('admin.churchHome.statistics') }}
-        </h2>
-        <p class="text-muted">
-          {{ $t('admin.statistics.lastUpdated') }}: {{ lastUpdatedFormatted }}
-        </p>
-
-        <!-- Age group statistics -->
-        <h3 class="mt-16">
-          {{ $t('admin.statistics.averageScoresByAgeGroup') }}
-        </h3>
-        <p class="text-muted text-sm mb-4">
-          {{ $t('admin.statistics.averageScoresByAgeGroupDescription') }}
-        </p>
-        <section
-          id="averages"
-          class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6 w-full"
-        >
-          <AdminStatisticCard
-            v-for="group in ageGroupsWithDefaults"
-            :key="group.ageGroup"
-            :title="formatAgeGroup(group.ageGroup)"
-            :value="formatScore(group.averageScore)"
-            :subtitle="`${group.userCount} ${$t('admin.statistics.users').toLocaleLowerCase()}`"
-          />
-        </section>
-
-        <!-- Points distribution chart -->
-        <h3 class="mt-16">
-          {{ $t('admin.statistics.pointsDistribution') }}
-        </h3>
-        <p class="text-muted text-sm mb-4">
-          {{ $t('admin.statistics.pointsDistributionDescription') }}
-        </p>
-        <section id="points" class="w-full">
-          <VisXYContainer
-            v-if="userScores.length > 0"
-            :data="userScores"
-            :height="300"
-          >
-            <VisGroupedBar
-              :x="barX"
-              :y="barY"
-              color="var(--ui-primary)"
-              :rounded-corners="false"
-            />
-            <VisAxis
-              type="y"
-              :label="$t('admin.statistics.points')"
-              :tick-format="(v: number) => formatScore(v)"
-            />
-            <VisAxis
-              type="x"
-              :label="$t('admin.statistics.peopleInAUnit')"
-              :tick-format="(i: number) => ''"
-            />
-          </VisXYContainer>
-          <p v-else class="text-muted">
-            {{ $t('admin.statistics.noData') }}
+      <AdminQueryState :fetching :error>
+        <div v-if="data?.churchAdminStatistics" class="mt-12 w-full">
+          <h2 class="text-3xl font-semibold mb-2">
+            {{ $t('admin.churchHome.statistics') }}
+          </h2>
+          <p class="text-muted">
+            {{ $t('admin.statistics.lastUpdated') }}: {{ lastUpdatedFormatted }}
           </p>
-        </section>
-      </div>
+
+          <!-- Age group statistics -->
+          <h3 class="mt-16">
+            {{ $t('admin.statistics.averageScoresByAgeGroup') }}
+          </h3>
+          <p class="text-muted text-sm mb-4">
+            {{ $t('admin.statistics.averageScoresByAgeGroupDescription') }}
+          </p>
+          <section
+            id="averages"
+            class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6 w-full"
+          >
+            <AdminStatisticCard
+              v-for="group in ageGroupsWithDefaults"
+              :key="group.ageGroup"
+              :title="formatAgeGroup(group.ageGroup)"
+              :value="formatScore(group.averageScore)"
+              :subtitle="`${group.userCount} ${$t('admin.statistics.users').toLocaleLowerCase()}`"
+            />
+          </section>
+
+          <!-- Points distribution chart -->
+          <h3 class="mt-16">
+            {{ $t('admin.statistics.pointsDistribution') }}
+          </h3>
+          <p class="text-muted text-sm mb-4">
+            {{ $t('admin.statistics.pointsDistributionDescription') }}
+          </p>
+          <section id="points" class="w-full">
+            <VisXYContainer
+              v-if="userScores.length > 0"
+              :data="userScores"
+              :height="300"
+            >
+              <VisGroupedBar
+                :x="barX"
+                :y="barY"
+                color="var(--ui-primary)"
+                :rounded-corners="false"
+              />
+              <VisAxis
+                type="y"
+                :label="$t('admin.statistics.points')"
+                :tick-format="(v: number) => formatScore(v)"
+              />
+              <VisAxis
+                type="x"
+                :label="$t('admin.statistics.peopleInAUnit')"
+                :tick-format="(i: number) => ''"
+              />
+            </VisXYContainer>
+            <p v-else class="text-muted">
+              {{ $t('admin.statistics.noData') }}
+            </p>
+          </section>
+        </div>
+      </AdminQueryState>
     </div>
   </div>
 </template>

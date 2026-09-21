@@ -197,82 +197,82 @@ function toggleTeam(teamId: string) {
 <template>
   <div>
     <div class="max-w-2xl">
-      <AdminLoadingState v-if="fetching" />
-      <AdminErrorState v-else-if="error" :error class="h-150" />
-      <template v-else-if="data">
-        <h1 class="mb-6 text-2xl font-bold">Rediger superteam</h1>
+      <AdminQueryState :fetching :error error-class="h-150">
+        <template v-if="data">
+          <h1 class="mb-6 text-2xl font-bold">Rediger superteam</h1>
 
-        <form class="space-y-6" @submit.prevent="handleSave">
-          <UFormField name="name" label="Navn" required>
-            <UInput v-model="state.name" class="w-full" />
-          </UFormField>
+          <form class="space-y-6" @submit.prevent="handleSave">
+            <UFormField name="name" label="Navn" required>
+              <UInput v-model="state.name" class="w-full" />
+            </UFormField>
 
-          <UFormField name="description" label="Beskrivelse">
-            <UTextarea v-model="state.description" class="w-full" />
-          </UFormField>
+            <UFormField name="description" label="Beskrivelse">
+              <UTextarea v-model="state.description" class="w-full" />
+            </UFormField>
 
-          <UFormField name="imageUrl" label="Bilde">
-            <AdminFileUpload v-model="state.imageUrl" />
-          </UFormField>
+            <UFormField name="imageUrl" label="Bilde">
+              <AdminFileUpload v-model="state.imageUrl" />
+            </UFormField>
 
-          <UFormField name="color" label="Farge">
-            <div class="flex items-center gap-3">
-              <UCheckbox v-model="hasColor" />
-              <template v-if="hasColor">
-                <ColorPickerInput v-model="colorValue" />
-              </template>
-              <span v-else class="text-muted text-sm">Ingen farge valgt</span>
+            <UFormField name="color" label="Farge">
+              <div class="flex items-center gap-3">
+                <UCheckbox v-model="hasColor" />
+                <template v-if="hasColor">
+                  <ColorPickerInput v-model="colorValue" />
+                </template>
+                <span v-else class="text-muted text-sm">Ingen farge valgt</span>
+              </div>
+            </UFormField>
+
+            <div class="flex gap-2">
+              <UButton type="submit" :disabled="!state.name">
+                Lagre endringer
+              </UButton>
             </div>
-          </UFormField>
+          </form>
 
-          <div class="flex gap-2">
-            <UButton type="submit" :disabled="!state.name">
-              Lagre endringer
+          <hr class="border-default my-8" />
+
+          <h2 class="mb-4 text-xl font-bold">Lag</h2>
+          <p class="text-muted mb-4 text-sm">
+            Velg hvilke lag som skal tilhøre denne superteamen.
+          </p>
+
+          <div
+            v-if="availableTeams.length > 0"
+            class="border-default mb-4 max-h-80 space-y-0 overflow-y-auto rounded-lg border"
+          >
+            <label
+              v-for="team in availableTeams"
+              :key="team.id"
+              class="border-default flex cursor-pointer items-center gap-3 border-b px-4 py-3 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              <UCheckbox
+                :model-value="selectedTeamIds.includes(team.id)"
+                @update:model-value="toggleTeam(team.id)"
+              />
+              <span>{{ team.name }}</span>
+            </label>
+          </div>
+          <div v-else class="text-dimmed py-4 text-sm">
+            Ingen tilgjengelige lag i dette prosjektet.
+          </div>
+
+          <UButton @click="handleAssignTeams"> Lagre lagtilordning </UButton>
+
+          <hr class="border-default my-8" />
+
+          <div>
+            <h2 class="mb-2 text-xl font-bold text-red-600">Faresone</h2>
+            <p class="text-muted mb-4 text-sm">
+              Sletting av superteam fjerner tilordningen til alle lag.
+            </p>
+            <UButton color="error" variant="soft" @click="handleDelete">
+              Slett superteam
             </UButton>
           </div>
-        </form>
-
-        <hr class="border-default my-8" />
-
-        <h2 class="mb-4 text-xl font-bold">Lag</h2>
-        <p class="text-muted mb-4 text-sm">
-          Velg hvilke lag som skal tilhøre denne superteamen.
-        </p>
-
-        <div
-          v-if="availableTeams.length > 0"
-          class="border-default mb-4 max-h-80 space-y-0 overflow-y-auto rounded-lg border"
-        >
-          <label
-            v-for="team in availableTeams"
-            :key="team.id"
-            class="border-default flex cursor-pointer items-center gap-3 border-b px-4 py-3 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800"
-          >
-            <UCheckbox
-              :model-value="selectedTeamIds.includes(team.id)"
-              @update:model-value="toggleTeam(team.id)"
-            />
-            <span>{{ team.name }}</span>
-          </label>
-        </div>
-        <div v-else class="text-dimmed py-4 text-sm">
-          Ingen tilgjengelige lag i dette prosjektet.
-        </div>
-
-        <UButton @click="handleAssignTeams"> Lagre lagtilordning </UButton>
-
-        <hr class="border-default my-8" />
-
-        <div>
-          <h2 class="mb-2 text-xl font-bold text-red-600">Faresone</h2>
-          <p class="text-muted mb-4 text-sm">
-            Sletting av superteam fjerner tilordningen til alle lag.
-          </p>
-          <UButton color="error" variant="soft" @click="handleDelete">
-            Slett superteam
-          </UButton>
-        </div>
-      </template>
+        </template>
+      </AdminQueryState>
     </div>
   </div>
 </template>

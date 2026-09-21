@@ -479,493 +479,499 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
 <template>
   <div>
     <div>
-      <AdminLoadingState v-if="fetching" />
-      <AdminErrorState v-else-if="error" :error />
-      <div v-else-if="data" class="space-y-6">
-        <!-- User Header -->
-        <div class="flex items-start justify-between">
-          <div>
-            <h1 class="text-3xl font-bold">{{ data.user.name }}</h1>
-          </div>
-          <div class="flex gap-2">
-            <UButton
-              v-if="canCheckAchievements"
-              icon="i-lucide-trophy"
-              variant="soft"
-              :to="{
-                name: 'admin-users-userId-achievements',
-                params: { userId: route.params.userId },
-              }"
-            >
-              Sjekk prestasjoner
-            </UButton>
-            <UButton
-              icon="i-lucide-refresh-cw"
-              variant="soft"
-              :loading="syncing"
-              @click="handleSyncUser"
-            >
-              Synkroniser
-            </UButton>
-          </div>
-        </div>
-
-        <!-- User Info -->
-        <div class="space-y-6">
-          <!-- Identity -->
-          <div>
-            <h3 class="mb-2 text-xs font-medium uppercase tracking-wide">
-              Identitet
-            </h3>
-            <dl
-              class="text-sm grid grid-cols-[auto_1fr] gap-x-6 divide-y divide-default"
-            >
-              <div class="py-2 grid grid-cols-subgrid col-span-full">
-                <dt class="text-muted w-36 shrink-0">ID</dt>
-                <dd class="font-mono">{{ data.user.id }}</dd>
-              </div>
-              <div class="py-2 grid grid-cols-subgrid col-span-full">
-                <dt class="text-muted w-36 shrink-0">Members-ID</dt>
-                <dd class="font-medium">{{ data.user.membersId }}</dd>
-              </div>
-              <div class="py-2 grid grid-cols-subgrid col-span-full">
-                <dt class="text-muted w-36 shrink-0">Members-UUID</dt>
-                <dd class="font-medium">{{ data.user.personUuid }}</dd>
-              </div>
-              <div class="py-2 grid grid-cols-subgrid col-span-full">
-                <dt class="text-muted w-36 shrink-0">Bruker opprettet</dt>
-                <dd class="font-medium">
-                  {{ formatDateTime(data.user.createdAt) }}
-                </dd>
-              </div>
-            </dl>
-          </div>
-
-          <!-- Personal -->
-          <div>
-            <h3 class="mb-2 text-xs font-medium uppercase tracking-wide">
-              Personlig
-            </h3>
-            <dl
-              class="text-sm grid grid-cols-[auto_1fr] gap-x-6 divide-y divide-default"
-            >
-              <div class="py-2 grid grid-cols-subgrid col-span-full">
-                <dt class="text-muted w-36 shrink-0">Alder</dt>
-                <dd class="font-medium">{{ data.user.age }} år</dd>
-              </div>
-              <div class="py-2 grid grid-cols-subgrid col-span-full">
-                <dt class="text-muted w-36 shrink-0">Språk</dt>
-                <dd class="font-medium">{{ data.user.language }}</dd>
-              </div>
-            </dl>
-          </div>
-
-          <!-- Church -->
-          <div>
-            <h3 class="mb-2 text-xs font-medium uppercase tracking-wide">
-              Menighet
-            </h3>
-            <dl
-              class="text-sm grid grid-cols-[auto_1fr] gap-x-6 divide-y divide-default"
-            >
-              <div class="py-2 grid grid-cols-subgrid col-span-full">
-                <dt class="text-muted w-36 shrink-0">Navn</dt>
-                <dd>
-                  <NuxtLink
-                    :to="{
-                      name: 'admin-churches-churchId',
-                      params: { churchId: data.user.church.id },
-                    }"
-                    class="font-medium hover:underline"
-                  >
-                    {{ data.user.church.name }}
-                  </NuxtLink>
-                </dd>
-              </div>
-              <div class="py-2 grid grid-cols-subgrid col-span-full">
-                <dt class="text-muted w-36 shrink-0">ID</dt>
-                <dd class="font-mono">{{ data.user.church.id }}</dd>
-              </div>
-              <div class="py-2 grid grid-cols-subgrid col-span-full">
-                <dt class="text-muted w-36 shrink-0">Synk-lås</dt>
-                <dd class="flex items-center gap-2">
-                  <template v-if="isChurchLocked">
-                    <UBadge color="warning" variant="soft">
-                      Låst til
-                      {{ formatDateTime(data.user.churchLockedUntil!) }}
-                    </UBadge>
-                    <UButton
-                      size="xs"
-                      variant="soft"
-                      color="neutral"
-                      :loading="unlocking"
-                      @click="handleUnlockChurch"
-                    >
-                      Lås opp
-                    </UButton>
-                  </template>
-                  <template v-else>
-                    <span class="text-dimmed text-sm">Ikke låst</span>
-                    <UButton
-                      size="xs"
-                      variant="soft"
-                      color="neutral"
-                      :loading="locking"
-                      @click="handleLockChurch"
-                    >
-                      Lås i 6 måneder
-                    </UButton>
-                  </template>
-                </dd>
-              </div>
-            </dl>
-          </div>
-        </div>
-
-        <!-- Teams Card -->
-        <UCard>
-          <template #header>
-            <h2 class="text-xl font-semibold">
-              Lag
-              <span
-                v-if="data.user.teams.length > 0"
-                class="text-dimmed text-sm font-normal"
-              >
-                ({{ data.user.teams.length }})
-              </span>
-            </h2>
-          </template>
-
-          <div v-if="data.user.teams.length > 0" class="space-y-2">
-            <NuxtLink
-              v-for="team in data.user.teams"
-              :key="team.id"
-              :to="{
-                name: 'admin-projects-projectId-teams-teamId',
-                params: {
-                  projectId: team.parentProject.id,
-                  teamId: team.id,
-                },
-              }"
-              class="border-default flex items-center justify-between rounded-md border p-3 hover:bg-elevated transition-colors"
-            >
-              <div>
-                <span class="font-medium">{{ team.name }}</span>
-                <div class="text-muted text-xs">
-                  {{ team.parentProject.name }}
-                </div>
-              </div>
-              <Icon name="lucide:chevron-right" class="size-4 text-dimmed" />
-            </NuxtLink>
-          </div>
-          <div v-else class="text-dimmed">Ikke med i noen lag</div>
-        </UCard>
-
-        <!-- Roles Card -->
-        <UCard>
-          <template #header>
-            <div class="flex items-center justify-between">
-              <h2 class="text-xl font-semibold">Roller og tillatelser</h2>
+      <AdminQueryState :fetching :error>
+        <div v-if="data" class="space-y-6">
+          <!-- User Header -->
+          <div class="flex items-start justify-between">
+            <div>
+              <h1 class="text-3xl font-bold">{{ data.user.name }}</h1>
+            </div>
+            <div class="flex gap-2">
               <UButton
-                v-if="canAssignRoles"
-                icon="i-lucide-plus"
-                size="sm"
-                @click="
-                  () => {
-                    showAddRoleModal = true
-                  }
-                "
+                v-if="canCheckAchievements"
+                icon="i-lucide-trophy"
+                variant="soft"
+                :to="{
+                  name: 'admin-users-userId-achievements',
+                  params: { userId: route.params.userId },
+                }"
               >
-                Legg til rolle
+                Sjekk prestasjoner
+              </UButton>
+              <UButton
+                icon="i-lucide-refresh-cw"
+                variant="soft"
+                :loading="syncing"
+                @click="handleSyncUser"
+              >
+                Synkroniser
               </UButton>
             </div>
-          </template>
+          </div>
 
-          <div v-if="data.user.roles.length > 0" class="space-y-3">
-            <div
-              v-for="role in data.user.roles"
-              :key="role.id"
-              class="border-default flex items-center justify-between rounded-md border p-3"
-            >
-              <div class="flex items-center gap-3">
-                <UBadge variant="soft" size="lg">
-                  {{ roleLabels[role.role] ?? role.role }}
-                </UBadge>
-                <div v-if="role.scope">
-                  <span class="text-dimmed text-sm">Omfang: </span>
-                  <span class="text-sm font-medium">
-                    {{ capitalizeFirst(role.scope.type) }}
-                  </span>
-                  <span class="text-dimmed ml-2 text-xs">
-                    ({{ role.scope.id }})
-                  </span>
+          <!-- User Info -->
+          <div class="space-y-6">
+            <!-- Identity -->
+            <div>
+              <h3 class="mb-2 text-xs font-medium uppercase tracking-wide">
+                Identitet
+              </h3>
+              <dl
+                class="text-sm grid grid-cols-[auto_1fr] gap-x-6 divide-y divide-default"
+              >
+                <div class="py-2 grid grid-cols-subgrid col-span-full">
+                  <dt class="text-muted w-36 shrink-0">ID</dt>
+                  <dd class="font-mono">{{ data.user.id }}</dd>
                 </div>
-              </div>
-              <UButton
-                v-if="canAssignRoles"
-                icon="i-lucide-trash-2"
-                color="error"
-                variant="ghost"
-                size="sm"
-                @click="
-                  handleRevokeRole(
-                    role.id,
-                    role.role,
-                    role.scope?.type,
-                    role.scope?.id,
-                  )
-                "
-              />
+                <div class="py-2 grid grid-cols-subgrid col-span-full">
+                  <dt class="text-muted w-36 shrink-0">Members-ID</dt>
+                  <dd class="font-medium">{{ data.user.membersId }}</dd>
+                </div>
+                <div class="py-2 grid grid-cols-subgrid col-span-full">
+                  <dt class="text-muted w-36 shrink-0">Members-UUID</dt>
+                  <dd class="font-medium">{{ data.user.personUuid }}</dd>
+                </div>
+                <div class="py-2 grid grid-cols-subgrid col-span-full">
+                  <dt class="text-muted w-36 shrink-0">Bruker opprettet</dt>
+                  <dd class="font-medium">
+                    {{ formatDateTime(data.user.createdAt) }}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
+            <!-- Personal -->
+            <div>
+              <h3 class="mb-2 text-xs font-medium uppercase tracking-wide">
+                Personlig
+              </h3>
+              <dl
+                class="text-sm grid grid-cols-[auto_1fr] gap-x-6 divide-y divide-default"
+              >
+                <div class="py-2 grid grid-cols-subgrid col-span-full">
+                  <dt class="text-muted w-36 shrink-0">Alder</dt>
+                  <dd class="font-medium">{{ data.user.age }} år</dd>
+                </div>
+                <div class="py-2 grid grid-cols-subgrid col-span-full">
+                  <dt class="text-muted w-36 shrink-0">Språk</dt>
+                  <dd class="font-medium">{{ data.user.language }}</dd>
+                </div>
+              </dl>
+            </div>
+
+            <!-- Church -->
+            <div>
+              <h3 class="mb-2 text-xs font-medium uppercase tracking-wide">
+                Menighet
+              </h3>
+              <dl
+                class="text-sm grid grid-cols-[auto_1fr] gap-x-6 divide-y divide-default"
+              >
+                <div class="py-2 grid grid-cols-subgrid col-span-full">
+                  <dt class="text-muted w-36 shrink-0">Navn</dt>
+                  <dd>
+                    <NuxtLink
+                      :to="{
+                        name: 'admin-churches-churchId',
+                        params: { churchId: data.user.church.id },
+                      }"
+                      class="font-medium hover:underline"
+                    >
+                      {{ data.user.church.name }}
+                    </NuxtLink>
+                  </dd>
+                </div>
+                <div class="py-2 grid grid-cols-subgrid col-span-full">
+                  <dt class="text-muted w-36 shrink-0">ID</dt>
+                  <dd class="font-mono">{{ data.user.church.id }}</dd>
+                </div>
+                <div class="py-2 grid grid-cols-subgrid col-span-full">
+                  <dt class="text-muted w-36 shrink-0">Synk-lås</dt>
+                  <dd class="flex items-center gap-2">
+                    <template v-if="isChurchLocked">
+                      <UBadge color="warning" variant="soft">
+                        Låst til
+                        {{ formatDateTime(data.user.churchLockedUntil!) }}
+                      </UBadge>
+                      <UButton
+                        size="xs"
+                        variant="soft"
+                        color="neutral"
+                        :loading="unlocking"
+                        @click="handleUnlockChurch"
+                      >
+                        Lås opp
+                      </UButton>
+                    </template>
+                    <template v-else>
+                      <span class="text-dimmed text-sm">Ikke låst</span>
+                      <UButton
+                        size="xs"
+                        variant="soft"
+                        color="neutral"
+                        :loading="locking"
+                        @click="handleLockChurch"
+                      >
+                        Lås i 6 måneder
+                      </UButton>
+                    </template>
+                  </dd>
+                </div>
+              </dl>
             </div>
           </div>
-          <div v-else class="text-dimmed">Ingen roller tildelt</div>
-        </UCard>
 
-        <!-- Consents Card -->
-        <UCard>
-          <template #header>
-            <h2 class="text-xl font-semibold">Samtykker</h2>
-          </template>
-
-          <div class="space-y-4">
-            <!-- Pending Consents -->
-            <div v-if="data.user.consentStatus.pendingConsents.length > 0">
-              <h3 class="text-muted mb-2 text-sm font-medium">Ventende</h3>
-              <div class="space-y-2">
-                <div
-                  v-for="consent in data.user.consentStatus.pendingConsents"
-                  :key="consent.id"
-                  class="border-default flex items-center justify-between rounded-md border p-3"
-                >
-                  <div class="flex items-center gap-3">
-                    <UBadge variant="soft" color="warning">Ventende</UBadge>
-                    <div>
-                      <span class="font-medium">{{ consent.title }}</span>
-                      <span class="text-dimmed ml-2 text-xs"
-                        >v{{ consent.version }}</span
-                      >
-                    </div>
-                  </div>
-                  <code class="text-dimmed text-xs">{{ consent.key }}</code>
-                </div>
-              </div>
-            </div>
-
-            <!-- Accepted Consents -->
-            <div v-if="data.user.consentStatus.acceptedConsents.length > 0">
-              <h3 class="text-muted mb-2 text-sm font-medium">Akseptert</h3>
-              <div class="space-y-2">
-                <div
-                  v-for="item in data.user.consentStatus.acceptedConsents"
-                  :key="item.id"
-                  class="border-default flex items-center justify-between gap-4 rounded-md border p-3"
-                >
-                  <div class="flex items-center gap-3">
-                    <UBadge variant="soft" color="success">Akseptert</UBadge>
-                    <div>
-                      <span class="font-medium">{{ item.consent.title }}</span>
-                      <span class="text-dimmed ml-2 text-xs">
-                        v{{ item.consent.version }}
-                      </span>
-                    </div>
-                  </div>
-                  <UButton
-                    v-if="
-                      item.consent.managementType ===
-                      ConsentManagementType.Local
-                    "
-                    color="neutral"
-                    variant="soft"
-                    size="sm"
-                    class="ml-auto"
-                    @click="
-                      openRemoveConsentModal(
-                        item.consent.id,
-                        item.consent.title,
-                      )
-                    "
-                  >
-                    Fjern samtykke
-                  </UButton>
-                  <div class="text-right">
-                    <code class="text-dimmed text-xs">
-                      {{ item.consent.key }}
-                    </code>
-                    <div class="text-dimmed text-xs">
-                      {{ formatDateTime(item.actionDate) }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Rejected Consents -->
-            <div v-if="data.user.consentStatus.rejectedConsents.length > 0">
-              <h3 class="text-muted mb-2 text-sm font-medium">Avvist</h3>
-              <div class="space-y-2">
-                <div
-                  v-for="item in data.user.consentStatus.rejectedConsents"
-                  :key="item.id"
-                  class="border-default flex items-center justify-between rounded-md border p-3"
-                >
-                  <div class="flex items-center gap-3">
-                    <UBadge variant="soft" color="error">Avvist</UBadge>
-                    <div>
-                      <span class="font-medium">{{ item.consent.title }}</span>
-                      <span class="text-dimmed ml-2 text-xs"
-                        >v{{ item.consent.version }}</span
-                      >
-                    </div>
-                  </div>
-                  <div class="text-right">
-                    <code class="text-dimmed text-xs">{{
-                      item.consent.key
-                    }}</code>
-                    <div class="text-dimmed text-xs">
-                      {{ formatDateTime(item.actionDate) }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- No consents -->
-            <div
-              v-if="
-                data.user.consentStatus.pendingConsents.length === 0 &&
-                data.user.consentStatus.acceptedConsents.length === 0 &&
-                data.user.consentStatus.rejectedConsents.length === 0
-              "
-              class="text-dimmed"
-            >
-              Ingen samtykkeaktivitet
-            </div>
-          </div>
-        </UCard>
-
-        <!-- Feedback Card -->
-        <UCard>
-          <template #header>
-            <div class="flex items-center justify-between">
+          <!-- Teams Card -->
+          <UCard>
+            <template #header>
               <h2 class="text-xl font-semibold">
-                Tilbakemeldinger
+                Lag
                 <span
-                  v-if="feedbackTotalCount > 0"
+                  v-if="data.user.teams.length > 0"
                   class="text-dimmed text-sm font-normal"
                 >
-                  ({{ feedbackTotalCount }}
-                  {{ feedbackTotalCount === 1 ? 'oppføring' : 'oppføringer' }})
+                  ({{ data.user.teams.length }})
                 </span>
               </h2>
-              <UButton
-                variant="ghost"
-                size="sm"
-                :to="{ name: 'admin-feedback' }"
+            </template>
+
+            <div v-if="data.user.teams.length > 0" class="space-y-2">
+              <NuxtLink
+                v-for="team in data.user.teams"
+                :key="team.id"
+                :to="{
+                  name: 'admin-projects-projectId-teams-teamId',
+                  params: {
+                    projectId: team.parentProject.id,
+                    teamId: team.id,
+                  },
+                }"
+                class="border-default flex items-center justify-between rounded-md border p-3 hover:bg-elevated transition-colors"
               >
-                Vis alle
-              </UButton>
-            </div>
-          </template>
-
-          <div v-if="feedbackEntries.length > 0" class="space-y-3">
-            <div
-              v-for="entry in feedbackEntries"
-              :key="entry.id"
-              class="border-default rounded-md border p-3"
-            >
-              <div class="flex items-start justify-between gap-4">
-                <p class="text-sm whitespace-pre-wrap">{{ entry.message }}</p>
-                <UBadge
-                  :color="entry.canContactMe ? 'success' : 'neutral'"
-                  variant="soft"
-                  class="shrink-0"
-                >
-                  {{ entry.canContactMe ? 'Kan kontaktes' : 'Ikke kontakt' }}
-                </UBadge>
-              </div>
-              <div
-                class="text-dimmed mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs"
-              >
-                <span>{{ formatDateTime(entry.createdAt) }}</span>
-                <span v-if="entry.platform">{{ entry.platform }}</span>
-                <span v-if="entry.screenWidth && entry.screenHeight">
-                  {{ entry.screenWidth }}x{{ entry.screenHeight }}
-                </span>
-                <code v-if="entry.appVersion">v{{ entry.appVersion }}</code>
-              </div>
-            </div>
-            <div
-              v-if="feedbackTotalCount > 10"
-              class="text-dimmed pt-2 text-center text-sm"
-            >
-              Viser 10 av {{ feedbackTotalCount }} oppføringer
-            </div>
-          </div>
-          <div v-else class="text-dimmed">Ingen tilbakemeldinger</div>
-        </UCard>
-
-        <!-- Score Journal Card -->
-        <UCard>
-          <template #header>
-            <div class="flex items-center justify-between">
-              <h2 class="text-xl font-semibold">
-                Poenglogg
-                <UBadge color="neutral" variant="soft">
-                  {{ data.user.points }} poeng
-                </UBadge>
-                <span
-                  v-if="scoreTotalCount > 0"
-                  class="text-dimmed text-sm font-normal"
-                >
-                  ({{ scoreTotalCount }} oppføringer)
-                </span>
-              </h2>
-            </div>
-          </template>
-
-          <div v-if="scoreEntries.length > 0" class="space-y-2">
-            <div
-              v-for="entry in scoreEntries"
-              :key="entry.id"
-              class="border-default flex items-center justify-between rounded-md border p-3"
-            >
-              <div class="flex items-center gap-3">
-                <UBadge
-                  :color="entry.points >= 0 ? 'success' : 'error'"
-                  variant="soft"
-                >
-                  {{ entry.points >= 0 ? '+' : ''
-                  }}{{ formatNumber(entry.points) }}
-                </UBadge>
                 <div>
-                  <span class="font-medium">{{ entry.project.name }}</span>
-                  <UBadge variant="subtle" size="xs" class="ml-2">
-                    {{ formatSourceType(entry.sourceType) }}
+                  <span class="font-medium">{{ team.name }}</span>
+                  <div class="text-muted text-xs">
+                    {{ team.parentProject.name }}
+                  </div>
+                </div>
+                <Icon name="lucide:chevron-right" class="size-4 text-dimmed" />
+              </NuxtLink>
+            </div>
+            <div v-else class="text-dimmed">Ikke med i noen lag</div>
+          </UCard>
+
+          <!-- Roles Card -->
+          <UCard>
+            <template #header>
+              <div class="flex items-center justify-between">
+                <h2 class="text-xl font-semibold">Roller og tillatelser</h2>
+                <UButton
+                  v-if="canAssignRoles"
+                  icon="i-lucide-plus"
+                  size="sm"
+                  @click="
+                    () => {
+                      showAddRoleModal = true
+                    }
+                  "
+                >
+                  Legg til rolle
+                </UButton>
+              </div>
+            </template>
+
+            <div v-if="data.user.roles.length > 0" class="space-y-3">
+              <div
+                v-for="role in data.user.roles"
+                :key="role.id"
+                class="border-default flex items-center justify-between rounded-md border p-3"
+              >
+                <div class="flex items-center gap-3">
+                  <UBadge variant="soft" size="lg">
+                    {{ roleLabels[role.role] ?? role.role }}
+                  </UBadge>
+                  <div v-if="role.scope">
+                    <span class="text-dimmed text-sm">Omfang: </span>
+                    <span class="text-sm font-medium">
+                      {{ capitalizeFirst(role.scope.type) }}
+                    </span>
+                    <span class="text-dimmed ml-2 text-xs">
+                      ({{ role.scope.id }})
+                    </span>
+                  </div>
+                </div>
+                <UButton
+                  v-if="canAssignRoles"
+                  icon="i-lucide-trash-2"
+                  color="error"
+                  variant="ghost"
+                  size="sm"
+                  @click="
+                    handleRevokeRole(
+                      role.id,
+                      role.role,
+                      role.scope?.type,
+                      role.scope?.id,
+                    )
+                  "
+                />
+              </div>
+            </div>
+            <div v-else class="text-dimmed">Ingen roller tildelt</div>
+          </UCard>
+
+          <!-- Consents Card -->
+          <UCard>
+            <template #header>
+              <h2 class="text-xl font-semibold">Samtykker</h2>
+            </template>
+
+            <div class="space-y-4">
+              <!-- Pending Consents -->
+              <div v-if="data.user.consentStatus.pendingConsents.length > 0">
+                <h3 class="text-muted mb-2 text-sm font-medium">Ventende</h3>
+                <div class="space-y-2">
+                  <div
+                    v-for="consent in data.user.consentStatus.pendingConsents"
+                    :key="consent.id"
+                    class="border-default flex items-center justify-between rounded-md border p-3"
+                  >
+                    <div class="flex items-center gap-3">
+                      <UBadge variant="soft" color="warning">Ventende</UBadge>
+                      <div>
+                        <span class="font-medium">{{ consent.title }}</span>
+                        <span class="text-dimmed ml-2 text-xs"
+                          >v{{ consent.version }}</span
+                        >
+                      </div>
+                    </div>
+                    <code class="text-dimmed text-xs">{{ consent.key }}</code>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Accepted Consents -->
+              <div v-if="data.user.consentStatus.acceptedConsents.length > 0">
+                <h3 class="text-muted mb-2 text-sm font-medium">Akseptert</h3>
+                <div class="space-y-2">
+                  <div
+                    v-for="item in data.user.consentStatus.acceptedConsents"
+                    :key="item.id"
+                    class="border-default flex items-center justify-between gap-4 rounded-md border p-3"
+                  >
+                    <div class="flex items-center gap-3">
+                      <UBadge variant="soft" color="success">Akseptert</UBadge>
+                      <div>
+                        <span class="font-medium">{{
+                          item.consent.title
+                        }}</span>
+                        <span class="text-dimmed ml-2 text-xs">
+                          v{{ item.consent.version }}
+                        </span>
+                      </div>
+                    </div>
+                    <UButton
+                      v-if="
+                        item.consent.managementType ===
+                        ConsentManagementType.Local
+                      "
+                      color="neutral"
+                      variant="soft"
+                      size="sm"
+                      class="ml-auto"
+                      @click="
+                        openRemoveConsentModal(
+                          item.consent.id,
+                          item.consent.title,
+                        )
+                      "
+                    >
+                      Fjern samtykke
+                    </UButton>
+                    <div class="text-right">
+                      <code class="text-dimmed text-xs">
+                        {{ item.consent.key }}
+                      </code>
+                      <div class="text-dimmed text-xs">
+                        {{ formatDateTime(item.actionDate) }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Rejected Consents -->
+              <div v-if="data.user.consentStatus.rejectedConsents.length > 0">
+                <h3 class="text-muted mb-2 text-sm font-medium">Avvist</h3>
+                <div class="space-y-2">
+                  <div
+                    v-for="item in data.user.consentStatus.rejectedConsents"
+                    :key="item.id"
+                    class="border-default flex items-center justify-between rounded-md border p-3"
+                  >
+                    <div class="flex items-center gap-3">
+                      <UBadge variant="soft" color="error">Avvist</UBadge>
+                      <div>
+                        <span class="font-medium">{{
+                          item.consent.title
+                        }}</span>
+                        <span class="text-dimmed ml-2 text-xs"
+                          >v{{ item.consent.version }}</span
+                        >
+                      </div>
+                    </div>
+                    <div class="text-right">
+                      <code class="text-dimmed text-xs">{{
+                        item.consent.key
+                      }}</code>
+                      <div class="text-dimmed text-xs">
+                        {{ formatDateTime(item.actionDate) }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- No consents -->
+              <div
+                v-if="
+                  data.user.consentStatus.pendingConsents.length === 0 &&
+                  data.user.consentStatus.acceptedConsents.length === 0 &&
+                  data.user.consentStatus.rejectedConsents.length === 0
+                "
+                class="text-dimmed"
+              >
+                Ingen samtykkeaktivitet
+              </div>
+            </div>
+          </UCard>
+
+          <!-- Feedback Card -->
+          <UCard>
+            <template #header>
+              <div class="flex items-center justify-between">
+                <h2 class="text-xl font-semibold">
+                  Tilbakemeldinger
+                  <span
+                    v-if="feedbackTotalCount > 0"
+                    class="text-dimmed text-sm font-normal"
+                  >
+                    ({{ feedbackTotalCount }}
+                    {{
+                      feedbackTotalCount === 1 ? 'oppføring' : 'oppføringer'
+                    }})
+                  </span>
+                </h2>
+                <UButton
+                  variant="ghost"
+                  size="sm"
+                  :to="{ name: 'admin-feedback' }"
+                >
+                  Vis alle
+                </UButton>
+              </div>
+            </template>
+
+            <div v-if="feedbackEntries.length > 0" class="space-y-3">
+              <div
+                v-for="entry in feedbackEntries"
+                :key="entry.id"
+                class="border-default rounded-md border p-3"
+              >
+                <div class="flex items-start justify-between gap-4">
+                  <p class="text-sm whitespace-pre-wrap">{{ entry.message }}</p>
+                  <UBadge
+                    :color="entry.canContactMe ? 'success' : 'neutral'"
+                    variant="soft"
+                    class="shrink-0"
+                  >
+                    {{ entry.canContactMe ? 'Kan kontaktes' : 'Ikke kontakt' }}
                   </UBadge>
                 </div>
-              </div>
-              <div class="text-right">
                 <div
-                  v-if="entry.reason"
-                  class="text-dimmed max-w-xs truncate text-sm"
+                  class="text-dimmed mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs"
                 >
-                  {{ entry.reason }}
-                </div>
-                <div class="text-dimmed text-xs">
-                  {{ formatDateTime(entry.createdAt) }}
+                  <span>{{ formatDateTime(entry.createdAt) }}</span>
+                  <span v-if="entry.platform">{{ entry.platform }}</span>
+                  <span v-if="entry.screenWidth && entry.screenHeight">
+                    {{ entry.screenWidth }}x{{ entry.screenHeight }}
+                  </span>
+                  <code v-if="entry.appVersion">v{{ entry.appVersion }}</code>
                 </div>
               </div>
+              <div
+                v-if="feedbackTotalCount > 10"
+                class="text-dimmed pt-2 text-center text-sm"
+              >
+                Viser 10 av {{ feedbackTotalCount }} oppføringer
+              </div>
             </div>
-            <div
-              v-if="scoreTotalCount > 100"
-              class="text-dimmed pt-2 text-center text-sm"
-            >
-              Viser 100 av {{ scoreTotalCount }} oppføringer
+            <div v-else class="text-dimmed">Ingen tilbakemeldinger</div>
+          </UCard>
+
+          <!-- Score Journal Card -->
+          <UCard>
+            <template #header>
+              <div class="flex items-center justify-between">
+                <h2 class="text-xl font-semibold">
+                  Poenglogg
+                  <UBadge color="neutral" variant="soft">
+                    {{ data.user.points }} poeng
+                  </UBadge>
+                  <span
+                    v-if="scoreTotalCount > 0"
+                    class="text-dimmed text-sm font-normal"
+                  >
+                    ({{ scoreTotalCount }} oppføringer)
+                  </span>
+                </h2>
+              </div>
+            </template>
+
+            <div v-if="scoreEntries.length > 0" class="space-y-2">
+              <div
+                v-for="entry in scoreEntries"
+                :key="entry.id"
+                class="border-default flex items-center justify-between rounded-md border p-3"
+              >
+                <div class="flex items-center gap-3">
+                  <UBadge
+                    :color="entry.points >= 0 ? 'success' : 'error'"
+                    variant="soft"
+                  >
+                    {{ entry.points >= 0 ? '+' : ''
+                    }}{{ formatNumber(entry.points) }}
+                  </UBadge>
+                  <div>
+                    <span class="font-medium">{{ entry.project.name }}</span>
+                    <UBadge variant="subtle" size="xs" class="ml-2">
+                      {{ formatSourceType(entry.sourceType) }}
+                    </UBadge>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div
+                    v-if="entry.reason"
+                    class="text-dimmed max-w-xs truncate text-sm"
+                  >
+                    {{ entry.reason }}
+                  </div>
+                  <div class="text-dimmed text-xs">
+                    {{ formatDateTime(entry.createdAt) }}
+                  </div>
+                </div>
+              </div>
+              <div
+                v-if="scoreTotalCount > 100"
+                class="text-dimmed pt-2 text-center text-sm"
+              >
+                Viser 100 av {{ scoreTotalCount }} oppføringer
+              </div>
             </div>
-          </div>
-          <div v-else class="text-dimmed">Ingen poengoppføringer</div>
-        </UCard>
-      </div>
+            <div v-else class="text-dimmed">Ingen poengoppføringer</div>
+          </UCard>
+        </div>
+      </AdminQueryState>
     </div>
 
     <!-- Add Role Modal -->

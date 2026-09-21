@@ -229,7 +229,7 @@ server-side filter, a facet and full URL state.
   2026-09-21**; when picked up, prefer a dedicated reorder mode that loads
   everything over page-local ordering, which is cheaper and semantically wrong.
 
-### 2. Loading, empty and error states everywhere they belong
+### 2. Loading, empty and error states everywhere they belong — ☑ done 2026-09-21
 
 Make the three states universal and consistent. `AdminErrorState` is on 30
 pages, `AdminLoadingState`/`USkeleton` on 22; empty states are ad hoc.
@@ -248,10 +248,10 @@ individually is the expensive way to do this:
 `UTable`'s `#loading` slot turned out to exist and be unused everywhere, so
 skeleton rows cost nothing.
 
-**Detail and form pages are the remaining half.** 30 pages use
-`AdminErrorState` and 21 use `AdminLoadingState`, mostly as the same
-`v-if error / v-else-if fetching` chain — the candidate for an `AdminQueryState`
-wrapper.
+**Detail and form pages: done 2026-09-21.** `AdminQueryState` on all 17 pages
+that had the chain — see the log entry. The 13 pages that render only
+`<AdminErrorState v-if="error" />` are correct as they are: they are lists,
+whose loading and empty states now live in the table's slots.
 
 Do not "deduplicate" `AdminErrorState`/`AdminLoadingState` back into the shared
 `ErrorState`/`LoadingState`: keeping them separate is what severs admin's
@@ -603,7 +603,41 @@ then `make generate` and `pnpm codegen`.
 
 ## Update log
 
-### 2026-09-21 — table states standardised (#2, list half)
+### 2026-09-21 — AdminQueryState; #2 complete
+
+**`AdminQueryState`** replaces the
+`v-if="fetching" / v-else-if="error" / v-else` chain on **all 17 pages** that
+had it. With the table half done earlier, cross-cutting #2 is closed.
+
+**It is not primarily a dedupe — it fixes a bug those 17 pages shared.**
+`v-if="fetching"` unmounts the entire page body on _every_ refetch: after a
+mutation, on a cache refresh, on a route-param change. The page flashes back to
+a spinner despite already having content to show. Three `my-church` pages had
+noticed and hand-rolled a `hasLoadedOnce` ref watching `data`; the other
+fourteen had not. The component shows the spinner only before the query has
+ever settled, so every page gets the good behaviour and the three hand-rolled
+refs are deleted.
+
+Two details that took care:
+
+- **Settling is keyed on the `true → false` transition of `fetching`, not on
+  `fetching` being falsy.** Every admin query is paused until auth is ready, so
+  `fetching` is false before the query ever runs — treating that as "settled"
+  would suppress the first spinner entirely. There is a test for exactly this.
+- **Error outranks a stale fetch once settled**, so a failed refetch cannot
+  leave a page spinning forever.
+
+**The conversion was mechanical but not safe to do blind.** Wrapping means
+finding each chain's following element and its matching close tag across
+nested Vue templates. A mismatched tag is a hard SFC compile error, so
+`pnpm build` is the check that actually matters here — it passed, and two pages
+were done by hand rather than by the transformer: `achievements/index.vue`,
+whose chain continues into a `UEmpty` branch, and `projects/index.vue`, where an
+explanatory comment sits between the chain and the element it explains and had
+to travel with it.
+
+Tests: 7 cases, mutation-checked — restoring the naive `showLoading = fetching`
+fails exactly the refetch case. Component 207 → 214.
 
 Two components, and **all 13 admin tables now carry both states** — up from
 10 with `#empty` and **0** with `#loading`.

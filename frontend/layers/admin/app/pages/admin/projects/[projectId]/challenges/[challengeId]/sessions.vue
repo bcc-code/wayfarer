@@ -411,91 +411,91 @@ function getDropdownItems(session: (typeof sessions.value)[number]) {
 <template>
   <div>
     <div>
-      <AdminLoadingState v-if="fetching" />
-      <AdminErrorState v-else-if="error" :error />
-      <template v-else-if="data">
-        <div
-          v-if="data.challenge.__typename !== 'QuizChallenge'"
-          class="text-center py-12"
-        >
-          <p class="text-muted">
-            Denne utfordringen er ikke en quiz-utfordring.
-          </p>
-          <UButton
-            class="mt-4"
-            :to="{
-              name: 'admin-projects-projectId-challenges-challengeId',
-              params: {
-                projectId: route.params.projectId,
-                challengeId: route.params.challengeId,
-              },
-            }"
+      <AdminQueryState :fetching :error>
+        <template v-if="data">
+          <div
+            v-if="data.challenge.__typename !== 'QuizChallenge'"
+            class="text-center py-12"
           >
-            Tilbake til utfordring
-          </UButton>
-        </div>
-        <template v-else>
-          <div class="mb-6 flex items-center justify-between">
-            <h1 class="text-2xl font-bold">Sesjoner</h1>
-            <UButton icon="lucide:plus" @click="openCreateModal">
-              Opprett sesjon
+            <p class="text-muted">
+              Denne utfordringen er ikke en quiz-utfordring.
+            </p>
+            <UButton
+              class="mt-4"
+              :to="{
+                name: 'admin-projects-projectId-challenges-challengeId',
+                params: {
+                  projectId: route.params.projectId,
+                  challengeId: route.params.challengeId,
+                },
+              }"
+            >
+              Tilbake til utfordring
             </UButton>
           </div>
+          <template v-else>
+            <div class="mb-6 flex items-center justify-between">
+              <h1 class="text-2xl font-bold">Sesjoner</h1>
+              <UButton icon="lucide:plus" @click="openCreateModal">
+                Opprett sesjon
+              </UButton>
+            </div>
 
-          <div class="mb-4">
-            <USelect
-              v-model="stateFilter"
-              :items="stateFilterOptions"
-              value-key="value"
-              label-key="label"
-              class="w-48"
-            />
-          </div>
-
-          <UTable :data="sessions" :loading="sessionsFetching" :columns>
-            <template #empty>
-              <AdminTableEmpty
-                :filtered="stateFilter !== 'all'"
-                title="Ingen sesjoner ennå"
-                filtered-title="Ingen sesjoner med denne statusen"
-                clear-label="Vis alle"
-                @clear="stateFilter = 'all'"
+            <div class="mb-4">
+              <USelect
+                v-model="stateFilter"
+                :items="stateFilterOptions"
+                value-key="value"
+                label-key="label"
+                class="w-48"
               />
-            </template>
-            <template #loading>
-              <AdminTableLoading />
-            </template>
-            <template #name-cell="{ row }">
-              {{ row.original.name || '(uten navn)' }}
-            </template>
-            <template #state-cell="{ row }">
-              <UBadge
-                variant="soft"
-                :color="stateBadgeColor(row.original.state)"
-              >
-                {{ stateLabel(row.original.state) }}
-              </UBadge>
-            </template>
-            <template #createdAt-cell="{ row }">
-              {{ formatDateTime(row.original.createdAt) }}
-            </template>
-            <template #actions-cell="{ row }">
-              <div class="flex justify-end">
-                <UDropdownMenu
-                  v-if="row.original.state !== QuizSessionState.Finished"
-                  :items="getDropdownItems(row.original)"
+            </div>
+
+            <UTable :data="sessions" :loading="sessionsFetching" :columns>
+              <template #empty>
+                <AdminTableEmpty
+                  :filtered="stateFilter !== 'all'"
+                  title="Ingen sesjoner ennå"
+                  filtered-title="Ingen sesjoner med denne statusen"
+                  clear-label="Vis alle"
+                  @clear="stateFilter = 'all'"
+                />
+              </template>
+              <template #loading>
+                <AdminTableLoading />
+              </template>
+              <template #name-cell="{ row }">
+                {{ row.original.name || '(uten navn)' }}
+              </template>
+              <template #state-cell="{ row }">
+                <UBadge
+                  variant="soft"
+                  :color="stateBadgeColor(row.original.state)"
                 >
-                  <UButton
-                    variant="ghost"
-                    size="sm"
-                    icon="lucide:more-horizontal"
-                  />
-                </UDropdownMenu>
-              </div>
-            </template>
-          </UTable>
+                  {{ stateLabel(row.original.state) }}
+                </UBadge>
+              </template>
+              <template #createdAt-cell="{ row }">
+                {{ formatDateTime(row.original.createdAt) }}
+              </template>
+              <template #actions-cell="{ row }">
+                <div class="flex justify-end">
+                  <UDropdownMenu
+                    v-if="row.original.state !== QuizSessionState.Finished"
+                    :items="getDropdownItems(row.original)"
+                  >
+                    <UButton
+                      variant="ghost"
+                      size="sm"
+                      icon="lucide:more-horizontal"
+                    />
+                  </UDropdownMenu>
+                </div>
+              </template>
+            </UTable>
+          </template>
         </template>
-      </template>
+      </AdminQueryState>
     </div>
 
     <!-- Create/Edit modal -->

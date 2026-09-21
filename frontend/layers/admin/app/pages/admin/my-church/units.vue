@@ -77,13 +77,6 @@ const {
 // Expand state tracking (initialized after filteredUnits is defined)
 const expandedUnitIds = ref<Set<string>>(new Set())
 
-// Track initial load to avoid showing loading state during refetches
-const hasLoadedOnce = ref(false)
-watch(data, (newData) => {
-  if (!newData) return
-  hasLoadedOnce.value = true
-})
-
 const { executeMutation: addTeamMembers } = useAddTeamMembersMutation()
 const { executeMutation: removeTeamMembers } = useRemoveTeamMembersMutation()
 const { executeMutation: createTeam } = useCreateTeamMutation()
@@ -732,279 +725,291 @@ function handleDropMember(
         {{ $t('admin.common.back') }}
       </UButton>
 
-      <AdminLoadingState v-if="fetching && !hasLoadedOnce" />
-      <AdminErrorState v-else-if="error" :error />
-      <div v-else-if="data" class="mt-12">
-        <!-- No active project message -->
-        <div
-          v-if="!data.myCurrentProject"
-          class="text-dimmed text-center py-12"
-        >
-          <Icon name="lucide:calendar-x" class="size-12 mb-4 mx-auto" />
-          <p class="text-lg">{{ $t('admin.units.noActiveProject') }}</p>
-        </div>
+      <AdminQueryState :fetching :error>
+        <div v-if="data" class="mt-12">
+          <!-- No active project message -->
+          <div
+            v-if="!data.myCurrentProject"
+            class="text-dimmed text-center py-12"
+          >
+            <Icon name="lucide:calendar-x" class="size-12 mb-4 mx-auto" />
+            <p class="text-lg">{{ $t('admin.units.noActiveProject') }}</p>
+          </div>
 
-        <!-- Two-column layout -->
-        <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <!-- Left column: Units -->
-          <div class="relative">
-            <h2 class="text-2xl font-semibold mb-4">
-              {{ $t('admin.units.title') }}
-            </h2>
+          <!-- Two-column layout -->
+          <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left column: Units -->
+            <div class="relative">
+              <h2 class="text-2xl font-semibold mb-4">
+                {{ $t('admin.units.title') }}
+              </h2>
 
-            <!-- Search -->
-            <UInput
-              v-model="unitSearch"
-              :placeholder="$t('admin.units.searchPlaceholder')"
-              icon="lucide:search"
-              class="mb-4"
-            />
-
-            <!-- Expand all checkbox -->
-            <UCheckbox
-              v-model="expandAll"
-              :label="$t('admin.units.expandAll')"
-              class="mb-4"
-            />
-
-            <!-- Create unit buttons -->
-            <div v-if="!isCreatingUnit" class="grid grid-cols-2 gap-2 mb-4">
-              <UButton size="lg" block class="flex-1" @click="startCreateUnit">
-                <Icon name="lucide:plus" />
-                {{ $t('admin.units.createOneUnit') }}
-              </UButton>
-              <UPopover v-model:open="isBulkCreating">
-                <UButton size="lg" block>
-                  <Icon name="lucide:plus" />
-                  {{ $t('admin.units.createMultipleUnits') }}
-                </UButton>
-                <template #content>
-                  <div class="p-4 w-64">
-                    <p class="text-sm font-medium mb-3">
-                      {{ $t('admin.units.bulkCreate.countLabel') }}
-                    </p>
-                    <UInput
-                      v-model.number="bulkCount"
-                      type="number"
-                      :min="1"
-                      :max="50"
-                      class="mb-3"
-                    />
-                    <p class="text-xs text-dimmed mb-3">
-                      {{ $t('admin.units.bulkCreate.autoGenerateInfo') }}
-                    </p>
-                    <div class="flex gap-2 justify-end">
-                      <UButton
-                        variant="ghost"
-                        size="sm"
-                        @click="
-                          () => {
-                            isBulkCreating = false
-                          }
-                        "
-                      >
-                        {{ $t('admin.common.cancel') }}
-                      </UButton>
-                      <UButton
-                        size="sm"
-                        :loading="bulkCreatingLoading"
-                        :disabled="bulkCount < 1 || bulkCount > 50"
-                        @click="saveBulkUnits"
-                      >
-                        {{ $t('admin.common.create') }}
-                      </UButton>
-                    </div>
-                  </div>
-                </template>
-              </UPopover>
-            </div>
-
-            <!-- Create unit form -->
-            <div
-              v-if="isCreatingUnit"
-              class="mb-4 rounded-lg border border-default bg-elevated/50 p-4"
-            >
+              <!-- Search -->
               <UInput
-                v-model="newUnitName"
-                :placeholder="$t('admin.units.namePlaceholder')"
-                class="mb-3"
-                autofocus
+                v-model="unitSearch"
+                :placeholder="$t('admin.units.searchPlaceholder')"
+                icon="lucide:search"
+                class="mb-4"
               />
-              <div class="flex gap-2 justify-end">
-                <UButton variant="ghost" size="sm" @click="cancelCreateUnit">
-                  {{ $t('admin.common.cancel') }}
-                </UButton>
-                <UButton
-                  size="sm"
-                  :loading="creatingUnitLoading"
-                  @click="saveNewUnit"
-                >
-                  {{ $t('admin.common.save') }}
-                </UButton>
-              </div>
-            </div>
 
-            <!-- Select all checkbox -->
-            <div
-              v-if="filteredUnits.length > 0"
-              class="mb-2 flex items-center gap-2"
-            >
+              <!-- Expand all checkbox -->
               <UCheckbox
-                :model-value="allSelected"
-                @update:model-value="toggleSelectAll"
+                v-model="expandAll"
+                :label="$t('admin.units.expandAll')"
+                class="mb-4"
               />
-              <span class="text-sm text-dimmed">
-                {{ $t('admin.units.selectAll') }}
-              </span>
-            </div>
 
-            <!-- Units list -->
-            <TransitionGroup
-              tag="div"
-              class="space-y-2"
-              enter-active-class="transition duration-300 ease-out"
-              enter-from-class="scale-95 opacity-0"
-              enter-to-class="scale-100 opacity-100"
-              leave-active-class="transition duration-300 ease-out absolute left-0 right-0"
-              leave-from-class="scale-100 opacity-100"
-              leave-to-class="scale-95 opacity-0"
-              move-class="transition duration-300 ease-out"
-            >
+              <!-- Create unit buttons -->
+              <div v-if="!isCreatingUnit" class="grid grid-cols-2 gap-2 mb-4">
+                <UButton
+                  size="lg"
+                  block
+                  class="flex-1"
+                  @click="startCreateUnit"
+                >
+                  <Icon name="lucide:plus" />
+                  {{ $t('admin.units.createOneUnit') }}
+                </UButton>
+                <UPopover v-model:open="isBulkCreating">
+                  <UButton size="lg" block>
+                    <Icon name="lucide:plus" />
+                    {{ $t('admin.units.createMultipleUnits') }}
+                  </UButton>
+                  <template #content>
+                    <div class="p-4 w-64">
+                      <p class="text-sm font-medium mb-3">
+                        {{ $t('admin.units.bulkCreate.countLabel') }}
+                      </p>
+                      <UInput
+                        v-model.number="bulkCount"
+                        type="number"
+                        :min="1"
+                        :max="50"
+                        class="mb-3"
+                      />
+                      <p class="text-xs text-dimmed mb-3">
+                        {{ $t('admin.units.bulkCreate.autoGenerateInfo') }}
+                      </p>
+                      <div class="flex gap-2 justify-end">
+                        <UButton
+                          variant="ghost"
+                          size="sm"
+                          @click="
+                            () => {
+                              isBulkCreating = false
+                            }
+                          "
+                        >
+                          {{ $t('admin.common.cancel') }}
+                        </UButton>
+                        <UButton
+                          size="sm"
+                          :loading="bulkCreatingLoading"
+                          :disabled="bulkCount < 1 || bulkCount > 50"
+                          @click="saveBulkUnits"
+                        >
+                          {{ $t('admin.common.create') }}
+                        </UButton>
+                      </div>
+                    </div>
+                  </template>
+                </UPopover>
+              </div>
+
+              <!-- Create unit form -->
               <div
-                v-for="unit in filteredUnits"
-                :key="unit.id"
-                class="flex items-start gap-2"
+                v-if="isCreatingUnit"
+                class="mb-4 rounded-lg border border-default bg-elevated/50 p-4"
+              >
+                <UInput
+                  v-model="newUnitName"
+                  :placeholder="$t('admin.units.namePlaceholder')"
+                  class="mb-3"
+                  autofocus
+                />
+                <div class="flex gap-2 justify-end">
+                  <UButton variant="ghost" size="sm" @click="cancelCreateUnit">
+                    {{ $t('admin.common.cancel') }}
+                  </UButton>
+                  <UButton
+                    size="sm"
+                    :loading="creatingUnitLoading"
+                    @click="saveNewUnit"
+                  >
+                    {{ $t('admin.common.save') }}
+                  </UButton>
+                </div>
+              </div>
+
+              <!-- Select all checkbox -->
+              <div
+                v-if="filteredUnits.length > 0"
+                class="mb-2 flex items-center gap-2"
               >
                 <UCheckbox
-                  :model-value="selectedUnitIds.has(unit.id)"
-                  class="mt-3.5"
-                  @update:model-value="toggleUnitSelection(unit.id)"
+                  :model-value="allSelected"
+                  @update:model-value="toggleSelectAll"
                 />
-                <AdminUnitCard
-                  class="flex-1"
-                  :unit="unit"
-                  :members="getTeamMembers(unit)"
-                  :user-items="userItems"
-                  :expand-all="isUnitExpanded(unit.id)"
-                  :loading="isTeamLoading(unit.id)"
-                  @add-member="
-                    (
-                      _userId: string,
-                      _teamId: string,
-                      _teamName: string,
-                      user: {
-                        id: string
-                        name: string
-                        age?: number | null
-                        gender: string
-                        teams: { id: string; name: string }[]
-                      },
-                    ) => handleUserSelect(user, unit.id)
-                  "
-                  @remove-member="handleRemoveFromTeam"
-                  @delete-unit="handleDeleteUnit"
-                  @drop-member="handleDropMember"
-                  @assign-leader="handleAssignLeader"
-                  @rename-unit="handleRenameUnit"
-                  @update:expanded="setUnitExpanded(unit.id, $event)"
-                />
+                <span class="text-sm text-dimmed">
+                  {{ $t('admin.units.selectAll') }}
+                </span>
               </div>
 
-              <p v-if="filteredUnits.length === 0" class="text-dimmed text-sm">
-                {{ $t('admin.units.noUnitsFound') }}
-              </p>
-            </TransitionGroup>
-          </div>
+              <!-- Units list -->
+              <TransitionGroup
+                tag="div"
+                class="space-y-2"
+                enter-active-class="transition duration-300 ease-out"
+                enter-from-class="scale-95 opacity-0"
+                enter-to-class="scale-100 opacity-100"
+                leave-active-class="transition duration-300 ease-out absolute left-0 right-0"
+                leave-from-class="scale-100 opacity-100"
+                leave-to-class="scale-95 opacity-0"
+                move-class="transition duration-300 ease-out"
+              >
+                <div
+                  v-for="unit in filteredUnits"
+                  :key="unit.id"
+                  class="flex items-start gap-2"
+                >
+                  <UCheckbox
+                    :model-value="selectedUnitIds.has(unit.id)"
+                    class="mt-3.5"
+                    @update:model-value="toggleUnitSelection(unit.id)"
+                  />
+                  <AdminUnitCard
+                    class="flex-1"
+                    :unit="unit"
+                    :members="getTeamMembers(unit)"
+                    :user-items="userItems"
+                    :expand-all="isUnitExpanded(unit.id)"
+                    :loading="isTeamLoading(unit.id)"
+                    @add-member="
+                      (
+                        _userId: string,
+                        _teamId: string,
+                        _teamName: string,
+                        user: {
+                          id: string
+                          name: string
+                          age?: number | null
+                          gender: string
+                          teams: { id: string; name: string }[]
+                        },
+                      ) => handleUserSelect(user, unit.id)
+                    "
+                    @remove-member="handleRemoveFromTeam"
+                    @delete-unit="handleDeleteUnit"
+                    @drop-member="handleDropMember"
+                    @assign-leader="handleAssignLeader"
+                    @rename-unit="handleRenameUnit"
+                    @update:expanded="setUnitExpanded(unit.id, $event)"
+                  />
+                </div>
 
-          <!-- Right column: Personer -->
-          <div>
-            <h2 class="text-2xl font-semibold mb-4 flex gap-3 items-center">
-              {{ $t('admin.units.people') }}
-              <Icon v-if="fetching" name="svg-spinners:bars-rotate-fade" />
-            </h2>
-
-            <!-- Search -->
-            <div class="flex gap-4 justify-between items-center mb-4">
-              <UInput
-                v-model="personSearch"
-                :placeholder="$t('admin.units.searchPeoplePlaceholder')"
-                icon="lucide:search"
-              />
-              <UPopover :content="{ align: 'end' }">
-                <UChip color="neutral" size="lg" :show="filters.showO36">
-                  <UButton variant="outline" color="neutral">
-                    <Icon name="lucide:filter" />
-                    {{ $t('admin.units.filter.title') }}
-                  </UButton>
-                </UChip>
-                <template #content>
-                  <div class="p-4">
-                    <UCheckbox
-                      v-model="filters.showO36"
-                      :label="$t('admin.units.filter.showO36')"
-                      :description="$t('admin.units.filter.showO36Description')"
-                      :ui="{ description: 'max-w-[200px]' }"
-                    />
-                  </div>
-                </template>
-              </UPopover>
+                <p
+                  v-if="filteredUnits.length === 0"
+                  class="text-dimmed text-sm"
+                >
+                  {{ $t('admin.units.noUnitsFound') }}
+                </p>
+              </TransitionGroup>
             </div>
 
-            <!-- Filter tabs -->
-            <UTabs
-              v-model="activeFilter"
-              :items="filterTabs"
-              variant="pill"
-              color="neutral"
-            />
+            <!-- Right column: Personer -->
+            <div>
+              <h2 class="text-2xl font-semibold mb-4 flex gap-3 items-center">
+                {{ $t('admin.units.people') }}
+                <Icon v-if="fetching" name="svg-spinners:bars-rotate-fade" />
+              </h2>
 
-            <!-- People list (draggable) -->
-            <VueDraggable
-              :model-value="filteredPeople"
-              :group="{ name: 'users', pull: 'clone', put: false }"
-              ghost-class="opacity-50"
-              :animation="200"
-              :sort="false"
-              class="mt-4 space-y-1"
-            >
-              <div
-                v-for="person in filteredPeople"
-                :key="person.id"
-                class="flex items-center justify-between p-2 rounded-lg border border-transparent hover:border-default hover:bg-elevated/50 cursor-grab active:cursor-grabbing"
-              >
-                <div class="flex items-center gap-2">
-                  <Icon
-                    name="lucide:grip-vertical"
-                    class="size-4 text-dimmed"
-                  />
-                  <span>{{ person.name }}</span>
-                </div>
-                <div class="flex items-center gap-1.5 text-dimmed text-sm">
-                  <Icon
-                    v-if="person.gender === 'MALE'"
-                    name="tabler:gender-male"
-                    class="size-4 bg-blue-500 rounded-full"
-                  />
-                  <Icon
-                    v-else-if="person.gender === 'FEMALE'"
-                    name="tabler:gender-female"
-                    class="size-4 bg-pink-500 rounded-full"
-                  />
-                  <span>
-                    {{ $t('admin.units.years', { years: person.age ?? '-' }) }}
-                  </span>
-                </div>
+              <!-- Search -->
+              <div class="flex gap-4 justify-between items-center mb-4">
+                <UInput
+                  v-model="personSearch"
+                  :placeholder="$t('admin.units.searchPeoplePlaceholder')"
+                  icon="lucide:search"
+                />
+                <UPopover :content="{ align: 'end' }">
+                  <UChip color="neutral" size="lg" :show="filters.showO36">
+                    <UButton variant="outline" color="neutral">
+                      <Icon name="lucide:filter" />
+                      {{ $t('admin.units.filter.title') }}
+                    </UButton>
+                  </UChip>
+                  <template #content>
+                    <div class="p-4">
+                      <UCheckbox
+                        v-model="filters.showO36"
+                        :label="$t('admin.units.filter.showO36')"
+                        :description="
+                          $t('admin.units.filter.showO36Description')
+                        "
+                        :ui="{ description: 'max-w-[200px]' }"
+                      />
+                    </div>
+                  </template>
+                </UPopover>
               </div>
-            </VueDraggable>
-            <p
-              v-if="filteredPeople.length === 0"
-              class="text-sm text-dimmed text-center py-4"
-            >
-              {{ $t('admin.units.noPeopleFound') }}
-            </p>
+
+              <!-- Filter tabs -->
+              <UTabs
+                v-model="activeFilter"
+                :items="filterTabs"
+                variant="pill"
+                color="neutral"
+              />
+
+              <!-- People list (draggable) -->
+              <VueDraggable
+                :model-value="filteredPeople"
+                :group="{ name: 'users', pull: 'clone', put: false }"
+                ghost-class="opacity-50"
+                :animation="200"
+                :sort="false"
+                class="mt-4 space-y-1"
+              >
+                <div
+                  v-for="person in filteredPeople"
+                  :key="person.id"
+                  class="flex items-center justify-between p-2 rounded-lg border border-transparent hover:border-default hover:bg-elevated/50 cursor-grab active:cursor-grabbing"
+                >
+                  <div class="flex items-center gap-2">
+                    <Icon
+                      name="lucide:grip-vertical"
+                      class="size-4 text-dimmed"
+                    />
+                    <span>{{ person.name }}</span>
+                  </div>
+                  <div class="flex items-center gap-1.5 text-dimmed text-sm">
+                    <Icon
+                      v-if="person.gender === 'MALE'"
+                      name="tabler:gender-male"
+                      class="size-4 bg-blue-500 rounded-full"
+                    />
+                    <Icon
+                      v-else-if="person.gender === 'FEMALE'"
+                      name="tabler:gender-female"
+                      class="size-4 bg-pink-500 rounded-full"
+                    />
+                    <span>
+                      {{
+                        $t('admin.units.years', { years: person.age ?? '-' })
+                      }}
+                    </span>
+                  </div>
+                </div>
+              </VueDraggable>
+              <p
+                v-if="filteredPeople.length === 0"
+                class="text-sm text-dimmed text-center py-4"
+              >
+                {{ $t('admin.units.noPeopleFound') }}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      </AdminQueryState>
     </div>
 
     <!-- Floating bulk action bar -->
