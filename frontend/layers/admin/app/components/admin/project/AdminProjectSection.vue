@@ -44,6 +44,24 @@ gql(`
     achievements(first: 0, filter: { projectId: $projectId }) {
       totalCount
     }
+    # Aliased so the shortcut count and the badge row can ask for different
+    # pages of the same field. Skipped with the trend: between camps the home
+    # page should stay cheap.
+    achievementBadges: achievements(
+      first: 50
+      filter: { projectId: $projectId }
+    ) @include(if: $withTrend) {
+      edges {
+        node {
+          id
+          name
+          awardedUserCount
+          imageCompletedObject {
+            ...ImageFields
+          }
+        }
+      }
+    }
     events(first: 0, filter: { projectId: $projectId }) {
       totalCount
     }
@@ -115,6 +133,10 @@ const shortcuts = computed(() =>
 const participants = computed(() => data.value?.users.totalCount)
 
 const trend = computed(() => data.value?.project?.activityTrend ?? [])
+
+const achievementBadges = computed(
+  () => data.value?.achievementBadges?.edges.map((edge) => edge.node) ?? [],
+)
 </script>
 
 <template>
@@ -153,8 +175,16 @@ const trend = computed(() => data.value?.project?.activityTrend ?? [])
         </UBadge>
       </div>
 
-      <!-- Only for a running project; `withTrend` skips the field. -->
+      <!-- Both only for a running project; `withTrend` skips the fields. -->
       <AdminActivityTrend :trend="trend" :days="14" />
+
+      <AdminAchievementBadges
+        v-if="achievementBadges.length"
+        :achievements="achievementBadges"
+        :project-id="project.id"
+        :participants="participants"
+        :size="36"
+      />
 
       <!-- `auto-fit`: 4-7 shortcuts depending on permissions, so no fixed
            column count fits without orphaning a tile. -->

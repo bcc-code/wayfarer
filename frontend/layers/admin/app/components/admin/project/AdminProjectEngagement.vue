@@ -58,14 +58,8 @@ const challenges = computed(() =>
     })),
 )
 
-const achievements = computed(() =>
-  (data.value?.achievements.edges ?? [])
-    .map((edge) => edge.node)
-    .sort((a, b) => b.awardedUserCount - a.awardedUserCount)
-    .map((achievement) => ({
-      ...achievement,
-      tooltip: `${achievement.name}: ${formatNumber(achievement.awardedUserCount)} av ${formatNumber(props.participants ?? 0)}${share(achievement.awardedUserCount)}`,
-    })),
+const achievements = computed(
+  () => data.value?.achievements.edges.map((edge) => edge.node) ?? [],
 )
 </script>
 
@@ -98,26 +92,12 @@ const achievements = computed(() =>
         <p v-if="!achievements.length" class="text-dimmed text-sm">
           Ingen utmerkelser ennå.
         </p>
-        <ul v-else class="flex flex-wrap gap-x-4 gap-y-3">
-          <li v-for="achievement in achievements" :key="achievement.id">
-            <UTooltip :text="achievement.tooltip" :delay-duration="200">
-              <NuxtLink
-                :to="{
-                  name: 'admin-projects-projectId-achievements-achievementId',
-                  params: { projectId, achievementId: achievement.id },
-                }"
-                class="block rounded"
-              >
-                <AdminEngagementRing
-                  :count="achievement.awardedUserCount"
-                  :total="participants"
-                  :image="achievement.imageCompletedObject?.url"
-                />
-                <span class="sr-only">{{ achievement.name }}</span>
-              </NuxtLink>
-            </UTooltip>
-          </li>
-        </ul>
+        <AdminAchievementBadges
+          v-else
+          :achievements="achievements"
+          :project-id="projectId"
+          :participants="participants"
+        />
       </div>
 
       <div>

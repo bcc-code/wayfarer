@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { vi } from 'vitest'
+import { config } from '@vue/test-utils'
 
 // The global auth middleware (app/middleware/auth.global.ts) runs during Nuxt
 // app initialization for every mounted component. It calls useAuth0(), which is
@@ -80,3 +81,15 @@ vi.mock('posthog-js', () => {
   }
   return { default: posthog, posthog }
 })
+
+// UTooltip needs reka-ui's TooltipProvider, which `UApp` supplies in the real
+// app and nothing supplies under mountSuspended — the injection throws during
+// setup. Stub it once here rather than per test, and keep the text as
+// `data-tooltip` so tests can assert what a tooltip would say.
+config.global.stubs = {
+  ...config.global.stubs,
+  UTooltip: {
+    props: ['text'],
+    template: '<div :data-tooltip="text"><slot /></div>',
+  },
+}

@@ -759,6 +759,29 @@ then `make generate` and `pnpm codegen`.
 
 ## Update log
 
+### 2026-09-22 — achievement badges on the home page too
+
+`AdminAchievementBadges` extracted from the engagement panel (rings, tooltips,
+sort, links) and added to each project's home-page section, at `size: 36`.
+
+Only the badges. The challenge rows stayed off the home page: the home page
+carries N projects at once, and ten lines of challenge names each would turn it
+back into a wall of text — the badge row is one line and the overview is one
+click away. The badges are also gated on `withTrend`, like the trend: an
+unstarted project's row would be all empty rings.
+
+The section's query aliases the field — `achievements(first: 0)` for the
+shortcut count, `achievementBadges: achievements(first: 50)` for the row — since
+one document cannot ask for the same field twice with different arguments
+without an alias.
+
+**`UTooltip` is now stubbed globally** in `test/component/setup.ts`. It injects
+reka-ui's `TooltipProviderContext`, which `UApp` provides in the real app and
+nothing provides under `mountSuspended`, so the injection throws during setup —
+adding a tooltip to a component broke twelve unrelated tests in its suite. The
+stub keeps the text as `data-tooltip`, so tests can still assert what a tooltip
+would say.
+
 ### 2026-09-22 — `Challenge.completionCount` and `Achievement.awardedUserCount`
 
 The engagement numbers the bible-study creators asked for. Both are

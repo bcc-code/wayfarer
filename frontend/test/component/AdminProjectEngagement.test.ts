@@ -45,18 +45,9 @@ mockNuxtImport('useAdminProjectEngagementQuery', () => () => ({
 
 mockNuxtImport('useAuthReady', () => () => ({ isAuthReady: ref(true) }))
 
-// UTooltip teleports its content and needs UApp's provider, so it is stubbed —
-// but its `text` is where each row's name and share live, so the stub keeps it
-// readable.
-const UTooltip = {
-  props: ['text'],
-  template: '<div :data-tooltip="text"><slot /></div>',
-}
-
 const mount = () =>
   mountSuspended(AdminProjectEngagement, {
     props: { projectId: 'PR01ARZ3NDEKTSV4RRFFQ69G5FAV', participants: 88 },
-    global: { stubs: { UTooltip } },
   })
 
 describe('AdminProjectEngagement', () => {

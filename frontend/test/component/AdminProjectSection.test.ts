@@ -13,8 +13,16 @@ const trendDays = [
   { date: '2026-09-17', points: 0, activeUsers: 0 },
 ]
 
+const achievementBadges = {
+  edges: [
+    { node: { id: 'AC1', name: 'Første steg', awardedUserCount: 12 } },
+    { node: { id: 'AC2', name: 'Halvveis', awardedUserCount: 70 } },
+  ],
+}
+
 const counts = {
   project: { id: 'PR01ARZ3NDEKTSV4RRFFQ69G5FAV', activityTrend: trendDays },
+  achievementBadges,
   challenges: { totalCount: 12 },
   achievements: { totalCount: 8 },
   events: { totalCount: 0 },
@@ -231,6 +239,25 @@ describe('AdminProjectSection', () => {
     })
 
     expect(wrapper.text()).not.toContain('Poeng siste 14 dager')
+  })
+
+  // Same gate as the trend: an unstarted project's badges would be a row of
+  // empty rings.
+  it('shows achievement badges only once the project is running', async () => {
+    const running = await mountSuspended(AdminProjectSection, {
+      props: { project: project() },
+    })
+    expect(
+      running.findAllComponents({ name: 'AdminEngagementRing' }),
+    ).toHaveLength(2)
+
+    data.value = { ...counts, achievementBadges: undefined }
+    const upcoming = await mountSuspended(AdminProjectSection, {
+      props: { project: project() },
+    })
+    expect(
+      upcoming.findAllComponents({ name: 'AdminEngagementRing' }),
+    ).toHaveLength(0)
   })
 
   it('holds the layout with skeletons while counts load', async () => {
