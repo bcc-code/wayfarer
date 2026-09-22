@@ -97,9 +97,8 @@ gql(`
 				}
 			}
 		}
-		# Five, not a hundred: the full log per project is a click away on the
-		# project's own score page, filtered to this user. This is the "what just
-		# happened" window a support call starts from.
+		# A "what just happened" window; the full log is on the project's own
+		# score page, filtered to this user.
 		adminScoreJournal(filter: { userId: $id }, last: 5) {
 			totalCount
 			edges {
@@ -120,9 +119,7 @@ gql(`
 				}
 			}
 		}
-		# 10, matching the "Viser 10 av N" notice this panel renders. It asked for
-		# 100 and rendered all of them unsliced, so the notice was simply untrue —
-		# and 100 entries inline is a wall in a panel that has a "Vis alle" link.
+		# 10: the panel's own notice says "Viser 10", and it links to the rest.
 		feedback(filter: { userId: $id }, first: 10) {
 			totalCount
 			edges {
@@ -168,9 +165,8 @@ const {
   pause: computed(() => !isAuthReady.value || !currentProjectId.value),
 })
 
-// Supplies the trailing breadcrumb crumb and the navbar title; everything above
-// it is derived from the route. Must come after `data` exists — see the
-// `flush: 'post'` note in useAdminPage, which makes this safe either way.
+// After `data` exists. `useAdminPage` defers the read, so order is not
+// load-bearing — but reading it in order is clearer.
 useAdminPage(() => data.value?.user.name)
 
 const { canAssignRoles, canCheckAchievements } = usePermissions()
@@ -193,13 +189,8 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
 </script>
 
 <template>
-  <!--
-    Capped at the same `max-w-6xl` as the home dashboard, for the same reason.
-    Full panel width stretched every card to ~1640px while its content sat in
-    the left third — and it left each role row's delete button orphaned about
-    1500px from the label it deletes, so you had to track across empty space to
-    see what you were removing.
-  -->
+  <!-- Capped: full panel width left each row's delete button ~1500px from
+       the label it deletes. -->
   <div class="max-w-6xl">
     <AdminQueryState :fetching :error>
       <div v-if="data" class="space-y-10">

@@ -5,16 +5,9 @@ definePageMeta({
   layout: 'admin',
 })
 
-/**
- * Split into one query per concern rather than one query for the page.
- *
- * `feedback` is `@requireRole(["admin","superadmin"])` and the directive
- * returns an *error* rather than null (`internal/graph/directives/auth.go`).
- * On a non-null field that fails the whole operation — so while it shared a
- * document with `me` and `projects`, a project admin got an error state for
- * the entire page even though those two resolved fine. Separate documents fail
- * separately, and the gated one is paused for users who cannot read it.
- */
+// One query per concern: `feedback` is admin/superadmin-only and the directive
+// errors rather than returning null, which on a non-null field fails the whole
+// document. Separate documents fail separately.
 gql(`
   query AdminHomeProjects($now: DateTime!) {
     me {
@@ -76,11 +69,7 @@ const { data: feedbackData } = useAdminHomeFeedbackQuery({
   pause: computed(() => !isAuthReady.value || !canAccessFeedback.value),
 })
 
-/**
- * A project admin holds roles for specific projects, so the global list is
- * filtered to what they may actually open. Superadmins and admins see
- * everything, which is what `canViewProject` already encodes.
- */
+// A project admin only sees projects they may open.
 const visibleProjects = computed(() =>
   (projectData.value?.projects.edges ?? [])
     .map((edge) => edge.node)
@@ -102,15 +91,7 @@ const greeting = computed(() => {
 </script>
 
 <template>
-  <!--
-    Capped width, deliberately. The restructure swapped `UContainer` for a plain
-    div everywhere so pages could use the whole panel — right for tables and
-    card grids, wrong here: this page is a single column of prose-like blocks,
-    and stretched across a wide screen the project section became a row of
-    seven tiles spread over ~1600px with a feedback list of one-line entries
-    under it. `max-w-*` on a deliberate element was always the exception to that
-    sweep.
-  -->
+  <!-- Capped: a single column of blocks, not a table or a card grid. -->
   <div class="max-w-6xl">
     <h1 v-if="projectData?.me" class="my-8 text-3xl text-balance">
       {{ greeting }}, {{ projectData.me.name }}

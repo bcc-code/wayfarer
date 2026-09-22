@@ -20,9 +20,8 @@ const props = withDefaults(
   },
 )
 
-// A viewBox with a fixed width plus `preserveAspectRatio="none"` lets the SVG
-// stretch to its container without recomputing geometry on resize, which a
-// ResizeObserver would otherwise be needed for.
+// Fixed viewBox + preserveAspectRatio="none" stretches to the container
+// without recomputing geometry on resize.
 const VIEW_WIDTH = 240
 
 const values = computed(() => props.points.map((point) => point.value))
@@ -41,15 +40,8 @@ const hoveredPoint = computed(() =>
   hovered.value === null ? null : (props.points[hovered.value] ?? null),
 )
 
-/**
- * A window where nothing happened gets a sentence, not a chart.
- *
- * A flat series still occupies the plot's full height, so the tile rendered as
- * a tall empty box with a stray baseline rule adrift in it — which reads as a
- * broken chart, the very thing the baseline was added to prevent. Quiet
- * stretches are normal in this domain, so this is a common state and deserves
- * to look deliberate.
- */
+// A flat series fills the plot height with nothing in it, which reads as a
+// broken chart. Quiet windows are normal here, so they get a sentence.
 const hasActivity = computed(() => values.value.some((value) => value > 0))
 
 const dayLabel = (date: string) =>
@@ -62,17 +54,8 @@ const dayLabel = (date: string) =>
       {{ emptyLabel }}
     </p>
 
-    <!--
-      A styled tooltip, not a native SVG `<title>`: the browser's own tooltip
-      takes about a second to appear, cannot be styled, and never shows on
-      keyboard focus — it reads as nothing happening.
-
-      `aria-hidden` on the plot with a real table beside it, rather than a
-      `role="img"` summary. The tooltip is a pointer affordance; the table is
-      the path for keyboard and screen-reader users, which is why the tooltip
-      does not need its own focus handling and the chart does not add 14 tab
-      stops per tile.
-    -->
+    <!-- The plot is aria-hidden and the table below is the accessible path, so
+         the tooltip can be pointer-only without adding 14 tab stops. -->
     <div v-if="hasActivity" class="relative">
       <svg
         :viewBox="`0 0 ${VIEW_WIDTH} ${height}`"
@@ -83,11 +66,7 @@ const dayLabel = (date: string) =>
         focusable="false"
         @pointerleave="hovered = null"
       >
-        <!--
-          Baseline. Without it an all-zero window — a normal state for a project
-          between bursts of activity — paints nothing at all, and the tile reads
-          as a chart that failed to load rather than as zero.
-        -->
+        <!-- Baseline, so a near-empty window still reads as a chart. -->
         <rect
           :x="0"
           :y="height - 1"
@@ -96,15 +75,8 @@ const dayLabel = (date: string) =>
           class="fill-current text-dimmed opacity-40"
         />
 
-        <!--
-          The most recent day carries the accent; the rest are the de-emphasis
-          hue, and the hovered one lifts to full opacity so the chart is seen to
-          respond. One series, so there is no categorical palette to validate
-          for colour-vision separation — the states are the same hue at
-          different emphasis, and all are design-system tokens rather than
-          project branding, which is arbitrary per project and cannot be
-          contrast-checked up front.
-        -->
+        <!-- One series: the states are one hue at different emphasis, so there
+             is no categorical palette to validate. -->
         <rect
           v-for="bar in bars"
           :key="`bar-${bar.index}`"
@@ -124,12 +96,7 @@ const dayLabel = (date: string) =>
           ]"
         />
 
-        <!--
-          Hit columns, painted last so they sit above the bars. Full plot
-          height and the full slot width including the gap: the bar itself is a
-          2px sliver on a quiet day, which no one can hover, so the reader only
-          has to be over the right column.
-        -->
+        <!-- Painted last so they sit above the bars. -->
         <rect
           v-for="bar in bars"
           :key="`hit-${bar.index}`"
@@ -142,11 +109,7 @@ const dayLabel = (date: string) =>
         />
       </svg>
 
-      <!--
-        Positioned by the slot centre as a percentage, so it tracks the column
-        however wide the container is — the svg stretches via
-        `preserveAspectRatio="none"` rather than being re-measured.
-      -->
+      <!-- Positioned by percentage, so it tracks the column at any width. -->
       <div
         v-if="hoveredBar && hoveredPoint"
         data-slot="tooltip"

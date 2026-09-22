@@ -27,15 +27,8 @@ const props = defineProps<{
   project: SectionProject
 }>()
 
-/**
- * One query per section, not one for the page.
- *
- * Counting per project needs a `filter: { projectId }` on each root
- * connection, and GraphQL has no dynamic aliasing — so a single page-level
- * document cannot count N projects. A component that owns its own query
- * sidesteps that entirely: each mounted section asks for its own project, and
- * urql keys the document cache on variables so nothing is fetched twice.
- */
+// One query per section: counting N projects in one document would need
+// dynamic aliasing. urql keys on variables, so nothing is fetched twice.
 gql(`
   query AdminProjectSectionCounts($projectId: ID!, $withTrend: Boolean!) {
     project(id: $projectId) {
@@ -102,12 +95,8 @@ const countByRoute = computed<Partial<Record<AdminRouteName, number>>>(() => {
   }
 })
 
-/**
- * Shortcuts come from the same `PROJECT_NAV` the sidebar uses, so they cannot
- * drift from it and permission gating is already handled and tested there.
- * "Oversikt" is dropped because it resolves to the same route as the section
- * title above it.
- */
+// Same `PROJECT_NAV` as the sidebar, so they cannot drift and permission
+// gating comes with it. "Oversikt" is the section title's own route.
 const permissions = usePermissions()
 const shortcuts = computed(() =>
   visibleNavItems(PROJECT_NAV, permissions, {
@@ -117,10 +106,8 @@ const shortcuts = computed(() =>
     .map((item) => ({
       ...item,
       count: countByRoute.value[item.to],
-      // `item.to` is a union of every project route name, so typed routes
-      // cannot verify that one `params` shape satisfies all of them — even
-      // though every member of PROJECT_NAV takes exactly `projectId`. Same
-      // cast, for the same reason, as `projects/[projectId]/index.vue`.
+      // `item.to` is a union of route names, so typed routes cannot check one
+      // `params` shape against all of them.
       to: {
         name: item.to,
         params: { projectId: props.project.id },
@@ -237,22 +224,12 @@ const trendTiles = computed(() => {
         </div>
       </div>
 
-      <!--
-        `auto-fit` rather than a fixed column count: the number of shortcuts
-        varies from 4 to 7 with the viewer's permissions, and a fixed 6-wide
-        grid left the 7th tile alone on a second row. auto-fit collapses the
-        empty tracks so whatever is visible stretches to fill one row.
-      -->
+      <!-- `auto-fit`: 4-7 shortcuts depending on permissions, so no fixed
+           column count fits without orphaning a tile. -->
       <nav
         class="grid grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-2"
         :aria-label="`Snarveier for ${project.name}`"
       >
-        <!--
-          One line per shortcut — icon, label, count — rather than three stacked
-          rows. Denser, and it means entries with no count (Poeng,
-          Innstillinger) simply have none instead of reserving empty space
-          where a number would go.
-        -->
         <NuxtLink
           v-for="item in shortcuts"
           :key="item.label"
@@ -261,11 +238,8 @@ const trendTiles = computed(() => {
         >
           <UIcon :name="item.icon" class="text-muted size-4 shrink-0" />
           <span class="truncate text-xs">{{ item.label }}</span>
-          <!--
-            Plain counts, deliberately not health signals: challenges are
-            episodic, so a low or zero count is an ordinary state rather than
-            something to flag.
-          -->
+          <!-- Plain counts, not health signals: challenges are episodic, so a
+               zero is ordinary. -->
           <USkeleton
             v-if="fetching && item.count === undefined"
             class="ml-auto h-4 w-6 shrink-0"

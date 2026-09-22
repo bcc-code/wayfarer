@@ -1,13 +1,7 @@
 <script setup lang="ts">
 import { dbLanguageToLocale } from '../../../utils/languageMapping'
 
-/**
- * Who this user is, and the two actions that act on the user as a whole.
- *
- * The header used to be the user's name alone, while everything identifying —
- * church, roles, teams, points — sat below the fold. The avatar was already
- * being fetched and thrown away.
- */
+// Identity, plus the two actions that apply to the user as a whole.
 gql(`
   mutation SyncUser($userId: ID!) {
     syncUser(userId: $userId) {
@@ -69,12 +63,12 @@ const props = defineProps<{
     churchLockedUntil?: string | null
     church: { id: string; name: string }
   }
-  /** Gates the church lock — the only mutating control here. */
+  /** Gates the church lock. */
   canManage?: boolean
   canCheckAchievements?: boolean
 }>()
 
-/** The page owns the query, so it refetches after a sync or a lock change. */
+/** The page owns the query and refetches. */
 const emit = defineEmits<{ changed: [] }>()
 
 const { executeMutation: syncUser } = useSyncUserMutation()
@@ -91,10 +85,7 @@ const isChurchLocked = computed(() => {
   return !!until && new Date(until) > new Date()
 })
 
-/**
- * A readable language, not a bare code. The DB stores `no` where the app uses
- * `nb`, so it goes through the existing mapping before being named.
- */
+// The DB stores `no` where the app uses `nb`.
 const LANGUAGE_NAMES = new Intl.DisplayNames(['nb'], { type: 'language' })
 const languageLabel = computed(() => {
   const code = props.user.language
@@ -197,11 +188,6 @@ async function handleUnlock() {
         <div class="min-w-0">
           <h1 class="text-3xl font-bold">{{ user.name }}</h1>
           <p v-if="user.email" class="text-muted text-sm">{{ user.email }}</p>
-          <!--
-            Separated and spelled out: "Østfold 25 år nb" ran together as one
-            string, and a bare language code says nothing to a reader who does
-            not already know it.
-          -->
           <div
             class="text-muted mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm"
           >
@@ -249,17 +235,7 @@ async function handleUnlock() {
       </div>
     </div>
 
-    <!--
-      Sync-lock and the technical identifiers share one quiet row. The lock was
-      buried inside a definition list about the church, which hid a
-      consequential action; promoting it to a full-width card then overstated it
-      — it is the rarest thing anyone does here. A labelled row with the state
-      spelled out is the middle ground.
-    -->
-    <!--
-      `border-t` only: every section below draws its own top rule, so a bottom
-      border here would put two rules a short gap apart.
-    -->
+    <!-- Sync-lock and the ids share one quiet row: both are rarely needed. -->
     <div
       class="border-default flex flex-wrap items-center gap-x-6 gap-y-2 border-t py-3 text-sm"
     >

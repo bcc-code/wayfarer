@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import { RoleType, ScopeType } from '~/api/generated'
 
-/**
- * Pickers for the scope a role needs. Loaded only while the dialog is open —
- * there is no reason to fetch every church on a page view.
- */
+// Scope pickers, loaded only while the dialog is open.
 gql(`
   query AdminUserRoleScopeOptions {
     churches(first: 500) {
@@ -59,7 +56,7 @@ const props = defineProps<{
   canManage?: boolean
 }>()
 
-/** The page owns the query, so it refetches when the role set changes. */
+/** The page owns the query and refetches. */
 const emit = defineEmits<{ changed: [] }>()
 
 const roleLabels: Record<RoleType, string> = {
@@ -77,31 +74,16 @@ const roleOptions = Object.entries(roleLabels).map(([value, label]) => ({
   value: value as RoleType,
 }))
 
-/**
- * The scope a role takes, derived from the role itself.
- *
- * It was a second dropdown the admin had to answer, with exactly one correct
- * answer per role — and nothing stopped them picking a wrong one, so
- * "Menighetsadmin scoped to a Prosjekt" was expressible and would have been
- * stored. The pairing comes from the service: its own tests assign
- * `ChurchAdmin` with a church id, `ProjectAdmin` with a project id, `TeamLead`
- * with a team id and `Admin` with none (`internal/services/roles_test.go`).
- */
+// The role determines its scope, so the dialog does not ask. Nothing validates
+// the pairing server-side, so a mismatch would be stored if offered.
 const ROLE_SCOPE: Partial<Record<RoleType, ScopeType>> = {
   [RoleType.ChurchAdmin]: ScopeType.Church,
   [RoleType.ProjectAdmin]: ScopeType.Project,
   [RoleType.TeamLead]: ScopeType.Team,
 }
 
-/**
- * What a role is scoped to, by name. `RoleScope` resolves `church`/`project`/
- * `team` server-side, so this says "Østfold" where the card used to print
- * `CH01K9VZ865699692N7FVTXYR4AQ`.
- *
- * The id is the *fallback*, not the default: a scope pointing at something
- * deleted still has to render, and then the raw id is the only honest thing
- * left to show.
- */
+// `RoleScope` resolves these server-side. The id is the fallback only: a scope
+// pointing at something deleted still has to render.
 function scopeLabel(scope: RoleScope): string {
   return (
     scope.church?.name ?? scope.project?.name ?? scope.team?.name ?? scope.id
@@ -129,8 +111,7 @@ function resetForm() {
   newRole.teamId = ''
 }
 
-// Changing the role changes which scope applies, so a half-filled one from the
-// previous role must not travel with it.
+// A half-filled scope must not travel to a role that does not use it.
 watch(
   () => newRole.role,
   () => {
@@ -161,11 +142,8 @@ const projectItems = computed(() =>
   })),
 )
 
-/**
- * Teams are picked through their project rather than from one global list:
- * `TeamFilter` has no free-text field, so a flat list of every team could not
- * be searched server-side, and a single project can hold over a thousand.
- */
+// Teams via their project: `TeamFilter` has no free-text field, and one
+// project can hold over a thousand teams.
 const { data: teamOptions } = useAdminUserRoleTeamOptionsQuery({
   variables: computed(() => ({ projectId: newRole.projectId })),
   pause: computed(
@@ -184,7 +162,7 @@ const teamItems = computed(() =>
   })),
 )
 
-/** The id the mutation should carry, for whichever scope the role needs. */
+/** The id for whichever scope this role needs. */
 const scopeId = computed(() => {
   switch (requiredScope.value) {
     case ScopeType.Church:
@@ -315,12 +293,6 @@ async function handleRevoke(role: UserRole) {
       </template>
 
       <template #body>
-        <!--
-          One question, then the scope it implies. The dialog used to ask for a
-          scope *type* the role already determines, and then for the scope's
-          **ULID as free text** — "Skriv inn church-ID" — which meant leaving
-          the page to find an id and pasting it back.
-        -->
         <div class="space-y-4">
           <UFormField label="Rolle">
             <USelect
@@ -362,11 +334,6 @@ async function handleRevoke(role: UserRole) {
             />
           </UFormField>
 
-          <!--
-            Teams are reached through their project: `TeamFilter` has no
-            free-text field, so one global list could not be searched
-            server-side, and a single project can hold over a thousand teams.
-          -->
           <UFormField v-if="requiredScope === ScopeType.Team" label="Lag">
             <USelectMenu
               v-model="newRole.teamId"
@@ -392,11 +359,7 @@ async function handleRevoke(role: UserRole) {
           <UButton variant="ghost" color="neutral" @click="closeAddModal">
             Avbryt
           </UButton>
-          <!--
-            Disabled until the scope is chosen: a scoped role submitted without
-            one would be assigned globally, which is a much larger grant than
-            the admin asked for.
-          -->
+          <!-- Without its scope, a scoped role would be assigned globally. -->
           <UButton :disabled="!canSubmit" @click="handleAssign">
             Tildel rolle
           </UButton>

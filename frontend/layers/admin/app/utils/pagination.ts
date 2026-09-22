@@ -108,16 +108,9 @@ export function validatePageSize(size: number): boolean {
 
 // ==================== Position within the result set ====================
 
-/**
- * Keyset pagination knows how to step but not where it is: a cursor says
- * "after this row", never "row 60 of 13,477". The position is therefore
- * tracked client-side by counting steps, which is exact as long as navigation
- * only happens through the controls — which is the only way it can happen.
- *
- * This is what makes "Viser 16–30 av 13 477" possible without adding OFFSET to
- * the backend. Jumping to an arbitrary page still is not: that needs a cursor
- * we have no way to compute without walking there.
- */
+// A cursor says "after this row", never "row 60 of 13 477", so the position is
+// counted client-side. Exact, since navigation only happens through the
+// controls. Jumping to an arbitrary page still needs OFFSET.
 
 export function nextOffset(offset: number, pageSize: number): number {
   return offset + pageSize
@@ -128,21 +121,14 @@ export function previousOffset(offset: number, pageSize: number): number {
 }
 
 export interface PageRange {
-  /** 1-based index of the first row on screen. */
+  /** Both 1-based. */
   start: number
-  /** 1-based index of the last row on screen. */
   end: number
   total: number
 }
 
-/**
- * The human-readable range for the current page, or null when there is nothing
- * to describe.
- *
- * `end` is derived from the rows actually returned rather than from the page
- * size, so a short final page reads "13 471–13 477" instead of overshooting the
- * total.
- */
+// `end` comes from the rows actually returned, so a short final page does not
+// overshoot the total.
 export function pageRange(
   offset: number,
   rowsOnPage: number,

@@ -1,25 +1,7 @@
 <script setup lang="ts">
-/**
- * A user's points: per-project totals, plus the handful of most recent entries.
- *
- * It used to be a flat 100-row journal with a project column that was identical
- * on every row, under a heading naming the *current* project while the rows
- * spanned all of them — `points(projectId:)` is project-scoped and
- * `adminScoreJournal(filter: { userId })` is not, so the number and the list
- * described different things.
- *
- * Two shapes instead, because the page is used for support:
- *
- * - **Totals per project** answer "where does this person have points, and how
- *   many" — and each links to that project's journal filtered to this user,
- *   where the full, paginated log lives.
- * - **The last few entries** answer "what just happened", which is where a
- *   support conversation usually starts.
- *
- * There is deliberately **no cross-project total**. Projects differ in length
- * and scoring scale, so a lifetime sum is a number nobody can act on — the same
- * vanity metric that came off the home dashboard.
- */
+// Totals per project plus the most recent entries, for support cases: "where
+// does this person have points" and "what just happened". No cross-project
+// total — projects differ in length and scale, so the sum means nothing.
 interface ProjectPoints {
   projectId: string
   projectName: string
@@ -36,15 +18,11 @@ interface ScoreEntry {
 }
 
 const props = defineProps<{
-  /** Per-project totals, most recently active project first. */
+  /** Most recently active project first. */
   pointsByProject: ProjectPoints[]
-  /** The most recent entries across all projects. */
   recent: ScoreEntry[]
-  /** Total rows in the journal, so the window can say what it is showing. */
   totalCount: number
-  /** Lets every link point at this user's entries. */
   userId: string
-  /** Marked in the list so the project being worked on is findable. */
   currentProjectId?: string
 }>()
 
@@ -109,11 +87,6 @@ const scoresRoute = (projectId: string) => ({
                 }}{{ formatNumber(entry.points) }}
               </UBadge>
               <div class="min-w-0">
-                <!--
-                  The project is shown here because this list *does* span
-                  projects — unlike the old flat log, where the same name
-                  repeated on every row.
-                -->
                 <NuxtLink
                   :to="scoresRoute(entry.project.id)"
                   class="truncate font-medium hover:underline"

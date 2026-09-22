@@ -351,14 +351,8 @@ func buildCacheKeyParams(filter *model.UserFilter, first *int, after *string, la
 }
 
 // mapUserPointsByProject converts the per-project point rows into GraphQL
-// models.
-//
-// Kept separate from the resolver so it is testable without a database, and
-// because it carries one deliberate decision: **projects the user has scored in
-// but netted to zero are still listed.** A row exists because there is journal
-// activity, and "0 poeng" against a project someone participated in is a real
-// answer on a support call — quite different from the project not appearing at
-// all, which would suggest they were never in it.
+// models. Projects netting to zero are kept: "0 poeng" for a project someone
+// participated in is a real answer, unlike the project being absent.
 func mapUserPointsByProject(
 	rows []*sqlc.GetUserPointsByProjectRow,
 ) []model.UserProjectPoints {

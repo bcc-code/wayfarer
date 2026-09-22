@@ -47,10 +47,7 @@ export interface UsePaginationReturn {
   totalCount: Ref<number | null>
   /** Current page size being used */
   pageSize: Ref<number>
-  /**
-   * Which rows are on screen, 1-based, or null when there is nothing to show.
-   * Tracked by counting steps — keyset cursors cannot report a position.
-   */
+  /** Null when there is nothing to show. */
   range: Ref<PageRange | null>
   /** Whether we're currently on the first page */
   isFirstPage: Ref<boolean>
@@ -68,20 +65,12 @@ export interface UsePaginationReturn {
   reset: () => void
   /** Set a new page size */
   setPageSize: (size: number) => void
-  /**
-   * Jump straight to a known position, for restoring from the URL.
-   *
-   * Takes the query variables rather than a page number on purpose: with
-   * keyset pagination the variables *are* the position, so round-tripping them
-   * is exact. There is no page number to restore — see `restore` in
-   * useListState.
-   */
+  /** Restore a position from the URL. The variables *are* the position. */
   restore: (state: {
     after?: string | null
     before?: string | null
     offset?: number
   }) => void
-  /** Rows stepped past, for persisting the position label. */
   offset: Ref<number>
 }
 
@@ -128,9 +117,7 @@ export function usePagination(
   const pageSize = ref(defaultPageSize)
   const pageInfo = ref<PaginationPageInfo | null>(null)
   const totalCount = ref<number | null>(null)
-  /** Rows stepped past so far. See `pageRange` in utils/pagination. */
   const offset = ref(0)
-  /** Rows the last query actually returned, so a short final page reads right. */
   const rowsOnPage = ref(0)
   const variables = ref<PaginationVariables>(
     buildInitialVariables(defaultPageSize),
@@ -215,11 +202,8 @@ export function usePagination(
     firstPage()
   }
 
-  /**
-   * Restore an exact position. `offset` only feeds the "Viser 16–30" label; the
-   * cursor is what actually selects the rows, so a stale offset mislabels a
-   * correct page rather than showing the wrong one.
-   */
+  // `offset` only feeds the label; the cursor selects the rows, so a stale
+  // offset mislabels a correct page rather than showing the wrong one.
   function restore(state: {
     after?: string | null
     before?: string | null

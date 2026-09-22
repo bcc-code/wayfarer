@@ -183,11 +183,8 @@ RETURNING *;
 
 
 -- name: GetUserPointsByProject :many
--- Per-project point totals for one user, most recently active project first.
---
--- Ordered by the user's latest entry in each project rather than by project
--- date: on a support call the project someone just earned points in is the one
--- being asked about. Uses idx_score_journal_user.
+-- Per-project point totals for one user. Ordered by their latest entry in each
+-- project: on a support call that is the project being asked about.
 SELECT
     p.id AS project_id,
     p.name AS project_name,

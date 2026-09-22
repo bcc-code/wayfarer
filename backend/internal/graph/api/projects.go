@@ -176,21 +176,15 @@ func buildProjectCacheKeyParams(filter *model.ProjectFilter, first *int, after *
 // ==================== Project activity trend ====================
 
 const (
-	// defaultTrendDays is what `activityTrend` returns when the client asks for
-	// no particular window.
 	defaultTrendDays = 14
-	// maxTrendDays bounds the window. The field is a sparkline feed, so a
-	// client asking for years of daily rows is a mistake rather than a use
-	// case, and an unbounded value is an easy way to make the server do work
-	// proportional to whatever a caller types.
+	// Bounded: this feeds a sparkline, and an unbounded window lets a caller
+	// choose how much work the server does.
 	maxTrendDays = 90
 )
 
-// resolveTrendDays applies the default and clamps the window.
-//
-// A nil value means the argument was omitted. Non-positive values are treated
-// as the default rather than as an error: an empty series is a worse answer
-// than a sensible one, and there is nothing a caller could do with the error.
+// resolveTrendDays applies the default and clamps the window. A non-positive
+// value falls back rather than erroring — there is nothing a caller could do
+// with the error.
 func resolveTrendDays(days *int) int {
 	if days == nil || *days <= 0 {
 		return defaultTrendDays
@@ -201,25 +195,17 @@ func resolveTrendDays(days *int) int {
 	return *days
 }
 
-// trendWindowStart is the first day (UTC midnight) of a `days`-long window that
-// ends on the day containing `now`. Used both to build the query's `since`
-// bound and to fill the series, so the two cannot disagree about the window.
+// trendWindowStart is the first day (UTC midnight) of a `days`-long window
+// ending today. Shared with the query's `since` bound so the two agree.
 func trendWindowStart(now time.Time, days int) time.Time {
 	today := now.UTC().Truncate(24 * time.Hour)
 	return today.AddDate(0, 0, -(days - 1))
 }
 
-// buildActivityTrend expands sparse daily rows into one point per day across
-// the whole window, oldest first.
-//
-// The query only returns days that have activity, which would make a sparkline
-// lie: three points a week apart plotted as adjacent columns reads as steady
-// activity rather than as three isolated spikes. Filling here rather than with
-// a generate_series join keeps the SQL a plain grouped scan and makes the
-// windowing unit-testable without a database.
-//
-// Rows outside the window are ignored rather than trusted, so a stale `since`
-// or a clock skew cannot stretch the series beyond `days` points.
+// buildActivityTrend expands sparse daily rows into one point per day, oldest
+// first. Without the gaps filled, three days a week apart plot as adjacent
+// columns and read as steady activity. Rows outside the window are dropped, so
+// a stale bound cannot stretch the series.
 func buildActivityTrend(
 	rows []*sqlc.GetProjectActivityTrendRow,
 	days int,
@@ -259,12 +245,8 @@ func buildActivityTrend(
 	return points
 }
 
-// activityTrend backs the `Project.activityTrend` resolver.
-//
-// The body lives here rather than in `projects.resolvers.go` because that file
-// is generated: keeping it thin means `make generate` never has to preserve
-// anything but a one-line delegation, and the generated file's import list
-// stays as gqlgen wrote it.
+// activityTrend backs the `Project.activityTrend` resolver. The body lives here
+// so the generated resolver file stays a one-line delegation.
 func (r *projectResolver) activityTrend(
 	ctx context.Context,
 	projectID string,
@@ -283,8 +265,7 @@ func (r *projectResolver) activityTrend(
 	rows, err := r.DB.Queries.GetProjectActivityTrend(ctx, sqlc.GetProjectActivityTrendParams{
 		ProjectID: projectID,
 		Since: pgtype.Timestamptz{
-			// The same window start the series is built from, so the query
-			// cannot return a day the series has no slot for.
+			// Same start the series is built from.
 			Time:  trendWindowStart(now, window),
 			Valid: true,
 		},

@@ -556,11 +556,8 @@ type GetUserPointsByProjectRow struct {
 	LastActivity interface{} `json:"last_activity"`
 }
 
-// Per-project point totals for one user, most recently active project first.
-//
-// Ordered by the user's latest entry in each project rather than by project
-// date: on a support call the project someone just earned points in is the one
-// being asked about. Uses idx_score_journal_user.
+// Per-project point totals for one user. Ordered by their latest entry in each
+// project: on a support call that is the project being asked about.
 func (q *Queries) GetUserPointsByProject(ctx context.Context, userID string) ([]*GetUserPointsByProjectRow, error) {
 	rows, err := q.db.Query(ctx, GetUserPointsByProject, userID)
 	if err != nil {

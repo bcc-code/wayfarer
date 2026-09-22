@@ -10,10 +10,6 @@ defineProps<{ teams: Team[] }>()
 
 <template>
   <AdminSection title="Lag" :count="teams.length">
-    <!--
-      Divided rows, not boxed ones: each row used to carry its own border
-      inside a bordered card, so every item was a box in a box.
-    -->
     <div v-if="teams.length" class="space-y-1">
       <NuxtLink
         v-for="team in teams"

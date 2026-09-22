@@ -10,16 +10,9 @@ gql(`
   }
 `)
 
-/**
- * A user's consent history as one sorted list, and the withdrawal it allows.
- *
- * The API returns **two different shapes** for the same concept:
- * `pendingConsents` are bare `Consent`s, while `acceptedConsents` and
- * `rejectedConsents` are `UserConsent`s wrapping one, carrying an `actionDate`
- * and the `managementType` that decides whether the consent can be withdrawn
- * here at all. `ConsentRow` flattens the three so the template renders one
- * loop rather than three near-identical blocks.
- */
+// The API returns two shapes for one concept: `pendingConsents` are bare
+// `Consent`s, accepted/rejected are `UserConsent`s wrapping one. `ConsentRow`
+// flattens all three into a single loop.
 interface ConsentSummary {
   id: string
   key: string
@@ -42,7 +35,7 @@ const props = defineProps<{
   }
 }>()
 
-/** The page owns the query, so it refetches when a consent changes. */
+/** The page owns the query and refetches. */
 const emit = defineEmits<{ changed: [] }>()
 
 type ConsentRowStatus = 'pending' | 'accepted' | 'rejected'
@@ -79,12 +72,7 @@ const STATUS_COLORS: Record<ConsentRowStatus, 'warning' | 'success' | 'error'> =
     rejected: 'error',
   }
 
-/**
- * Grouped by sorting rather than by heading: every row already carries a status
- * badge, so sub-headings named "Ventende / Akseptert / Avvist" said the same
- * word twice. Pending sorts first because it is the only status that wants
- * someone to act.
- */
+// Pending first: the only status that wants someone to act.
 const rows = computed<ConsentRow[]>(() => {
   const status = props.consentStatus
 

@@ -262,6 +262,28 @@ In practice:
    unnamed queries. That is usually what you want; when it is not, name them
    (`@container/card` + `@md/card:`).
 
+### Comments: only what the code cannot say
+
+Write a comment when a reader would otherwise get it wrong — a non-obvious API
+contract, a constraint that looks like it could be simplified away, a value
+chosen for a reason. Not for narrating what the next line does, and not for
+history or rationale: that belongs here, in this note.
+
+One or two lines. If it needs a paragraph, it is probably a note entry.
+
+Examples worth keeping, because removing them invites a bug:
+
+- `UProgress`'s `role="progressbar"` sits on an inner element, so the
+  accessible name must come from `get-value-label`, not an `aria-label`.
+- `useAdminPage`'s `flush: 'post'` — without it, a page's label getter runs
+  during setup and 500s on a TDZ.
+- `sr-only` must go on a wrapper, not a `<table>`, or the `<caption>` escapes.
+
+What came out on 2026-09-22: a comment-density pass over everything written
+that week took `AdminSection` from **54% comment lines to 9%**, and the shared
+components and composables to **7% overall**. Most of what went was rationale
+already written down here — duplicated, and in the way of the code.
+
 ### Raised surfaces are white in light mode, tinted in dark
 
 The admin shell sets the page ground to `bg-neutral-100 dark:bg-neutral-950`

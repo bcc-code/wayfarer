@@ -3,23 +3,20 @@ import { refDebounced } from '@vueuse/core'
 import type { UsePaginationReturn } from './usePagination'
 
 export interface UseListStateOptions<F extends Record<string, string>> {
-  /** The list's pagination, reset automatically whenever the query changes. */
   pagination: UsePaginationReturn
-  /** Filter keys with their default (empty) values. Keys become URL params. */
+  /** Keys become URL params. */
   filters?: F
-  /** Debounce on the free-text search, in ms. */
   debounceMs?: number
-  /** Page sizes offered in the footer. */
   pageSizes?: number[]
 }
 
 export interface UseListStateReturn<F extends Record<string, string>> {
   search: Ref<string>
-  /** Debounced search — this is what belongs in query variables. */
+  /** Use this in query variables, not `search`. */
   debouncedSearch: Ref<string>
   filters: F
   pageSizes: number[]
-  /** Filters (not search) that are currently set, for chips in the toolbar. */
+  /** Set filters, excluding the free-text search. */
   activeFilters: Ref<Array<{ key: keyof F & string; value: string }>>
   hasActiveQuery: Ref<boolean>
   clearFilter: (key: keyof F & string) => void
@@ -27,33 +24,14 @@ export interface UseListStateReturn<F extends Record<string, string>> {
 }
 
 /**
- * Search, filters and page size for an admin list, kept in the URL.
+ * Search, filters and page position for an admin list, kept in the URL.
  *
- * Two things this owns that every list page would otherwise re-implement, and
- * one of them is a correctness fix rather than convenience:
+ * Owns the pagination reset so no page can forget it: asking for page 4 of a
+ * result set that now has one page gives an empty table with no error.
  *
- * **Pagination resets when the query changes.** Today each page wires its own
- * `watch(debouncedSearch, () => pagination.reset())`. A page that adds a second
- * filter and forgets to extend that watch will ask for page 4 of a result set
- * that now has one page, and get an empty table with no error. Owning the reset
- * here means no page can forget it.
- *
- * **State lives in the URL**, so a refresh keeps context, browser back works,
- * and a filtered list can be sent to someone.
- *
- * **The page position is included**, as the pagination variables rather than a
- * page number. With keyset pagination the variables *are* the position, so
- * round-tripping `after`/`before` restores the exact same rows — and a keyset
- * cursor is more stable than a page number would be: it means "the rows after
- * user X" whatever is inserted or deleted before it, and it survives user X
- * being deleted (the SQL compares, it does not look up). What a cursor cannot
- * carry is the *position label*, so `from` rides along for that; a stale
- * `from` mislabels a correct page rather than showing the wrong one.
- *
- * Params are split into two groups because they behave differently: changing
- * what you are querying (`q`, filters) must reset the position, while changing
- * where you are (`after`, `before`, `from`, `size`) must not — resetting on a
- * position change would make paging impossible.
+ * The position is stored as the pagination variables, not a page number — with
+ * keyset pagination the variables *are* the position. `from` rides along only
+ * to label it ("Viser 16–30"), since a cursor cannot carry that.
  */
 export function useListState<F extends Record<string, string>>(
   options: UseListStateOptions<F>,
@@ -83,28 +61,24 @@ export function useListState<F extends Record<string, string>>(
     if (fromUrl) filters[key] = fromUrl as F[keyof F & string]
   }
 
-  // The page's own default, captured before the URL can override it, so `size`
-  // is written only when it actually differs from what the page would do
-  // anyway. Comparing against `pageSizes[0]` instead would put `?size=20` on
-  // every URL of a list that defaults to 20 but offers 15 first.
+  // Captured before the URL can override it, so `size` is only written when it
+  // differs from the page's own default.
   const defaultPageSize = pagination.pageSize.value
 
-  // A page size in the URL is only honoured if it is one we offer — otherwise a
-  // hand-edited `?size=100000` would become a query for every row in the table.
+  // Only a size we offer, or a hand-edited `?size=100000` queries every row.
   const sizeFromUrl = Number(readParam('size'))
   if (pageSizes.includes(sizeFromUrl)) {
     pagination.setPageSize(sizeFromUrl)
   }
 
-  // Restore the position before the first query runs, so a deep link fetches
-  // the right page once rather than fetching page 1 and then jumping.
+  // Before the first query, so a deep link fetches the right page once.
   pagination.restore({
     after: readParam('after') || null,
     before: readParam('before') || null,
     offset: Number(readParam('from')) || 0,
   })
 
-  /** What is being queried. A change here invalidates the position. */
+  /** A change here invalidates the position. */
   const queryParams = computed(() => {
     const params: Record<string, string> = {}
     if (debouncedSearch.value) params.q = debouncedSearch.value
@@ -114,7 +88,7 @@ export function useListState<F extends Record<string, string>>(
     return params
   })
 
-  /** Where in the result set we are. Changing these must not reset anything. */
+  /** Changing these must not reset anything, or paging is impossible. */
   const positionParams = computed(() => {
     const params: Record<string, string> = {}
     const { after, before } = pagination.variables.value
@@ -131,8 +105,7 @@ export function useListState<F extends Record<string, string>>(
   })
 
   const writeUrl = () => {
-    // `replace`, not `push`: typing into a search box should not fill the
-    // history with a step per keystroke-batch.
+    // `replace`, not `push`: no history entry per keystroke batch.
     void router.replace({
       query: { ...queryParams.value, ...positionParams.value },
     })
@@ -144,8 +117,7 @@ export function useListState<F extends Record<string, string>>(
       const changed = Object.keys({ ...params, ...previous }).some(
         (key) => params[key] !== previous?.[key],
       )
-      // Reset first, so the position params written below are the reset ones
-      // rather than a cursor into the previous result set.
+      // Before writing the URL, so it carries the reset position.
       if (changed) pagination.reset()
       writeUrl()
     },
@@ -157,9 +129,7 @@ export function useListState<F extends Record<string, string>>(
   const activeFilters = computed(() =>
     filterKeys
       .filter((key) => !!filters[key])
-      // `F extends Record<string, string>` does not narrow `F[key]` to
-      // `string` through the index, so the cast states what the constraint
-      // already guarantees.
+      // The constraint guarantees `string`; the index signature loses it.
       .map((key) => ({ key, value: filters[key] as string })),
   )
 

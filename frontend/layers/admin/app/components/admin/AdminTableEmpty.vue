@@ -1,29 +1,15 @@
 <script setup lang="ts">
-/**
- * Empty state for a `UTable`, for its `#empty` slot.
- *
- * Belongs in the slot, never beside the table. Rendered as a sibling it appears
- * *below* the table's own empty row, so an empty list shows two empty states —
- * a mistake made independently on six pages in this codebase before this
- * component existed.
- *
- * It also separates the two cases a list actually has, which the sibling
- * version could not: nothing exists yet, versus nothing matched. The second
- * needs a way back out, and telling a user "no challenges yet" when they have
- * simply filtered them all away is actively misleading.
- */
+// For UTable's #empty slot — never as a sibling, where it renders *below* the
+// table's own empty row and you get two empty states.
+//
+// Separates "nothing exists" from "nothing matched": the second needs a way out.
 const props = withDefaults(
   defineProps<{
-    /** True when a search or filter is narrowing the list. */
     filtered?: boolean
-    /** Shown when the list is genuinely empty. */
     title: string
     description?: string
-    /** Shown when a filter hid everything. Falls back to a generic line. */
     filteredTitle?: string
-    /** Label for the escape hatch out of a filtered miss. */
     clearLabel?: string
-    /** Optional icon for the genuinely-empty case. */
     icon?: string
   }>(),
   {
@@ -46,8 +32,7 @@ const heading = computed(() =>
 
 <template>
   <div class="py-6 text-center">
-    <!-- Icon only for the "nothing here yet" case; a filtered miss is a
-         transient state, and decorating it overstates it. -->
+    <!-- No icon for a filtered miss: it is transient. -->
     <UIcon
       v-if="icon && !filtered"
       :name="icon"

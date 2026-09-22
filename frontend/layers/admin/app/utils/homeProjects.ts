@@ -1,11 +1,6 @@
 import { describeProjectTiming } from './dates'
 
-/**
- * How many active projects get their own section before the rest collapse into
- * an "N more" link. Multiple projects can run at once, so the home page is
- * built for N — but in practice there is usually one, and an unbounded number
- * of full sections stops the page being answerable at a glance.
- */
+/** Beyond this, the rest collapse into an "N more" link. */
 export const MAX_ACTIVE_PROJECT_SECTIONS = 3
 
 export interface TimedProject {
@@ -15,25 +10,14 @@ export interface TimedProject {
 }
 
 export interface HomeProjectSelection<T extends TimedProject> {
-  /** Running now, soonest to end first, capped at MAX_ACTIVE_PROJECT_SECTIONS. */
   active: T[]
-  /** Active projects beyond the cap, for an "N more" link. */
   hiddenActiveCount: number
-  /** The next one to start. Only set when nothing is active. */
+  /** Only set when nothing is active. */
   next: T | null
 }
 
-/**
- * Pick what the home page shows from the set of not-yet-ended projects.
- *
- * Active projects are ordered by **ending soonest**: a camp that ends tomorrow
- * needs attention before one that runs for another three months. Start date is
- * the tiebreak so the order is stable rather than dependent on server ordering.
- *
- * `next` is deliberately only populated when nothing is active — it is the
- * fallback for the empty state, not a permanent section, and showing both at
- * once buries the thing that is actually live.
- */
+// Active projects end-soonest first, with start date as a stable tiebreak.
+// `next` is the empty-state fallback, so it is skipped when anything is live.
 export function selectHomeProjects<T extends TimedProject>(
   projects: T[] | undefined,
   now: Date = new Date(),

@@ -2292,13 +2292,8 @@ type User struct {
 	Language          string            `json:"language"`
 	CreatedAt         scalars.DateTime  `json:"createdAt"`
 	Points            int               `json:"points"`
-	// The user's point total in every project they have scored in, most recently
-	// active first.
-	//
-	// Separate from `points(projectId:)` because that takes one project at a time,
-	// so a caller wanting "where does this person have points, and how many"
-	// would need one aliased field per project — and the set is not known up
-	// front.
+	// Point totals per project, most recently active first. `points(projectId:)`
+	// takes one project at a time, and the set is not known up front.
 	PointsByProject []UserProjectPoints `json:"pointsByProject"`
 }
 
@@ -2363,9 +2358,7 @@ type UserFilter struct {
 	Ids       []string `json:"ids,omitempty"`
 }
 
-// A user's point total within one project. Flat `projectId`/`projectName` rather
-// than a nested `Project!`, matching `ChurchAdminStatistics` — the aggregate needs
-// a label and a link target, not a whole project.
+// A user's point total within one project.
 type UserProjectPoints struct {
 	ProjectID   string `json:"projectId"`
 	ProjectName string `json:"projectName"`

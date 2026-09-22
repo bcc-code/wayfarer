@@ -1,10 +1,6 @@
 <script setup lang="ts">
-/**
- * Named `…Panel` because `AdminUserFeedback` is already taken — that is the
- * "Gi oss tilbakemelding" widget in the admin shell. Components are registered
- * in one flat namespace (`pathPrefix: false`), so the directory does not
- * disambiguate them.
- */
+// `…Panel` because `AdminUserFeedback` is the shell's feedback widget —
+// components share one flat namespace, so the directory does not disambiguate.
 interface FeedbackEntry {
   id: string
   message: string
@@ -19,25 +15,16 @@ interface FeedbackEntry {
 const props = defineProps<{
   entries: FeedbackEntry[]
   totalCount: number
-  /** So "Vis alle" lands on the full list filtered to this user. */
   userId: string
 }>()
 
-/**
- * The panel shows at most what the query asked for, so the "showing N of M"
- * line is derived from the rows actually present rather than hardcoded — it
- * previously claimed 10 while rendering up to 100.
- */
+// Derived, not hardcoded: it once claimed 10 while rendering up to 100.
 const isTruncated = computed(() => props.totalCount > props.entries.length)
 </script>
 
 <template>
   <AdminSection title="Tilbakemeldinger" :count="totalCount">
     <template #actions>
-      <!--
-        Filtered to this user, not the whole feedback list: "Vis alle" from a
-        person's page means all of *their* feedback.
-      -->
       <UButton
         variant="link"
         size="sm"

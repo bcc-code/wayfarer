@@ -545,19 +545,9 @@ type GetProjectActivityTrendRow struct {
 	ActiveUsers int32       `json:"active_users"`
 }
 
-// Daily point/participant aggregates for a project's recent activity.
-//
-// Only days that actually have rows come back; the caller fills the gaps, so
-// the query stays a plain grouped scan rather than a generate_series join.
-//
-// Buckets by UTC day. The alternative is converting to a fixed local zone,
-// which only moves activity between 00:00 and 02:00 local onto the adjacent
-// day — invisible at sparkline resolution and not worth hardcoding a timezone
-// in SQL for.
-//
-// Uses idx_score_journal_time for the range and filters on project; the window
-// is a handful of recent days, so this touches a small tail of the table. If it
-// ever shows up slow, the index to add is (project_id, created_at).
+// Daily point/participant aggregates. Only days with rows come back; the
+// caller fills the gaps. Buckets by UTC day. If it ever shows up slow, the
+// index to add is (project_id, created_at).
 func (q *Queries) GetProjectActivityTrend(ctx context.Context, arg GetProjectActivityTrendParams) ([]*GetProjectActivityTrendRow, error) {
 	rows, err := q.db.Query(ctx, GetProjectActivityTrend, arg.ProjectID, arg.Since)
 	if err != nil {

@@ -5,11 +5,10 @@ const props = withDefaults(
   defineProps<{
     pagination: UsePaginationReturn
     searchPlaceholder?: string
-    /** Filter chips shown in the toolbar; pair with `useListState`. */
     activeFilters?: Array<{ key: string; value: string; label?: string }>
     /** Noun for the result count, e.g. "brukere". */
     itemLabel?: string
-    /** Hide the search box for lists that are not searchable yet. */
+    /** False for filter inputs with no free-text field. */
     searchable?: boolean
   }>(),
   {
@@ -33,10 +32,7 @@ const pageSize = computed(() => props.pagination.pageSize.value)
 const canGoPrevious = computed(() => !props.pagination.isFirstPage.value)
 const canGoNext = computed(() => !props.pagination.isLastPage.value)
 
-/**
- * Only the sizes the page offers. `useListState` validates the URL against the
- * same list, so a hand-edited `?size=` cannot widen the query either.
- */
+// `useListState` validates `?size=` against the same list.
 const PAGE_SIZES = [15, 25, 50, 100]
 const pageSizeItems = PAGE_SIZES.map((size) => ({
   label: String(size),
@@ -50,13 +46,8 @@ const onPageSizeChange = (value: number) => {
 
 <template>
   <div class="space-y-4">
-    <!--
-      Toolbar: search and filters on the left, page actions on the right. The
-      shape is the one every data-table reference agrees on; the filter *panel*
-      pattern from consumer apps is deliberately not copied, because an admin
-      list wants its state visible and linkable rather than hidden behind an
-      apply step.
-    -->
+    <!-- Filters stay inline and in the URL rather than behind an apply step,
+         so a filtered list is visible and linkable. -->
     <div class="flex flex-wrap items-center gap-2">
       <UInput
         v-if="searchable"
@@ -85,11 +76,7 @@ const onPageSizeChange = (value: number) => {
       </div>
     </div>
 
-    <!--
-      Active filters stay visible as chips rather than living only inside their
-      controls — with three or more facets it is otherwise easy to forget a
-      list is filtered and read a short result as the whole truth.
-    -->
+    <!-- Chips, so a short result is never mistaken for the whole truth. -->
     <div v-if="activeFilters.length" class="flex flex-wrap items-center gap-2">
       <UBadge
         v-for="filter in activeFilters"
@@ -121,12 +108,7 @@ const onPageSizeChange = (value: number) => {
 
     <slot />
 
-    <!--
-      Footer: position on the left, controls on the right — the layout all four
-      reference dashboards use. Numbered pages are deliberately absent: the API
-      is keyset-paginated, so there is no way to jump to page 5 without walking
-      there. See notes/admin-ux-improvements.md.
-    -->
+    <!-- No numbered pages: keyset pagination cannot jump to page 5. -->
     <div
       v-if="range"
       class="flex flex-wrap items-center justify-between gap-3 text-sm"
