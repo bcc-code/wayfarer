@@ -800,6 +800,51 @@ then `make generate` and `pnpm codegen`.
 
 ## Update log
 
+### 2026-09-22 — achievement page: the same pass as the challenge page
+
+Applied the conventions the challenge and quiz passes established.
+
+- **A page header**: the achievement's name (the `h1` said only "Rediger
+  utmerkelse"), a type badge, a "Skjult" badge, and "12 av 88 deltakere har fått
+  den" from `awardedUserCount`. Delete moved here from a full-width red `block`
+  button under Save.
+- **`@container`** with `@4xl:grid-cols-[minmax(0,32rem)_minmax(0,1fr)]`,
+  replacing an unconditional `flex gap-8`, and the preview is `@4xl:sticky`.
+- **Sections**: Utmerkelsestype (create only), Innhold, Varsling, Poeng og
+  synlighet, then the type-specific one — replacing one long column and
+  `border-t` dividers.
+- **The type's nested ternary is gone.** In edit mode the form printed
+  `Type: … utmerkelse` from a four-deep ternary; the badge in the header now
+  carries it from a label map on the page, and the selector renders only when
+  creating.
+- **`awardableFrom` uses `AdminDateTimeField`** instead of a raw
+  `datetime-local`, and its help text now says what an empty field means.
+- **The two images sit side by side** — they are two states of one image, and
+  stacked they invited uploading the same file twice.
+- **"Skjult" had its label twice**, once on the `UFormField` and once on the
+  checkbox; now one label plus a description of what hiding does.
+
+#### Two dead things
+
+- **`achievedAt` was in the query and unused.** It is viewer-relative — the
+  _admin's_ own award timestamp — so like `activeChallenges` it means nothing on
+  an admin page. Removed.
+- **`AdminAchievementPreview`'s "earned" shadow never applied.** It keyed off
+  `achievement.achievedAt`, but the preview is passed the _form state_, which
+  has no such field. It now keys off the preview's own pending/completed toggle,
+  which is what the shadow was for.
+
+#### One I broke and caught
+
+The restructure dropped the **Varslingstekst** field, which the schema requires
+— the form would have been unsubmittable. Caught by re-deriving the schema's
+field list from the source and diffing it against the `state.` bindings in the
+template; the component test now asserts a control exists for each of the nine.
+
+Worth knowing for the next test like it: `input[type="datetime-local"]` is a bad
+way to assert a raw date input is gone, because **reka-ui's `DateField` renders
+a hidden one itself** for form integration. Assert on the component instead.
+
 ### 2026-09-22 — one solid button per surface
 
 The quiz editor had two: "Legg til spørsmål" and "Lagre quiz". Saving is the

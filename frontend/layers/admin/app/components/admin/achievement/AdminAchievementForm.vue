@@ -66,7 +66,6 @@ const props = defineProps<{
   isEditMode?: boolean
   colors?: Colors
   submitLabel: string
-  onDelete?: () => void
 }>()
 
 const emit = defineEmits<{
@@ -200,151 +199,147 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
 </script>
 
 <template>
-  <div class="flex gap-8">
-    <UForm
-      :state
-      :schema="schema"
-      loading-auto
-      class="flex flex-col gap-8 grow"
-      @submit.prevent="handleSubmit"
-    >
-      <!-- Type Selector (only in create mode) -->
-      <UFormField v-if="!isEditMode" name="type" label="Utmerkelsestype">
-        <AdminAchievementTypeSelector
-          v-model="selectedType"
-          :disabled="isEditMode"
-        />
-      </UFormField>
-
-      <!-- Type indicator in edit mode -->
-      <div v-else class="text-muted text-sm">
-        <span class="font-medium">Type:</span>
-        {{
-          selectedType === 'SIMPLE'
-            ? 'Enkel'
-            : selectedType === 'CONTENT'
-              ? 'Innhold'
-              : selectedType === 'STREAK'
-                ? 'Streak'
-                : 'Quiz'
-        }}
-        utmerkelse
-      </div>
-
-      <!-- Common Fields -->
-      <AdminTranslatableFormField
-        label="Navn"
-        :translation-status="translationStatus"
-        name="name"
+  <!-- `@container`, not a fixed two-column flex: the preview only earns a
+       column of its own once the panel is wide enough for both. -->
+  <div class="@container">
+    <div class="grid gap-8 @4xl:grid-cols-[minmax(0,32rem)_minmax(0,1fr)]">
+      <UForm
+        :state
+        :schema="schema"
+        loading-auto
+        class="space-y-8"
+        @submit.prevent="handleSubmit"
       >
-        <UInput v-model="state.name" size="xl" required class="w-full" />
-      </AdminTranslatableFormField>
+        <!-- Only on create; in edit mode the type is a badge in the page
+             header, where it cannot be mistaken for something editable. -->
+        <AdminSection v-if="!isEditMode" title="Utmerkelsestype">
+          <UFormField name="type">
+            <AdminAchievementTypeSelector v-model="selectedType" />
+          </UFormField>
+        </AdminSection>
 
-      <AdminTranslatableFormField
-        label="Beskrivelse (ikke oppnådd)"
-        :translation-status="translationStatus"
-        name="descriptionPending"
-      >
-        <UTextarea
-          v-model="state.descriptionPending"
-          class="w-full"
-          autoresize
-          required
-        />
-      </AdminTranslatableFormField>
+        <AdminSection title="Innhold">
+          <div class="flex flex-col gap-6">
+            <AdminTranslatableFormField
+              label="Navn"
+              :translation-status="translationStatus"
+              name="name"
+            >
+              <UInput v-model="state.name" size="xl" required class="w-full" />
+            </AdminTranslatableFormField>
 
-      <AdminTranslatableFormField
-        label="Beskrivelse (oppnådd)"
-        :translation-status="translationStatus"
-        name="descriptionCompleted"
-      >
-        <UTextarea
-          v-model="state.descriptionCompleted"
-          class="w-full"
-          autoresize
-          required
-        />
-      </AdminTranslatableFormField>
+            <AdminTranslatableFormField
+              label="Beskrivelse (ikke oppnådd)"
+              :translation-status="translationStatus"
+              name="descriptionPending"
+              help="Vises mens utmerkelsen står åpen."
+            >
+              <UTextarea
+                v-model="state.descriptionPending"
+                class="w-full"
+                autoresize
+                required
+              />
+            </AdminTranslatableFormField>
 
-      <AdminTranslatableFormField
-        label="Varslingstekst"
-        :translation-status="translationStatus"
-        name="notificationText"
-        help="Tekst som vises i push-varsler når brukere oppnår denne utmerkelsen"
-      >
-        <UInput
-          v-model="state.notificationText"
-          size="xl"
-          required
-          class="w-full"
-        />
-      </AdminTranslatableFormField>
+            <AdminTranslatableFormField
+              label="Beskrivelse (oppnådd)"
+              :translation-status="translationStatus"
+              name="descriptionCompleted"
+              help="Vises etter at deltakeren har fått utmerkelsen."
+            >
+              <UTextarea
+                v-model="state.descriptionCompleted"
+                class="w-full"
+                autoresize
+                required
+              />
+            </AdminTranslatableFormField>
 
-      <UFormField
-        name="imagePending"
-        label="Bilde (ikke oppnådd)"
-        hint="(valgfritt)"
-      >
-        <AdminFileUpload v-model="state.imagePending" />
-      </UFormField>
+            <!-- Side by side: they are two states of one image, and seeing
+                 them apart made it easy to upload the same file twice. -->
+            <div class="grid gap-4 @lg:grid-cols-2">
+              <UFormField
+                name="imagePending"
+                label="Bilde (ikke oppnådd)"
+                hint="(valgfritt)"
+              >
+                <AdminFileUpload v-model="state.imagePending" />
+              </UFormField>
 
-      <UFormField
-        name="imageCompleted"
-        label="Bilde (oppnådd)"
-        hint="(valgfritt)"
-      >
-        <AdminFileUpload v-model="state.imageCompleted" />
-      </UFormField>
+              <UFormField
+                name="imageCompleted"
+                label="Bilde (oppnådd)"
+                hint="(valgfritt)"
+              >
+                <AdminFileUpload v-model="state.imageCompleted" />
+              </UFormField>
+            </div>
+          </div>
+        </AdminSection>
 
-      <UFormField name="points" label="Poeng for utmerkelsen">
-        <UInput
-          v-model.number="state.points"
-          type="number"
-          size="xl"
-          required
-          class="w-full"
-        />
-      </UFormField>
+        <AdminSection title="Varsling">
+          <AdminTranslatableFormField
+            label="Varslingstekst"
+            :translation-status="translationStatus"
+            name="notificationText"
+            help="Tekst som vises i push-varsler når deltakeren oppnår utmerkelsen."
+          >
+            <UInput
+              v-model="state.notificationText"
+              size="xl"
+              required
+              class="w-full"
+            />
+          </AdminTranslatableFormField>
+        </AdminSection>
 
-      <UFormField name="hidden" label="Skjult">
-        <UCheckbox
-          v-model="state.hidden"
-          label="Skjul denne utmerkelsen fra brukere frem til de oppnår den"
-        />
-      </UFormField>
+        <AdminSection title="Poeng og synlighet">
+          <div class="flex flex-col gap-6">
+            <UFormField name="points" label="Poeng for utmerkelsen">
+              <UInput
+                v-model.number="state.points"
+                type="number"
+                size="xl"
+                required
+                class="w-full"
+              />
+            </UFormField>
 
-      <UFormField
-        name="awardableFrom"
-        label="Tidligste tildelings-tidspunkt"
-        hint="(valgfritt)"
-        description="Utmerkelsen kan tidligst tildeles fra dette tidspunktet"
-      >
-        <UInput
-          v-model="state.awardableFrom"
-          type="datetime-local"
-          size="xl"
-          class="w-full"
-        />
-      </UFormField>
+            <UFormField name="hidden">
+              <UCheckbox
+                v-model="state.hidden"
+                label="Skjult"
+                description="Deltakeren ser ikke utmerkelsen før de har oppnådd den."
+              />
+            </UFormField>
 
-      <!-- Type-specific sections -->
-      <template v-if="selectedType === 'CONTENT'">
-        <div class="border-default border-t pt-6">
-          <h3 class="mb-4 font-medium">Innholdselementer</h3>
+            <UFormField
+              name="awardableFrom"
+              label="Tidligste tildelings-tidspunkt"
+              hint="(valgfritt)"
+              help="Utmerkelsen kan ikke oppnås før dette tidspunktet. La feltet stå tomt for ingen sperre."
+            >
+              <AdminDateTimeField v-model="state.awardableFrom" />
+            </UFormField>
+          </div>
+        </AdminSection>
+
+        <AdminSection
+          v-if="selectedType === 'CONTENT'"
+          title="Innholdselementer"
+        >
           <AdminContentItemSelector v-model="contentItems" />
-        </div>
-      </template>
+        </AdminSection>
 
-      <template v-else-if="selectedType === 'STREAK'">
-        <div class="border-default border-t pt-6">
-          <h3 class="mb-4 font-medium">Innholdselementer (med frist)</h3>
+        <AdminSection
+          v-else-if="selectedType === 'STREAK'"
+          title="Innholdselementer (med frist)"
+        >
           <AdminContentItemSelector v-model="streakItems" />
-        </div>
-      </template>
+        </AdminSection>
 
-      <template v-else-if="selectedType === 'QUIZ'">
-        <div class="border-default border-t pt-6">
-          <h3 class="mb-4 font-medium">Quiz-konfigurasjon</h3>
+        <AdminSection v-else-if="selectedType === 'QUIZ'" title="Quiz">
           <AdminQuizSelector
             :project-id="projectId"
             :quiz-id="quizId"
@@ -354,29 +349,20 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
             @update:min-score-percentage="(v) => (minScorePercentage = v)"
             @update:require-completion="(v) => (requireCompletion = v)"
           />
+        </AdminSection>
+
+        <div v-if="typeSpecificError" class="text-error text-sm">
+          {{ typeSpecificError }}
         </div>
-      </template>
 
-      <!-- Type-specific validation error -->
-      <div v-if="typeSpecificError" class="text-error text-sm">
-        {{ typeSpecificError }}
-      </div>
+        <UButton type="submit" size="lg" block>{{ submitLabel }}</UButton>
+      </UForm>
 
-      <UButton type="submit" size="lg" block>{{ submitLabel }}</UButton>
-      <UButton
-        v-if="onDelete"
-        color="error"
-        variant="ghost"
-        size="lg"
-        block
-        @click="onDelete"
-      >
-        Slett utmerkelse
-      </UButton>
-    </UForm>
-
-    <AdminThemedPreview :colors="colors">
-      <AdminAchievementPreview :achievement="state" />
-    </AdminThemedPreview>
+      <!-- Sticky: it used to scroll away before you reached the points and
+           visibility fields. -->
+      <AdminThemedPreview :colors="colors" class="top-6 h-fit @4xl:sticky">
+        <AdminAchievementPreview :achievement="state" />
+      </AdminThemedPreview>
+    </div>
   </div>
 </template>

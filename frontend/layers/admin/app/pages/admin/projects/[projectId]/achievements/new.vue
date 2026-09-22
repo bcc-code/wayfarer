@@ -120,15 +120,13 @@ async function handleSubmit(formData: AchievementFormData) {
 </script>
 
 <template>
-  <div>
-    <div>
-      <h1 class="mb-6 text-2xl font-bold">Opprett utmerkelse</h1>
-      <AdminAchievementForm
-        :project-id="route.params.projectId"
-        :colors="data?.project.branding.colors"
-        submit-label="Opprett utmerkelse"
-        @submit="handleSubmit"
-      />
-    </div>
+  <div class="space-y-8">
+    <h1 class="text-3xl font-bold">Opprett utmerkelse</h1>
+    <AdminAchievementForm
+      :project-id="route.params.projectId"
+      :colors="data?.project.branding.colors"
+      submit-label="Opprett utmerkelse"
+      @submit="handleSubmit"
+    />
   </div>
 </template>

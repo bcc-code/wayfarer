@@ -7,7 +7,11 @@ definePageMeta({
 })
 
 gql(`
-  query AdminProjectAchievementPage($achievementId: ID!) {
+  query AdminProjectAchievementPage($achievementId: ID!, $projectId: ID!) {
+    # The denominator for the award count.
+    participants: users(first: 0, filter: { projectId: $projectId }) {
+      totalCount
+    }
     achievement(id: $achievementId) {
       __typename
       id
@@ -21,7 +25,7 @@ gql(`
         ...ImageFields
       }
       notificationText
-      achievedAt
+      awardedUserCount
       points
       hidden
       awardableFrom
@@ -97,6 +101,7 @@ const { isAuthReady } = useAuthReady()
 const { data, fetching, error } = useAdminProjectAchievementPageQuery({
   variables: computed(() => ({
     achievementId: route.params.achievementId,
+    projectId: route.params.projectId,
   })),
   pause: computed(() => !isAuthReady.value),
 })
@@ -126,6 +131,13 @@ const achievementType = computed<AchievementType>(() => {
       return 'SIMPLE'
   }
 })
+
+const achievementTypeLabels: Record<string, string> = {
+  SimpleAchievement: 'Enkel',
+  ContentAchievement: 'Innhold',
+  StreakAchievement: 'Streak',
+  QuizAchievement: 'Quiz',
+}
 
 const initialData = computed(() => {
   if (!data.value) return undefined
@@ -301,24 +313,50 @@ async function handleDelete() {
 </script>
 
 <template>
-  <div>
-    <div>
-      <AdminQueryState :fetching :error>
-        <template v-if="initialData">
-          <h1 class="mb-6 text-2xl font-bold">Rediger utmerkelse</h1>
-          <AdminAchievementForm
-            :project-id="route.params.projectId"
-            :initial-data="initialData"
-            :translation-status="data?.achievement.translationStatus ?? []"
-            :achievement-type="achievementType"
-            :is-edit-mode="true"
-            :colors="data?.achievement.project.branding.colors"
-            submit-label="Lagre endringer"
-            :on-delete="handleDelete"
-            @submit="handleSubmit"
-          />
-        </template>
-      </AdminQueryState>
+  <AdminQueryState :fetching :error>
+    <div v-if="initialData && data" class="space-y-8">
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-3">
+            <h1 class="text-3xl font-bold">{{ data.achievement.name }}</h1>
+            <UBadge variant="subtle">
+              {{
+                achievementTypeLabels[data.achievement.__typename ?? ''] ??
+                'Utmerkelse'
+              }}
+            </UBadge>
+            <UBadge
+              v-if="data.achievement.hidden"
+              variant="soft"
+              color="warning"
+            >
+              Skjult
+            </UBadge>
+          </div>
+          <!-- Status, so it belongs to the header rather than competing with
+               the form. -->
+          <p class="text-muted mt-1 text-sm">
+            {{ formatNumber(data.achievement.awardedUserCount) }} av
+            {{ formatNumber(data.participants.totalCount) }} deltakere har fått
+            den
+          </p>
+        </div>
+
+        <UButton variant="soft" color="error" @click="handleDelete">
+          Slett
+        </UButton>
+      </div>
+
+      <AdminAchievementForm
+        :project-id="route.params.projectId"
+        :initial-data="initialData"
+        :translation-status="data.achievement.translationStatus ?? []"
+        :achievement-type="achievementType"
+        :is-edit-mode="true"
+        :colors="data.achievement.project.branding.colors"
+        submit-label="Lagre endringer"
+        @submit="handleSubmit"
+      />
     </div>
-  </div>
+  </AdminQueryState>
 </template>
