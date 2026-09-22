@@ -13,9 +13,15 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
+let keySeq = 0
+const nextKey = () => `a${++keySeq}`
+
 const localQuestion = reactive<QuizQuestionFormData>({
   ...props.question,
-  predefinedAnswers: props.question.predefinedAnswers?.map((a) => ({ ...a })),
+  predefinedAnswers: props.question.predefinedAnswers?.map((a) => ({
+    ...a,
+    localKey: nextKey(),
+  })),
   orderingItems: props.question.orderingItems?.map((item) => ({ ...item })),
 })
 
@@ -41,6 +47,7 @@ function addAnswer() {
     localQuestion.predefinedAnswers = []
   }
   localQuestion.predefinedAnswers.push({
+    localKey: nextKey(),
     answerText: '',
     isCorrect: false,
     answerOrder: localQuestion.predefinedAnswers.length + 1,
@@ -49,11 +56,28 @@ function addAnswer() {
 
 function removeAnswer(index: number) {
   localQuestion.predefinedAnswers?.splice(index, 1)
-  // Reorder
-  localQuestion.predefinedAnswers?.forEach((a, i) => {
-    a.answerOrder = i + 1
+  renumberAnswers()
+}
+
+function renumberAnswers() {
+  localQuestion.predefinedAnswers?.forEach((answer, index) => {
+    answer.answerOrder = index + 1
   })
 }
+
+/**
+ * Safe to drag freely: `updateQuizQuestion` deletes every answer for the
+ * question and re-inserts the set in one transaction, so the
+ * UNIQUE (question_id, answer_order) index is never asked to hold two rows on
+ * one position. Questions themselves need a two-pass reorder for that reason.
+ */
+const canRemoveAnswer = computed(
+  () => (localQuestion.predefinedAnswers?.length ?? 0) > 2,
+)
+
+const canRemoveOrderingItem = computed(
+  () => (localQuestion.orderingItems?.length ?? 0) > 2,
+)
 
 function addOrderingItem() {
   if (!localQuestion.orderingItems) {
@@ -159,7 +183,9 @@ function handleSave() {
         <div class="flex items-start justify-between gap-4">
           <div>
             <p class="text-sm font-medium">Svaralternativer</p>
-            <p class="text-muted text-xs">Kryss av for riktig(e) svar</p>
+            <p class="text-muted text-xs">
+              Kryss av for riktig(e) svar. Dra for å endre rekkefølgen.
+            </p>
           </div>
           <UButton
             size="xs"
@@ -178,50 +204,71 @@ function handleSave() {
           description="Brukeren kan velge mer enn ett alternativ."
         />
 
-        <div
-          v-for="(answer, index) in localQuestion.predefinedAnswers"
-          :key="index"
-          class="flex items-start gap-3"
+        <VueDraggable
+          v-model="localQuestion.predefinedAnswers!"
+          handle=".answer-handle"
+          ghost-class="opacity-50"
+          :animation="200"
+          class="space-y-2"
+          @end="renumberAnswers"
         >
-          <!-- `mt-2.5` lines the checkbox up with the first line of a wrapped
-               answer rather than the middle of the box. -->
-          <UCheckbox
-            v-model="answer.isCorrect"
-            class="mt-2.5"
-            :aria-label="`Marker svar ${index + 1} som riktig`"
-          />
-          <div class="flex min-w-0 flex-1 flex-col gap-1">
-            <!-- Answers are whole sentences; a single-line input hid the end
-                 of most of them. -->
-            <UTextarea
-              v-model="answer.answerText"
-              placeholder="Svartekst"
-              class="w-full"
-              autoresize
-              :rows="1"
+          <div
+            v-for="(answer, index) in localQuestion.predefinedAnswers"
+            :key="answer.localKey"
+            class="flex items-start gap-2"
+          >
+            <div
+              class="answer-handle text-muted mt-2 cursor-grab active:cursor-grabbing"
+              :aria-label="`Flytt svar ${index + 1}`"
+            >
+              <UIcon name="lucide:grip-vertical" class="size-5" />
+            </div>
+            <!-- `mt-2.5` lines the checkbox up with the first line of a wrapped
+                 answer rather than the middle of the box. -->
+            <UCheckbox
+              v-model="answer.isCorrect"
+              class="mt-2.5"
+              :aria-label="`Marker svar ${index + 1} som riktig`"
             />
-            <AdminTranslationIndicator
-              v-if="
-                props.question.predefinedAnswers?.[index]?.translationStatus
-                  ?.length
+            <div class="flex min-w-0 flex-1 flex-col gap-1">
+              <!-- Answers are whole sentences; a single-line input hid the end
+                   of most of them. -->
+              <UTextarea
+                v-model="answer.answerText"
+                placeholder="Svartekst"
+                class="w-full"
+                autoresize
+                :rows="1"
+              />
+              <!-- Read off the answer, not `props…[index]`: after a drag the
+                   local index no longer matches the prop array. -->
+              <AdminTranslationIndicator
+                v-if="answer.translationStatus?.length"
+                :translation-status="answer.translationStatus"
+                field-name="answerText"
+              />
+            </div>
+            <UTooltip
+              :text="
+                canRemoveAnswer
+                  ? `Fjern svar ${index + 1}`
+                  : 'Et flervalgsspørsmål trenger minst to svar'
               "
-              :translation-status="
-                props.question.predefinedAnswers![index]!.translationStatus!
-              "
-              field-name="answerText"
-            />
+              :delay-duration="200"
+            >
+              <UButton
+                class="mt-1.5"
+                size="xs"
+                variant="ghost"
+                color="error"
+                icon="lucide:x"
+                :aria-label="`Fjern svar ${index + 1}`"
+                :disabled="!canRemoveAnswer"
+                @click="removeAnswer(index)"
+              />
+            </UTooltip>
           </div>
-          <UButton
-            class="mt-1.5"
-            size="xs"
-            variant="ghost"
-            color="error"
-            icon="lucide:x"
-            :aria-label="`Fjern svar ${index + 1}`"
-            :disabled="(localQuestion.predefinedAnswers?.length ?? 0) <= 2"
-            @click="removeAnswer(index)"
-          />
-        </div>
+        </VueDraggable>
       </div>
     </template>
 
@@ -298,15 +345,24 @@ function handleSave() {
               size="xl"
               class="flex-1"
             />
-            <UButton
-              size="xs"
-              variant="ghost"
-              color="error"
-              :disabled="(localQuestion.orderingItems?.length ?? 0) <= 2"
-              @click="removeOrderingItem(index)"
+            <UTooltip
+              :text="
+                canRemoveOrderingItem
+                  ? `Fjern element ${index + 1}`
+                  : 'Et rekkefølgespørsmål trenger minst to ledd'
+              "
+              :delay-duration="200"
             >
-              Fjern
-            </UButton>
+              <UButton
+                size="xs"
+                variant="ghost"
+                color="error"
+                :disabled="!canRemoveOrderingItem"
+                @click="removeOrderingItem(index)"
+              >
+                Fjern
+              </UButton>
+            </UTooltip>
           </div>
         </VueDraggable>
       </div>

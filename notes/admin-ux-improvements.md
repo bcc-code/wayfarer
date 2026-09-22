@@ -807,11 +807,25 @@ answers, with the answers in single-line inputs.
 - The per-question timeout now repeats the interaction note from the quiz-level
   field: the stricter of the two applies.
 
-Left for later: answers cannot be reordered. Worth knowing that this is cheap —
+**Answers are draggable** (same day, second pass). This needed no backend work:
 `updateQuizQuestion` deletes every answer for the question and re-inserts the
-set in one transaction, so unlike `quiz_questions` there is no
-`UNIQUE (question_id, answer_order)` dance to work around. A drag handle is all
-it needs.
+set in one transaction, so `UNIQUE (question_id, answer_order)` is never asked
+to hold two rows on one position — unlike `quiz_questions`, which needs the
+two-pass reorder above.
+
+Dragging did surface a latent bug: `AdminTranslationIndicator` read its status
+from `props.question.predefinedAnswers[index]`, so after a reorder the local
+index no longer matched the prop array and the indicator would describe the
+wrong answer. The local copies carry `translationStatus` already, so it reads
+off the answer itself now. The local copies also carry a `localKey`, since
+`:key="index"` and a drag do not mix.
+
+**Disabled removals say why.** Both the answer and ordering-item remove buttons
+were simply greyed out; they now carry a tooltip naming the minimum ("Et
+flervalgsspørsmål trenger minst to svar").
+
+**The dialog heading names the question** — "Spørsmål 2 av 3" — so you know
+where you are in a long quiz.
 
 ### 2026-09-22 — quiz checkbox help text, and two labels that were lying
 

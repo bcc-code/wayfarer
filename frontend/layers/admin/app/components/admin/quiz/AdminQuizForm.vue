@@ -17,6 +17,16 @@ export interface QuizFormData {
   questions: QuizQuestionFormData[]
 }
 
+export interface QuizAnswerFormData {
+  id?: string
+  /** Stable across reorders, which `id` is not for a new answer. */
+  localKey?: string
+  answerText: string
+  isCorrect: boolean
+  answerOrder: number
+  translationStatus?: TranslationStatusFragment[]
+}
+
 export interface QuizQuestionFormData {
   id?: string
   /** Stable across edits and reorders, which `id` is not for a new question. */
@@ -27,13 +37,7 @@ export interface QuizQuestionFormData {
   timeoutSeconds?: number
   points?: number
   allowMultipleSelection?: boolean
-  predefinedAnswers?: {
-    id?: string
-    answerText: string
-    isCorrect: boolean
-    answerOrder: number
-    translationStatus?: TranslationStatusFragment[]
-  }[]
+  predefinedAnswers?: QuizAnswerFormData[]
   minValue?: number
   maxValue?: number
   stepValue?: number
@@ -157,6 +161,13 @@ function addQuestion() {
   }
   isAddingQuestion.value = true
 }
+
+/** Only for the dialog heading, so it can say where you are in the quiz. */
+const editingIndex = computed(() =>
+  questions.value.findIndex(
+    (question) => question.localKey === editingQuestion.value?.localKey,
+  ),
+)
 
 function editQuestion(question: QuizQuestionFormData) {
   editingQuestion.value = { ...question }
@@ -428,7 +439,11 @@ const questionPoints = computed(() =>
     >
       <template #header>
         <h3 class="text-lg font-semibold">
-          {{ isAddingQuestion ? 'Nytt spørsmål' : 'Rediger spørsmål' }}
+          {{
+            isAddingQuestion
+              ? `Nytt spørsmål (${questions.length + 1} av ${questions.length + 1})`
+              : `Spørsmål ${editingIndex + 1} av ${questions.length}`
+          }}
         </h3>
       </template>
       <template #body>

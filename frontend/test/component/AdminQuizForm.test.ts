@@ -108,6 +108,20 @@ describe('AdminQuizForm', () => {
     expect(wrapper.text()).toContain('Ikke i bruk ennå')
   })
 
+  // Editing question 7 of 12 should say so.
+  it('names the question in the dialog heading', async () => {
+    const wrapper = await mount()
+
+    const edit = wrapper
+      .findAllComponents({ name: 'UButton' })
+      .filter((button) => button.text() === 'Rediger')
+    await edit[1]!.trigger('click')
+
+    // UModal teleports its content out of the wrapper, so the heading is read
+    // from where it actually lands.
+    expect(document.body.textContent).toContain('Spørsmål 2 av 2')
+  })
+
   it('explains what the working settings do', async () => {
     const wrapper = await mount()
 

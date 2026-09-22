@@ -68,6 +68,63 @@ describe('AdminQuizQuestionEditor', () => {
       { answerText: 'Peter', isCorrect: false, answerOrder: 2 },
     ])
 
+  // Free to drag: `updateQuizQuestion` replaces the whole answer set in one
+  // transaction, so the unique order index is never asked to hold a duplicate.
+  it('lets the answers be dragged into a new order', async () => {
+    const wrapper = await mount(answered())
+
+    expect(wrapper.findAll('.answer-handle')).toHaveLength(2)
+    expect(wrapper.text()).toContain('Dra for å endre rekkefølgen')
+  })
+
+  it('renumbers the answers after a drag', async () => {
+    const wrapper = await mount(answered())
+
+    const draggable = wrapper.findComponent({ name: 'VueDraggable' })
+    await draggable.setValue(
+      [
+        {
+          answerText: 'Peter',
+          isCorrect: false,
+          answerOrder: 2,
+          localKey: 'a2',
+        },
+        {
+          answerText: 'Paulus',
+          isCorrect: true,
+          answerOrder: 1,
+          localKey: 'a1',
+        },
+      ],
+      'modelValue',
+    )
+    draggable.vm.$emit('end')
+    await wrapper.vm.$nextTick()
+
+    await saveButton(wrapper).trigger('click')
+    const saved = wrapper.emitted('save')?.[0]?.[0] as {
+      predefinedAnswers: { answerText: string; answerOrder: number }[]
+    }
+    expect(
+      saved.predefinedAnswers.map((a) => [a.answerText, a.answerOrder]),
+    ).toEqual([
+      ['Peter', 1],
+      ['Paulus', 2],
+    ])
+  })
+
+  // The button was simply greyed out with no explanation.
+  it('says why a removal is blocked at two answers', async () => {
+    const wrapper = await mount(answered())
+
+    // UTooltip is stubbed globally in test/component/setup.ts, which keeps the
+    // text as `data-tooltip`.
+    const tooltips = wrapper
+      .findAll('[data-tooltip]')
+      .map((el) => el.attributes('data-tooltip'))
+    expect(tooltips).toContain('Et flervalgsspørsmål trenger minst to svar')
+  })
+
   it('says what the checkbox means before the answers, not after', async () => {
     const wrapper = await mount(answered())
 
