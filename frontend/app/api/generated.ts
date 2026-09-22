@@ -4785,7 +4785,7 @@ export type AdminTeamPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminTeamPageQuery = { __typename?: 'Query', team: { __typename?: 'Team', id: string, name: string, description: string, joinCode: string, leaderboardExcluded: boolean, averageAge?: number | null, members: Array<{ __typename?: 'TeamMember', id: string, name: string, isTeamLead: boolean, joinedAt: string, user: { __typename?: 'User', id: string, email: string, image?: string | null }, church: { __typename?: 'Church', id: string, name: string } }>, parentProject: { __typename?: 'Project', id: string, name: string }, superTeam?: { __typename?: 'SuperTeam', id: string, name: string } | null } };
+export type AdminTeamPageQuery = { __typename?: 'Query', team: { __typename?: 'Team', id: string, name: string, description: string, joinCode: string, leaderboardExcluded: boolean, averageAge?: number | null, members: Array<{ __typename?: 'TeamMember', id: string, name: string, isTeamLead: boolean, joinedAt: string, user: { __typename?: 'User', id: string, image?: string | null }, church: { __typename?: 'Church', id: string, name: string } }>, superTeam?: { __typename?: 'SuperTeam', id: string, name: string } | null, memberLeaderboard: Array<{ __typename?: 'LeaderboardEntry', id: string, score: number, rank?: number | null }> } };
 
 export type AdminTeamsPageQueryVariables = Exact<{
   filter?: InputMaybe<TeamFilter>;
@@ -7810,7 +7810,6 @@ export const AdminTeamPageDocument = gql`
       joinedAt
       user {
         id
-        email
         image
       }
       church {
@@ -7818,13 +7817,14 @@ export const AdminTeamPageDocument = gql`
         name
       }
     }
-    parentProject {
-      id
-      name
-    }
     superTeam {
       id
       name
+    }
+    memberLeaderboard {
+      id
+      score
+      rank
     }
   }
 }

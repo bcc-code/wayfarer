@@ -720,7 +720,7 @@ then `make generate` and `pnpm codegen`.
 | `superteams/[superTeamId].vue`          | `…/superteams/:id`        | 278 | ☐   | Teams `first: 200`.                                                                                                              |
 | `superteams/distribute.vue`             | `…/superteams/distribute` | 657 | ☐   | Ladder-to-heaven tool. `@unovis/vue` charts, raw `fetch` to two plugin endpoints — not GraphQL.                                  |
 | `teams/index.vue`                       | `…/teams`                 | 231 | ◐   | **On `AdminListView`** + superteam filter. Slot-name bug fixed.                                                                  |
-| `teams/[teamId].vue`                    | `…/teams/:id`             | 428 | ☐   | 14 toast calls.                                                                                                                  |
+| `teams/[teamId].vue`                    | `…/teams/:id`             | 480 | ◐   | Confirmations on all three destructive actions; member rows show people + points; Detaljer section; `max-w-6xl`.                 |
 | `scores/index.vue`                      | `…/scores`                | 271 | ◐   | **On `AdminListView`** + source-type filter.                                                                                     |
 | `scores/new.vue`                        | `…/scores/new`            | 131 | ☐   | Project picker removed — route supplies it.                                                                                      |
 
@@ -758,6 +758,53 @@ then `make generate` and `pnpm codegen`.
 ---
 
 ## Update log
+
+### 2026-09-22 — team detail page: confirmations, real member rows, points
+
+#### The important one: three destructive actions had no confirmation
+
+`handleDeleteTeam` deleted the team on a single click of "Slett" in the header —
+no dialog, no undo. `handleRegenerateJoinCode` invalidated a live join code the
+same way, and `handleRemoveMember` removed someone immediately. All three now go
+through `useConfirm`, which the layer already had and five sibling pages
+(superteams, events, challenges, achievements) already used. Each dialog names
+the consequence rather than asking "are you sure": deleting says how many
+memberships go with the team, regenerating says the old code stops working at
+once.
+
+#### The member list now shows people, not ULIDs
+
+Every row printed a raw `US01K9VZ…` under the name while the query fetched
+`user.image`, `user.email`, `church.name` and `joinedAt` and displayed **none**
+of them. Rows are now avatar, name, church, joined date — and `email` was
+dropped from the query rather than squeezed into the row, since the user page is
+one click away.
+
+#### `Team.memberLeaderboard` was in the schema and unused
+
+It gives each member's points in the team's project plus their rank within the
+team, so the list can answer "who is actually contributing". `LeaderboardEntry.id`
+is the **user id** (see `GetTeamMemberLeaderboard`), which is what makes the join
+to `members` possible.
+
+The join and the ordering live in `layers/admin/app/utils/teamMembers.ts`
+(`rankTeamMembers`) with unit tests, rather than in the page: team lead first,
+then most points. A member with no score at all is absent from the leaderboard
+rows, not present with a zero, so the util fills that in.
+
+#### The rest
+
+- `max-w-6xl`, like the other data detail pages.
+- The metadata rows moved into an `AdminSection` titled "Detaljer" with
+  `divide-y`, instead of bare hand-rolled `border-b` rows outside any section.
+- **Rows removed:** `Prosjekt` (the breadcrumb names it, and it was plain text —
+  a dead end), `Medlemmer` (the section heading below carries the count).
+  `Lag-ID` moved last.
+- `Superlag` links to the superteam page.
+- `averageAge` null rendered as "`- år`" — a dash followed by "years". Now
+  "Ukjent". It is nullable _and_ optional in the generated types, so a template
+  `!== null` does not narrow it; the page reads it through a computed.
+- The lead badge says "Leder", matching the "Gjør til leder" action beside it.
 
 ### 2026-09-22 — consent detail page restructured
 
