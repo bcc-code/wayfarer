@@ -268,6 +268,7 @@ type ComplexityRoot struct {
 	ContentAchievement struct {
 		AchievedAt           func(childComplexity int) int
 		AwardableFrom        func(childComplexity int) int
+		AwardedUserCount     func(childComplexity int) int
 		CelebratedAt         func(childComplexity int) int
 		Challenge            func(childComplexity int) int
 		CompletedItemCount   func(childComplexity int) int
@@ -323,6 +324,7 @@ type ComplexityRoot struct {
 
 	ExternalChallenge struct {
 		ButtonText                  func(childComplexity int) int
+		CompletionCount             func(childComplexity int) int
 		Description                 func(childComplexity int) int
 		EndTime                     func(childComplexity int) int
 		Event                       func(childComplexity int) int
@@ -780,6 +782,7 @@ type ComplexityRoot struct {
 
 	PluginChallenge struct {
 		ButtonText                  func(childComplexity int) int
+		CompletionCount             func(childComplexity int) int
 		Description                 func(childComplexity int) int
 		EndTime                     func(childComplexity int) int
 		Event                       func(childComplexity int) int
@@ -981,6 +984,7 @@ type ComplexityRoot struct {
 	QuizAchievement struct {
 		AchievedAt           func(childComplexity int) int
 		AwardableFrom        func(childComplexity int) int
+		AwardedUserCount     func(childComplexity int) int
 		CelebratedAt         func(childComplexity int) int
 		Challenge            func(childComplexity int) int
 		DescriptionCompleted func(childComplexity int) int
@@ -1004,6 +1008,7 @@ type ComplexityRoot struct {
 
 	QuizChallenge struct {
 		ButtonText                  func(childComplexity int) int
+		CompletionCount             func(childComplexity int) int
 		Description                 func(childComplexity int) int
 		EndTime                     func(childComplexity int) int
 		Event                       func(childComplexity int) int
@@ -1145,6 +1150,7 @@ type ComplexityRoot struct {
 	SimpleAchievement struct {
 		AchievedAt           func(childComplexity int) int
 		AwardableFrom        func(childComplexity int) int
+		AwardedUserCount     func(childComplexity int) int
 		CelebratedAt         func(childComplexity int) int
 		Challenge            func(childComplexity int) int
 		DescriptionCompleted func(childComplexity int) int
@@ -1166,6 +1172,7 @@ type ComplexityRoot struct {
 	SimpleChallenge struct {
 		AllowSelfCompletion         func(childComplexity int) int
 		ButtonText                  func(childComplexity int) int
+		CompletionCount             func(childComplexity int) int
 		Description                 func(childComplexity int) int
 		EndTime                     func(childComplexity int) int
 		Event                       func(childComplexity int) int
@@ -1188,6 +1195,7 @@ type ComplexityRoot struct {
 	StreakAchievement struct {
 		AchievedAt           func(childComplexity int) int
 		AwardableFrom        func(childComplexity int) int
+		AwardedUserCount     func(childComplexity int) int
 		CelebratedAt         func(childComplexity int) int
 		Challenge            func(childComplexity int) int
 		CompletedItemCount   func(childComplexity int) int
@@ -1421,6 +1429,7 @@ type ContentAchievementResolver interface {
 	AchievedAt(ctx context.Context, obj *model.ContentAchievement) (*scalars.DateTime, error)
 	CelebratedAt(ctx context.Context, obj *model.ContentAchievement) (*scalars.DateTime, error)
 
+	AwardedUserCount(ctx context.Context, obj *model.ContentAchievement) (int, error)
 	Items(ctx context.Context, obj *model.ContentAchievement) ([]model.ContentItem, error)
 	UserCompletedItems(ctx context.Context, obj *model.ContentAchievement) ([]model.ContentItem, error)
 	NextItem(ctx context.Context, obj *model.ContentAchievement) (*model.ContentItem, error)
@@ -1446,6 +1455,7 @@ type ExternalChallengeResolver interface {
 
 	UserCompletedAt(ctx context.Context, obj *model.ExternalChallenge) (*scalars.DateTime, error)
 	UserEnrolledAt(ctx context.Context, obj *model.ExternalChallenge) (*scalars.DateTime, error)
+	CompletionCount(ctx context.Context, obj *model.ExternalChallenge) (int, error)
 	TranslationStatus(ctx context.Context, obj *model.ExternalChallenge) ([]model.TranslationFieldStatus, error)
 }
 type ExternalContentResolver interface {
@@ -1660,6 +1670,7 @@ type PluginChallengeResolver interface {
 
 	UserCompletedAt(ctx context.Context, obj *model.PluginChallenge) (*scalars.DateTime, error)
 	UserEnrolledAt(ctx context.Context, obj *model.PluginChallenge) (*scalars.DateTime, error)
+	CompletionCount(ctx context.Context, obj *model.PluginChallenge) (int, error)
 	TranslationStatus(ctx context.Context, obj *model.PluginChallenge) ([]model.TranslationFieldStatus, error)
 }
 type PredefinedQuestionResolver interface {
@@ -1789,6 +1800,7 @@ type QuizAchievementResolver interface {
 	AchievedAt(ctx context.Context, obj *model.QuizAchievement) (*scalars.DateTime, error)
 	CelebratedAt(ctx context.Context, obj *model.QuizAchievement) (*scalars.DateTime, error)
 
+	AwardedUserCount(ctx context.Context, obj *model.QuizAchievement) (int, error)
 	Quiz(ctx context.Context, obj *model.QuizAchievement) (*model.Quiz, error)
 
 	TranslationStatus(ctx context.Context, obj *model.QuizAchievement) ([]model.TranslationFieldStatus, error)
@@ -1800,6 +1812,7 @@ type QuizChallengeResolver interface {
 
 	UserCompletedAt(ctx context.Context, obj *model.QuizChallenge) (*scalars.DateTime, error)
 	UserEnrolledAt(ctx context.Context, obj *model.QuizChallenge) (*scalars.DateTime, error)
+	CompletionCount(ctx context.Context, obj *model.QuizChallenge) (int, error)
 	TranslationStatus(ctx context.Context, obj *model.QuizChallenge) ([]model.TranslationFieldStatus, error)
 	Quiz(ctx context.Context, obj *model.QuizChallenge) (*model.Quiz, error)
 }
@@ -1861,6 +1874,7 @@ type SimpleAchievementResolver interface {
 	AchievedAt(ctx context.Context, obj *model.SimpleAchievement) (*scalars.DateTime, error)
 	CelebratedAt(ctx context.Context, obj *model.SimpleAchievement) (*scalars.DateTime, error)
 
+	AwardedUserCount(ctx context.Context, obj *model.SimpleAchievement) (int, error)
 	TranslationStatus(ctx context.Context, obj *model.SimpleAchievement) ([]model.TranslationFieldStatus, error)
 }
 type SimpleChallengeResolver interface {
@@ -1870,6 +1884,7 @@ type SimpleChallengeResolver interface {
 
 	UserCompletedAt(ctx context.Context, obj *model.SimpleChallenge) (*scalars.DateTime, error)
 	UserEnrolledAt(ctx context.Context, obj *model.SimpleChallenge) (*scalars.DateTime, error)
+	CompletionCount(ctx context.Context, obj *model.SimpleChallenge) (int, error)
 	TranslationStatus(ctx context.Context, obj *model.SimpleChallenge) ([]model.TranslationFieldStatus, error)
 }
 type StreakAchievementResolver interface {
@@ -1882,6 +1897,7 @@ type StreakAchievementResolver interface {
 	AchievedAt(ctx context.Context, obj *model.StreakAchievement) (*scalars.DateTime, error)
 	CelebratedAt(ctx context.Context, obj *model.StreakAchievement) (*scalars.DateTime, error)
 
+	AwardedUserCount(ctx context.Context, obj *model.StreakAchievement) (int, error)
 	Items(ctx context.Context, obj *model.StreakAchievement) ([]model.ContentItem, error)
 	UserCompletedItems(ctx context.Context, obj *model.StreakAchievement) ([]model.ContentItem, error)
 	NextItem(ctx context.Context, obj *model.StreakAchievement) (*model.ContentItem, error)
@@ -2639,6 +2655,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ContentAchievement.AwardableFrom(childComplexity), true
+	case "ContentAchievement.awardedUserCount":
+		if e.complexity.ContentAchievement.AwardedUserCount == nil {
+			break
+		}
+
+		return e.complexity.ContentAchievement.AwardedUserCount(childComplexity), true
 	case "ContentAchievement.celebratedAt":
 		if e.complexity.ContentAchievement.CelebratedAt == nil {
 			break
@@ -2889,6 +2911,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ExternalChallenge.ButtonText(childComplexity), true
+	case "ExternalChallenge.completionCount":
+		if e.complexity.ExternalChallenge.CompletionCount == nil {
+			break
+		}
+
+		return e.complexity.ExternalChallenge.CompletionCount(childComplexity), true
 	case "ExternalChallenge.description":
 		if e.complexity.ExternalChallenge.Description == nil {
 			break
@@ -5711,6 +5739,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PluginChallenge.ButtonText(childComplexity), true
+	case "PluginChallenge.completionCount":
+		if e.complexity.PluginChallenge.CompletionCount == nil {
+			break
+		}
+
+		return e.complexity.PluginChallenge.CompletionCount(childComplexity), true
 	case "PluginChallenge.description":
 		if e.complexity.PluginChallenge.Description == nil {
 			break
@@ -6970,6 +7004,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.QuizAchievement.AwardableFrom(childComplexity), true
+	case "QuizAchievement.awardedUserCount":
+		if e.complexity.QuizAchievement.AwardedUserCount == nil {
+			break
+		}
+
+		return e.complexity.QuizAchievement.AwardedUserCount(childComplexity), true
 	case "QuizAchievement.celebratedAt":
 		if e.complexity.QuizAchievement.CelebratedAt == nil {
 			break
@@ -7091,6 +7131,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.QuizChallenge.ButtonText(childComplexity), true
+	case "QuizChallenge.completionCount":
+		if e.complexity.QuizChallenge.CompletionCount == nil {
+			break
+		}
+
+		return e.complexity.QuizChallenge.CompletionCount(childComplexity), true
 	case "QuizChallenge.description":
 		if e.complexity.QuizChallenge.Description == nil {
 			break
@@ -7682,6 +7728,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SimpleAchievement.AwardableFrom(childComplexity), true
+	case "SimpleAchievement.awardedUserCount":
+		if e.complexity.SimpleAchievement.AwardedUserCount == nil {
+			break
+		}
+
+		return e.complexity.SimpleAchievement.AwardedUserCount(childComplexity), true
 	case "SimpleAchievement.celebratedAt":
 		if e.complexity.SimpleAchievement.CelebratedAt == nil {
 			break
@@ -7791,6 +7843,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SimpleChallenge.ButtonText(childComplexity), true
+	case "SimpleChallenge.completionCount":
+		if e.complexity.SimpleChallenge.CompletionCount == nil {
+			break
+		}
+
+		return e.complexity.SimpleChallenge.CompletionCount(childComplexity), true
 	case "SimpleChallenge.description":
 		if e.complexity.SimpleChallenge.Description == nil {
 			break
@@ -7906,6 +7964,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.StreakAchievement.AwardableFrom(childComplexity), true
+	case "StreakAchievement.awardedUserCount":
+		if e.complexity.StreakAchievement.AwardedUserCount == nil {
+			break
+		}
+
+		return e.complexity.StreakAchievement.AwardedUserCount(childComplexity), true
 	case "StreakAchievement.celebratedAt":
 		if e.complexity.StreakAchievement.CelebratedAt == nil {
 			break
@@ -9677,6 +9741,9 @@ interface Achievement {
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
+    # Users who have been awarded it. Team and super-team awards are counted
+    # separately and not included here.
+    awardedUserCount: Int! @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
@@ -9700,6 +9767,9 @@ type SimpleAchievement implements Achievement {
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
+    # Users who have been awarded it. Team and super-team awards are counted
+    # separately and not included here.
+    awardedUserCount: Int! @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
@@ -9721,6 +9791,9 @@ type ContentAchievement implements Achievement {
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
+    # Users who have been awarded it. Team and super-team awards are counted
+    # separately and not included here.
+    awardedUserCount: Int! @goField(forceResolver: true)
     # Content-specific fields
     items: [ContentItem!]! @goField(forceResolver: true)
     userCompletedItems: [ContentItem!]! @goField(forceResolver: true)
@@ -9748,6 +9821,9 @@ type StreakAchievement implements Achievement {
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
+    # Users who have been awarded it. Team and super-team awards are counted
+    # separately and not included here.
+    awardedUserCount: Int! @goField(forceResolver: true)
     # Content items with deadlines (external_content.complete_by)
     items: [ContentItem!]! @goField(forceResolver: true)
     userCompletedItems: [ContentItem!]! @goField(forceResolver: true)
@@ -9775,6 +9851,9 @@ type QuizAchievement implements Achievement {
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
+    # Users who have been awarded it. Team and super-team awards are counted
+    # separately and not included here.
+    awardedUserCount: Int! @goField(forceResolver: true)
     quiz: Quiz @goField(forceResolver: true)
     minScorePercentage: Int
     requireCompletion: Boolean!
@@ -10010,6 +10089,9 @@ interface Challenge {
     requiresSuperTeamMembership: Boolean!
     userCompletedAt: DateTime @goField(forceResolver: true)
     userEnrolledAt: DateTime @goField(forceResolver: true)
+    # Users who have completed it. Project-wide and viewer-independent, unlike
+    # userCompletedAt.
+    completionCount: Int! @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
@@ -10033,6 +10115,9 @@ type SimpleChallenge implements Challenge {
     requiresSuperTeamMembership: Boolean!
     userCompletedAt: DateTime @goField(forceResolver: true)
     userEnrolledAt: DateTime @goField(forceResolver: true)
+    # Users who have completed it. Project-wide and viewer-independent, unlike
+    # userCompletedAt.
+    completionCount: Int! @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     # SimpleChallenge-specific fields
     allowSelfCompletion: Boolean!
@@ -10056,6 +10141,9 @@ type QuizChallenge implements Challenge {
     requiresSuperTeamMembership: Boolean!
     userCompletedAt: DateTime @goField(forceResolver: true)
     userEnrolledAt: DateTime @goField(forceResolver: true)
+    # Users who have completed it. Project-wide and viewer-independent, unlike
+    # userCompletedAt.
+    completionCount: Int! @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     # QuizChallenge-specific fields - no url, linked to quiz
     quiz: Quiz! @goField(forceResolver: true)
@@ -10079,6 +10167,9 @@ type ExternalChallenge implements Challenge {
     requiresSuperTeamMembership: Boolean!
     userCompletedAt: DateTime @goField(forceResolver: true)
     userEnrolledAt: DateTime @goField(forceResolver: true)
+    # Users who have completed it. Project-wide and viewer-independent, unlike
+    # userCompletedAt.
+    completionCount: Int! @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     # ExternalChallenge-specific fields - url is required
     url: String!
@@ -10102,6 +10193,9 @@ type PluginChallenge implements Challenge {
     requiresSuperTeamMembership: Boolean!
     userCompletedAt: DateTime @goField(forceResolver: true)
     userEnrolledAt: DateTime @goField(forceResolver: true)
+    # Users who have completed it. Project-wide and viewer-independent, unlike
+    # userCompletedAt.
+    completionCount: Int! @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     # PluginChallenge-specific fields - pluginChallengeId is required, plugin_data is internal-only
     pluginChallengeId: String!
@@ -18957,6 +19051,35 @@ func (ec *executionContext) fieldContext_ContentAchievement_awardableFrom(_ cont
 	return fc, nil
 }
 
+func (ec *executionContext) _ContentAchievement_awardedUserCount(ctx context.Context, field graphql.CollectedField, obj *model.ContentAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ContentAchievement_awardedUserCount,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.ContentAchievement().AwardedUserCount(ctx, obj)
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ContentAchievement_awardedUserCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ContentAchievement",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ContentAchievement_items(ctx context.Context, field graphql.CollectedField, obj *model.ContentAchievement) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -20431,6 +20554,35 @@ func (ec *executionContext) fieldContext_ExternalChallenge_userEnrolledAt(_ cont
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExternalChallenge_completionCount(ctx context.Context, field graphql.CollectedField, obj *model.ExternalChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExternalChallenge_completionCount,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.ExternalChallenge().CompletionCount(ctx, obj)
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExternalChallenge_completionCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExternalChallenge",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -27434,6 +27586,8 @@ func (ec *executionContext) fieldContext_Mutation_createSimpleAchievement(ctx co
 				return ec.fieldContext_SimpleAchievement_hidden(ctx, field)
 			case "awardableFrom":
 				return ec.fieldContext_SimpleAchievement_awardableFrom(ctx, field)
+			case "awardedUserCount":
+				return ec.fieldContext_SimpleAchievement_awardedUserCount(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_SimpleAchievement_translationStatus(ctx, field)
 			}
@@ -27531,6 +27685,8 @@ func (ec *executionContext) fieldContext_Mutation_createContentAchievement(ctx c
 				return ec.fieldContext_ContentAchievement_hidden(ctx, field)
 			case "awardableFrom":
 				return ec.fieldContext_ContentAchievement_awardableFrom(ctx, field)
+			case "awardedUserCount":
+				return ec.fieldContext_ContentAchievement_awardedUserCount(ctx, field)
 			case "items":
 				return ec.fieldContext_ContentAchievement_items(ctx, field)
 			case "userCompletedItems":
@@ -27638,6 +27794,8 @@ func (ec *executionContext) fieldContext_Mutation_createStreakAchievement(ctx co
 				return ec.fieldContext_StreakAchievement_hidden(ctx, field)
 			case "awardableFrom":
 				return ec.fieldContext_StreakAchievement_awardableFrom(ctx, field)
+			case "awardedUserCount":
+				return ec.fieldContext_StreakAchievement_awardedUserCount(ctx, field)
 			case "items":
 				return ec.fieldContext_StreakAchievement_items(ctx, field)
 			case "userCompletedItems":
@@ -27804,6 +27962,8 @@ func (ec *executionContext) fieldContext_Mutation_updateContentAchievement(ctx c
 				return ec.fieldContext_ContentAchievement_hidden(ctx, field)
 			case "awardableFrom":
 				return ec.fieldContext_ContentAchievement_awardableFrom(ctx, field)
+			case "awardedUserCount":
+				return ec.fieldContext_ContentAchievement_awardedUserCount(ctx, field)
 			case "items":
 				return ec.fieldContext_ContentAchievement_items(ctx, field)
 			case "userCompletedItems":
@@ -27911,6 +28071,8 @@ func (ec *executionContext) fieldContext_Mutation_updateStreakAchievement(ctx co
 				return ec.fieldContext_StreakAchievement_hidden(ctx, field)
 			case "awardableFrom":
 				return ec.fieldContext_StreakAchievement_awardableFrom(ctx, field)
+			case "awardedUserCount":
+				return ec.fieldContext_StreakAchievement_awardedUserCount(ctx, field)
 			case "items":
 				return ec.fieldContext_StreakAchievement_items(ctx, field)
 			case "userCompletedItems":
@@ -28018,6 +28180,8 @@ func (ec *executionContext) fieldContext_Mutation_updateQuizAchievement(ctx cont
 				return ec.fieldContext_QuizAchievement_hidden(ctx, field)
 			case "awardableFrom":
 				return ec.fieldContext_QuizAchievement_awardableFrom(ctx, field)
+			case "awardedUserCount":
+				return ec.fieldContext_QuizAchievement_awardedUserCount(ctx, field)
 			case "quiz":
 				return ec.fieldContext_QuizAchievement_quiz(ctx, field)
 			case "minScorePercentage":
@@ -28475,6 +28639,8 @@ func (ec *executionContext) fieldContext_Mutation_markContentItemCompleted(ctx c
 				return ec.fieldContext_ContentAchievement_hidden(ctx, field)
 			case "awardableFrom":
 				return ec.fieldContext_ContentAchievement_awardableFrom(ctx, field)
+			case "awardedUserCount":
+				return ec.fieldContext_ContentAchievement_awardedUserCount(ctx, field)
 			case "items":
 				return ec.fieldContext_ContentAchievement_items(ctx, field)
 			case "userCompletedItems":
@@ -28582,6 +28748,8 @@ func (ec *executionContext) fieldContext_Mutation_unmarkContentItemCompleted(ctx
 				return ec.fieldContext_ContentAchievement_hidden(ctx, field)
 			case "awardableFrom":
 				return ec.fieldContext_ContentAchievement_awardableFrom(ctx, field)
+			case "awardedUserCount":
+				return ec.fieldContext_ContentAchievement_awardedUserCount(ctx, field)
 			case "items":
 				return ec.fieldContext_ContentAchievement_items(ctx, field)
 			case "userCompletedItems":
@@ -28689,6 +28857,8 @@ func (ec *executionContext) fieldContext_Mutation_markStreakItemCompleted(ctx co
 				return ec.fieldContext_StreakAchievement_hidden(ctx, field)
 			case "awardableFrom":
 				return ec.fieldContext_StreakAchievement_awardableFrom(ctx, field)
+			case "awardedUserCount":
+				return ec.fieldContext_StreakAchievement_awardedUserCount(ctx, field)
 			case "items":
 				return ec.fieldContext_StreakAchievement_items(ctx, field)
 			case "userCompletedItems":
@@ -28796,6 +28966,8 @@ func (ec *executionContext) fieldContext_Mutation_unmarkStreakItemCompleted(ctx 
 				return ec.fieldContext_StreakAchievement_hidden(ctx, field)
 			case "awardableFrom":
 				return ec.fieldContext_StreakAchievement_awardableFrom(ctx, field)
+			case "awardedUserCount":
+				return ec.fieldContext_StreakAchievement_awardedUserCount(ctx, field)
 			case "items":
 				return ec.fieldContext_StreakAchievement_items(ctx, field)
 			case "userCompletedItems":
@@ -29611,6 +29783,8 @@ func (ec *executionContext) fieldContext_Mutation_selfCompleteChallenge(ctx cont
 				return ec.fieldContext_SimpleChallenge_userCompletedAt(ctx, field)
 			case "userEnrolledAt":
 				return ec.fieldContext_SimpleChallenge_userEnrolledAt(ctx, field)
+			case "completionCount":
+				return ec.fieldContext_SimpleChallenge_completionCount(ctx, field)
 			case "translationStatus":
 				return ec.fieldContext_SimpleChallenge_translationStatus(ctx, field)
 			case "allowSelfCompletion":
@@ -32895,6 +33069,8 @@ func (ec *executionContext) fieldContext_Mutation_createQuizAchievement(ctx cont
 				return ec.fieldContext_QuizAchievement_hidden(ctx, field)
 			case "awardableFrom":
 				return ec.fieldContext_QuizAchievement_awardableFrom(ctx, field)
+			case "awardedUserCount":
+				return ec.fieldContext_QuizAchievement_awardedUserCount(ctx, field)
 			case "quiz":
 				return ec.fieldContext_QuizAchievement_quiz(ctx, field)
 			case "minScorePercentage":
@@ -34287,6 +34463,8 @@ func (ec *executionContext) fieldContext_Mutation_createContentAchievementFromEx
 				return ec.fieldContext_ContentAchievement_hidden(ctx, field)
 			case "awardableFrom":
 				return ec.fieldContext_ContentAchievement_awardableFrom(ctx, field)
+			case "awardedUserCount":
+				return ec.fieldContext_ContentAchievement_awardedUserCount(ctx, field)
 			case "items":
 				return ec.fieldContext_ContentAchievement_items(ctx, field)
 			case "userCompletedItems":
@@ -37765,6 +37943,35 @@ func (ec *executionContext) fieldContext_PluginChallenge_userEnrolledAt(_ contex
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PluginChallenge_completionCount(ctx context.Context, field graphql.CollectedField, obj *model.PluginChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PluginChallenge_completionCount,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.PluginChallenge().CompletionCount(ctx, obj)
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PluginChallenge_completionCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PluginChallenge",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -45469,6 +45676,35 @@ func (ec *executionContext) fieldContext_QuizAchievement_awardableFrom(_ context
 	return fc, nil
 }
 
+func (ec *executionContext) _QuizAchievement_awardedUserCount(ctx context.Context, field graphql.CollectedField, obj *model.QuizAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizAchievement_awardedUserCount,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.QuizAchievement().AwardedUserCount(ctx, obj)
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizAchievement_awardedUserCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizAchievement",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _QuizAchievement_quiz(ctx context.Context, field graphql.CollectedField, obj *model.QuizAchievement) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -46209,6 +46445,35 @@ func (ec *executionContext) fieldContext_QuizChallenge_userEnrolledAt(_ context.
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizChallenge_completionCount(ctx context.Context, field graphql.CollectedField, obj *model.QuizChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizChallenge_completionCount,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.QuizChallenge().CompletionCount(ctx, obj)
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizChallenge_completionCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizChallenge",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -49775,6 +50040,35 @@ func (ec *executionContext) fieldContext_SimpleAchievement_awardableFrom(_ conte
 	return fc, nil
 }
 
+func (ec *executionContext) _SimpleAchievement_awardedUserCount(ctx context.Context, field graphql.CollectedField, obj *model.SimpleAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SimpleAchievement_awardedUserCount,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.SimpleAchievement().AwardedUserCount(ctx, obj)
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SimpleAchievement_awardedUserCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SimpleAchievement",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _SimpleAchievement_translationStatus(ctx context.Context, field graphql.CollectedField, obj *model.SimpleAchievement) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -50384,6 +50678,35 @@ func (ec *executionContext) fieldContext_SimpleChallenge_userEnrolledAt(_ contex
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SimpleChallenge_completionCount(ctx context.Context, field graphql.CollectedField, obj *model.SimpleChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SimpleChallenge_completionCount,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.SimpleChallenge().CompletionCount(ctx, obj)
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SimpleChallenge_completionCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SimpleChallenge",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -51037,6 +51360,35 @@ func (ec *executionContext) fieldContext_StreakAchievement_awardableFrom(_ conte
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StreakAchievement_awardedUserCount(ctx context.Context, field graphql.CollectedField, obj *model.StreakAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StreakAchievement_awardedUserCount,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.StreakAchievement().AwardedUserCount(ctx, obj)
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StreakAchievement_awardedUserCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StreakAchievement",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -63970,6 +64322,42 @@ func (ec *executionContext) _ContentAchievement(ctx context.Context, sel ast.Sel
 			}
 		case "awardableFrom":
 			out.Values[i] = ec._ContentAchievement_awardableFrom(ctx, field, obj)
+		case "awardedUserCount":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ContentAchievement_awardedUserCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "items":
 			field := field
 
@@ -64788,6 +65176,42 @@ func (ec *executionContext) _ExternalChallenge(ctx context.Context, sel ast.Sele
 					}
 				}()
 				res = ec._ExternalChallenge_userEnrolledAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "completionCount":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ExternalChallenge_completionCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 
@@ -68895,6 +69319,42 @@ func (ec *executionContext) _PluginChallenge(ctx context.Context, sel ast.Select
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "completionCount":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._PluginChallenge_completionCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "translationStatus":
 			field := field
 
@@ -72422,6 +72882,42 @@ func (ec *executionContext) _QuizAchievement(ctx context.Context, sel ast.Select
 			}
 		case "awardableFrom":
 			out.Values[i] = ec._QuizAchievement_awardableFrom(ctx, field, obj)
+		case "awardedUserCount":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._QuizAchievement_awardedUserCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "quiz":
 			field := field
 
@@ -72722,6 +73218,42 @@ func (ec *executionContext) _QuizChallenge(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._QuizChallenge_userEnrolledAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "completionCount":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._QuizChallenge_completionCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 
@@ -74765,6 +75297,42 @@ func (ec *executionContext) _SimpleAchievement(ctx context.Context, sel ast.Sele
 			}
 		case "awardableFrom":
 			out.Values[i] = ec._SimpleAchievement_awardableFrom(ctx, field, obj)
+		case "awardedUserCount":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SimpleAchievement_awardedUserCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "translationStatus":
 			field := field
 
@@ -75025,6 +75593,42 @@ func (ec *executionContext) _SimpleChallenge(ctx context.Context, sel ast.Select
 					}
 				}()
 				res = ec._SimpleChallenge_userEnrolledAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "completionCount":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SimpleChallenge_completionCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 
@@ -75410,6 +76014,42 @@ func (ec *executionContext) _StreakAchievement(ctx context.Context, sel ast.Sele
 			}
 		case "awardableFrom":
 			out.Values[i] = ec._StreakAchievement_awardableFrom(ctx, field, obj)
+		case "awardedUserCount":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._StreakAchievement_awardedUserCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "items":
 			field := field
 

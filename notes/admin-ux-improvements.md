@@ -663,12 +663,11 @@ Three things are not, in rough order of value:
 
 1. ~~Time-series for the sparklines~~ — **done 2026-09-21.**
    `Project.activityTrend(days:)` over `score_journal`.
-2. **`Challenge.completionCount` / `Achievement.awardedCount`** — the engagement
-   numbers the bible-study creators asked for, and the best detector of the set:
-   "this challenge is live and nobody has completed it" catches a broken QR code
-   or a wrong date _during_ a camp rather than after. A project-level live-
-   challenges field belongs with them — `activeChallenges` is viewer-relative
-   and unusable in admin (see the 2026-09-22 log entry).
+2. ~~`Challenge.completionCount` / `Achievement.awardedUserCount`~~ — **done
+   2026-09-22.** A project-level live-challenges field is still open, since
+   `activeChallenges` is viewer-relative and unusable in admin — but it may not
+   be needed: `Challenge` already exposes `publishedAt` / `visibleAt` /
+   `startedAt` / `endTime`, so the frontend can derive what is live.
 3. ~~`Project.participantCount` / `teamCount`~~ — **not needed.** Resolved on
    the frontend instead: a per-project component runs its own counts query, so
    the root `users`/`teams` connections suffice. See the 2026-09-21 section
@@ -760,6 +759,77 @@ then `make generate` and `pnpm codegen`.
 
 ## Update log
 
+### 2026-09-22 — `Challenge.completionCount` and `Achievement.awardedUserCount`
+
+The engagement numbers the bible-study creators asked for. Both are
+viewer-independent, unlike `userCompletedAt` / `achievedAt`.
+
+**Backend.** Added to the `Challenge` and `Achievement` interfaces and all four
+implementations of each, `forceResolver` on every one. Two grouped bulk queries
+(`GetBulkChallengeCompletionCounts`, `GetBulkAchievementAwardedUserCounts`) feed
+two new dataloaders, `ChallengeCompletionCountLoader` and
+`AchievementAwardedUserCountLoader` — a list of 50 challenges costs one query.
+
+Two decisions worth keeping:
+
+- **Not cached in Ristretto.** These change on every completion or award and
+  have no invalidation path, so they are batched per request window only — the
+  same call `userProjectScoreBatchFunc` already makes for scores.
+- **`awardedUserCount`, not `awardedCount`.** `team_achievements` and
+  `super_team_achievements` exist, so an unqualified name would repeat the
+  `activeChallenges` mistake: a number whose meaning you have to read the
+  resolver to learn. The name says whose awards it counts. Challenges have no
+  team equivalent, so `completionCount` needs no qualifier.
+
+**Frontend.** Three surfaces, all sharing `AdminEngagementCount` (count, "av N ·
+x %", optional proportion bar):
+
+- Project overview: a new **Engasjement** section (`AdminProjectEngagement`,
+  owns its own query), each list sorted by count descending so the tail answers
+  "what is nobody doing".
+- Challenges list: a **Fullført** column.
+- Achievements list: the award count per row.
+
+The share needs a denominator, so the two list pages now also ask for
+`participants: users(first: 0, filter: { projectId })`.
+
+**Second pass, same day: the panel was too tall.** Two side-by-side vertical
+lists of 10 and 12 rows, each repeating "av 88 · 3 %", filled a screen. Now:
+
+- The denominator is stated once for the panel, not per row.
+- **Achievements come first** and are a wrapping grid of badges — the
+  achievement's own image inside a ring whose arc is the share of participants
+  (`AdminEngagementRing`), count underneath. 12 achievements fit in two rows
+  instead of twelve.
+
+  Three things the first attempt got wrong: the track was `text-elevated`, which
+  is not a text utility, so it inherited body colour and drew a near-white ring
+  the pink arc vanished against (now `text-dimmed` at 40 %); the image sat one
+  pixel off the track (now inset by `STROKE + 4`, inside its own
+  `overflow-hidden` disc so any aspect ratio still clips); and
+  `/images/achievement-placeholder.png` is a **white disc**, which swallowed the
+  ring entirely — an achievement without an image now gets a muted award icon
+  from the component instead.
+
+- **Challenges stay named rows**, but dense and in two columns: name, count, a
+  12-unit bar. Their images do not identify them the way an achievement badge
+  does ("Game Night 1 - Tipping" vs "Game Night 1 - Unit oppgave"), so a badge
+  grid would have been unreadable.
+- Name and exact share moved into a `UTooltip` per row or badge.
+
+`UTooltip` teleports and needs `UApp`'s provider, so component tests stub it
+with a `data-tooltip` attribute rather than asserting on rendered tooltip text.
+
+`AdminEngagementCount` (count + "av N · x %" + optional bar) stays as it is for
+the two list pages, where a table row has the width for it.
+
+Tests: two loader mapping tests in `internal/loaders/`, and component tests for
+`AdminEngagementCount` (share maths, no total, zero participants, the bar capped
+at 100 % — awards can outnumber current participants) and
+`AdminProjectEngagement` (ordering, per-list empty state).
+
+Not done: no e2e test, which would need Docker.
+
 ### 2026-09-22 — project overview becomes a dashboard (no-backend half)
 
 `/admin/projects/:projectId` was a header plus five tab-replacement links. It is
@@ -792,9 +862,10 @@ this project" — for an admin who is also a participant they under-report, and 
 number differs per admin looking at the same project. The
 `activeChallengesCount` tile was removed from `AdminProjectSection` too.
 
-`Challenge` has no `startTime`/`endTime` in the GraphQL schema either, so "what is
-live right now" cannot be computed on the frontend at all. It needs a
-project-level field.
+It needs a project-level field — or, since `Challenge` does expose `publishedAt`,
+`visibleAt`, `startedAt` and `endTime`, the frontend can derive "live right now"
+from those without any backend work. (An earlier version of this entry claimed
+those fields did not exist. They do.)
 
 #### What the bible-study creators asked for still needs backend work
 

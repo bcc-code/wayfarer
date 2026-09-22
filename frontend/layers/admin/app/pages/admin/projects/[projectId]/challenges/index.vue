@@ -14,12 +14,17 @@ const canEdit = computed(() => canEditProject(route.params.projectId))
 // not appear, with nothing on the page to say so.
 gql(`
   query AdminProjectChallenges(
+    $projectId: ID!
     $filter: ChallengeFilter
     $first: Int
     $after: String
     $last: Int
     $before: String
   ) {
+    # For the "x of y" share on each row's completion count.
+    participants: users(first: 0, filter: { projectId: $projectId }) {
+      totalCount
+    }
     challenges(
       filter: $filter
       first: $first
@@ -41,6 +46,7 @@ gql(`
           id
           name
           description
+          completionCount
           imageObject {
             ...ImageFields
           }
@@ -78,6 +84,7 @@ const { isAuthReady } = useAuthReady()
 const { data, error, fetching } = useAdminProjectChallengesQuery({
   variables: computed(() => ({
     ...pagination.variables.value,
+    projectId: route.params.projectId,
     filter: {
       projectId: route.params.projectId,
       ...(list.filters.challengeType
@@ -96,6 +103,8 @@ watch(
 const challenges = computed(
   () => data.value?.challenges.edges.map((e) => e.node) ?? [],
 )
+
+const participants = computed(() => data.value?.participants.totalCount)
 
 const activeFilters = computed(() =>
   list.activeFilters.value.map((filter) => ({
@@ -170,6 +179,7 @@ function challengeType(typename?: string) {
           { accessorKey: 'name' },
           { accessorKey: 'description' },
           { accessorKey: 'type', header: 'Type' },
+          { accessorKey: 'completionCount', header: 'Fullført' },
           { id: 'actions' },
         ]"
       >
@@ -184,6 +194,12 @@ function challengeType(typename?: string) {
         </template>
         <template #type-cell="{ row }">
           {{ challengeType(row.original.__typename) }}
+        </template>
+        <template #completionCount-cell="{ row }">
+          <AdminEngagementCount
+            :count="row.original.completionCount"
+            :total="participants"
+          />
         </template>
         <template #actions-cell="{ row }">
           <div class="flex justify-end">

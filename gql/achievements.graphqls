@@ -20,6 +20,9 @@ interface Achievement {
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
+    # Users who have been awarded it. Team and super-team awards are counted
+    # separately and not included here.
+    awardedUserCount: Int! @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
@@ -43,6 +46,9 @@ type SimpleAchievement implements Achievement {
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
+    # Users who have been awarded it. Team and super-team awards are counted
+    # separately and not included here.
+    awardedUserCount: Int! @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
@@ -64,6 +70,9 @@ type ContentAchievement implements Achievement {
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
+    # Users who have been awarded it. Team and super-team awards are counted
+    # separately and not included here.
+    awardedUserCount: Int! @goField(forceResolver: true)
     # Content-specific fields
     items: [ContentItem!]! @goField(forceResolver: true)
     userCompletedItems: [ContentItem!]! @goField(forceResolver: true)
@@ -91,6 +100,9 @@ type StreakAchievement implements Achievement {
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
+    # Users who have been awarded it. Team and super-team awards are counted
+    # separately and not included here.
+    awardedUserCount: Int! @goField(forceResolver: true)
     # Content items with deadlines (external_content.complete_by)
     items: [ContentItem!]! @goField(forceResolver: true)
     userCompletedItems: [ContentItem!]! @goField(forceResolver: true)
@@ -118,6 +130,9 @@ type QuizAchievement implements Achievement {
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
+    # Users who have been awarded it. Team and super-team awards are counted
+    # separately and not included here.
+    awardedUserCount: Int! @goField(forceResolver: true)
     quiz: Quiz @goField(forceResolver: true)
     minScorePercentage: Int
     requireCompletion: Boolean!

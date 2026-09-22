@@ -26,6 +26,7 @@ export type Scalars = {
 export type Achievement = {
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
   awardableFrom?: Maybe<Scalars['DateTime']['output']>;
+  awardedUserCount: Scalars['Int']['output'];
   celebratedAt?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   descriptionCompleted: Scalars['String']['output'];
@@ -214,6 +215,7 @@ export type BulkScoreAdjustmentItemInput = {
 
 export type Challenge = {
   buttonText?: Maybe<Scalars['String']['output']>;
+  completionCount: Scalars['Int']['output'];
   description: Scalars['HTML']['output'];
   endTime?: Maybe<Scalars['DateTime']['output']>;
   event?: Maybe<Event>;
@@ -392,6 +394,7 @@ export type ContentAchievement = Achievement & {
   __typename?: 'ContentAchievement';
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
   awardableFrom?: Maybe<Scalars['DateTime']['output']>;
+  awardedUserCount: Scalars['Int']['output'];
   celebratedAt?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   completedItemCount: Scalars['Int']['output'];
@@ -739,6 +742,7 @@ export enum ExportFormat {
 export type ExternalChallenge = Challenge & {
   __typename?: 'ExternalChallenge';
   buttonText: Scalars['String']['output'];
+  completionCount: Scalars['Int']['output'];
   description: Scalars['HTML']['output'];
   endTime?: Maybe<Scalars['DateTime']['output']>;
   event?: Maybe<Event>;
@@ -2112,6 +2116,7 @@ export type PageInfo = {
 export type PluginChallenge = Challenge & {
   __typename?: 'PluginChallenge';
   buttonText?: Maybe<Scalars['String']['output']>;
+  completionCount: Scalars['Int']['output'];
   description: Scalars['HTML']['output'];
   endTime?: Maybe<Scalars['DateTime']['output']>;
   event?: Maybe<Event>;
@@ -2686,6 +2691,7 @@ export type QuizAchievement = Achievement & {
   __typename?: 'QuizAchievement';
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
   awardableFrom?: Maybe<Scalars['DateTime']['output']>;
+  awardedUserCount: Scalars['Int']['output'];
   celebratedAt?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   descriptionCompleted: Scalars['String']['output'];
@@ -2712,6 +2718,7 @@ export type QuizAchievement = Achievement & {
 export type QuizChallenge = Challenge & {
   __typename?: 'QuizChallenge';
   buttonText: Scalars['String']['output'];
+  completionCount: Scalars['Int']['output'];
   description: Scalars['HTML']['output'];
   endTime?: Maybe<Scalars['DateTime']['output']>;
   event?: Maybe<Event>;
@@ -2988,6 +2995,7 @@ export type SimpleAchievement = Achievement & {
   __typename?: 'SimpleAchievement';
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
   awardableFrom?: Maybe<Scalars['DateTime']['output']>;
+  awardedUserCount: Scalars['Int']['output'];
   celebratedAt?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   descriptionCompleted: Scalars['String']['output'];
@@ -3012,6 +3020,7 @@ export type SimpleChallenge = Challenge & {
   __typename?: 'SimpleChallenge';
   allowSelfCompletion: Scalars['Boolean']['output'];
   buttonText: Scalars['String']['output'];
+  completionCount: Scalars['Int']['output'];
   description: Scalars['HTML']['output'];
   endTime?: Maybe<Scalars['DateTime']['output']>;
   event?: Maybe<Event>;
@@ -3036,6 +3045,7 @@ export type StreakAchievement = Achievement & {
   __typename?: 'StreakAchievement';
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
   awardableFrom?: Maybe<Scalars['DateTime']['output']>;
+  awardedUserCount: Scalars['Int']['output'];
   celebratedAt?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   completedItemCount: Scalars['Int']['output'];
@@ -4359,6 +4369,23 @@ export type AdminProjectSwitcherQueryVariables = Exact<{ [key: string]: never; }
 
 export type AdminProjectSwitcherQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, startDate: any, endDate: any } }> } };
 
+export type AdminProjectEngagementQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminProjectEngagementQuery = { __typename?: 'Query', challenges: { __typename?: 'ChallengeConnection', edges: Array<{ __typename?: 'ChallengeEdge', node:
+        | { __typename?: 'ExternalChallenge', id: string, name: string, completionCount: number }
+        | { __typename?: 'PluginChallenge', id: string, name: string, completionCount: number }
+        | { __typename?: 'QuizChallenge', id: string, name: string, completionCount: number }
+        | { __typename?: 'SimpleChallenge', id: string, name: string, completionCount: number }
+       }> }, achievements: { __typename?: 'AchievementConnection', edges: Array<{ __typename?: 'AchievementEdge', node:
+        | { __typename?: 'ContentAchievement', id: string, name: string, awardedUserCount: number, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+        | { __typename?: 'QuizAchievement', id: string, name: string, awardedUserCount: number, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+        | { __typename?: 'SimpleAchievement', id: string, name: string, awardedUserCount: number, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+        | { __typename?: 'StreakAchievement', id: string, name: string, awardedUserCount: number, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+       }> } };
+
 export type AdminProjectSectionCountsQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
   withTrend: Scalars['Boolean']['input'];
@@ -4585,11 +4612,11 @@ export type AdminProjectAchievementsQueryVariables = Exact<{
 }>;
 
 
-export type AdminProjectAchievementsQuery = { __typename?: 'Query', achievements: { __typename?: 'AchievementConnection', edges: Array<{ __typename?: 'AchievementEdge', node:
-        | { __typename?: 'ContentAchievement', id: string, name: string, descriptionPending: string, points: number, hidden: boolean, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
-        | { __typename?: 'QuizAchievement', id: string, name: string, descriptionPending: string, points: number, hidden: boolean, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
-        | { __typename?: 'SimpleAchievement', id: string, name: string, descriptionPending: string, points: number, hidden: boolean, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
-        | { __typename?: 'StreakAchievement', id: string, name: string, descriptionPending: string, points: number, hidden: boolean, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+export type AdminProjectAchievementsQuery = { __typename?: 'Query', participants: { __typename?: 'UserConnection', totalCount: number }, achievements: { __typename?: 'AchievementConnection', edges: Array<{ __typename?: 'AchievementEdge', node:
+        | { __typename?: 'ContentAchievement', id: string, name: string, descriptionPending: string, points: number, hidden: boolean, awardedUserCount: number, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+        | { __typename?: 'QuizAchievement', id: string, name: string, descriptionPending: string, points: number, hidden: boolean, awardedUserCount: number, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+        | { __typename?: 'SimpleAchievement', id: string, name: string, descriptionPending: string, points: number, hidden: boolean, awardedUserCount: number, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+        | { __typename?: 'StreakAchievement', id: string, name: string, descriptionPending: string, points: number, hidden: boolean, awardedUserCount: number, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
        }> } };
 
 export type AdminProjectAchievementsNewPageQueryVariables = Exact<{
@@ -4642,6 +4669,7 @@ export type AdminChallengeSessionsPageQuery = { __typename?: 'Query', challenge:
    };
 
 export type AdminProjectChallengesQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
   filter?: InputMaybe<ChallengeFilter>;
   first?: InputMaybe<Scalars['Int']['input']>;
   after?: InputMaybe<Scalars['String']['input']>;
@@ -4650,11 +4678,11 @@ export type AdminProjectChallengesQueryVariables = Exact<{
 }>;
 
 
-export type AdminProjectChallengesQuery = { __typename?: 'Query', challenges: { __typename?: 'ChallengeConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'ChallengeEdge', cursor: string, node:
-        | { __typename: 'ExternalChallenge', id: string, name: string, description: any, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
-        | { __typename: 'PluginChallenge', id: string, name: string, description: any, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
-        | { __typename: 'QuizChallenge', id: string, name: string, description: any, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
-        | { __typename: 'SimpleChallenge', id: string, name: string, description: any, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
+export type AdminProjectChallengesQuery = { __typename?: 'Query', participants: { __typename?: 'UserConnection', totalCount: number }, challenges: { __typename?: 'ChallengeConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'ChallengeEdge', cursor: string, node:
+        | { __typename: 'ExternalChallenge', id: string, name: string, description: any, completionCount: number, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
+        | { __typename: 'PluginChallenge', id: string, name: string, description: any, completionCount: number, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
+        | { __typename: 'QuizChallenge', id: string, name: string, description: any, completionCount: number, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
+        | { __typename: 'SimpleChallenge', id: string, name: string, description: any, completionCount: number, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
        }> } };
 
 export type AdminProjectChallengeNewPageQueryVariables = Exact<{
@@ -6505,6 +6533,35 @@ export const AdminProjectSwitcherDocument = gql`
 export function useAdminProjectSwitcherQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectSwitcherQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectSwitcherQuery, AdminProjectSwitcherQueryVariables | undefined>({ query: AdminProjectSwitcherDocument, variables: undefined, ...options });
 };
+export const AdminProjectEngagementDocument = gql`
+    query AdminProjectEngagement($projectId: ID!) {
+  challenges(first: 50, filter: {projectId: $projectId}) {
+    edges {
+      node {
+        id
+        name
+        completionCount
+      }
+    }
+  }
+  achievements(first: 50, filter: {projectId: $projectId}) {
+    edges {
+      node {
+        id
+        name
+        awardedUserCount
+        imageCompletedObject {
+          ...ImageFields
+        }
+      }
+    }
+  }
+}
+    ${ImageFieldsFragmentDoc}`;
+
+export function useAdminProjectEngagementQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectEngagementQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectEngagementQuery, AdminProjectEngagementQueryVariables | undefined>({ query: AdminProjectEngagementDocument, variables: undefined, ...options });
+};
 export const AdminProjectSectionCountsDocument = gql`
     query AdminProjectSectionCounts($projectId: ID!, $withTrend: Boolean!) {
   project(id: $projectId) {
@@ -7252,6 +7309,9 @@ export function useAdminProjectAchievementPageQuery(options?: Omit<Urql.UseQuery
 };
 export const AdminProjectAchievementsDocument = gql`
     query AdminProjectAchievements($projectId: ID!) {
+  participants: users(first: 0, filter: {projectId: $projectId}) {
+    totalCount
+  }
   achievements(first: 50, filter: {projectId: $projectId}) {
     edges {
       node {
@@ -7263,6 +7323,7 @@ export const AdminProjectAchievementsDocument = gql`
         }
         points
         hidden
+        awardedUserCount
       }
     }
   }
@@ -7392,7 +7453,10 @@ export function useAdminChallengeSessionsPageQuery(options?: Omit<Urql.UseQueryA
   return Urql.useQuery<AdminChallengeSessionsPageQuery, AdminChallengeSessionsPageQueryVariables | undefined>({ query: AdminChallengeSessionsPageDocument, variables: undefined, ...options });
 };
 export const AdminProjectChallengesDocument = gql`
-    query AdminProjectChallenges($filter: ChallengeFilter, $first: Int, $after: String, $last: Int, $before: String) {
+    query AdminProjectChallenges($projectId: ID!, $filter: ChallengeFilter, $first: Int, $after: String, $last: Int, $before: String) {
+  participants: users(first: 0, filter: {projectId: $projectId}) {
+    totalCount
+  }
   challenges(
     filter: $filter
     first: $first
@@ -7414,6 +7478,7 @@ export const AdminProjectChallengesDocument = gql`
         id
         name
         description
+        completionCount
         imageObject {
           ...ImageFields
         }

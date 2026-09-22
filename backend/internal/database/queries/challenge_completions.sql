@@ -39,3 +39,11 @@ FROM user_challenge_completions
 WHERE (user_id, challenge_id) IN (
     SELECT unnest(@userids::char(28)[]), unnest(@challengeids::char(28)[])
 );
+
+-- name: GetBulkChallengeCompletionCounts :many
+-- Completions per challenge, for the dataloader. Challenges with none are
+-- absent from the result; the caller fills in 0.
+SELECT challenge_id, COUNT(*)::bigint AS completion_count
+FROM user_challenge_completions
+WHERE challenge_id = ANY(@challengeids::char(28)[])
+GROUP BY challenge_id;

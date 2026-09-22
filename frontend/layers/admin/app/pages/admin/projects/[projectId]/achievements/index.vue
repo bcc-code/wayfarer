@@ -12,6 +12,10 @@ const canEdit = computed(() => canEditProject(route.params.projectId))
 
 gql(`
   query AdminProjectAchievements($projectId: ID!) {
+    # For the "x of y" share on each row's award count.
+    participants: users(first: 0, filter: { projectId: $projectId }) {
+      totalCount
+    }
     achievements(first: 50, filter: { projectId: $projectId }) {
       edges {
         node {
@@ -23,6 +27,7 @@ gql(`
           }
           points
           hidden
+          awardedUserCount
         }
       }
     }
@@ -53,6 +58,8 @@ watch(
   },
   { immediate: true },
 )
+
+const participants = computed(() => data.value?.participants.totalCount)
 
 const { executeMutation: reorderAchievements } =
   useReorderAchievementsMutation()
@@ -142,6 +149,11 @@ async function handleReorder() {
                 {{ achievement.descriptionPending }}
               </div>
             </div>
+            <AdminEngagementCount
+              :count="achievement.awardedUserCount"
+              :total="participants"
+              class="w-32 shrink-0 text-right text-sm"
+            />
             <div class="text-muted shrink-0 text-sm">
               {{ formatNumber(achievement.points) }} pts
             </div>

@@ -30,6 +30,7 @@ type Achievement interface {
 	GetPoints() int
 	GetHidden() bool
 	GetAwardableFrom() *scalars.DateTime
+	GetAwardedUserCount() int
 	GetTranslationStatus() []TranslationFieldStatus
 }
 
@@ -52,6 +53,7 @@ type Challenge interface {
 	GetRequiresSuperTeamMembership() bool
 	GetUserCompletedAt() *scalars.DateTime
 	GetUserEnrolledAt() *scalars.DateTime
+	GetCompletionCount() int
 	GetTranslationStatus() []TranslationFieldStatus
 }
 
@@ -372,6 +374,7 @@ type ContentAchievement struct {
 	Points               int                      `json:"points"`
 	Hidden               bool                     `json:"hidden"`
 	AwardableFrom        *scalars.DateTime        `json:"awardableFrom,omitempty"`
+	AwardedUserCount     int                      `json:"awardedUserCount"`
 	Items                []ContentItem            `json:"items"`
 	UserCompletedItems   []ContentItem            `json:"userCompletedItems"`
 	NextItem             *ContentItem             `json:"nextItem,omitempty"`
@@ -401,6 +404,7 @@ func (this ContentAchievement) GetCelebratedAt() *scalars.DateTime  { return thi
 func (this ContentAchievement) GetPoints() int                      { return this.Points }
 func (this ContentAchievement) GetHidden() bool                     { return this.Hidden }
 func (this ContentAchievement) GetAwardableFrom() *scalars.DateTime { return this.AwardableFrom }
+func (this ContentAchievement) GetAwardedUserCount() int            { return this.AwardedUserCount }
 func (this ContentAchievement) GetTranslationStatus() []TranslationFieldStatus {
 	if this.TranslationStatus == nil {
 		return nil
@@ -733,6 +737,7 @@ type ExternalChallenge struct {
 	RequiresSuperTeamMembership bool                     `json:"requiresSuperTeamMembership"`
 	UserCompletedAt             *scalars.DateTime        `json:"userCompletedAt,omitempty"`
 	UserEnrolledAt              *scalars.DateTime        `json:"userEnrolledAt,omitempty"`
+	CompletionCount             int                      `json:"completionCount"`
 	TranslationStatus           []TranslationFieldStatus `json:"translationStatus"`
 	URL                         string                   `json:"url"`
 	EventID                     *string                  `json:"-"`
@@ -759,6 +764,7 @@ func (this ExternalChallenge) GetRequiresSuperTeamMembership() bool {
 }
 func (this ExternalChallenge) GetUserCompletedAt() *scalars.DateTime { return this.UserCompletedAt }
 func (this ExternalChallenge) GetUserEnrolledAt() *scalars.DateTime  { return this.UserEnrolledAt }
+func (this ExternalChallenge) GetCompletionCount() int               { return this.CompletionCount }
 func (this ExternalChallenge) GetTranslationStatus() []TranslationFieldStatus {
 	if this.TranslationStatus == nil {
 		return nil
@@ -1290,6 +1296,7 @@ type PluginChallenge struct {
 	RequiresSuperTeamMembership bool                     `json:"requiresSuperTeamMembership"`
 	UserCompletedAt             *scalars.DateTime        `json:"userCompletedAt,omitempty"`
 	UserEnrolledAt              *scalars.DateTime        `json:"userEnrolledAt,omitempty"`
+	CompletionCount             int                      `json:"completionCount"`
 	TranslationStatus           []TranslationFieldStatus `json:"translationStatus"`
 	PluginChallengeID           string                   `json:"pluginChallengeId"`
 	EventID                     *string                  `json:"-"`
@@ -1316,6 +1323,7 @@ func (this PluginChallenge) GetRequiresSuperTeamMembership() bool {
 }
 func (this PluginChallenge) GetUserCompletedAt() *scalars.DateTime { return this.UserCompletedAt }
 func (this PluginChallenge) GetUserEnrolledAt() *scalars.DateTime  { return this.UserEnrolledAt }
+func (this PluginChallenge) GetCompletionCount() int               { return this.CompletionCount }
 func (this PluginChallenge) GetTranslationStatus() []TranslationFieldStatus {
 	if this.TranslationStatus == nil {
 		return nil
@@ -1523,6 +1531,7 @@ type QuizAchievement struct {
 	Points               int                      `json:"points"`
 	Hidden               bool                     `json:"hidden"`
 	AwardableFrom        *scalars.DateTime        `json:"awardableFrom,omitempty"`
+	AwardedUserCount     int                      `json:"awardedUserCount"`
 	Quiz                 *Quiz                    `json:"quiz,omitempty"`
 	MinScorePercentage   *int                     `json:"minScorePercentage,omitempty"`
 	RequireCompletion    bool                     `json:"requireCompletion"`
@@ -1551,6 +1560,7 @@ func (this QuizAchievement) GetCelebratedAt() *scalars.DateTime  { return this.C
 func (this QuizAchievement) GetPoints() int                      { return this.Points }
 func (this QuizAchievement) GetHidden() bool                     { return this.Hidden }
 func (this QuizAchievement) GetAwardableFrom() *scalars.DateTime { return this.AwardableFrom }
+func (this QuizAchievement) GetAwardedUserCount() int            { return this.AwardedUserCount }
 func (this QuizAchievement) GetTranslationStatus() []TranslationFieldStatus {
 	if this.TranslationStatus == nil {
 		return nil
@@ -1582,6 +1592,7 @@ type QuizChallenge struct {
 	RequiresSuperTeamMembership bool                     `json:"requiresSuperTeamMembership"`
 	UserCompletedAt             *scalars.DateTime        `json:"userCompletedAt,omitempty"`
 	UserEnrolledAt              *scalars.DateTime        `json:"userEnrolledAt,omitempty"`
+	CompletionCount             int                      `json:"completionCount"`
 	TranslationStatus           []TranslationFieldStatus `json:"translationStatus"`
 	Quiz                        *Quiz                    `json:"quiz"`
 	EventID                     *string                  `json:"-"`
@@ -1608,6 +1619,7 @@ func (this QuizChallenge) GetRequiresSuperTeamMembership() bool {
 }
 func (this QuizChallenge) GetUserCompletedAt() *scalars.DateTime { return this.UserCompletedAt }
 func (this QuizChallenge) GetUserEnrolledAt() *scalars.DateTime  { return this.UserEnrolledAt }
+func (this QuizChallenge) GetCompletionCount() int               { return this.CompletionCount }
 func (this QuizChallenge) GetTranslationStatus() []TranslationFieldStatus {
 	if this.TranslationStatus == nil {
 		return nil
@@ -1824,6 +1836,7 @@ type SimpleAchievement struct {
 	Points               int                      `json:"points"`
 	Hidden               bool                     `json:"hidden"`
 	AwardableFrom        *scalars.DateTime        `json:"awardableFrom,omitempty"`
+	AwardedUserCount     int                      `json:"awardedUserCount"`
 	TranslationStatus    []TranslationFieldStatus `json:"translationStatus"`
 	ChallengeID          *string                  `json:"-"`
 	EventID              *string                  `json:"-"`
@@ -1848,6 +1861,7 @@ func (this SimpleAchievement) GetCelebratedAt() *scalars.DateTime  { return this
 func (this SimpleAchievement) GetPoints() int                      { return this.Points }
 func (this SimpleAchievement) GetHidden() bool                     { return this.Hidden }
 func (this SimpleAchievement) GetAwardableFrom() *scalars.DateTime { return this.AwardableFrom }
+func (this SimpleAchievement) GetAwardedUserCount() int            { return this.AwardedUserCount }
 func (this SimpleAchievement) GetTranslationStatus() []TranslationFieldStatus {
 	if this.TranslationStatus == nil {
 		return nil
@@ -1879,6 +1893,7 @@ type SimpleChallenge struct {
 	RequiresSuperTeamMembership bool                     `json:"requiresSuperTeamMembership"`
 	UserCompletedAt             *scalars.DateTime        `json:"userCompletedAt,omitempty"`
 	UserEnrolledAt              *scalars.DateTime        `json:"userEnrolledAt,omitempty"`
+	CompletionCount             int                      `json:"completionCount"`
 	TranslationStatus           []TranslationFieldStatus `json:"translationStatus"`
 	AllowSelfCompletion         bool                     `json:"allowSelfCompletion"`
 	EventID                     *string                  `json:"-"`
@@ -1905,6 +1920,7 @@ func (this SimpleChallenge) GetRequiresSuperTeamMembership() bool {
 }
 func (this SimpleChallenge) GetUserCompletedAt() *scalars.DateTime { return this.UserCompletedAt }
 func (this SimpleChallenge) GetUserEnrolledAt() *scalars.DateTime  { return this.UserEnrolledAt }
+func (this SimpleChallenge) GetCompletionCount() int               { return this.CompletionCount }
 func (this SimpleChallenge) GetTranslationStatus() []TranslationFieldStatus {
 	if this.TranslationStatus == nil {
 		return nil
@@ -1936,6 +1952,7 @@ type StreakAchievement struct {
 	Points               int                      `json:"points"`
 	Hidden               bool                     `json:"hidden"`
 	AwardableFrom        *scalars.DateTime        `json:"awardableFrom,omitempty"`
+	AwardedUserCount     int                      `json:"awardedUserCount"`
 	Items                []ContentItem            `json:"items"`
 	UserCompletedItems   []ContentItem            `json:"userCompletedItems"`
 	NextItem             *ContentItem             `json:"nextItem,omitempty"`
@@ -1966,6 +1983,7 @@ func (this StreakAchievement) GetCelebratedAt() *scalars.DateTime  { return this
 func (this StreakAchievement) GetPoints() int                      { return this.Points }
 func (this StreakAchievement) GetHidden() bool                     { return this.Hidden }
 func (this StreakAchievement) GetAwardableFrom() *scalars.DateTime { return this.AwardableFrom }
+func (this StreakAchievement) GetAwardedUserCount() int            { return this.AwardedUserCount }
 func (this StreakAchievement) GetTranslationStatus() []TranslationFieldStatus {
 	if this.TranslationStatus == nil {
 		return nil

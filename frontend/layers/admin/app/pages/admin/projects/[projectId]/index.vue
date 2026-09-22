@@ -187,6 +187,13 @@ onMounted(() => {
             </div>
           </AdminSection>
 
+          <AdminSection title="Engasjement">
+            <AdminProjectEngagement
+              :project-id="route.params.projectId"
+              :participants="participants"
+            />
+          </AdminSection>
+
           <AdminSection title="Innhold">
             <!-- Container query, not viewport: two sidebars take ~600px out of
                  the window before the panel gets any. -->

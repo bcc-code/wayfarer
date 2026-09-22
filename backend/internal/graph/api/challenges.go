@@ -1058,3 +1058,13 @@ func validateUpdateChallengeInput(input model.UpdateChallengeInput, challengeTyp
 	}
 	return nil
 }
+
+// challengeCompletionCount returns how many users have completed the challenge.
+func (r *Resolver) challengeCompletionCount(ctx context.Context, challengeID string) (int, error) {
+	thunk := r.Loaders.ChallengeCompletionCountLoader.Load(ctx, challengeID)
+	count, err := thunk()
+	if err != nil {
+		return 0, fmt.Errorf("failed to load challenge completion count: %w", err)
+	}
+	return int(count), nil
+}

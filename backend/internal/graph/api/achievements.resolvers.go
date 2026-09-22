@@ -59,6 +59,11 @@ func (r *contentAchievementResolver) CelebratedAt(ctx context.Context, obj *mode
 	return resolveCelebratedAt(ctx, r.Resolver, obj.ID)
 }
 
+// AwardedUserCount is the resolver for the awardedUserCount field.
+func (r *contentAchievementResolver) AwardedUserCount(ctx context.Context, obj *model.ContentAchievement) (int, error) {
+	return r.achievementAwardedUserCount(ctx, obj.ID)
+}
+
 // Items is the resolver for the items field.
 func (r *contentAchievementResolver) Items(ctx context.Context, obj *model.ContentAchievement) ([]model.ContentItem, error) {
 	thunk := r.Loaders.ContentItemsByAchievementLoader.Load(ctx, obj.ID)
@@ -1930,6 +1935,11 @@ func (r *quizAchievementResolver) CelebratedAt(ctx context.Context, obj *model.Q
 	return resolveCelebratedAt(ctx, r.Resolver, obj.ID)
 }
 
+// AwardedUserCount is the resolver for the awardedUserCount field.
+func (r *quizAchievementResolver) AwardedUserCount(ctx context.Context, obj *model.QuizAchievement) (int, error) {
+	return r.achievementAwardedUserCount(ctx, obj.ID)
+}
+
 // Quiz is the resolver for the quiz field.
 func (r *quizAchievementResolver) Quiz(ctx context.Context, obj *model.QuizAchievement) (*model.Quiz, error) {
 	if obj.QuizID == "" {
@@ -1979,6 +1989,11 @@ func (r *simpleAchievementResolver) CelebratedAt(ctx context.Context, obj *model
 	return resolveCelebratedAt(ctx, r.Resolver, obj.ID)
 }
 
+// AwardedUserCount is the resolver for the awardedUserCount field.
+func (r *simpleAchievementResolver) AwardedUserCount(ctx context.Context, obj *model.SimpleAchievement) (int, error) {
+	return r.achievementAwardedUserCount(ctx, obj.ID)
+}
+
 // TranslationStatus is the resolver for the translationStatus field.
 func (r *simpleAchievementResolver) TranslationStatus(ctx context.Context, obj *model.SimpleAchievement) ([]model.TranslationFieldStatus, error) {
 	return r.achievementTranslationStatus(ctx, obj.ID)
@@ -2017,6 +2032,11 @@ func (r *streakAchievementResolver) AchievedAt(ctx context.Context, obj *model.S
 // CelebratedAt is the resolver for the celebratedAt field.
 func (r *streakAchievementResolver) CelebratedAt(ctx context.Context, obj *model.StreakAchievement) (*scalars.DateTime, error) {
 	return resolveCelebratedAt(ctx, r.Resolver, obj.ID)
+}
+
+// AwardedUserCount is the resolver for the awardedUserCount field.
+func (r *streakAchievementResolver) AwardedUserCount(ctx context.Context, obj *model.StreakAchievement) (int, error) {
+	return r.achievementAwardedUserCount(ctx, obj.ID)
 }
 
 // Items is the resolver for the items field.
