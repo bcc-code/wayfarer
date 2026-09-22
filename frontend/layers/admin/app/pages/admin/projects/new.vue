@@ -11,10 +11,10 @@ definePageMeta({
 useAdminPage(() => 'Nytt prosjekt')
 
 const schema = z.object({
-  name: z.string().nonempty({ error: 'Name is required' }),
+  name: z.string().nonempty({ error: 'Navn er påkrevd' }),
   description: z.string().optional(),
-  startDate: z.string().nonempty({ error: 'Start date is required' }),
-  endDate: z.string().nonempty({ error: 'End date is required' }),
+  startDate: z.string().nonempty({ error: 'Startdato er påkrevd' }),
+  endDate: z.string().nonempty({ error: 'Sluttdato er påkrevd' }),
   branding: z.object({
     logo: z.string().nullish(),
     banner: z.string().nullish(),

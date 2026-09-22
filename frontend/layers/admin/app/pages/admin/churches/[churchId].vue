@@ -120,56 +120,60 @@ async function saveChanges() {
       </UButton>
     </div>
 
-    <AdminLoadingState v-if="fetching" />
-    <AdminErrorState v-else-if="error" :error />
-    <template v-else-if="data">
-      <!-- View Mode -->
-      <UCard v-if="!isEditing">
-        <dl class="space-y-4">
-          <div class="flex gap-6 border-b border-default py-2">
-            <dt class="text-muted w-24 shrink-0">ID</dt>
-            <dd class="font-mono text-sm">{{ data.church.id }}</dd>
-          </div>
-          <div class="flex gap-6 border-b border-default py-2">
-            <dt class="text-muted w-24 shrink-0">Navn</dt>
-            <dd class="font-medium">{{ data.church.name }}</dd>
-          </div>
-          <div class="flex gap-6 border-b border-default py-2">
-            <dt class="text-muted w-24 shrink-0">Land</dt>
-            <dd>{{ data.church.country }}</dd>
-          </div>
-          <div class="flex gap-6 py-2">
-            <dt class="text-muted w-24 shrink-0">Kategori</dt>
-            <dd>{{ data.church.category }}</dd>
-          </div>
-        </dl>
-      </UCard>
+    <AdminQueryState :fetching :error>
+      <template v-if="data">
+        <!-- View Mode -->
+        <AdminSection v-if="!isEditing" title="Detaljer">
+          <dl class="divide-default divide-y">
+            <div class="flex gap-6 py-2">
+              <dt class="text-muted w-24 shrink-0">Navn</dt>
+              <dd class="font-medium">{{ data.church.name }}</dd>
+            </div>
+            <div class="flex gap-6 py-2">
+              <dt class="text-muted w-24 shrink-0">Land</dt>
+              <dd>{{ data.church.country }}</dd>
+            </div>
+            <div class="flex gap-6 py-2">
+              <dt class="text-muted w-24 shrink-0">Kategori</dt>
+              <dd>{{ data.church.category }}</dd>
+            </div>
+            <!--
+              The ULID last rather than first, matching the user detail page:
+              it is a support aid, not the first thing a reader wants.
+            -->
+            <div class="flex gap-6 py-2">
+              <dt class="text-muted w-24 shrink-0">ID</dt>
+              <dd class="font-mono text-sm">{{ data.church.id }}</dd>
+            </div>
+          </dl>
+        </AdminSection>
 
-      <!-- Edit Mode -->
-      <UCard v-else>
-        <div class="space-y-4">
-          <UFormField label="Navn">
-            <UInput v-model="editState.name" class="w-full" />
-          </UFormField>
+        <!-- Edit Mode -->
+        <AdminSection v-else title="Rediger menighet">
+          <div class="space-y-4">
+            <UFormField label="Navn">
+              <UInput v-model="editState.name" class="w-full" />
+            </UFormField>
 
-          <UFormField label="Land">
-            <UInput v-model="editState.country" class="w-full" />
-          </UFormField>
+            <UFormField label="Land">
+              <UInput v-model="editState.country" class="w-full" />
+            </UFormField>
 
-          <UFormField label="Kategori">
-            <USelect
-              v-model="editState.category"
-              :items="categoryOptions"
-              class="w-full"
-            />
-          </UFormField>
+            <UFormField label="Kategori">
+              <USelect
+                v-model="editState.category"
+                :items="categoryOptions"
+                class="w-full"
+              />
+            </UFormField>
 
-          <div class="flex justify-end gap-2 pt-4">
-            <UButton variant="ghost" @click="cancelEditing">Avbryt</UButton>
-            <UButton @click="saveChanges">Lagre endringer</UButton>
+            <div class="flex justify-end gap-2 pt-4">
+              <UButton variant="ghost" @click="cancelEditing">Avbryt</UButton>
+              <UButton @click="saveChanges">Lagre endringer</UButton>
+            </div>
           </div>
-        </div>
-      </UCard>
-    </template>
+        </AdminSection>
+      </template>
+    </AdminQueryState>
   </div>
 </template>

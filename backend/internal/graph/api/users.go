@@ -349,3 +349,23 @@ func buildCacheKeyParams(filter *model.UserFilter, first *int, after *string, la
 
 	return params
 }
+
+// mapUserPointsByProject converts the per-project point rows into GraphQL
+// models. Projects netting to zero are kept: "0 poeng" for a project someone
+// participated in is a real answer, unlike the project being absent.
+func mapUserPointsByProject(
+	rows []*sqlc.GetUserPointsByProjectRow,
+) []model.UserProjectPoints {
+	points := make([]model.UserProjectPoints, 0, len(rows))
+	for _, row := range rows {
+		if row == nil {
+			continue
+		}
+		points = append(points, model.UserProjectPoints{
+			ProjectID:   row.ProjectID,
+			ProjectName: row.ProjectName,
+			Points:      int(row.Points),
+		})
+	}
+	return points
+}

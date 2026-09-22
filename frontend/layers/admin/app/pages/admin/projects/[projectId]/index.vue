@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import type { RouteLocationRaw } from 'vue-router'
+import {
+  describeProjectTiming,
+  formatProjectCountdown,
+} from '../../../../utils/dates'
 
 definePageMeta({
   permission: 'projects:view',
@@ -14,9 +18,22 @@ const canEdit = computed(() => canEditProject(route.params.projectId))
 // does not re-fetch what the shell already has.
 const { project, fetching: fetchingProject } = useCurrentProject()
 
-// Counts only — each section owns its own list query on its own route.
+// Counts for the section links, plus what the page needs to report status.
+// Each section still owns its own list query on its own route.
 gql(`
-  query AdminProjectOverview($projectId: ID!) {
+  query AdminProjectOverview($projectId: ID!, $withTrend: Boolean!) {
+    project(id: $projectId) {
+      id
+      # A finished or unstarted project's last 14 days are empty, which reads
+      # as a broken chart rather than as "nothing is running".
+      activityTrend(days: 14) @include(if: $withTrend) {
+        date
+        points
+        activeUsers
+      }
+    }
+    users(first: 0, filter: { projectId: $projectId }) { totalCount }
+    teams(first: 0, filter: { projectId: $projectId }) { totalCount }
     challenges(first: 0, filter: { projectId: $projectId }) { totalCount }
     achievements(first: 0, filter: { projectId: $projectId }) { totalCount }
     events(first: 0, filter: { projectId: $projectId }) { totalCount }
@@ -24,12 +41,23 @@ gql(`
   }
 `)
 
+const timing = computed(() =>
+  project.value
+    ? describeProjectTiming(project.value.startDate, project.value.endDate)
+    : undefined,
+)
+
 const { isAuthReady } = useAuthReady()
 const { data, error, fetching } = useAdminProjectOverviewQuery({
-  variables: computed(() => ({ projectId: route.params.projectId })),
+  variables: computed(() => ({
+    projectId: route.params.projectId,
+    withTrend: timing.value?.state === 'running',
+  })),
   pause: computed(() => !isAuthReady.value),
 })
 
+const trend = computed(() => data.value?.project?.activityTrend ?? [])
+const participants = computed(() => data.value?.users.totalCount)
 const projectRoute = (name: string): RouteLocationRaw =>
   ({
     name,
@@ -37,6 +65,12 @@ const projectRoute = (name: string): RouteLocationRaw =>
   }) as RouteLocationRaw
 
 const sections = computed(() => [
+  {
+    label: 'Lag',
+    icon: 'lucide:users-round',
+    count: data.value?.teams.totalCount,
+    to: 'admin-projects-projectId-teams',
+  },
   {
     label: 'Utfordringer',
     icon: 'lucide:swords',
@@ -81,63 +115,110 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
-    <AdminLoadingState v-if="fetchingProject" />
-    <AdminErrorState v-else-if="error" :error />
-    <template v-else-if="project">
-      <header class="mb-8 space-y-2">
-        <img
-          v-if="project.branding.logoImage?.url"
-          :src="project.branding.logoImage.url"
-          width="64"
-          class="mb-4 rounded"
-        />
-        <h1 class="text-3xl">{{ project.name }}</h1>
-        <p v-if="project.description" class="text-muted max-w-2xl">
-          {{ project.description }}
-        </p>
-        <p class="text-dimmed text-sm">
-          {{ formatDateRange(project.startDate, project.endDate) }}
-        </p>
-        <div v-if="canEdit" class="pt-2">
-          <UButton
-            variant="soft"
-            icon="lucide:pencil"
-            :to="{
-              name: 'admin-projects-projectId-edit',
-              params: { projectId: route.params.projectId },
-            }"
-          >
-            Rediger prosjekt
-          </UButton>
-        </div>
-      </header>
+  <!-- Capped like the other detail pages: a full-width row of five tiles
+       strands each count far from its label. -->
+  <div class="max-w-6xl">
+    <AdminQueryState :fetching="fetchingProject" :error>
+      <template v-if="project">
+        <header class="mb-8 space-y-2">
+          <img
+            v-if="project.branding.logoImage?.url"
+            :src="project.branding.logoImage.url"
+            width="64"
+            class="mb-4 rounded"
+            alt=""
+          />
+          <div class="flex flex-wrap items-center gap-3">
+            <h1 class="text-3xl">{{ project.name }}</h1>
+            <UBadge
+              v-if="timing"
+              :color="timing.state === 'running' ? 'success' : 'neutral'"
+              variant="subtle"
+            >
+              {{ formatProjectCountdown(timing) }}
+            </UBadge>
+          </div>
+          <p v-if="project.description" class="text-muted max-w-2xl">
+            {{ project.description }}
+          </p>
+          <p class="text-dimmed text-sm">
+            {{ formatDateRange(project.startDate, project.endDate) }}
+          </p>
+          <div v-if="canEdit" class="pt-2">
+            <UButton
+              variant="soft"
+              icon="lucide:pencil"
+              :to="{
+                name: 'admin-projects-projectId-edit',
+                params: { projectId: route.params.projectId },
+              }"
+            >
+              Rediger prosjekt
+            </UButton>
+          </div>
+        </header>
 
-      <!--
-        Container query, not viewport. `lg:grid-cols-4` measured the window, but
-        two sidebars take ~600px out of it, so four cards overflowed the panel
-        on exactly the widths the breakpoint was meant to cover.
-      -->
-      <div class="@container">
-        <div class="grid gap-4 @md:grid-cols-2 @4xl:grid-cols-4">
-          <NuxtLink
-            v-for="section in sections"
-            :key="section.label"
-            :to="projectRoute(section.to)"
-          >
-            <UCard class="hover:bg-elevated/50 h-full transition-colors">
-              <div class="flex items-center gap-3">
-                <UIcon :name="section.icon" class="text-muted size-5" />
-                <span class="font-medium">{{ section.label }}</span>
+        <div class="@container space-y-8">
+          <AdminSection title="Status">
+            <div class="space-y-4">
+              <div class="flex flex-wrap items-baseline gap-x-8 gap-y-2">
+                <div>
+                  <p class="text-muted text-xs">Deltakere</p>
+                  <p class="text-2xl font-semibold tabular-nums">
+                    <USkeleton v-if="fetching" class="h-8 w-16" />
+                    <template v-else>
+                      {{ formatNumber(participants ?? 0) }}
+                    </template>
+                  </p>
+                </div>
               </div>
-              <div class="mt-2 text-2xl tabular-nums">
-                <USkeleton v-if="fetching" class="h-8 w-12" />
-                <template v-else>{{ section.count ?? 0 }}</template>
-              </div>
-            </UCard>
-          </NuxtLink>
+
+              <AdminActivityTrend :trend="trend" :days="14" />
+              <p
+                v-if="timing && timing.state !== 'running'"
+                class="text-dimmed text-sm"
+              >
+                {{
+                  timing.state === 'upcoming'
+                    ? 'Prosjektet har ikke startet — ingen aktivitet ennå.'
+                    : 'Prosjektet er avsluttet.'
+                }}
+              </p>
+            </div>
+          </AdminSection>
+
+          <AdminSection title="Engasjement">
+            <AdminProjectEngagement
+              :project-id="route.params.projectId"
+              :participants="participants"
+            />
+          </AdminSection>
+
+          <AdminSection title="Innhold">
+            <!-- Container query, not viewport: two sidebars take ~600px out of
+                 the window before the panel gets any. -->
+            <div class="grid gap-3 @md:grid-cols-2 @4xl:grid-cols-5">
+              <NuxtLink
+                v-for="section in sections"
+                :key="section.label"
+                :to="projectRoute(section.to)"
+                class="hover:bg-elevated bg-elevated/50 rounded-lg p-3 transition-colors"
+              >
+                <div class="flex items-center gap-2">
+                  <UIcon :name="section.icon" class="text-muted size-4" />
+                  <span class="truncate text-sm">{{ section.label }}</span>
+                </div>
+                <div class="mt-1 text-xl font-semibold tabular-nums">
+                  <USkeleton v-if="fetching" class="h-6 w-10" />
+                  <template v-else>
+                    {{ formatNumber(section.count ?? 0) }}
+                  </template>
+                </div>
+              </NuxtLink>
+            </div>
+          </AdminSection>
         </div>
-      </div>
-    </template>
+      </template>
+    </AdminQueryState>
   </div>
 </template>

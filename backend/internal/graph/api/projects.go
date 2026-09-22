@@ -1,10 +1,13 @@
 package api
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -168,4 +171,111 @@ func buildProjectCacheKeyParams(filter *model.ProjectFilter, first *int, after *
 	}
 
 	return params
+}
+
+// ==================== Project activity trend ====================
+
+const (
+	defaultTrendDays = 14
+	// Bounded: this feeds a sparkline, and an unbounded window lets a caller
+	// choose how much work the server does.
+	maxTrendDays = 90
+)
+
+// resolveTrendDays applies the default and clamps the window. A non-positive
+// value falls back rather than erroring — there is nothing a caller could do
+// with the error.
+func resolveTrendDays(days *int) int {
+	if days == nil || *days <= 0 {
+		return defaultTrendDays
+	}
+	if *days > maxTrendDays {
+		return maxTrendDays
+	}
+	return *days
+}
+
+// trendWindowStart is the first day (UTC midnight) of a `days`-long window
+// ending today. Shared with the query's `since` bound so the two agree.
+func trendWindowStart(now time.Time, days int) time.Time {
+	today := now.UTC().Truncate(24 * time.Hour)
+	return today.AddDate(0, 0, -(days - 1))
+}
+
+// buildActivityTrend expands sparse daily rows into one point per day, oldest
+// first. Without the gaps filled, three days a week apart plot as adjacent
+// columns and read as steady activity. Rows outside the window are dropped, so
+// a stale bound cannot stretch the series.
+func buildActivityTrend(
+	rows []*sqlc.GetProjectActivityTrendRow,
+	days int,
+	now time.Time,
+) []model.ProjectActivityPoint {
+	start := trendWindowStart(now, days)
+
+	type dayTotals struct {
+		points      int
+		activeUsers int
+	}
+	byDay := make(map[string]dayTotals, len(rows))
+	for _, row := range rows {
+		if !row.Day.Valid {
+			continue
+		}
+		day := row.Day.Time.UTC().Truncate(24 * time.Hour)
+		if day.Before(start) {
+			continue
+		}
+		byDay[day.Format(time.DateOnly)] = dayTotals{
+			points:      int(row.Points),
+			activeUsers: int(row.ActiveUsers),
+		}
+	}
+
+	points := make([]model.ProjectActivityPoint, 0, days)
+	for i := 0; i < days; i++ {
+		day := start.AddDate(0, 0, i)
+		totals := byDay[day.Format(time.DateOnly)]
+		points = append(points, model.ProjectActivityPoint{
+			Date:        scalars.Date{Time: day},
+			Points:      totals.points,
+			ActiveUsers: totals.activeUsers,
+		})
+	}
+	return points
+}
+
+// activityTrend backs the `Project.activityTrend` resolver. The body lives here
+// so the generated resolver file stays a one-line delegation.
+func (r *projectResolver) activityTrend(
+	ctx context.Context,
+	projectID string,
+	days *int,
+) ([]model.ProjectActivityPoint, error) {
+	window := resolveTrendDays(days)
+	now := time.Now()
+
+	cacheKey := fmt.Sprintf("project:%s:activity-trend:%d", projectID, window)
+	if cached, ok := r.Cache.Get(cacheKey); ok {
+		if trend, ok := cached.([]model.ProjectActivityPoint); ok {
+			return trend, nil
+		}
+	}
+
+	rows, err := r.DB.Queries.GetProjectActivityTrend(ctx, sqlc.GetProjectActivityTrendParams{
+		ProjectID: projectID,
+		Since: pgtype.Timestamptz{
+			// Same start the series is built from.
+			Time:  trendWindowStart(now, window),
+			Valid: true,
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get activity trend for project %s: %w", projectID, err)
+	}
+
+	trend := buildActivityTrend(rows, window, now)
+	r.Cache.Set(cacheKey, trend)
+
+	return trend, nil
 }

@@ -136,14 +136,15 @@ const columns: TableColumn<UserRow>[] = [
             {{ row.original.eventCount }}
           </UBadge>
         </template>
+        <template #empty>
+          <AdminTableEmpty
+            title="Ingen brukere med manglende poengjournal-oppforinger funnet"
+          />
+        </template>
+        <template #loading>
+          <AdminTableLoading />
+        </template>
       </UTable>
-
-      <div
-        v-if="affectedUsers.length === 0 && !fetching"
-        class="text-muted py-12 text-center"
-      >
-        Ingen brukere med manglende poengjournal-oppforinger funnet.
-      </div>
     </template>
   </div>
 </template>

@@ -445,6 +445,15 @@ WHERE (user_id, achievement_id) IN (
     SELECT unnest(@user_ids::char(28)[]), unnest(@achievement_ids::char(28)[])
 );
 
+-- name: GetBulkAchievementAwardedUserCounts :many
+-- User awards per achievement, for the dataloader. Team and super-team awards
+-- live in their own tables and are not counted here. Achievements with no
+-- awards are absent from the result; the caller fills in 0.
+SELECT achievement_id, COUNT(*)::bigint AS awarded_user_count
+FROM user_achievements
+WHERE achievement_id = ANY(@achievement_ids::char(28)[])
+GROUP BY achievement_id;
+
 -- name: MarkAchievementCelebrated :exec
 UPDATE user_achievements
 SET celebrated_at = now()

@@ -6,7 +6,7 @@ definePageMeta({
 
 gql(`
   query AdminProjectsPage {
-    projects(first: 100) {
+    projects(first: 100, filter: { archived: false }) {
       edges {
         node {
           id
@@ -15,7 +15,9 @@ gql(`
           endDate
           startDate
           branding {
-            logo
+            logoImage {
+              url
+            }
             colors {
               light {
                 accent
@@ -55,65 +57,65 @@ const { canCreateProject } = usePermissions()
         Nytt prosjekt
       </UButton>
     </div>
-    <AdminLoadingState v-if="fetching" />
-    <AdminErrorState v-else-if="error" :error />
-    <!--
-      Container query, not viewport: `lg:` measured the window while the cards
-      live in a panel the sidebar has already taken ~300px out of.
-    -->
-    <div v-else-if="data" class="@container space-y-12">
-      <section v-if="currentProjects.length > 0">
-        <h2 class="mb-4">Aktive prosjekter</h2>
-        <ul class="grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-3">
-          <li v-for="project in currentProjects" :key="project.id">
-            <NuxtLink
-              class="block h-full"
-              :to="{
-                name: 'admin-projects-projectId',
-                params: { projectId: project.id },
-              }"
+    <AdminQueryState :fetching :error>
+      <!--
+        Container query, not viewport: `lg:` measured the window while the cards
+        live in a panel the sidebar has already taken ~300px out of.
+      -->
+      <div v-if="data" class="@container space-y-12">
+        <section v-if="currentProjects.length > 0">
+          <h2 class="mb-4">Aktive prosjekter</h2>
+          <ul class="grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-3">
+            <li v-for="project in currentProjects" :key="project.id">
+              <NuxtLink
+                class="block h-full"
+                :to="{
+                  name: 'admin-projects-projectId',
+                  params: { projectId: project.id },
+                }"
+              >
+                <AdminProjectCard :project />
+              </NuxtLink>
+            </li>
+          </ul>
+        </section>
+        <section v-if="futureProjects.length > 0">
+          <h2 class="mb-4">Kommende prosjekter</h2>
+          <ul class="grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-3">
+            <li v-for="project in futureProjects" :key="project.id">
+              <NuxtLink
+                class="block h-full"
+                :to="{
+                  name: 'admin-projects-projectId',
+                  params: { projectId: project.id },
+                }"
+              >
+                <AdminProjectCard :project />
+              </NuxtLink>
+            </li>
+          </ul>
+        </section>
+        <section v-if="pastProjects.length > 0">
+          <h2 class="mb-4">Tidligere prosjekter</h2>
+          <ul class="grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-3">
+            <li
+              v-for="project in pastProjects"
+              :key="project.id"
+              class="opacity-50 transition-opacity hover:opacity-100"
             >
-              <AdminProjectCard :project />
-            </NuxtLink>
-          </li>
-        </ul>
-      </section>
-      <section v-if="futureProjects.length > 0">
-        <h2 class="mb-4">Kommende prosjekter</h2>
-        <ul class="grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-3">
-          <li v-for="project in futureProjects" :key="project.id">
-            <NuxtLink
-              class="block h-full"
-              :to="{
-                name: 'admin-projects-projectId',
-                params: { projectId: project.id },
-              }"
-            >
-              <AdminProjectCard :project />
-            </NuxtLink>
-          </li>
-        </ul>
-      </section>
-      <section v-if="pastProjects.length > 0">
-        <h2 class="mb-4">Tidligere prosjekter</h2>
-        <ul class="grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-3">
-          <li
-            v-for="project in pastProjects"
-            :key="project.id"
-            class="opacity-50 transition-opacity hover:opacity-100"
-          >
-            <NuxtLink
-              class="block h-full"
-              :to="{
-                name: 'admin-projects-projectId',
-                params: { projectId: project.id },
-              }"
-            >
-              <AdminProjectCard :project />
-            </NuxtLink>
-          </li>
-        </ul>
-      </section>
-    </div>
+              <NuxtLink
+                class="block h-full"
+                :to="{
+                  name: 'admin-projects-projectId',
+                  params: { projectId: project.id },
+                }"
+              >
+                <AdminProjectCard :project />
+              </NuxtLink>
+            </li>
+          </ul>
+        </section>
+      </div>
+    </AdminQueryState>
   </div>
 </template>

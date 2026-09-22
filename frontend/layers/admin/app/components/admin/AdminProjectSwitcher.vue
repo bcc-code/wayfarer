@@ -8,7 +8,7 @@ defineProps<{ collapsed?: boolean }>()
 // enough date context to group, not full branding colours.
 gql(`
   query AdminProjectSwitcher {
-    projects(first: 100) {
+    projects(first: 100, filter: { archived: false }) {
       edges {
         node {
           id

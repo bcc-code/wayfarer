@@ -7,6 +7,10 @@ import {
   isFirstPage as isFirstPagePure,
   isLastPage as isLastPagePure,
   validatePageSize,
+  nextOffset,
+  previousOffset,
+  pageRange,
+  type PageRange,
   type CursorPageInfo,
   type CursorPaginationVariables,
 } from '../utils/pagination'
@@ -43,6 +47,8 @@ export interface UsePaginationReturn {
   totalCount: Ref<number | null>
   /** Current page size being used */
   pageSize: Ref<number>
+  /** Null when there is nothing to show. */
+  range: Ref<PageRange | null>
   /** Whether we're currently on the first page */
   isFirstPage: Ref<boolean>
   /** Whether we're currently on the last page */
@@ -59,6 +65,13 @@ export interface UsePaginationReturn {
   reset: () => void
   /** Set a new page size */
   setPageSize: (size: number) => void
+  /** Restore a position from the URL. The variables *are* the position. */
+  restore: (state: {
+    after?: string | null
+    before?: string | null
+    offset?: number
+  }) => void
+  offset: Ref<number>
 }
 
 /**
@@ -87,7 +100,11 @@ export interface UsePaginationReturn {
 export function usePagination(
   options: UsePaginationOptions = {},
 ): UsePaginationReturn {
-  const { defaultPageSize = 20, initialCursor = null, direction = 'forward' } = options
+  const {
+    defaultPageSize = 20,
+    initialCursor = null,
+    direction = 'forward',
+  } = options
   const isBackward = direction === 'backward'
 
   // Build initial variables based on direction
@@ -100,15 +117,23 @@ export function usePagination(
   const pageSize = ref(defaultPageSize)
   const pageInfo = ref<PaginationPageInfo | null>(null)
   const totalCount = ref<number | null>(null)
-  const variables = ref<PaginationVariables>(buildInitialVariables(defaultPageSize))
+  const offset = ref(0)
+  const rowsOnPage = ref(0)
+  const variables = ref<PaginationVariables>(
+    buildInitialVariables(defaultPageSize),
+  )
 
   // Computed properties
   // For backward pagination, "first page" is the last page of data (newest items)
   const isFirstPage = computed(() =>
-    isBackward ? isLastPagePure(pageInfo.value) : isFirstPagePure(pageInfo.value),
+    isBackward
+      ? isLastPagePure(pageInfo.value)
+      : isFirstPagePure(pageInfo.value),
   )
   const isLastPage = computed(() =>
-    isBackward ? isFirstPagePure(pageInfo.value) : isLastPagePure(pageInfo.value),
+    isBackward
+      ? isFirstPagePure(pageInfo.value)
+      : isLastPagePure(pageInfo.value),
   )
 
   // Methods
@@ -121,6 +146,7 @@ export function usePagination(
       : buildNextPageVariables(pageInfo.value, pageSize.value)
     if (nextVars) {
       variables.value = nextVars
+      offset.value = nextOffset(offset.value, pageSize.value)
     }
   }
 
@@ -132,6 +158,7 @@ export function usePagination(
       : buildPreviousPageVariables(pageInfo.value, pageSize.value)
     if (prevVars) {
       variables.value = prevVars
+      offset.value = previousOffset(offset.value, pageSize.value)
     }
   }
 
@@ -139,22 +166,28 @@ export function usePagination(
     variables.value = buildInitialVariables(pageSize.value)
     pageInfo.value = null
     totalCount.value = null
+    offset.value = 0
+    rowsOnPage.value = 0
   }
 
   function updateConnection<T>(connection: Connection<T> | null | undefined) {
     if (!connection) {
       pageInfo.value = null
       totalCount.value = null
+      rowsOnPage.value = 0
       return
     }
 
     pageInfo.value = connection.pageInfo
     totalCount.value = connection.totalCount ?? null
+    rowsOnPage.value = connection.edges.length
   }
 
   function reset() {
     pageInfo.value = null
     totalCount.value = null
+    offset.value = 0
+    rowsOnPage.value = 0
     variables.value = buildInitialVariables(pageSize.value)
   }
 
@@ -169,11 +202,46 @@ export function usePagination(
     firstPage()
   }
 
+  // `offset` only feeds the label; the cursor selects the rows, so a stale
+  // offset mislabels a correct page rather than showing the wrong one.
+  function restore(state: {
+    after?: string | null
+    before?: string | null
+    offset?: number
+  }) {
+    if (state.after) {
+      variables.value = {
+        first: pageSize.value,
+        after: state.after,
+        last: null,
+        before: null,
+      }
+    } else if (state.before) {
+      variables.value = {
+        first: null,
+        after: null,
+        last: pageSize.value,
+        before: state.before,
+      }
+    } else {
+      return
+    }
+
+    offset.value = Math.max(0, state.offset ?? 0)
+    pageInfo.value = null
+    rowsOnPage.value = 0
+  }
+
+  const range = computed(() =>
+    pageRange(offset.value, rowsOnPage.value, totalCount.value),
+  )
+
   return {
     variables,
     pageInfo,
     totalCount,
     pageSize,
+    range,
     isFirstPage,
     isLastPage,
     nextPage,
@@ -182,5 +250,7 @@ export function usePagination(
     updateConnection,
     reset,
     setPageSize,
+    restore,
+    offset,
   }
 }

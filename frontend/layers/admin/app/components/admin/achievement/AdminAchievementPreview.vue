@@ -24,7 +24,7 @@ const state = ref<'pending' | 'completed'>('pending')
       <div
         :class="[
           'grid aspect-square size-55 place-items-center overflow-hidden rounded-full',
-          { 'shadow-large': achievement.achievedAt },
+          { 'shadow-large': state === 'completed' },
         ]"
       >
         <img

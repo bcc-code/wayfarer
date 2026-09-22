@@ -48,6 +48,25 @@ type Project {
     myPoints: Int! @goField(forceResolver: true)
     archivedAt: Boolean
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
+    """
+    Daily activity for the last `days` days, oldest first, for trend display.
+    Every day in the window is present, including days with no activity, so the
+    result can be plotted directly without gap-filling on the client.
+    """
+    activityTrend(days: Int = 14): [ProjectActivityPoint!]! @goField(forceResolver: true)
+}
+
+"""
+One day of aggregate activity in a project, derived from the score journal —
+which covers every point award regardless of source, so it reflects challenge
+completions, achievements, quizzes and manual adjustments alike.
+"""
+type ProjectActivityPoint {
+    date: Date!
+    """Points awarded that day."""
+    points: Int!
+    """Distinct users who were awarded points that day."""
+    activeUsers: Int!
 }
 
 # ==================== Project Input Types ====================

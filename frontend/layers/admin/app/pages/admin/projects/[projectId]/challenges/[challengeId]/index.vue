@@ -7,7 +7,11 @@ definePageMeta({
 })
 
 gql(`
-  query AdminProjectChallengePage($challengeId: ID!) {
+  query AdminProjectChallengePage($challengeId: ID!, $projectId: ID!) {
+    # The denominator for the completion count.
+    participants: users(first: 0, filter: { projectId: $projectId }) {
+      totalCount
+    }
     challenge(id: $challengeId) {
       __typename
       id
@@ -20,6 +24,7 @@ gql(`
       visibleAt
       startedAt
       endTime
+      completionCount
       project {
         id
         name
@@ -38,6 +43,19 @@ gql(`
       ... on PluginChallenge {
         pluginChallengeId
       }
+      ... on QuizChallenge {
+        quiz {
+          id
+          completionPoints
+          allowRetakes
+          randomizeQuestions
+          revealCorrectAnswers
+          timeoutSeconds
+          questions {
+            id
+          }
+        }
+      }
       translationStatus {
         ...TranslationStatus
       }
@@ -53,6 +71,7 @@ const { isAuthReady } = useAuthReady()
 const { data, fetching, error } = useAdminProjectChallengePageQuery({
   variables: computed(() => ({
     challengeId: route.params.challengeId,
+    projectId: route.params.projectId,
   })),
   pause: computed(() => !isAuthReady.value),
 })
@@ -63,6 +82,24 @@ useAdminPage(() => data.value?.challenge.name)
 
 const { executeMutation } = useUpdateChallengeMutation()
 const { executeMutation: executeDelete } = useDeleteChallengeMutation()
+
+const challengeTypeLabels: Record<string, string> = {
+  SimpleChallenge: 'Enkel',
+  ExternalChallenge: 'Ekstern',
+  QuizChallenge: 'Quiz',
+  PluginChallenge: 'Plugin',
+}
+
+const isPublished = computed(() => {
+  const publishedAt = data.value?.challenge.publishedAt
+  return !!publishedAt && new Date(publishedAt) <= new Date()
+})
+
+const quiz = computed(() =>
+  data.value?.challenge.__typename === 'QuizChallenge'
+    ? data.value.challenge.quiz
+    : null,
+)
 
 function getChallengeType(typename: string): ChallengeType {
   switch (typename) {
@@ -181,15 +218,36 @@ async function handleDelete() {
 </script>
 
 <template>
-  <div>
-    <div>
-      <AdminLoadingState v-if="fetching" />
-      <AdminErrorState v-else-if="error" :error />
-      <div v-else-if="initialData" class="space-y-6">
-        <div class="flex gap-2">
+  <AdminQueryState :fetching :error>
+    <div v-if="initialData && data" class="space-y-8">
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-3">
+            <h1 class="text-3xl font-bold">{{ data.challenge.name }}</h1>
+            <UBadge variant="subtle">
+              {{
+                challengeTypeLabels[data.challenge.__typename ?? ''] ??
+                'Utfordring'
+              }}
+            </UBadge>
+            <UBadge v-if="!isPublished" variant="soft" color="warning">
+              Ikke publisert
+            </UBadge>
+          </div>
+          <!-- Completion belongs to the header, not a section: it is status,
+               and this page is for editing. -->
+          <p class="text-muted mt-1 text-sm">
+            {{ formatNumber(data.challenge.completionCount) }} av
+            {{ formatNumber(data.participants.totalCount) }} deltakere har
+            fullført
+          </p>
+        </div>
+
+        <div class="flex shrink-0 flex-wrap gap-2">
           <UButton
-            v-if="data?.challenge.__typename === 'QuizChallenge'"
+            v-if="data.challenge.__typename === 'QuizChallenge'"
             variant="soft"
+            icon="lucide:list-checks"
             :to="{
               name: 'admin-projects-projectId-challenges-challengeId-sessions',
               params: {
@@ -202,21 +260,31 @@ async function handleDelete() {
           </UButton>
           <AdminChallengeQrModal
             :challenge-id="route.params.challengeId"
-            :challenge-name="data?.challenge.name ?? ''"
+            :challenge-name="data.challenge.name"
           />
+          <UButton variant="soft" color="error" @click="handleDelete">
+            Slett
+          </UButton>
         </div>
-        <AdminChallengeForm
-          :initial-data="initialData"
-          :project-id="route.params.projectId"
-          :challenge-id="route.params.challengeId"
-          :colors="data?.challenge.project.branding.colors"
-          :translation-status="data?.challenge.translationStatus ?? []"
-          submit-label="Lagre endringer"
-          is-edit-mode
-          :on-delete="handleDelete"
-          @submit="handleSubmit"
-        />
       </div>
+
+      <AdminChallengeForm
+        :initial-data="initialData"
+        :project-id="route.params.projectId"
+        :challenge-id="route.params.challengeId"
+        :colors="data.challenge.project.branding.colors"
+        :translation-status="data.challenge.translationStatus ?? []"
+        submit-label="Lagre endringer"
+        is-edit-mode
+        @submit="handleSubmit"
+      />
+
+      <AdminChallengeQuizSection
+        v-if="data.challenge.__typename === 'QuizChallenge'"
+        :project-id="route.params.projectId"
+        :challenge-id="route.params.challengeId"
+        :quiz="quiz"
+      />
     </div>
-  </div>
+  </AdminQueryState>
 </template>

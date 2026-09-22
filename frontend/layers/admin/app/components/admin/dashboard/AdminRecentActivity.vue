@@ -4,6 +4,7 @@ defineProps<{
     id: string
     message: string
     createdAt: string
+    tags?: string[]
     user: { id: string; name: string }
   }>
 }>()
@@ -11,10 +12,6 @@ defineProps<{
 
 <template>
   <UCard>
-    <template #header>
-      <h3 class="font-semibold">Siste tilbakemeldinger</h3>
-    </template>
-
     <div class="space-y-3">
       <div
         v-for="entry in feedbackEntries"
@@ -22,17 +19,29 @@ defineProps<{
         class="border-default rounded-lg border p-3"
       >
         <p class="line-clamp-2 text-sm">{{ entry.message }}</p>
-        <p class="text-muted mt-1 text-xs">
-          {{ entry.user.name }} &middot;
-          {{ formatRelativeTime(entry.createdAt) }}
-        </p>
+        <div class="mt-1 flex flex-wrap items-center gap-2">
+          <p class="text-muted text-xs">
+            {{ entry.user.name }} &middot;
+            {{ formatRelativeTime(entry.createdAt) }}
+          </p>
+          <!-- Tags say what an entry is about without reading it. -->
+          <UBadge
+            v-for="tag in entry.tags"
+            :key="tag"
+            variant="subtle"
+            color="neutral"
+            size="sm"
+          >
+            {{ tag }}
+          </UBadge>
+        </div>
       </div>
-      <p v-if="!feedbackEntries.length" class="text-muted text-center text-sm">
-        Ingen nye tilbakemeldinger
-      </p>
-      <UButton variant="ghost" size="sm" to="/admin/feedback" class="w-full">
-        Se alle tilbakemeldinger
-      </UButton>
+      <UEmpty
+        v-if="!feedbackEntries.length"
+        icon="lucide:check"
+        title="Alt behandlet"
+        description="Ingen ubehandlede tilbakemeldinger."
+      />
     </div>
   </UCard>
 </template>

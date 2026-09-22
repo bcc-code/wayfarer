@@ -25,12 +25,14 @@ const props = defineProps<{
   colors?: Colors
   submitLabel: string
   isEditMode?: boolean
-  onDelete?: () => void
 }>()
 
 const emit = defineEmits<{
   submit: [data: ChallengeFormData]
 }>()
+
+/** Lets the page react to the type, which decides what else it renders. */
+const selectedType = defineModel<ChallengeType>('type')
 
 export interface ChallengeFormData {
   type: ChallengeType
@@ -51,7 +53,7 @@ export interface ChallengeFormData {
 const schema = z
   .object({
     type: z.nativeEnum(ChallengeType),
-    name: z.string().min(1, 'Name is required'),
+    name: z.string().min(1, 'Navn er påkrevd'),
     description: z.string().optional(),
     image: z.string().optional(),
     url: z
@@ -62,7 +64,7 @@ const schema = z
           val.startsWith('/') ||
           z.string().url().safeParse(val).success,
         {
-          message: 'Must be a valid URL or a local path starting with /',
+          message: 'Må være en gyldig URL eller en lokal sti som starter med /',
         },
       )
       .optional()
@@ -81,7 +83,7 @@ const schema = z
       data.type === ChallengeType.Plugin ||
       (data.buttonText && data.buttonText.length > 0),
     {
-      message: 'Button text is required',
+      message: 'Knappetekst er påkrevd',
       path: ['buttonText'],
     },
   )
@@ -90,7 +92,7 @@ const schema = z
       data.type !== ChallengeType.Plugin ||
       (data.pluginChallengeId && data.pluginChallengeId.length > 0),
     {
-      message: 'Plugin Challenge ID is required',
+      message: 'Plugin Challenge ID er påkrevd',
       path: ['pluginChallengeId'],
     },
   )
@@ -143,6 +145,21 @@ const challengeTypeOptions = [
   { value: ChallengeType.Plugin, label: 'Plugin' },
 ]
 
+watch(
+  () => state.type,
+  (type) => {
+    selectedType.value = type
+  },
+  { immediate: true },
+)
+
+const challengeTypeLabel = computed(
+  () =>
+    challengeTypeOptions
+      .find((option) => option.value === state.type)
+      ?.label.toLowerCase() ?? 'utfordringen',
+)
+
 function handleSubmit(event: FormSubmitEvent<Schema>) {
   if (event.data) {
     emit('submit', {
@@ -153,197 +170,166 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
 </script>
 
 <template>
-  <div class="grid grid-cols-2 gap-8">
-    <div class="space-y-6">
+  <!-- `@container`, not a fixed two-column grid: the preview only earns a
+       column of its own once the panel is wide enough for both. -->
+  <div class="@container">
+    <div class="grid gap-8 @4xl:grid-cols-[minmax(0,32rem)_minmax(0,1fr)]">
       <UForm
         :state
         :schema="schema"
         loading-auto
-        class="flex max-w-md flex-col gap-6"
+        class="space-y-8"
         @submit.prevent="handleSubmit"
       >
-        <slot name="before-type" />
-        <UFormField name="type" label="Utfordringstype">
-          <USelect
-            v-model="state.type"
-            :items="challengeTypeOptions"
-            :disabled="isEditMode"
-            class="w-full"
-          />
-        </UFormField>
-        <AdminTranslatableFormField
-          label="Navn"
-          :translation-status="translationStatus"
-          name="name"
+        <AdminSection title="Innhold">
+          <div class="flex flex-col gap-6">
+            <slot name="before-type" />
+            <UFormField
+              name="type"
+              label="Utfordringstype"
+              :help="isEditMode ? 'Typen kan ikke endres etterpå' : undefined"
+            >
+              <USelect
+                v-model="state.type"
+                :items="challengeTypeOptions"
+                :disabled="isEditMode"
+                class="w-full"
+              />
+            </UFormField>
+            <AdminTranslatableFormField
+              label="Navn"
+              :translation-status="translationStatus"
+              name="name"
+            >
+              <UInput v-model="state.name" size="xl" required class="w-full" />
+            </AdminTranslatableFormField>
+            <AdminTranslatableFormField
+              label="Beskrivelse"
+              :translation-status="translationStatus"
+              name="description"
+              hint="(valgfritt)"
+              help="Støtter HTML-formatering"
+            >
+              <UTextarea
+                v-model="state.description"
+                class="w-full"
+                autoresize
+              />
+            </AdminTranslatableFormField>
+            <UFormField name="image" label="Bilde" hint="(valgfritt)">
+              <AdminFileUpload v-model="state.image" />
+            </UFormField>
+            <AdminTranslatableFormField
+              label="Knappetekst"
+              :translation-status="translationStatus"
+              name="buttonText"
+              :hint="
+                state.type === ChallengeType.Plugin ? '(valgfritt)' : undefined
+              "
+            >
+              <UInput
+                v-model="state.buttonText"
+                size="xl"
+                :required="state.type !== ChallengeType.Plugin"
+                class="w-full"
+              />
+            </AdminTranslatableFormField>
+          </div>
+        </AdminSection>
+
+        <!-- Only ever one of these renders; the section is skipped for the
+             types that have no extra field. -->
+        <AdminSection
+          v-if="state.type !== ChallengeType.Quiz"
+          :title="`Innstillinger for ${challengeTypeLabel}`"
         >
-          <UInput v-model="state.name" size="xl" required class="w-full" />
-        </AdminTranslatableFormField>
-        <AdminTranslatableFormField
-          label="Beskrivelse"
-          :translation-status="translationStatus"
-          name="description"
-          hint="(valgfritt)"
-          help="Støtter HTML-formatering"
-        >
-          <UTextarea v-model="state.description" class="w-full" autoresize />
-        </AdminTranslatableFormField>
-        <UFormField name="image" label="Bilde" hint="(valgfritt)">
-          <AdminFileUpload v-model="state.image" />
-        </UFormField>
-        <UFormField
-          v-if="state.type === ChallengeType.External"
-          name="url"
-          label="Ekstern URL"
-          help="URL-en brukere vil bli sendt til"
-        >
-          <UInput v-model="state.url" size="xl" required class="w-full" />
-        </UFormField>
-        <UFormField
-          v-if="state.type === ChallengeType.Simple"
-          name="allowSelfCompletion"
-          label="Selvfullføring"
-        >
-          <UCheckbox
-            v-model="state.allowSelfCompletion"
-            label="Tillat brukere å markere denne utfordringen som fullført"
-          />
-        </UFormField>
-        <UFormField
-          v-if="state.type === ChallengeType.Plugin"
-          name="pluginChallengeId"
-          label="Plugin Challenge ID"
-          help="Unik identifikator for plugin-utfordringen"
-        >
-          <UInput
-            v-model="state.pluginChallengeId"
-            size="xl"
-            required
-            class="w-full"
-          />
-        </UFormField>
-        <AdminTranslatableFormField
-          label="Knappetekst"
-          :translation-status="translationStatus"
-          name="buttonText"
-          :hint="
-            state.type === ChallengeType.Plugin ? '(valgfritt)' : undefined
-          "
-        >
-          <UInput
-            v-model="state.buttonText"
-            size="xl"
-            :required="state.type !== ChallengeType.Plugin"
-            class="w-full"
-          />
-        </AdminTranslatableFormField>
-        <AdminTranslatableFormField
-          label="Varslingstekst"
-          :translation-status="translationStatus"
-          name="notificationText"
-          hint="(valgfritt)"
-          help="Tekst som vises i push-varsler når admin melder bruker på utfordringen. La feltet stå tomt for ingen varsling."
-        >
-          <UInput v-model="state.notificationText" size="xl" class="w-full" />
-        </AdminTranslatableFormField>
-        <UFormField
-          name="publishedAt"
-          label="Publiseringstidspunkt"
-          hint="(valgfritt - standard: nå)"
-          help="Når utfordringen blir tilgjengelig for brukere"
-        >
-          <UInput
-            v-model="state.publishedAt"
-            type="datetime-local"
-            size="xl"
-            class="w-full"
-          />
-        </UFormField>
-        <UFormField
-          v-if="isEditMode"
-          name="visibleAt"
-          label="Synlig fra"
-          hint="(valgfritt)"
-          help="Når denne utfordringen blir synlig for brukere"
-        >
-          <UInput
-            v-model="state.visibleAt"
-            type="datetime-local"
-            size="xl"
-            class="w-full"
-          />
-        </UFormField>
-        <!-- <UFormField
-          v-if="isEditMode"
-          name="startedAt"
-          label="Startet"
-          hint="(valgfritt)"
-          help="Når denne utfordringen startet"
-        >
-          <UInput
-            v-model="state.startedAt"
-            type="datetime-local"
-            size="xl"
-            class="w-full"
-          />
-        </UFormField>
-        <UFormField
-          name="endTime"
-          label="Sluttid"
-          hint="(valgfritt)"
-          help="Når denne utfordringen utløper"
-        >
-          <UInput
-            v-model="state.endTime"
-            type="datetime-local"
-            size="xl"
-            class="w-full"
-          />
-        </UFormField> -->
+          <UFormField
+            v-if="state.type === ChallengeType.External"
+            name="url"
+            label="Ekstern URL"
+            help="URL-en brukere vil bli sendt til"
+          >
+            <UInput v-model="state.url" size="xl" required class="w-full" />
+          </UFormField>
+          <UFormField
+            v-else-if="state.type === ChallengeType.Simple"
+            name="allowSelfCompletion"
+            label="Selvfullføring"
+          >
+            <UCheckbox
+              v-model="state.allowSelfCompletion"
+              label="Tillat brukere å markere denne utfordringen som fullført"
+            />
+          </UFormField>
+          <UFormField
+            v-else-if="state.type === ChallengeType.Plugin"
+            name="pluginChallengeId"
+            label="Plugin Challenge ID"
+            help="Unik identifikator for plugin-utfordringen"
+          >
+            <UInput
+              v-model="state.pluginChallengeId"
+              size="xl"
+              required
+              class="w-full"
+            />
+          </UFormField>
+        </AdminSection>
+
+        <AdminSection title="Tidspunkt">
+          <div class="flex flex-col gap-6">
+            <UFormField
+              name="publishedAt"
+              label="Publiseringstidspunkt"
+              hint="(valgfritt - standard: nå)"
+              help="Når utfordringen blir tilgjengelig for brukere"
+            >
+              <AdminDateTimeField v-model="state.publishedAt" />
+            </UFormField>
+            <UFormField
+              name="visibleAt"
+              label="Synlig fra"
+              hint="(valgfritt)"
+              help="Når utfordringen blir synlig for brukere. Før dette ser bare påmeldte den."
+            >
+              <AdminDateTimeField v-model="state.visibleAt" />
+            </UFormField>
+            <UFormField
+              name="endTime"
+              label="Sluttid"
+              hint="(valgfritt)"
+              help="Når utfordringen utløper. Uten sluttid varer den ut prosjektet."
+            >
+              <AdminDateTimeField v-model="state.endTime" />
+            </UFormField>
+          </div>
+        </AdminSection>
+
+        <AdminSection title="Varsling">
+          <AdminTranslatableFormField
+            label="Varslingstekst"
+            :translation-status="translationStatus"
+            name="notificationText"
+            hint="(valgfritt)"
+            help="Tekst som vises i push-varsler når admin melder bruker på utfordringen. La feltet stå tomt for ingen varsling."
+          >
+            <UTextarea
+              v-model="state.notificationText"
+              class="w-full"
+              autoresize
+              :rows="2"
+            />
+          </AdminTranslatableFormField>
+        </AdminSection>
+
         <UButton type="submit" size="lg" block>{{ submitLabel }}</UButton>
-        <UButton
-          v-if="onDelete"
-          color="error"
-          variant="ghost"
-          size="lg"
-          block
-          @click="onDelete"
-        >
-          Slett utfordring
-        </UButton>
       </UForm>
 
-      <!-- Quiz section (shown when Quiz type is selected) -->
-      <div v-if="state.type === ChallengeType.Quiz" class="border-t pt-6">
-        <h3 class="text-lg font-semibold mb-4">Quiz</h3>
-        <template v-if="isEditMode && projectId && challengeId">
-          <div class="border border-default rounded-lg p-4 space-y-3">
-            <p class="text-text-muted">
-              Konfigurer quiz-innstillinger og spørsmål.
-            </p>
-            <UButton
-              :to="{
-                name: 'admin-projects-projectId-challenges-challengeId-quiz',
-                params: { projectId, challengeId },
-              }"
-            >
-              Rediger quiz
-            </UButton>
-          </div>
-        </template>
-        <div
-          v-else
-          class="border border-dashed border-default rounded-lg p-4 text-center"
-        >
-          <p class="text-text-muted">
-            Quiz-innstillinger blir tilgjengelig etter at utfordringen er
-            opprettet.
-          </p>
-        </div>
-      </div>
+      <!-- Sticky: by the time you reach the timestamps the preview would
+           otherwise have scrolled away. -->
+      <AdminThemedPreview :colors="colors" class="top-6 h-fit @4xl:sticky">
+        <AdminChallengeCardPreview :challenge="state" />
+      </AdminThemedPreview>
     </div>
-
-    <AdminThemedPreview :colors="colors">
-      <AdminChallengeCardPreview :challenge="state" />
-    </AdminThemedPreview>
   </div>
 </template>

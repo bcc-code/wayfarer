@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
+import { ScoreSourceType } from '~/api/generated'
 
 definePageMeta({
   permission: 'scores:view',
@@ -48,6 +49,16 @@ gql(`
   }
 `)
 
+/** Names the user in the filter chip; a ULID there would say nothing. */
+gql(`
+  query AdminScoresFilteredUser($id: ID!) {
+    user(id: $id) {
+      id
+      name
+    }
+  }
+`)
+
 gql(`
   mutation DeleteScoreJournalEntry($id: ID!) {
     deleteScoreJournalEntry(id: $id)
@@ -61,16 +72,72 @@ const pagination = usePagination({
 
 const route = useRoute('admin-projects-projectId-scores')
 
+/**
+ * `ScoreJournalFilter` has no free-text field. Its useful facet is the source:
+ * separating manual adjustments from automatic awards is the common question
+ * of a points journal, and `MANUAL` is the one an admin is answerable for.
+ */
+function formatSourceType(type: string) {
+  return type.charAt(0) + type.slice(1).toLowerCase()
+}
+
+// Codegen emits a real TS enum, so the members are the values — a string
+// literal list would not typecheck against it.
+const sourceTypes = Object.values(ScoreSourceType)
+
+const list = useListState({
+  pagination,
+  // `userId` has no control of its own: it arrives from a user detail page's
+  // score journal, where each row links to that project's entries for that
+  // user. Declaring it here is what makes it survive a reload and reset
+  // pagination like any other filter.
+  filters: { sourceType: '', userId: '' },
+})
+
 const { isAuthReady } = useAuthReady()
 const { data, fetching, error, executeQuery } = useAdminScoresPageQuery({
   // Merged with the pagination cursor, and computed so the journal repoints
   // when the project switcher changes the param.
   variables: computed(() => ({
     ...pagination.variables.value,
-    filter: { projectId: route.params.projectId },
+    filter: {
+      projectId: route.params.projectId,
+      ...(list.filters.sourceType
+        ? { sourceType: list.filters.sourceType as ScoreSourceType }
+        : {}),
+      ...(list.filters.userId ? { userId: list.filters.userId } : {}),
+    },
   })),
   pause: computed(() => !isAuthReady.value),
 })
+
+// `value` stays a plain string: `useListState` holds URL params, which are
+// strings, and typing the items as the enum would make USelect demand a
+// `ScoreSourceType` model. The cast back to the enum happens at the query.
+const sourceTypeItems = computed(() =>
+  sourceTypes.map((type) => ({
+    label: formatSourceType(type),
+    value: String(type),
+  })),
+)
+
+const { data: filteredUserData } = useAdminScoresFilteredUserQuery({
+  variables: computed(() => ({ id: list.filters.userId })),
+  pause: computed(() => !isAuthReady.value || !list.filters.userId),
+  requestPolicy: 'cache-first',
+})
+
+const activeFilters = computed(() =>
+  list.activeFilters.value.map((filter) =>
+    filter.key === 'userId'
+      ? {
+          ...filter,
+          // Falls back to the id until the name resolves, or if the user is gone.
+          label: `Bruker: ${filteredUserData.value?.user.name ?? filter.value}`,
+        }
+      : { ...filter, label: `Kilde: ${formatSourceType(filter.value)}` },
+  ),
+)
 
 watch(
   () => data.value?.adminScoreJournal,
@@ -128,11 +195,9 @@ async function handleDelete() {
   entryToDelete.value = null
 }
 
-function formatSourceType(type: string) {
-  return type.charAt(0) + type.slice(1).toLowerCase()
-}
-
 const { canDeleteScoreEntry, canManageScores } = usePermissions()
+
+const showCreateModal = ref(false)
 </script>
 
 <template>
@@ -141,19 +206,37 @@ const { canDeleteScoreEntry, canManageScores } = usePermissions()
       <h1 class="text-3xl">Poengjusteringer</h1>
       <UButton
         v-if="canManageScores"
-        :to="{
-          name: 'admin-projects-projectId-scores-new',
-          params: { projectId: route.params.projectId },
-        }"
+        icon="lucide:plus"
+        @click="
+          () => {
+            showCreateModal = true
+          }
+        "
       >
         Ny justering
       </UButton>
     </div>
     <AdminErrorState v-if="error" :error />
-    <div v-else class="space-y-4">
-      <div class="flex items-center justify-between gap-2">
-        <RelayPagination v-model:pagination="pagination" />
-      </div>
+    <AdminListView
+      v-else
+      :pagination
+      :active-filters="activeFilters"
+      :searchable="false"
+      item-label="oppføringer"
+      @clear-filter="list.clearFilter($event as 'sourceType' | 'userId')"
+      @clear-all="list.clearAll()"
+    >
+      <template #filters>
+        <USelect
+          v-model="list.filters.sourceType"
+          :items="sourceTypeItems"
+          value-key="value"
+          placeholder="Alle kilder"
+          icon="lucide:filter"
+          class="w-48"
+        />
+      </template>
+
       <UTable :data="entries" :loading="fetching" :columns>
         <template #user-cell="{ row }">
           <NuxtLink
@@ -201,8 +284,25 @@ const { canDeleteScoreEntry, canManageScores } = usePermissions()
             />
           </div>
         </template>
+        <template #empty>
+          <AdminTableEmpty
+            :filtered="!!activeFilters.length"
+            title="Ingen poengoppføringer i dette prosjektet"
+            filtered-title="Ingen oppføringer passer filteret"
+            @clear="list.clearAll()"
+          />
+        </template>
+        <template #loading>
+          <AdminTableLoading :rows="pagination.pageSize.value" />
+        </template>
       </UTable>
-    </div>
+    </AdminListView>
+
+    <AdminScoreAdjustmentModal
+      v-model:open="showCreateModal"
+      :project-id="route.params.projectId"
+      @created="executeQuery({ requestPolicy: 'network-only' })"
+    />
 
     <UModal v-model:open="deleteModal">
       <template #content>

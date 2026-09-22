@@ -448,3 +448,14 @@ func convertPublishedStreakAchievementRow(row *sqlc.GetPublishedStreakAchievemen
 		TotalItems:           totalItems,
 	}
 }
+
+// achievementAwardedUserCount returns how many users have been awarded the
+// achievement. Team and super-team awards are not counted.
+func (r *Resolver) achievementAwardedUserCount(ctx context.Context, achievementID string) (int, error) {
+	thunk := r.Loaders.AchievementAwardedUserCountLoader.Load(ctx, achievementID)
+	count, err := thunk()
+	if err != nil {
+		return 0, fmt.Errorf("failed to load achievement awarded user count: %w", err)
+	}
+	return int(count), nil
+}

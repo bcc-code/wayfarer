@@ -610,14 +610,17 @@ func (r *mutationResolver) ReorderQuizQuestions(ctx context.Context, quizID stri
 		return nil, fmt.Errorf("unauthorized")
 	}
 
-	// Update order for each question (batch update, not in loop)
-	for i, questionID := range questionIds {
-		err := r.DB.Queries.UpdateQuizQuestionOrder(ctx, sqlc.UpdateQuizQuestionOrderParams{
-			ID:            questionID,
-			Questionorder: int32(i),
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to update question order: %w", err)
+	// Two passes: positions are unique per quiz, so everything is parked on a
+	// negative order before the real ones are assigned.
+	for _, pass := range quizReorderPasses(questionIds) {
+		for _, step := range pass {
+			err := r.DB.Queries.UpdateQuizQuestionOrder(ctx, sqlc.UpdateQuizQuestionOrderParams{
+				ID:            step.ID,
+				Questionorder: step.Order,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to update question order: %w", err)
+			}
 		}
 	}
 

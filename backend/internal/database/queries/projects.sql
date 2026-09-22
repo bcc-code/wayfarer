@@ -290,3 +290,17 @@ RETURNING id, name, description, rules, info_message, info_message_start, info_m
 
 -- name: ProjectExists :one
 SELECT EXISTS(SELECT 1 FROM projects WHERE id = @projectid::char(28));
+
+-- name: GetProjectActivityTrend :many
+-- Daily point/participant aggregates. Only days with rows come back; the
+-- caller fills the gaps. Buckets by UTC day. If it ever shows up slow, the
+-- index to add is (project_id, created_at).
+SELECT
+    created_at::date AS day,
+    COALESCE(SUM(points), 0)::bigint AS points,
+    COUNT(DISTINCT user_id)::int AS active_users
+FROM score_journal
+WHERE project_id = @project_id::char(28)
+    AND created_at >= @since::timestamptz
+GROUP BY day
+ORDER BY day;

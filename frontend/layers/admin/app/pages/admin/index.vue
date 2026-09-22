@@ -1,50 +1,30 @@
 <script setup lang="ts">
+import { selectHomeProjects } from '../../utils/homeProjects'
+
 definePageMeta({
   layout: 'admin',
 })
 
+// One query per concern: `feedback` is admin/superadmin-only and the directive
+// errors rather than returning null, which on a non-null field fails the whole
+// document. Separate documents fail separately.
 gql(`
-  query AdminHomePage($now: DateTime!) {
+  query AdminHomeProjects($now: DateTime!) {
     me {
       id
       name
     }
-    adminDashboardStats {
-      totalUsers
-      totalPointsAwarded
-      newUsersLast7Days
-    }
-    feedback(first: 5) {
-      edges {
-        node {
-          id
-          message
-          createdAt
-          user {
-            id
-            name
-          }
-        }
-      }
-    }
-    projects(filter: { endDateAfter: $now }) {
+    projects(filter: { endDateAfter: $now, archived: false }, first: 100) {
       edges {
         node {
           id
           name
           description
-          endDate
           startDate
+          endDate
           branding {
-            logo
-            rounding
-            colors {
-              light {
-                accent
-              }
-              dark {
-                accent
-              }
+            logoImage {
+              url
             }
           }
         }
@@ -53,17 +33,53 @@ gql(`
   }
 `)
 
+gql(`
+  query AdminHomeFeedback {
+    feedback(first: 5, filter: { handled: false }) {
+      totalCount
+      edges {
+        node {
+          id
+          message
+          createdAt
+          tags
+          user {
+            id
+            name
+          }
+        }
+      }
+    }
+  }
+`)
+
 const { isAuthReady } = useAuthReady()
-const { data, fetching, error } = useAdminHomePageQuery({
+const { canAccessFeedback, canViewProject } = usePermissions()
+
+const {
+  data: projectData,
+  fetching,
+  error,
+} = useAdminHomeProjectsQuery({
   variables: { now: new Date().toISOString() },
   pause: computed(() => !isAuthReady.value),
 })
-const { currentProjects } = useGroupedProjects(() =>
-  data.value?.projects.edges.map((edge) => edge.node),
+
+const { data: feedbackData } = useAdminHomeFeedbackQuery({
+  pause: computed(() => !isAuthReady.value || !canAccessFeedback.value),
+})
+
+// A project admin only sees projects they may open.
+const visibleProjects = computed(() =>
+  (projectData.value?.projects.edges ?? [])
+    .map((edge) => edge.node)
+    .filter((project) => canViewProject(project.id)),
 )
 
-const feedbackEntries = computed(
-  () => data.value?.feedback.edges.map((edge) => edge.node) ?? [],
+const selection = computed(() => selectHomeProjects(visibleProjects.value))
+
+const unhandledFeedback = computed(
+  () => feedbackData.value?.feedback.edges.map((edge) => edge.node) ?? [],
 )
 
 const greeting = computed(() => {
@@ -75,60 +91,77 @@ const greeting = computed(() => {
 </script>
 
 <template>
-  <div>
-    <h1 v-if="data?.me" class="my-8 text-3xl text-balance">
-      {{ greeting }}, {{ data.me.name }}
+  <!-- Capped: a single column of blocks, not a table or a card grid. -->
+  <div class="max-w-6xl">
+    <h1 v-if="projectData?.me" class="my-8 text-3xl text-balance">
+      {{ greeting }}, {{ projectData.me.name }}
     </h1>
 
-    <AdminLoadingState v-if="fetching" />
-    <AdminErrorState v-else-if="error" :error />
+    <AdminQueryState :fetching :error>
+      <div class="@container space-y-8">
+        <!--
+          One section per active project, stacked. Usually there is exactly one;
+          the list is ordered by ending soonest and capped, with the remainder
+          behind the "flere aktive" link.
+        -->
+        <section v-if="selection.active.length">
+          <div class="mb-3 flex items-baseline gap-4">
+            <h2>
+              {{
+                selection.active.length > 1
+                  ? 'Aktive prosjekter'
+                  : 'Aktivt prosjekt'
+              }}
+            </h2>
+            <UButton variant="soft" size="xs" :to="{ name: 'admin-projects' }">
+              {{
+                selection.hiddenActiveCount
+                  ? `${selection.hiddenActiveCount} flere aktive`
+                  : 'Se alle'
+              }}
+            </UButton>
+          </div>
+          <div class="space-y-4">
+            <AdminProjectSection
+              v-for="project in selection.active"
+              :key="project.id"
+              :project
+            />
+          </div>
+        </section>
 
-    <!-- Container query, not viewport: the sidebar has already taken ~300px. -->
-    <div v-else-if="data" class="@container space-y-8">
-      <AdminDashboardStats :stats="data.adminDashboardStats" />
+        <!--
+          Nothing running: the next one, in the same section. Its counts double as
+          the readiness view — challenges, achievements and teams at zero is
+          exactly what "not set up yet" looks like — so there is no separate
+          readiness block or query.
+        -->
+        <section v-else-if="selection.next">
+          <h2 class="mb-3">Neste prosjekt</h2>
+          <AdminProjectSection :project="selection.next" />
+        </section>
 
-      <div class="grid gap-6 @4xl:grid-cols-3">
-        <div class="@4xl:col-span-2">
-          <AdminRecentActivity :feedback-entries="feedbackEntries" />
-        </div>
-      </div>
-
-      <section>
-        <div class="mb-3 flex items-baseline gap-4">
-          <h2>Aktive prosjekter</h2>
-          <UButton
-            v-if="currentProjects.length"
-            variant="soft"
-            size="xs"
-            to="/admin/projects"
-          >
-            Se alle
-          </UButton>
-        </div>
-        <div
-          v-if="currentProjects.length"
-          class="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4"
-        >
-          <NuxtLink
-            v-for="project in currentProjects"
-            :key="project.id"
-            class="block h-full"
-            :to="{
-              name: 'admin-projects-projectId',
-              params: { projectId: project.id },
-            }"
-          >
-            <AdminProjectCard :project />
-          </NuxtLink>
-        </div>
         <UEmpty
           v-else
           icon="lucide:square-dashed-mouse-pointer"
-          title="Her er det tomt"
-          description="Det er ingen aktive prosjekter for øyeblikket"
+          title="Ingen aktive eller kommende prosjekter"
+          description="Alle prosjekter er avsluttet eller arkivert."
           :actions="[{ label: 'Se alle prosjekter', to: '/admin/projects' }]"
         />
-      </section>
-    </div>
+
+        <section v-if="feedbackData?.feedback">
+          <div class="mb-3 flex items-baseline gap-4">
+            <h2>Ubehandlede tilbakemeldinger</h2>
+            <UBadge v-if="feedbackData.feedback.totalCount" variant="subtle">
+              {{ feedbackData.feedback.totalCount }}
+            </UBadge>
+            <UButton variant="soft" size="xs" :to="{ name: 'admin-feedback' }">
+              Se alle
+            </UButton>
+          </div>
+          <AdminRecentActivity :feedback-entries="unhandledFeedback" />
+        </section>
+      </div>
+    </AdminQueryState>
   </div>
 </template>

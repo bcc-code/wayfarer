@@ -181,3 +181,17 @@ SELECT
     now()
 RETURNING *;
 
+
+-- name: GetUserPointsByProject :many
+-- Per-project point totals for one user. Ordered by their latest entry in each
+-- project: on a support call that is the project being asked about.
+SELECT
+    p.id AS project_id,
+    p.name AS project_name,
+    COALESCE(SUM(sj.points), 0)::bigint AS points,
+    MAX(sj.created_at) AS last_activity
+FROM score_journal sj
+JOIN projects p ON p.id = sj.project_id
+WHERE sj.user_id = @user_id::char(28)
+GROUP BY p.id, p.name
+ORDER BY last_activity DESC;

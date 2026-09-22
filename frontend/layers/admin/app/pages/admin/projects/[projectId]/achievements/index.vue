@@ -12,6 +12,10 @@ const canEdit = computed(() => canEditProject(route.params.projectId))
 
 gql(`
   query AdminProjectAchievements($projectId: ID!) {
+    # For the "x of y" share on each row's award count.
+    participants: users(first: 0, filter: { projectId: $projectId }) {
+      totalCount
+    }
     achievements(first: 50, filter: { projectId: $projectId }) {
       edges {
         node {
@@ -23,6 +27,7 @@ gql(`
           }
           points
           hidden
+          awardedUserCount
         }
       }
     }
@@ -53,6 +58,8 @@ watch(
   },
   { immediate: true },
 )
+
+const participants = computed(() => data.value?.participants.totalCount)
 
 const { executeMutation: reorderAchievements } =
   useReorderAchievementsMutation()
@@ -102,68 +109,73 @@ async function handleReorder() {
       </UButton>
     </div>
 
-    <AdminLoadingState v-if="fetching" />
-    <AdminErrorState v-else-if="error" :error />
-    <UEmpty
-      v-else-if="!achievements.length"
-      icon="lucide:award"
-      title="Ingen utmerkelser ennå"
-      description="Opprett den første utmerkelsen for dette prosjektet."
-    />
-    <div v-else class="border-default rounded-lg border">
-      <VueDraggable
-        v-model="achievements"
-        handle=".drag-handle"
-        ghost-class="opacity-50"
-        :animation="200"
-        @end="handleReorder"
-      >
-        <div
-          v-for="achievement in achievements"
-          :key="achievement.id"
-          class="border-default flex items-center gap-4 border-b px-4 py-3 last:border-b-0"
+    <AdminQueryState :fetching :error>
+      <UEmpty
+        v-if="!achievements.length"
+        icon="lucide:award"
+        title="Ingen utmerkelser ennå"
+        description="Opprett den første utmerkelsen for dette prosjektet."
+      />
+      <div v-else class="border-default rounded-lg border">
+        <VueDraggable
+          v-model="achievements"
+          handle=".drag-handle"
+          ghost-class="opacity-50"
+          :animation="200"
+          @end="handleReorder"
         >
           <div
-            class="drag-handle text-muted cursor-grab active:cursor-grabbing"
+            v-for="achievement in achievements"
+            :key="achievement.id"
+            class="border-default flex items-center gap-4 border-b px-4 py-3 last:border-b-0"
           >
-            <UIcon name="lucide:grip-vertical" class="size-5" />
-          </div>
-          <img
-            :src="
-              achievement.imageCompletedObject?.url ??
-              '/images/achievement-placeholder.png'
-            "
-            height="32"
-            width="32"
-            class="size-8 shrink-0 rounded"
-          />
-          <div class="min-w-0 flex-1">
-            <div class="font-medium">{{ achievement.name }}</div>
-            <div class="text-dimmed truncate text-sm">
-              {{ achievement.descriptionPending }}
+            <div
+              class="drag-handle text-muted cursor-grab active:cursor-grabbing"
+            >
+              <UIcon name="lucide:grip-vertical" class="size-5" />
             </div>
+            <img
+              :src="
+                achievement.imageCompletedObject?.url ??
+                '/images/achievement-placeholder.png'
+              "
+              height="32"
+              width="32"
+              class="size-8 shrink-0 rounded"
+            />
+            <div class="min-w-0 flex-1">
+              <div class="font-medium">{{ achievement.name }}</div>
+              <div class="text-dimmed truncate text-sm">
+                {{ achievement.descriptionPending }}
+              </div>
+            </div>
+            <AdminEngagementCount
+              :count="achievement.awardedUserCount"
+              :total="participants"
+              class="w-32 shrink-0 text-right text-sm"
+            />
+            <div class="text-muted shrink-0 text-sm">
+              {{ formatNumber(achievement.points) }} pts
+            </div>
+            <UBadge v-if="achievement.hidden" variant="soft" color="warning">
+              Skjult
+            </UBadge>
+            <UButton
+              variant="ghost"
+              size="sm"
+              :to="{
+                name: 'admin-projects-projectId-achievements-achievementId',
+                params: {
+                  projectId: route.params.projectId,
+                  achievementId: achievement.id,
+                },
+              }"
+            >
+              Rediger
+            </UButton>
           </div>
-          <div class="text-muted shrink-0 text-sm">
-            {{ formatNumber(achievement.points) }} pts
-          </div>
-          <UBadge v-if="achievement.hidden" variant="soft" color="warning">
-            Skjult
-          </UBadge>
-          <UButton
-            variant="ghost"
-            size="sm"
-            :to="{
-              name: 'admin-projects-projectId-achievements-achievementId',
-              params: {
-                projectId: route.params.projectId,
-                achievementId: achievement.id,
-              },
-            }"
-          >
-            Rediger
-          </UButton>
-        </div>
-      </VueDraggable>
-    </div>
+        </VueDraggable>
+      </div>
+    </AdminQueryState>
   </div>
 </template>

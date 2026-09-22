@@ -536,6 +536,53 @@ func (q *Queries) GetUserEventScore(ctx context.Context, arg GetUserEventScorePa
 	return total_score, err
 }
 
+const GetUserPointsByProject = `-- name: GetUserPointsByProject :many
+SELECT
+    p.id AS project_id,
+    p.name AS project_name,
+    COALESCE(SUM(sj.points), 0)::bigint AS points,
+    MAX(sj.created_at) AS last_activity
+FROM score_journal sj
+JOIN projects p ON p.id = sj.project_id
+WHERE sj.user_id = $1::char(28)
+GROUP BY p.id, p.name
+ORDER BY last_activity DESC
+`
+
+type GetUserPointsByProjectRow struct {
+	ProjectID    string      `json:"project_id"`
+	ProjectName  string      `json:"project_name"`
+	Points       int64       `json:"points"`
+	LastActivity interface{} `json:"last_activity"`
+}
+
+// Per-project point totals for one user. Ordered by their latest entry in each
+// project: on a support call that is the project being asked about.
+func (q *Queries) GetUserPointsByProject(ctx context.Context, userID string) ([]*GetUserPointsByProjectRow, error) {
+	rows, err := q.db.Query(ctx, GetUserPointsByProject, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUserPointsByProjectRow{}
+	for rows.Next() {
+		var i GetUserPointsByProjectRow
+		if err := rows.Scan(
+			&i.ProjectID,
+			&i.ProjectName,
+			&i.Points,
+			&i.LastActivity,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetUserProjectScore = `-- name: GetUserProjectScore :one
 SELECT COALESCE(SUM(points), 0)::bigint AS total_score
 FROM score_journal

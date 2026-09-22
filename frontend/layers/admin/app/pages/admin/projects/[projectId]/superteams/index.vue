@@ -72,17 +72,11 @@ const superteams = computed(
       </div>
     </div>
 
-    <AdminLoadingState v-if="fetching" />
-    <AdminErrorState v-else-if="error" :error />
-    <UEmpty
-      v-else-if="!superteams.length"
-      icon="lucide:users"
-      title="Ingen superlag ennå"
-      description="Opprett det første superlaget for dette prosjektet."
-    />
+    <AdminErrorState v-if="error" :error />
     <UTable
       v-else
       :data="superteams"
+      :loading="fetching"
       :columns="[
         { accessorKey: 'color', header: 'Farge' },
         { accessorKey: 'imageObject', header: 'Bilde' },
@@ -126,6 +120,16 @@ const superteams = computed(
             Rediger
           </UButton>
         </div>
+      </template>
+      <template #empty>
+        <AdminTableEmpty
+          icon="lucide:users"
+          title="Ingen superlag ennå"
+          description="Opprett det første superlaget for dette prosjektet."
+        />
+      </template>
+      <template #loading>
+        <AdminTableLoading />
       </template>
     </UTable>
   </div>

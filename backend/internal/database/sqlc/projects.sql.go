@@ -522,6 +522,52 @@ func (q *Queries) GetAllProjects(ctx context.Context) ([]*GetAllProjectsRow, err
 	return items, nil
 }
 
+const GetProjectActivityTrend = `-- name: GetProjectActivityTrend :many
+SELECT
+    created_at::date AS day,
+    COALESCE(SUM(points), 0)::bigint AS points,
+    COUNT(DISTINCT user_id)::int AS active_users
+FROM score_journal
+WHERE project_id = $1::char(28)
+    AND created_at >= $2::timestamptz
+GROUP BY day
+ORDER BY day
+`
+
+type GetProjectActivityTrendParams struct {
+	ProjectID string             `json:"project_id"`
+	Since     pgtype.Timestamptz `json:"since"`
+}
+
+type GetProjectActivityTrendRow struct {
+	Day         pgtype.Date `json:"day"`
+	Points      int64       `json:"points"`
+	ActiveUsers int32       `json:"active_users"`
+}
+
+// Daily point/participant aggregates. Only days with rows come back; the
+// caller fills the gaps. Buckets by UTC day. If it ever shows up slow, the
+// index to add is (project_id, created_at).
+func (q *Queries) GetProjectActivityTrend(ctx context.Context, arg GetProjectActivityTrendParams) ([]*GetProjectActivityTrendRow, error) {
+	rows, err := q.db.Query(ctx, GetProjectActivityTrend, arg.ProjectID, arg.Since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetProjectActivityTrendRow{}
+	for rows.Next() {
+		var i GetProjectActivityTrendRow
+		if err := rows.Scan(&i.Day, &i.Points, &i.ActiveUsers); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetProjectByID = `-- name: GetProjectByID :one
 SELECT id, name, description, rules, info_message, info_message_start, info_message_end, start_date, end_date, logo_url, banner_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,

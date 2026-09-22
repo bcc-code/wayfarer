@@ -7,7 +7,7 @@ definePageMeta({
 })
 
 gql(`
-	query AdminUsersPage($filter: UserFilter, $first: Int, $after: String, $last: Int, $before: String) {
+  query AdminUsersPage($filter: UserFilter, $first: Int, $after: String, $last: Int, $before: String) {
     users(
       filter: $filter
       first: $first
@@ -30,6 +30,7 @@ gql(`
           email
           image
           church {
+            id
             name
           }
           roles {
@@ -42,38 +43,73 @@ gql(`
   }
 `)
 
-const searchQuery = ref('')
-const debouncedSearch = refDebounced(searchQuery, 300)
+/** Churches for the filter. Rarely change, so cache-first is enough. */
+gql(`
+  query AdminUsersPageChurches {
+    churches(first: 500) {
+      edges {
+        node {
+          id
+          name
+        }
+      }
+    }
+  }
+`)
 
-const pagination = usePagination({
-  defaultPageSize: 15,
+const pagination = usePagination({ defaultPageSize: 15 })
+
+const list = useListState({
+  pagination,
+  filters: { churchId: '' },
 })
-
-// Reset pagination when search changes
-watch(debouncedSearch, () => {
-  pagination.reset()
-})
-
-const queryVariables = computed(() => ({
-  ...pagination.variables.value,
-  filter: debouncedSearch.value ? { query: debouncedSearch.value } : undefined,
-}))
 
 const { isAuthReady } = useAuthReady()
+
+const { data: churchData } = useAdminUsersPageChurchesQuery({
+  pause: computed(() => !isAuthReady.value),
+  requestPolicy: 'cache-first',
+})
+
+const churchItems = computed(() =>
+  (churchData.value?.churches.edges ?? []).map((edge) => ({
+    label: edge.node.name,
+    value: edge.node.id,
+  })),
+)
+
+const queryVariables = computed(() => {
+  const filter: Record<string, string> = {}
+  if (list.debouncedSearch.value) filter.query = list.debouncedSearch.value
+  if (list.filters.churchId) filter.churchId = list.filters.churchId
+
+  return {
+    ...pagination.variables.value,
+    filter: Object.keys(filter).length ? filter : undefined,
+  }
+})
+
 const { data, fetching, error } = useAdminUsersPageQuery({
   variables: queryVariables,
   pause: computed(() => !isAuthReady.value),
 })
 
-// Update pagination state when data changes
 watch(
   () => data.value?.users,
-  (connection) => {
-    pagination.updateConnection(connection)
-  },
+  (connection) => pagination.updateConnection(connection),
 )
 
 const users = computed(() => data.value?.users.edges.map((edge) => edge.node))
+
+/** Chips need the church's name, not the id that is in the URL. */
+const activeFilters = computed(() =>
+  list.activeFilters.value.map((filter) => ({
+    ...filter,
+    label:
+      churchItems.value.find((item) => item.value === filter.value)?.label ??
+      filter.value,
+  })),
+)
 
 const columns: TableColumn<
   AdminUsersPageQuery['users']['edges'][number]['node']
@@ -81,7 +117,6 @@ const columns: TableColumn<
   { accessorKey: 'name', header: 'Navn' },
   { accessorKey: 'church.name', header: 'Menighet' },
   { accessorKey: 'roles', header: 'Roller' },
-  { id: 'actions' },
 ]
 </script>
 
@@ -89,16 +124,28 @@ const columns: TableColumn<
   <div>
     <h1 class="mb-6 text-3xl">Brukere</h1>
     <AdminErrorState v-if="error" :error />
-    <div v-else class="space-y-4">
-      <div class="flex items-center justify-between gap-2">
-        <UInput
-          v-model="searchQuery"
-          placeholder="Søk etter navn eller e-post..."
-          icon="i-lucide-search"
-          class="w-64"
+
+    <AdminListView
+      v-else
+      v-model:search="list.search.value"
+      :pagination
+      :active-filters="activeFilters"
+      search-placeholder="Søk etter navn eller e-post…"
+      item-label="brukere"
+      @clear-filter="list.clearFilter($event as 'churchId')"
+      @clear-all="list.clearAll()"
+    >
+      <template #filters>
+        <USelectMenu
+          v-model="list.filters.churchId"
+          :items="churchItems"
+          value-key="value"
+          placeholder="Alle menigheter"
+          searchable
+          class="w-56"
         />
-        <RelayPagination v-model:pagination="pagination" />
-      </div>
+      </template>
+
       <UTable :data="users" :loading="fetching" :columns>
         <template #name-cell="{ row }">
           <NuxtLink
@@ -123,7 +170,22 @@ const columns: TableColumn<
             </UBadge>
           </div>
         </template>
+        <!--
+          Distinguishes "no users" from "nothing matched" — the second is the
+          common case on a searchable list and needs a way back out.
+        -->
+        <template #empty>
+          <AdminTableEmpty
+            :filtered="list.hasActiveQuery.value"
+            title="Ingen brukere"
+            filtered-title="Ingen brukere passer søket"
+            @clear="list.clearAll()"
+          />
+        </template>
+        <template #loading>
+          <AdminTableLoading :rows="pagination.pageSize.value" />
+        </template>
       </UTable>
-    </div>
+    </AdminListView>
   </div>
 </template>

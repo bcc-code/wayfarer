@@ -68,6 +68,8 @@ type Loaders struct {
 	UserEnrolledChallengeIDsLoader           *dataloader.Loader[UserProjectKey, map[string]bool]
 	UserAccessibleQuizIDsLoader              *dataloader.Loader[UserProjectKey, map[string]bool]
 	UserActiveQuizSessionLoader              *dataloader.Loader[UserQuizKey, *sqlc.QuizSession]
+	ChallengeCompletionCountLoader           *dataloader.Loader[string, int64]
+	AchievementAwardedUserCountLoader        *dataloader.Loader[string, int64]
 }
 
 // newBatchedLoader creates a new batched dataloader with standard configuration:
@@ -145,5 +147,7 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		UserEnrolledChallengeIDsLoader:           newBatchedLoader(userEnrolledChallengeIDsBatchFunc(db, cache)),
 		UserAccessibleQuizIDsLoader:              newBatchedLoader(userAccessibleQuizIDsBatchFunc(db, cache)),
 		UserActiveQuizSessionLoader:              newBatchedLoader(userActiveQuizSessionBatchFunc(db, cache)),
+		ChallengeCompletionCountLoader:           newBatchedLoader(challengeCompletionCountBatchFunc(db)),
+		AchievementAwardedUserCountLoader:        newBatchedLoader(achievementAwardedUserCountBatchFunc(db)),
 	}
 }

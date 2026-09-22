@@ -57,6 +57,16 @@ gql(`
   }
 `)
 
+/** Names the user in the filter chip; a ULID there would say nothing. */
+gql(`
+  query AdminFeedbackFilteredUser($id: ID!) {
+    user(id: $id) {
+      id
+      name
+    }
+  }
+`)
+
 gql(`
   query FeedbackTags {
     feedbackTags
@@ -82,15 +92,55 @@ const pagination = usePagination({
   defaultPageSize: 15,
 })
 
-// Filters
-const selectedTags = ref<string[]>([])
-const selectedPlatform = ref<string | undefined>()
-const handledFilter = ref<boolean | undefined>()
+/**
+ * Filters live in `useListState` so they land in the URL and reset pagination
+ * on their own. It stores strings, because URL params are strings — the
+ * multi-select and the tri-state below bridge to their own shapes rather than
+ * teaching the composable about arrays and booleans.
+ */
+const list = useListState({
+  pagination,
+  // `userId` has no control of its own: it arrives from a user detail page's
+  // "Vis alle" link and is cleared through its chip. Declaring it here is what
+  // makes it survive a reload and reset pagination like any other filter.
+  filters: { tags: '', platform: '', handled: '', userId: '' },
+})
+
+// Comma-joined in the URL. Tags are admin-authored via UInputTags, so a tag
+// containing a comma would split into two filter values — visible in the chip
+// rather than silent, but worth knowing. Repeatable `?tags=a&tags=b` params
+// would be the robust fix if tags ever become user-authored.
+const selectedTags = computed<string[]>({
+  get: () =>
+    list.filters.tags
+      ? list.filters.tags.split(',').filter((tag) => tag !== '')
+      : [],
+  set: (tags) => {
+    list.filters.tags = tags.join(',')
+  },
+})
+
+const selectedPlatform = computed<string | undefined>({
+  get: () => list.filters.platform || undefined,
+  set: (platform) => {
+    list.filters.platform = platform ?? ''
+  },
+})
+
+// Tri-state: unset means "no filter", which is distinct from `handled: false`.
+const handledFilter = computed<boolean | undefined>({
+  get: () =>
+    list.filters.handled === '' ? undefined : list.filters.handled === 'true',
+  set: (handled) => {
+    list.filters.handled = handled === undefined ? '' : String(handled)
+  },
+})
 
 const filter = computed(() => ({
   tags: selectedTags.value.length > 0 ? selectedTags.value : undefined,
   handled: handledFilter.value,
   platform: selectedPlatform.value,
+  userId: list.filters.userId || undefined,
 }))
 
 const queryVariables = computed(() => ({
@@ -112,14 +162,15 @@ const { data: platformsData } = useFeedbackPlatformsQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
+const { data: filteredUserData } = useAdminFeedbackFilteredUserQuery({
+  variables: computed(() => ({ id: list.filters.userId })),
+  pause: computed(() => !isAuthReady.value || !list.filters.userId),
+  requestPolicy: 'cache-first',
+})
+
 // Refresh when Firestore notifies of updates
 useFirestoreRefresh(['AdminFeedbackPageDocument'], () => {
   executeQuery({ requestPolicy: 'network-only' })
-})
-
-// Reset pagination when filter changes
-watch([selectedTags, selectedPlatform, handledFilter], () => {
-  pagination.reset()
 })
 
 watch(
@@ -143,6 +194,43 @@ const handledOptions = [
   { label: 'Ubehandlet', value: false },
   { label: 'Behandlet', value: true },
 ]
+
+/** Readable chips: one per facet, rather than the raw URL value. */
+const activeFilters = computed(() => {
+  const chips: Array<{ key: string; value: string; label: string }> = []
+
+  if (selectedTags.value.length) {
+    chips.push({
+      key: 'tags',
+      value: list.filters.tags,
+      label: `Tags: ${selectedTags.value.join(', ')}`,
+    })
+  }
+  if (selectedPlatform.value) {
+    chips.push({
+      key: 'platform',
+      value: selectedPlatform.value,
+      label: `Plattform: ${selectedPlatform.value}`,
+    })
+  }
+  if (handledFilter.value !== undefined) {
+    chips.push({
+      key: 'handled',
+      value: list.filters.handled,
+      label: `Status: ${handledFilter.value ? 'Behandlet' : 'Ubehandlet'}`,
+    })
+  }
+  if (list.filters.userId) {
+    chips.push({
+      key: 'userId',
+      value: list.filters.userId,
+      // Falls back to the id until the name resolves, or if the user is gone.
+      label: `Bruker: ${filteredUserData.value?.user.name ?? list.filters.userId}`,
+    })
+  }
+
+  return chips
+})
 
 type FeedbackNode = NonNullable<typeof feedbacks.value>[number]
 
@@ -275,8 +363,21 @@ async function handleUpdateTags(feedbackId: string, tags: string[]) {
       <h1 class="text-3xl">Tilbakemeldinger</h1>
     </div>
     <AdminErrorState v-if="error" :error />
-    <div v-else class="space-y-4">
-      <div class="flex items-center justify-between gap-2">
+    <!--
+      `searchable: false` — `FeedbackFilter` has no free-text field (userId,
+      tags, handled, platform only), so a search box here would be a control
+      that cannot work.
+    -->
+    <AdminListView
+      v-else
+      :pagination
+      :active-filters="activeFilters"
+      :searchable="false"
+      item-label="tilbakemeldinger"
+      @clear-filter="list.clearFilter($event as 'tags')"
+      @clear-all="list.clearAll()"
+    >
+      <template #filters>
         <USelectMenu
           v-model="selectedTags"
           :items="allUniqueTags"
@@ -307,9 +408,7 @@ async function handleUpdateTags(feedbackId: string, tags: string[]) {
           class="min-w-40"
         />
         <USelectMenu
-          :model-value="
-            handledOptions.find((o) => o.value === handledFilter)?.value
-          "
+          :model-value="handledFilter"
           :items="handledOptions"
           value-key="value"
           label-key="label"
@@ -319,26 +418,8 @@ async function handleUpdateTags(feedbackId: string, tags: string[]) {
           class="min-w-40"
           @update:model-value="handledFilter = $event"
         />
-        <UButton
-          v-if="
-            selectedTags.length > 0 ||
-            selectedPlatform !== undefined ||
-            handledFilter !== undefined
-          "
-          variant="ghost"
-          size="sm"
-          color="neutral"
-          label="Nullstill"
-          @click="
-            () => {
-              selectedTags = []
-              selectedPlatform = undefined
-              handledFilter = undefined
-            }
-          "
-        />
-        <RelayPagination v-model:pagination="pagination" class="ml-auto" />
-      </div>
+      </template>
+
       <UTable :data="feedbacks" :loading="fetching" :columns>
         <template #user-cell="{ row }">
           <NuxtLink
@@ -488,13 +569,25 @@ async function handleUpdateTags(feedbackId: string, tags: string[]) {
             />
           </div>
         </template>
+        <!--
+          Moved into the table's own `#empty` slot: as a sibling it rendered
+          *below* the table's own empty row, so an empty list showed two empty
+          states. It also now distinguishes a filtered miss from a truly empty
+          list.
+        -->
+        <template #empty>
+          <AdminTableEmpty
+            :filtered="!!activeFilters.length"
+            title="Ingen tilbakemeldinger ennå"
+            filtered-title="Ingen tilbakemeldinger passer filteret"
+            @clear="list.clearAll()"
+          />
+        </template>
+        <template #loading>
+          <AdminTableLoading :rows="pagination.pageSize.value" />
+        </template>
       </UTable>
-      <UEmpty
-        v-if="!fetching && feedbacks?.length === 0"
-        title="Ingen tilbakemeldinger ennå"
-        description="Tilbakemeldinger fra brukere vises her når de blir sendt inn."
-      />
-    </div>
+    </AdminListView>
 
     <UModal v-model:open="deleteModal">
       <template #content>

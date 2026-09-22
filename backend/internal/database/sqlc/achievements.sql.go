@@ -1024,6 +1024,41 @@ func (q *Queries) GetAllAchievementsByProjectID(ctx context.Context, projectID s
 	return items, nil
 }
 
+const GetBulkAchievementAwardedUserCounts = `-- name: GetBulkAchievementAwardedUserCounts :many
+SELECT achievement_id, COUNT(*)::bigint AS awarded_user_count
+FROM user_achievements
+WHERE achievement_id = ANY($1::char(28)[])
+GROUP BY achievement_id
+`
+
+type GetBulkAchievementAwardedUserCountsRow struct {
+	AchievementID    string `json:"achievement_id"`
+	AwardedUserCount int64  `json:"awarded_user_count"`
+}
+
+// User awards per achievement, for the dataloader. Team and super-team awards
+// live in their own tables and are not counted here. Achievements with no
+// awards are absent from the result; the caller fills in 0.
+func (q *Queries) GetBulkAchievementAwardedUserCounts(ctx context.Context, achievementIds []string) ([]*GetBulkAchievementAwardedUserCountsRow, error) {
+	rows, err := q.db.Query(ctx, GetBulkAchievementAwardedUserCounts, achievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetBulkAchievementAwardedUserCountsRow{}
+	for rows.Next() {
+		var i GetBulkAchievementAwardedUserCountsRow
+		if err := rows.Scan(&i.AchievementID, &i.AwardedUserCount); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetBulkUserAchievementCelebratedTimestamps = `-- name: GetBulkUserAchievementCelebratedTimestamps :many
 SELECT user_id, achievement_id, celebrated_at
 FROM user_achievements

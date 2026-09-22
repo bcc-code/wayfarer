@@ -58,7 +58,7 @@ const columns: TableColumn<ConsentRow>[] = [
     <div v-else class="space-y-4">
       <UTable :data="consents" :loading="fetching" :columns>
         <template #key-cell="{ row }">
-          <code class="bg-background-indent rounded px-2 py-1 text-sm">
+          <code class="bg-elevated rounded px-2 py-1 text-sm">
             {{ row.original.key }}
           </code>
         </template>
@@ -97,13 +97,16 @@ const columns: TableColumn<ConsentRow>[] = [
             </UButton>
           </div>
         </template>
+        <template #empty>
+          <AdminTableEmpty
+            title="Ingen samtykker funnet"
+            description="Opprett ditt første samtykke for å komme i gang."
+          />
+        </template>
+        <template #loading>
+          <AdminTableLoading />
+        </template>
       </UTable>
-      <div
-        v-if="consents.length === 0 && !fetching"
-        class="text-dimmed py-12 text-center"
-      >
-        Ingen samtykker funnet. Opprett ditt første samtykke for å komme i gang.
-      </div>
     </div>
   </div>
 </template>

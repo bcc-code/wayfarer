@@ -15,7 +15,6 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
-	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -454,17 +453,13 @@ func (r *userResolver) Roles(ctx context.Context, obj *model.User) ([]model.User
 	return result, nil
 }
 
-// Points is the resolver for the points field.
-func (r *userResolver) Points(ctx context.Context, obj *model.User, projectID string) (int, error) {
-	thunk := r.Loaders.UserProjectScoreLoader.Load(ctx, loaders.UserProjectKey{
-		UserID:    obj.ID,
-		ProjectID: projectID,
-	})
-	score, err := thunk()
+// PointsByProject is the resolver for the pointsByProject field.
+func (r *userResolver) PointsByProject(ctx context.Context, obj *model.User) ([]model.UserProjectPoints, error) {
+	rows, err := r.DB.Queries.GetUserPointsByProject(ctx, obj.ID)
 	if err != nil {
-		return 0, fmt.Errorf("failed to get user score: %w", err)
+		return nil, fmt.Errorf("failed to get points by project for user %s: %w", obj.ID, err)
 	}
-	return int(score), nil
+	return mapUserPointsByProject(rows), nil
 }
 
 // User returns UserResolver implementation.

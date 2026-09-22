@@ -24,7 +24,12 @@ type User {
     consentStatus: ConsentStatus!
     language: String!
     createdAt: DateTime!
-    points(projectId: ID!): Int! @goField(forceResolver: true)
+    points(projectId: ID!): Int!
+    """
+    Point totals per project, most recently active first. `points(projectId:)`
+    takes one project at a time, and the set is not known up front.
+    """
+    pointsByProject: [UserProjectPoints!]! @goField(forceResolver: true) @goField(forceResolver: true)
 }
 
 # ==================== User Input Types ====================
@@ -36,6 +41,13 @@ input CreateUserInput {
     gender: Gender!
     churchId: ID!
     age: Int!
+}
+
+"""A user's point total within one project."""
+type UserProjectPoints {
+    projectId: ID!
+    projectName: String!
+    points: Int!
 }
 
 input UserFilter {
