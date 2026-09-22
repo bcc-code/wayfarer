@@ -62,31 +62,50 @@ describe('AdminQuizQuestionEditor', () => {
     expect(wrapper.emitted('save')).toBeUndefined()
   })
 
-  it('tells the checkbox what it means before the answers, not after', async () => {
-    const wrapper = await mount(
-      predefined([
-        { answerText: 'Paulus', isCorrect: true, answerOrder: 1 },
-        { answerText: 'Peter', isCorrect: false, answerOrder: 2 },
-      ]),
-    )
+  const answered = () =>
+    predefined([
+      { answerText: 'Paulus', isCorrect: true, answerOrder: 1 },
+      { answerText: 'Peter', isCorrect: false, answerOrder: 2 },
+    ])
 
-    const hint = wrapper.text().indexOf('Kryss av for riktig(e) svar')
-    const firstAnswer = wrapper.text().indexOf('Riktig')
-    expect(hint).toBeGreaterThan(-1)
-    expect(hint).toBeLessThan(firstAnswer)
+  it('says what the checkbox means before the answers, not after', async () => {
+    const wrapper = await mount(answered())
+
+    const text = wrapper.text()
+    expect(text.indexOf('Kryss av for riktig(e) svar')).toBeGreaterThan(-1)
+    expect(text.indexOf('Kryss av for riktig(e) svar')).toBeLessThan(
+      text.indexOf('Tillat flere svar'),
+    )
   })
 
-  it('marks which answers are correct at a glance', async () => {
-    const wrapper = await mount(
-      predefined([
-        { answerText: 'Paulus', isCorrect: true, answerOrder: 1 },
-        { answerText: 'Peter', isCorrect: false, answerOrder: 2 },
-      ]),
-    )
+  // Answers are whole sentences; a single-line input hid the end of most.
+  it('gives each answer a growing textarea, not a one-line input', async () => {
+    const wrapper = await mount(answered())
 
-    const badges = wrapper
-      .findAllComponents({ name: 'UBadge' })
-      .filter((badge) => badge.text() === 'Riktig')
-    expect(badges).toHaveLength(1)
+    const areas = wrapper.findAllComponents({ name: 'UTextarea' })
+    // The question text plus one per answer.
+    expect(areas).toHaveLength(3)
+    expect(areas[1]!.props('autoresize')).toBe(true)
+  })
+
+  // The answers are the question; scoring and betting are settings about it.
+  it('puts the answers before the scoring and betting settings', async () => {
+    const wrapper = await mount(answered())
+
+    const text = wrapper.text()
+    const answers = text.indexOf('Svaralternativer')
+    expect(answers).toBeGreaterThan(-1)
+    expect(answers).toBeLessThan(text.indexOf('Poeng'))
+    expect(answers).toBeLessThan(text.indexOf('Aktiver betting'))
+  })
+
+  // It used to sit above the betting box, away from the list it governs.
+  it('keeps "Tillat flere svar" with the answers', async () => {
+    const wrapper = await mount(answered())
+
+    const text = wrapper.text()
+    expect(text.indexOf('Tillat flere svar')).toBeLessThan(
+      text.indexOf('Aktiver betting'),
+    )
   })
 })

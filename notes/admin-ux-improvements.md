@@ -785,6 +785,34 @@ then `make generate` and `pnpm codegen`.
 
 ## Update log
 
+### 2026-09-22 — question editor dialog restructured
+
+The dialog read type → text → points/timeout → betting → allow-multiple →
+answers, with the answers in single-line inputs.
+
+- **Answers are `UTextarea autoresize` now.** They are whole sentences; three of
+  four in a real quiz ran past the right edge of the input, so you could not
+  read or proofread them. The checkbox gets `mt-2.5` to line up with the first
+  line of a wrapped answer instead of the middle of the box.
+- **The "Riktig" badge is gone.** It only rendered on checked rows, which made
+  those inputs narrower than the rest — a visible ragged edge — and it put a
+  second indicator at the opposite end of the row from the checkbox that
+  controls it. My addition, and the wrong call.
+- **Answers come before scoring and betting.** The answer options _are_ the
+  question; they were arriving after two toggles and a betting subsystem.
+- **"Tillat flere svar" moved in with the answers**, since it changes what
+  checking them means, and picked up a description.
+- **Betting is one boxed block at the end.** It was the only boxed field in the
+  dialog while the bare "Tillat flere svar" sat right below it.
+- The per-question timeout now repeats the interaction note from the quiz-level
+  field: the stricter of the two applies.
+
+Left for later: answers cannot be reordered. Worth knowing that this is cheap —
+`updateQuizQuestion` deletes every answer for the question and re-inserts the
+set in one transaction, so unlike `quiz_questions` there is no
+`UNIQUE (question_id, answer_order)` dance to work around. A drag handle is all
+it needs.
+
 ### 2026-09-22 — quiz checkbox help text, and two labels that were lying
 
 Adding help text to the three quiz checkboxes meant checking what each one does.

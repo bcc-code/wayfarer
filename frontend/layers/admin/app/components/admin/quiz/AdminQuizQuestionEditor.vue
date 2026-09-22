@@ -125,8 +125,12 @@ function handleSave() {
 </script>
 
 <template>
-  <div class="space-y-4">
-    <UFormField name="questionType" label="Spørsmålstype">
+  <div class="space-y-5">
+    <UFormField
+      name="questionType"
+      label="Spørsmålstype"
+      :help="question.id ? 'Typen kan ikke endres etterpå' : undefined"
+    >
       <USelect
         v-model="localQuestion.questionType"
         :items="questionTypeOptions"
@@ -148,109 +152,9 @@ function handleSave() {
       />
     </AdminTranslatableFormField>
 
-    <div class="grid grid-cols-2 gap-4">
-      <UFormField name="points" label="Poeng">
-        <UInput
-          v-model.number="localQuestion.points"
-          type="number"
-          size="xl"
-          class="w-full"
-        />
-      </UFormField>
-
-      <UFormField
-        name="timeoutSeconds"
-        label="Tidsbegrensning (sekunder)"
-        hint="(valgfritt)"
-      >
-        <UInput
-          v-model.number="localQuestion.timeoutSeconds"
-          type="number"
-          size="xl"
-          class="w-full"
-        />
-      </UFormField>
-    </div>
-
-    <!-- Betting Settings -->
-    <div class="space-y-4 border border-default rounded-lg p-4">
-      <UFormField name="bettingEnabled">
-        <UCheckbox
-          v-model="localQuestion.bettingEnabled"
-          label="Aktiver betting"
-        />
-      </UFormField>
-
-      <template v-if="localQuestion.bettingEnabled">
-        <div class="space-y-4 pl-6">
-          <div>
-            <label class="text-sm font-medium">
-              Prosent-grenser (valgfritt)
-            </label>
-            <div class="grid grid-cols-2 gap-4 mt-2">
-              <UFormField name="bettingMinPercentage" label="Min %">
-                <UInput
-                  v-model.number="localQuestion.bettingMinPercentage"
-                  type="number"
-                  :min="0"
-                  :max="100"
-                  size="xl"
-                  class="w-full"
-                />
-              </UFormField>
-
-              <UFormField name="bettingMaxPercentage" label="Maks %">
-                <UInput
-                  v-model.number="localQuestion.bettingMaxPercentage"
-                  type="number"
-                  :min="0"
-                  :max="100"
-                  size="xl"
-                  class="w-full"
-                />
-              </UFormField>
-            </div>
-          </div>
-
-          <div>
-            <label class="text-sm font-medium">
-              Absolutte grenser (valgfritt)
-            </label>
-            <div class="grid grid-cols-2 gap-4 mt-2">
-              <UFormField name="bettingMinAbsolute" label="Min poeng">
-                <UInput
-                  v-model.number="localQuestion.bettingMinAbsolute"
-                  type="number"
-                  :min="0"
-                  size="xl"
-                  class="w-full"
-                />
-              </UFormField>
-
-              <UFormField name="bettingMaxAbsolute" label="Maks poeng">
-                <UInput
-                  v-model.number="localQuestion.bettingMaxAbsolute"
-                  type="number"
-                  :min="0"
-                  size="xl"
-                  class="w-full"
-                />
-              </UFormField>
-            </div>
-          </div>
-        </div>
-      </template>
-    </div>
-
-    <!-- Predefined Question Options -->
+    <!-- The answers are the question, so they come before the scoring and
+         betting settings rather than after them. -->
     <template v-if="localQuestion.questionType === QuizQuestionType.Predefined">
-      <UFormField name="allowMultipleSelection">
-        <UCheckbox
-          v-model="localQuestion.allowMultipleSelection"
-          label="Tillat flere svar"
-        />
-      </UFormField>
-
       <div class="space-y-3">
         <div class="flex items-start justify-between gap-4">
           <div>
@@ -267,21 +171,34 @@ function handleSave() {
           </UButton>
         </div>
 
+        <!-- Sits with the answers: it changes what checking them means. -->
+        <UCheckbox
+          v-model="localQuestion.allowMultipleSelection"
+          label="Tillat flere svar"
+          description="Brukeren kan velge mer enn ett alternativ."
+        />
+
         <div
           v-for="(answer, index) in localQuestion.predefinedAnswers"
           :key="index"
-          class="flex items-center gap-3"
+          class="flex items-start gap-3"
         >
+          <!-- `mt-2.5` lines the checkbox up with the first line of a wrapped
+               answer rather than the middle of the box. -->
           <UCheckbox
             v-model="answer.isCorrect"
+            class="mt-2.5"
             :aria-label="`Marker svar ${index + 1} som riktig`"
           />
-          <div class="flex flex-1 flex-col gap-1">
-            <UInput
+          <div class="flex min-w-0 flex-1 flex-col gap-1">
+            <!-- Answers are whole sentences; a single-line input hid the end
+                 of most of them. -->
+            <UTextarea
               v-model="answer.answerText"
               placeholder="Svartekst"
-              size="xl"
               class="w-full"
+              autoresize
+              :rows="1"
             />
             <AdminTranslationIndicator
               v-if="
@@ -294,15 +211,8 @@ function handleSave() {
               field-name="answerText"
             />
           </div>
-          <UBadge
-            v-if="answer.isCorrect"
-            size="xs"
-            variant="soft"
-            color="success"
-          >
-            Riktig
-          </UBadge>
           <UButton
+            class="mt-1.5"
             size="xs"
             variant="ghost"
             color="error"
@@ -401,6 +311,101 @@ function handleSave() {
         </VueDraggable>
       </div>
     </template>
+
+    <div class="grid grid-cols-2 gap-4">
+      <UFormField name="points" label="Poeng">
+        <UInput
+          v-model.number="localQuestion.points"
+          type="number"
+          size="xl"
+          class="w-full"
+        />
+      </UFormField>
+
+      <UFormField
+        name="timeoutSeconds"
+        label="Tidsbegrensning (sekunder)"
+        hint="(valgfritt)"
+        help="Den strengeste av denne og quizens egen grense gjelder."
+      >
+        <UInput
+          v-model.number="localQuestion.timeoutSeconds"
+          type="number"
+          size="xl"
+          class="w-full"
+        />
+      </UFormField>
+    </div>
+
+    <!-- Last, and boxed as one block: betting is a subsystem of its own, and
+         it was previously the only boxed field in the dialog. -->
+    <div class="border-default space-y-4 rounded-lg border p-4">
+      <UCheckbox
+        v-model="localQuestion.bettingEnabled"
+        label="Aktiver betting"
+        description="Brukeren kan satse poeng på svaret sitt."
+      />
+
+      <template v-if="localQuestion.bettingEnabled">
+        <div class="space-y-4 pl-6">
+          <div>
+            <label class="text-sm font-medium">
+              Prosent-grenser (valgfritt)
+            </label>
+            <div class="grid grid-cols-2 gap-4 mt-2">
+              <UFormField name="bettingMinPercentage" label="Min %">
+                <UInput
+                  v-model.number="localQuestion.bettingMinPercentage"
+                  type="number"
+                  :min="0"
+                  :max="100"
+                  size="xl"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField name="bettingMaxPercentage" label="Maks %">
+                <UInput
+                  v-model.number="localQuestion.bettingMaxPercentage"
+                  type="number"
+                  :min="0"
+                  :max="100"
+                  size="xl"
+                  class="w-full"
+                />
+              </UFormField>
+            </div>
+          </div>
+
+          <div>
+            <label class="text-sm font-medium">
+              Absolutte grenser (valgfritt)
+            </label>
+            <div class="grid grid-cols-2 gap-4 mt-2">
+              <UFormField name="bettingMinAbsolute" label="Min poeng">
+                <UInput
+                  v-model.number="localQuestion.bettingMinAbsolute"
+                  type="number"
+                  :min="0"
+                  size="xl"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField name="bettingMaxAbsolute" label="Maks poeng">
+                <UInput
+                  v-model.number="localQuestion.bettingMaxAbsolute"
+                  type="number"
+                  :min="0"
+                  size="xl"
+                  class="w-full"
+                />
+              </UFormField>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
 
     <div class="flex items-center justify-end gap-3 pt-2">
       <p v-if="validationError" class="text-error mr-auto text-sm">
