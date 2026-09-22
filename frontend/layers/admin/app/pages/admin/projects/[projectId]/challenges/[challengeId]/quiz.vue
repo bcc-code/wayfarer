@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import type { RouteLocationRaw } from 'vue-router'
-import type { QuizFormData } from '../../../../../../components/admin/quiz/AdminQuizForm.vue'
+import type {
+  QuizFormData,
+  QuizQuestionFormData,
+} from '../../../../../../components/admin/quiz/AdminQuizForm.vue'
+import {
+  planQuizQuestionSave,
+  orderedQuestionIds,
+  bettingClearFlags,
+} from '../../../../../../utils/quizSave'
 
 definePageMeta({
   permission: 'projects:view',
@@ -36,6 +44,15 @@ gql(`
           }
         }
       }
+    }
+  }
+`)
+
+gql(`
+  mutation ReorderQuizQuestions($quizId: ID!, $questionIds: [ID!]!) {
+    reorderQuizQuestions(quizId: $quizId, questionIds: $questionIds) {
+      id
+      questionOrder
     }
   }
 `)
@@ -76,6 +93,8 @@ const { executeMutation: updateQuiz } = useUpdateQuizMutation()
 const { executeMutation: addQuizQuestion } = useAddQuizQuestionMutation()
 const { executeMutation: updateQuizQuestion } = useUpdateQuizQuestionMutation()
 const { executeMutation: deleteQuizQuestion } = useDeleteQuizQuestionMutation()
+const { executeMutation: reorderQuizQuestions } =
+  useReorderQuizQuestionsMutation()
 
 function getQuestionType(typename: string): QuizQuestionType {
   switch (typename) {
@@ -160,210 +179,179 @@ const quizData = computed<QuizFormData | undefined>(() => {
 
 const isNewQuiz = computed(() => !quizData.value?.id)
 
-async function saveQuiz(quizFormData: QuizFormData) {
-  if (quizFormData.id) {
-    // Update existing quiz
-    const updateResult = await updateQuiz({
-      id: quizFormData.id,
+const saving = ref(false)
+const formDirty = ref(false)
+
+/** Shared by add and update; the two inputs take the same shape. */
+function questionInput(question: QuizQuestionFormData) {
+  return {
+    questionText: question.questionText,
+    timeoutSeconds: question.timeoutSeconds,
+    points: question.points,
+    allowMultipleSelection: question.allowMultipleSelection,
+    predefinedAnswers: question.predefinedAnswers?.map((a) => ({
+      answerText: a.answerText,
+      isCorrect: a.isCorrect,
+      answerOrder: a.answerOrder,
+    })),
+    orderingItems: question.orderingItems?.map((item) => ({
+      itemText: item.itemText,
+      correctOrder: item.correctOrder,
+    })),
+    minValue: question.minValue,
+    maxValue: question.maxValue,
+    stepValue: question.stepValue,
+    bettingEnabled: question.bettingEnabled,
+    bettingMinPercentage: question.bettingMinPercentage,
+    bettingMaxPercentage: question.bettingMaxPercentage,
+    bettingMinAbsolute: question.bettingMinAbsolute,
+    bettingMaxAbsolute: question.bettingMaxAbsolute,
+  }
+}
+
+async function saveQuizSettings(form: QuizFormData) {
+  const input = {
+    name: form.name,
+    description: form.description,
+    image: form.image,
+    timeoutSeconds: form.timeoutSeconds,
+    randomizeQuestions: form.randomizeQuestions,
+    revealCorrectAnswers: form.revealCorrectAnswers,
+    allowRetakes: form.allowRetakes,
+    completionPoints: form.completionPoints,
+  }
+
+  if (form.id) {
+    const result = await updateQuiz({ id: form.id, input })
+    return { id: form.id, error: result.error?.message }
+  }
+
+  const result = await createQuiz({
+    input: {
+      projectId: route.params.projectId,
+      challengeId: route.params.challengeId,
+      ...input,
+    },
+  })
+  return {
+    id: result.data?.createQuiz.id,
+    error: result.error?.message ?? (result.data ? undefined : 'Ukjent feil'),
+  }
+}
+
+/**
+ * Questions are saved in parallel and every failure is collected. The previous
+ * version awaited one mutation per question in a loop and ignored each result,
+ * so a quiz could half-save and still report success.
+ *
+ * Updates deliberately omit `questionOrder`: positions are unique per quiz, so
+ * two questions swapping would collide. Order is applied once at the end by
+ * `reorderQuizQuestions`, which parks every row on a negative order first.
+ */
+async function saveQuestions(quizId: string, form: QuizFormData) {
+  const existing = quizData.value?.questions ?? []
+  const plan = planQuizQuestionSave(existing, form.questions)
+  const errors: string[] = []
+
+  const deletions = plan.deletes.map(async (id) => {
+    const result = await deleteQuizQuestion({ id })
+    if (result.error)
+      errors.push(`Kunne ikke slette spørsmål: ${result.error.message}`)
+  })
+
+  const updates = plan.updates.map(async ({ id, question }) => {
+    const original = existing.find((q) => q.id === id)
+    const result = await updateQuizQuestion({
+      id,
       input: {
-        name: quizFormData.name,
-        description: quizFormData.description,
-        image: quizFormData.image,
-        timeoutSeconds: quizFormData.timeoutSeconds,
-        randomizeQuestions: quizFormData.randomizeQuestions,
-        revealCorrectAnswers: quizFormData.revealCorrectAnswers,
-        allowRetakes: quizFormData.allowRetakes,
-        completionPoints: quizFormData.completionPoints,
+        ...questionInput(question),
+        ...bettingClearFlags(original, question),
       },
     })
-
-    if (updateResult.error) {
-      toast.add({
-        title: 'Feil',
-        description: updateResult.error.message,
-        color: 'error',
-      })
-      return
+    if (result.error) {
+      errors.push(`«${question.questionText}»: ${result.error.message}`)
     }
+  })
 
-    // Handle questions - delete removed, update existing, add new
-    const existingQuestions = quizData.value?.questions ?? []
-    const newQuestions = quizFormData.questions
-
-    // Delete removed questions
-    for (const existing of existingQuestions) {
-      if (existing.id && !newQuestions.find((q) => q.id === existing.id)) {
-        await deleteQuizQuestion({ id: existing.id })
-      }
-    }
-
-    // Helper to check if a value is "set" (not null, undefined, or NaN)
-    const hasValue = (v: number | null | undefined): boolean =>
-      v !== null && v !== undefined && !Number.isNaN(v)
-
-    // Update existing and add new questions
-    for (const question of newQuestions) {
-      if (question.id) {
-        // Find original question to check if values should be cleared
-        const originalQuestion = existingQuestions.find(
-          (q) => q.id === question.id,
-        )
-        // Determine if betting absolute values should be cleared
-        // (had a value before, but now doesn't)
-        const clearBettingMinAbsolute =
-          hasValue(originalQuestion?.bettingMinAbsolute) &&
-          !hasValue(question.bettingMinAbsolute)
-        const clearBettingMaxAbsolute =
-          hasValue(originalQuestion?.bettingMaxAbsolute) &&
-          !hasValue(question.bettingMaxAbsolute)
-
-        // Update existing
-        await updateQuizQuestion({
-          id: question.id,
-          input: {
-            questionText: question.questionText,
-            questionOrder: question.questionOrder,
-            timeoutSeconds: question.timeoutSeconds,
-            points: question.points,
-            allowMultipleSelection: question.allowMultipleSelection,
-            predefinedAnswers: question.predefinedAnswers?.map((a) => ({
-              answerText: a.answerText,
-              isCorrect: a.isCorrect,
-              answerOrder: a.answerOrder,
-            })),
-            orderingItems: question.orderingItems?.map((item) => ({
-              itemText: item.itemText,
-              correctOrder: item.correctOrder,
-            })),
-            minValue: question.minValue,
-            maxValue: question.maxValue,
-            stepValue: question.stepValue,
-            bettingEnabled: question.bettingEnabled,
-            bettingMinPercentage: question.bettingMinPercentage,
-            bettingMaxPercentage: question.bettingMaxPercentage,
-            bettingMinAbsolute: question.bettingMinAbsolute,
-            bettingMaxAbsolute: question.bettingMaxAbsolute,
-            clearBettingMinAbsolute: clearBettingMinAbsolute || undefined,
-            clearBettingMaxAbsolute: clearBettingMaxAbsolute || undefined,
-          },
-        })
-      } else {
-        // Add new
-        await addQuizQuestion({
-          quizId: quizFormData.id,
-          input: {
-            questionType: question.questionType,
-            questionText: question.questionText,
-            questionOrder: question.questionOrder,
-            timeoutSeconds: question.timeoutSeconds,
-            points: question.points,
-            allowMultipleSelection: question.allowMultipleSelection,
-            predefinedAnswers: question.predefinedAnswers?.map((a) => ({
-              answerText: a.answerText,
-              isCorrect: a.isCorrect,
-              answerOrder: a.answerOrder,
-            })),
-            orderingItems: question.orderingItems?.map((item) => ({
-              itemText: item.itemText,
-              correctOrder: item.correctOrder,
-            })),
-            minValue: question.minValue,
-            maxValue: question.maxValue,
-            stepValue: question.stepValue,
-            bettingEnabled: question.bettingEnabled,
-            bettingMinPercentage: question.bettingMinPercentage,
-            bettingMaxPercentage: question.bettingMaxPercentage,
-            bettingMinAbsolute: question.bettingMinAbsolute,
-            bettingMaxAbsolute: question.bettingMaxAbsolute,
-          },
-        })
-      }
-    }
-  } else {
-    // Create new quiz
-    const createResult = await createQuiz({
+  const addedIds = new Map<number, string>()
+  const additions = plan.adds.map(async ({ question, order, position }) => {
+    const result = await addQuizQuestion({
+      quizId,
       input: {
-        projectId: route.params.projectId,
-        challengeId: route.params.challengeId,
-        name: quizFormData.name,
-        description: quizFormData.description,
-        image: quizFormData.image,
-        timeoutSeconds: quizFormData.timeoutSeconds,
-        randomizeQuestions: quizFormData.randomizeQuestions,
-        revealCorrectAnswers: quizFormData.revealCorrectAnswers,
-        allowRetakes: quizFormData.allowRetakes,
-        completionPoints: quizFormData.completionPoints,
+        questionType: question.questionType,
+        questionOrder: order,
+        ...questionInput(question),
       },
     })
-
-    if (createResult.error) {
-      toast.add({
-        title: 'Feil',
-        description: createResult.error.message,
-        color: 'error',
-      })
-      return
+    const id = result.data?.addQuizQuestion.id
+    if (id) addedIds.set(position, id)
+    else {
+      errors.push(
+        `«${question.questionText}»: ${result.error?.message ?? 'kunne ikke legges til'}`,
+      )
     }
+  })
 
-    const quizId = createResult.data?.createQuiz.id
-    if (!quizId) {
-      toast.add({
-        title: 'Feil',
-        description: 'Kunne ikke opprette quiz',
-        color: 'error',
-      })
-      return
-    }
+  await Promise.all([...deletions, ...updates, ...additions])
 
-    // Add questions
-    for (const question of quizFormData.questions) {
-      await addQuizQuestion({
-        quizId,
-        input: {
-          questionType: question.questionType,
-          questionText: question.questionText,
-          questionOrder: question.questionOrder,
-          timeoutSeconds: question.timeoutSeconds,
-          points: question.points,
-          allowMultipleSelection: question.allowMultipleSelection,
-          predefinedAnswers: question.predefinedAnswers?.map((a) => ({
-            answerText: a.answerText,
-            isCorrect: a.isCorrect,
-            answerOrder: a.answerOrder,
-          })),
-          orderingItems: question.orderingItems?.map((item) => ({
-            itemText: item.itemText,
-            correctOrder: item.correctOrder,
-          })),
-          minValue: question.minValue,
-          maxValue: question.maxValue,
-          stepValue: question.stepValue,
-          bettingEnabled: question.bettingEnabled,
-          bettingMinPercentage: question.bettingMinPercentage,
-          bettingMaxPercentage: question.bettingMaxPercentage,
-          bettingMinAbsolute: question.bettingMinAbsolute,
-          bettingMaxAbsolute: question.bettingMaxAbsolute,
-        },
-      })
+  // Skipped when something failed: ordering a list that is missing a question
+  // would silently shuffle the rest.
+  if (!errors.length) {
+    const ids = orderedQuestionIds(form.questions, addedIds)
+    if (ids.length) {
+      const result = await reorderQuizQuestions({ quizId, questionIds: ids })
+      if (result.error) {
+        errors.push(`Kunne ikke lagre rekkefølgen: ${result.error.message}`)
+      }
     }
   }
 
-  // Refetch to update cache before navigating
-  await refetchQuiz({ requestPolicy: 'network-only' })
+  return errors
+}
 
-  toast.add({
-    title: 'Suksess',
-    description: isNewQuiz.value ? 'Quiz opprettet' : 'Quiz oppdatert',
-    color: 'success',
-  })
+async function saveQuiz(quizFormData: QuizFormData) {
+  saving.value = true
+  try {
+    const quiz = await saveQuizSettings(quizFormData)
+    if (!quiz.id || quiz.error) {
+      toast.add({
+        title: 'Kunne ikke lagre quizen',
+        description: quiz.error,
+        color: 'error',
+      })
+      return
+    }
 
-  navigateTo({
-    name: 'admin-projects-projectId-challenges-challengeId',
-    params: {
-      projectId: route.params.projectId,
-      challengeId: route.params.challengeId,
-    },
-  })
+    const errors = await saveQuestions(quiz.id, quizFormData)
+    await refetchQuiz({ requestPolicy: 'network-only' })
+
+    // Stay on the page when anything failed: the form still holds what was
+    // meant to be saved, and leaving would lose it.
+    if (errors.length) {
+      toast.add({
+        title: `${errors.length} spørsmål ble ikke lagret`,
+        description: errors.join('\n'),
+        color: 'error',
+      })
+      return
+    }
+
+    toast.add({
+      title: isNewQuiz.value ? 'Quiz opprettet' : 'Quiz oppdatert',
+      color: 'success',
+    })
+    formDirty.value = false
+
+    navigateTo({
+      name: 'admin-projects-projectId-challenges-challengeId',
+      params: {
+        projectId: route.params.projectId,
+        challengeId: route.params.challengeId,
+      },
+    })
+  } finally {
+    saving.value = false
+  }
 }
 
 // Check if challenge is a quiz challenge
@@ -399,6 +387,8 @@ const isQuizChallenge = computed(() => {
               {{ isNewQuiz ? 'Opprett quiz' : 'Rediger quiz' }}
             </h1>
             <AdminQuizForm
+              v-model:dirty="formDirty"
+              :saving
               :quiz-data="quizData"
               :translation-status="
                 data?.challenge.__typename === 'QuizChallenge'

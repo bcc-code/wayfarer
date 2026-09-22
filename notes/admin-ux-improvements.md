@@ -690,7 +690,11 @@ Three things are not, in rough order of value:
    `activeChallenges` is viewer-relative and unusable in admin — but it may not
    be needed: `Challenge` already exposes `publishedAt` / `visibleAt` /
    `startedAt` / `endTime`, so the frontend can derive what is live.
-3. ~~`Project.participantCount` / `teamCount`~~ — **not needed.** Resolved on
+3. **Quiz: `randomizeQuestions` is not implemented** and
+   `QuizPredefinedAnswer.isCorrect` is ungated — see the 2026-09-22 quiz
+   entries. Neither is a new field; both are existing fields that do not do what
+   the admin panel implies.
+4. ~~`Project.participantCount` / `teamCount`~~ — **not needed.** Resolved on
    the frontend instead: a per-project component runs its own counts query, so
    the root `users`/`teams` connections suffice. See the 2026-09-21 section
    entry. (A `Team.memberCount` would still be needed for the join/team funnel,
@@ -780,6 +784,149 @@ then `make generate` and `pnpm codegen`.
 ---
 
 ## Update log
+
+### 2026-09-22 — quiz checkbox help text, and two labels that were lying
+
+Adding help text to the three quiz checkboxes meant checking what each one does.
+Two did not match their labels.
+
+#### `randomizeQuestions` does nothing
+
+The value is stored, exposed on `Quiz`, and fetched by the user app's
+fragments — and **nothing orders questions by it**.
+`GetQuizQuestionsByQuizID` is `ORDER BY question_order ASC`, there is no shuffle
+in the backend, and the only shuffle in the frontend is
+`QuizOrderingQuestion.vue` reordering the _items within_ an ordering question,
+which is unrelated.
+
+The checkbox stays editable (the column is real, and someone may implement it)
+but now says **"Ikke i bruk ennå — spørsmålene vises alltid i rekkefølgen
+nedenfor."** A setting that silently does nothing is worse than no setting.
+
+This also reverted something from the previous entry: I had disabled the drag
+handles when randomisation was on, "where the order means nothing". The order
+always means something, so that made a working feature look broken based on a
+flag with no effect.
+
+#### `revealCorrectAnswers` governs four places, not one
+
+The original label said "etter fullføring". My first correction said "underveis".
+**Both were wrong** — a full sweep of the consumers shows one switch for "does
+the user ever learn which answers were right":
+
+| Where                                             | With it off                                          |
+| ------------------------------------------------- | ---------------------------------------------------- |
+| `QuizPredefinedQuestion` / `QuizOrderingQuestion` | no correct/wrong highlight, no pulse/shake animation |
+| `QuizProgress`                                    | dots read "answered", not "correct"/"wrong"          |
+| `QuizResult`                                      | a "thanks for your answers" screen, no score         |
+| `QuizReviewMode`                                  | hidden when reading the quiz back too                |
+| `QuizChallenge`                                   | the lock button becomes "next question"              |
+
+So the label is plainly **"Vis riktige svar"**, and the help text names all
+three moments: underveis, i resultatet, og når quizen leses om igjen.
+
+The lesson: one grep of the component that owns the feature is not a sweep. The
+first answer came from `QuizChallenge.vue` alone, which is where the flag is
+_passed down_, not where most of it is used.
+
+#### `allowRetakes` was accurate
+
+`Quiz.canStart` refuses a second attempt once a submission has `completed_at`
+when the flag is off, so: "Uten dette kan hver bruker levere quizen bare én
+gang."
+
+#### Backend follow-ups this raised
+
+1. **Implement `randomizeQuestions`.** The column, the GraphQL field and the
+   admin checkbox all exist; nothing shuffles. Preferred shape: shuffle in the
+   **user app**, seeded per submission so a reload does not reshuffle, leaving
+   `question_order` authoritative for admin. Until then the checkbox says it is
+   not in use.
+2. **`QuizPredefinedAnswer.isCorrect` is ungated.** The resolver returns the raw
+   value with no role check and no reference to `revealCorrectAnswers`, so a
+   user who queries the quiz directly can read the answers regardless of the
+   setting. The flag is presentation-only. Gating it means returning `null`
+   unless the caller is an admin or the answer is already locked.
+
+### 2026-09-22 — quiz form: partial saves, reorder, dialog editing
+
+#### `reorderQuizQuestions` could not reorder (backend)
+
+`quiz_questions` has `UNIQUE (quiz_id, question_order)` (migration 00034, never
+dropped), and the resolver wrote final positions one row at a time. Any swap
+therefore failed: the first `UPDATE` takes an order the second row still holds.
+
+Fixed with a two-pass write — `quizReorderPasses()` in `quizzes.go` parks every
+question on a **negative** order, which no real position uses, then assigns
+1..n. Unit-tested, including the swap case the old version got wrong. The final
+pass is also 1-based now; the old one wrote 0-based while the admin panel's adds
+and updates were 1-based.
+
+Not addressed: the resolver still trusts `questionIds` to cover every question
+in the quiz. A partial list would leave a row holding a position the final pass
+wants. The frontend always sends all of them.
+
+#### Saving reported success after failing (frontend)
+
+`saveQuiz` ran one mutation per question in an `await` loop and **checked none of
+the results**. A quiz could half-save and still show "Quiz oppdatert" and
+navigate away.
+
+Now: quiz settings first (nothing else matters if that fails), then deletes,
+updates and adds **in parallel** with every failure collected, then one
+`reorderQuizQuestions`. On any failure it names the failing questions and
+**stays on the page**, because the form still holds the work.
+
+Three ordering constraints that shape this, all because positions are unique:
+
+- **Updates omit `questionOrder`.** Two questions swapping would collide, so
+  order is applied only by the reorder call at the end.
+- **Adds are parked past the end** (`max(existing order) + 1 + n`), since
+  inserting at a position a live row still holds is rejected.
+- **The reorder is skipped when anything failed.** Ordering a list that is
+  missing a question would silently shuffle the rest.
+
+The planning is `planQuizQuestionSave` / `orderedQuestionIds` /
+`bettingClearFlags` in `utils/quizSave.ts`, with unit tests, rather than inline
+in the page.
+
+#### The editor
+
+- **Matching by `localKey`, not `questionOrder`.** `saveQuestion` found the
+  edited question by its order — a mutable value that delete and reorder
+  renumber — and the list was keyed by it too. New questions have no id, so the
+  form assigns a local key on load and on add.
+- **Editing is a `UModal`** now, per the page-or-dialog rule: the list used to be
+  replaced wholesale by the editor, hiding the other questions and the submit
+  button.
+- **Validation is visible.** The editor already had checks, but each one did a
+  bare `return` — so clicking "Legg til spørsmål" with no correct answer marked
+  did nothing and said nothing. `validateQuizQuestion()` returns the reason,
+  shown beside a disabled save button. It also now catches empty answer text and
+  an inverted number range.
+- **Correct answers**: the hint moved above the list (it was below, so you were
+  told what the checkbox meant after using it), each checkbox has an
+  `aria-label`, and a "Riktig" badge marks the checked ones.
+
+`allowMultipleSelection` is deliberately _not_ validated against the number of
+correct answers: a question can have several correct answers while still
+constraining the user to pick one.
+
+#### The rest
+
+- **Drag-to-reorder** on the question list.
+- **Confirmation** before removing a question. Answer and ordering-item removal
+  stays immediate: it happens inside the dialog, where Avbryt discards the lot.
+- **Unsaved-changes guard** via `onBeforeRouteLeave` in the form, with the dirty
+  flag cleared by the page after a successful save.
+- **Totals**: "15 poeng fra spørsmål + 50 for fullføring = 65 poeng".
+- **The two timeouts explained** — the quiz-level field now says a question can
+  have its own and the stricter one applies.
+- **`AdminSection`** for Quiz-innstillinger and Spørsmål, replacing `border-t`
+  dividers; the type label comes from `questionTypeOptions` instead of a nested
+  ternary chain.
+
+Still open: no live preview for the quiz (the challenge form has one).
 
 ### 2026-09-22 — challenge page: three gaps closed, form restructured
 

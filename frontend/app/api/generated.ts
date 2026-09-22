@@ -4690,6 +4690,20 @@ export type AdminChallengeQuizPageQuery = { __typename?: 'Query', challenge:
     | { __typename: 'SimpleChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
    };
 
+export type ReorderQuizQuestionsMutationVariables = Exact<{
+  quizId: Scalars['ID']['input'];
+  questionIds: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+}>;
+
+
+export type ReorderQuizQuestionsMutation = { __typename?: 'Mutation', reorderQuizQuestions: Array<
+    | { __typename?: 'FreeTextQuestion', id: string, questionOrder: number }
+    | { __typename?: 'JsonQuestion', id: string, questionOrder: number }
+    | { __typename?: 'NumberQuestion', id: string, questionOrder: number }
+    | { __typename?: 'OrderingQuestion', id: string, questionOrder: number }
+    | { __typename?: 'PredefinedQuestion', id: string, questionOrder: number }
+  > };
+
 export type AdminChallengeSessionsPageQueryVariables = Exact<{
   challengeId: Scalars['ID']['input'];
 }>;
@@ -7540,6 +7554,18 @@ ${TranslationStatusFragmentDoc}`;
 
 export function useAdminChallengeQuizPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminChallengeQuizPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminChallengeQuizPageQuery, AdminChallengeQuizPageQueryVariables | undefined>({ query: AdminChallengeQuizPageDocument, variables: undefined, ...options });
+};
+export const ReorderQuizQuestionsDocument = gql`
+    mutation ReorderQuizQuestions($quizId: ID!, $questionIds: [ID!]!) {
+  reorderQuizQuestions(quizId: $quizId, questionIds: $questionIds) {
+    id
+    questionOrder
+  }
+}
+    `;
+
+export function useReorderQuizQuestionsMutation() {
+  return Urql.useMutation<ReorderQuizQuestionsMutation, ReorderQuizQuestionsMutationVariables>(ReorderQuizQuestionsDocument);
 };
 export const AdminChallengeSessionsPageDocument = gql`
     query AdminChallengeSessionsPage($challengeId: ID!) {

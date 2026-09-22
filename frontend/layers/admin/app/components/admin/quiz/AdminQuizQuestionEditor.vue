@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { VueDraggable } from 'vue-draggable-plus'
 import type { QuizQuestionFormData } from './AdminQuizForm.vue'
+import { validateQuizQuestion } from '../../../utils/quizQuestionValidation'
 
 const props = defineProps<{
   question: QuizQuestionFormData
@@ -79,39 +80,11 @@ function handleOrderingReorder() {
   })
 }
 
+/** Shown in the editor, so the reason a save is blocked is visible. */
+const validationError = computed(() => validateQuizQuestion(localQuestion))
+
 function handleSave() {
-  // Validate
-  if (!localQuestion.questionText.trim()) {
-    return
-  }
-
-  if (localQuestion.questionType === QuizQuestionType.Predefined) {
-    if (
-      !localQuestion.predefinedAnswers ||
-      localQuestion.predefinedAnswers.length < 2
-    ) {
-      return
-    }
-    const hasCorrect = localQuestion.predefinedAnswers.some((a) => a.isCorrect)
-    if (!hasCorrect) {
-      return
-    }
-  }
-
-  if (localQuestion.questionType === QuizQuestionType.Ordering) {
-    if (
-      !localQuestion.orderingItems ||
-      localQuestion.orderingItems.length < 2
-    ) {
-      return
-    }
-    const hasEmptyItems = localQuestion.orderingItems.some(
-      (item) => !item.itemText.trim(),
-    )
-    if (hasEmptyItems) {
-      return
-    }
-  }
+  if (validationError.value) return
 
   // Helper to convert empty/NaN/0 to undefined for optional number fields
   const toOptionalNumber = (value: number | undefined): number | undefined => {
@@ -152,11 +125,7 @@ function handleSave() {
 </script>
 
 <template>
-  <div class="border border-default rounded-lg p-4 space-y-4">
-    <h4 class="font-medium">
-      {{ question.id ? 'Rediger spørsmål' : 'Nytt spørsmål' }}
-    </h4>
-
+  <div class="space-y-4">
     <UFormField name="questionType" label="Spørsmålstype">
       <USelect
         v-model="localQuestion.questionType"
@@ -283,9 +252,17 @@ function handleSave() {
       </UFormField>
 
       <div class="space-y-3">
-        <div class="flex items-center justify-between">
-          <label class="text-sm font-medium">Svaralternativer</label>
-          <UButton size="xs" variant="ghost" @click="addAnswer">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-sm font-medium">Svaralternativer</p>
+            <p class="text-muted text-xs">Kryss av for riktig(e) svar</p>
+          </div>
+          <UButton
+            size="xs"
+            variant="ghost"
+            icon="lucide:plus"
+            @click="addAnswer"
+          >
             Legg til svar
           </UButton>
         </div>
@@ -295,7 +272,10 @@ function handleSave() {
           :key="index"
           class="flex items-center gap-3"
         >
-          <UCheckbox v-model="answer.isCorrect" />
+          <UCheckbox
+            v-model="answer.isCorrect"
+            :aria-label="`Marker svar ${index + 1} som riktig`"
+          />
           <div class="flex flex-1 flex-col gap-1">
             <UInput
               v-model="answer.answerText"
@@ -314,18 +294,24 @@ function handleSave() {
               field-name="answerText"
             />
           </div>
+          <UBadge
+            v-if="answer.isCorrect"
+            size="xs"
+            variant="soft"
+            color="success"
+          >
+            Riktig
+          </UBadge>
           <UButton
             size="xs"
             variant="ghost"
             color="error"
+            icon="lucide:x"
+            :aria-label="`Fjern svar ${index + 1}`"
             :disabled="(localQuestion.predefinedAnswers?.length ?? 0) <= 2"
             @click="removeAnswer(index)"
-          >
-            Fjern
-          </UButton>
+          />
         </div>
-
-        <p class="text-xs text-muted">Kryss av for riktig(e) svar</p>
       </div>
     </template>
 
@@ -416,11 +402,14 @@ function handleSave() {
       </div>
     </template>
 
-    <div class="flex gap-3 pt-2">
-      <UButton @click="handleSave">
+    <div class="flex items-center justify-end gap-3 pt-2">
+      <p v-if="validationError" class="text-error mr-auto text-sm">
+        {{ validationError }}
+      </p>
+      <UButton variant="ghost" @click="emit('cancel')">Avbryt</UButton>
+      <UButton :disabled="!!validationError" @click="handleSave">
         {{ question.id ? 'Oppdater' : 'Legg til' }} spørsmål
       </UButton>
-      <UButton variant="ghost" @click="emit('cancel')">Avbryt</UButton>
     </div>
   </div>
 </template>
