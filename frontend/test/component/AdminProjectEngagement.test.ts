@@ -51,16 +51,17 @@ const mount = () =>
   })
 
 describe('AdminProjectEngagement', () => {
-  // Achievements first, then challenges. Most-completed first within each, so
-  // the tail answers "what is nobody doing".
-  it('orders both lists by count, descending', async () => {
+  // Achievements first, then challenges. The achievements keep the project's
+  // own order; challenges are most-completed first, so the tail answers
+  // "what is nobody doing".
+  it('keeps the achievement order and sorts challenges by count', async () => {
     const wrapper = await mount()
 
     const lists = wrapper.findAll('ul')
     expect(lists).toHaveLength(2)
     expect(lists[0]!.findAll('li').map((li) => li.text())).toEqual([
-      expect.stringContaining('Halvveis'),
       expect.stringContaining('Første steg'),
+      expect.stringContaining('Halvveis'),
     ])
     expect(lists[1]!.findAll('li').map((li) => li.text())).toEqual([
       expect.stringContaining('Kveldssamling'),
@@ -91,7 +92,7 @@ describe('AdminProjectEngagement', () => {
     const wrapper = await mount()
 
     expect(wrapper.findAll('ul')[0]!.find('a').attributes('href')).toContain(
-      'AC2',
+      'AC1',
     )
     expect(wrapper.findAll('ul')[1]!.find('a').attributes('href')).toContain(
       'CL2',

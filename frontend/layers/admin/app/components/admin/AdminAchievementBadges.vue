@@ -14,16 +14,14 @@ const props = defineProps<{
   size?: number
 }>()
 
-// Most-awarded first, so the tail answers "what is nobody earning".
+// The project's own order, as the achievements list defines it by drag.
 const badges = computed(() =>
-  [...props.achievements]
-    .sort((a, b) => b.awardedUserCount - a.awardedUserCount)
-    .map((achievement) => ({
-      ...achievement,
-      tooltip: props.participants
-        ? `${achievement.name}: ${formatNumber(achievement.awardedUserCount)} av ${formatNumber(props.participants)} · ${Math.round((achievement.awardedUserCount / props.participants) * 100)} %`
-        : `${achievement.name}: ${formatNumber(achievement.awardedUserCount)}`,
-    })),
+  props.achievements.map((achievement) => ({
+    ...achievement,
+    tooltip: props.participants
+      ? `${achievement.name}: ${formatNumber(achievement.awardedUserCount)} av ${formatNumber(props.participants)} · ${Math.round((achievement.awardedUserCount / props.participants) * 100)} %`
+      : `${achievement.name}: ${formatNumber(achievement.awardedUserCount)}`,
+  })),
 )
 </script>
 

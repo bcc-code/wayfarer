@@ -132,7 +132,7 @@ const achievements = computed(
                 <span class="min-w-0 grow truncate text-sm">
                   {{ challenge.name }}
                 </span>
-                <span class="w-6 shrink-0 text-right text-sm tabular-nums">
+                <span class="w-14 shrink-0 text-right text-sm tabular-nums">
                   {{ formatNumber(challenge.completionCount) }}
                 </span>
                 <span

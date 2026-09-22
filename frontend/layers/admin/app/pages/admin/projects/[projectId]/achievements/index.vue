@@ -116,7 +116,7 @@ async function handleReorder() {
         title="Ingen utmerkelser ennå"
         description="Opprett den første utmerkelsen for dette prosjektet."
       />
-      <div v-else class="border-default rounded-lg border">
+      <div v-else class="@container border-default rounded-lg border">
         <VueDraggable
           v-model="achievements"
           handle=".drag-handle"
@@ -152,9 +152,9 @@ async function handleReorder() {
             <AdminEngagementCount
               :count="achievement.awardedUserCount"
               :total="participants"
-              class="w-32 shrink-0 text-right text-sm"
+              class="hidden shrink-0 text-right text-sm @2xl:block"
             />
-            <div class="text-muted shrink-0 text-sm">
+            <div class="text-muted w-20 shrink-0 text-right text-sm">
               {{ formatNumber(achievement.points) }} pts
             </div>
             <UBadge v-if="achievement.hidden" variant="soft" color="warning">

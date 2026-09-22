@@ -24,15 +24,15 @@ const mount = (participants?: number) =>
   })
 
 describe('AdminAchievementBadges', () => {
-  // Most-awarded first, so the tail answers "what is nobody earning".
-  it('orders badges by award count, descending', async () => {
+  // The project's own order, as the achievements list defines it by drag.
+  it('keeps the order it is given', async () => {
     const wrapper = await mount(88)
 
     expect(
       wrapper.findAll('li').map((li) => li.find('a').attributes('href')),
     ).toEqual([
-      expect.stringContaining('AC2'),
       expect.stringContaining('AC1'),
+      expect.stringContaining('AC2'),
       expect.stringContaining('AC3'),
     ])
   })
@@ -45,8 +45,8 @@ describe('AdminAchievementBadges', () => {
         .findAll('[data-tooltip]')
         .map((el) => el.attributes('data-tooltip')),
     ).toEqual([
-      'Halvveis: 70 av 88 · 80 %',
       'Første steg: 12 av 88 · 14 %',
+      'Halvveis: 70 av 88 · 80 %',
       'Streakmaster: 0 av 88 · 0 %',
     ])
   })
@@ -56,13 +56,13 @@ describe('AdminAchievementBadges', () => {
     const wrapper = await mount()
 
     expect(wrapper.find('[data-tooltip]').attributes('data-tooltip')).toBe(
-      'Halvveis: 70',
+      'Første steg: 12',
     )
   })
 
   it('names each badge for screen readers', async () => {
     const wrapper = await mount(88)
 
-    expect(wrapper.find('.sr-only').text()).toBe('Halvveis')
+    expect(wrapper.find('.sr-only').text()).toBe('Første steg')
   })
 })

@@ -14,8 +14,13 @@ const share = computed(() => {
 
 <template>
   <div>
-    <span class="font-medium tabular-nums">{{ formatNumber(count) }}</span>
-    <span v-if="share !== undefined" class="text-muted ml-1 text-xs">
+    <span class="font-medium whitespace-nowrap tabular-nums">{{
+      formatNumber(count)
+    }}</span>
+    <span
+      v-if="share !== undefined"
+      class="text-muted ml-1 text-xs whitespace-nowrap"
+    >
       av {{ formatNumber(total ?? 0) }} · {{ share }} %
     </span>
     <div
