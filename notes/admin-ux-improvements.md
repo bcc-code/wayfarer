@@ -781,6 +781,40 @@ then `make generate` and `pnpm codegen`.
 
 ## Update log
 
+### 2026-09-22 — `DateRangeField` rebuilt on `UInputDate`
+
+Changing a project's end date meant reselecting the whole range: the field was a
+read-only `UInput` over a `UCalendar range`, and a range calendar restarts the
+selection on every click.
+
+The fix is Nuxt UI's own **date range picker** example: `UInputDate` with
+`range` (Nuxt UI 4.11, wrapping reka-ui's `DateRangeField`) and a `UCalendar`
+in a popover on its trailing slot, `:number-of-months="2"` so a range crossing
+a month boundary is visible at once.
+
+Editing one end is the typable segments' job, not the calendar's — a range
+calendar restarts its selection on every click, and that is correct for picking
+a fresh range.
+
+**A rejected first attempt, worth not repeating.** reka-ui's
+`RangeCalendarRootProps` has `fixedDate?: 'start' | 'end'` ("which part of the
+range should be fixed"), forwarded by `UCalendar` in range mode via its
+`rangeOnlyProps`. Pinning one end does make a calendar click edit only the
+other, and it works — but driving it needs a visible "Endre startdato / Endre
+sluttdato" switch above the calendar, and that chrome was worse than the problem
+it solved. The segments already answer "change just the end".
+
+Two details worth keeping:
+
+- **The model is partial now** (`{ start?, end? }` rather than undefined until
+  both exist). `UInputDate` has to render one end while the other is half-typed.
+- **Writes stay one-way.** A segment mid-edit reports `undefined`, and clearing
+  the stored date on that would lose it. Project and event dates are required,
+  so never clearing is the right trade; a component test pins this.
+
+The component is shared by four forms — projects new/edit and events new/edit —
+and none of them passed the `placeholder` prop the old version took, so it went.
+
 ### 2026-09-22 — score adjustment becomes a dialog
 
 Applies the new page-or-dialog convention above. `AdminScoreAdjustmentModal`
