@@ -13,7 +13,8 @@
     "test:component": "vitest run --project=component",
     "test:watch": "vitest --project=unit",
     "format": "prettier --write .",
-    "lint": "eslint . --fix",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "typecheck": "nuxt typecheck",
     "pwa-assets-generator": "pwa-assets-generator --preset minimal-2023 public/app-icon.png"
   },
@@ -68,6 +69,7 @@
     "@vite-pwa/assets-generator": "^1.0.2",
     "@vue/test-utils": "^2.4.11",
     "eslint": "^10.6.0",
+    "eslint-config-prettier": "^10.1.8",
     "happy-dom": "^20.10.6",
     "playwright-core": "^1.61.1",
     "prettier": "^3.9.4",

@@ -1,5 +1,6 @@
 // @ts-check
 import withNuxt from './.nuxt/eslint.config.mjs'
+import prettier from 'eslint-config-prettier/flat'
 import { globalIgnores } from 'eslint/config'
 
 export default withNuxt([
@@ -39,4 +40,11 @@ export default withNuxt([
       ],
     },
   },
+  /**
+   * Last, so it wins: Prettier owns formatting, ESLint owns correctness.
+   * `vue/html-self-closing` and Prettier disagreed about `<img />` vs `<img >`
+   * and each undid the other on every run, so `pnpm lint` rewrote files it had
+   * no business touching. This turns off every rule that overlaps.
+   */
+  prettier,
 ])
