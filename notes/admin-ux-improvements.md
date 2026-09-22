@@ -800,6 +800,56 @@ then `make generate` and `pnpm codegen`.
 
 ## Update log
 
+### 2026-09-22 — quiz achievement: the selector was half-built
+
+#### The help text was written and never rendered
+
+`AdminQuizSelector` passed `help="User must complete the quiz…"` to
+**`UCheckbox`**. `help` is a `UFormField` prop, so it was silently dropped — the
+text existed in the source and nothing showed it. `description` is the
+UCheckbox prop, and that is what it uses now.
+
+Worth remembering as a class of bug: an unknown prop on a Nuxt UI component
+fails by rendering nothing, with no warning.
+
+#### It was also in English
+
+"Select a quiz…", "Require completion", "Require minimum score", "Minimum Score
+(%)" and both help strings, in an otherwise Norwegian panel. Now Norwegian, and
+the labels say what the requirement _is_ rather than what the user must do:
+"Krev fullført quiz", "Krev minste poengandel".
+
+#### What it now explains
+
+Read off `FinalizeQuiz`: the award is evaluated when the submission is
+finalised; `requireCompletion` skips an unfinished submission; a
+`minScorePercentage` skips when `score / maxScore * 100` is below it. With
+**neither** set, everyone who submits earns the achievement whatever they
+scored — which the section now says outright, since that is surprising.
+
+#### Two more bugs in the same component
+
+- **No `pause` on `isAuthReady`**, against the convention in
+  `frontend/CLAUDE.md`. The query fired before the token existed.
+- **An empty project rendered an empty select** with a "Select a quiz…"
+  placeholder and no explanation. A quiz belongs to a quiz challenge, so it is
+  now disabled with "Ingen quizer i dette prosjektet" and a line saying to
+  create one first.
+
+#### Elsewhere in the pass
+
+- **Push text is a textarea** on both the achievement and challenge forms. It is
+  a sentence or two and the single-line input cut it off mid-word.
+- **The type-specific validation error moved into its section.** "En quiz må
+  velges" floated between the sections and the save button, pointing at
+  nothing; it now sits under the field it is about, for both the QUIZ and STREAK
+  cases.
+- **Nine English zod messages translated** — "Name is required", "Points must be
+  at least 0", "Must be a valid URL or a local path starting with /" and the
+  rest — across the achievement form, challenge form and both project forms.
+  These surface directly under the fields, so they were the most visible
+  untranslated strings left in the panel.
+
 ### 2026-09-22 — achievement page: the same pass as the challenge page
 
 Applied the conventions the challenge and quiz passes established.

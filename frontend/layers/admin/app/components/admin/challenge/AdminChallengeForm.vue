@@ -53,7 +53,7 @@ export interface ChallengeFormData {
 const schema = z
   .object({
     type: z.nativeEnum(ChallengeType),
-    name: z.string().min(1, 'Name is required'),
+    name: z.string().min(1, 'Navn er påkrevd'),
     description: z.string().optional(),
     image: z.string().optional(),
     url: z
@@ -64,7 +64,7 @@ const schema = z
           val.startsWith('/') ||
           z.string().url().safeParse(val).success,
         {
-          message: 'Must be a valid URL or a local path starting with /',
+          message: 'Må være en gyldig URL eller en lokal sti som starter med /',
         },
       )
       .optional()
@@ -83,7 +83,7 @@ const schema = z
       data.type === ChallengeType.Plugin ||
       (data.buttonText && data.buttonText.length > 0),
     {
-      message: 'Button text is required',
+      message: 'Knappetekst er påkrevd',
       path: ['buttonText'],
     },
   )
@@ -92,7 +92,7 @@ const schema = z
       data.type !== ChallengeType.Plugin ||
       (data.pluginChallengeId && data.pluginChallengeId.length > 0),
     {
-      message: 'Plugin Challenge ID is required',
+      message: 'Plugin Challenge ID er påkrevd',
       path: ['pluginChallengeId'],
     },
   )
@@ -313,7 +313,12 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
             hint="(valgfritt)"
             help="Tekst som vises i push-varsler når admin melder bruker på utfordringen. La feltet stå tomt for ingen varsling."
           >
-            <UInput v-model="state.notificationText" size="xl" class="w-full" />
+            <UTextarea
+              v-model="state.notificationText"
+              class="w-full"
+              autoresize
+              :rows="2"
+            />
           </AdminTranslatableFormField>
         </AdminSection>
 

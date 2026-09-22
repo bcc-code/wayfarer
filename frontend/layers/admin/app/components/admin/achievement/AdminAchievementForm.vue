@@ -74,13 +74,13 @@ const emit = defineEmits<{
 
 // Common fields schema
 const schema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  descriptionPending: z.string().min(1, 'Description is required'),
-  descriptionCompleted: z.string().min(1, 'Description is required'),
-  notificationText: z.string().min(1, 'Notification text is required'),
+  name: z.string().min(1, 'Navn er påkrevd'),
+  descriptionPending: z.string().min(1, 'Beskrivelse er påkrevd'),
+  descriptionCompleted: z.string().min(1, 'Beskrivelse er påkrevd'),
+  notificationText: z.string().min(1, 'Varslingstekst er påkrevd'),
   imagePending: z.string().optional(),
   imageCompleted: z.string().optional(),
-  points: z.number().min(0, 'Points must be at least 0'),
+  points: z.number().min(0, 'Poeng kan ikke være negativt'),
   hidden: z.boolean(),
   awardableFrom: z.string().optional(),
 })
@@ -285,11 +285,12 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
             name="notificationText"
             help="Tekst som vises i push-varsler når deltakeren oppnår utmerkelsen."
           >
-            <UInput
+            <UTextarea
               v-model="state.notificationText"
-              size="xl"
-              required
               class="w-full"
+              autoresize
+              :rows="2"
+              required
             />
           </AdminTranslatableFormField>
         </AdminSection>
@@ -337,6 +338,9 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
           title="Innholdselementer (med frist)"
         >
           <AdminContentItemSelector v-model="streakItems" />
+          <p v-if="typeSpecificError" class="text-error mt-3 text-sm">
+            {{ typeSpecificError }}
+          </p>
         </AdminSection>
 
         <AdminSection v-else-if="selectedType === 'QUIZ'" title="Quiz">
@@ -349,11 +353,10 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
             @update:min-score-percentage="(v) => (minScorePercentage = v)"
             @update:require-completion="(v) => (requireCompletion = v)"
           />
+          <p v-if="typeSpecificError" class="text-error mt-3 text-sm">
+            {{ typeSpecificError }}
+          </p>
         </AdminSection>
-
-        <div v-if="typeSpecificError" class="text-error text-sm">
-          {{ typeSpecificError }}
-        </div>
 
         <UButton type="submit" size="lg" block>{{ submitLabel }}</UButton>
       </UForm>
