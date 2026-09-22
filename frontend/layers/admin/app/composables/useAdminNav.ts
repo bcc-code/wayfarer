@@ -31,30 +31,40 @@ export function useAdminNav() {
 
   /**
    * Route names are only known at runtime here, so TypeScript cannot correlate
-   * a name with that route's own param shape. Every nav target either takes no
-   * params or takes exactly `projectId`, which the model guarantees.
+   * a name with that route's own param shape. `scoped` says which of the two
+   * shapes the target has: PROJECT_NAV entries take exactly `projectId`,
+   * GLOBAL_NAV entries take none. Handing `projectId` to a route that does not
+   * declare it makes vue-router discard it with a "Discarded invalid param(s)"
+   * warning on every render while inside a project.
    */
-  const toLocation = (item: AdminNavItem): RouteLocationRaw =>
-    (projectId.value
+  const toLocation = (item: AdminNavItem, scoped: boolean): RouteLocationRaw =>
+    (scoped && projectId.value
       ? { name: item.to, params: { projectId: projectId.value } }
       : { name: item.to }) as RouteLocationRaw
 
-  const toMenuItem = (item: AdminNavItem): NavigationMenuItem => ({
+  const toMenuItem = (
+    item: AdminNavItem,
+    scoped: boolean,
+  ): NavigationMenuItem => ({
     label: item.label,
     icon: item.icon,
-    to: toLocation(item),
+    to: toLocation(item, scoped),
     active: isNavItemActive(item, route.name as string | undefined),
   })
 
   const globalNav = computed(() =>
-    visibleNavItems(GLOBAL_NAV, permissions, context.value).map(toMenuItem),
+    visibleNavItems(GLOBAL_NAV, permissions, context.value).map((item) =>
+      toMenuItem(item, false),
+    ),
   )
 
   // Only meaningful inside a project; empty elsewhere so the sidebar can drop
   // the whole group.
   const projectNav = computed(() =>
     projectId.value
-      ? visibleNavItems(PROJECT_NAV, permissions, context.value).map(toMenuItem)
+      ? visibleNavItems(PROJECT_NAV, permissions, context.value).map((item) =>
+          toMenuItem(item, true),
+        )
       : [],
   )
 
