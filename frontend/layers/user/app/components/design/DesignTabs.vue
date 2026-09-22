@@ -154,7 +154,11 @@ onUnmounted(() => {
     <button
       v-for="(tab, index) in enabledTabs"
       :key="tab.key"
-      :ref="(el) => { if (el) buttonRefs[index] = el as HTMLButtonElement }"
+      :ref="
+        (el) => {
+          if (el) buttonRefs[index] = el as HTMLButtonElement
+        }
+      "
       :class="
         buttonClasses({
           variant,

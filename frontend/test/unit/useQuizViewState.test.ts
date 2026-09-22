@@ -266,9 +266,9 @@ describe('resolveQuizViewState', () => {
 
   describe('unavailable', () => {
     it('returns unavailable when quiz is unavailable', () => {
-      expect(
-        resolveQuizViewState(makeInput({ isQuizUnavailable: true })),
-      ).toBe('unavailable')
+      expect(resolveQuizViewState(makeInput({ isQuizUnavailable: true }))).toBe(
+        'unavailable',
+      )
     })
   })
 

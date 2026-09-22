@@ -30,9 +30,7 @@ export interface PushPayload {
  * Types of notifications the app can send
  */
 export type NotificationType =
-  | 'achievement_unlocked'
-  | 'challenge_available'
-  | 'generic'
+  'achievement_unlocked' | 'challenge_available' | 'generic'
 
 /**
  * Data attached to the notification for click handling

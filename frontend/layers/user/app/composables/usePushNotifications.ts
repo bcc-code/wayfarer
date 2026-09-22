@@ -108,8 +108,7 @@ export function usePushNotifications() {
       if (!sub) {
         // Get VAPID public key from config
         const vapidPublicKey = config.public.vapidPublicKey as
-          | string
-          | undefined
+          string | undefined
 
         if (!vapidPublicKey) {
           error.value = new Error('Push notifications not configured')

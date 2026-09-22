@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { fuzzyMatch, fuzzySearch } from '../../layers/admin/app/utils/fuzzySearch'
+import {
+  fuzzyMatch,
+  fuzzySearch,
+} from '../../layers/admin/app/utils/fuzzySearch'
 
 describe('fuzzySearch', () => {
   describe('fuzzyMatch', () => {
@@ -122,7 +125,9 @@ describe('fuzzySearch', () => {
       it('should match episode search patterns', () => {
         expect(fuzzyMatch('ep1', 'Episode 1: The Beginning')).not.toBeNull()
         expect(fuzzyMatch('ep 1', 'Episode 1: The Beginning')).not.toBeNull()
-        expect(fuzzyMatch('beginning', 'Episode 1: The Beginning')).not.toBeNull()
+        expect(
+          fuzzyMatch('beginning', 'Episode 1: The Beginning'),
+        ).not.toBeNull()
       })
 
       it('should match bible verse patterns', () => {

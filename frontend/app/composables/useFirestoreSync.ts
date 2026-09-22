@@ -206,10 +206,7 @@ export function useFirestoreSync() {
         }
       },
       (err: Error) => {
-        console.error(
-          `Firestore project listener error for ${category}:`,
-          err,
-        )
+        console.error(`Firestore project listener error for ${category}:`, err)
       },
     )
   }

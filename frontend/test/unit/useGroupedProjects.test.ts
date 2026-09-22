@@ -52,10 +52,7 @@ describe('useGroupedProjects', () => {
       const grouped = useGroupedProjects(projects)
 
       expect(grouped.currentProjects.value).toHaveLength(2)
-      expect(grouped.currentProjects.value.map((p) => p.id)).toEqual([
-        '1',
-        '2',
-      ])
+      expect(grouped.currentProjects.value.map((p) => p.id)).toEqual(['1', '2'])
     })
 
     it('should include projects that started today', () => {

@@ -37,5 +37,4 @@ describe('animations', () => {
       expect(result.stagger).toBeGreaterThanOrEqual(0)
     })
   })
-
 })

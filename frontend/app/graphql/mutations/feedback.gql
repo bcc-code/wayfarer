@@ -8,7 +8,10 @@ mutation DeleteFeedback($id: ID!) {
   deleteFeedback(id: $id)
 }
 
-mutation ForwardFeedbackToDesk($feedbackId: ID!, $destination: ForwardDestination!) {
+mutation ForwardFeedbackToDesk(
+  $feedbackId: ID!
+  $destination: ForwardDestination!
+) {
   forwardFeedbackToDesk(feedbackId: $feedbackId, destination: $destination)
 }
 
