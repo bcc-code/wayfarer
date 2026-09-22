@@ -19,6 +19,8 @@ interface FeedbackEntry {
 const props = defineProps<{
   entries: FeedbackEntry[]
   totalCount: number
+  /** So "Vis alle" lands on the full list filtered to this user. */
+  userId: string
 }>()
 
 /**
@@ -32,7 +34,15 @@ const isTruncated = computed(() => props.totalCount > props.entries.length)
 <template>
   <AdminSection title="Tilbakemeldinger" :count="totalCount">
     <template #actions>
-      <UButton variant="link" size="sm" :to="{ name: 'admin-feedback' }">
+      <!--
+        Filtered to this user, not the whole feedback list: "Vis alle" from a
+        person's page means all of *their* feedback.
+      -->
+      <UButton
+        variant="link"
+        size="sm"
+        :to="{ name: 'admin-feedback', query: { userId } }"
+      >
         Vis alle
       </UButton>
     </template>

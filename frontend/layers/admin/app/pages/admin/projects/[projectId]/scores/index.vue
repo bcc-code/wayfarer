@@ -49,6 +49,16 @@ gql(`
   }
 `)
 
+/** Names the user in the filter chip; a ULID there would say nothing. */
+gql(`
+  query AdminScoresFilteredUser($id: ID!) {
+    user(id: $id) {
+      id
+      name
+    }
+  }
+`)
+
 gql(`
   mutation DeleteScoreJournalEntry($id: ID!) {
     deleteScoreJournalEntry(id: $id)
@@ -77,7 +87,11 @@ const sourceTypes = Object.values(ScoreSourceType)
 
 const list = useListState({
   pagination,
-  filters: { sourceType: '' },
+  // `userId` has no control of its own: it arrives from a user detail page's
+  // score journal, where each row links to that project's entries for that
+  // user. Declaring it here is what makes it survive a reload and reset
+  // pagination like any other filter.
+  filters: { sourceType: '', userId: '' },
 })
 
 const { isAuthReady } = useAuthReady()
@@ -91,6 +105,7 @@ const { data, fetching, error, executeQuery } = useAdminScoresPageQuery({
       ...(list.filters.sourceType
         ? { sourceType: list.filters.sourceType as ScoreSourceType }
         : {}),
+      ...(list.filters.userId ? { userId: list.filters.userId } : {}),
     },
   })),
   pause: computed(() => !isAuthReady.value),
@@ -106,11 +121,22 @@ const sourceTypeItems = computed(() =>
   })),
 )
 
+const { data: filteredUserData } = useAdminScoresFilteredUserQuery({
+  variables: computed(() => ({ id: list.filters.userId })),
+  pause: computed(() => !isAuthReady.value || !list.filters.userId),
+  requestPolicy: 'cache-first',
+})
+
 const activeFilters = computed(() =>
-  list.activeFilters.value.map((filter) => ({
-    ...filter,
-    label: `Kilde: ${formatSourceType(filter.value)}`,
-  })),
+  list.activeFilters.value.map((filter) =>
+    filter.key === 'userId'
+      ? {
+          ...filter,
+          // Falls back to the id until the name resolves, or if the user is gone.
+          label: `Bruker: ${filteredUserData.value?.user.name ?? filter.value}`,
+        }
+      : { ...filter, label: `Kilde: ${formatSourceType(filter.value)}` },
+  ),
 )
 
 watch(
@@ -193,7 +219,7 @@ const { canDeleteScoreEntry, canManageScores } = usePermissions()
       :active-filters="activeFilters"
       :searchable="false"
       item-label="oppføringer"
-      @clear-filter="list.clearFilter($event as 'sourceType')"
+      @clear-filter="list.clearFilter($event as 'sourceType' | 'userId')"
       @clear-all="list.clearAll()"
     >
       <template #filters>

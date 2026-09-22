@@ -57,6 +57,16 @@ gql(`
   }
 `)
 
+/** Names the user in the filter chip; a ULID there would say nothing. */
+gql(`
+  query AdminFeedbackFilteredUser($id: ID!) {
+    user(id: $id) {
+      id
+      name
+    }
+  }
+`)
+
 gql(`
   query FeedbackTags {
     feedbackTags
@@ -90,7 +100,10 @@ const pagination = usePagination({
  */
 const list = useListState({
   pagination,
-  filters: { tags: '', platform: '', handled: '' },
+  // `userId` has no control of its own: it arrives from a user detail page's
+  // "Vis alle" link and is cleared through its chip. Declaring it here is what
+  // makes it survive a reload and reset pagination like any other filter.
+  filters: { tags: '', platform: '', handled: '', userId: '' },
 })
 
 // Comma-joined in the URL. Tags are admin-authored via UInputTags, so a tag
@@ -127,6 +140,7 @@ const filter = computed(() => ({
   tags: selectedTags.value.length > 0 ? selectedTags.value : undefined,
   handled: handledFilter.value,
   platform: selectedPlatform.value,
+  userId: list.filters.userId || undefined,
 }))
 
 const queryVariables = computed(() => ({
@@ -146,6 +160,12 @@ const { data: tagsData, executeQuery: refetchTags } = useFeedbackTagsQuery({
 
 const { data: platformsData } = useFeedbackPlatformsQuery({
   pause: computed(() => !isAuthReady.value),
+})
+
+const { data: filteredUserData } = useAdminFeedbackFilteredUserQuery({
+  variables: computed(() => ({ id: list.filters.userId })),
+  pause: computed(() => !isAuthReady.value || !list.filters.userId),
+  requestPolicy: 'cache-first',
 })
 
 // Refresh when Firestore notifies of updates
@@ -198,6 +218,14 @@ const activeFilters = computed(() => {
       key: 'handled',
       value: list.filters.handled,
       label: `Status: ${handledFilter.value ? 'Behandlet' : 'Ubehandlet'}`,
+    })
+  }
+  if (list.filters.userId) {
+    chips.push({
+      key: 'userId',
+      value: list.filters.userId,
+      // Falls back to the id until the name resolves, or if the user is gone.
+      label: `Bruker: ${filteredUserData.value?.user.name ?? list.filters.userId}`,
     })
   }
 

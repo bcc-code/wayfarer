@@ -4441,6 +4441,13 @@ export type AdminFeedbackPageQueryVariables = Exact<{
 
 export type AdminFeedbackPageQuery = { __typename?: 'Query', feedback: { __typename?: 'FeedbackConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'FeedbackEdge', cursor: string, node: { __typename?: 'UserFeedback', id: string, message: string, canContactMe: boolean, userAgent?: string | null, platform?: string | null, screenWidth?: number | null, screenHeight?: number | null, appVersion?: string | null, locale?: string | null, projectId?: string | null, timezone?: string | null, contextUrl?: string | null, tags: Array<string>, createdAt: any, handledAt?: any | null, user: { __typename?: 'User', id: string, name: string } } }> } };
 
+export type AdminFeedbackFilteredUserQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type AdminFeedbackFilteredUserQuery = { __typename?: 'Query', user: { __typename?: 'User', id: string, name: string } };
+
 export type FeedbackTagsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -4682,6 +4689,13 @@ export type AdminScoresPageQueryVariables = Exact<{
 
 
 export type AdminScoresPageQuery = { __typename?: 'Query', adminScoreJournal: { __typename?: 'ScoreJournalConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'ScoreJournalEdge', cursor: string, node: { __typename?: 'ScoreJournal', id: string, points: number, sourceType: ScoreSourceType, reason?: string | null, createdAt: any, user: { __typename?: 'User', id: string, name: string }, project: { __typename?: 'Project', id: string, name: string }, awardedBy?: { __typename?: 'User', id: string, name: string } | null } }> } };
+
+export type AdminScoresFilteredUserQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type AdminScoresFilteredUserQuery = { __typename?: 'Query', user: { __typename?: 'User', id: string, name: string } };
 
 export type DeleteScoreJournalEntryMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -6767,6 +6781,18 @@ export const AdminFeedbackPageDocument = gql`
 export function useAdminFeedbackPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminFeedbackPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminFeedbackPageQuery, AdminFeedbackPageQueryVariables | undefined>({ query: AdminFeedbackPageDocument, variables: undefined, ...options });
 };
+export const AdminFeedbackFilteredUserDocument = gql`
+    query AdminFeedbackFilteredUser($id: ID!) {
+  user(id: $id) {
+    id
+    name
+  }
+}
+    `;
+
+export function useAdminFeedbackFilteredUserQuery(options?: Omit<Urql.UseQueryArgs<never, AdminFeedbackFilteredUserQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminFeedbackFilteredUserQuery, AdminFeedbackFilteredUserQueryVariables | undefined>({ query: AdminFeedbackFilteredUserDocument, variables: undefined, ...options });
+};
 export const FeedbackTagsDocument = gql`
     query FeedbackTags {
   feedbackTags
@@ -7549,6 +7575,18 @@ export const AdminScoresPageDocument = gql`
 
 export function useAdminScoresPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminScoresPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminScoresPageQuery, AdminScoresPageQueryVariables | undefined>({ query: AdminScoresPageDocument, variables: undefined, ...options });
+};
+export const AdminScoresFilteredUserDocument = gql`
+    query AdminScoresFilteredUser($id: ID!) {
+  user(id: $id) {
+    id
+    name
+  }
+}
+    `;
+
+export function useAdminScoresFilteredUserQuery(options?: Omit<Urql.UseQueryArgs<never, AdminScoresFilteredUserQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminScoresFilteredUserQuery, AdminScoresFilteredUserQueryVariables | undefined>({ query: AdminScoresFilteredUserDocument, variables: undefined, ...options });
 };
 export const DeleteScoreJournalEntryDocument = gql`
     mutation DeleteScoreJournalEntry($id: ID!) {

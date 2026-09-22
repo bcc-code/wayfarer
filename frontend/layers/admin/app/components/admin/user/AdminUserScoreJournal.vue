@@ -14,11 +14,16 @@ const props = defineProps<{
   /** The user's total in the scoped project. */
   points: number
   /**
-   * The project everything here is filtered to. Named in the header because
-   * both the total and the journal are project-scoped, and an unlabelled
-   * "Poenglogg / N poeng" reads as a lifetime figure.
+   * The project the **points total** is scoped to — not the journal.
+   *
+   * `points(projectId:)` is per project; `adminScoreJournal(filter: { userId })`
+   * is not, so its rows span every project the user has scored in. Labelling
+   * the whole section "Poenglogg i <project>" was wrong: the heading claimed a
+   * scope the rows below it did not have. The name belongs on the badge.
    */
   projectName?: string
+  /** Lets each row link to that project's score journal for this user. */
+  userId: string
 }>()
 
 const isTruncated = computed(() => props.totalCount > props.entries.length)
@@ -31,10 +36,11 @@ function formatSourceType(type: string) {
 <template>
   <AdminSection title="Poenglogg" :count="totalCount">
     <template #actions>
-      <div class="flex items-center gap-2 text-sm">
-        <span v-if="projectName" class="text-muted">i {{ projectName }}</span>
-        <UBadge color="neutral" variant="soft">{{ points }} poeng</UBadge>
-      </div>
+      <UBadge color="neutral" variant="soft">
+        {{ points }} poeng<template v-if="projectName">
+          i {{ projectName }}</template
+        >
+      </UBadge>
     </template>
 
     <!--
@@ -55,7 +61,22 @@ function formatSourceType(type: string) {
             {{ entry.points >= 0 ? '+' : '' }}{{ formatNumber(entry.points) }}
           </UBadge>
           <div>
-            <span class="font-medium">{{ entry.project.name }}</span>
+            <!--
+              The project name links to that project's score journal filtered
+              to this user — the "see everything" target for a log that spans
+              projects, where one section-level link could not point anywhere
+              meaningful.
+            -->
+            <NuxtLink
+              :to="{
+                name: 'admin-projects-projectId-scores',
+                params: { projectId: entry.project.id },
+                query: { userId },
+              }"
+              class="font-medium hover:underline"
+            >
+              {{ entry.project.name }}
+            </NuxtLink>
             <UBadge variant="subtle" size="xs" class="ml-2">
               {{ formatSourceType(entry.sourceType) }}
             </UBadge>

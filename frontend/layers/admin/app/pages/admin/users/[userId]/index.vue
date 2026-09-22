@@ -226,6 +226,7 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
         <AdminUserFeedbackPanel
           :entries="feedbackEntries"
           :total-count="feedbackTotalCount"
+          :user-id="route.params.userId"
         />
 
         <AdminUserScoreJournal
@@ -233,6 +234,7 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
           :total-count="scoreTotalCount"
           :points="data.user.points"
           :project-name="currentProjectName"
+          :user-id="route.params.userId"
         />
       </div>
     </AdminQueryState>

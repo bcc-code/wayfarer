@@ -734,6 +734,44 @@ then `make generate` and `pnpm codegen`.
 
 ## Update log
 
+### 2026-09-22 — "see all" links go to the list filtered to that user
+
+Every outward link from the user detail page now lands somewhere about *that
+user*, not on an unfiltered list.
+
+| Link | Was | Now |
+| --- | --- | --- |
+| Feedback "Vis alle" | the whole feedback list | `admin-feedback?userId=…` |
+| Score journal row | plain text | that project's journal, `?userId=…` |
+
+Both target pages had to learn the filter: `userId` joins their `useListState`
+filters so it survives a reload, resets pagination, and is clearable through a
+chip like any other. Neither gets a *control* for it — a user picker on the
+feedback list would be a worse way to answer "show me this person's feedback"
+than arriving from their page — so the chip is the only affordance, which is
+what makes the filter discoverable once set.
+
+**Each page resolves the user's name for the chip** through a small paused
+query, falling back to the id while it loads or if the user is gone. A chip
+reading `Bruker: US01KCMJRS055PF6TPYVPT3M642W` would be the same mistake as the
+role scope printing a ULID.
+
+**A bug of mine, found while doing this.** The journal panel's heading said
+"Poenglogg **i Sommercamp 2026**" — but `adminScoreJournal(filter: { userId })`
+has **no project filter**, so its rows span every project the user has scored
+in. Only `points(projectId:)` is project-scoped. The heading was claiming a
+scope the rows below it did not have, which is visible in an earlier screenshot:
+rows labelled "Test project" under a heading naming a different project. The
+project name moved to the points badge, where it is true.
+
+That is the same class of error as the thing it was introduced to fix — an
+unlabelled scope — and I created it while fixing that. Worth the reminder that
+adding a label is only an improvement if the label is accurate.
+
+It also explains why a single section-level "Vis alle" was impossible here, and
+why the restructure had removed the old one: a cross-project log has no one
+project page to point at. Per-row links are the honest shape.
+
 ### 2026-09-21 — `AdminSection` replaces `UCard` for page content (5 attempts)
 
 The user's observation: "everything boxed in a card / box… would it be better to
