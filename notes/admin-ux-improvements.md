@@ -734,6 +734,58 @@ then `make generate` and `pnpm codegen`.
 
 ## Update log
 
+### 2026-09-22 — points panel: per-project totals + recent activity
+
+The flat journal is gone. The panel now shows **per-project totals** and the
+**five most recent entries**, chosen because the page is used for support cases:
+totals answer "where does this person have points and how many", the recent
+window answers "what just happened", which is where a support call starts.
+
+**No cross-project total, deliberately.** Projects differ in length and scoring
+scale, so a lifetime sum is a number nobody can act on — the same vanity metric
+that came off the home dashboard. The per-project figure is the unit that means
+something.
+
+**What the old panel got wrong**, visible in the screenshot that prompted this:
+
+- The heading said "0 poeng i Sommercamp 2026" above twelve rows totalling
+  ~25 000 points in a *different* project. `points(projectId:)` is
+  project-scoped; `adminScoreJournal(filter: { userId })` is not.
+- The project column was **identical on all twelve rows** — a third of each
+  row's width spent saying nothing. It only carries information when the log
+  actually spans projects, and then a flat log is unscannable anyway. In the new
+  recent-activity list it does span projects, so the name is back to being
+  useful there.
+- 100 rows on a summary page, truncated with no way to see the rest. The full
+  log now lives where it belongs: each total links to that project's score page
+  filtered to this user.
+
+**Backend: `User.pointsByProject: [UserProjectPoints!]!`.** Needed because
+`points(projectId:)` takes one project at a time, so a caller wanting the whole
+set would need an aliased field per project and the set is not known up front.
+Deriving it client-side from the fetched journal was rejected: summing a
+`last: 100` window and labelling it "total" is the lying-label problem twice
+over.
+
+Three choices in that query worth keeping:
+
+- **Ordered by the user's latest entry per project**, not by project date — on a
+  support call the project someone just scored in is the one being asked about.
+- **Flat `projectId`/`projectName`** rather than a nested `Project!`, matching
+  `ChurchAdminStatistics`. The aggregate needs a label and a link target, not a
+  whole project with branding.
+- **Projects that net to zero still appear.** A row exists because there is
+  journal activity, and "0 poeng" for a project someone participated in is a
+  real answer — quite different from the project being absent, which would
+  suggest they were never in it. There is a test for exactly that.
+
+`mapUserPointsByProject` is a pure function in `users.go` (not the generated
+resolver file) with 5 tests, including that an empty result is a non-nil slice —
+the field is `[UserProjectPoints!]!` and gqlgen marshals nil as `null`.
+
+Gate: backend `make fmt` + `make test` green (27 packages); frontend typecheck
+0, lint 0, 604 unit + 225 component, build exit 0.
+
 ### 2026-09-22 — "see all" links go to the list filtered to that user
 
 Every outward link from the user detail page now lands somewhere about *that

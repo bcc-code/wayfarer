@@ -8,7 +8,6 @@ gql(`
 	query AdminUserPageCurrentProject {
 		currentProject {
 			id
-			name
 		}
 	}
 `)
@@ -27,6 +26,11 @@ gql(`
 			language
 			churchLockedUntil
 			points(projectId: $projectId)
+			pointsByProject {
+				projectId
+				projectName
+				points
+			}
 			church {
 				id
 				name
@@ -93,7 +97,10 @@ gql(`
 				}
 			}
 		}
-		adminScoreJournal(filter: { userId: $id }, last: 100) {
+		# Five, not a hundred: the full log per project is a click away on the
+		# project's own score page, filtered to this user. This is the "what just
+		# happened" window a support call starts from.
+		adminScoreJournal(filter: { userId: $id }, last: 5) {
 			totalCount
 			edges {
 				node {
@@ -147,11 +154,6 @@ const { data: currentProjectData } = useAdminUserPageCurrentProjectQuery({
 const currentProjectId = computed(
   () => currentProjectData.value?.currentProject.id,
 )
-/** Names the project the points panel is scoped to. */
-const currentProjectName = computed(
-  () => currentProjectData.value?.currentProject.name,
-)
-
 // Main query that depends on having the project ID
 const {
   data,
@@ -230,11 +232,11 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
         />
 
         <AdminUserScoreJournal
-          :entries="scoreEntries"
+          :points-by-project="data.user.pointsByProject"
+          :recent="scoreEntries"
           :total-count="scoreTotalCount"
-          :points="data.user.points"
-          :project-name="currentProjectName"
           :user-id="route.params.userId"
+          :current-project-id="currentProjectId"
         />
       </div>
     </AdminQueryState>

@@ -1299,6 +1299,7 @@ type ComplexityRoot struct {
 		Name              func(childComplexity int) int
 		PersonUUID        func(childComplexity int) int
 		Points            func(childComplexity int, projectID string) int
+		PointsByProject   func(childComplexity int) int
 		Projects          func(childComplexity int) int
 		Roles             func(childComplexity int) int
 		SuperTeams        func(childComplexity int) int
@@ -1351,6 +1352,12 @@ type ComplexityRoot struct {
 		User         func(childComplexity int) int
 		UserAgent    func(childComplexity int) int
 		UserID       func(childComplexity int) int
+	}
+
+	UserProjectPoints struct {
+		Points      func(childComplexity int) int
+		ProjectID   func(childComplexity int) int
+		ProjectName func(childComplexity int) int
 	}
 
 	UserRole struct {
@@ -1913,7 +1920,7 @@ type UserResolver interface {
 	SuperTeams(ctx context.Context, obj *model.User) ([]model.SuperTeam, error)
 	Roles(ctx context.Context, obj *model.User) ([]model.UserRole, error)
 
-	Points(ctx context.Context, obj *model.User, projectID string) (int, error)
+	PointsByProject(ctx context.Context, obj *model.User) ([]model.UserProjectPoints, error)
 }
 type UserConsentResolver interface {
 	Consent(ctx context.Context, obj *model.UserConsent) (*model.Consent, error)
@@ -8405,6 +8412,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.User.Points(childComplexity, args["projectId"].(string)), true
+	case "User.pointsByProject":
+		if e.complexity.User.PointsByProject == nil {
+			break
+		}
+
+		return e.complexity.User.PointsByProject(childComplexity), true
 	case "User.projects":
 		if e.complexity.User.Projects == nil {
 			break
@@ -8632,6 +8645,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.UserFeedback.UserID(childComplexity), true
+
+	case "UserProjectPoints.points":
+		if e.complexity.UserProjectPoints.Points == nil {
+			break
+		}
+
+		return e.complexity.UserProjectPoints.Points(childComplexity), true
+	case "UserProjectPoints.projectId":
+		if e.complexity.UserProjectPoints.ProjectID == nil {
+			break
+		}
+
+		return e.complexity.UserProjectPoints.ProjectID(childComplexity), true
+	case "UserProjectPoints.projectName":
+		if e.complexity.UserProjectPoints.ProjectName == nil {
+			break
+		}
+
+		return e.complexity.UserProjectPoints.ProjectName(childComplexity), true
 
 	case "UserRole.id":
 		if e.complexity.UserRole.ID == nil {
@@ -10322,7 +10354,17 @@ type User {
     consentStatus: ConsentStatus!
     language: String!
     createdAt: DateTime!
-    points(projectId: ID!): Int! @goField(forceResolver: true)
+    points(projectId: ID!): Int!
+    """
+    The user's point total in every project they have scored in, most recently
+    active first.
+
+    Separate from ` + "`" + `points(projectId:)` + "`" + ` because that takes one project at a time,
+    so a caller wanting "where does this person have points, and how many"
+    would need one aliased field per project — and the set is not known up
+    front.
+    """
+    pointsByProject: [UserProjectPoints!]! @goField(forceResolver: true) @goField(forceResolver: true)
 }
 
 # ==================== User Input Types ====================
@@ -10334,6 +10376,17 @@ input CreateUserInput {
     gender: Gender!
     churchId: ID!
     age: Int!
+}
+
+"""
+A user's point total within one project. Flat ` + "`" + `projectId` + "`" + `/` + "`" + `projectName` + "`" + ` rather
+than a nested ` + "`" + `Project!` + "`" + `, matching ` + "`" + `ChurchAdminStatistics` + "`" + ` — the aggregate needs
+a label and a link target, not a whole project.
+"""
+type UserProjectPoints {
+    projectId: ID!
+    projectName: String!
+    points: Int!
 }
 
 input UserFilter {
@@ -24969,6 +25022,8 @@ func (ec *executionContext) fieldContext_MissingContentProgressUser_user(_ conte
 				return ec.fieldContext_User_createdAt(ctx, field)
 			case "points":
 				return ec.fieldContext_User_points(ctx, field)
+			case "pointsByProject":
+				return ec.fieldContext_User_pointsByProject(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -25166,6 +25221,8 @@ func (ec *executionContext) fieldContext_MissingScoreJournalUser_user(_ context.
 				return ec.fieldContext_User_createdAt(ctx, field)
 			case "points":
 				return ec.fieldContext_User_points(ctx, field)
+			case "pointsByProject":
+				return ec.fieldContext_User_pointsByProject(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -25363,6 +25420,8 @@ func (ec *executionContext) fieldContext_MissingStreakProgressUser_user(_ contex
 				return ec.fieldContext_User_createdAt(ctx, field)
 			case "points":
 				return ec.fieldContext_User_points(ctx, field)
+			case "pointsByProject":
+				return ec.fieldContext_User_pointsByProject(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -30704,6 +30763,8 @@ func (ec *executionContext) fieldContext_Mutation_updateAvatar(ctx context.Conte
 				return ec.fieldContext_User_createdAt(ctx, field)
 			case "points":
 				return ec.fieldContext_User_points(ctx, field)
+			case "pointsByProject":
+				return ec.fieldContext_User_pointsByProject(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -30809,6 +30870,8 @@ func (ec *executionContext) fieldContext_Mutation_assignUserToProject(ctx contex
 				return ec.fieldContext_User_createdAt(ctx, field)
 			case "points":
 				return ec.fieldContext_User_points(ctx, field)
+			case "pointsByProject":
+				return ec.fieldContext_User_pointsByProject(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -30914,6 +30977,8 @@ func (ec *executionContext) fieldContext_Mutation_removeUserFromProject(ctx cont
 				return ec.fieldContext_User_createdAt(ctx, field)
 			case "points":
 				return ec.fieldContext_User_points(ctx, field)
+			case "pointsByProject":
+				return ec.fieldContext_User_pointsByProject(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -31019,6 +31084,8 @@ func (ec *executionContext) fieldContext_Mutation_assignUserToEvent(ctx context.
 				return ec.fieldContext_User_createdAt(ctx, field)
 			case "points":
 				return ec.fieldContext_User_points(ctx, field)
+			case "pointsByProject":
+				return ec.fieldContext_User_pointsByProject(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -31197,6 +31264,8 @@ func (ec *executionContext) fieldContext_Mutation_lockUserChurch(ctx context.Con
 				return ec.fieldContext_User_createdAt(ctx, field)
 			case "points":
 				return ec.fieldContext_User_points(ctx, field)
+			case "pointsByProject":
+				return ec.fieldContext_User_pointsByProject(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -31302,6 +31371,8 @@ func (ec *executionContext) fieldContext_Mutation_unlockUserChurch(ctx context.C
 				return ec.fieldContext_User_createdAt(ctx, field)
 			case "points":
 				return ec.fieldContext_User_points(ctx, field)
+			case "pointsByProject":
+				return ec.fieldContext_User_pointsByProject(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -40110,6 +40181,8 @@ func (ec *executionContext) fieldContext_Query_me(_ context.Context, field graph
 				return ec.fieldContext_User_createdAt(ctx, field)
 			case "points":
 				return ec.fieldContext_User_points(ctx, field)
+			case "pointsByProject":
+				return ec.fieldContext_User_pointsByProject(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -41497,6 +41570,8 @@ func (ec *executionContext) fieldContext_Query_user(ctx context.Context, field g
 				return ec.fieldContext_User_createdAt(ctx, field)
 			case "points":
 				return ec.fieldContext_User_points(ctx, field)
+			case "pointsByProject":
+				return ec.fieldContext_User_pointsByProject(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -41684,6 +41759,8 @@ func (ec *executionContext) fieldContext_Query_usersWithRole(ctx context.Context
 				return ec.fieldContext_User_createdAt(ctx, field)
 			case "points":
 				return ec.fieldContext_User_points(ctx, field)
+			case "pointsByProject":
+				return ec.fieldContext_User_pointsByProject(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -47070,6 +47147,8 @@ func (ec *executionContext) fieldContext_QuizSession_createdBy(_ context.Context
 				return ec.fieldContext_User_createdAt(ctx, field)
 			case "points":
 				return ec.fieldContext_User_points(ctx, field)
+			case "pointsByProject":
+				return ec.fieldContext_User_pointsByProject(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -47483,6 +47562,8 @@ func (ec *executionContext) fieldContext_QuizSubmission_user(_ context.Context, 
 				return ec.fieldContext_User_createdAt(ctx, field)
 			case "points":
 				return ec.fieldContext_User_points(ctx, field)
+			case "pointsByProject":
+				return ec.fieldContext_User_pointsByProject(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -48502,6 +48583,8 @@ func (ec *executionContext) fieldContext_ScoreJournal_user(_ context.Context, fi
 				return ec.fieldContext_User_createdAt(ctx, field)
 			case "points":
 				return ec.fieldContext_User_points(ctx, field)
+			case "pointsByProject":
+				return ec.fieldContext_User_pointsByProject(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -48773,6 +48856,8 @@ func (ec *executionContext) fieldContext_ScoreJournal_awardedBy(_ context.Contex
 				return ec.fieldContext_User_createdAt(ctx, field)
 			case "points":
 				return ec.fieldContext_User_points(ctx, field)
+			case "pointsByProject":
+				return ec.fieldContext_User_pointsByProject(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -51755,6 +51840,8 @@ func (ec *executionContext) fieldContext_SyncUserResult_user(_ context.Context, 
 				return ec.fieldContext_User_createdAt(ctx, field)
 			case "points":
 				return ec.fieldContext_User_points(ctx, field)
+			case "pointsByProject":
+				return ec.fieldContext_User_pointsByProject(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -52709,6 +52796,8 @@ func (ec *executionContext) fieldContext_TeamMember_user(_ context.Context, fiel
 				return ec.fieldContext_User_createdAt(ctx, field)
 			case "points":
 				return ec.fieldContext_User_points(ctx, field)
+			case "pointsByProject":
+				return ec.fieldContext_User_pointsByProject(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -53544,8 +53633,7 @@ func (ec *executionContext) _User_points(ctx context.Context, field graphql.Coll
 		field,
 		ec.fieldContext_User_points,
 		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.User().Points(ctx, obj, fc.Args["projectId"].(string))
+			return obj.Points, nil
 		},
 		nil,
 		ec.marshalNInt2int,
@@ -53558,8 +53646,8 @@ func (ec *executionContext) fieldContext_User_points(ctx context.Context, field 
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
 		},
@@ -53574,6 +53662,43 @@ func (ec *executionContext) fieldContext_User_points(ctx context.Context, field 
 	if fc.Args, err = ec.field_User_points_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_pointsByProject(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_User_pointsByProject,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.User().PointsByProject(ctx, obj)
+		},
+		nil,
+		ec.marshalNUserProjectPoints2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserProjectPointsᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_User_pointsByProject(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "projectId":
+				return ec.fieldContext_UserProjectPoints_projectId(ctx, field)
+			case "projectName":
+				return ec.fieldContext_UserProjectPoints_projectName(ctx, field)
+			case "points":
+				return ec.fieldContext_UserProjectPoints_points(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserProjectPoints", field.Name)
+		},
 	}
 	return fc, nil
 }
@@ -54149,6 +54274,8 @@ func (ec *executionContext) fieldContext_UserEdge_node(_ context.Context, field 
 				return ec.fieldContext_User_createdAt(ctx, field)
 			case "points":
 				return ec.fieldContext_User_points(ctx, field)
+			case "pointsByProject":
+				return ec.fieldContext_User_pointsByProject(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -54282,6 +54409,8 @@ func (ec *executionContext) fieldContext_UserFeedback_user(_ context.Context, fi
 				return ec.fieldContext_User_createdAt(ctx, field)
 			case "points":
 				return ec.fieldContext_User_points(ctx, field)
+			case "pointsByProject":
+				return ec.fieldContext_User_pointsByProject(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -54695,6 +54824,93 @@ func (ec *executionContext) fieldContext_UserFeedback_handledAt(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _UserProjectPoints_projectId(ctx context.Context, field graphql.CollectedField, obj *model.UserProjectPoints) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserProjectPoints_projectId,
+		func(ctx context.Context) (any, error) {
+			return obj.ProjectID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserProjectPoints_projectId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserProjectPoints",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserProjectPoints_projectName(ctx context.Context, field graphql.CollectedField, obj *model.UserProjectPoints) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserProjectPoints_projectName,
+		func(ctx context.Context) (any, error) {
+			return obj.ProjectName, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserProjectPoints_projectName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserProjectPoints",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserProjectPoints_points(ctx context.Context, field graphql.CollectedField, obj *model.UserProjectPoints) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserProjectPoints_points,
+		func(ctx context.Context) (any, error) {
+			return obj.Points, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserProjectPoints_points(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserProjectPoints",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _UserRole_id(ctx context.Context, field graphql.CollectedField, obj *model.UserRole) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -54792,6 +55008,8 @@ func (ec *executionContext) fieldContext_UserRole_user(_ context.Context, field 
 				return ec.fieldContext_User_createdAt(ctx, field)
 			case "points":
 				return ec.fieldContext_User_points(ctx, field)
+			case "pointsByProject":
+				return ec.fieldContext_User_pointsByProject(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -76601,6 +76819,11 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "points":
+			out.Values[i] = ec._User_points(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "pointsByProject":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -76609,7 +76832,7 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._User_points(ctx, field, obj)
+				res = ec._User_pointsByProject(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -77025,6 +77248,55 @@ func (ec *executionContext) _UserFeedback(ctx context.Context, sel ast.Selection
 			}
 		case "handledAt":
 			out.Values[i] = ec._UserFeedback_handledAt(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var userProjectPointsImplementors = []string{"UserProjectPoints"}
+
+func (ec *executionContext) _UserProjectPoints(ctx context.Context, sel ast.SelectionSet, obj *model.UserProjectPoints) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, userProjectPointsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UserProjectPoints")
+		case "projectId":
+			out.Values[i] = ec._UserProjectPoints_projectId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "projectName":
+			out.Values[i] = ec._UserProjectPoints_projectName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "points":
+			out.Values[i] = ec._UserProjectPoints_points(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -81724,6 +81996,54 @@ func (ec *executionContext) marshalNUserFeedback2ᚖgithubᚗcomᚋbccᚑmedia�
 		return graphql.Null
 	}
 	return ec._UserFeedback(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNUserProjectPoints2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserProjectPoints(ctx context.Context, sel ast.SelectionSet, v model.UserProjectPoints) graphql.Marshaler {
+	return ec._UserProjectPoints(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUserProjectPoints2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserProjectPointsᚄ(ctx context.Context, sel ast.SelectionSet, v []model.UserProjectPoints) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNUserProjectPoints2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserProjectPoints(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalNUserRole2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserRole(ctx context.Context, sel ast.SelectionSet, v model.UserRole) graphql.Marshaler {
