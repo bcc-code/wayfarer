@@ -196,6 +196,8 @@ async function handleDelete() {
 }
 
 const { canDeleteScoreEntry, canManageScores } = usePermissions()
+
+const showCreateModal = ref(false)
 </script>
 
 <template>
@@ -204,10 +206,12 @@ const { canDeleteScoreEntry, canManageScores } = usePermissions()
       <h1 class="text-3xl">Poengjusteringer</h1>
       <UButton
         v-if="canManageScores"
-        :to="{
-          name: 'admin-projects-projectId-scores-new',
-          params: { projectId: route.params.projectId },
-        }"
+        icon="lucide:plus"
+        @click="
+          () => {
+            showCreateModal = true
+          }
+        "
       >
         Ny justering
       </UButton>
@@ -293,6 +297,12 @@ const { canDeleteScoreEntry, canManageScores } = usePermissions()
         </template>
       </UTable>
     </AdminListView>
+
+    <AdminScoreAdjustmentModal
+      v-model:open="showCreateModal"
+      :project-id="route.params.projectId"
+      @created="executeQuery({ requestPolicy: 'network-only' })"
+    />
 
     <UModal v-model:open="deleteModal">
       <template #content>

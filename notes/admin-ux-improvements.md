@@ -209,6 +209,28 @@ Consequences, since this is easy to design around by accident:
 House rules for this pass. New work follows them; existing pages are brought
 along as they are touched, not in a separate sweep.
 
+### Creating things: page or dialog
+
+Decided 2026-09-22, after surveying what the panel already did (8 create pages,
+6 create dialogs).
+
+**A page when the thing being created gets its own detail page and URL. A dialog
+when it is an action on the object already on screen.**
+
+| Page (`…/new`)                                                   | Dialog                                                                                         |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| projects, consents, challenges, achievements, events, superteams | roles, achievement awards, consent withdrawals, church units, quiz sessions, score adjustments |
+
+Why the line falls there: a page is worth its own route when the form is long
+(consents has 16 fields, projects 12), when the result is a thing you will
+navigate to afterwards, and when the URL is worth sharing. A dialog is right when
+the form is two or three fields, when the result belongs to the list you are
+looking at, and when losing your place in that list would be the worse outcome.
+
+When a create page becomes a dialog, **leave the old route as a redirect to the
+list** rather than deleting it — the panel already does this for
+`admin/scores/new` and for the project overview's legacy `?tab=` links.
+
 ### Components own their own responsive styling
 
 **A component should look right at any width it is given, without the page or
@@ -758,6 +780,55 @@ then `make generate` and `pnpm codegen`.
 ---
 
 ## Update log
+
+### 2026-09-22 — score adjustment becomes a dialog
+
+Applies the new page-or-dialog convention above. `AdminScoreAdjustmentModal`
+opens over the Poeng list, so the new row appears in the list you were already
+reading; `…/scores/new` stays as a redirect to that list.
+
+Two things it does that the page did not:
+
+- **Refuses zero.** The page let you submit `points: 0`, which writes a journal
+  row that changes nothing. Submit is disabled until there is a user and a
+  non-zero amount.
+- **Refetches the list on success** instead of navigating, so the row you just
+  created is visible without a reload.
+
+The `UForm` + zod schema went with the page. Three fields with one rule each did
+not need a resolver, and the button's own `disabled` says the same thing more
+directly. `test/component/AdminScoreAdjustmentModal.test.ts` covers the guard,
+the mutation payload and the failure path.
+
+Worth knowing for the next dialog test: **`UModal` teleports its body**, so
+`wrapper.find('.thing')` finds nothing from the wrapper root — `findComponent`
+still reaches across the teleport, so assert on child components and their
+props.
+
+### 2026-09-22 — `AdminUserPicker`: no more pasting ULIDs
+
+Creating a score adjustment asked for a **Bruker ID** in a text box. There is no
+route in the admin panel that hands you a user ULID to paste, so the form was
+only usable by someone who already had one on their clipboard.
+
+`AdminUserPicker` is a `USelectMenu` searching server-side through
+`users(filter: { query, projectId })`, 300 ms debounce, 20 rows, each showing
+avatar + name + church.
+
+- **`ignore-filter` is load-bearing.** Without it the menu also filters the 20
+  rows it was handed, so a server match could be hidden by the client.
+- **`first: 20` is not a page size.** This is a "find one known person" control,
+  not a data list, so more rows would not help — and that is why it does not use
+  `AdminListView`.
+- **`projectId` scopes it.** An adjustment belongs to one project, so its
+  participants are the only valid targets.
+- It takes and emits the **id**, and resolves a label for an id handed in from
+  outside via `users(filter: { ids: [...] })`, so an edit form can prefill it.
+
+This is the first of the four "picker wanting a searchable select" cases in
+cross-cutting item 1. The others are `users/[userId]/achievements.vue`
+(`first: 200`) and the church-scoped `UInputMenu` in `my-church/admins.vue`,
+which loads its whole list client-side — fine while it is one church's members.
 
 ### 2026-09-22 — team detail page: confirmations, real member rows, points
 

@@ -4369,6 +4369,21 @@ export type AdminProjectSwitcherQueryVariables = Exact<{ [key: string]: never; }
 
 export type AdminProjectSwitcherQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, startDate: any, endDate: any } }> } };
 
+export type AdminUserPickerSearchQueryVariables = Exact<{
+  query?: InputMaybe<Scalars['String']['input']>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
+}>;
+
+
+export type AdminUserPickerSearchQuery = { __typename?: 'Query', users: { __typename?: 'UserConnection', edges: Array<{ __typename?: 'UserEdge', node: { __typename?: 'User', id: string, name: string, image?: string | null, church: { __typename?: 'Church', id: string, name: string } } }> } };
+
+export type AdminUserPickerSelectedQueryVariables = Exact<{
+  ids?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
+}>;
+
+
+export type AdminUserPickerSelectedQuery = { __typename?: 'Query', users: { __typename?: 'UserConnection', edges: Array<{ __typename?: 'UserEdge', node: { __typename?: 'User', id: string, name: string, image?: string | null, church: { __typename?: 'Church', id: string, name: string } } }> } };
+
 export type AdminProjectEngagementQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
 }>;
@@ -4398,6 +4413,13 @@ export type AdminProjectSectionCountsQuery = { __typename?: 'Query', project: { 
         | { __typename?: 'SimpleAchievement', id: string, name: string, awardedUserCount: number, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
         | { __typename?: 'StreakAchievement', id: string, name: string, awardedUserCount: number, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
        }> }, events: { __typename?: 'EventConnection', totalCount: number }, superteams: { __typename?: 'SuperTeamConnection', totalCount: number }, teams: { __typename?: 'TeamConnection', totalCount: number }, users: { __typename?: 'UserConnection', totalCount: number } };
+
+export type CreateScoreAdjustmentMutationVariables = Exact<{
+  input: CreateScoreAdjustmentInput;
+}>;
+
+
+export type CreateScoreAdjustmentMutation = { __typename?: 'Mutation', createScoreAdjustment: { __typename?: 'ScoreJournal', id: string, points: number, reason?: string | null } };
 
 export type AdminSetUserConsentMutationVariables = Exact<{
   userId: Scalars['ID']['input'];
@@ -4750,13 +4772,6 @@ export type DeleteScoreJournalEntryMutationVariables = Exact<{
 
 
 export type DeleteScoreJournalEntryMutation = { __typename?: 'Mutation', deleteScoreJournalEntry: boolean };
-
-export type CreateScoreAdjustmentMutationVariables = Exact<{
-  input: CreateScoreAdjustmentInput;
-}>;
-
-
-export type CreateScoreAdjustmentMutation = { __typename?: 'Mutation', createScoreAdjustment: { __typename?: 'ScoreJournal', id: string, points: number, reason?: string | null } };
 
 export type AdminSuperTeamDetailPageQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -6538,6 +6553,48 @@ export const AdminProjectSwitcherDocument = gql`
 export function useAdminProjectSwitcherQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectSwitcherQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectSwitcherQuery, AdminProjectSwitcherQueryVariables | undefined>({ query: AdminProjectSwitcherDocument, variables: undefined, ...options });
 };
+export const AdminUserPickerSearchDocument = gql`
+    query AdminUserPickerSearch($query: String, $projectId: ID) {
+  users(first: 20, filter: {query: $query, projectId: $projectId}) {
+    edges {
+      node {
+        id
+        name
+        image
+        church {
+          id
+          name
+        }
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminUserPickerSearchQuery(options?: Omit<Urql.UseQueryArgs<never, AdminUserPickerSearchQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminUserPickerSearchQuery, AdminUserPickerSearchQueryVariables | undefined>({ query: AdminUserPickerSearchDocument, variables: undefined, ...options });
+};
+export const AdminUserPickerSelectedDocument = gql`
+    query AdminUserPickerSelected($ids: [ID!]) {
+  users(first: 1, filter: {ids: $ids}) {
+    edges {
+      node {
+        id
+        name
+        image
+        church {
+          id
+          name
+        }
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminUserPickerSelectedQuery(options?: Omit<Urql.UseQueryArgs<never, AdminUserPickerSelectedQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminUserPickerSelectedQuery, AdminUserPickerSelectedQueryVariables | undefined>({ query: AdminUserPickerSelectedDocument, variables: undefined, ...options });
+};
 export const AdminProjectEngagementDocument = gql`
     query AdminProjectEngagement($projectId: ID!) {
   challenges(first: 50, filter: {projectId: $projectId}) {
@@ -6612,6 +6669,19 @@ export const AdminProjectSectionCountsDocument = gql`
 
 export function useAdminProjectSectionCountsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectSectionCountsQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectSectionCountsQuery, AdminProjectSectionCountsQueryVariables | undefined>({ query: AdminProjectSectionCountsDocument, variables: undefined, ...options });
+};
+export const CreateScoreAdjustmentDocument = gql`
+    mutation CreateScoreAdjustment($input: CreateScoreAdjustmentInput!) {
+  createScoreAdjustment(input: $input) {
+    id
+    points
+    reason
+  }
+}
+    `;
+
+export function useCreateScoreAdjustmentMutation() {
+  return Urql.useMutation<CreateScoreAdjustmentMutation, CreateScoreAdjustmentMutationVariables>(CreateScoreAdjustmentDocument);
 };
 export const AdminSetUserConsentDocument = gql`
     mutation AdminSetUserConsent($userId: ID!, $consentId: ID!, $action: ConsentAction!) {
@@ -7706,19 +7776,6 @@ export const DeleteScoreJournalEntryDocument = gql`
 
 export function useDeleteScoreJournalEntryMutation() {
   return Urql.useMutation<DeleteScoreJournalEntryMutation, DeleteScoreJournalEntryMutationVariables>(DeleteScoreJournalEntryDocument);
-};
-export const CreateScoreAdjustmentDocument = gql`
-    mutation CreateScoreAdjustment($input: CreateScoreAdjustmentInput!) {
-  createScoreAdjustment(input: $input) {
-    id
-    points
-    reason
-  }
-}
-    `;
-
-export function useCreateScoreAdjustmentMutation() {
-  return Urql.useMutation<CreateScoreAdjustmentMutation, CreateScoreAdjustmentMutationVariables>(CreateScoreAdjustmentDocument);
 };
 export const AdminSuperTeamDetailPageDocument = gql`
     query AdminSuperTeamDetailPage($id: ID!, $projectId: ID!) {
