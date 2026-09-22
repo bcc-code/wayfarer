@@ -350,7 +350,14 @@ const questionPoints = computed(() =>
 
     <AdminSection title="Spørsmål" :count="questions.length">
       <template #actions>
-        <UButton size="sm" icon="lucide:plus" @click="addQuestion">
+        <!-- Soft: "Lagre quiz" is this page's primary action, and two solid
+             buttons compete for it. -->
+        <UButton
+          size="sm"
+          variant="soft"
+          icon="lucide:plus"
+          @click="addQuestion"
+        >
           Legg til spørsmål
         </UButton>
       </template>

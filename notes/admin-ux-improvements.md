@@ -209,6 +209,21 @@ Consequences, since this is easy to design around by accident:
 House rules for this pass. New work follows them; existing pages are brought
 along as they are touched, not in a separate sweep.
 
+### One solid button per surface
+
+**A page, a dialog or an empty state gets exactly one solid (primary) button —
+its single most likely action.** Everything else is `soft`, `ghost` or a link.
+Two solid buttons on one screen ask the reader to decide which one the screen is
+for.
+
+- On a **detail or edit page** the primary is _save_. A "Legg til …" that adds a
+  row to the thing being edited is `soft`.
+- On a **list page** the primary is _create_, because there is nothing to save.
+- A **dialog** has its own primary (its confirm action); the page behind an
+  overlay is not competing with it.
+- An **empty state** may have a solid button — it is the only thing on screen,
+  and it never renders alongside the form it replaces.
+
 ### Creating things: page or dialog
 
 Decided 2026-09-22, after surveying what the panel already did (8 create pages,
@@ -784,6 +799,19 @@ then `make generate` and `pnpm codegen`.
 ---
 
 ## Update log
+
+### 2026-09-22 — one solid button per surface
+
+The quiz editor had two: "Legg til spørsmål" and "Lagre quiz". Saving is the
+page's primary action, so the add button is `soft` now. Written up as a
+convention above.
+
+Swept the pages restructured today; only that one was wrong. Two that look like
+exceptions and are not: the question dialog's own "Oppdater spørsmål" (its own
+surface, with the page behind an overlay) and "Tilbake til utfordring" on the
+quiz page (inside the `!isQuizChallenge` branch, which never renders alongside
+the form). A component test on `AdminQuizForm` now asserts that the save button
+is the only solid one.
 
 ### 2026-09-22 — question editor dialog restructured
 

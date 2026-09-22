@@ -122,6 +122,17 @@ describe('AdminQuizForm', () => {
     expect(document.body.textContent).toContain('Spørsmål 2 av 2')
   })
 
+  // "Lagre quiz" is the page's primary action; nothing else should compete.
+  it('leaves only the save button solid', async () => {
+    const wrapper = await mount()
+
+    const solid = wrapper
+      .findAllComponents({ name: 'UButton' })
+      .filter((button) => (button.props('variant') ?? 'solid') === 'solid')
+
+    expect(solid.map((button) => button.text())).toEqual(['Lagre quiz'])
+  })
+
   it('explains what the working settings do', async () => {
     const wrapper = await mount()
 
