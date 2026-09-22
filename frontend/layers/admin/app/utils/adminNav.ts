@@ -122,6 +122,12 @@ export const PROJECT_NAV: AdminNavItem[] = [
     can: (p) => !!p.canAccessTeams.value,
   },
   {
+    label: 'Ledertavler',
+    icon: 'lucide:list-ordered',
+    to: 'admin-projects-projectId-leaderboards',
+    match: 'admin-projects-projectId-leaderboards',
+  },
+  {
     label: 'Poeng',
     icon: 'lucide:trophy',
     to: 'admin-projects-projectId-scores',
