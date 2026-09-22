@@ -24,17 +24,17 @@ stubs.
 - Update the log at the bottom as work lands, same convention as the
   restructure note.
 
-## Where this stands (2026-09-21)
+## Where this stands (2026-09-22)
 
-| #   | Item                            | State                                                                                                          |
-| --- | ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| 1   | Hardcoded query limits          | 1 done, 3 deliberately left, 10 open — 4 of those are pickers/dropdowns wanting a searchable select, not pages |
-| 2   | Loading / empty / error states  | **done** — 13 tables + 17 pages                                                                                |
-| 3   | Search, filter, sort            | filtering on 6 lists; **sorting untouched**                                                                    |
-| 4   | The 1,000-line outliers         | half — `users/[userId]` split into 6 components; `my-church/units.vue` remains                                 |
-| 5   | `church-admin` navigation       | **untouched** — the biggest single-surface gap left                                                            |
-| 6   | Archived projects               | **done**                                                                                                       |
-| 7   | Container queries in components | **done**                                                                                                       |
+| #   | Item                            | State                                                                                                                          |
+| --- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | Hardcoded query limits          | 1 done, 3 deliberately left, 10 open — 4 are pickers wanting a searchable select; 1 of those 4 now has one (`AdminUserPicker`) |
+| 2   | Loading / empty / error states  | **done** — 13 tables + 17 pages                                                                                                |
+| 3   | Search, filter, sort            | filtering on 6 lists; **sorting untouched**                                                                                    |
+| 4   | The 1,000-line outliers         | half — `users/[userId]` split into 6 components; `my-church/units.vue` remains                                                 |
+| 5   | `church-admin` navigation       | **untouched** — the biggest single-surface gap left                                                                            |
+| 6   | Archived projects               | **done**                                                                                                                       |
+| 7   | Container queries in components | **done**                                                                                                                       |
 
 Shared machinery built along the way, all with tests:
 `AdminListView` + `useListState` (toolbar, footer, URL state, pagination reset),
@@ -115,6 +115,80 @@ could be exercised from the terminal:
   decision because it is a consumer-app bug.
 
 ---
+
+## Pick up here — pages not yet passed over
+
+Ranked 2026-09-22, after the challenge, quiz and achievement passes. Line counts
+are current; `☐` rows in the inventory below are the full list, this is the
+order worth doing them in.
+
+### 1. `superteams/distribute.vue` — 657 lines
+
+The largest untouched page in the panel, and the only one that is a **tool**
+rather than a form: distributing teams into superteams is a real camp-setup task
+done under time pressure. Nothing in it has been looked at, and none of this
+note's conventions are applied to it.
+
+### 2. `challenges/[challengeId]/sessions.vue` — 602 lines
+
+The other half of the quiz work: live quiz sessions during an event. Largest
+untouched project-scoped page, and the quiz context is adjacent to it.
+
+### 3. `users/[userId]/achievements.vue` — 389 lines
+
+Awarding an achievement by hand is a support task. Holds one of the remaining
+`first: 200` pickers from cross-cutting item 1; `AdminUserPicker` is the pattern
+to copy (server-searched `USelectMenu`, `ignore-filter`, debounce).
+
+### 4. `superteams/[superTeamId].vue` — 278 lines
+
+The same shape as `teams/[teamId].vue`, so it is cheap and makes the pair
+consistent. Check it for the same three missing confirmations that page had.
+
+### 5. `[projectId]/edit.vue` (297) and `projects/new.vue` (167)
+
+Project setup. Both picked up the new `DateRangeField` and the translated zod
+messages as a side effect, but neither has had a pass of its own.
+
+### 6. `achievements/index.vue` — 169 lines
+
+The drag-to-reorder list, skipped early in this note over a suspected reorder
+conflict. **Checked 2026-09-22: there is none.** `achievements.sort_order` has
+no unique constraint, unlike `quiz_questions.question_order`, so
+`reorderAchievements` cannot hit the collision the quiz reorder did.
+
+### Low value, by earlier decisions
+
+- **`maintenance/*`** (5 pages, 66-381 lines) — "the maintenance stuff is not
+  too often used".
+- **`events/*`** (3 pages) — project events are barely used, which is why no
+  feature is built on them.
+- **`consents/index.vue`, `consents/new.vue`, `churches/[churchId].vue`,
+  `projects/index.vue`** — small, and already consistent enough.
+
+### Deferred, not forgotten
+
+All of **`my-church/*`** — including `units.vue` at **1,109 lines**, the last
+remaining outlier from cross-cutting item 4 and the biggest single-surface gap
+in the panel (item 5). Held because the next project's shape is not known yet;
+picking a navigation structure now would be guessing.
+
+### Backend work already identified
+
+Logged in the entries below, not started:
+
+1. `Challenge` needs nothing more, but a **project-level live-challenges** view
+   does — `activeChallenges` is viewer-relative.
+2. **`randomizeQuestions` is not implemented** (quiz questions never shuffle).
+3. **`QuizPredefinedAnswer.isCorrect` is ungated** — a user can read the answers
+   regardless of `revealCorrectAnswers`.
+4. **`Team.memberCount`** for the join/team funnel.
+5. **A paginated `Consent.userHistory`**, so the consent page can say how many
+   accepted.
+6. **`reorderQuizQuestions` trusts its input** to cover every question in the
+   quiz; a partial list would leave a row on a contested position.
+7. **A `make schema` generator** for `schema.sql` (it documents 46 of 83
+   tables).
 
 ## Scope decisions
 
