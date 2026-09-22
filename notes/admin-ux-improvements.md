@@ -781,6 +781,80 @@ then `make generate` and `pnpm codegen`.
 
 ## Update log
 
+### 2026-09-22 — challenge page: three gaps closed, form restructured
+
+#### The functionality holes
+
+- **`endTime` was commented out.** Lines of `AdminChallengeForm.vue` had
+  `endTime` and `startedAt` inside a `<!-- -->` block, so **no challenge end
+  time could be set from the admin panel at all** — while the schema had the
+  field, the query fetched it, `initialData` mapped it and `handleSubmit`
+  submitted it. `endTime` is a real field again. `startedAt` stayed out (it is
+  not something an admin sets) and its dead markup was deleted rather than left
+  commented.
+- **"Synlig fra" only rendered in edit mode**, so visibility could not be set at
+  creation. Now always present.
+- **All four timestamps were raw `datetime-local`**, which is why publishing
+  read `02/09/2026, 02:29 PM` — US order, 12-hour clock, in a Norwegian admin.
+  New `AdminDateTimeField` wraps `UInputDate` (`granularity="minute"`) plus a
+  calendar popover, and speaks the same `YYYY-MM-DDTHH:mm` string the forms
+  already store, so `toLocalDatetimeLocal` / `toISOString` are untouched.
+
+  Two behaviours it has to get right, both tested: the calendar emits a date
+  with **no time**, so the stored time must survive picking a different day; and
+  clearing _is_ allowed here, unlike the project date range, because every field
+  using it is optional.
+
+#### Layout
+
+- `grid grid-cols-2 gap-8` with the form at `max-w-md` was why a wide screen
+  showed a 448px form in a half-width cell and a large void beside it. Now
+  `@container` with `@4xl:grid-cols-[minmax(0,32rem)_minmax(0,1fr)]`, so one
+  column until the panel can actually hold both.
+- **The preview is `@4xl:sticky top-6`.** It used to scroll away before you
+  reached the timestamps, which defeats a live preview.
+- **A page header**: name, type badge, "Ikke publisert" badge, actions. Sesjoner
+  and QR-kode were floating above the form looking like tabs.
+- **Sections**: Innhold, type-specific settings, Tidspunkt, Varsling.
+- **Order fixed.** Delete moved from a full-width red button directly under Save
+  (and _above_ a content section) to the header, matching the team and consent
+  pages. The quiz block left the form for `AdminChallengeQuizSection` after it.
+
+#### Quiz summary
+
+`QuizChallenge.quiz` already exposed everything needed, so the block summarises
+the quiz instead of only linking to it. A quiz with **no questions** gets a
+warning line: the challenge is live and there is nothing to answer.
+
+First attempt was a flat row of self-describing fragments — "3 spørsmål · 50
+poeng for fullføring · Ett forsøk · Fast rekkefølge · …" — which read as loose
+text rather than as this quiz's settings. It is a **labelled `dl`** now
+(Spørsmål / Poeng for fullføring / Forsøk / Rekkefølge / Riktige svar /
+Tidsgrense), matching the Detaljer lists elsewhere in the panel. The lesson
+generalises: a value needs a label to belong to something, and six unlabelled
+phrases in a row belong to nothing.
+
+The create page renders the same component with no ids, which is how it says
+"available after the challenge exists" — the form no longer carries that notice,
+so `AdminChallengeForm` exposes the selected type as a `v-model:type` for the
+page to branch on.
+
+#### Completion count
+
+`challenge.completionCount` (added earlier today) sits in the **header**, not a
+section: this page is for editing, and completion is status. One line to remove
+if it turns out not to pull its weight.
+
+#### The dead-token sweep, finished
+
+Nine more `text-text-muted` — the user-layer branding token that resolves to
+nothing outside `AdminThemedPreview` — in `quiz.vue`, `AdminQuizForm` and
+`AdminQuizQuestionEditor`. All now `text-muted`. **No admin page or non-preview
+admin component still uses a user-layer token.** The ones left are inside the
+preview components (`AdminChallengeCardPreview`, `AdminAchievementPreview`,
+`AdminProjectThemePreview`), where they are correct — those render the
+user-facing look under the branding variables.
+
 ### 2026-09-22 — `DateRangeField` rebuilt on `UInputDate`
 
 Changing a project's end date meant reselecting the whole range: the field was a

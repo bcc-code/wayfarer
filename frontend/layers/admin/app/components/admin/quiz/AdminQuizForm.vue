@@ -285,7 +285,7 @@ const questionTypeOptions = [
           >
             <div class="flex items-start justify-between gap-4">
               <div class="flex-1">
-                <div class="text-sm text-text-muted mb-1">
+                <div class="text-sm text-muted mb-1">
                   Spørsmål {{ index + 1 }} -
                   {{
                     question.questionType === QuizQuestionType.Predefined
@@ -300,10 +300,7 @@ const questionTypeOptions = [
                 <div class="font-medium">
                   {{ question.questionText || '(Ingen spørsmålstekst)' }}
                 </div>
-                <div
-                  v-if="question.points"
-                  class="text-sm text-text-muted mt-1"
-                >
+                <div v-if="question.points" class="text-sm text-muted mt-1">
                   {{ formatNumber(question.points) }} poeng
                 </div>
               </div>
@@ -329,7 +326,7 @@ const questionTypeOptions = [
 
           <div
             v-if="questions.length === 0"
-            class="text-center py-8 text-text-muted border border-dashed border-default rounded-lg"
+            class="text-center py-8 text-muted border border-dashed border-default rounded-lg"
           >
             Ingen spørsmål ennå. Klikk «Legg til spørsmål» for å opprette ett.
           </div>

@@ -47,6 +47,10 @@ const { executeMutation: createQuiz } = useCreateQuizMutation()
 
 const eventId = ref('')
 
+// Mirrors the form's type select, so the page knows whether to show the quiz
+// notice.
+const type = ref<ChallengeType>(ChallengeType.Simple)
+
 const eventOptions = computed(() => {
   return (
     data.value?.events.edges.map((e) => ({
@@ -146,26 +150,29 @@ async function handleSubmit(formData: ChallengeFormData) {
 </script>
 
 <template>
-  <div>
-    <div>
-      <h1 class="mb-6 text-2xl font-bold">Opprett utfordring</h1>
-      <AdminChallengeForm
-        :project-id="route.params.projectId"
-        :colors="data?.project.branding.colors"
-        submit-label="Opprett utfordring"
-        @submit="handleSubmit"
-      >
-        <template #before-type>
-          <UFormField name="eventId" label="Arrangement (valgfritt)">
-            <USelect
-              v-model="eventId"
-              :items="eventOptions"
-              placeholder="Ingen (prosjekt-nivå)"
-              class="w-full"
-            />
-          </UFormField>
-        </template>
-      </AdminChallengeForm>
-    </div>
+  <div class="space-y-8">
+    <h1 class="text-3xl font-bold">Opprett utfordring</h1>
+    <AdminChallengeForm
+      v-model:type="type"
+      :project-id="route.params.projectId"
+      :colors="data?.project.branding.colors"
+      submit-label="Opprett utfordring"
+      @submit="handleSubmit"
+    >
+      <template #before-type>
+        <UFormField name="eventId" label="Arrangement (valgfritt)">
+          <USelect
+            v-model="eventId"
+            :items="eventOptions"
+            placeholder="Ingen (prosjekt-nivå)"
+            class="w-full"
+          />
+        </UFormField>
+      </template>
+    </AdminChallengeForm>
+
+    <!-- The quiz itself cannot exist before the challenge does; saying so here
+         beats a dead "Rediger quiz" button. -->
+    <AdminChallengeQuizSection v-if="type === ChallengeType.Quiz" />
   </div>
 </template>

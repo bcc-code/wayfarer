@@ -325,7 +325,7 @@ function handleSave() {
           </UButton>
         </div>
 
-        <p class="text-xs text-text-muted">Kryss av for riktig(e) svar</p>
+        <p class="text-xs text-muted">Kryss av for riktig(e) svar</p>
       </div>
     </template>
 
@@ -373,7 +373,7 @@ function handleSave() {
           </UButton>
         </div>
 
-        <p class="text-xs text-text-muted">
+        <p class="text-xs text-muted">
           Dra for å endre rekkefølge. Rekkefølgen i listen er den korrekte
           rekkefølgen.
         </p>
@@ -391,11 +391,11 @@ function handleSave() {
             class="flex items-center gap-3 mb-2"
           >
             <div
-              class="drag-handle text-text-muted cursor-grab active:cursor-grabbing"
+              class="drag-handle text-muted cursor-grab active:cursor-grabbing"
             >
               <UIcon name="lucide:grip-vertical" class="size-5" />
             </div>
-            <span class="text-sm text-text-muted w-6">{{ index + 1 }}.</span>
+            <span class="text-sm text-muted w-6">{{ index + 1 }}.</span>
             <UInput
               v-model="item.itemText"
               placeholder="Elementtekst"

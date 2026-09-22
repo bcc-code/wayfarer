@@ -378,7 +378,7 @@ const isQuizChallenge = computed(() => {
       <AdminQueryState :fetching :error>
         <template v-if="data">
           <div v-if="!isQuizChallenge" class="text-center py-12">
-            <p class="text-text-muted">
+            <p class="text-muted">
               Denne utfordringen er ikke en quiz-utfordring.
             </p>
             <UButton

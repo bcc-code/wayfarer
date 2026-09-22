@@ -4655,14 +4655,21 @@ export type AdminProjectAchievementsNewPageQuery = { __typename?: 'Query', proje
 
 export type AdminProjectChallengePageQueryVariables = Exact<{
   challengeId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
 }>;
 
 
-export type AdminProjectChallengePageQuery = { __typename?: 'Query', challenge:
-    | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, image?: string | null, buttonText: string, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } }, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
-    | { __typename: 'PluginChallenge', pluginChallengeId: string, id: string, name: string, description: any, image?: string | null, buttonText?: string | null, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } }, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
-    | { __typename: 'QuizChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } }, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
-    | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, image?: string | null, buttonText: string, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } }, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
+export type AdminProjectChallengePageQuery = { __typename?: 'Query', participants: { __typename?: 'UserConnection', totalCount: number }, challenge:
+    | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, image?: string | null, buttonText: string, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, completionCount: number, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } }, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
+    | { __typename: 'PluginChallenge', pluginChallengeId: string, id: string, name: string, description: any, image?: string | null, buttonText?: string | null, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, completionCount: number, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } }, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
+    | { __typename: 'QuizChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, completionCount: number, quiz: { __typename?: 'Quiz', id: string, completionPoints: number, allowRetakes: boolean, randomizeQuestions: boolean, revealCorrectAnswers: boolean, timeoutSeconds?: number | null, questions: Array<
+          | { __typename?: 'FreeTextQuestion', id: string }
+          | { __typename?: 'JsonQuestion', id: string }
+          | { __typename?: 'NumberQuestion', id: string }
+          | { __typename?: 'OrderingQuestion', id: string }
+          | { __typename?: 'PredefinedQuestion', id: string }
+        > }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } }, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
+    | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, image?: string | null, buttonText: string, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, completionCount: number, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } }, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
    };
 
 export type AdminChallengeQuizPageQueryVariables = Exact<{
@@ -7438,7 +7445,10 @@ export function useAdminProjectAchievementsNewPageQuery(options?: Omit<Urql.UseQ
   return Urql.useQuery<AdminProjectAchievementsNewPageQuery, AdminProjectAchievementsNewPageQueryVariables | undefined>({ query: AdminProjectAchievementsNewPageDocument, variables: undefined, ...options });
 };
 export const AdminProjectChallengePageDocument = gql`
-    query AdminProjectChallengePage($challengeId: ID!) {
+    query AdminProjectChallengePage($challengeId: ID!, $projectId: ID!) {
+  participants: users(first: 0, filter: {projectId: $projectId}) {
+    totalCount
+  }
   challenge(id: $challengeId) {
     __typename
     id
@@ -7451,6 +7461,7 @@ export const AdminProjectChallengePageDocument = gql`
     visibleAt
     startedAt
     endTime
+    completionCount
     project {
       id
       name
@@ -7468,6 +7479,19 @@ export const AdminProjectChallengePageDocument = gql`
     }
     ... on PluginChallenge {
       pluginChallengeId
+    }
+    ... on QuizChallenge {
+      quiz {
+        id
+        completionPoints
+        allowRetakes
+        randomizeQuestions
+        revealCorrectAnswers
+        timeoutSeconds
+        questions {
+          id
+        }
+      }
     }
     translationStatus {
       ...TranslationStatus
