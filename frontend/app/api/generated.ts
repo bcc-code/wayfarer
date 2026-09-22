@@ -4687,10 +4687,11 @@ export type AdminProjectEventsQuery = { __typename?: 'Query', events: { __typena
 
 export type AdminProjectOverviewQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
+  withTrend: Scalars['Boolean']['input'];
 }>;
 
 
-export type AdminProjectOverviewQuery = { __typename?: 'Query', challenges: { __typename?: 'ChallengeConnection', totalCount: number }, achievements: { __typename?: 'AchievementConnection', totalCount: number }, events: { __typename?: 'EventConnection', totalCount: number }, superteams: { __typename?: 'SuperTeamConnection', totalCount: number } };
+export type AdminProjectOverviewQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, activityTrend?: Array<{ __typename?: 'ProjectActivityPoint', date: any, points: number, activeUsers: number }> }, users: { __typename?: 'UserConnection', totalCount: number }, teams: { __typename?: 'TeamConnection', totalCount: number }, challenges: { __typename?: 'ChallengeConnection', totalCount: number }, achievements: { __typename?: 'AchievementConnection', totalCount: number }, events: { __typename?: 'EventConnection', totalCount: number }, superteams: { __typename?: 'SuperTeamConnection', totalCount: number } };
 
 export type AdminScoresPageQueryVariables = Exact<{
   filter?: InputMaybe<ScoreJournalFilter>;
@@ -7525,7 +7526,21 @@ export function useAdminProjectEventsQuery(options?: Omit<Urql.UseQueryArgs<neve
   return Urql.useQuery<AdminProjectEventsQuery, AdminProjectEventsQueryVariables | undefined>({ query: AdminProjectEventsDocument, variables: undefined, ...options });
 };
 export const AdminProjectOverviewDocument = gql`
-    query AdminProjectOverview($projectId: ID!) {
+    query AdminProjectOverview($projectId: ID!, $withTrend: Boolean!) {
+  project(id: $projectId) {
+    id
+    activityTrend(days: 14) @include(if: $withTrend) {
+      date
+      points
+      activeUsers
+    }
+  }
+  users(first: 0, filter: {projectId: $projectId}) {
+    totalCount
+  }
+  teams(first: 0, filter: {projectId: $projectId}) {
+    totalCount
+  }
   challenges(first: 0, filter: {projectId: $projectId}) {
     totalCount
   }

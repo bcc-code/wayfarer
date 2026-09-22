@@ -1,11 +1,8 @@
 <script setup lang="ts">
-// `formatDateRange` / `formatNumber` are auto-imported from the shared root;
-// only layer-local modules need an explicit relative import.
 import {
   describeProjectTiming,
   formatProjectCountdown,
 } from '../../../utils/dates'
-import { dailyAverage } from '../../../utils/sparkline'
 import type { RouteLocationRaw } from 'vue-router'
 import {
   PROJECT_NAV,
@@ -118,57 +115,10 @@ const shortcuts = computed(() =>
 const participants = computed(() => data.value?.users.totalCount)
 
 const trend = computed(() => data.value?.project?.activityTrend ?? [])
-
-/**
- * Two tiles, not one chart with two axes: points run to thousands and active
- * users to dozens, and a shared scale would flatten one of them into the
- * baseline. A second y-axis is never the answer.
- *
- * The aggregates differ on purpose. Points are additive, so the window total is
- * meaningful. Active users is a distinct count **per day** — summing it would
- * count the same person once per day they appeared — so it is shown as a daily
- * average.
- */
-const trendTiles = computed(() => {
-  if (trend.value.length === 0) return []
-  return [
-    {
-      key: 'points',
-      label: 'Poeng siste 14 dager',
-      value: formatNumber(
-        trend.value.reduce((sum, point) => sum + point.points, 0),
-      ),
-      points: trend.value.map((point) => ({
-        date: point.date,
-        value: point.points,
-      })),
-    },
-    {
-      key: 'activeUsers',
-      label: 'Aktive deltakere per dag',
-      value: formatNumber(
-        dailyAverage(trend.value.map((point) => point.activeUsers)),
-      ),
-      points: trend.value.map((point) => ({
-        date: point.date,
-        value: point.activeUsers,
-      })),
-    },
-  ]
-})
 </script>
 
 <template>
-  <!--
-    `@container` on this component's own root: the shortcut grid tracks the
-    width the section is *given*, not the window's. See Conventions in
-    notes/admin-ux-improvements.md.
-
-    No accent ring. Tinting the card border with the project's branding colour
-    was meant to tell stacked sections apart, but with one active project there
-    is nothing to tell apart and an arbitrary per-project hue on the border just
-    reads as random. The logo already carries the project's identity.
-  -->
+  <!-- `@container`: the shortcut grid tracks the width this section is given. -->
   <UCard class="@container">
     <div class="space-y-4">
       <div class="flex items-center gap-3">
@@ -203,26 +153,8 @@ const trendTiles = computed(() => {
         </UBadge>
       </div>
 
-      <!--
-        Stat tile per measure — label, aggregate, sparkline. Rendered only for a
-        running project; `withTrend` skips the field otherwise.
-      -->
-      <div v-if="trendTiles.length" class="grid gap-3 @2xl:grid-cols-2">
-        <div
-          v-for="tile in trendTiles"
-          :key="tile.key"
-          class="bg-elevated/50 rounded-lg p-3"
-        >
-          <p class="text-muted text-xs">{{ tile.label }}</p>
-          <p class="mb-2 text-xl font-semibold">{{ tile.value }}</p>
-          <AdminSparkline
-            :points="tile.points"
-            :label="tile.label"
-            :height="36"
-            empty-label="Ingen aktivitet siste 14 dager"
-          />
-        </div>
-      </div>
+      <!-- Only for a running project; `withTrend` skips the field. -->
+      <AdminActivityTrend :trend="trend" :days="14" />
 
       <!-- `auto-fit`: 4-7 shortcuts depending on permissions, so no fixed
            column count fits without orphaning a tile. -->
