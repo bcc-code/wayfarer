@@ -693,7 +693,7 @@ then `make generate` and `pnpm codegen`.
 | `users/[userId]/achievements.vue` | `…/achievements`            | 389 | ☐   | `first: 200` picker — see #1, wants a searchable select, not pagination.                                      |
 | `churches/[churchId].vue`         | `/admin/churches/:churchId` | 175 | ☐   | Drill-down leaf by design — no list page, no nav entry (decision recorded in restructure note).               |
 | `consents/index.vue`              | `/admin/consents`           | 109 | ☐   | Plain list (`[Consent!]!`), not a connection — off `AdminListView` by decision, see log. Sibling empty state. |
-| `consents/[consentId].vue`        | `/admin/consents/:id`       | 305 | ☐   |                                                                                                               |
+| `consents/[consentId].vue`        | `/admin/consents/:id`       | 300 | ◐   | Header + Tekst + Detaljer sections, `max-w-4xl`. Acceptance counts need a paginated `userHistory`.            |
 | `consents/new.vue`                | `/admin/consents/new`       | 187 | ☐   |                                                                                                               |
 | `feedback/index.vue`              | `/admin/feedback`           | 601 | ◐   | **On `AdminListView`.** Three facets + URL state; realtime via Firestore. Largest list page.                  |
 
@@ -758,6 +758,51 @@ then `make generate` and `pnpm codegen`.
 ---
 
 ## Update log
+
+### 2026-09-22 — consent detail page restructured
+
+It was a bare `dl` of full-panel-width rows with the machine ID first, the
+version stated twice, and two paragraphs of near-identical text one above the
+other. Now: header (title, version badge, draft badge, actions), then **Tekst**,
+then **Detaljer**, both in `AdminSection`.
+
+What each change fixes:
+
+- **`max-w-4xl`, not `6xl`.** The other detail pages are data; this one is a
+  legal paragraph, and the body preview at ~1900px was one long line. Deliberate
+  divergence from the `max-w-6xl` used elsewhere.
+- **Both texts labelled.** `shortText` was an unlabelled subtitle under the
+  title and `body` was "Forhåndsvisning av innhold" below, so a consent whose
+  two fields say similar things read as the same paragraph printed twice. They
+  are now "Kort tekst" and "Fullstendig tekst" inside one section.
+- **The ID moved last**, matching the user and church pages.
+- **The "Versjon" row is gone** — the `v2` badge beside the title already said
+  it.
+- **`w-24` → `w-32`** on the label column: "Administrert av" wrapped onto two
+  lines.
+- **Type reads "Lokal"/"Ekstern"**, not the raw `LOCAL`/`REMOTE` enum.
+- **The edit form replaces the text section** rather than appearing above a
+  stale copy of it. Detaljer stays visible in both modes; it is read-only
+  context.
+
+#### A dead class, fixed in three pages
+
+`bg-background-indent` resolves to `--color-background-indent`, a **project
+branding** variable that only exists inside `AdminThemedPreview` and the theme
+editor. Used on a plain admin page it resolves to nothing, so the `<code>` chips
+on the consent detail page, the consents list and the team detail page had no
+background at all. All three now use `bg-elevated`. `AdminErrorState`'s own
+comment already warned that these tokens "read wrong inside the dashboard" —
+worth grepping for the other user-layer tokens (`text-text-muted`,
+`rounded-list`, `p-medium`, `text-label`) on admin pages outside the preview
+components.
+
+#### Not done: who accepted it
+
+`Consent.userHistory: [UserConsentHistoryEntry!]!` exists and would answer "how
+many have accepted this, and who rejected it" — the one question this page
+cannot answer today. It is unpaginated, though, so with 13k users it is a
+hazard, not a quick win. It needs a connection (or a count field) first.
 
 ### 2026-09-22 — achievement badges on the home page too
 

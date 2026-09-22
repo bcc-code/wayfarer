@@ -315,7 +315,7 @@ async function handleToggleLeaderboardExclusion(excluded: boolean) {
             <div class="border-default flex items-center gap-6 border-b py-2">
               <dt class="text-muted w-24 shrink-0">Invitasjonskode</dt>
               <dd class="flex items-center gap-2">
-                <code class="bg-background-indent rounded px-2 py-1">{{
+                <code class="bg-elevated rounded px-2 py-1">{{
                   data.team.joinCode
                 }}</code>
                 <UButton

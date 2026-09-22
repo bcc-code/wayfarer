@@ -46,6 +46,11 @@ const {
 // above it is derived from the route.
 useAdminPage(() => data.value?.consent.title)
 
+const managementTypeLabels: Record<string, string> = {
+  LOCAL: 'Lokal',
+  REMOTE: 'Ekstern',
+}
+
 const { executeMutation: updateConsent } = useUpdateConsentMutation()
 const toast = useToast()
 
@@ -130,148 +135,146 @@ async function publishConsent() {
 </script>
 
 <template>
-  <div>
-    <div>
-      <AdminQueryState :fetching :error>
-        <div v-if="data" class="space-y-6">
-          <!-- Consent Header -->
-          <div class="flex items-start justify-between">
+  <!-- Capped tighter than the data pages: this one is mostly prose, and the
+       body preview at full panel width is unreadable. -->
+  <div class="max-w-4xl">
+    <AdminQueryState :fetching :error>
+      <div v-if="data" class="space-y-8">
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex flex-wrap items-center gap-3">
+            <h1 class="text-3xl font-bold">{{ data.consent.title }}</h1>
+            <UBadge variant="soft">v{{ data.consent.version }}</UBadge>
+            <UBadge
+              v-if="!data.consent.publishedAt"
+              variant="soft"
+              color="warning"
+            >
+              Utkast
+            </UBadge>
+          </div>
+          <div class="flex shrink-0 gap-2">
+            <UButton
+              v-if="!data.consent.publishedAt"
+              variant="soft"
+              color="success"
+              @click="publishConsent"
+            >
+              Publiser
+            </UButton>
+            <UButton v-if="!isEditing" variant="soft" @click="startEditing">
+              Rediger
+            </UButton>
+          </div>
+        </div>
+
+        <AdminSection v-if="isEditing" title="Rediger samtykke">
+          <div class="space-y-4">
+            <AdminTranslatableFormField
+              label="Tittel"
+              :translation-status="data.consent.translationStatus"
+              name="title"
+            >
+              <UInput v-model="editState.title" class="w-full" />
+            </AdminTranslatableFormField>
+            <AdminTranslatableFormField
+              label="Kort tekst"
+              :translation-status="data.consent.translationStatus"
+              name="shortText"
+            >
+              <UTextarea
+                v-model="editState.shortText"
+                class="w-full"
+                autoresize
+                placeholder="En kort beskrivelse som vises før brukere leser hele samtykket"
+              />
+            </AdminTranslatableFormField>
+            <AdminTranslatableFormField
+              label="Innhold (Markdown)"
+              :translation-status="data.consent.translationStatus"
+              name="body"
+            >
+              <UTextarea
+                v-model="editState.body"
+                class="w-full font-mono"
+                :rows="10"
+                autoresize
+              />
+            </AdminTranslatableFormField>
+            <UFormField label="URL (valgfritt)">
+              <UInput
+                v-model="editState.url"
+                class="w-full"
+                type="url"
+                placeholder="https://..."
+              />
+            </UFormField>
+            <UFormField label="Administreres av (valgfritt)">
+              <UInput
+                v-model="editState.managedBy"
+                class="w-full"
+                placeholder="Ekstern systemidentifikator"
+              />
+            </UFormField>
+          </div>
+          <!-- `AdminSection` has no footer slot; the actions sit at the end
+               of the section instead. -->
+          <div class="flex justify-end gap-3 pt-4">
+            <UButton variant="ghost" @click="cancelEditing">Avbryt</UButton>
+            <UButton @click="saveChanges">Lagre endringer</UButton>
+          </div>
+        </AdminSection>
+
+        <!-- Both texts labelled: they are separate fields that often hold
+             similar wording, and an unlabelled subtitle above the preview read
+             as the same paragraph twice. -->
+        <AdminSection v-else title="Tekst">
+          <div class="space-y-4">
             <div>
-              <div class="mb-2 flex items-center gap-3">
-                <h1 class="text-3xl font-bold">{{ data.consent.title }}</h1>
-                <UBadge variant="soft"> v{{ data.consent.version }} </UBadge>
-                <UBadge
-                  v-if="!data.consent.publishedAt"
-                  variant="soft"
-                  color="warning"
-                >
-                  Utkast
-                </UBadge>
-              </div>
-              <p class="text-dimmed">{{ data.consent.shortText }}</p>
+              <p class="text-muted mb-1 text-xs">Kort tekst</p>
+              <p>{{ data.consent.shortText }}</p>
             </div>
-            <div class="flex gap-2">
-              <UButton
-                v-if="!data.consent.publishedAt"
-                variant="soft"
-                color="success"
-                @click="publishConsent"
-              >
-                Publiser
-              </UButton>
-              <UButton v-if="!isEditing" variant="soft" @click="startEditing">
-                Rediger
-              </UButton>
+            <div>
+              <p class="text-muted mb-1 text-xs">Fullstendig tekst</p>
+              <div
+                class="prose prose-sm dark:prose-invert max-w-none"
+                v-html="data.consent.body.html"
+              />
             </div>
           </div>
+        </AdminSection>
 
-          <!-- Edit Form -->
-          <AdminSection v-if="isEditing" title="Rediger samtykke">
-            <div class="space-y-4">
-              <AdminTranslatableFormField
-                label="Tittel"
-                :translation-status="data?.consent.translationStatus"
-                name="title"
-              >
-                <UInput v-model="editState.title" class="w-full" />
-              </AdminTranslatableFormField>
-              <AdminTranslatableFormField
-                label="Kort tekst"
-                :translation-status="data?.consent.translationStatus"
-                name="shortText"
-              >
-                <UTextarea
-                  v-model="editState.shortText"
-                  class="w-full"
-                  autoresize
-                  placeholder="En kort beskrivelse som vises før brukere leser hele samtykket"
-                />
-              </AdminTranslatableFormField>
-              <AdminTranslatableFormField
-                label="Innhold (Markdown)"
-                :translation-status="data?.consent.translationStatus"
-                name="body"
-              >
-                <UTextarea
-                  v-model="editState.body"
-                  class="w-full font-mono"
-                  :rows="10"
-                  autoresize
-                />
-              </AdminTranslatableFormField>
-              <UFormField label="URL (valgfritt)">
-                <UInput
-                  v-model="editState.url"
-                  class="w-full"
-                  type="url"
-                  placeholder="https://..."
-                />
-              </UFormField>
-              <UFormField label="Administreres av (valgfritt)">
-                <UInput
-                  v-model="editState.managedBy"
-                  class="w-full"
-                  placeholder="Ekstern systemidentifikator"
-                />
-              </UFormField>
-            </div>
-            <!-- `AdminSection` has no footer slot; the actions sit at the end
-                 of the section instead. -->
-            <div class="flex justify-end gap-3 pt-4">
-              <UButton variant="ghost" @click="cancelEditing">Avbryt</UButton>
-              <UButton @click="saveChanges">Lagre endringer</UButton>
-            </div>
-          </AdminSection>
-
-          <!-- Consent Info -->
-          <dl class="text-sm">
-            <div class="border-default flex gap-6 border-b py-2">
-              <dt class="text-muted w-24 shrink-0">Samtykke-ID</dt>
-              <dd class="font-mono">{{ data.consent.id }}</dd>
-            </div>
-            <div class="border-default flex gap-6 border-b py-2">
-              <dt class="text-muted w-24 shrink-0">Nøkkel</dt>
+        <AdminSection title="Detaljer">
+          <dl class="divide-default divide-y text-sm">
+            <div class="flex gap-6 py-2">
+              <dt class="text-muted w-32 shrink-0">Nøkkel</dt>
               <dd>
-                <code class="bg-background-indent rounded px-2 py-1">
+                <code class="bg-elevated rounded px-2 py-1">
                   {{ data.consent.key }}
                 </code>
               </dd>
             </div>
-            <div class="border-default flex gap-6 border-b py-2">
-              <dt class="text-muted w-24 shrink-0">Versjon</dt>
-              <dd class="font-medium">{{ data.consent.version }}</dd>
-            </div>
-            <div class="border-default flex gap-6 border-b py-2">
-              <dt class="text-muted w-24 shrink-0">Publisert</dt>
-              <dd v-if="data.consent.publishedAt" class="font-medium">
+            <div class="flex gap-6 py-2">
+              <dt class="text-muted w-32 shrink-0">Publisert</dt>
+              <dd v-if="data.consent.publishedAt">
                 {{ formatDateTime(data.consent.publishedAt) }}
               </dd>
-              <dd v-else class="text-muted">Ikke publisert</dd>
+              <dd v-else class="text-dimmed">Ikke publisert</dd>
             </div>
-            <div class="border-default flex gap-6 border-b py-2">
-              <dt class="text-muted w-24 shrink-0">Type</dt>
+            <div class="flex gap-6 py-2">
+              <dt class="text-muted w-32 shrink-0">Type</dt>
               <dd>
-                <UBadge
-                  :color="
-                    data.consent.managementType === 'LOCAL'
-                      ? 'primary'
-                      : 'neutral'
-                  "
-                  variant="soft"
-                >
-                  {{ data.consent.managementType }}
-                </UBadge>
+                {{
+                  managementTypeLabels[data.consent.managementType] ??
+                  data.consent.managementType
+                }}
               </dd>
             </div>
-            <div
-              v-if="data.consent.managedBy"
-              class="border-default flex gap-6 border-b py-2"
-            >
-              <dt class="text-muted w-24 shrink-0">Administrert av</dt>
-              <dd class="font-medium">{{ data.consent.managedBy }}</dd>
+            <div v-if="data.consent.managedBy" class="flex gap-6 py-2">
+              <dt class="text-muted w-32 shrink-0">Administrert av</dt>
+              <dd>{{ data.consent.managedBy }}</dd>
             </div>
             <div v-if="data.consent.url" class="flex gap-6 py-2">
-              <dt class="text-muted w-24 shrink-0">URL</dt>
+              <dt class="text-muted w-32 shrink-0">URL</dt>
               <dd>
                 <a
                   :href="data.consent.url"
@@ -283,17 +286,15 @@ async function publishConsent() {
                 </a>
               </dd>
             </div>
+            <!-- Last, matching the user and church pages: a support aid, not
+                 the first thing a reader wants. -->
+            <div class="flex gap-6 py-2">
+              <dt class="text-muted w-32 shrink-0">Samtykke-ID</dt>
+              <dd class="font-mono">{{ data.consent.id }}</dd>
+            </div>
           </dl>
-
-          <!-- Body Preview -->
-          <AdminSection title="Forhåndsvisning av innhold">
-            <div
-              class="prose prose-sm dark:prose-invert max-w-none"
-              v-html="data.consent.body.html"
-            />
-          </AdminSection>
-        </div>
-      </AdminQueryState>
-    </div>
+        </AdminSection>
+      </div>
+    </AdminQueryState>
   </div>
 </template>

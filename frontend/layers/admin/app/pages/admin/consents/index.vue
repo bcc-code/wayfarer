@@ -58,7 +58,7 @@ const columns: TableColumn<ConsentRow>[] = [
     <div v-else class="space-y-4">
       <UTable :data="consents" :loading="fetching" :columns>
         <template #key-cell="{ row }">
-          <code class="bg-background-indent rounded px-2 py-1 text-sm">
+          <code class="bg-elevated rounded px-2 py-1 text-sm">
             {{ row.original.key }}
           </code>
         </template>
