@@ -21,6 +21,7 @@ const mount = (board: Record<string, unknown>) =>
 const boardWith = (
   nodes: ReturnType<typeof entry>[],
   me: ReturnType<typeof entry> | null = null,
+  nearestChurchRivals: ReturnType<typeof entry>[] = [],
 ) => ({
   id: 'LC1',
   name: 'Topp 20',
@@ -28,6 +29,7 @@ const boardWith = (
     totalCount: nodes.length,
     edges: nodes.map((node) => ({ node })),
     me,
+    nearestChurchRivals,
   },
 })
 
@@ -63,6 +65,36 @@ describe('StandingsBoard', () => {
   it('does not repeat the viewer when they are already listed', async () => {
     const me = entry('US1', 'Ada', 1, [LeaderboardEntryTag.Me] as never)
     const wrapper = await mount(boardWith([me], me))
+
+    expect(wrapper.findComponent(LeaderboardList).props('extraItems')).toEqual(
+      [],
+    )
+  })
+
+  // The rivals the server picked rank just above the viewer, so they belong
+  // between the cut and the viewer's own row.
+  it('shows the nearest rivals above the viewer', async () => {
+    const me = entry('US9', 'Deg', 41, [LeaderboardEntryTag.Me] as never)
+    const nearest = entry('US8', 'Rival', 40)
+    const furthest = entry('US7', 'Fjernere rival', 38)
+
+    const wrapper = await mount(
+      // Server order is nearest-first; the component sorts by rank.
+      boardWith([entry('US1', 'Ada', 1)], me, [nearest, furthest]),
+    )
+
+    expect(wrapper.findComponent(LeaderboardList).props('extraItems')).toEqual([
+      furthest,
+      nearest,
+      me,
+    ])
+  })
+
+  // Rivals rank above the viewer, so a viewer on the board means they are too.
+  it('shows no rivals when the viewer is already on the board', async () => {
+    const me = entry('US1', 'Ada', 1, [LeaderboardEntryTag.Me] as never)
+
+    const wrapper = await mount(boardWith([me], me, [entry('US0', 'X', 0)]))
 
     expect(wrapper.findComponent(LeaderboardList).props('extraItems')).toEqual(
       [],

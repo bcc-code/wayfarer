@@ -6,6 +6,7 @@ import {
   findEntryById,
   entryExistsInList,
   getExtraItems,
+  getExtraItemsWithRivals,
   findCurrentUserEntry,
   findTeamLeadEntry,
   type LeaderboardEntryLike,
@@ -227,5 +228,62 @@ describe('leaderboard', () => {
     it('should return undefined for empty array', () => {
       expect(findTeamLeadEntry([])).toBeUndefined()
     })
+  })
+})
+
+describe('getExtraItemsWithRivals', () => {
+  const ranked = (id: string, rank: number, tags?: LeaderboardEntryTag[]) =>
+    ({ id, rank, tags }) as LeaderboardEntryLike & { rank: number }
+
+  const top = [ranked('US1', 1), ranked('US2', 2)]
+
+  it('is empty when there is no viewer entry', () => {
+    expect(getExtraItemsWithRivals(top, null, [ranked('US8', 40)])).toEqual([])
+  })
+
+  // Rivals rank above the viewer, so if the viewer made the cut they did too —
+  // appending them would repeat rows already on the board.
+  it('is empty when the viewer is already on the board', () => {
+    const me = ranked('US1', 1, [LeaderboardEntryTag.Me])
+
+    expect(
+      getExtraItemsWithRivals([me, top[1]!], me, [ranked('US0', 0)]),
+    ).toEqual([])
+  })
+
+  it('appends the viewer alone when there are no rivals', () => {
+    const me = ranked('US9', 41, [LeaderboardEntryTag.Me])
+
+    expect(getExtraItemsWithRivals(top, me)).toEqual([me])
+  })
+
+  // The server walks backward from the viewer, so rivals arrive nearest-first.
+  it('orders rivals by rank, with the viewer last', () => {
+    const me = ranked('US9', 41, [LeaderboardEntryTag.Me])
+    const nearest = ranked('US8', 40)
+    const middle = ranked('US7', 35)
+    const furthest = ranked('US6', 20)
+
+    expect(
+      getExtraItemsWithRivals(top, me, [nearest, middle, furthest]),
+    ).toEqual([furthest, middle, nearest, me])
+  })
+
+  it('drops a rival that is already on the board', () => {
+    const me = ranked('US9', 41, [LeaderboardEntryTag.Me])
+    const onBoard = top[1]!
+
+    expect(
+      getExtraItemsWithRivals(top, me, [onBoard, ranked('US8', 40)]),
+    ).toEqual([ranked('US8', 40), me])
+  })
+
+  it('puts an unranked rival last among the rivals', () => {
+    const me = ranked('US9', 41, [LeaderboardEntryTag.Me])
+    const unranked = { id: 'US5' } as LeaderboardEntryLike & { rank?: number }
+
+    expect(
+      getExtraItemsWithRivals(top, me, [unranked, ranked('US8', 40)]),
+    ).toEqual([ranked('US8', 40), unranked, me])
   })
 })

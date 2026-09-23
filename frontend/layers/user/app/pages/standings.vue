@@ -3,39 +3,6 @@ const { track } = useAnalytics()
 const { t } = useI18n()
 
 /**
- * Every board in one query. `leaderboardConfig(id)` and `leaderboardConfigs`
- * are admin-only, so a user can reach a config only through
- * `myCurrentProject.leaderboards`, which takes no arguments — there is no way
- * to fetch just the open tab's board. Tab switching is therefore free: no
- * request, the data is already here.
- */
-gql(`
-  query StandingsPage($first: Int) {
-    myCurrentProject {
-      id
-      myTeam {
-        id
-      }
-      leaderboards {
-        id
-        name
-        leaderboard(first: $first) {
-          totalCount
-          edges {
-            node {
-              ...LeaderboardEntryWithDescriptionFields
-            }
-          }
-          me {
-            ...LeaderboardEntryWithDescriptionFields
-          }
-        }
-      }
-    }
-  }
-`)
-
-/**
  * One `first` covers every board: `leaderboard` is selected once for the whole
  * list, so it cannot vary per config the way the old page used 20 for persons
  * and 500 for teams.

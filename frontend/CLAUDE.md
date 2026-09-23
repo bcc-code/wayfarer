@@ -249,6 +249,6 @@ Worked examples:
 
 - `EmptyState.test.ts` — simplest render test
 - `ChallengeCard.test.ts` — real children, mocked `useAnalytics`
-- `StandingsGlobal.test.ts` — driving query state (loading/error/empty/data)
+- `StandingsPage.test.ts` — driving query state (loading/error/empty/data)
 - `StandingsUnitEdit.test.ts` — interactive form flow with a stubbed
   `DesignDrawer` (the only place a stub is required)

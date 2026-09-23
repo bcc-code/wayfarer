@@ -188,6 +188,28 @@ One consequence to know: `leaderboards` returns inactive configs to
 admins/superadmins, so an admin sees the tab in a project whose every board is
 inactive. That matches what they see on the page itself.
 
+### Nearest rivals
+
+The board query also asks for `LeaderboardConnection.nearestChurchRivals`, and
+`StandingsBoard` renders those rows between the cut and the viewer's own row, so
+someone outside the top N sees who they are chasing rather than just their own
+rank in isolation.
+
+What that field actually is, since the name undersells the constraint: the
+entries **from the viewer's own church** ranked just above them. Not simply "the
+people ahead of you" — `findNearestChurchRivals` filters on
+`entry.ChurchID == me.ChurchID`. It is PERSONS-only (empty for TEAMS,
+SUPERTEAMS, CHURCHES), empty when the viewer is off the board, already rank 1,
+or has no church, and `first` defaults to 3 and is capped at 5 server-side.
+Church-agnostic rivals would be a backend change; not done.
+
+Ordering is the one thing the client has to get right: the server walks
+*backward* from the viewer, so rivals arrive nearest-first. `getExtraItemsWithRivals`
+(in `app/utils/leaderboard.ts`) re-sorts them by rank so the block reads
+downward like the board it continues, drops any rival already in the main list,
+and returns nothing at all when the viewer is on the board — in that case every
+rival is on it too.
+
 ### Resolved while building
 
 - **Tab identity.** The config `id` is what goes in `?tab=` and the

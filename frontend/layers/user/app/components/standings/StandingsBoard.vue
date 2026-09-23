@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { StandingsPageQuery } from '~/api/generated'
-import { getExtraItems } from '~/utils/leaderboard'
+import { getExtraItemsWithRivals } from '~/utils/leaderboard'
 
 /**
  * One admin-configured board, already computed by the server. The page fetches
@@ -17,7 +17,11 @@ const entries = computed(() =>
 )
 
 const extraItems = computed(() =>
-  getExtraItems(entries.value, props.board.leaderboard.me),
+  getExtraItemsWithRivals(
+    entries.value,
+    props.board.leaderboard.me,
+    props.board.leaderboard.nearestChurchRivals,
+  ),
 )
 </script>
 
