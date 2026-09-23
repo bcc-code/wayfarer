@@ -27,6 +27,7 @@ export interface LeaderboardConfigFormData {
   name: string
   entityType: LeaderboardEntityType
   eventId: string | null
+  maxEntries: number | null
   sortOrder: number
   isActive: boolean
   filter: LeaderboardFilter | null
@@ -132,6 +133,9 @@ const schema = z
     name: z.string().min(1, 'Navn er påkrevd'),
     entityType: z.nativeEnum(LeaderboardEntityType),
     eventId: optionalId,
+    maxEntries: z
+      .union([z.number().int().min(1).max(2147483647), z.literal('')])
+      .optional(),
     sortOrder: z.number().int('Rekkefølge må være et heltall'),
     isActive: z.boolean(),
     filter: z.object({
@@ -202,6 +206,7 @@ const state = reactive<Schema>({
   name: '',
   entityType: LeaderboardEntityType.Persons,
   eventId: null,
+  maxEntries: '',
   sortOrder: 0,
   isActive: true,
   filter: emptyFilter(),
@@ -214,6 +219,7 @@ watch(
     state.name = config.name
     state.entityType = config.entityType
     state.eventId = config.event?.id ?? null
+    state.maxEntries = config.maxEntries ?? ''
     state.sortOrder = config.sortOrder
     state.isActive = config.isActive
     // `LeaderboardFilterView` on the way out, `LeaderboardFilter` on the way
@@ -258,6 +264,8 @@ function onSubmit(event: FormSubmitEvent<Schema>) {
     name: event.data.name,
     entityType: event.data.entityType,
     eventId: event.data.eventId || null,
+    maxEntries:
+      typeof event.data.maxEntries === 'number' ? event.data.maxEntries : null,
     sortOrder: event.data.sortOrder,
     isActive: event.data.isActive,
     filter: buildFilter(event.data.filter),
@@ -308,6 +316,22 @@ function clearFilter() {
             value-key="value"
             placeholder="Hele prosjektet"
             clear
+            class="w-full"
+          />
+        </UFormField>
+
+        <UFormField
+          name="maxEntries"
+          label="Maks antall oppføringer"
+          help="La stå tom for ingen grense. Egen plassering og nærmeste rivaler vises i tillegg."
+        >
+          <UInput
+            v-model.number="state.maxEntries"
+            type="number"
+            :min="1"
+            :max="2147483647"
+            :step="1"
+            placeholder="Ingen grense"
             class="w-full"
           />
         </UFormField>
