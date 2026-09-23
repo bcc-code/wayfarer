@@ -488,13 +488,6 @@ func (r *projectResolver) Leaderboard(ctx context.Context, obj *model.Project, e
 		return nil, fmt.Errorf("failed to get project leaderboard: %w", err)
 	}
 
-	// Apply PERSONS leaderboard restrictions - dynamic limit based on totalCount
-	if entityType == model.LeaderboardEntityTypePersons {
-		result := FilterPersonLeaderboardEntries(entries, totalCount, first, after)
-		entries = result.Entries
-		first = result.AdjustedFirst
-	}
-
 	// Build connection
 	connection, err := buildLeaderboardConnection(ctx, entries, meEntry, totalCount, currentUserID, entityType, obj.ID, r.Loaders, first, last, after, before, obj.ID, false, filter)
 	if err != nil {

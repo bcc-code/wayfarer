@@ -666,7 +666,6 @@ func TestLeaderboardAgeCalculationYearBased(t *testing.T) {
 
 // TestLeaderboardDenseRanking tests that entities with the same score share the same rank
 // and that ranks are consecutive (no gaps). This tests the DENSE_RANK() behavior.
-// Uses TEAMS entity type to avoid PERSONS visibility limit filtering.
 func TestLeaderboardDenseRanking(t *testing.T) {
 	ctx := context.Background()
 	dbMgr, _ := GetTestEnv()

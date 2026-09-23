@@ -142,12 +142,6 @@ func (r *Resolver) getLeaderboardForConfig(ctx context.Context, obj *model.Leade
 		return nil, fmt.Errorf("failed to get leaderboard: %w", err)
 	}
 
-	if obj.EntityType == model.LeaderboardEntityTypePersons {
-		result := FilterPersonLeaderboardEntries(entries, totalCount, first, after)
-		entries = result.Entries
-		first = result.AdjustedFirst
-	}
-
 	connection, err := buildLeaderboardConnection(ctx, entries, meEntry, totalCount, currentUserID, obj.EntityType, obj.ProjectID, r.Loaders, first, last, after, before, params.ContextID, isEvent, params.Filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build leaderboard connection: %w", err)

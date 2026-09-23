@@ -1,12 +1,103 @@
 package api
 
 import (
+	"context"
+	"fmt"
 	"testing"
 
+	"github.com/bcc-media/wayfarer/internal/cache"
+	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/services"
+	"github.com/bcc-media/wayfarer/internal/services/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
+
+func TestPersonLeaderboardsRespectPaginationRegardlessOfSize(t *testing.T) {
+	const projectID = "PR01ARZ3NDEKTSV4RRFFQ69G5FAV"
+	const eventID = "EV01ARZ3NDEKTSV4RRFFQ69G5FAV"
+
+	for _, source := range []string{"project", "event", "project config", "event config"} {
+		t.Run(source, func(t *testing.T) {
+			for _, tt := range []struct {
+				name       string
+				totalCount int
+				first      *int
+				after      *string
+				last       *int
+				before     *string
+				startRank  int
+				count      int
+			}{
+				{name: "small board", totalCount: 19, first: intPtr(100), startRank: 1, count: 19},
+				{name: "medium board", totalCount: 20, first: intPtr(100), startRank: 1, count: 20},
+				{name: "large board", totalCount: 50, first: intPtr(100), startRank: 1, count: 50},
+				{name: "requested page size", totalCount: 50, first: intPtr(5), startRank: 1, count: 5},
+				{name: "after old small cap", totalCount: 19, first: intPtr(5), after: stringPtr("3"), startRank: 4, count: 5},
+				{name: "after old medium cap", totalCount: 20, first: intPtr(5), after: stringPtr("10"), startRank: 11, count: 5},
+				{name: "after old large cap", totalCount: 50, first: intPtr(5), after: stringPtr("20"), startRank: 21, count: 5},
+				{name: "backward beyond old cap", totalCount: 50, last: intPtr(5), before: stringPtr("30"), startRank: 25, count: 5},
+				{name: "default page size", totalCount: 19, startRank: 1, count: 10},
+			} {
+				t.Run(tt.name, func(t *testing.T) {
+					queries := mocks.NewMockLeaderboardQuerier(t)
+					c, err := cache.NewCacheWithRegistry(cache.DefaultConfig())
+					require.NoError(t, err)
+					t.Cleanup(c.Close)
+
+					projectRows := make([]*sqlc.GetFullProjectPersonLeaderboardRow, tt.totalCount)
+					eventRows := make([]*sqlc.GetFullEventPersonLeaderboardRow, tt.totalCount)
+					for i := range projectRows {
+						projectRows[i] = &sqlc.GetFullProjectPersonLeaderboardRow{
+							EntityID: fmt.Sprintf("US%026d", i+1),
+							Name:     fmt.Sprintf("User %d", i+1),
+							Score:    int64(tt.totalCount - i),
+							Rank:     int64(i + 1),
+						}
+						eventRows[i] = (*sqlc.GetFullEventPersonLeaderboardRow)(projectRows[i])
+					}
+					isEvent := source == "event" || source == "event config"
+					if isEvent {
+						queries.On("GetFullEventPersonLeaderboard", mock.Anything, mock.Anything).Return(eventRows, nil).Once()
+					} else {
+						queries.On("GetFullProjectPersonLeaderboard", mock.Anything, mock.Anything).Return(projectRows, nil).Once()
+					}
+
+					userID := projectRows[tt.totalCount-1].EntityID
+					ctx := context.WithValue(context.Background(), middleware.UserIDKey, userID)
+					r := &Resolver{LeaderboardService: services.NewLeaderboardService(queries, c, nil)}
+					var connection *model.LeaderboardConnection
+					switch source {
+					case "project":
+						connection, err = r.Project().Leaderboard(ctx, &model.Project{ID: projectID}, model.LeaderboardEntityTypePersons, nil, tt.first, tt.after, tt.last, tt.before)
+					case "event":
+						connection, err = r.Event().Leaderboard(ctx, &model.Event{ID: eventID, ProjectID: projectID}, model.LeaderboardEntityTypePersons, nil, tt.first, tt.after, tt.last, tt.before)
+					default:
+						config := &model.LeaderboardConfig{ProjectID: projectID, EntityType: model.LeaderboardEntityTypePersons}
+						if isEvent {
+							config.EventID = stringPtr(eventID)
+						}
+						connection, err = r.LeaderboardConfig().Leaderboard(ctx, config, tt.first, tt.after, tt.last, tt.before)
+					}
+					require.NoError(t, err)
+					require.Len(t, connection.Edges, tt.count)
+					assert.Equal(t, tt.totalCount, connection.TotalCount)
+					for i, edge := range connection.Edges {
+						assert.Equal(t, tt.startRank+i, *edge.Node.Rank)
+					}
+					assert.Equal(t, fmt.Sprint(tt.startRank), *connection.PageInfo.StartCursor)
+					assert.Equal(t, fmt.Sprint(tt.startRank+tt.count-1), *connection.PageInfo.EndCursor)
+					require.NotNil(t, connection.Me)
+					assert.Equal(t, userID, connection.Me.ID)
+					assert.Equal(t, tt.totalCount, *connection.Me.Rank)
+				})
+			}
+		})
+	}
+}
 
 func TestMarshalLeaderboardFilter_Nil(t *testing.T) {
 	b, err := marshalLeaderboardFilter(nil)
