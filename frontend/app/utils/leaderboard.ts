@@ -65,6 +65,37 @@ export function getExtraItems<T extends LeaderboardEntryLike>(
   return [me]
 }
 
+export interface RankedLeaderboardEntryLike extends LeaderboardEntryLike {
+  rank?: number | null
+}
+
+/**
+ * The rows shown below the cut: the viewer's nearest rivals, then the viewer.
+ *
+ * `nearestChurchRivals` is the entries from the viewer's own church ranked just
+ * above them — so it only means anything when the viewer is off the board. If
+ * they are on it, everyone ranked above them is on it too, and there is nothing
+ * to append.
+ *
+ * The server walks backward from the viewer, so its rivals arrive
+ * nearest-first; they are re-sorted by rank here so the block reads downward
+ * like the board it continues.
+ */
+export function getExtraItemsWithRivals<T extends RankedLeaderboardEntryLike>(
+  mainList: T[],
+  me: T | null | undefined,
+  rivals: T[] = [],
+): T[] {
+  const meItems = getExtraItems(mainList, me)
+  if (!meItems.length) return []
+
+  const rivalItems = rivals
+    .filter((rival) => !entryExistsInList(mainList, rival))
+    .sort((a, b) => (a.rank ?? Infinity) - (b.rank ?? Infinity))
+
+  return [...rivalItems, ...meItems]
+}
+
 /**
  * Extract the current user entry from a list
  */

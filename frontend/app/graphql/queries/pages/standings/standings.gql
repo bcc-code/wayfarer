@@ -1,0 +1,29 @@
+query StandingsPage($first: Int) {
+  myCurrentProject {
+    id
+    myTeam {
+      id
+    }
+    leaderboards {
+      id
+      name
+      leaderboard(first: $first) {
+        totalCount
+        edges {
+          node {
+            ...LeaderboardEntryWithDescriptionFields
+          }
+        }
+        me {
+          ...LeaderboardEntryWithDescriptionFields
+        }
+        # The viewer's own church-mates ranked just above them, so someone off
+        # the board still sees who they are chasing. Defaults to 3, PERSONS
+        # boards only — empty for other entity types.
+        nearestChurchRivals {
+          ...LeaderboardEntryWithDescriptionFields
+        }
+      }
+    }
+  }
+}

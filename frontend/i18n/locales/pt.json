@@ -61,15 +61,9 @@
     "privacyPolicy": "Declaração de Privacidade"
   },
   "standings": {
-    "global": "Globalmente",
     "unit": "Minha unidade",
-    "local": "Local",
     "you": "Você",
-    "rules": "Regras",
-    "units": "Unidades",
-    "top": "Topo {amount}",
-    "u18": "U18",
-    "o18": "O18"
+    "rules": "Regras"
   },
   "pointHistory": {
     "pointHistoryButton": "Histórico de pontos",

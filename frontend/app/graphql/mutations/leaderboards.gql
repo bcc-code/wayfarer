@@ -1,0 +1,20 @@
+mutation CreateLeaderboardConfig($input: CreateLeaderboardConfigInput!) {
+  createLeaderboardConfig(input: $input) {
+    id
+  }
+}
+
+# `UpdateLeaderboardConfigInput` is full-replace, not a patch: every field but
+# `filter` is required and the caller resends the complete desired state.
+mutation UpdateLeaderboardConfig(
+  $id: ID!
+  $input: UpdateLeaderboardConfigInput!
+) {
+  updateLeaderboardConfig(id: $id, input: $input) {
+    ...LeaderboardConfigFields
+  }
+}
+
+mutation DeleteLeaderboardConfig($id: ID!) {
+  deleteLeaderboardConfig(id: $id)
+}

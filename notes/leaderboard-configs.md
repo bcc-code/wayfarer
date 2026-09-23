@@ -17,6 +17,17 @@ The old ad-hoc `leaderboard(...)` fields on `Project`/`Event` are **not deprecat
   - `filter JSONB` — nullable. Stores the same shape as the GraphQL `LeaderboardFilter` input, serialized via `json.Marshal`/`json.Unmarshal` (same "typed struct <-> JSONB `[]byte`" convention as `push_notification_log.target_criteria`, see `internal/services/push/service.go`). No typed columns per filter field — this avoids a migration every time `LeaderboardFilter` grows a field.
   - `sort_order INT`, `is_active BOOLEAN` (draft/inactive configs are hidden from non-admin callers)
   - `created_at`/`updated_at TIMESTAMPTZ NOT NULL DEFAULT now()` — `NOT NULL`, matching `push_notifications`' stricter convention rather than the looser nullable-with-default convention used by most other tables in this codebase
+- **Migration 00103** (`00103_drop_leaderboard_config_slug.sql`) exists because
+  00102 was edited **after it had already been applied**. Code review dropped
+  `slug` and its unique index from the `CREATE TABLE` and tightened
+  `created_at`/`updated_at` to `NOT NULL`, but goose records 00102 as applied
+  and never re-runs it. A database that migrated before that edit therefore
+  still has `slug VARCHAR(100) NOT NULL` with no default, and every insert fails
+  with `null value in column "slug" of relation "leaderboard_configs" violates
+  not-null constraint (SQLSTATE 23502)` — which is exactly what the admin UI hit
+  the first time it tried to create a config. 00103 drops the column and index
+  conditionally, so it is a no-op on a database created from the amended 00102.
+  Any environment that migrated between 27399ba2 and 729a7433 needs it.
 - **ID prefix**: `LC` (`ulid.NewLeaderboardConfigID()` / `ulid.IsLeaderboardConfigID()`)
 - No unique constraint besides the `id` primary key (the `(project_id, slug)` unique index was removed along with `slug`)
 
@@ -29,6 +40,31 @@ The old ad-hoc `leaderboard(...)` fields on `Project`/`Event` are **not deprecat
 - **Admin CRUD**: `createLeaderboardConfig` / `updateLeaderboardConfig` / `deleteLeaderboardConfig` mutations use `@requireRole(roles: ["admin", "superadmin"])`. The two read queries (`leaderboardConfig(id)` / `leaderboardConfigs(filter, ...)`) do **not** use `@requireRole` — that directive is reserved for mutations in this schema (per `backend/CLAUDE.md`); authorization for these two admin-only reads is enforced in the resolver instead, via the `requireAdminUser` helper in `leaderboards.go`.
 - **`UpdateLeaderboardConfigInput` is full-replace**, not partial-patch: `name`, `entityType`, `sortOrder`, `isActive` are all required (`!`); the caller always resends the complete desired state. `filter` stays nullable — `filter: null` unambiguously means "no filter," `filter: {...}` means "this filter." There is no `clearFilter` flag and no absent-vs-explicit-null ambiguity to solve, because there's no "leave unchanged" case for any field except by resending its current value. This is a deliberate departure from every other `Update*Input` in this codebase (which are PATCH-style, all-optional with `COALESCE`-based partial updates) — chosen specifically to avoid the ambiguity a nullable `filter` field would otherwise create.
 - **Serving**: `Project.leaderboards` / `Event.leaderboards` return all *active* configs (all configs, including inactive, if the caller is admin/superadmin — checked via `RoleService.IsAdmin` in the resolver, not the schema). Each config's `leaderboard(first, after, last, before)` field returns the fully computed `LeaderboardConnection`.
+
+## Not yet supported: a per-config size limit
+
+A config says *who* is on a board, not *how many* rows it shows. There is no
+`max_entries` / "top N" anywhere — not in `leaderboard_configs`, not on
+`LeaderboardConfig`, not in either input. The only size control is the `first`
+pagination argument the **client** passes to `LeaderboardConfig.leaderboard`,
+which `getLeaderboardForConfig` forwards straight to the engine.
+(`filter.minScore` / `maxScore` are score bounds, not a rank cap.)
+
+This is a real gap — deferred deliberately to keep the frontend PR small, to be
+implemented by a backend developer later. Sketch:
+
+1. Migration: `max_entries INT` on `leaderboard_configs`, nullable (null = no cap).
+2. `gql/leaderboards.graphqls`: `maxEntries: Int` on `LeaderboardConfig` and on
+   both `CreateLeaderboardConfigInput` and `UpdateLeaderboardConfigInput`
+   (nullable in the update input, the same treatment `filter` gets in that
+   full-replace input).
+3. `leaderboard_configs.sql` + `make generate`.
+4. `getLeaderboardForConfig`: clamp the effective `first` to `maxEntries` when
+   set, so the cap holds whatever a client asks for.
+
+Until then the client picks the size, which is why the user-facing standings
+page hardcodes one `BOARD_SIZE` for every board — see
+`leaderboard-configs-frontend.md`.
 
 ## Reused leaderboard engine
 

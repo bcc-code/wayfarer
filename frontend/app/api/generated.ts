@@ -3575,6 +3575,8 @@ export type LeaderboardEntryFieldsFragment = { __typename?: 'LeaderboardEntry', 
 
 export type LeaderboardEntryWithDescriptionFieldsFragment = { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> };
 
+export type LeaderboardConfigFieldsFragment = { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null };
+
 export type PredefinedAnswerFieldsFragment = { __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> };
 
 type QuizQuestionFields_FreeTextQuestion_Fragment = { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> };
@@ -3867,6 +3869,28 @@ export type MarkFeedbackHandledMutationVariables = Exact<{
 
 
 export type MarkFeedbackHandledMutation = { __typename?: 'Mutation', markFeedbackHandled: { __typename?: 'UserFeedback', id: string, handledAt?: any | null } };
+
+export type CreateLeaderboardConfigMutationVariables = Exact<{
+  input: CreateLeaderboardConfigInput;
+}>;
+
+
+export type CreateLeaderboardConfigMutation = { __typename?: 'Mutation', createLeaderboardConfig: { __typename?: 'LeaderboardConfig', id: string } };
+
+export type UpdateLeaderboardConfigMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateLeaderboardConfigInput;
+}>;
+
+
+export type UpdateLeaderboardConfigMutation = { __typename?: 'Mutation', updateLeaderboardConfig: { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null } };
+
+export type DeleteLeaderboardConfigMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteLeaderboardConfigMutation = { __typename?: 'Mutation', deleteLeaderboardConfig: boolean };
 
 export type CreateProjectMutationVariables = Exact<{
   input: CreateProjectInput;
@@ -4309,22 +4333,12 @@ export type ConsentsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type ConsentsPageQuery = { __typename?: 'Query', me: { __typename?: 'User', consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, shortText: string, publishedAt?: any | null, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } }>, acceptedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, title: string, shortText: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }>, rejectedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, title: string, shortText: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }> } } };
 
-export type StandingsGlobalPageQueryVariables = Exact<{
-  entityType: LeaderboardEntityType;
-  filter?: InputMaybe<LeaderboardFilter>;
+export type StandingsPageQueryVariables = Exact<{
   first?: InputMaybe<Scalars['Int']['input']>;
 }>;
 
 
-export type StandingsGlobalPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } | null } } };
-
-export type StandingsLocalPageQueryVariables = Exact<{
-  filter?: InputMaybe<LeaderboardFilter>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-}>;
-
-
-export type StandingsLocalPageQuery = { __typename?: 'Query', me: { __typename?: 'User', church: { __typename?: 'Church', id: string, name: string } }, myCurrentProject: { __typename?: 'Project', id: string, personLeaderboard: { __typename?: 'LeaderboardConnection', totalCount: number, edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } | null }, unitLeaderboard: { __typename?: 'LeaderboardConnection', totalCount: number, edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } | null } } };
+export type StandingsPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, myTeam?: { __typename?: 'Team', id: string } | null, leaderboards: Array<{ __typename?: 'LeaderboardConfig', id: string, name: string, leaderboard: { __typename?: 'LeaderboardConnection', totalCount: number, edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } | null, nearestChurchRivals: Array<{ __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> }> } }> } };
 
 export type StandingsUnitPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4383,6 +4397,13 @@ export type AdminUserPickerSelectedQueryVariables = Exact<{
 
 
 export type AdminUserPickerSelectedQuery = { __typename?: 'Query', users: { __typename?: 'UserConnection', edges: Array<{ __typename?: 'UserEdge', node: { __typename?: 'User', id: string, name: string, image?: string | null, church: { __typename?: 'Church', id: string, name: string } } }> } };
+
+export type AdminLeaderboardConfigFormOptionsQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminLeaderboardConfigFormOptionsQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, events: Array<{ __typename?: 'Event', id: string, name: string }> }, teams: { __typename?: 'TeamConnection', edges: Array<{ __typename?: 'TeamEdge', node: { __typename?: 'Team', id: string, name: string } }> }, superteams: { __typename?: 'SuperTeamConnection', edges: Array<{ __typename?: 'SuperTeamEdge', node: { __typename?: 'SuperTeam', id: string, name: string } }> }, churches: { __typename?: 'ChurchConnection', edges: Array<{ __typename?: 'ChurchEdge', node: { __typename?: 'Church', id: string, name: string } }> } };
 
 export type AdminProjectEngagementQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
@@ -4770,6 +4791,20 @@ export type AdminProjectOverviewQueryVariables = Exact<{
 
 export type AdminProjectOverviewQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, activityTrend?: Array<{ __typename?: 'ProjectActivityPoint', date: any, points: number, activeUsers: number }> }, users: { __typename?: 'UserConnection', totalCount: number }, teams: { __typename?: 'TeamConnection', totalCount: number }, challenges: { __typename?: 'ChallengeConnection', totalCount: number }, achievements: { __typename?: 'AchievementConnection', totalCount: number }, events: { __typename?: 'EventConnection', totalCount: number }, superteams: { __typename?: 'SuperTeamConnection', totalCount: number } };
 
+export type AdminProjectLeaderboardPageQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type AdminProjectLeaderboardPageQuery = { __typename?: 'Query', leaderboardConfig: { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null } };
+
+export type AdminProjectLeaderboardsQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminProjectLeaderboardsQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, leaderboards: Array<{ __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null }> } };
+
 export type AdminScoresPageQueryVariables = Exact<{
   filter?: InputMaybe<ScoreJournalFilter>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -4946,12 +4981,7 @@ export type ProjectRulesQuery = { __typename?: 'Query', myCurrentProject: { __ty
 export type CurrentProjectQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type CurrentProjectQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, activeChallengesCount: number, branding: { __typename?: 'Branding', rounding: number, logoImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, bannerImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } }, leaderboard: { __typename?: 'LeaderboardConnection', totalCount: number } } };
-
-export type StandingsPageQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type StandingsPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', myTeam?: { __typename?: 'Team', id: string } | null } };
+export type CurrentProjectQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, activeChallengesCount: number, branding: { __typename?: 'Branding', rounding: number, logoImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, bannerImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } }, leaderboards: Array<{ __typename?: 'LeaderboardConfig', id: string }> } };
 
 export const ImageFieldsFragmentDoc = gql`
     fragment ImageFields on Image {
@@ -5089,6 +5119,33 @@ export const LeaderboardEntryWithDescriptionFieldsFragmentDoc = gql`
   score
   rank
   tags
+}
+    `;
+export const LeaderboardConfigFieldsFragmentDoc = gql`
+    fragment LeaderboardConfigFields on LeaderboardConfig {
+  id
+  name
+  entityType
+  sortOrder
+  isActive
+  event {
+    id
+    name
+  }
+  filter {
+    minScore
+    maxScore
+    churchId
+    country
+    churchCategory
+    gender
+    ageRange {
+      min
+      max
+    }
+    teamId
+    superTeamId
+  }
 }
     `;
 export const TranslationStatusFragmentDoc = gql`
@@ -5556,6 +5613,37 @@ export const MarkFeedbackHandledDocument = gql`
 
 export function useMarkFeedbackHandledMutation() {
   return Urql.useMutation<MarkFeedbackHandledMutation, MarkFeedbackHandledMutationVariables>(MarkFeedbackHandledDocument);
+};
+export const CreateLeaderboardConfigDocument = gql`
+    mutation CreateLeaderboardConfig($input: CreateLeaderboardConfigInput!) {
+  createLeaderboardConfig(input: $input) {
+    id
+  }
+}
+    `;
+
+export function useCreateLeaderboardConfigMutation() {
+  return Urql.useMutation<CreateLeaderboardConfigMutation, CreateLeaderboardConfigMutationVariables>(CreateLeaderboardConfigDocument);
+};
+export const UpdateLeaderboardConfigDocument = gql`
+    mutation UpdateLeaderboardConfig($id: ID!, $input: UpdateLeaderboardConfigInput!) {
+  updateLeaderboardConfig(id: $id, input: $input) {
+    ...LeaderboardConfigFields
+  }
+}
+    ${LeaderboardConfigFieldsFragmentDoc}`;
+
+export function useUpdateLeaderboardConfigMutation() {
+  return Urql.useMutation<UpdateLeaderboardConfigMutation, UpdateLeaderboardConfigMutationVariables>(UpdateLeaderboardConfigDocument);
+};
+export const DeleteLeaderboardConfigDocument = gql`
+    mutation DeleteLeaderboardConfig($id: ID!) {
+  deleteLeaderboardConfig(id: $id)
+}
+    `;
+
+export function useDeleteLeaderboardConfigMutation() {
+  return Urql.useMutation<DeleteLeaderboardConfigMutation, DeleteLeaderboardConfigMutationVariables>(DeleteLeaderboardConfigDocument);
 };
 export const CreateProjectDocument = gql`
     mutation CreateProject($input: CreateProjectInput!) {
@@ -6396,69 +6484,37 @@ export const ConsentsPageDocument = gql`
 export function useConsentsPageQuery(options?: Omit<Urql.UseQueryArgs<never, ConsentsPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<ConsentsPageQuery, ConsentsPageQueryVariables | undefined>({ query: ConsentsPageDocument, variables: undefined, ...options });
 };
-export const StandingsGlobalPageDocument = gql`
-    query StandingsGlobalPage($entityType: LeaderboardEntityType!, $filter: LeaderboardFilter, $first: Int) {
+export const StandingsPageDocument = gql`
+    query StandingsPage($first: Int) {
   myCurrentProject {
     id
-    leaderboard(entityType: $entityType, filter: $filter, first: $first) {
-      edges {
-        node {
+    myTeam {
+      id
+    }
+    leaderboards {
+      id
+      name
+      leaderboard(first: $first) {
+        totalCount
+        edges {
+          node {
+            ...LeaderboardEntryWithDescriptionFields
+          }
+        }
+        me {
           ...LeaderboardEntryWithDescriptionFields
         }
-      }
-      me {
-        ...LeaderboardEntryWithDescriptionFields
+        nearestChurchRivals {
+          ...LeaderboardEntryWithDescriptionFields
+        }
       }
     }
   }
 }
     ${LeaderboardEntryWithDescriptionFieldsFragmentDoc}`;
 
-export function useStandingsGlobalPageQuery(options?: Omit<Urql.UseQueryArgs<never, StandingsGlobalPageQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<StandingsGlobalPageQuery, StandingsGlobalPageQueryVariables | undefined>({ query: StandingsGlobalPageDocument, variables: undefined, ...options });
-};
-export const StandingsLocalPageDocument = gql`
-    query StandingsLocalPage($filter: LeaderboardFilter, $first: Int) {
-  me {
-    church {
-      id
-      name
-    }
-  }
-  myCurrentProject {
-    id
-    personLeaderboard: leaderboard(
-      entityType: PERSONS
-      filter: $filter
-      first: $first
-    ) {
-      totalCount
-      edges {
-        node {
-          ...LeaderboardEntryFields
-        }
-      }
-      me {
-        ...LeaderboardEntryFields
-      }
-    }
-    unitLeaderboard: leaderboard(entityType: TEAMS, filter: $filter, first: $first) {
-      totalCount
-      edges {
-        node {
-          ...LeaderboardEntryFields
-        }
-      }
-      me {
-        ...LeaderboardEntryFields
-      }
-    }
-  }
-}
-    ${LeaderboardEntryFieldsFragmentDoc}`;
-
-export function useStandingsLocalPageQuery(options?: Omit<Urql.UseQueryArgs<never, StandingsLocalPageQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<StandingsLocalPageQuery, StandingsLocalPageQueryVariables | undefined>({ query: StandingsLocalPageDocument, variables: undefined, ...options });
+export function useStandingsPageQuery(options?: Omit<Urql.UseQueryArgs<never, StandingsPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<StandingsPageQuery, StandingsPageQueryVariables | undefined>({ query: StandingsPageDocument, variables: undefined, ...options });
 };
 export const StandingsUnitPageDocument = gql`
     query StandingsUnitPage {
@@ -6616,6 +6672,45 @@ export const AdminUserPickerSelectedDocument = gql`
 
 export function useAdminUserPickerSelectedQuery(options?: Omit<Urql.UseQueryArgs<never, AdminUserPickerSelectedQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminUserPickerSelectedQuery, AdminUserPickerSelectedQueryVariables | undefined>({ query: AdminUserPickerSelectedDocument, variables: undefined, ...options });
+};
+export const AdminLeaderboardConfigFormOptionsDocument = gql`
+    query AdminLeaderboardConfigFormOptions($projectId: ID!) {
+  project(id: $projectId) {
+    id
+    events {
+      id
+      name
+    }
+  }
+  teams(filter: {projectId: $projectId}, first: 500) {
+    edges {
+      node {
+        id
+        name
+      }
+    }
+  }
+  superteams(filter: {projectId: $projectId}, first: 500) {
+    edges {
+      node {
+        id
+        name
+      }
+    }
+  }
+  churches(first: 500) {
+    edges {
+      node {
+        id
+        name
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminLeaderboardConfigFormOptionsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminLeaderboardConfigFormOptionsQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminLeaderboardConfigFormOptionsQuery, AdminLeaderboardConfigFormOptionsQueryVariables | undefined>({ query: AdminLeaderboardConfigFormOptionsDocument, variables: undefined, ...options });
 };
 export const AdminProjectEngagementDocument = gql`
     query AdminProjectEngagement($projectId: ID!) {
@@ -7765,6 +7860,31 @@ export const AdminProjectOverviewDocument = gql`
 export function useAdminProjectOverviewQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectOverviewQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectOverviewQuery, AdminProjectOverviewQueryVariables | undefined>({ query: AdminProjectOverviewDocument, variables: undefined, ...options });
 };
+export const AdminProjectLeaderboardPageDocument = gql`
+    query AdminProjectLeaderboardPage($id: ID!) {
+  leaderboardConfig(id: $id) {
+    ...LeaderboardConfigFields
+  }
+}
+    ${LeaderboardConfigFieldsFragmentDoc}`;
+
+export function useAdminProjectLeaderboardPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectLeaderboardPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectLeaderboardPageQuery, AdminProjectLeaderboardPageQueryVariables | undefined>({ query: AdminProjectLeaderboardPageDocument, variables: undefined, ...options });
+};
+export const AdminProjectLeaderboardsDocument = gql`
+    query AdminProjectLeaderboards($projectId: ID!) {
+  project(id: $projectId) {
+    id
+    leaderboards {
+      ...LeaderboardConfigFields
+    }
+  }
+}
+    ${LeaderboardConfigFieldsFragmentDoc}`;
+
+export function useAdminProjectLeaderboardsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectLeaderboardsQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectLeaderboardsQuery, AdminProjectLeaderboardsQueryVariables | undefined>({ query: AdminProjectLeaderboardsDocument, variables: undefined, ...options });
+};
 export const AdminScoresPageDocument = gql`
     query AdminScoresPage($filter: ScoreJournalFilter, $first: Int, $after: String, $last: Int, $before: String) {
   adminScoreJournal(
@@ -8382,8 +8502,8 @@ export const CurrentProjectDocument = gql`
       ...BrandingFields
     }
     activeChallengesCount
-    leaderboard(entityType: PERSONS, first: 1) {
-      totalCount
+    leaderboards {
+      id
     }
   }
 }
@@ -8391,17 +8511,4 @@ export const CurrentProjectDocument = gql`
 
 export function useCurrentProjectQuery(options?: Omit<Urql.UseQueryArgs<never, CurrentProjectQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<CurrentProjectQuery, CurrentProjectQueryVariables | undefined>({ query: CurrentProjectDocument, variables: undefined, ...options });
-};
-export const StandingsPageDocument = gql`
-    query StandingsPage {
-  myCurrentProject {
-    myTeam {
-      id
-    }
-  }
-}
-    `;
-
-export function useStandingsPageQuery(options?: Omit<Urql.UseQueryArgs<never, StandingsPageQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<StandingsPageQuery, StandingsPageQueryVariables | undefined>({ query: StandingsPageDocument, variables: undefined, ...options });
 };

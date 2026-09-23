@@ -60,15 +60,9 @@
     "privacyPolicy": "Gizlilik Politikası"
   },
   "standings": {
-    "global": "Küresel",
     "unit": "Benim birimim",
-    "local": "Lokal",
     "you": "Sana",
-    "rules": "Kurallar",
-    "units": "Birimler",
-    "top": "Üst {amount}",
-    "u18": "U18",
-    "o18": "O18"
+    "rules": "Kurallar"
   },
   "pointHistory": {
     "pointHistoryButton": "Puan geçmişi",

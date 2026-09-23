@@ -104,15 +104,9 @@
     "privacyPolicy": "Personvernerklæring"
   },
   "standings": {
-    "global": "Globalt",
     "unit": "Min unit",
-    "local": "Lokalt",
     "you": "Deg",
-    "rules": "Regler",
-    "units": "Units",
-    "top": "Topp {amount}",
-    "u18": "U18",
-    "o18": "O18"
+    "rules": "Regler"
   },
   "pointHistory": {
     "pointHistoryButton": "Poenghistorikk",

@@ -103,15 +103,9 @@
     "privacyPolicy": "Polityka prywatności"
   },
   "standings": {
-    "global": "Globalnie",
     "unit": "Mój unit",
-    "local": "Lokalnie",
     "you": "Ty",
-    "rules": "Zasady",
-    "units": "Unity",
-    "top": "Top {amount}",
-    "u18": "U18",
-    "o18": "O18"
+    "rules": "Zasady"
   },
   "pointHistory": {
     "pointHistoryButton": "Historia punktów",

@@ -103,15 +103,9 @@
     "privacyPolicy": "Adatvédelmi irányelvek"
   },
   "standings": {
-    "global": "Globális",
     "unit": "Az én Unitom",
-    "local": "Helyi",
     "you": "Te",
-    "rules": "Szabályok",
-    "units": "Unitok",
-    "top": "Top {amount}",
-    "u18": "U18",
-    "o18": "O18"
+    "rules": "Szabályok"
   },
   "pointHistory": {
     "pointHistoryButton": "Pontelőzmények",

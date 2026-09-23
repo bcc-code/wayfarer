@@ -103,15 +103,9 @@
     "privacyPolicy": "Declaración de privacidad"
   },
   "standings": {
-    "global": "Global",
     "unit": "Mi unidad",
-    "local": "Local",
     "you": "¿ De tí?",
-    "rules": "Reglas",
-    "units": "Unidades",
-    "top": "Arriba {amount}",
-    "u18": "SUB-18",
-    "o18": "O18"
+    "rules": "Reglas"
   },
   "pointHistory": {
     "pointHistoryButton": "Historial de puntos",

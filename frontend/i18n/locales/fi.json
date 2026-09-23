@@ -103,15 +103,9 @@
     "privacyPolicy": "Tietosuojakäytäntö"
   },
   "standings": {
-    "global": "Maailmanlaajuisesti",
     "unit": "Oma yksikköni",
-    "local": "Paikallisesti",
     "you": "Sinä",
-    "rules": "Säännöt",
-    "units": "Yksiköt",
-    "top": "Top {amount}",
-    "u18": "U18",
-    "o18": "O18"
+    "rules": "Säännöt"
   },
   "pointHistory": {
     "pointHistoryButton": "Pistehistoria",
