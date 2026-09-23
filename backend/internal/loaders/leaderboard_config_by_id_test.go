@@ -15,6 +15,7 @@ func TestConvertRowToLeaderboardConfig(t *testing.T) {
 	now := time.Now().UTC().Truncate(time.Second)
 	eventID := "EV01ARZ3NDEKTSV4RRFFQ69G5FAV"
 
+	maxEntries := int32(20)
 	row := &sqlc.LeaderboardConfig{
 		ID:         "LC01ARZ3NDEKTSV4RRFFQ69G5FAV",
 		ProjectID:  "PR01ARZ3NDEKTSV4RRFFQ69G5FAV",
@@ -23,6 +24,7 @@ func TestConvertRowToLeaderboardConfig(t *testing.T) {
 		EntityType: "CHURCHES",
 		Filter:     []byte(`{"minScore":5}`),
 		SortOrder:  2,
+		MaxEntries: &maxEntries,
 		IsActive:   true,
 		CreatedAt:  pgtype.Timestamptz{Time: now, Valid: true},
 		UpdatedAt:  pgtype.Timestamptz{Time: now, Valid: true},
@@ -39,6 +41,8 @@ func TestConvertRowToLeaderboardConfig(t *testing.T) {
 	require.NotNil(t, result.Filter)
 	require.NotNil(t, result.Filter.MinScore)
 	assert.Equal(t, 5, *result.Filter.MinScore)
+	require.NotNil(t, result.MaxEntries)
+	assert.Equal(t, 20, *result.MaxEntries)
 	assert.Equal(t, 2, result.SortOrder)
 	assert.True(t, result.IsActive)
 	assert.True(t, now.Equal(result.CreatedAt.Time))
@@ -60,5 +64,6 @@ func TestConvertRowToLeaderboardConfig_NilFilterAndEvent(t *testing.T) {
 
 	assert.Nil(t, result.EventID)
 	assert.Nil(t, result.Filter)
+	assert.Nil(t, result.MaxEntries)
 	assert.False(t, result.IsActive)
 }

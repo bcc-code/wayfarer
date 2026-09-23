@@ -83,13 +83,17 @@ func TestPersonLeaderboardsRespectPaginationRegardlessOfSize(t *testing.T) {
 						connection, err = r.LeaderboardConfig().Leaderboard(ctx, config, tt.first, tt.after, tt.last, tt.before)
 					}
 					require.NoError(t, err)
-					require.Len(t, connection.Edges, tt.count)
+					count := tt.count
+					if tt.name == "default page size" && (source == "project config" || source == "event config") {
+						count = tt.totalCount
+					}
+					require.Len(t, connection.Edges, count)
 					assert.Equal(t, tt.totalCount, connection.TotalCount)
 					for i, edge := range connection.Edges {
 						assert.Equal(t, tt.startRank+i, *edge.Node.Rank)
 					}
 					assert.Equal(t, fmt.Sprint(tt.startRank), *connection.PageInfo.StartCursor)
-					assert.Equal(t, fmt.Sprint(tt.startRank+tt.count-1), *connection.PageInfo.EndCursor)
+					assert.Equal(t, fmt.Sprint(tt.startRank+count-1), *connection.PageInfo.EndCursor)
 					require.NotNil(t, connection.Me)
 					assert.Equal(t, userID, connection.Me.ID)
 					assert.Equal(t, tt.totalCount, *connection.Me.Rank)
@@ -288,4 +292,113 @@ func TestBuildCountLeaderboardConfigsFilterParams_EmptyIdsTreatedAsNoFilter(t *t
 	params := buildCountLeaderboardConfigsFilterParams(filter)
 
 	assert.Nil(t, params.Ids, "an explicitly empty ids slice should not filter out every row")
+}
+
+func TestLeaderboardMaxEntriesToDB(t *testing.T) {
+	for _, value := range []*int{nil, intPtr(1), intPtr(20), intPtr(2147483647)} {
+		result, err := leaderboardMaxEntriesToDB(value)
+		require.NoError(t, err)
+		if value == nil {
+			assert.Nil(t, result)
+		} else {
+			require.NotNil(t, result)
+			assert.Equal(t, *value, int(*result))
+		}
+	}
+	for _, value := range []int{0, -1, 2147483648} {
+		_, err := leaderboardMaxEntriesToDB(&value)
+		assert.Error(t, err)
+	}
+}
+
+func TestPaginateConfiguredLeaderboard(t *testing.T) {
+	entries := make([]services.LeaderboardEntry, 5)
+	for i := range entries {
+		entries[i].Rank = int64(i + 1)
+	}
+	for _, tt := range []struct {
+		name                    string
+		first, last             *int
+		after, before           *string
+		count, start            int
+		previous, next, invalid bool
+	}{
+		{name: "whole board", first: intPtr(100), count: 5, start: 1},
+		{name: "first page", first: intPtr(2), count: 2, start: 1, next: true},
+		{name: "middle page", first: intPtr(2), after: stringPtr("2"), count: 2, start: 3, previous: true, next: true},
+		{name: "last page", first: intPtr(2), after: stringPtr("4"), count: 1, start: 5, previous: true},
+		{name: "at cap", first: intPtr(100), after: stringPtr("5"), previous: true},
+		{name: "beyond cap", first: intPtr(100), after: stringPtr("99"), previous: true},
+		{name: "backward", last: intPtr(2), count: 2, start: 4, previous: true},
+		{name: "backward before", last: intPtr(2), before: stringPtr("4"), count: 2, start: 2, previous: true, next: true},
+		{name: "before beyond cap", last: intPtr(2), before: stringPtr("99"), count: 2, start: 4, previous: true},
+		{name: "both bounds", first: intPtr(10), after: stringPtr("2"), before: stringPtr("5"), count: 2, start: 3, previous: true, next: true},
+		{name: "zero page", first: intPtr(0), next: true},
+		{name: "negative first", first: intPtr(-1), invalid: true},
+		{name: "negative last", last: intPtr(-1), invalid: true},
+		{name: "both page sizes", first: intPtr(1), last: intPtr(1), invalid: true},
+		{name: "invalid after", first: intPtr(1), after: stringPtr("garbage"), invalid: true},
+		{name: "invalid before", last: intPtr(1), before: stringPtr("0"), invalid: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			page, previous, next, err := paginateConfiguredLeaderboard(entries, tt.first, tt.after, tt.last, tt.before)
+			if tt.invalid {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Len(t, page, tt.count)
+			assert.Equal(t, tt.previous, previous)
+			assert.Equal(t, tt.next, next)
+			if tt.count > 0 {
+				assert.Equal(t, int64(tt.start), page[0].Rank)
+			}
+		})
+	}
+}
+
+func TestConfiguredLeaderboardMaxEntries(t *testing.T) {
+	for _, isEvent := range []bool{false, true} {
+		for _, maxEntries := range []*int{nil, intPtr(3), intPtr(150)} {
+			t.Run(fmt.Sprintf("event=%v/limit=%v", isEvent, maxEntries), func(t *testing.T) {
+				queries := mocks.NewMockLeaderboardQuerier(t)
+				c, err := cache.NewCacheWithRegistry(cache.DefaultConfig())
+				require.NoError(t, err)
+				t.Cleanup(c.Close)
+				rows := make([]*sqlc.GetFullProjectPersonLeaderboardRow, 200)
+				eventRows := make([]*sqlc.GetFullEventPersonLeaderboardRow, len(rows))
+				for i := range rows {
+					rows[i] = &sqlc.GetFullProjectPersonLeaderboardRow{EntityID: fmt.Sprintf("US%026d", i+1), Rank: int64(i + 1), Score: int64(200 - i), ChurchID: "CH1"}
+					eventRows[i] = (*sqlc.GetFullEventPersonLeaderboardRow)(rows[i])
+				}
+				if isEvent {
+					queries.On("GetFullEventPersonLeaderboard", mock.Anything, mock.Anything).Return(eventRows, nil)
+				} else {
+					queries.On("GetFullProjectPersonLeaderboard", mock.Anything, mock.Anything).Return(rows, nil)
+				}
+				config := &model.LeaderboardConfig{ProjectID: "PR1", EntityType: model.LeaderboardEntityTypePersons, MaxEntries: maxEntries}
+				if isEvent {
+					config.EventID = stringPtr("EV1")
+				}
+				userID := rows[199].EntityID
+				ctx := context.WithValue(context.Background(), middleware.UserIDKey, userID)
+				r := &Resolver{LeaderboardService: services.NewLeaderboardService(queries, c, nil)}
+				board, err := r.getLeaderboardForConfig(ctx, config, nil, nil, nil, nil)
+				require.NoError(t, err)
+				count := 100
+				if maxEntries != nil {
+					count = *maxEntries
+				}
+				require.Len(t, board.Edges, count)
+				assert.Equal(t, 200, board.TotalCount)
+				assert.Equal(t, maxEntries == nil, board.PageInfo.HasNextPage)
+				require.NotNil(t, board.Me)
+				assert.Equal(t, userID, board.Me.ID)
+				rivals, err := r.LeaderboardConnection().NearestChurchRivals(ctx, board, intPtr(3))
+				require.NoError(t, err)
+				require.Len(t, rivals, 3)
+				assert.Equal(t, 199, *rivals[0].Rank)
+			})
+		}
+	}
 }

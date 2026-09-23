@@ -77,6 +77,11 @@ describe('standings page', () => {
     localStorage.clear()
   })
 
+  it('lets each config determine its board size', async () => {
+    await mountWith({ data: makeData([board('LC1', 'Topp')]) })
+    expect(queryMock.mock.calls[0]?.[0]).not.toHaveProperty('variables')
+  })
+
   it('shows the loading skeleton on initial load', async () => {
     const wrapper = await mountWith({ fetching: true, data: null })
 
