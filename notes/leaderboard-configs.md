@@ -41,6 +41,31 @@ The old ad-hoc `leaderboard(...)` fields on `Project`/`Event` are **not deprecat
 - **`UpdateLeaderboardConfigInput` is full-replace**, not partial-patch: `name`, `entityType`, `sortOrder`, `isActive` are all required (`!`); the caller always resends the complete desired state. `filter` stays nullable — `filter: null` unambiguously means "no filter," `filter: {...}` means "this filter." There is no `clearFilter` flag and no absent-vs-explicit-null ambiguity to solve, because there's no "leave unchanged" case for any field except by resending its current value. This is a deliberate departure from every other `Update*Input` in this codebase (which are PATCH-style, all-optional with `COALESCE`-based partial updates) — chosen specifically to avoid the ambiguity a nullable `filter` field would otherwise create.
 - **Serving**: `Project.leaderboards` / `Event.leaderboards` return all *active* configs (all configs, including inactive, if the caller is admin/superadmin — checked via `RoleService.IsAdmin` in the resolver, not the schema). Each config's `leaderboard(first, after, last, before)` field returns the fully computed `LeaderboardConnection`.
 
+## Not yet supported: a per-config size limit
+
+A config says *who* is on a board, not *how many* rows it shows. There is no
+`max_entries` / "top N" anywhere — not in `leaderboard_configs`, not on
+`LeaderboardConfig`, not in either input. The only size control is the `first`
+pagination argument the **client** passes to `LeaderboardConfig.leaderboard`,
+which `getLeaderboardForConfig` forwards straight to the engine.
+(`filter.minScore` / `maxScore` are score bounds, not a rank cap.)
+
+This is a real gap — deferred deliberately to keep the frontend PR small, to be
+implemented by a backend developer later. Sketch:
+
+1. Migration: `max_entries INT` on `leaderboard_configs`, nullable (null = no cap).
+2. `gql/leaderboards.graphqls`: `maxEntries: Int` on `LeaderboardConfig` and on
+   both `CreateLeaderboardConfigInput` and `UpdateLeaderboardConfigInput`
+   (nullable in the update input, the same treatment `filter` gets in that
+   full-replace input).
+3. `leaderboard_configs.sql` + `make generate`.
+4. `getLeaderboardForConfig`: clamp the effective `first` to `maxEntries` when
+   set, so the cap holds whatever a client asks for.
+
+Until then the client picks the size, which is why the user-facing standings
+page hardcodes one `BOARD_SIZE` for every board — see
+`leaderboard-configs-frontend.md`.
+
 ## Reused leaderboard engine
 
 `LeaderboardConfig.leaderboard` does **not** reimplement leaderboard computation — it adapts a config into the existing `services.LeaderboardParams` (see `backend/internal/graph/api/leaderboards.go:buildLeaderboardParamsFromConfig`) and calls the same `LeaderboardService.GetProjectLeaderboard`/`GetEventLeaderboard` used by the ad-hoc fields, then the same `buildLeaderboardConnection`/`FilterPersonLeaderboardEntries` helpers (these take `rivalsContextID`/`rivalsIsEvent`/`rivalsFilter` and compute `nearestChurchRivals` lazily — see `feat/nearest-neighboor-ranking`'s "avoid computing rivals on every leaderboard query" refactor, which this branch rebased onto). This means:

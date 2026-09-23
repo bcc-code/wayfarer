@@ -150,6 +150,12 @@ switches tabs client-side. Consequences to keep in mind:
 - One `first` applies to **all** boards in that query; it cannot vary per
   config the way the old code used 20 for persons and 500 for teams. Going with
   `first: 100`.
+  - The real fix is a per-config size limit, which the backend does not have —
+    an admin can define who is on a board but not how many rows it shows. See
+    "Not yet supported: a per-config size limit" in
+    [`leaderboard-configs.md`](./leaderboard-configs.md). Deferred deliberately
+    to keep this PR small; a backend developer will add it, and `BOARD_SIZE`
+    then goes away.
 - Tab switching costs no request, which is a UX gain over the current
   `v-if`-per-tab components.
 
