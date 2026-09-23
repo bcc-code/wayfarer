@@ -260,6 +260,7 @@ CREATE TABLE leaderboard_configs (
     -- Same shape as the GraphQL `LeaderboardFilter` input, so the filter can
     -- grow a field without a migration.
     filter JSONB,
+    max_entries INT CHECK (max_entries > 0),
     sort_order INT NOT NULL DEFAULT 0,
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),

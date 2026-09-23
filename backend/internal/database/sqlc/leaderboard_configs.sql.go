@@ -48,6 +48,7 @@ INSERT INTO leaderboard_configs (
     name,
     entity_type,
     filter,
+    max_entries,
     sort_order,
     is_active
 )
@@ -58,10 +59,11 @@ VALUES (
     $4::text,
     $5::text,
     $6::jsonb,
-    COALESCE($7::int, 0),
-    COALESCE($8::bool, true)
+    $7::int,
+    COALESCE($8::int, 0),
+    COALESCE($9::bool, true)
 )
-RETURNING id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at
+RETURNING id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at, max_entries
 `
 
 type CreateLeaderboardConfigParams struct {
@@ -71,6 +73,7 @@ type CreateLeaderboardConfigParams struct {
 	Name       string  `json:"name"`
 	Entitytype string  `json:"entitytype"`
 	Filter     []byte  `json:"filter"`
+	Maxentries *int32  `json:"maxentries"`
 	Sortorder  *int32  `json:"sortorder"`
 	Isactive   *bool   `json:"isactive"`
 }
@@ -83,6 +86,7 @@ func (q *Queries) CreateLeaderboardConfig(ctx context.Context, arg CreateLeaderb
 		arg.Name,
 		arg.Entitytype,
 		arg.Filter,
+		arg.Maxentries,
 		arg.Sortorder,
 		arg.Isactive,
 	)
@@ -98,6 +102,7 @@ func (q *Queries) CreateLeaderboardConfig(ctx context.Context, arg CreateLeaderb
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.MaxEntries,
 	)
 	return &i, err
 }
@@ -113,7 +118,7 @@ func (q *Queries) DeleteLeaderboardConfig(ctx context.Context, id string) error 
 }
 
 const GetLeaderboardConfigByID = `-- name: GetLeaderboardConfigByID :one
-SELECT id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at
+SELECT id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at, max_entries
 FROM leaderboard_configs
 WHERE id = $1::char(28)
 `
@@ -132,12 +137,13 @@ func (q *Queries) GetLeaderboardConfigByID(ctx context.Context, id string) (*Lea
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.MaxEntries,
 	)
 	return &i, err
 }
 
 const GetLeaderboardConfigsByEventIDs = `-- name: GetLeaderboardConfigsByEventIDs :many
-SELECT id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at
+SELECT id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at, max_entries
 FROM leaderboard_configs
 WHERE event_id = ANY($1::char(28)[])
 ORDER BY event_id, sort_order, id
@@ -165,6 +171,7 @@ func (q *Queries) GetLeaderboardConfigsByEventIDs(ctx context.Context, eventIds 
 			&i.IsActive,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.MaxEntries,
 		); err != nil {
 			return nil, err
 		}
@@ -177,7 +184,7 @@ func (q *Queries) GetLeaderboardConfigsByEventIDs(ctx context.Context, eventIds 
 }
 
 const GetLeaderboardConfigsByIDs = `-- name: GetLeaderboardConfigsByIDs :many
-SELECT id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at
+SELECT id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at, max_entries
 FROM leaderboard_configs
 WHERE id = ANY($1::char(28)[])
 `
@@ -202,6 +209,7 @@ func (q *Queries) GetLeaderboardConfigsByIDs(ctx context.Context, ids []string) 
 			&i.IsActive,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.MaxEntries,
 		); err != nil {
 			return nil, err
 		}
@@ -214,7 +222,7 @@ func (q *Queries) GetLeaderboardConfigsByIDs(ctx context.Context, ids []string) 
 }
 
 const GetLeaderboardConfigsByProjectIDs = `-- name: GetLeaderboardConfigsByProjectIDs :many
-SELECT id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at
+SELECT id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at, max_entries
 FROM leaderboard_configs
 WHERE project_id = ANY($1::char(28)[])
 ORDER BY project_id, sort_order, id
@@ -242,6 +250,7 @@ func (q *Queries) GetLeaderboardConfigsByProjectIDs(ctx context.Context, project
 			&i.IsActive,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.MaxEntries,
 		); err != nil {
 			return nil, err
 		}
@@ -254,7 +263,7 @@ func (q *Queries) GetLeaderboardConfigsByProjectIDs(ctx context.Context, project
 }
 
 const GetLeaderboardConfigsFilteredCursor = `-- name: GetLeaderboardConfigsFilteredCursor :many
-SELECT id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at
+SELECT id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at, max_entries
 FROM leaderboard_configs
 WHERE
     ($1::char(28)[] IS NULL OR id = ANY($1::char(28)[]))
@@ -321,6 +330,7 @@ func (q *Queries) GetLeaderboardConfigsFilteredCursor(ctx context.Context, arg G
 			&i.IsActive,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.MaxEntries,
 		); err != nil {
 			return nil, err
 		}
@@ -338,28 +348,31 @@ SET
     name = $1::text,
     entity_type = $2::text,
     filter = $3::jsonb,
-    sort_order = $4::int,
-    is_active = $5::bool
-WHERE id = $6::char(28)
-RETURNING id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at
+    max_entries = $4::int,
+    sort_order = $5::int,
+    is_active = $6::bool
+WHERE id = $7::char(28)
+RETURNING id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at, max_entries
 `
 
 type UpdateLeaderboardConfigParams struct {
 	Name       string `json:"name"`
 	Entitytype string `json:"entitytype"`
 	Filter     []byte `json:"filter"`
+	Maxentries *int32 `json:"maxentries"`
 	Sortorder  int32  `json:"sortorder"`
 	Isactive   bool   `json:"isactive"`
 	ID         string `json:"id"`
 }
 
 // Full-replace update: the caller always sends the complete desired state.
-// A null filter means "no filter" (never ambiguous with "not provided").
+// Null filter/max_entries values clear those settings.
 func (q *Queries) UpdateLeaderboardConfig(ctx context.Context, arg UpdateLeaderboardConfigParams) (*LeaderboardConfig, error) {
 	row := q.db.QueryRow(ctx, UpdateLeaderboardConfig,
 		arg.Name,
 		arg.Entitytype,
 		arg.Filter,
+		arg.Maxentries,
 		arg.Sortorder,
 		arg.Isactive,
 		arg.ID,
@@ -376,6 +389,7 @@ func (q *Queries) UpdateLeaderboardConfig(ctx context.Context, arg UpdateLeaderb
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.MaxEntries,
 	)
 	return &i, err
 }

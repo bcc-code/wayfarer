@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
+	"sort"
+	"strconv"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
@@ -18,6 +21,64 @@ import (
 // cursor query when neither first nor last is specified. Kept as a single constant so the
 // two call sites (query-limit calculation, hasMore trimming) can't drift out of sync.
 const defaultLeaderboardConfigsPageSize = 10
+
+const defaultConfiguredLeaderboardPageSize = 100
+
+func leaderboardMaxEntriesToDB(maxEntries *int) (*int32, error) {
+	if maxEntries == nil {
+		return nil, nil
+	}
+	if *maxEntries < 1 || *maxEntries > math.MaxInt32 {
+		return nil, fmt.Errorf("maxEntries must be between 1 and %d", math.MaxInt32)
+	}
+	value := int32(*maxEntries)
+	return &value, nil
+}
+
+// paginateConfiguredLeaderboard paginates a board that has already been capped.
+// Cursor bounds are applied before page sizes, including cursors beyond the cap.
+func paginateConfiguredLeaderboard(entries []services.LeaderboardEntry, first *int, after *string, last *int, before *string) ([]services.LeaderboardEntry, bool, bool, error) {
+	if first != nil && last != nil {
+		return nil, false, false, fmt.Errorf("cannot specify both first and last")
+	}
+	if (first != nil && *first < 0) || (last != nil && *last < 0) {
+		return nil, false, false, fmt.Errorf("page size cannot be negative")
+	}
+	start, end := 0, len(entries)
+	for _, bound := range []struct {
+		cursor *string
+		after  bool
+	}{{after, true}, {before, false}} {
+		if bound.cursor == nil || *bound.cursor == "" {
+			continue
+		}
+		rank, err := strconv.ParseInt(*bound.cursor, 10, 64)
+		if err != nil || rank < 1 {
+			return nil, false, false, fmt.Errorf("invalid leaderboard cursor")
+		}
+		index := sort.Search(len(entries), func(i int) bool {
+			if bound.after {
+				return entries[i].Rank > rank
+			}
+			return entries[i].Rank >= rank
+		})
+		if bound.after {
+			start = index
+		} else {
+			end = index
+		}
+	}
+	if end < start {
+		end = start
+	}
+	if first != nil && *first < end-start {
+		end = start + *first
+	}
+	if last != nil && *last < end-start {
+		start = end - *last
+	}
+	return entries[start:end], start > 0, end < len(entries), nil
+}
 
 // marshalLeaderboardFilter serializes a LeaderboardFilter input into the JSON bytes
 // stored in the leaderboard_configs.filter JSONB column. Returns nil for a nil filter.
@@ -120,14 +181,27 @@ func filterViewToFilter(view *model.LeaderboardFilterView) *model.LeaderboardFil
 
 // getLeaderboardForConfig computes the finished, paginated leaderboard for a persisted
 // config by adapting it into services.LeaderboardParams and reusing the same leaderboard
-// engine (caching, pagination, nearestChurchRivals) as the ad-hoc Project/Event.leaderboard fields.
+// engine (ranking, caching, nearestChurchRivals) as the ad-hoc Project/Event.leaderboard fields.
 func (r *Resolver) getLeaderboardForConfig(ctx context.Context, obj *model.LeaderboardConfig, first *int, after *string, last *int, before *string) (*model.LeaderboardConnection, error) {
 	currentUserID, ok := middleware.GetUserID(ctx)
 	if !ok || currentUserID == "" {
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
-	params, isEvent := buildLeaderboardParamsFromConfig(obj, first, after, last, before, currentUserID)
+	if first == nil && last == nil {
+		first = obj.MaxEntries
+		if first == nil {
+			first = intPtr(defaultConfiguredLeaderboardPageSize)
+		}
+	}
+	// Fetch the top N before applying cursors so later pages cannot escape the
+	// configured cap. The service already caches the full board; this only slices
+	// that shared data, leaving the cache, totalCount, me and rivals unchanged.
+	fetchLimit := math.MaxInt32
+	if obj.MaxEntries != nil {
+		fetchLimit = *obj.MaxEntries
+	}
+	params, isEvent := buildLeaderboardParamsFromConfig(obj, &fetchLimit, nil, nil, nil, currentUserID)
 
 	var entries []services.LeaderboardEntry
 	var meEntry *services.LeaderboardEntry
@@ -142,10 +216,16 @@ func (r *Resolver) getLeaderboardForConfig(ctx context.Context, obj *model.Leade
 		return nil, fmt.Errorf("failed to get leaderboard: %w", err)
 	}
 
+	entries, hasPreviousPage, hasNextPage, err := paginateConfiguredLeaderboard(entries, first, after, last, before)
+	if err != nil {
+		return nil, err
+	}
 	connection, err := buildLeaderboardConnection(ctx, entries, meEntry, totalCount, currentUserID, obj.EntityType, obj.ProjectID, r.Loaders, first, last, after, before, params.ContextID, isEvent, params.Filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build leaderboard connection: %w", err)
 	}
+	connection.PageInfo.HasPreviousPage = hasPreviousPage
+	connection.PageInfo.HasNextPage = hasNextPage
 
 	return connection, nil
 }
