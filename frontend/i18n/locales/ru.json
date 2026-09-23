@@ -103,15 +103,9 @@
     "privacyPolicy": "Политика конфиденциальности"
   },
   "standings": {
-    "global": "Глобально",
     "unit": "Моя команда",
-    "local": "Локально",
     "you": "Ты",
-    "rules": "Правила",
-    "units": "Команды",
-    "top": "Топ {amount}",
-    "u18": "U18",
-    "o18": "O18"
+    "rules": "Правила"
   },
   "pointHistory": {
     "pointHistoryButton": "История баллов",

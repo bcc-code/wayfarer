@@ -104,15 +104,9 @@
     "privacyPolicy": "Privacy policy"
   },
   "standings": {
-    "global": "Global",
     "unit": "My unit",
-    "local": "Local",
     "you": "You",
-    "rules": "Rules",
-    "units": "Units",
-    "top": "Top {amount}",
-    "u18": "U18",
-    "o18": "O18"
+    "rules": "Rules"
   },
   "pointHistory": {
     "pointHistoryButton": "Points history",

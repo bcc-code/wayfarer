@@ -86,12 +86,13 @@ const availableChallengesBadge = computed(
   () => data.value?.myCurrentProject.activeChallengesCount,
 )
 
-// Hide the standings tab when no one has any points yet, so there is no
-// leaderboard to show. The persons leaderboard only counts scores >= 1, and
-// team scores are sums of member scores, so an empty persons leaderboard means
-// there are no standings at all.
+// Hide the standings tab when the project has no leaderboards configured —
+// the page is config-driven, so with no configs there is nothing for it to
+// render. This used to key off whether the persons leaderboard had any rows,
+// which asked the wrong question: a configured board that is still empty is a
+// page worth opening, and rows without a config are not reachable at all.
 const hasLeaderboard = computed(
-  () => (data.value?.myCurrentProject.leaderboard.totalCount ?? 0) > 0,
+  () => (data.value?.myCurrentProject.leaderboards.length ?? 0) > 0,
 )
 
 const links = computed<NavigationMenuItem[]>(() =>
@@ -128,8 +129,8 @@ gql(`
         ...BrandingFields
       }
       activeChallengesCount
-      leaderboard(entityType: PERSONS, first: 1) {
-        totalCount
+      leaderboards {
+        id
       }
     }
   }

@@ -17,6 +17,17 @@ The old ad-hoc `leaderboard(...)` fields on `Project`/`Event` are **not deprecat
   - `filter JSONB` — nullable. Stores the same shape as the GraphQL `LeaderboardFilter` input, serialized via `json.Marshal`/`json.Unmarshal` (same "typed struct <-> JSONB `[]byte`" convention as `push_notification_log.target_criteria`, see `internal/services/push/service.go`). No typed columns per filter field — this avoids a migration every time `LeaderboardFilter` grows a field.
   - `sort_order INT`, `is_active BOOLEAN` (draft/inactive configs are hidden from non-admin callers)
   - `created_at`/`updated_at TIMESTAMPTZ NOT NULL DEFAULT now()` — `NOT NULL`, matching `push_notifications`' stricter convention rather than the looser nullable-with-default convention used by most other tables in this codebase
+- **Migration 00103** (`00103_drop_leaderboard_config_slug.sql`) exists because
+  00102 was edited **after it had already been applied**. Code review dropped
+  `slug` and its unique index from the `CREATE TABLE` and tightened
+  `created_at`/`updated_at` to `NOT NULL`, but goose records 00102 as applied
+  and never re-runs it. A database that migrated before that edit therefore
+  still has `slug VARCHAR(100) NOT NULL` with no default, and every insert fails
+  with `null value in column "slug" of relation "leaderboard_configs" violates
+  not-null constraint (SQLSTATE 23502)` — which is exactly what the admin UI hit
+  the first time it tried to create a config. 00103 drops the column and index
+  conditionally, so it is a no-op on a database created from the amended 00102.
+  Any environment that migrated between 27399ba2 and 729a7433 needs it.
 - **ID prefix**: `LC` (`ulid.NewLeaderboardConfigID()` / `ulid.IsLeaderboardConfigID()`)
 - No unique constraint besides the `id` primary key (the `(project_id, slug)` unique index was removed along with `slug`)
 

@@ -103,15 +103,9 @@
     "privacyPolicy": "Datenschutzerklärung"
   },
   "standings": {
-    "global": "Global",
     "unit": "Meine Unit",
-    "local": "Ortsgemeinden",
     "you": "Du",
-    "rules": "Regeln",
-    "units": "Units",
-    "top": "Top {amount}",
-    "u18": "U18",
-    "o18": "Ü18"
+    "rules": "Regeln"
   },
   "pointHistory": {
     "pointHistoryButton": "Punktestand",

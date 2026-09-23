@@ -24,7 +24,7 @@ The two phases are deliberately sequential, not parallel:
 ## Status
 
 - [x] Phase 1 — admin interface
-- [ ] Phase 2 — user-facing app
+- [x] Phase 2 — user-facing app
 
 ## What the API gives us
 
@@ -109,7 +109,7 @@ Files:
   any falsy value as unset rather than pinning one sentinel, which also keeps a
   legitimate `0` score bound from collapsing to "no bound".
 
-## Phase 2 — user-facing app
+## Phase 2 — user-facing app — done
 
 Today `layers/user/app/pages/standings.vue` hardcodes three tabs — `global`,
 `local`, `unit` — backed by `app/graphql/queries/pages/standings/{global,local,unit}.gql`
@@ -117,25 +117,97 @@ and the `StandingsGlobal` / `StandingsLocal` / `StandingsUnit` components. Each
 builds its own ad-hoc `leaderboard(entityType:, filter:)` call, with the age
 range and church filters computed client-side.
 
-The config-driven version renders tabs from `myCurrentProject.leaderboards`
-instead, with each tab's rows coming from that config's `leaderboard` field.
+### Decided
 
-Points to decide in phase 2:
+- **Config-driven only, no fallback.** A project with no configs shows an empty
+  state; the old `StandingsGlobal` / `StandingsLocal` components and their
+  `.gql` documents are deleted rather than kept as a fallback path. Existing
+  projects need configs created in the admin UI before this ships — that is the
+  accepted cost of not carrying two code paths.
+- **Flat list of tabs**, one per config, in `sortOrder`. The current nested
+  sub-tabs (`StandingsGlobal`'s age ranges, `StandingsLocal`'s persons/units)
+  disappear: each becomes its own config and therefore its own top-level tab.
+- **The unit tab stays as-is, always last.** `StandingsUnit` reads
+  `myTeam.memberLeaderboard`, not an ad-hoc leaderboard, so it does not map onto
+  a `LeaderboardConfig`. It keeps its own query and stays gated on the user
+  having a team.
 
-- `StandingsUnit` is not an ad-hoc leaderboard at all — it reads
-  `myTeam.memberLeaderboard`. It does not map onto a `LeaderboardConfig` and
-  probably stays as-is.
-- `StandingsGlobal`'s age-range sub-tabs and `StandingsLocal`'s persons/units
-  sub-tabs are client-side switches between two filters. As configs, those
-  become two separate configs each — which changes the shape of the UI from
-  "tab with inner tabs" to "flat list of tabs".
-- Migration: projects without configs still need a working standings page, so
-  either seed configs for existing projects or keep the current components as a
-  fallback when `leaderboards` is empty.
-- `myCurrentProject.leaderboards` will include the project's **event-scoped**
-  configs as well (see phase 1's findings). Showing an event board as a project
-  standings tab is probably wrong; filter on `event` being null, or decide
-  deliberately to include them.
-- `tab` is persisted in `localStorage` (`standings-tab`) and in the URL by the
-  literal keys `global`/`local`/`unit`. Config-driven tabs need a stable key —
-  the config `id` is stable but meaningless in a URL.
+### The constraint that shapes this
+
+`leaderboardConfig(id)` and `leaderboardConfigs(...)` are **admin-only** — the
+resolvers call `IsAdmin` and return "permission denied" otherwise (see
+`leaderboards.resolvers.go`). A normal user can only reach configs through
+`myCurrentProject.leaderboards`, which takes no arguments.
+
+So there is no way to fetch *one* config's board by id as a user. The page
+fetches the whole list with each config's `leaderboard` in a single query and
+switches tabs client-side. Consequences to keep in mind:
+
+- Every board is computed on page load, not just the open tab. That is close to
+  what the page already does — `StandingsLocal` computes two boards in one
+  query — and the backend caches full boards keyed by
+  `(context, contextID, entityType, filter)`, shared with the ad-hoc path.
+- One `first` applies to **all** boards in that query; it cannot vary per
+  config the way the old code used 20 for persons and 500 for teams. Going with
+  `first: 100`.
+- Tab switching costs no request, which is a UX gain over the current
+  `v-if`-per-tab components.
+
+### What was built
+
+- `layers/user/app/pages/standings.vue` — one `StandingsPage` query fetching
+  every config and its board; tabs are the configs in `sortOrder`, with `unit`
+  appended last when the user has a team. The tab bar is hidden when there is
+  only one tab.
+- `layers/user/app/components/standings/StandingsBoard.vue` — presentational:
+  one config's name, its entries, and the viewer's own row via `getExtraItems`.
+- Deleted: `StandingsGlobal.vue`, `StandingsLocal.vue`,
+  `app/graphql/queries/pages/standings/{global,local}.gql`, and
+  `test/component/Standings{Global,Local}.test.ts`.
+- Tests: `test/component/StandingsPage.test.ts`,
+  `test/component/StandingsBoard.test.ts`.
+- `AGE_RANGE_YOUNG` / `AGE_RANGE_ADULT` kept — `pages/index.vue` still uses
+  them.
+
+### Navigation
+
+`layers/user/app/layouts/default.vue` hid the standings tab when the persons
+leaderboard had no rows. It now hides it when the project has **no leaderboards
+configured** — `myCurrentProject.leaderboards` is empty. The old check asked the
+wrong question once the page became config-driven: a configured board that is
+still empty is a page worth opening, and rows without a config are not reachable
+at all.
+
+One consequence to know: `leaderboards` returns inactive configs to
+admins/superadmins, so an admin sees the tab in a project whose every board is
+inactive. That matches what they see on the page itself.
+
+### Resolved while building
+
+- **Tab identity.** The config `id` is what goes in `?tab=` and the
+  `standings-tab` localStorage key. An unknown value — a deleted or deactivated
+  config, a different project, or the old `global` / `local` literal left over
+  from before this change — falls back to the first tab. Note that
+  `useLocalStorage` with a string default uses the raw String serializer, not
+  JSON; the value is stored unquoted.
+- **Event-scoped configs are shown.** `myCurrentProject.leaderboards` returns
+  them (the loader filters on `project_id` alone) and the user app has no event
+  pages, so filtering them out would make an event board unreachable. An admin
+  created and named it deliberately, and `isActive` already controls whether
+  anyone sees it.
+- **Tab labels come from config names**, which are admin-authored and
+  untranslated. `standings.unit` stays for the unit tab; `standings.global`,
+  `local`, `top`, `u18`, `o18` and `units` were removed from all 16 locale files
+  that carried them.
+- **Analytics.** `LeaderboardTabChanged` sends tab *labels*, not ids — a config
+  id says nothing in a dashboard, where the old values were readable
+  (`global` / `local` / `unit`). `TeamLeaderboardViewed` still fires on the unit
+  tab.
+
+### Before this ships
+
+Existing projects have no configs, so their standings tab disappears and the
+page shows an empty state. Configs have to be created in the admin UI (or
+seeded) for every live project first. This is the accepted cost of the
+"config-driven only, no fallback" decision above — it is not a bug to discover
+later.

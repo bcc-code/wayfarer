@@ -103,15 +103,9 @@
     "privacyPolicy": "隐私政策"
   },
   "standings": {
-    "global": "全球的",
     "unit": "我的团队",
-    "local": "当地的",
     "you": "你",
-    "rules": "规则",
-    "units": "团队",
-    "top": "顶部 {amount}",
-    "u18": "18岁以下",
-    "o18": "18岁以上"
+    "rules": "规则"
   },
   "pointHistory": {
     "pointHistoryButton": "积分历史",

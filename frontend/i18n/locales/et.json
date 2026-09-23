@@ -103,15 +103,9 @@
     "privacyPolicy": "Privaatsuspoliitika"
   },
   "standings": {
-    "global": "Globaalne",
     "unit": "Minu üksus",
-    "local": "Kohalik",
     "you": "Sina",
-    "rules": "Reeglid",
-    "units": "Üksused",
-    "top": "{amount} parimat",
-    "u18": "ALLA 18-A.",
-    "o18": "ÜLE 18-A."
+    "rules": "Reeglid"
   },
   "pointHistory": {
     "pointHistoryButton": "Punktide ajalugu",
