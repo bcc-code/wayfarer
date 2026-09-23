@@ -104,15 +104,9 @@
     "privacyPolicy": "Politica de confidențialitate"
   },
   "standings": {
-    "global": "Global",
     "unit": "Unitatea mea",
-    "local": "Local",
     "you": "Tu",
-    "rules": "Reguli",
-    "units": "Unități",
-    "top": "Clasament {amount}",
-    "u18": "U18",
-    "o18": "O18"
+    "rules": "Reguli"
   },
   "pointHistory": {
     "pointHistoryButton": "Istoric puncte",
