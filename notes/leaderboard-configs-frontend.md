@@ -201,7 +201,10 @@ people ahead of you" — `findNearestChurchRivals` filters on
 `entry.ChurchID == me.ChurchID`. It is PERSONS-only (empty for TEAMS,
 SUPERTEAMS, CHURCHES), empty when the viewer is off the board, already rank 1,
 or has no church, and `first` defaults to 3 and is capped at 5 server-side.
-Church-agnostic rivals would be a backend change; not done.
+The church scoping is **intended**, confirmed with the team — rivals are the
+people from your own church ahead of you, not the field at large. So the field's
+behaviour is the product decision, not a limitation to route around; leave the
+filter alone.
 
 Ordering is the one thing the client has to get right: the server walks
 *backward* from the viewer, so rivals arrive nearest-first. `getExtraItemsWithRivals`
