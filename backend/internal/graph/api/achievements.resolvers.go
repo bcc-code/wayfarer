@@ -715,8 +715,6 @@ func (r *mutationResolver) UpdateContentAchievement(ctx context.Context, id stri
 	// Invalidate caches
 	r.Cache.InvalidateProject(contentAch.ProjectID)
 	r.Cache.InvalidateAchievement(id)
-	r.Cache.Delete(cache.ContentItemsByAchievementKey(id))
-	r.Cache.Delete(cache.ContentItemCountKey(id))
 	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
 	r.Loaders.ContentItemsByAchievementLoader.Clear(ctx, id)
 
@@ -1062,8 +1060,6 @@ func (r *mutationResolver) DeleteAchievement(ctx context.Context, id string) (bo
 	// Invalidate caches
 	r.Cache.InvalidateProject(projectID)
 	r.Cache.InvalidateAchievement(id)
-	r.Cache.Delete(cache.ContentItemsByAchievementKey(id))
-	r.Cache.Delete(cache.ContentItemCountKey(id))
 	if quizID != "" {
 		// Drop the cached quiz achievement criteria used by finalizeQuiz
 		r.Cache.InvalidateQuiz(quizID)
@@ -1338,10 +1334,8 @@ func (r *mutationResolver) MarkContentItemCompleted(ctx context.Context, userID 
 		achievementIDs[i] = row.ID
 	}
 
-	// Invalidate caches for all achievements
-	for _, id := range achievementIDs {
-		r.Cache.Delete(cache.UserContentProgressKey(userID, id))
-	}
+	// Refresh the target user's progress on all server instances.
+	r.Cache.InvalidateUserAchievementProgress(userID)
 
 	// Check which achievements user already has - skip completion check for those
 	alreadyAwarded, err := r.DB.Queries.GetUserAwardedAchievementIDs(ctx, sqlc.GetUserAwardedAchievementIDsParams{
@@ -1463,16 +1457,15 @@ func (r *mutationResolver) UnmarkContentItemCompleted(ctx context.Context, userI
 		return nil, fmt.Errorf("failed to unmark content item completed: %w", err)
 	}
 
-	// Convert to model, apply translations, and invalidate caches
+	r.Cache.InvalidateUserAchievementProgress(userID)
+
+	// Convert to model and apply translations
 	result := make([]model.ContentAchievement, 0, len(achievementRows))
 	for _, row := range achievementRows {
 		contentAch := convertPublishedContentAchievementRow(row)
 		// Apply translation
 		translated := r.ApplyTranslationToAchievement(ctx, contentAch)
 		result = append(result, *translated.(*model.ContentAchievement))
-
-		// Invalidate user-specific caches
-		r.Cache.Delete(cache.UserContentProgressKey(userID, row.ID))
 	}
 
 	// Notify Firestore listeners about content progress
@@ -1525,10 +1518,8 @@ func (r *mutationResolver) MarkStreakItemCompleted(ctx context.Context, userID s
 		achievementIDs[i] = row.ID
 	}
 
-	// Invalidate caches
-	for _, id := range achievementIDs {
-		r.Cache.Delete(cache.UserStreakProgressKey(userID, id))
-	}
+	// Refresh the target user's progress on all server instances.
+	r.Cache.InvalidateUserAchievementProgress(userID)
 
 	// Check which achievements user already has
 	alreadyAwarded, err := r.DB.Queries.GetUserAwardedAchievementIDs(ctx, sqlc.GetUserAwardedAchievementIDsParams{
@@ -1624,10 +1615,7 @@ func (r *mutationResolver) UnmarkStreakItemCompleted(ctx context.Context, userID
 		return nil, fmt.Errorf("failed to unmark streak item completed: %w", err)
 	}
 
-	// Invalidate caches
-	for _, row := range achievementRows {
-		r.Cache.Delete(cache.UserStreakProgressKey(userID, row.ID))
-	}
+	r.Cache.InvalidateUserAchievementProgress(userID)
 
 	result := make([]model.StreakAchievement, 0, len(achievementRows))
 	for _, row := range achievementRows {
