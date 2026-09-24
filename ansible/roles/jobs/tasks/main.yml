@@ -1,0 +1,45 @@
+---
+# Scheduled jobs that POST to the app's own trigger endpoints (replaces the
+# Google Cloud Scheduler jobs). Each job is a systemd timer + oneshot
+# service running /opt/wayfarer/bin/wayfarer-job <name>; output lands in
+# the journal: `journalctl -u wayfarer-job-sync-ssf`.
+
+- name: Install curl
+  ansible.builtin.apt:
+    name: curl
+    state: present
+
+- name: Install wayfarer job script
+  ansible.builtin.template:
+    src: wayfarer-job.sh.j2
+    dest: /opt/wayfarer/bin/wayfarer-job
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install wayfarer job units
+  ansible.builtin.template:
+    src: "wayfarer-job.{{ item.1 }}.j2"
+    dest: "/etc/systemd/system/wayfarer-job-{{ item.0.name }}.{{ item.1 }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ wayfarer_jobs | product(['service', 'timer']) | list }}"
+  loop_control:
+    label: "wayfarer-job-{{ item.0.name }}.{{ item.1 }}"
+  vars:
+    job: "{{ item.0 }}"
+  notify: Reload systemd (jobs)
+
+- name: Reload systemd before enabling timers
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable wayfarer job timers
+  ansible.builtin.systemd:
+    name: "wayfarer-job-{{ item.name }}.timer"
+    enabled: true
+    state: started
+  loop: "{{ wayfarer_jobs }}"
+  loop_control:
+    label: "{{ item.name }}"
+  ignore_errors: "{{ ansible_check_mode }}"

@@ -1,0 +1,11 @@
+# Managed by Ansible (roles/jobs)
+[Unit]
+Description=Schedule for wayfarer job {{ job.name }}
+
+[Timer]
+OnCalendar={{ job.on_calendar }}
+# Catch up once after downtime (e.g. reboot across the scheduled time).
+Persistent=true
+
+[Install]
+WantedBy=timers.target

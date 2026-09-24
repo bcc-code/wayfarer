@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Managed by Ansible (roles/jobs)
+#
+# Triggers a scheduled wayfarer job by POSTing to the app's own endpoint.
+# Keys come from /opt/wayfarer/wayfarer.env (loaded by the systemd unit via
+# EnvironmentFile), so no secret is duplicated into Ansible. Secrets are fed
+# to curl through a file descriptor to keep them out of `ps`.
+#
+# Usage: wayfarer-job <export-translations|sync-ssf|sync-members>
+set -euo pipefail
+
+BASE_URL="{{ wayfarer_jobs_base_url }}"
+
+post() { # post <path> <header>
+	local path=$1 header=$2
+	echo "POST ${path}"
+	curl --silent --show-error --fail-with-body \
+		--max-time {{ wayfarer_jobs_curl_max_time }} \
+		-X POST -H @<(printf '%s\n' "$header") \
+		"${BASE_URL}${path}"
+	echo
+}
+
+# EXTERNAL_API_KEYS is "source1:key1,source2:key2"; use the configured
+# source so requests are attributed to it in the logs.
+api_key() {
+	local source={{ wayfarer_jobs_api_key_source }} pair
+	IFS=',' read -ra pairs <<<"${EXTERNAL_API_KEYS:-}"
+	for pair in "${pairs[@]}"; do
+		pair=${pair// /}
+		if [[ ${pair%%:*} == "$source" ]]; then
+			printf '%s' "${pair#*:}"
+			return
+		fi
+	done
+	echo "no '${source}:<key>' entry in EXTERNAL_API_KEYS" >&2
+	return 1
+}
+
+case "${1:-}" in
+export-translations)
+	post /api/translations/export/all "X-Export-Key: ${TRANSLATIONS_EXPORT_KEY:?not set}"
+	;;
+sync-ssf)
+	post "/ssf/sync/{{ wayfarer_jobs_ssf_plan_slug }}" "X-Sync-Key: ${SSF_SYNC_KEY:?not set}"
+	;;
+sync-members)
+	key=$(api_key)
+	post /api/maintenance/sync-user-data "Authorization: Bearer ${key}"
+	post /api/maintenance/import-new-members "Authorization: Bearer ${key}"
+	;;
+*)
+	echo "usage: $0 <export-translations|sync-ssf|sync-members>" >&2
+	exit 2
+	;;
+esac

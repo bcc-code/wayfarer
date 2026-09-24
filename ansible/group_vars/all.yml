@@ -68,3 +68,23 @@ backup_db_password: "{{ vault_backup_db_password | default('CHANGE_ME') }}"
 metabase_db_user: metabase
 # Set via `ansible-vault` or -e on the command line; never commit a real value.
 metabase_db_password: "{{ vault_metabase_db_password | default('CHANGE_ME') }}"
+
+# --- Scheduled jobs (roles/jobs) -----------------------------------------------
+# systemd timers that POST to the app's trigger endpoints. Keys are read at
+# run time from /opt/wayfarer/wayfarer.env (TRANSLATIONS_EXPORT_KEY,
+# SSF_SYNC_KEY, EXTERNAL_API_KEYS), not stored here.
+wayfarer_jobs_base_url: https://interact.bcc.no
+# Which EXTERNAL_API_KEYS entry ("<source>:<key>") the maintenance calls use.
+wayfarer_jobs_api_key_source: cron
+wayfarer_jobs_ssf_plan_slug: hidden-treasures-podcast
+# The full-table member sync is one long synchronous request.
+wayfarer_jobs_curl_max_time: 3600
+# OnCalendar syntax (`systemd-analyze calendar '<spec>'` to check).
+wayfarer_jobs:
+  - name: export-translations
+    on_calendar: "*-*-* *:00:00 Europe/Oslo"
+  - name: sync-ssf
+    on_calendar: "*-*-* 05:00:00 Europe/Oslo"
+  # Monday night: refresh existing users, then import newly eligible members.
+  - name: sync-members
+    on_calendar: "Tue *-*-* 02:00:00 Europe/Oslo"
