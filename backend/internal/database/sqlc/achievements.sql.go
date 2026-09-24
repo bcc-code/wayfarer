@@ -2012,11 +2012,13 @@ func (q *Queries) GetUserContentProgress(ctx context.Context, arg GetUserContent
 }
 
 const GetUserProgressCounts = `-- name: GetUserProgressCounts :many
-SELECT achievement_id, COUNT(*)::int AS progress_count
-FROM user_content_progress
-WHERE user_id = $1::char(28)
-  AND achievement_id = ANY($2::char(28)[])
-GROUP BY achievement_id
+SELECT p.achievement_id, COUNT(*)::int AS progress_count
+FROM user_content_progress p
+JOIN content_achievement_items i
+  ON i.achievement_id = p.achievement_id AND i.external_content_id = p.external_content_id
+WHERE p.user_id = $1::char(28)
+  AND p.achievement_id = ANY($2::char(28)[])
+GROUP BY p.achievement_id
 `
 
 type GetUserProgressCountsParams struct {
@@ -2029,7 +2031,7 @@ type GetUserProgressCountsRow struct {
 	ProgressCount int32  `json:"progress_count"`
 }
 
-// Get user progress counts per achievement
+// Count only completed items that still belong to the achievement.
 func (q *Queries) GetUserProgressCounts(ctx context.Context, arg GetUserProgressCountsParams) ([]*GetUserProgressCountsRow, error) {
 	rows, err := q.db.Query(ctx, GetUserProgressCounts, arg.UserID, arg.AchievementIds)
 	if err != nil {
@@ -2088,11 +2090,13 @@ func (q *Queries) GetUserStreakProgress(ctx context.Context, arg GetUserStreakPr
 }
 
 const GetUserStreakProgressCounts = `-- name: GetUserStreakProgressCounts :many
-SELECT achievement_id, COUNT(*)::int AS progress_count
-FROM user_streak_progress
-WHERE user_id = $1::char(28)
-  AND achievement_id = ANY($2::char(28)[])
-GROUP BY achievement_id
+SELECT p.achievement_id, COUNT(*)::int AS progress_count
+FROM user_streak_progress p
+JOIN streak_achievement_items i
+  ON i.achievement_id = p.achievement_id AND i.external_content_id = p.external_content_id
+WHERE p.user_id = $1::char(28)
+  AND p.achievement_id = ANY($2::char(28)[])
+GROUP BY p.achievement_id
 `
 
 type GetUserStreakProgressCountsParams struct {
@@ -2105,7 +2109,7 @@ type GetUserStreakProgressCountsRow struct {
 	ProgressCount int32  `json:"progress_count"`
 }
 
-// Get user progress counts per streak achievement
+// Count only completed items that still belong to the streak achievement.
 func (q *Queries) GetUserStreakProgressCounts(ctx context.Context, arg GetUserStreakProgressCountsParams) ([]*GetUserStreakProgressCountsRow, error) {
 	rows, err := q.db.Query(ctx, GetUserStreakProgressCounts, arg.UserID, arg.AchievementIds)
 	if err != nil {
