@@ -8,7 +8,13 @@ max_connections = {{ postgres_max_connections }}
 
 # --- Security ---
 password_encryption = scram-sha-256
-ssl = off   # clients are loopback or the WireGuard-encrypted tailnet (see pg_hba)
+# External clients reach us over the public internet; pg_hba requires TLS
+# for them (hostssl). The files hold the wayfarer server's Let's Encrypt
+# cert for {{ postgres_tls_domain }} (synced by pg-sync-le-cert), so clients
+# can use sslmode=verify-full.
+ssl = on
+ssl_cert_file = '{{ postgres_tls_dir }}/server.crt'
+ssl_key_file = '{{ postgres_tls_dir }}/server.key'
 
 # --- Memory ---
 shared_buffers = {{ (mem_mb * 0.25) | int }}MB

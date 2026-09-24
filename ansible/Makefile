@@ -6,12 +6,16 @@
 #   export INTERACT_DB_PASSWORD=...
 #   export BACKUP_DB_PASSWORD=...
 #   export TAILSCALE_AUTHKEY=tskey-auth-...   # first join only
-# or use an ansible-vault file (see README.md).
+# or use an ansible-vault file (see README.md). group_vars/interact/vault.yml
+# is encrypted, so playbook runs prompt for the vault password unless
+# ANSIBLE_VAULT_PASSWORD_FILE points at a file holding it.
 
 PLAYBOOK := site.yml
 EXTRA_VARS := $(if $(INTERACT_DB_PASSWORD),-e interact_db_password=$(INTERACT_DB_PASSWORD),)
 EXTRA_VARS += $(if $(TAILSCALE_AUTHKEY),-e tailscale_authkey=$(TAILSCALE_AUTHKEY),)
 EXTRA_VARS += $(if $(BACKUP_DB_PASSWORD),-e backup_db_password=$(BACKUP_DB_PASSWORD),)
+EXTRA_VARS += $(if $(METABASE_DB_PASSWORD),-e metabase_db_password=$(METABASE_DB_PASSWORD),)
+EXTRA_VARS += $(if $(ANSIBLE_VAULT_PASSWORD_FILE),,--ask-vault-pass)
 
 .PHONY: help deps check lint dry-run deploy ping hardening tuning firewall tailscale postgres interact backup wayfarer
 

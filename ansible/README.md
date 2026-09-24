@@ -11,11 +11,11 @@ playbook reconfigures Postgres and the firewall on it.
 | ----------- | ------- |
 | `hardening` | apt upgrade + unattended security upgrades, sshd hardening (key-only, root stays allowed with keys for existing tooling), fail2ban, sysctl hardening |
 | `tuning`    | load-test base tuning: nofile 65535 (limits.d + systemd default), somaxconn/syn-backlog 8192, wider ephemeral port range, tcp_tw_reuse, nf_conntrack_max 131072 (ufw stateful tracking), CPU governor pinned to `performance` |
-| `firewall`  | ufw: deny incoming by default; allow 22 (rate-limited), 80 (ACME http-01), 443 (native TLS); tailnet traffic on `tailscale0` + UDP 41641 |
+| `firewall`  | ufw: deny incoming by default; allow 22 (rate-limited), 80 (ACME http-01), 443 (native TLS), 5432 from `postgres_external_clients` only; tailnet traffic on `tailscale0` + UDP 41641 |
 | `tailscale` | Installs Tailscale from the official apt repo and joins the tailnet (first join needs `tailscale_authkey`; a no-op once the node is Running) |
-| `postgres`  | PostgreSQL 17 from Debian repos, scram-only auth, listens on loopback + tailscale IPs (backup role only over the tailnet), tuning derived from host RAM/CPUs, pg_stat_statements |
+| `postgres`  | PostgreSQL 17 from Debian repos, scram-only auth, listens on loopback + tailscale IPs (+ public IP when `postgres_external_clients` is set), SSL on with the app's Let's Encrypt cert (synced by `pg-sync-le-cert`); backup role over the tailnet, backup/metabase over TLS from external clients, tuning derived from host RAM/CPUs, pg_stat_statements |
 | `interact`  | Creates the `interact` database and role for the app |
-| `backup`    | Read-only `backup` role (`pg_read_all_data` + stats/settings) for off-box `pg_dump` over the tailnet; admitted by `pg_hba` from the Tailscale ranges only |
+| `backup`    | Read-only `backup` and `metabase` roles (`pg_read_all_data` + stats/settings). `backup` is for off-box `pg_dump` over the tailnet; both are admitted from `postgres_external_clients` over TLS only |
 | `wayfarer`  | Native (proxyless) blue/green deploy layout: `wayfarer@{blue,green}` systemd units sharing the port via SO_REUSEPORT, per-color admin/health ports (9441/9442), split DB pools, `bin/deploy.sh` invoked by Semaphore CI (`.semaphore/`). Secret env `/opt/wayfarer/wayfarer.env` is placed manually |
 
 ## Prerequisites
@@ -30,15 +30,15 @@ ACME issuance will fail (both names are in `TLS_AUTO_DOMAINS`).
 
 ## Secrets
 
-The Interact and backup DB passwords must be provided; the playbook refuses
+The Interact, backup and metabase DB passwords must be provided; the playbook refuses
 the `CHANGE_ME` placeholder. Either:
 
 ```sh
 # one-off
-ansible-playbook site.yml -e interact_db_password=... -e backup_db_password=...
+ansible-playbook site.yml -e interact_db_password=... -e backup_db_password=... -e metabase_db_password=...
 
 # or with vault: put vault_interact_db_password in an encrypted vars file
-ansible-vault create group_vars/interact/vault.yml   # vault_interact_db_password, vault_backup_db_password
+ansible-vault create group_vars/interact/vault.yml   # vault_interact_db_password, vault_backup_db_password, vault_metabase_db_password
 ansible-playbook site.yml --ask-vault-pass
 ```
 
@@ -75,10 +75,21 @@ described above.
 - **Postgres exposure:** `listen_addresses` is loopback plus the node's
   Tailscale IPs (read from `tailscale ip` at play time). Postgres may start
   before tailscaled on boot, so `net.ipv{4,6}.ip_nonlocal_bind = 1` lets it
-  bind those addresses before they exist. ufw never opens 5432 publicly and
-  `pg_hba.conf` only admits the `backup` role from the Tailscale ranges
-  (`tailnet_cidrs`); `interact`/`postgres` stay loopback-only. Changing
+  bind those addresses before they exist. `pg_hba.conf` admits the `backup`
+  role from the Tailscale ranges (`tailnet_cidrs`); `interact`/`postgres`
+  stay loopback-only. Changing
   `listen_addresses` restarts Postgres (brief app connection drop).
+- **External clients (public internet):** the IPs in
+  `postgres_external_clients` (currently `85.112.141.130`) get a ufw allow
+  on 5432, and Postgres also binds the box's public IPv4. `pg_hba` admits
+  them only as `backup`/`metabase` and only over TLS (`hostssl`); plaintext
+  connections are rejected. Postgres serves the wayfarer server's Let's
+  Encrypt cert for `postgres_tls_domain`: autocert keeps key+chain in one PEM
+  under `/opt/wayfarer/autocert`, and `/usr/local/sbin/pg-sync-le-cert`
+  splits it into `/etc/postgresql/17/main/tls/` and reloads Postgres. A
+  systemd path unit runs it on renewal, a daily timer as backstop. Until the
+  app has a cert, a snakeoil fallback is served. Connect with verification:
+  `psql "host=interact.bcc.media dbname=interact user=metabase sslmode=verify-full sslrootcert=system"`.
 - **Backups over the tailnet:** from any tailnet machine,
   `pg_dump -Fc -h <box tailscale IP> -U backup -d interact -f interact.dump`.
 - **Dokploy/Docker removal:** this playbook no longer installs Dokploy, but

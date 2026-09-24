@@ -1,30 +1,38 @@
 ---
-# Read-only Postgres role for off-box backups over the tailnet. It gets the
+# Read-only Postgres roles: `backup` for off-box pg_dump over the tailnet and
+# `metabase` for analytics from postgres_external_clients. Each gets the
 # built-in pg_read_all_data role (SELECT on every table/sequence in every
 # database, present and future, no write capability) plus pg_read_all_stats /
 # pg_read_all_settings so the same login works for monitoring. Network access
-# for this user is opened in roles/postgres (pg_hba.conf.j2, tailnet CIDRs).
+# for these users is opened in roles/postgres (pg_hba.conf.j2) and
+# roles/firewall.
 
-- name: Fail if the backup password was left at the placeholder
+- name: Fail if a read-only role password was left at the placeholder
   ansible.builtin.assert:
-    that: backup_db_password != 'CHANGE_ME'
+    that:
+      - backup_db_password != 'CHANGE_ME'
+      - metabase_db_password != 'CHANGE_ME'
     fail_msg: >-
-      Set vault_backup_db_password (ansible-vault) or pass
-      -e backup_db_password=... before running this playbook.
+      Set vault_backup_db_password and vault_metabase_db_password
+      (ansible-vault) or pass -e backup_db_password=... -e
+      metabase_db_password=... before running this playbook.
   no_log: true
 
 # ignore_errors in --check: Postgres/psycopg2 may not really be
 # installed yet during a dry run.
-- name: Provision backup role
+- name: Provision read-only roles
   ignore_errors: "{{ ansible_check_mode }}"
   become_user: postgres
   block:
-    - name: Create read-only backup role
+    - name: Create read-only roles
       community.postgresql.postgresql_user:
-        name: "{{ backup_db_user }}"
-        password: "{{ backup_db_password }}"
+        name: "{{ item.name }}"
+        password: "{{ item.password }}"
         role_attr_flags: LOGIN,NOSUPERUSER,NOCREATEDB,NOCREATEROLE,NOREPLICATION
         state: present
+      loop:
+        - { name: "{{ backup_db_user }}", password: "{{ backup_db_password }}" }
+        - { name: "{{ metabase_db_user }}", password: "{{ metabase_db_password }}" }
       no_log: true
 
     - name: Grant read-everything predefined roles
@@ -35,4 +43,5 @@
           - pg_read_all_settings
         target_roles:
           - "{{ backup_db_user }}"
+          - "{{ metabase_db_user }}"
         state: present

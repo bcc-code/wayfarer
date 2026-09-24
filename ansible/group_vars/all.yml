@@ -24,8 +24,22 @@ postgres_version: 17
 # Loopback plus the node's Tailscale addresses (looked up with `tailscale ip`
 # in roles/postgres). ip_nonlocal_bind (also set there) lets Postgres bind
 # them even when it starts before tailscaled has brought the interface up.
-# pg_hba.conf additionally admits only the backup role from the tailnet.
-postgres_listen_addresses: "127.0.0.1,::1,{{ postgres_tailscale_ips | join(',') }}"
+# pg_hba.conf additionally admits only the read-only roles from the tailnet.
+# When postgres_external_clients is set, the public IPv4 is bound too (ufw
+# opens 5432 to those clients only; pg_hba requires TLS for them).
+postgres_listen_addresses: >-
+  127.0.0.1,::1,{{ postgres_tailscale_ips | join(',') }}{{
+  (',' ~ ansible_facts['default_ipv4']['address'])
+  if postgres_external_clients | length > 0 else '' }}
+# TLS reuses the wayfarer server's Let's Encrypt cert (autocert cache, one
+# combined key+chain PEM per domain), synced into postgres_tls_dir.
+postgres_tls_domain: interact.bcc.media
+postgres_tls_autocert_dir: /opt/wayfarer/autocert
+postgres_tls_dir: "/etc/postgresql/{{ postgres_version }}/main/tls"
+# Public IPv4 addresses allowed to reach 5432 over the internet. Admitted by
+# pg_hba over TLS only (hostssl), as the read-only backup/metabase roles.
+postgres_external_clients:
+  - 85.112.141.130
 # 500: each blue/green color runs DB_MAX_OPEN_CONNS=230 (roles/wayfarer), and
 # both colors are up concurrently during a deploy — 460 peak, leaving 40 for
 # psql/monitoring/bench headroom. (100 total starved the pool at spike
@@ -41,10 +55,16 @@ interact_db_password: "{{ vault_interact_db_password | default('CHANGE_ME') }}"
 
 # --- Backup (read-only, tailnet only) ------------------------------------------
 # Tailscale address ranges (IPv4 CGNAT + IPv6 ULA) admitted in pg_hba.conf
-# for the backup role only.
+# for the read-only backup role only.
 tailnet_cidrs:
   - 100.64.0.0/10
   - fd7a:115c:a1e0::/48
 backup_db_user: backup
 # Set via `ansible-vault` or -e on the command line; never commit a real value.
 backup_db_password: "{{ vault_backup_db_password | default('CHANGE_ME') }}"
+
+# --- Metabase (read-only, external clients over TLS) --------------------------
+# Same read-only grants as backup; admitted only from postgres_external_clients.
+metabase_db_user: metabase
+# Set via `ansible-vault` or -e on the command line; never commit a real value.
+metabase_db_password: "{{ vault_metabase_db_password | default('CHANGE_ME') }}"

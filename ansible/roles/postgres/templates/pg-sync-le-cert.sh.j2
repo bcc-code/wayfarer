@@ -1,0 +1,37 @@
+#!/bin/sh
+# Managed by Ansible (roles/postgres). Copies the Let's Encrypt cert that the
+# wayfarer server obtains via autocert into Postgres' TLS files and reloads
+# Postgres when it changed. autocert's DirCache stores the private key and
+# the certificate chain in one PEM file named after the domain.
+set -eu
+
+SRC={{ postgres_tls_autocert_dir }}/{{ postgres_tls_domain }}
+DEST={{ postgres_tls_dir }}
+
+# No LE cert yet (first boot, or the app hasn't served that name): keep
+# whatever is in place (the snakeoil fallback seeded by Ansible).
+[ -s "$SRC" ] || exit 0
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+
+awk -v key="$tmp/server.key" -v crt="$tmp/server.crt" '
+  /-----BEGIN .*PRIVATE KEY-----/ { out = key }
+  /-----BEGIN CERTIFICATE-----/   { out = crt }
+  out { print > out }
+  /-----END / { out = "" }
+' "$SRC"
+
+[ -s "$tmp/server.key" ] && [ -s "$tmp/server.crt" ] || {
+  echo "pg-sync-le-cert: could not split $SRC into key and cert" >&2
+  exit 1
+}
+
+if cmp -s "$tmp/server.crt" "$DEST/server.crt" && cmp -s "$tmp/server.key" "$DEST/server.key"; then
+  exit 0
+fi
+
+install -o postgres -g postgres -m 0600 "$tmp/server.key" "$DEST/server.key"
+install -o postgres -g postgres -m 0644 "$tmp/server.crt" "$DEST/server.crt"
+systemctl reload postgresql
+echo "pg-sync-le-cert: installed new certificate for {{ postgres_tls_domain }}"

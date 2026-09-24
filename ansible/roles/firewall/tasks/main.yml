@@ -24,6 +24,14 @@
         proto: tcp
       loop: "{{ firewall_allowed_tcp_ports }}"
 
+    - name: Allow Postgres from external clients only
+      community.general.ufw:
+        rule: allow
+        from_ip: "{{ item }}"
+        port: "5432"
+        proto: tcp
+      loop: "{{ postgres_external_clients }}"
+
     - name: Allow all traffic on the tailnet interface
       community.general.ufw:
         rule: allow

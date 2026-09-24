@@ -1,0 +1,8 @@
+# Managed by Ansible (roles/postgres)
+[Unit]
+Description=Copy the Let's Encrypt certificate into Postgres and reload it
+After=postgresql.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/pg-sync-le-cert
