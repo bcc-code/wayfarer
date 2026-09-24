@@ -95,7 +95,8 @@
   },
   "achievement": {
     "title": "Ödül",
-    "unlocked": "Başarıldı!"
+    "unlocked": "Başarıldı!",
+    "progress": "{total} öğeden {completed} tanesi tamamlandı"
   },
   "feedback": {
     "title": "Geri bildirim gönderin",

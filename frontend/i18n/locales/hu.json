@@ -139,7 +139,8 @@
   },
   "achievement": {
     "title": "Díj",
-    "unlocked": "Elérted!"
+    "unlocked": "Elérted!",
+    "progress": "{completed}/{total} teljesítve"
   },
   "feedback": {
     "title": "Adja meg véleményedet",

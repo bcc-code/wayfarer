@@ -139,7 +139,8 @@
   },
   "achievement": {
     "title": "Osiągnięcie",
-    "unlocked": "Osiągnięte!"
+    "unlocked": "Osiągnięte!",
+    "progress": "Ukończono {completed} z {total}"
   },
   "feedback": {
     "title": "Podziel się z nami swoją opinią",

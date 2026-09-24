@@ -140,7 +140,8 @@
   },
   "achievement": {
     "title": "Utmerkelse",
-    "unlocked": "Oppnådd!"
+    "unlocked": "Oppnådd!",
+    "progress": "{completed} av {total} fullført"
   },
   "feedback": {
     "title": "Gi oss tilbakemelding",

@@ -139,7 +139,8 @@
   },
   "achievement": {
     "title": "成就",
-    "unlocked": "达成！"
+    "unlocked": "达成！",
+    "progress": "已完成 {completed}/{total}"
   },
   "feedback": {
     "title": "请给我们反馈",

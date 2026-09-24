@@ -139,7 +139,8 @@
   },
   "achievement": {
     "title": "Onderscheiding",
-    "unlocked": "Behaald!"
+    "unlocked": "Behaald!",
+    "progress": "{completed} van {total} voltooid"
   },
   "feedback": {
     "title": "Geef ons feedback",
