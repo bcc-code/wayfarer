@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Managed by Ansible (roles/jobs)
+#
+# ExecStopPost hook: pushes the job's result to its Gatus external endpoint
+# (GATUS_ENDPOINT, set per unit). systemd provides SERVICE_RESULT and
+# EXIT_STATUS; GATUS_TOKEN comes from /opt/wayfarer/jobs.d/<job>.env. Never fails
+# the unit — a monitoring outage must not mark the job itself as failed.
+set -uo pipefail
+
+if [[ -z ${GATUS_TOKEN:-} ]]; then
+	echo "GATUS_TOKEN not set; skipping Gatus report" >&2
+	exit 0
+fi
+
+query="success=true"
+if [[ ${SERVICE_RESULT:-} != success ]]; then
+	query="success=false&error=${SERVICE_RESULT:-unknown}-${EXIT_STATUS:-unknown}"
+fi
+
+echo "Reporting to Gatus: ${GATUS_ENDPOINT} ${query}"
+curl --silent --show-error --fail-with-body --max-time 30 \
+	-X POST -H @<(printf 'Authorization: Bearer %s\n' "$GATUS_TOKEN") \
+	"{{ gatus_base_url }}/api/v1/endpoints/${GATUS_ENDPOINT}/external?${query}" ||
+	echo "Gatus report failed" >&2
+exit 0

@@ -102,7 +102,10 @@ described above.
 - **Scheduled jobs:** `systemctl list-timers 'wayfarer-job-*'` shows the
   next runs; `journalctl -u wayfarer-job-sync-ssf` shows output; run one now
   with `systemctl start wayfarer-job-sync-ssf`. Schedules live in
-  `wayfarer_jobs` (`group_vars/all.yml`).
+  `wayfarer_jobs` (`group_vars/all.yml`). A job with `gatus_endpoint` pushes
+  success/failure to Gatus after each run (`ExecStopPost` hook); tokens
+  are per job in `vault_gatus_tokens` (keyed by job name), written to
+  `/opt/wayfarer/jobs.d/<job>.env` (0600).
 - **Postgres tuning** is computed from Ansible facts at run time
   (25% RAM shared_buffers, SSD planner costs, parallelism per vCPU) in
   `roles/postgres/templates/90-tuning.conf.j2`. Changing `max_connections`

@@ -8,3 +8,8 @@ Wants=network-online.target
 Type=oneshot
 EnvironmentFile=/opt/wayfarer/wayfarer.env
 ExecStart=/opt/wayfarer/bin/wayfarer-job {{ job.name }}
+{% if job.gatus_endpoint is defined %}
+EnvironmentFile=/opt/wayfarer/jobs.d/{{ job.name }}.env
+Environment=GATUS_ENDPOINT={{ job.gatus_endpoint }}
+ExecStopPost=/opt/wayfarer/bin/wayfarer-job-report
+{% endif %}

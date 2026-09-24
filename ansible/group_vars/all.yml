@@ -79,12 +79,20 @@ wayfarer_jobs_api_key_source: cron
 wayfarer_jobs_ssf_plan_slug: hidden-treasures-podcast
 # The full-table member sync is one long synchronous request.
 wayfarer_jobs_curl_max_time: 3600
+# Jobs with a gatus_endpoint push their result there after every run.
+gatus_base_url: https://bccm.gatus.io
+# Per-job push tokens, keyed by job name, e.g. in vault:
+#   vault_gatus_tokens: { export-translations: ..., sync-members: ... }
+# Never commit a real value. A missing token = that job's report is skipped.
+gatus_tokens: "{{ vault_gatus_tokens | default({}) }}"
 # OnCalendar syntax (`systemd-analyze calendar '<spec>'` to check).
 wayfarer_jobs:
   - name: export-translations
     on_calendar: "*-*-* *:00:00 Europe/Oslo"
+    gatus_endpoint: interactcron_translations
   - name: sync-ssf
     on_calendar: "*-*-* 05:00:00 Europe/Oslo"
   # Monday night: refresh existing users, then import newly eligible members.
   - name: sync-members
     on_calendar: "Tue *-*-* 02:00:00 Europe/Oslo"
+    gatus_endpoint: interactcron_members

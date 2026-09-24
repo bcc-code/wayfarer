@@ -17,6 +17,38 @@
     group: root
     mode: "0755"
 
+- name: Install Gatus report hook
+  ansible.builtin.template:
+    src: wayfarer-job-report.sh.j2
+    dest: /opt/wayfarer/bin/wayfarer-job-report
+    owner: root
+    group: root
+    mode: "0755"
+
+# Gatus tokens are per endpoint and owned by Ansible (vault); wayfarer.env
+# stays manually placed.
+- name: Create job secrets directory
+  ansible.builtin.file:
+    path: /opt/wayfarer/jobs.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Install per-job Gatus token env files
+  ansible.builtin.copy:
+    dest: "/opt/wayfarer/jobs.d/{{ item.name }}.env"
+    content: |
+      # Managed by Ansible (roles/jobs)
+      GATUS_TOKEN={{ gatus_tokens[item.name] | default('') }}
+    owner: root
+    group: root
+    mode: "0600"
+  loop: "{{ wayfarer_jobs | selectattr('gatus_endpoint', 'defined') | list }}"
+  loop_control:
+    label: "{{ item.name }}"
+  no_log: true
+
 - name: Install wayfarer job units
   ansible.builtin.template:
     src: "wayfarer-job.{{ item.1 }}.j2"

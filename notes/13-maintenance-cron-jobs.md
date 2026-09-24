@@ -18,6 +18,10 @@ On the prod box, via `ansible/roles/jobs` (systemd timers, schedules in
 | `sync-ssf` | daily 05:00 | `POST /ssf/sync/hidden-treasures-podcast` (`X-Sync-Key: $SSF_SYNC_KEY`) |
 | `sync-members` | Tue 02:00 (Monday night) | `sync-user-data`, then `import-new-members` (Bearer key from the `cron:` entry in `EXTERNAL_API_KEYS`) |
 
+`export-translations` and `sync-members` report each run to Gatus
+(`interactcron_translations` / `interactcron_members`; per-job tokens in
+vault as `vault_gatus_tokens`, keyed by job name).
+
 All keys are read from `/opt/wayfarer/wayfarer.env` at run time. Logs:
 `journalctl -u wayfarer-job-<name>`. These replaced the Google Cloud
 Scheduler jobs; the trigger endpoints only accept POST (a GET is a 404).
