@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { ref } from 'vue'
+import type { ZodType } from 'zod'
 import AdminLeaderboardConfigForm from '../../layers/admin/app/components/admin/leaderboard/AdminLeaderboardConfigForm.vue'
 import {
   ChurchCategory,
@@ -31,6 +32,7 @@ const initialData = {
   id: 'LC1',
   name: 'Topp 20',
   entityType: LeaderboardEntityType.Persons,
+  maxEntries: 20,
   sortOrder: 2,
   isActive: false,
   event: null,
@@ -132,6 +134,7 @@ describe('AdminLeaderboardConfigForm', () => {
 
     expect(valueOf('name', 'UInput')).toBe('Topp 20')
     expect(valueOf('sortOrder', 'UInput')).toBe(2)
+    expect(valueOf('maxEntries', 'UInput')).toBe(20)
     expect(valueOf('isActive', 'USwitch')).toBe(false)
     expect(valueOf('filter.ageMin', 'UInput')).toBe(13)
     expect(valueOf('filter.ageMax', 'UInput')).toBe(18)
@@ -182,8 +185,42 @@ describe('AdminLeaderboardConfigForm', () => {
 
     expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({
       eventId: null,
+      maxEntries: null,
       filter: null,
     })
+  })
+
+  it('saves an entry limit and clears it when the input is emptied', async () => {
+    const wrapper = await mount({ initialData, isEditMode: true })
+    const form = wrapper.findComponent({ name: 'UForm' })
+    const state = form.props('state')
+    const input = field(wrapper, 'maxEntries')!.findComponent({
+      name: 'UInput',
+    })
+    await input.vm.$emit('update:modelValue', 5)
+    await submit(wrapper, { ...state })
+    expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({ maxEntries: 5 })
+    await input.vm.$emit('update:modelValue', '')
+    await submit(wrapper, { ...state })
+    expect(wrapper.emitted('submit')?.[1]?.[0]).toMatchObject({
+      maxEntries: null,
+    })
+  })
+
+  it('accepts only positive integer limits or a blank field', async () => {
+    const wrapper = await mount({ initialData, isEditMode: true })
+    const form = wrapper.findComponent({ name: 'UForm' })
+    const schema = form.props('schema') as ZodType
+    for (const maxEntries of [0, -1, 1.5, 2147483648]) {
+      expect(
+        schema.safeParse({ ...form.props('state'), maxEntries }).success,
+      ).toBe(false)
+    }
+    for (const maxEntries of ['', 1, 150]) {
+      expect(
+        schema.safeParse({ ...form.props('state'), maxEntries }).success,
+      ).toBe(true)
+    }
   })
 
   it('rebuilds ageRange from the two age controls', async () => {
@@ -209,6 +246,7 @@ describe('AdminLeaderboardConfigForm', () => {
       eventId: 'EV1',
       sortOrder: 1,
       isActive: true,
+      maxEntries: null,
       filter: { gender: Gender.Male, ageRange: { min: 13, max: 18 } },
     })
   })

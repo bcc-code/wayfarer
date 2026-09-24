@@ -10,6 +10,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
+	"github.com/bcc-media/wayfarer/internal/utils"
 	"github.com/graph-gophers/dataloader/v7"
 )
 
@@ -82,6 +83,7 @@ func ConvertRowToLeaderboardConfig(row *sqlc.LeaderboardConfig) *model.Leaderboa
 		Name:       row.Name,
 		EntityType: model.LeaderboardEntityType(row.EntityType),
 		Filter:     filter,
+		MaxEntries: utils.Int32PtrToIntPtr(row.MaxEntries),
 		SortOrder:  int(row.SortOrder),
 		IsActive:   row.IsActive,
 		CreatedAt:  scalars.DateTime{Time: row.CreatedAt.Time},

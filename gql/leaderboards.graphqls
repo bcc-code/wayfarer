@@ -9,12 +9,14 @@ type LeaderboardConfig {
     name: String!
     entityType: LeaderboardEntityType!
     filter: LeaderboardFilterView
+    maxEntries: Int
     sortOrder: Int!
     isActive: Boolean!
     createdAt: DateTime!
     updatedAt: DateTime!
     """
-    The finished, computed leaderboard for this config.
+    The finished leaderboard, capped before pagination. With no page size, returns
+    the configured limit, or 100 entries when maxEntries is null.
     """
     leaderboard(first: Int, after: String, last: Int, before: String): LeaderboardConnection! @goField(forceResolver: true)
 }
@@ -46,6 +48,7 @@ input CreateLeaderboardConfigInput {
     name: String!
     entityType: LeaderboardEntityType!
     filter: LeaderboardFilter
+    maxEntries: Int
     sortOrder: Int
     isActive: Boolean
 }
@@ -54,6 +57,7 @@ input UpdateLeaderboardConfigInput {
     name: String!
     entityType: LeaderboardEntityType!
     filter: LeaderboardFilter
+    maxEntries: Int
     sortOrder: Int!
     isActive: Boolean!
 }
