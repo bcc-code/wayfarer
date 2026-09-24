@@ -77,7 +77,10 @@ type ContentAchievement implements Achievement {
     items: [ContentItem!]! @goField(forceResolver: true)
     userCompletedItems: [ContentItem!]! @goField(forceResolver: true)
     nextItem: ContentItem @goField(forceResolver: true)
-    totalItems: Int!
+    # Number of items currently required by this achievement.
+    totalItems: Int! @goField(forceResolver: true)
+    # Current user's completed items that still belong to this achievement.
+    # Independent of achievedAt: editing items does not revoke an award.
     completedItemCount: Int! @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
@@ -107,7 +110,10 @@ type StreakAchievement implements Achievement {
     items: [ContentItem!]! @goField(forceResolver: true)
     userCompletedItems: [ContentItem!]! @goField(forceResolver: true)
     nextItem: ContentItem @goField(forceResolver: true)
-    totalItems: Int!
+    # Number of items currently required by this achievement.
+    totalItems: Int! @goField(forceResolver: true)
+    # Current user's qualifying completions among the current items.
+    # Deadline rules are applied when completion is recorded.
     completedItemCount: Int! @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }

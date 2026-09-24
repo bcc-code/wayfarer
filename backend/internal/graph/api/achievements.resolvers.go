@@ -170,19 +170,19 @@ func (r *contentAchievementResolver) NextItem(ctx context.Context, obj *model.Co
 	return nil, nil
 }
 
+// TotalItems is the resolver for the totalItems field.
+func (r *contentAchievementResolver) TotalItems(ctx context.Context, obj *model.ContentAchievement) (int, error) {
+	items, err := r.Loaders.ContentItemsByAchievementLoader.Load(ctx, obj.ID)()
+	if err != nil {
+		return 0, fmt.Errorf("failed to load content items: %w", err)
+	}
+	return len(items), nil
+}
+
 // CompletedItemCount is the resolver for the completedItemCount field.
 func (r *contentAchievementResolver) CompletedItemCount(ctx context.Context, obj *model.ContentAchievement) (int, error) {
-	userID, ok := middleware.GetUserID(ctx)
-	if !ok || userID == "" {
-		return 0, nil
-	}
-
-	progressThunk := r.Loaders.UserContentProgressLoader.Load(ctx, loaders.UserAchievementKey{UserID: userID, AchievementID: obj.ID})
-	progress, err := progressThunk()
-	if err != nil {
-		return 0, fmt.Errorf("failed to load user progress: %w", err)
-	}
-	return len(progress), nil
+	items, err := r.UserCompletedItems(ctx, obj)
+	return len(items), err
 }
 
 // TranslationStatus is the resolver for the translationStatus field.
@@ -388,7 +388,6 @@ func (r *mutationResolver) CreateContentAchievement(ctx context.Context, input m
 		ProjectID:            achievement.ProjectID,
 		EventID:              achievement.EventID,
 		ChallengeID:          achievement.ChallengeID,
-		TotalItems:           len(input.Items),
 	}, nil
 }
 
@@ -507,7 +506,6 @@ func (r *mutationResolver) CreateStreakAchievement(ctx context.Context, input mo
 		ProjectID:            achievement.ProjectID,
 		EventID:              achievement.EventID,
 		ChallengeID:          achievement.ChallengeID,
-		TotalItems:           len(input.Items),
 	}, nil
 }
 
@@ -2134,19 +2132,19 @@ func (r *streakAchievementResolver) NextItem(ctx context.Context, obj *model.Str
 	return nil, nil
 }
 
+// TotalItems is the resolver for the totalItems field.
+func (r *streakAchievementResolver) TotalItems(ctx context.Context, obj *model.StreakAchievement) (int, error) {
+	items, err := r.Loaders.StreakItemsByAchievementLoader.Load(ctx, obj.ID)()
+	if err != nil {
+		return 0, fmt.Errorf("failed to load streak items: %w", err)
+	}
+	return len(items), nil
+}
+
 // CompletedItemCount is the resolver for the completedItemCount field.
 func (r *streakAchievementResolver) CompletedItemCount(ctx context.Context, obj *model.StreakAchievement) (int, error) {
-	userID, ok := middleware.GetUserID(ctx)
-	if !ok || userID == "" {
-		return 0, nil
-	}
-
-	progressThunk := r.Loaders.UserStreakProgressLoader.Load(ctx, loaders.UserAchievementKey{UserID: userID, AchievementID: obj.ID})
-	progress, err := progressThunk()
-	if err != nil {
-		return 0, fmt.Errorf("failed to load user streak progress: %w", err)
-	}
-	return len(progress), nil
+	items, err := r.UserCompletedItems(ctx, obj)
+	return len(items), err
 }
 
 // TranslationStatus is the resolver for the translationStatus field.
