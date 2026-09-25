@@ -123,8 +123,9 @@ func TestAchievementProgress(t *testing.T) {
 			mark("unmark", 2)
 			check(token, 1, 3, false)
 			mark("mark", 2)
-			edit(1, 2)                // Removed A still has historical progress; D is no longer required.
-			check(token, 2, 2, false) // Editing alone does not award.
+			edit(1, 2)                            // Removed A still has historical progress; D is no longer required.
+			check(token, 2, 2, kind == "Content") // Content edits award without another completion event.
+			check(otherToken, 0, 2, false)
 
 			// The event-processing path must use the same intersection as the API.
 			service := &services.ContentAchievementService{DB: db.DB, Cache: c, Loaders: loaders.NewLoaders(db.DB, c)}

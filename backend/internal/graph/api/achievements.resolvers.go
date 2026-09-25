@@ -627,6 +627,8 @@ func (r *mutationResolver) UpdateContentAchievement(ctx context.Context, id stri
 		return nil, fmt.Errorf("unauthorized to update achievements in this project")
 	}
 
+	itemsRemoved := false
+
 	// Start transaction if we need to update content items
 	if input.Items != nil {
 		tx, err := r.DB.Pool.Begin(ctx)
@@ -636,6 +638,22 @@ func (r *mutationResolver) UpdateContentAchievement(ctx context.Context, id stri
 		defer tx.Rollback(ctx)
 
 		qtx := r.DB.Queries.WithTx(tx)
+
+		// Read the previous requirements from the database, not a potentially stale cache.
+		previousItems, err := qtx.GetContentItemsByAchievementIDs(ctx, []string{id})
+		if err != nil {
+			return nil, fmt.Errorf("failed to load existing content items: %w", err)
+		}
+		newContentIDs := make(map[string]struct{}, len(input.Items))
+		for _, item := range input.Items {
+			newContentIDs[item.ExternalContentID] = struct{}{}
+		}
+		for _, item := range previousItems {
+			if _, retained := newContentIDs[item.ExternalContentID]; !retained {
+				itemsRemoved = true
+				break
+			}
+		}
 
 		// Update common fields if provided
 		if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil || input.NotificationText != nil || input.ImagePending != nil || input.ImageCompleted != nil || input.EventID != nil || input.ChallengeID != nil || input.Points != nil || input.Hidden != nil || input.AwardableFrom != nil {
@@ -727,6 +745,22 @@ func (r *mutationResolver) UpdateContentAchievement(ctx context.Context, id stri
 		// Invalidate new event if it's being set to a value
 		if *input.EventID != "" {
 			r.Cache.InvalidateEvent(*input.EventID)
+		}
+	}
+
+	// Removing a requirement can complete an achievement without another content event.
+	// Recalculate only after commit and invalidation so awards use the saved requirements.
+	if itemsRemoved {
+		service := &services.ContentAchievementService{
+			DB: r.DB, Cache: r.Cache, PushService: r.PushService,
+			Loaders: r.Loaders, WebhookService: r.WebhookService,
+		}
+		awardedUserIDs, err := service.RecalculateAchievement(ctx, contentAch.ProjectID, id)
+		if err != nil {
+			return nil, fmt.Errorf("achievement updated, but failed to recalculate awards: %w", err)
+		}
+		for _, uid := range awardedUserIDs {
+			go r.FirebaseService.NotifyUserAchievements(context.Background(), uid)
 		}
 	}
 
