@@ -122,14 +122,6 @@ function descriptionFor(achievement: ProjectCardAchievement) {
             class="size-full"
           />
         </span>
-        <span
-          v-if="progress"
-          class="text-caption tabular-nums text-text-muted"
-          :aria-label="progressLabel ?? undefined"
-        >
-          {{ formatNumber(progress.completed) }} /
-          {{ formatNumber(progress.total) }}
-        </span>
       </button>
       <template #content>
         <div
