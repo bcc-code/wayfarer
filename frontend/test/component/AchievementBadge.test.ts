@@ -73,9 +73,11 @@ describe('AchievementBadge', () => {
     vi.clearAllMocks()
   })
 
+  // Progress lives only in the drawer body; the badge face is image-only so
+  // every cell of the achievement grid stays the same height.
   describe('progress', () => {
     it.each(['ContentAchievement', 'StreakAchievement'] as const)(
-      'shows progress on the badge and in the drawer for %s',
+      'shows progress in the drawer for %s',
       async (__typename) => {
         const wrapper = await mountWith(
           makeAchievement({
@@ -85,12 +87,8 @@ describe('AchievementBadge', () => {
           }),
         )
 
-        expect(wrapper.find('button').text()).toContain('3 / 13')
-        const caption = wrapper.find('button [aria-label]')
-        expect(caption.attributes('aria-label')).toMatch(/3.*13/)
-        expect(wrapper.find('p.tabular-nums').text()).toBe(
-          caption.attributes('aria-label'),
-        )
+        expect(wrapper.find('p.tabular-nums').text()).toMatch(/3.*13/)
+        expect(wrapper.find('button').text()).toBe('')
       },
     )
 
@@ -101,7 +99,7 @@ describe('AchievementBadge', () => {
         completedItemCount: 0,
       })
       const wrapper = await mountWith(achievement)
-      expect(wrapper.find('button').text()).toContain('0 / 13')
+      expect(wrapper.find('p.tabular-nums').text()).toMatch(/0.*13/)
 
       await wrapper.setProps({
         achievement: makeAchievement({
@@ -110,7 +108,7 @@ describe('AchievementBadge', () => {
           completedItemCount: 3,
         }),
       })
-      expect(wrapper.find('button').text()).toContain('3 / 13')
+      expect(wrapper.find('p.tabular-nums').text()).toMatch(/3.*13/)
     })
 
     it('hides progress for achievements with no items', async () => {
@@ -121,7 +119,6 @@ describe('AchievementBadge', () => {
           completedItemCount: 0,
         }),
       )
-      expect(wrapper.find('button [aria-label]').exists()).toBe(false)
       expect(wrapper.find('p.tabular-nums').exists()).toBe(false)
     })
 
@@ -129,7 +126,6 @@ describe('AchievementBadge', () => {
       'hides progress for %s',
       async (__typename) => {
         const wrapper = await mountWith(makeAchievement({ __typename }))
-        expect(wrapper.find('button [aria-label]').exists()).toBe(false)
         expect(wrapper.find('p.tabular-nums').exists()).toBe(false)
       },
     )
@@ -143,7 +139,7 @@ describe('AchievementBadge', () => {
           achievedAt: '2026-01-01T00:00:00Z',
         }),
       )
-      expect(wrapper.find('button [aria-label]').exists()).toBe(false)
+      expect(wrapper.find('p.tabular-nums').exists()).toBe(false)
       expect(wrapper.text()).toContain('You did it!')
     })
   })

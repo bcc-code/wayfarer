@@ -111,17 +111,15 @@ function descriptionFor(achievement: ProjectCardAchievement) {
           : $t('achievement.title')
       "
     >
-      <button class="flex w-full flex-col items-center gap-2 outline-none">
-        <span
-          class="grid aspect-square w-full place-items-center overflow-hidden rounded-full"
-        >
-          <DesignImage
-            :image="currentImage"
-            :alt="achievement.name"
-            fallback="/images/achievement-placeholder.png"
-            class="size-full"
-          />
-        </span>
+      <button
+        class="grid aspect-square size-full place-items-center overflow-hidden rounded-full outline-none"
+      >
+        <DesignImage
+          :image="currentImage"
+          :alt="achievement.name"
+          fallback="/images/achievement-placeholder.png"
+          class="size-full"
+        />
       </button>
       <template #content>
         <div
