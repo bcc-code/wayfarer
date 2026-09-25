@@ -25,6 +25,7 @@ type Achievement = InstanceType<typeof AchievementBadge>['achievement']
 
 function makeAchievement(overrides: Partial<Achievement> = {}): Achievement {
   return {
+    __typename: 'SimpleAchievement',
     id: 'AC01ARZ3NDEKTSV4RRFFQ69G5FAV',
     name: 'First Steps',
     achievedAt: null,
@@ -70,6 +71,77 @@ function mountWith(
 describe('AchievementBadge', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  // Progress lives only in the drawer body; the badge face is image-only so
+  // every cell of the achievement grid stays the same height.
+  describe('progress', () => {
+    it.each(['ContentAchievement', 'StreakAchievement'] as const)(
+      'shows progress in the drawer for %s',
+      async (__typename) => {
+        const wrapper = await mountWith(
+          makeAchievement({
+            __typename,
+            totalItems: 13,
+            completedItemCount: 3,
+          }),
+        )
+
+        expect(wrapper.find('p.tabular-nums').text()).toMatch(/3.*13/)
+        expect(wrapper.find('button').text()).toBe('')
+      },
+    )
+
+    it('shows zero completed and responds to refreshed query data', async () => {
+      const achievement = makeAchievement({
+        __typename: 'ContentAchievement',
+        totalItems: 13,
+        completedItemCount: 0,
+      })
+      const wrapper = await mountWith(achievement)
+      expect(wrapper.find('p.tabular-nums').text()).toMatch(/0.*13/)
+
+      await wrapper.setProps({
+        achievement: makeAchievement({
+          __typename: 'ContentAchievement',
+          totalItems: 13,
+          completedItemCount: 3,
+        }),
+      })
+      expect(wrapper.find('p.tabular-nums').text()).toMatch(/3.*13/)
+    })
+
+    it('hides progress for achievements with no items', async () => {
+      const wrapper = await mountWith(
+        makeAchievement({
+          __typename: 'ContentAchievement',
+          totalItems: 0,
+          completedItemCount: 0,
+        }),
+      )
+      expect(wrapper.find('p.tabular-nums').exists()).toBe(false)
+    })
+
+    it.each(['SimpleAchievement', 'QuizAchievement'] as const)(
+      'hides progress for %s',
+      async (__typename) => {
+        const wrapper = await mountWith(makeAchievement({ __typename }))
+        expect(wrapper.find('p.tabular-nums').exists()).toBe(false)
+      },
+    )
+
+    it('keeps an awarded badge unlocked when its item requirements change', async () => {
+      const wrapper = await mountWith(
+        makeAchievement({
+          __typename: 'ContentAchievement',
+          totalItems: 13,
+          completedItemCount: 3,
+          achievedAt: '2026-01-01T00:00:00Z',
+        }),
+      )
+      expect(wrapper.find('p.tabular-nums').exists()).toBe(false)
+      expect(wrapper.text()).toContain('You did it!')
+    })
   })
 
   describe('currentImage', () => {

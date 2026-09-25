@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
@@ -243,20 +242,6 @@ func convertRowToSimpleAchievement(row *sqlc.GetAchievementsFilteredCursorRow, h
 }
 
 func convertRowToContentAchievement(row *sqlc.GetAchievementsFilteredCursorRow, hidden bool) (model.Achievement, error) {
-	// Count content items from JSON if available
-	totalItems := 0
-	if row.ContentItems != nil {
-		var itemsData []map[string]interface{}
-		jsonBytes, err := json.Marshal(row.ContentItems)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal content items: %w", err)
-		}
-		if err := json.Unmarshal(jsonBytes, &itemsData); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal content items: %w", err)
-		}
-		totalItems = len(itemsData)
-	}
-
 	var awardableFrom *scalars.DateTime
 	if row.AwardableFrom.Valid {
 		awardableFrom = &scalars.DateTime{Time: row.AwardableFrom.Time}
@@ -276,28 +261,13 @@ func convertRowToContentAchievement(row *sqlc.GetAchievementsFilteredCursorRow, 
 		ProjectID:            row.ProjectID,
 		EventID:              row.EventID,
 		ChallengeID:          row.ChallengeID,
-		TotalItems:           totalItems,
-		// Items, UserCompletedItems, NextItem, and CompletedItemCount will be populated by resolvers
+		// Items, UserCompletedItems, NextItem, TotalItems, and CompletedItemCount will be populated by resolvers
 	}, nil
 }
 
 func convertRowToStreakAchievement(row *sqlc.GetAchievementsFilteredCursorRow, hidden bool) (model.Achievement, error) {
 	if row.StreakAchievementID == nil {
 		return nil, fmt.Errorf("streak achievement missing streak data")
-	}
-
-	// Count streak items from JSON if available
-	totalItems := 0
-	if row.StreakItems != nil {
-		var itemsData []map[string]interface{}
-		jsonBytes, err := json.Marshal(row.StreakItems)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal streak items: %w", err)
-		}
-		if err := json.Unmarshal(jsonBytes, &itemsData); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal streak items: %w", err)
-		}
-		totalItems = len(itemsData)
 	}
 
 	var awardableFrom *scalars.DateTime
@@ -319,7 +289,6 @@ func convertRowToStreakAchievement(row *sqlc.GetAchievementsFilteredCursorRow, h
 		ProjectID:            row.ProjectID,
 		EventID:              row.EventID,
 		ChallengeID:          row.ChallengeID,
-		TotalItems:           totalItems,
 	}, nil
 }
 
@@ -367,18 +336,6 @@ func convertRowToQuizAchievement(row *sqlc.GetAchievementsFilteredCursorRow, hid
 
 // convertPublishedContentAchievementRow converts GetPublishedContentAchievementsByExternalContentRow to ContentAchievement model
 func convertPublishedContentAchievementRow(row *sqlc.GetPublishedContentAchievementsByExternalContentRow) *model.ContentAchievement {
-	// Count content items from JSON if available
-	totalItems := 0
-	if row.ContentItems != nil {
-		var itemsData []map[string]interface{}
-		jsonBytes, err := json.Marshal(row.ContentItems)
-		if err == nil {
-			if err := json.Unmarshal(jsonBytes, &itemsData); err == nil {
-				totalItems = len(itemsData)
-			}
-		}
-	}
-
 	hidden := false
 	if row.Hidden != nil {
 		hidden = *row.Hidden
@@ -403,24 +360,11 @@ func convertPublishedContentAchievementRow(row *sqlc.GetPublishedContentAchievem
 		ProjectID:            row.ProjectID,
 		EventID:              row.EventID,
 		ChallengeID:          row.ChallengeID,
-		TotalItems:           totalItems,
 	}
 }
 
 // convertPublishedStreakAchievementRow converts GetPublishedStreakAchievementsByExternalContentRow to StreakAchievement model
 func convertPublishedStreakAchievementRow(row *sqlc.GetPublishedStreakAchievementsByExternalContentRow) *model.StreakAchievement {
-	// Count streak items from JSON if available
-	totalItems := 0
-	if row.StreakItems != nil {
-		var itemsData []map[string]interface{}
-		jsonBytes, err := json.Marshal(row.StreakItems)
-		if err == nil {
-			if err := json.Unmarshal(jsonBytes, &itemsData); err == nil {
-				totalItems = len(itemsData)
-			}
-		}
-	}
-
 	hidden := false
 	if row.Hidden != nil {
 		hidden = *row.Hidden
@@ -445,7 +389,6 @@ func convertPublishedStreakAchievementRow(row *sqlc.GetPublishedStreakAchievemen
 		ProjectID:            row.ProjectID,
 		EventID:              row.EventID,
 		ChallengeID:          row.ChallengeID,
-		TotalItems:           totalItems,
 	}
 }
 

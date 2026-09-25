@@ -118,7 +118,6 @@ func TestMultipleAchievementsInCache(t *testing.T) {
 			Points:               100,
 			Hidden:               false,
 			ProjectID:            "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
-			TotalItems:           3,
 		},
 		&model.StreakAchievement{
 			ID:                   "AC01K8XV6VK9ED2GBZSQ2VDTATZZ",
@@ -130,7 +129,6 @@ func TestMultipleAchievementsInCache(t *testing.T) {
 			Points:               150,
 			Hidden:               false,
 			ProjectID:            "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
-			TotalItems:           0,
 		},
 	}
 

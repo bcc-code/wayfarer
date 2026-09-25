@@ -139,7 +139,8 @@
   },
   "achievement": {
     "title": "Badge",
-    "unlocked": "Débloqué !"
+    "unlocked": "Débloqué !",
+    "progress": "{completed} sur {total} terminés"
   },
   "feedback": {
     "title": "Donne-nous ton avis",

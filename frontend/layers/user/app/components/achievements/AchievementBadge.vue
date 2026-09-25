@@ -8,6 +8,7 @@ const props = defineProps<{
   achievement: ProjectCardAchievement
 }>()
 
+const { t } = useI18n()
 const { track } = useAnalytics()
 const { openAchievementId, clearOpenAchievementId, celebrating } =
   useAchievementSheet()
@@ -16,6 +17,33 @@ const { executeMutation: markCelebrated } =
 
 const open = ref(false)
 const showConfetti = ref(false)
+
+// Awards persist even if the required items change later. Only pending
+// achievements show progress toward the current requirements.
+const progress = computed(() => {
+  const achievement = props.achievement
+  if (
+    achievement.achievedAt ||
+    (achievement.__typename !== 'ContentAchievement' &&
+      achievement.__typename !== 'StreakAchievement') ||
+    achievement.totalItems <= 0
+  ) {
+    return null
+  }
+  return {
+    completed: achievement.completedItemCount,
+    total: achievement.totalItems,
+  }
+})
+
+const progressLabel = computed(() =>
+  progress.value
+    ? t('achievement.progress', {
+        completed: formatNumber(progress.value.completed),
+        total: formatNumber(progress.value.total),
+      })
+    : null,
+)
 
 // Determine which image to show based on achievement state
 const currentImage = computed(() => {
@@ -116,6 +144,12 @@ function descriptionFor(achievement: ProjectCardAchievement) {
           >
             <h3 class="text-heading" v-html="achievement.name" />
             <p class="text-label" v-html="descriptionFor(achievement)" />
+            <p
+              v-if="progressLabel"
+              class="text-label tabular-nums text-text-muted"
+            >
+              {{ progressLabel }}
+            </p>
           </div>
           <div
             v-if="achievement.achievedAt && achievement.points"

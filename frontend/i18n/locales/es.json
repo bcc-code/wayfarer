@@ -139,7 +139,8 @@
   },
   "achievement": {
     "title": "Distinción",
-    "unlocked": "¡Conseguido!"
+    "unlocked": "¡Conseguido!",
+    "progress": "{completed} de {total} completados"
   },
   "feedback": {
     "title": "Envíenos sus comentarios",

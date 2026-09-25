@@ -140,7 +140,8 @@
   },
   "achievement": {
     "title": "Achievement",
-    "unlocked": "Unlocked!"
+    "unlocked": "Unlocked!",
+    "progress": "{completed} of {total} completed"
   },
   "feedback": {
     "title": "Give us your feedback",

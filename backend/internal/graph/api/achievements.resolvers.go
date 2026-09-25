@@ -170,19 +170,19 @@ func (r *contentAchievementResolver) NextItem(ctx context.Context, obj *model.Co
 	return nil, nil
 }
 
+// TotalItems is the resolver for the totalItems field.
+func (r *contentAchievementResolver) TotalItems(ctx context.Context, obj *model.ContentAchievement) (int, error) {
+	items, err := r.Loaders.ContentItemsByAchievementLoader.Load(ctx, obj.ID)()
+	if err != nil {
+		return 0, fmt.Errorf("failed to load content items: %w", err)
+	}
+	return len(items), nil
+}
+
 // CompletedItemCount is the resolver for the completedItemCount field.
 func (r *contentAchievementResolver) CompletedItemCount(ctx context.Context, obj *model.ContentAchievement) (int, error) {
-	userID, ok := middleware.GetUserID(ctx)
-	if !ok || userID == "" {
-		return 0, nil
-	}
-
-	progressThunk := r.Loaders.UserContentProgressLoader.Load(ctx, loaders.UserAchievementKey{UserID: userID, AchievementID: obj.ID})
-	progress, err := progressThunk()
-	if err != nil {
-		return 0, fmt.Errorf("failed to load user progress: %w", err)
-	}
-	return len(progress), nil
+	items, err := r.UserCompletedItems(ctx, obj)
+	return len(items), err
 }
 
 // TranslationStatus is the resolver for the translationStatus field.
@@ -388,7 +388,6 @@ func (r *mutationResolver) CreateContentAchievement(ctx context.Context, input m
 		ProjectID:            achievement.ProjectID,
 		EventID:              achievement.EventID,
 		ChallengeID:          achievement.ChallengeID,
-		TotalItems:           len(input.Items),
 	}, nil
 }
 
@@ -507,7 +506,6 @@ func (r *mutationResolver) CreateStreakAchievement(ctx context.Context, input mo
 		ProjectID:            achievement.ProjectID,
 		EventID:              achievement.EventID,
 		ChallengeID:          achievement.ChallengeID,
-		TotalItems:           len(input.Items),
 	}, nil
 }
 
@@ -629,6 +627,8 @@ func (r *mutationResolver) UpdateContentAchievement(ctx context.Context, id stri
 		return nil, fmt.Errorf("unauthorized to update achievements in this project")
 	}
 
+	itemsRemoved := false
+
 	// Start transaction if we need to update content items
 	if input.Items != nil {
 		tx, err := r.DB.Pool.Begin(ctx)
@@ -638,6 +638,22 @@ func (r *mutationResolver) UpdateContentAchievement(ctx context.Context, id stri
 		defer tx.Rollback(ctx)
 
 		qtx := r.DB.Queries.WithTx(tx)
+
+		// Read the previous requirements from the database, not a potentially stale cache.
+		previousItems, err := qtx.GetContentItemsByAchievementIDs(ctx, []string{id})
+		if err != nil {
+			return nil, fmt.Errorf("failed to load existing content items: %w", err)
+		}
+		newContentIDs := make(map[string]struct{}, len(input.Items))
+		for _, item := range input.Items {
+			newContentIDs[item.ExternalContentID] = struct{}{}
+		}
+		for _, item := range previousItems {
+			if _, retained := newContentIDs[item.ExternalContentID]; !retained {
+				itemsRemoved = true
+				break
+			}
+		}
 
 		// Update common fields if provided
 		if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil || input.NotificationText != nil || input.ImagePending != nil || input.ImageCompleted != nil || input.EventID != nil || input.ChallengeID != nil || input.Points != nil || input.Hidden != nil || input.AwardableFrom != nil {
@@ -717,8 +733,6 @@ func (r *mutationResolver) UpdateContentAchievement(ctx context.Context, id stri
 	// Invalidate caches
 	r.Cache.InvalidateProject(contentAch.ProjectID)
 	r.Cache.InvalidateAchievement(id)
-	r.Cache.Delete(cache.ContentItemsByAchievementKey(id))
-	r.Cache.Delete(cache.ContentItemCountKey(id))
 	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
 	r.Loaders.ContentItemsByAchievementLoader.Clear(ctx, id)
 
@@ -731,6 +745,22 @@ func (r *mutationResolver) UpdateContentAchievement(ctx context.Context, id stri
 		// Invalidate new event if it's being set to a value
 		if *input.EventID != "" {
 			r.Cache.InvalidateEvent(*input.EventID)
+		}
+	}
+
+	// Removing a requirement can complete an achievement without another content event.
+	// Recalculate only after commit and invalidation so awards use the saved requirements.
+	if itemsRemoved {
+		service := &services.ContentAchievementService{
+			DB: r.DB, Cache: r.Cache, PushService: r.PushService,
+			Loaders: r.Loaders, WebhookService: r.WebhookService,
+		}
+		awardedUserIDs, err := service.RecalculateAchievement(ctx, contentAch.ProjectID, id)
+		if err != nil {
+			return nil, fmt.Errorf("achievement updated, but failed to recalculate awards: %w", err)
+		}
+		for _, uid := range awardedUserIDs {
+			go r.FirebaseService.NotifyUserAchievements(context.Background(), uid)
 		}
 	}
 
@@ -1064,8 +1094,6 @@ func (r *mutationResolver) DeleteAchievement(ctx context.Context, id string) (bo
 	// Invalidate caches
 	r.Cache.InvalidateProject(projectID)
 	r.Cache.InvalidateAchievement(id)
-	r.Cache.Delete(cache.ContentItemsByAchievementKey(id))
-	r.Cache.Delete(cache.ContentItemCountKey(id))
 	if quizID != "" {
 		// Drop the cached quiz achievement criteria used by finalizeQuiz
 		r.Cache.InvalidateQuiz(quizID)
@@ -1340,10 +1368,8 @@ func (r *mutationResolver) MarkContentItemCompleted(ctx context.Context, userID 
 		achievementIDs[i] = row.ID
 	}
 
-	// Invalidate caches for all achievements
-	for _, id := range achievementIDs {
-		r.Cache.Delete(cache.UserContentProgressKey(userID, id))
-	}
+	// Refresh the target user's progress on all server instances.
+	r.Cache.InvalidateUserAchievementProgress(userID)
 
 	// Check which achievements user already has - skip completion check for those
 	alreadyAwarded, err := r.DB.Queries.GetUserAwardedAchievementIDs(ctx, sqlc.GetUserAwardedAchievementIDsParams{
@@ -1465,16 +1491,15 @@ func (r *mutationResolver) UnmarkContentItemCompleted(ctx context.Context, userI
 		return nil, fmt.Errorf("failed to unmark content item completed: %w", err)
 	}
 
-	// Convert to model, apply translations, and invalidate caches
+	r.Cache.InvalidateUserAchievementProgress(userID)
+
+	// Convert to model and apply translations
 	result := make([]model.ContentAchievement, 0, len(achievementRows))
 	for _, row := range achievementRows {
 		contentAch := convertPublishedContentAchievementRow(row)
 		// Apply translation
 		translated := r.ApplyTranslationToAchievement(ctx, contentAch)
 		result = append(result, *translated.(*model.ContentAchievement))
-
-		// Invalidate user-specific caches
-		r.Cache.Delete(cache.UserContentProgressKey(userID, row.ID))
 	}
 
 	// Notify Firestore listeners about content progress
@@ -1527,10 +1552,8 @@ func (r *mutationResolver) MarkStreakItemCompleted(ctx context.Context, userID s
 		achievementIDs[i] = row.ID
 	}
 
-	// Invalidate caches
-	for _, id := range achievementIDs {
-		r.Cache.Delete(cache.UserStreakProgressKey(userID, id))
-	}
+	// Refresh the target user's progress on all server instances.
+	r.Cache.InvalidateUserAchievementProgress(userID)
 
 	// Check which achievements user already has
 	alreadyAwarded, err := r.DB.Queries.GetUserAwardedAchievementIDs(ctx, sqlc.GetUserAwardedAchievementIDsParams{
@@ -1626,10 +1649,7 @@ func (r *mutationResolver) UnmarkStreakItemCompleted(ctx context.Context, userID
 		return nil, fmt.Errorf("failed to unmark streak item completed: %w", err)
 	}
 
-	// Invalidate caches
-	for _, row := range achievementRows {
-		r.Cache.Delete(cache.UserStreakProgressKey(userID, row.ID))
-	}
+	r.Cache.InvalidateUserAchievementProgress(userID)
 
 	result := make([]model.StreakAchievement, 0, len(achievementRows))
 	for _, row := range achievementRows {
@@ -2134,19 +2154,19 @@ func (r *streakAchievementResolver) NextItem(ctx context.Context, obj *model.Str
 	return nil, nil
 }
 
+// TotalItems is the resolver for the totalItems field.
+func (r *streakAchievementResolver) TotalItems(ctx context.Context, obj *model.StreakAchievement) (int, error) {
+	items, err := r.Loaders.StreakItemsByAchievementLoader.Load(ctx, obj.ID)()
+	if err != nil {
+		return 0, fmt.Errorf("failed to load streak items: %w", err)
+	}
+	return len(items), nil
+}
+
 // CompletedItemCount is the resolver for the completedItemCount field.
 func (r *streakAchievementResolver) CompletedItemCount(ctx context.Context, obj *model.StreakAchievement) (int, error) {
-	userID, ok := middleware.GetUserID(ctx)
-	if !ok || userID == "" {
-		return 0, nil
-	}
-
-	progressThunk := r.Loaders.UserStreakProgressLoader.Load(ctx, loaders.UserAchievementKey{UserID: userID, AchievementID: obj.ID})
-	progress, err := progressThunk()
-	if err != nil {
-		return 0, fmt.Errorf("failed to load user streak progress: %w", err)
-	}
-	return len(progress), nil
+	items, err := r.UserCompletedItems(ctx, obj)
+	return len(items), err
 }
 
 // TranslationStatus is the resolver for the translationStatus field.

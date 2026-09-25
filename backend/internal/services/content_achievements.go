@@ -307,11 +307,9 @@ func (s *ContentAchievementService) processContentAchievements(ctx context.Conte
 		achievementsByID[achievement.ID] = achievement
 	}
 
-	// Invalidate caches for all achievements
+	// Invalidate progress after processing, including any newly awarded badge.
 	if s.Cache != nil {
-		for _, id := range achievementIDs {
-			s.Cache.Delete(cache.UserContentProgressKey(userID, id))
-		}
+		defer s.Cache.InvalidateUserAchievementProgress(userID)
 	}
 
 	// Check which achievements user already has - skip those entirely
@@ -467,11 +465,9 @@ func (s *ContentAchievementService) processStreakAchievements(ctx context.Contex
 		achievementIDs[i] = a.ID
 	}
 
-	// Invalidate caches
+	// Invalidate progress after processing, including any newly awarded badge.
 	if s.Cache != nil {
-		for _, id := range achievementIDs {
-			s.Cache.Delete(cache.UserStreakProgressKey(userID, id))
-		}
+		defer s.Cache.InvalidateUserAchievementProgress(userID)
 	}
 
 	// Check which achievements user already has

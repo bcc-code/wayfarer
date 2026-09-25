@@ -42,6 +42,9 @@ const (
 	// deliberately NOT the full user invalidation (see
 	// InvalidateUserChallengeEnrollment for the measured blast-radius cost).
 	InvalidationTypeUserEnrollment InvalidationType = "userenroll"
+
+	// Progress updates must also invalidate other instances before the next read.
+	InvalidationTypeUserAchievementProgress InvalidationType = "userachievementprogress"
 )
 
 // InvalidationMessage is the payload sent via NOTIFY
@@ -222,6 +225,8 @@ func (s *CacheSync) applyInvalidation(msg InvalidationMessage) {
 		s.cache.invalidateChallengeLocal(msg.ID, msg.ProjectID, eventID)
 	case InvalidationTypeAchievement:
 		s.cache.invalidateAchievementLocal(msg.ID)
+	case InvalidationTypeUserAchievementProgress:
+		s.cache.invalidateUserAchievementProgressLocal(msg.ID)
 	case InvalidationTypeLeaderboardConfig:
 		var eventID *string
 		if msg.EventID != "" {

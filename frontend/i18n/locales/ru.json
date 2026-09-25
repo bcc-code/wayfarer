@@ -139,7 +139,8 @@
   },
   "achievement": {
     "title": "Награда",
-    "unlocked": "Получено достижение!"
+    "unlocked": "Получено достижение!",
+    "progress": "Выполнено {completed} из {total}"
   },
   "feedback": {
     "title": "Оставь отзыв",
