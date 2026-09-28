@@ -304,7 +304,7 @@ watch(fixComplete, (complete) => {
               name: 'admin-users-userId',
               params: { userId: row.original.user.id },
             }"
-            class="hover:text-primary font-medium hover:underline"
+            class="hover:text-highlighted font-medium hover:underline"
           >
             {{ row.original.user.name }}
           </NuxtLink>

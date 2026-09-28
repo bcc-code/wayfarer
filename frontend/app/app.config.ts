@@ -37,7 +37,11 @@ const overlay = `bg-glass backdrop-blur-sm ${solid}`
 export default defineAppConfig({
   ui: {
     colors: {
-      primary: 'emerald',
+      // The admin panel resolves `--ui-primary` to ink (admin.css), so the ramp
+      // behind it is only reached by a `primary-<shade>` utility. Keeping it on
+      // the neutral scale means such a utility lands in the same family rather
+      // than reintroducing a hue nothing else uses.
+      primary: 'zinc',
       neutral: 'zinc',
       // Semantic palettes for the admin panel. Softer hues than the Nuxt UI
       // defaults; the shade they resolve to is set per mode in admin.css.
@@ -173,6 +177,18 @@ export default defineAppConfig({
           variant: 'pill',
           class: {
             link: 'hover:before:bg-control',
+          },
+        },
+        // `primary` is monochrome (admin.css), so the active link's text no
+        // longer separates it from its neighbours on colour alone. A surface
+        // one step above the hover one carries the position instead, and still
+        // reads as current while a neighbour is under the cursor.
+        {
+          disabled: false,
+          active: true,
+          variant: 'pill',
+          class: {
+            link: 'before:bg-control-hover',
           },
         },
       ],

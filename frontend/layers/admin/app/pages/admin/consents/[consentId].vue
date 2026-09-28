@@ -280,7 +280,7 @@ async function publishConsent() {
                   :href="data.consent.url"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="text-primary hover:underline"
+                  class="admin-link"
                 >
                   {{ data.consent.url }}
                 </a>
