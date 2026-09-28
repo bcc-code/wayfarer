@@ -140,7 +140,8 @@
   },
   "achievement": {
     "title": "Auszeichnung",
-    "unlocked": "Erreicht!"
+    "unlocked": "Erreicht!",
+    "progress": "{completed} von {total} abgeschlossen"
   },
   "feedback": {
     "title": "Gib uns Feedback",
