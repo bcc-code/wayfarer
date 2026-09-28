@@ -482,6 +482,7 @@ type ComplexityRoot struct {
 		ID          func(childComplexity int) int
 		IsActive    func(childComplexity int) int
 		Leaderboard func(childComplexity int, first *int, after *string, last *int, before *string) int
+		MaxEntries  func(childComplexity int) int
 		Name        func(childComplexity int) int
 		Project     func(childComplexity int) int
 		SortOrder   func(childComplexity int) int
@@ -3609,6 +3610,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.LeaderboardConfig.Leaderboard(childComplexity, args["first"].(*int), args["after"].(*string), args["last"].(*int), args["before"].(*string)), true
+	case "LeaderboardConfig.maxEntries":
+		if e.complexity.LeaderboardConfig.MaxEntries == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardConfig.MaxEntries(childComplexity), true
 	case "LeaderboardConfig.name":
 		if e.complexity.LeaderboardConfig.Name == nil {
 			break
@@ -10338,12 +10345,14 @@ type LeaderboardConfig {
     name: String!
     entityType: LeaderboardEntityType!
     filter: LeaderboardFilterView
+    maxEntries: Int
     sortOrder: Int!
     isActive: Boolean!
     createdAt: DateTime!
     updatedAt: DateTime!
     """
-    The finished, computed leaderboard for this config.
+    The finished leaderboard, capped before pagination. With no page size, returns
+    the configured limit, or 100 entries when maxEntries is null.
     """
     leaderboard(first: Int, after: String, last: Int, before: String): LeaderboardConnection! @goField(forceResolver: true)
 }
@@ -10375,6 +10384,7 @@ input CreateLeaderboardConfigInput {
     name: String!
     entityType: LeaderboardEntityType!
     filter: LeaderboardFilter
+    maxEntries: Int
     sortOrder: Int
     isActive: Boolean
 }
@@ -10383,6 +10393,7 @@ input UpdateLeaderboardConfigInput {
     name: String!
     entityType: LeaderboardEntityType!
     filter: LeaderboardFilter
+    maxEntries: Int
     sortOrder: Int!
     isActive: Boolean!
 }
@@ -19604,6 +19615,8 @@ func (ec *executionContext) fieldContext_Event_leaderboards(_ context.Context, f
 				return ec.fieldContext_LeaderboardConfig_entityType(ctx, field)
 			case "filter":
 				return ec.fieldContext_LeaderboardConfig_filter(ctx, field)
+			case "maxEntries":
+				return ec.fieldContext_LeaderboardConfig_maxEntries(ctx, field)
 			case "sortOrder":
 				return ec.fieldContext_LeaderboardConfig_sortOrder(ctx, field)
 			case "isActive":
@@ -23763,6 +23776,35 @@ func (ec *executionContext) fieldContext_LeaderboardConfig_filter(_ context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _LeaderboardConfig_maxEntries(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardConfig) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardConfig_maxEntries,
+		func(ctx context.Context) (any, error) {
+			return obj.MaxEntries, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardConfig_maxEntries(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardConfig",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _LeaderboardConfig_sortOrder(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardConfig) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -24100,6 +24142,8 @@ func (ec *executionContext) fieldContext_LeaderboardConfigEdge_node(_ context.Co
 				return ec.fieldContext_LeaderboardConfig_entityType(ctx, field)
 			case "filter":
 				return ec.fieldContext_LeaderboardConfig_filter(ctx, field)
+			case "maxEntries":
+				return ec.fieldContext_LeaderboardConfig_maxEntries(ctx, field)
 			case "sortOrder":
 				return ec.fieldContext_LeaderboardConfig_sortOrder(ctx, field)
 			case "isActive":
@@ -30689,6 +30733,8 @@ func (ec *executionContext) fieldContext_Mutation_createLeaderboardConfig(ctx co
 				return ec.fieldContext_LeaderboardConfig_entityType(ctx, field)
 			case "filter":
 				return ec.fieldContext_LeaderboardConfig_filter(ctx, field)
+			case "maxEntries":
+				return ec.fieldContext_LeaderboardConfig_maxEntries(ctx, field)
 			case "sortOrder":
 				return ec.fieldContext_LeaderboardConfig_sortOrder(ctx, field)
 			case "isActive":
@@ -30772,6 +30818,8 @@ func (ec *executionContext) fieldContext_Mutation_updateLeaderboardConfig(ctx co
 				return ec.fieldContext_LeaderboardConfig_entityType(ctx, field)
 			case "filter":
 				return ec.fieldContext_LeaderboardConfig_filter(ctx, field)
+			case "maxEntries":
+				return ec.fieldContext_LeaderboardConfig_maxEntries(ctx, field)
 			case "sortOrder":
 				return ec.fieldContext_LeaderboardConfig_sortOrder(ctx, field)
 			case "isActive":
@@ -39322,6 +39370,8 @@ func (ec *executionContext) fieldContext_Project_leaderboards(_ context.Context,
 				return ec.fieldContext_LeaderboardConfig_entityType(ctx, field)
 			case "filter":
 				return ec.fieldContext_LeaderboardConfig_filter(ctx, field)
+			case "maxEntries":
+				return ec.fieldContext_LeaderboardConfig_maxEntries(ctx, field)
 			case "sortOrder":
 				return ec.fieldContext_LeaderboardConfig_sortOrder(ctx, field)
 			case "isActive":
@@ -41622,6 +41672,8 @@ func (ec *executionContext) fieldContext_Query_leaderboardConfig(ctx context.Con
 				return ec.fieldContext_LeaderboardConfig_entityType(ctx, field)
 			case "filter":
 				return ec.fieldContext_LeaderboardConfig_filter(ctx, field)
+			case "maxEntries":
+				return ec.fieldContext_LeaderboardConfig_maxEntries(ctx, field)
 			case "sortOrder":
 				return ec.fieldContext_LeaderboardConfig_sortOrder(ctx, field)
 			case "isActive":
@@ -58714,7 +58766,7 @@ func (ec *executionContext) unmarshalInputCreateLeaderboardConfigInput(ctx conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"projectId", "eventId", "name", "entityType", "filter", "sortOrder", "isActive"}
+	fieldsInOrder := [...]string{"projectId", "eventId", "name", "entityType", "filter", "maxEntries", "sortOrder", "isActive"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -58756,6 +58808,13 @@ func (ec *executionContext) unmarshalInputCreateLeaderboardConfigInput(ctx conte
 				return it, err
 			}
 			it.Filter = data
+		case "maxEntries":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxEntries"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxEntries = data
 		case "sortOrder":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sortOrder"))
 			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
@@ -61508,7 +61567,7 @@ func (ec *executionContext) unmarshalInputUpdateLeaderboardConfigInput(ctx conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "entityType", "filter", "sortOrder", "isActive"}
+	fieldsInOrder := [...]string{"name", "entityType", "filter", "maxEntries", "sortOrder", "isActive"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -61536,6 +61595,13 @@ func (ec *executionContext) unmarshalInputUpdateLeaderboardConfigInput(ctx conte
 				return it, err
 			}
 			it.Filter = data
+		case "maxEntries":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxEntries"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxEntries = data
 		case "sortOrder":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sortOrder"))
 			data, err := ec.unmarshalNInt2int(ctx, v)
@@ -66580,6 +66646,8 @@ func (ec *executionContext) _LeaderboardConfig(ctx context.Context, sel ast.Sele
 			}
 		case "filter":
 			out.Values[i] = ec._LeaderboardConfig_filter(ctx, field, obj)
+		case "maxEntries":
+			out.Values[i] = ec._LeaderboardConfig_maxEntries(ctx, field, obj)
 		case "sortOrder":
 			out.Values[i] = ec._LeaderboardConfig_sortOrder(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

@@ -2,6 +2,7 @@ fragment LeaderboardConfigFields on LeaderboardConfig {
   id
   name
   entityType
+  maxEntries
   sortOrder
   isActive
   event {

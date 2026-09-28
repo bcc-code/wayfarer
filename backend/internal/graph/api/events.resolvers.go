@@ -50,13 +50,6 @@ func (r *eventResolver) Leaderboard(ctx context.Context, obj *model.Event, entit
 		return nil, fmt.Errorf("failed to get event leaderboard: %w", err)
 	}
 
-	// Apply PERSONS leaderboard restrictions - dynamic limit based on totalCount
-	if entityType == model.LeaderboardEntityTypePersons {
-		result := FilterPersonLeaderboardEntries(entries, totalCount, first, after)
-		entries = result.Entries
-		first = result.AdjustedFirst
-	}
-
 	// Build connection
 	connection, err := buildLeaderboardConnection(ctx, entries, meEntry, totalCount, currentUserID, entityType, obj.ProjectID, r.Loaders, first, last, after, before, obj.ID, true, filter)
 	if err != nil {

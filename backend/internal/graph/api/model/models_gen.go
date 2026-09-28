@@ -495,6 +495,7 @@ type CreateLeaderboardConfigInput struct {
 	Name       string                `json:"name"`
 	EntityType LeaderboardEntityType `json:"entityType"`
 	Filter     *LeaderboardFilter    `json:"filter,omitempty"`
+	MaxEntries *int                  `json:"maxEntries,omitempty"`
 	SortOrder  *int                  `json:"sortOrder,omitempty"`
 	IsActive   *bool                 `json:"isActive,omitempty"`
 }
@@ -1015,11 +1016,13 @@ type LeaderboardConfig struct {
 	Name       string                 `json:"name"`
 	EntityType LeaderboardEntityType  `json:"entityType"`
 	Filter     *LeaderboardFilterView `json:"filter,omitempty"`
+	MaxEntries *int                   `json:"maxEntries,omitempty"`
 	SortOrder  int                    `json:"sortOrder"`
 	IsActive   bool                   `json:"isActive"`
 	CreatedAt  scalars.DateTime       `json:"createdAt"`
 	UpdatedAt  scalars.DateTime       `json:"updatedAt"`
-	// The finished, computed leaderboard for this config.
+	// The finished leaderboard, capped before pagination. With no page size, returns
+	// the configured limit, or 100 entries when maxEntries is null.
 	Leaderboard *LeaderboardConnection `json:"leaderboard"`
 	EventID     *string                `json:"-"`
 	ProjectID   string                 `json:"-"`
@@ -2174,6 +2177,7 @@ type UpdateLeaderboardConfigInput struct {
 	Name       string                `json:"name"`
 	EntityType LeaderboardEntityType `json:"entityType"`
 	Filter     *LeaderboardFilter    `json:"filter,omitempty"`
+	MaxEntries *int                  `json:"maxEntries,omitempty"`
 	SortOrder  int                   `json:"sortOrder"`
 	IsActive   bool                  `json:"isActive"`
 }

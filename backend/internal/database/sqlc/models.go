@@ -253,6 +253,7 @@ type LeaderboardConfig struct {
 	IsActive   bool               `json:"is_active"`
 	CreatedAt  pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+	MaxEntries *int32             `json:"max_entries"`
 }
 
 type LeaderboardEventChurch struct {

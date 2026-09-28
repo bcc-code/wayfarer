@@ -4,8 +4,8 @@ mutation CreateLeaderboardConfig($input: CreateLeaderboardConfigInput!) {
   }
 }
 
-# `UpdateLeaderboardConfigInput` is full-replace, not a patch: every field but
-# `filter` is required and the caller resends the complete desired state.
+# `UpdateLeaderboardConfigInput` is full-replace, not a patch. The caller
+# resends the complete state; null clears `filter` and `maxEntries`.
 mutation UpdateLeaderboardConfig(
   $id: ID!
   $input: UpdateLeaderboardConfigInput!
