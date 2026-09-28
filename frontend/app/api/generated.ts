@@ -883,6 +883,13 @@ export enum ForwardDestination {
   SsfTicket = 'SSF_TICKET'
 }
 
+export type FreeTextGroup = {
+  __typename?: 'FreeTextGroup';
+  count: Scalars['Int']['output'];
+  percentage: Scalars['Float']['output'];
+  text: Scalars['String']['output'];
+};
+
 export type FreeTextQuestion = QuizQuestion & {
   __typename?: 'FreeTextQuestion';
   bettingEnabled: Scalars['Boolean']['output'];
@@ -897,6 +904,22 @@ export type FreeTextQuestion = QuizQuestion & {
   quiz: Quiz;
   timeoutSeconds?: Maybe<Scalars['Int']['output']>;
   translationStatus: Array<TranslationFieldStatus>;
+};
+
+/**
+ * FREE_TEXT questions are not graded. Answers are grouped by a normalised form
+ * (trimmed, inner whitespace collapsed, case-folded) and the most common original
+ * spelling is shown.
+ */
+export type FreeTextQuestionResults = QuizQuestionResults & {
+  __typename?: 'FreeTextQuestionResults';
+  distinctCount: Scalars['Int']['output'];
+  /** Groups, most common first. */
+  groups: Array<FreeTextGroup>;
+  question: QuizQuestion;
+  responseCount: Scalars['Int']['output'];
+  /** Every answer as submitted, for the expanded view. */
+  responses: Array<Scalars['String']['output']>;
 };
 
 export type FreeTextResponse = QuizResponse & {
@@ -948,6 +971,16 @@ export type JsonQuestion = QuizQuestion & {
   quiz: Quiz;
   timeoutSeconds?: Maybe<Scalars['Int']['output']>;
   translationStatus: Array<TranslationFieldStatus>;
+};
+
+/**
+ * JSON questions hold arbitrary structured data that cannot be summarised
+ * automatically. Kept in the list so question numbering stays intact.
+ */
+export type JsonQuestionResults = QuizQuestionResults & {
+  __typename?: 'JsonQuestionResults';
+  question: QuizQuestion;
+  responseCount: Scalars['Int']['output'];
 };
 
 export type JsonResponse = QuizResponse & {
@@ -2047,6 +2080,14 @@ export enum NotificationType {
   Generic = 'GENERIC'
 }
 
+export type NumberBucket = {
+  __typename?: 'NumberBucket';
+  count: Scalars['Int']['output'];
+  from: Scalars['Float']['output'];
+  percentage: Scalars['Float']['output'];
+  to: Scalars['Float']['output'];
+};
+
 export type NumberQuestion = QuizQuestion & {
   __typename?: 'NumberQuestion';
   bettingEnabled: Scalars['Boolean']['output'];
@@ -2066,6 +2107,21 @@ export type NumberQuestion = QuizQuestion & {
   translationStatus: Array<TranslationFieldStatus>;
 };
 
+/**
+ * NUMBER questions store no correct answer, so results describe the distribution
+ * rather than correctness.
+ */
+export type NumberQuestionResults = QuizQuestionResults & {
+  __typename?: 'NumberQuestionResults';
+  average?: Maybe<Scalars['Float']['output']>;
+  buckets: Array<NumberBucket>;
+  max?: Maybe<Scalars['Float']['output']>;
+  median?: Maybe<Scalars['Float']['output']>;
+  min?: Maybe<Scalars['Float']['output']>;
+  question: QuizQuestion;
+  responseCount: Scalars['Int']['output'];
+};
+
 export type NumberResponse = QuizResponse & {
   __typename?: 'NumberResponse';
   answeredAt?: Maybe<Scalars['DateTime']['output']>;
@@ -2077,6 +2133,14 @@ export type NumberResponse = QuizResponse & {
   question: QuizQuestion;
   submission: QuizSubmission;
   timeSpentSeconds?: Maybe<Scalars['Int']['output']>;
+};
+
+export type OrderingItemResult = {
+  __typename?: 'OrderingItemResult';
+  correctPosition: Scalars['Int']['output'];
+  correctlyPlacedCount: Scalars['Int']['output'];
+  item: QuizOrderingItem;
+  percentage: Scalars['Float']['output'];
 };
 
 export type OrderingQuestion = QuizQuestion & {
@@ -2094,6 +2158,18 @@ export type OrderingQuestion = QuizQuestion & {
   quiz: Quiz;
   timeoutSeconds?: Maybe<Scalars['Int']['output']>;
   translationStatus: Array<TranslationFieldStatus>;
+};
+
+/**
+ * ORDERING questions are graded all-or-nothing, so per-position accuracy is what
+ * shows where people actually went wrong.
+ */
+export type OrderingQuestionResults = QuizQuestionResults & {
+  __typename?: 'OrderingQuestionResults';
+  fullyCorrectCount: Scalars['Int']['output'];
+  items: Array<OrderingItemResult>;
+  question: QuizQuestion;
+  responseCount: Scalars['Int']['output'];
 };
 
 export type OrderingResponse = QuizResponse & {
@@ -2143,6 +2219,14 @@ export type PluginChallenge = Challenge & {
   visibleAt?: Maybe<Scalars['DateTime']['output']>;
 };
 
+export type PredefinedOptionResult = {
+  __typename?: 'PredefinedOptionResult';
+  answer: QuizPredefinedAnswer;
+  count: Scalars['Int']['output'];
+  isCorrect: Scalars['Boolean']['output'];
+  percentage: Scalars['Float']['output'];
+};
+
 export type PredefinedQuestion = QuizQuestion & {
   __typename?: 'PredefinedQuestion';
   allowMultipleSelection: Scalars['Boolean']['output'];
@@ -2159,6 +2243,15 @@ export type PredefinedQuestion = QuizQuestion & {
   quiz: Quiz;
   timeoutSeconds?: Maybe<Scalars['Int']['output']>;
   translationStatus: Array<TranslationFieldStatus>;
+};
+
+export type PredefinedQuestionResults = QuizQuestionResults & {
+  __typename?: 'PredefinedQuestionResults';
+  /** Responses that selected exactly the correct set of answers. */
+  correctCount: Scalars['Int']['output'];
+  options: Array<PredefinedOptionResult>;
+  question: QuizQuestion;
+  responseCount: Scalars['Int']['output'];
 };
 
 export type PredefinedResponse = QuizResponse & {
@@ -2336,6 +2429,7 @@ export type Query = {
   projects: ProjectConnection;
   pushNotificationsEnabled: Scalars['Boolean']['output'];
   quiz: Quiz;
+  quizResults: QuizResults;
   quizSession?: Maybe<QuizSession>;
   quizSessions: Array<QuizSession>;
   quizSubmission: QuizSubmission;
@@ -2535,6 +2629,11 @@ export type QueryProjectsArgs = {
 
 export type QueryQuizArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryQuizResultsArgs = {
+  quizId: Scalars['ID']['input'];
 };
 
 
@@ -2797,6 +2896,20 @@ export type QuizQuestion = {
   translationStatus: Array<TranslationFieldStatus>;
 };
 
+/**
+ * Per-question aggregates. One implementation per question type, because the
+ * question types have genuinely different shapes of answer.
+ */
+export type QuizQuestionResults = {
+  question: QuizQuestion;
+  /**
+   * Submissions that answered this question. Every percentage on the concrete
+   * types is a share of this, never of the quiz-wide submission count — a
+   * question people skipped must not read as unpopular answers.
+   */
+  responseCount: Scalars['Int']['output'];
+};
+
 export enum QuizQuestionType {
   FreeText = 'FREE_TEXT',
   Json = 'JSON',
@@ -2814,6 +2927,24 @@ export type QuizResponse = {
   question: QuizQuestion;
   submission: QuizSubmission;
   timeSpentSeconds?: Maybe<Scalars['Int']['output']>;
+};
+
+export type QuizResults = {
+  __typename?: 'QuizResults';
+  averageMaxScore?: Maybe<Scalars['Float']['output']>;
+  averageScore?: Maybe<Scalars['Float']['output']>;
+  averageScorePercentage?: Maybe<Scalars['Float']['output']>;
+  /** Distinct users behind those submissions. */
+  participantCount: Scalars['Int']['output'];
+  questions: Array<QuizQuestionResults>;
+  quiz: Quiz;
+  /**
+   * Distinct sessions those submissions belong to. Submissions created outside a
+   * session (M2M imports) are counted in submissionCount but not here.
+   */
+  sessionCount: Scalars['Int']['output'];
+  /** Completed submissions across all sessions. */
+  submissionCount: Scalars['Int']['output'];
 };
 
 export type QuizSession = {
@@ -4729,6 +4860,61 @@ export type ReorderQuizQuestionsMutation = { __typename?: 'Mutation', reorderQui
     | { __typename?: 'OrderingQuestion', id: string, questionOrder: number }
     | { __typename?: 'PredefinedQuestion', id: string, questionOrder: number }
   > };
+
+export type AdminChallengeResultsPageQueryVariables = Exact<{
+  challengeId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminChallengeResultsPageQuery = { __typename?: 'Query', challenge:
+    | { __typename: 'ExternalChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename: 'PluginChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename: 'QuizChallenge', id: string, name: string, quiz: { __typename?: 'Quiz', id: string, name: string }, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename: 'SimpleChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
+   };
+
+export type AdminQuizResultsQueryVariables = Exact<{
+  quizId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminQuizResultsQuery = { __typename?: 'Query', quizResults: { __typename?: 'QuizResults', submissionCount: number, participantCount: number, sessionCount: number, averageScore?: number | null, averageMaxScore?: number | null, averageScorePercentage?: number | null, questions: Array<
+      | { __typename: 'FreeTextQuestionResults', distinctCount: number, responses: Array<string>, responseCount: number, groups: Array<{ __typename?: 'FreeTextGroup', text: string, count: number, percentage: number }>, question:
+          | { __typename?: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'JsonQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'NumberQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'OrderingQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'PredefinedQuestion', id: string, questionText: string, questionOrder: number }
+         }
+      | { __typename: 'JsonQuestionResults', responseCount: number, question:
+          | { __typename?: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'JsonQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'NumberQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'OrderingQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'PredefinedQuestion', id: string, questionText: string, questionOrder: number }
+         }
+      | { __typename: 'NumberQuestionResults', average?: number | null, median?: number | null, min?: number | null, max?: number | null, responseCount: number, buckets: Array<{ __typename?: 'NumberBucket', from: number, to: number, count: number, percentage: number }>, question:
+          | { __typename?: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'JsonQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'NumberQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'OrderingQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'PredefinedQuestion', id: string, questionText: string, questionOrder: number }
+         }
+      | { __typename: 'OrderingQuestionResults', fullyCorrectCount: number, responseCount: number, items: Array<{ __typename?: 'OrderingItemResult', correctPosition: number, correctlyPlacedCount: number, percentage: number, item: { __typename?: 'QuizOrderingItem', id: string, itemText: string } }>, question:
+          | { __typename?: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'JsonQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'NumberQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'OrderingQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'PredefinedQuestion', id: string, questionText: string, questionOrder: number }
+         }
+      | { __typename: 'PredefinedQuestionResults', correctCount: number, responseCount: number, options: Array<{ __typename?: 'PredefinedOptionResult', count: number, percentage: number, isCorrect: boolean, answer: { __typename?: 'QuizPredefinedAnswer', id: string, answerText: string } }>, question:
+          | { __typename?: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'JsonQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'NumberQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'OrderingQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'PredefinedQuestion', id: string, questionText: string, questionOrder: number }
+         }
+    > } };
 
 export type AdminChallengeSessionsPageQueryVariables = Exact<{
   challengeId: Scalars['ID']['input'];
@@ -7683,6 +7869,99 @@ export const ReorderQuizQuestionsDocument = gql`
 
 export function useReorderQuizQuestionsMutation() {
   return Urql.useMutation<ReorderQuizQuestionsMutation, ReorderQuizQuestionsMutationVariables>(ReorderQuizQuestionsDocument);
+};
+export const AdminChallengeResultsPageDocument = gql`
+    query AdminChallengeResultsPage($challengeId: ID!) {
+  challenge(id: $challengeId) {
+    __typename
+    id
+    name
+    project {
+      id
+      name
+    }
+    ... on QuizChallenge {
+      quiz {
+        id
+        name
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminChallengeResultsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminChallengeResultsPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminChallengeResultsPageQuery, AdminChallengeResultsPageQueryVariables | undefined>({ query: AdminChallengeResultsPageDocument, variables: undefined, ...options });
+};
+export const AdminQuizResultsDocument = gql`
+    query AdminQuizResults($quizId: ID!) {
+  quizResults(quizId: $quizId) {
+    submissionCount
+    participantCount
+    sessionCount
+    averageScore
+    averageMaxScore
+    averageScorePercentage
+    questions {
+      __typename
+      question {
+        id
+        questionText
+        questionOrder
+      }
+      responseCount
+      ... on PredefinedQuestionResults {
+        correctCount
+        options {
+          answer {
+            id
+            answerText
+          }
+          count
+          percentage
+          isCorrect
+        }
+      }
+      ... on NumberQuestionResults {
+        average
+        median
+        min
+        max
+        buckets {
+          from
+          to
+          count
+          percentage
+        }
+      }
+      ... on FreeTextQuestionResults {
+        distinctCount
+        groups {
+          text
+          count
+          percentage
+        }
+        responses
+      }
+      ... on OrderingQuestionResults {
+        fullyCorrectCount
+        items {
+          item {
+            id
+            itemText
+          }
+          correctPosition
+          correctlyPlacedCount
+          percentage
+        }
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminQuizResultsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminQuizResultsQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminQuizResultsQuery, AdminQuizResultsQueryVariables | undefined>({ query: AdminQuizResultsDocument, variables: undefined, ...options });
 };
 export const AdminChallengeSessionsPageDocument = gql`
     query AdminChallengeSessionsPage($challengeId: ID!) {
