@@ -46,8 +46,9 @@ export function useAuth() {
   const auth0 = useAuth0()
   const config = useRuntimeConfig()
 
-  // Wayfarer JWT stored in localStorage (exchanged from Auth0 token)
-  const wayfarerToken = useLocalStorage<string>('token', () => null)
+  // Wayfarer access token stored in localStorage (see utils/authSession)
+  const wayfarerToken = useLocalStorage<string>(ACCESS_TOKEN_KEY, () => null)
+  const authUrl = authBaseUrl(config.public)
   const isLoading = useState('isLoading', () => true)
   const me = useState<GetMeQuery['me'] | null | undefined>('me', () => null)
 
@@ -93,6 +94,9 @@ export function useAuth() {
   const getAccessToken = async () => {
     await until(isLoading).toBe(false, { timeout: 10_000 })
     if (!wayfarerToken.value || isTokenExpired(wayfarerToken.value)) {
+      if (hasRefreshToken() && (await refreshSession(authUrl))) {
+        return getStoredAccessToken()
+      }
       await loginWithRedirect()
       return null
     }
@@ -136,7 +140,7 @@ export function useAuth() {
   async function logout() {
     track(AnalyticsEvent.LogoutCompleted)
     reset()
-    wayfarerToken.value = null
+    await logoutSession(authUrl)
     me.value = null
     return auth0.logout({
       logoutParams: {
@@ -145,7 +149,7 @@ export function useAuth() {
     })
   }
 
-  // Exchange Auth0 token for Wayfarer JWT
+  // Exchange Auth0 token for a Wayfarer session (access + refresh token)
   async function exchangeToken(): Promise<boolean> {
     try {
       const auth0Token = await getAuth0Token()
@@ -153,16 +157,11 @@ export function useAuth() {
         return false
       }
 
-      const response = await $fetch<{ token: string }>(
-        `${config.public.tokenUrl}?token=${auth0Token}`,
-        { method: 'GET' },
-      )
-
-      if (response && response.token) {
-        setAccessToken(response.token)
-        return true
+      const success = await exchangeExternalToken(authUrl, auth0Token)
+      if (success) {
+        isLoading.value = false
       }
-      return false
+      return success
     } catch {
       return false
     }

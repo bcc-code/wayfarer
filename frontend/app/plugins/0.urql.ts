@@ -23,7 +23,11 @@ export default defineNuxtPlugin((nuxtApp) => {
         cacheExchange,
         authExchange(async (utils) => {
           // Use Wayfarer token from localStorage for API calls
-          const wayfarerToken = useLocalStorage<string>('token', () => null)
+          const wayfarerToken = useLocalStorage<string>(
+            ACCESS_TOKEN_KEY,
+            () => null,
+          )
+          const authUrl = authBaseUrl(config.public)
           let isRedirecting = false
 
           return {
@@ -53,24 +57,32 @@ export default defineNuxtPlugin((nuxtApp) => {
               // Prevent multiple concurrent refresh attempts
               if (isRedirecting) return
 
+              // 1. Wayfarer session: rotate the refresh token. No Auth0 needed.
+              if (hasRefreshToken()) {
+                if (await refreshSession(authUrl)) return
+                // A network or server hiccup keeps the tokens. If the access
+                // token still works, carry on and try again later.
+                const current = getStoredAccessToken()
+                if (hasRefreshToken() && current && !isTokenExpired(current)) {
+                  return
+                }
+              }
+
               // This runs from a urql exchange callback, outside any Vue setup
               // or app context — useAuth0() relies on inject(), so it must be
               // resolved inside runWithContext or it returns undefined.
               const auth0 = () =>
                 nuxtApp.vueApp.runWithContext(() => useAuth0())
 
-              // Try silent refresh first - get fresh Auth0 token and exchange it
+              // 2. No session (legacy token or session ended): exchange a
+              // fresh Auth0 token if the Auth0 session is still alive.
               try {
                 const auth0Token = await auth0().getAccessTokenSilently()
-                if (auth0Token) {
-                  const response = await $fetch<{ token: string }>(
-                    `${config.public.tokenUrl}?token=${auth0Token}`,
-                    { method: 'GET' },
-                  )
-                  if (response?.token) {
-                    wayfarerToken.value = response.token
-                    return // Success - urql will retry the operation
-                  }
+                if (
+                  auth0Token &&
+                  (await exchangeExternalToken(authUrl, auth0Token))
+                ) {
+                  return // Success - urql will retry the operation
                 }
               } catch {
                 // Silent refresh failed, fall through to login redirect
@@ -80,7 +92,7 @@ export default defineNuxtPlugin((nuxtApp) => {
               // redirect. The token is only cleared here, after the refresh
               // attempt, so a recoverable 401 never pauses in-flight queries.
               isRedirecting = true
-              wayfarerToken.value = null
+              clearSessionTokens()
               try {
                 await auth0().loginWithRedirect({
                   appState: {
@@ -95,7 +107,9 @@ export default defineNuxtPlugin((nuxtApp) => {
               }
             },
             willAuthError() {
-              return false
+              // Refresh ahead of expiry (and daily, so the session keeps
+              // sliding) instead of waiting for a 401.
+              return !isRedirecting && canRefreshProactively()
             },
           } as AuthConfig
         }),
