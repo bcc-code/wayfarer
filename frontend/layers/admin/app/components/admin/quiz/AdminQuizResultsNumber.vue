@@ -16,8 +16,7 @@ const props = defineProps<{
   max?: number | null
 }>()
 
-// Null rather than 0 when nobody answered: the stats strip is dropped entirely
-// instead of claiming an average of zero.
+// Dropped entirely when nobody answered, rather than claiming an average of 0.
 const stats = computed(() => {
   if (props.average == null) return []
   return [

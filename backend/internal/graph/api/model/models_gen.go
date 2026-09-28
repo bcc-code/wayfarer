@@ -73,14 +73,12 @@ type QuizQuestion interface {
 	GetTranslationStatus() []TranslationFieldStatus
 }
 
-// Per-question aggregates. One implementation per question type, because the
-// question types have genuinely different shapes of answer.
+// Per-question aggregates, one implementation per question type.
 type QuizQuestionResults interface {
 	IsQuizQuestionResults()
 	GetQuestion() QuizQuestion
-	// Submissions that answered this question. Every percentage on the concrete
-	// types is a share of this, never of the quiz-wide submission count — a
-	// question people skipped must not read as unpopular answers.
+	// Submissions that answered this question. Every percentage below is a share
+	// of this, never of the quiz-wide submission count.
 	GetResponseCount() int
 }
 
@@ -920,9 +918,8 @@ func (this FreeTextQuestion) GetTranslationStatus() []TranslationFieldStatus {
 	return interfaceSlice
 }
 
-// FREE_TEXT questions are not graded. Answers are grouped by a normalised form
-// (trimmed, inner whitespace collapsed, case-folded) and the most common original
-// spelling is shown.
+// Not graded. Grouped by a normalised form (trimmed, whitespace collapsed,
+// case-folded), labelled with the most common original spelling.
 type FreeTextQuestionResults struct {
 	Question      QuizQuestion `json:"question"`
 	ResponseCount int          `json:"responseCount"`
@@ -936,9 +933,8 @@ type FreeTextQuestionResults struct {
 func (FreeTextQuestionResults) IsQuizQuestionResults()         {}
 func (this FreeTextQuestionResults) GetQuestion() QuizQuestion { return this.Question }
 
-// Submissions that answered this question. Every percentage on the concrete
-// types is a share of this, never of the quiz-wide submission count — a
-// question people skipped must not read as unpopular answers.
+// Submissions that answered this question. Every percentage below is a share
+// of this, never of the quiz-wide submission count.
 func (this FreeTextQuestionResults) GetResponseCount() int { return this.ResponseCount }
 
 type FreeTextResponse struct {
@@ -1021,8 +1017,8 @@ func (this JSONQuestion) GetTranslationStatus() []TranslationFieldStatus {
 	return interfaceSlice
 }
 
-// JSON questions hold arbitrary structured data that cannot be summarised
-// automatically. Kept in the list so question numbering stays intact.
+// Arbitrary structured data, so only a count. Kept in the list so question
+// numbering stays intact.
 type JSONQuestionResults struct {
 	Question      QuizQuestion `json:"question"`
 	ResponseCount int          `json:"responseCount"`
@@ -1031,9 +1027,8 @@ type JSONQuestionResults struct {
 func (JSONQuestionResults) IsQuizQuestionResults()         {}
 func (this JSONQuestionResults) GetQuestion() QuizQuestion { return this.Question }
 
-// Submissions that answered this question. Every percentage on the concrete
-// types is a share of this, never of the quiz-wide submission count — a
-// question people skipped must not read as unpopular answers.
+// Submissions that answered this question. Every percentage below is a share
+// of this, never of the quiz-wide submission count.
 func (this JSONQuestionResults) GetResponseCount() int { return this.ResponseCount }
 
 type JSONResponse struct {
@@ -1239,8 +1234,7 @@ func (this NumberQuestion) GetTranslationStatus() []TranslationFieldStatus {
 	return interfaceSlice
 }
 
-// NUMBER questions store no correct answer, so results describe the distribution
-// rather than correctness.
+// NUMBER stores no correct answer, so results describe the distribution.
 type NumberQuestionResults struct {
 	Question      QuizQuestion   `json:"question"`
 	ResponseCount int            `json:"responseCount"`
@@ -1254,9 +1248,8 @@ type NumberQuestionResults struct {
 func (NumberQuestionResults) IsQuizQuestionResults()         {}
 func (this NumberQuestionResults) GetQuestion() QuizQuestion { return this.Question }
 
-// Submissions that answered this question. Every percentage on the concrete
-// types is a share of this, never of the quiz-wide submission count — a
-// question people skipped must not read as unpopular answers.
+// Submissions that answered this question. Every percentage below is a share
+// of this, never of the quiz-wide submission count.
 func (this NumberQuestionResults) GetResponseCount() int { return this.ResponseCount }
 
 type NumberResponse struct {
@@ -1331,8 +1324,8 @@ func (this OrderingQuestion) GetTranslationStatus() []TranslationFieldStatus {
 	return interfaceSlice
 }
 
-// ORDERING questions are graded all-or-nothing, so per-position accuracy is what
-// shows where people actually went wrong.
+// Graded all-or-nothing, so per-position accuracy is what shows where people
+// went wrong.
 type OrderingQuestionResults struct {
 	Question          QuizQuestion         `json:"question"`
 	ResponseCount     int                  `json:"responseCount"`
@@ -1343,9 +1336,8 @@ type OrderingQuestionResults struct {
 func (OrderingQuestionResults) IsQuizQuestionResults()         {}
 func (this OrderingQuestionResults) GetQuestion() QuizQuestion { return this.Question }
 
-// Submissions that answered this question. Every percentage on the concrete
-// types is a share of this, never of the quiz-wide submission count — a
-// question people skipped must not read as unpopular answers.
+// Submissions that answered this question. Every percentage below is a share
+// of this, never of the quiz-wide submission count.
 func (this OrderingQuestionResults) GetResponseCount() int { return this.ResponseCount }
 
 type OrderingResponse struct {
@@ -1500,9 +1492,8 @@ type PredefinedQuestionResults struct {
 func (PredefinedQuestionResults) IsQuizQuestionResults()         {}
 func (this PredefinedQuestionResults) GetQuestion() QuizQuestion { return this.Question }
 
-// Submissions that answered this question. Every percentage on the concrete
-// types is a share of this, never of the quiz-wide submission count — a
-// question people skipped must not read as unpopular answers.
+// Submissions that answered this question. Every percentage below is a share
+// of this, never of the quiz-wide submission count.
 func (this PredefinedQuestionResults) GetResponseCount() int { return this.ResponseCount }
 
 type PredefinedResponse struct {
@@ -1803,8 +1794,7 @@ type QuizResults struct {
 	SubmissionCount int `json:"submissionCount"`
 	// Distinct users behind those submissions.
 	ParticipantCount int `json:"participantCount"`
-	// Distinct sessions those submissions belong to. Submissions created outside a
-	// session (M2M imports) are counted in submissionCount but not here.
+	// Submissions created outside a session (M2M imports) are not counted here.
 	SessionCount           int                   `json:"sessionCount"`
 	AverageScore           *float64              `json:"averageScore,omitempty"`
 	AverageMaxScore        *float64              `json:"averageMaxScore,omitempty"`

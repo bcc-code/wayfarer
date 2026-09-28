@@ -1,18 +1,13 @@
--- Aggregated quiz results for the admin panel.
+-- Aggregated quiz results for the admin panel. Pools all completed submissions
+-- for a quiz across every session; nothing here runs per question.
 --
--- Every query here pools all completed submissions for a quiz, across every
--- session. Six queries cover the whole results page regardless of how many
--- questions the quiz has — nothing in here runs per question.
---
--- Queries that return raw rows (numbers, free text, ordering) do so on purpose:
--- bucketing, grouping and position-matching are shaping decisions, made in Go
--- behind pure functions so they can be unit-tested without a database.
+-- Numbers, free text and ordering come back as raw rows on purpose: bucketing,
+-- grouping and position-matching are shaped in Go, where they are testable.
 
 -- name: GetQuizResultsSummary :one
--- scored_count counts submissions that actually carry a score. AVG over an
--- empty or all-NULL set is NULL, which a plain ::float8 cast would mis-type as
--- non-nullable; COALESCE keeps the scan safe and scored_count lets the resolver
--- tell "no scores yet" from "average happens to be zero".
+-- AVG over an empty or all-NULL set is NULL, which a plain ::float8 cast
+-- mis-types as non-nullable. COALESCE keeps the scan safe; scored_count is what
+-- separates "no scores yet" from "the average is zero".
 SELECT
     COUNT(*)::int AS submission_count,
     COUNT(DISTINCT s.user_id)::int AS participant_count,
@@ -36,9 +31,7 @@ WHERE s.quiz_id = @quizid::char(28)
 GROUP BY r.question_id;
 
 -- name: GetQuizPredefinedAnswerCounts :many
--- One row per (question, answer) that anybody selected. Answers nobody picked
--- are absent; the resolver fills them in as zero from the question's own answer
--- list, so an unpicked option still shows on the page.
+-- Only answers somebody selected; the resolver fills unpicked ones in as zero.
 SELECT
     r.question_id,
     sel.answer_id::char(28) AS answer_id,

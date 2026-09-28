@@ -1,18 +1,7 @@
-/**
- * Turning quiz results into something you can paste into a keynote.
- *
- * The page renders from the GraphQL result directly; these helpers produce the
- * flat table behind the copy button and the CSV download. Kept pure and
- * structurally typed (rather than tied to the generated types) so the awkward
- * parts — decimal commas, quoting a free-text answer that contains a comma —
- * are unit-tested instead of eyeballed in a spreadsheet.
- */
+/** The flat tables behind the copy button and the CSV download. */
 
-/**
- * UTF-8 byte order mark. Built from a char code rather than written literally:
- * Prettier rewrites a "\uFEFF" escape into the invisible character itself, which
- * then trips eslint's no-irregular-whitespace and is impossible to see in a diff.
- */
+// From a char code because Prettier rewrites a "\uFEFF" escape into the
+// invisible character, which then trips eslint's no-irregular-whitespace.
 const BOM = String.fromCharCode(0xfeff)
 
 /** One row of a question's result table. */
@@ -33,10 +22,7 @@ export interface QuestionResultTable {
   rows: ResultRow[]
 }
 
-/**
- * Norwegian decimal comma, at most one decimal, and no trailing ",0" — a slide
- * wants "74 %", not "74,0 %".
- */
+/** Norwegian decimal comma, one decimal, no trailing ",0". */
 export function formatPercent(value: number): string {
   return `${new Intl.NumberFormat('nb-NO', { maximumFractionDigits: 1 }).format(value)} %`
 }
@@ -49,12 +35,9 @@ export function formatDecimal(value: number): string {
 }
 
 /**
- * Tab-separated, because that is what pastes into Keynote and Excel as a real
- * table. Commas would need quoting and then paste as one column.
- *
- * Tabs and newlines inside a free-text answer would break the row apart, so
- * they collapse to spaces — the clipboard has no quoting convention to fall
- * back on the way CSV does.
+ * Tab-separated: what pastes into Keynote and Excel as a table. Tabs and
+ * newlines in an answer collapse to spaces — the clipboard has no quoting
+ * convention to fall back on.
  */
 export function toTsv(rows: ResultRow[]): string {
   const lines = ['Svar\tAntall\tProsent']
@@ -70,11 +53,7 @@ export function toTsv(rows: ResultRow[]): string {
   return lines.join('\n')
 }
 
-/**
- * RFC 4180 quoting: wrap in quotes when the value contains a comma, a quote or
- * a newline, and double any embedded quote. Free-text answers routinely contain
- * all three.
- */
+/** RFC 4180 quoting. Free-text answers routinely need it. */
 function csvCell(value: string): string {
   if (/[",\r\n]/.test(value)) {
     return `"${value.replace(/"/g, '""')}"`
@@ -83,11 +62,8 @@ function csvCell(value: string): string {
 }
 
 /**
- * One CSV for the whole quiz: a row per option, bucket or group, carrying its
- * question so the rows stay attributable once they are out of the panel.
- *
- * Prefixed with a UTF-8 BOM — without it Excel on Windows reads "Håp" as "HÃ¥p",
- * which is exactly the kind of thing nobody notices until it is on a screen.
+ * A row per option, bucket or group, carrying its question. The BOM is what
+ * stops Excel on Windows reading "Håp" as "HÃ¥p".
  */
 export function toCsv(tables: QuestionResultTable[]): string {
   const lines = [
@@ -134,15 +110,8 @@ export function csvFilename(quizName: string): string {
 // ==================== Mapping results to rows ====================
 
 /**
- * The shape the page and the mapper need, kept structural so it does not drag
- * the whole generated result type (and its `Quiz`, and its `Project`...) into a
- * unit test.
- *
- * Every per-type field is optional because this one interface stands in for all
- * five result types; which fields are present is decided by `__typename`. Ids
- * are not optional: the list keys are built from them. The
- * mapper branches on the array fields rather than the typename, so a result
- * that carries `options` is a predefined one whatever it calls itself.
+ * Structural so tests need not build the whole generated type. One interface
+ * stands in for all five result types, hence the optional per-type fields.
  */
 export interface QuestionResultLike {
   __typename?: string
@@ -208,12 +177,8 @@ export function questionTypeLabel(typename: string | undefined): string {
 }
 
 /**
- * Flattens one question's results to rows. JSON questions yield none — there is
- * nothing to tabulate, and an empty table is more honest than a fabricated one.
- *
- * Ordering rows are per-position accuracy ("how many put this item here"), which
- * is what the page shows; the all-or-nothing correct count rides in the page
- * header rather than as a row, because it is not the same kind of number.
+ * Branches on the array fields rather than `__typename`. JSON yields no rows;
+ * ordering yields per-position accuracy, not the all-or-nothing count.
  */
 export function questionResultRows(result: QuestionResultLike): ResultRow[] {
   if (result.options) {
@@ -264,11 +229,7 @@ export function questionResultTables(
   }))
 }
 
-/**
- * A count as a percentage of that question's responses, 0–100, rounded the same
- * way the backend rounds its own percentages so the two never disagree by a
- * tenth on the same screen.
- */
+/** Rounded as the backend rounds, so the two never disagree by a tenth. */
 export function percentageOfResponses(
   count: number,
   responseCount: number,

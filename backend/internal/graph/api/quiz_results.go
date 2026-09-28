@@ -12,20 +12,12 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 )
 
-// Shaping helpers for aggregated quiz results.
-//
-// Counting happens in SQL (queries/quiz_results.sql); everything here turns raw
-// rows into what the admin panel draws. They are deliberately pure so the
-// awkward cases — no responses, a single response, every answer identical — can
-// be tested without a database.
+// Counting happens in SQL (queries/quiz_results.sql); these shape the rows into
+// what the panel draws, pure so the empty and single-value cases are testable.
 
-// numberBucketTarget is how many histogram buckets a NUMBER question aims for.
-// Few enough to read off a projector, enough to show a shape.
 const numberBucketTarget = 6
 
-// percentageOf returns part as a percentage of total, rounded to one decimal.
-// A zero total yields 0 rather than NaN: a question nobody answered draws as an
-// empty bar, not as a broken one.
+// Zero total yields 0, not NaN: an unanswered question draws as an empty bar.
 func percentageOf(part, total int) float64 {
 	if total <= 0 {
 		return 0
@@ -33,8 +25,7 @@ func percentageOf(part, total int) float64 {
 	return math.Round(float64(part)/float64(total)*1000) / 10
 }
 
-// numberStats returns the average, median, min and max of values.
-// Returns nil for each when values is empty. Does not mutate values.
+// All nil when values is empty. Does not mutate values.
 func numberStats(values []float64) (avg, median, minimum, maximum *float64) {
 	if len(values) == 0 {
 		return nil, nil, nil, nil
@@ -64,13 +55,8 @@ func numberStats(values []float64) (avg, median, minimum, maximum *float64) {
 	return &a, &m, &lo, &hi
 }
 
-// numberBuckets splits values into up to `target` equal-width buckets spanning
-// min..max. The top bucket is closed on both ends so the maximum value lands
-// inside the histogram rather than falling off it.
-//
-// Values that are all identical produce a single bucket: an equal-width split of
-// a zero-width range would divide by zero, and "everyone said 40" is a real and
-// fairly common answer.
+// Up to `target` equal-width buckets spanning min..max. Identical values give
+// one bucket — splitting a zero-width range would divide by zero.
 func numberBuckets(values []float64, target int) []model.NumberBucket {
 	if len(values) == 0 {
 		return []model.NumberBucket{}
@@ -98,8 +84,7 @@ func numberBuckets(values []float64, target int) []model.NumberBucket {
 		}}
 	}
 
-	// Never make more buckets than there are distinct values to put in them —
-	// an eight-bucket histogram of three answers is mostly empty columns.
+	// More buckets than distinct values is mostly empty columns.
 	if distinct := countDistinct(values); distinct < target {
 		target = distinct
 	}
@@ -112,7 +97,7 @@ func numberBuckets(values []float64, target int) []model.NumberBucket {
 			To:   lo + width*float64(i+1),
 		}
 	}
-	// Guard against float drift leaving the maximum just outside the last edge.
+	// Float drift could leave the maximum outside the last edge.
 	buckets[target-1].To = hi
 
 	for _, v := range values {
@@ -141,18 +126,14 @@ func countDistinct(values []float64) int {
 	return len(seen)
 }
 
-// normalizeFreeText is the key free-text answers are grouped by: trimmed, inner
-// whitespace collapsed, case-folded. Deliberately naive — exact match after
-// normalisation, no stemming or fuzzy clustering — so a group always means
-// "these people wrote the same thing".
+// Grouping key: trimmed, whitespace collapsed, case-folded. Naive on purpose —
+// a group always means "these people wrote the same thing".
 func normalizeFreeText(s string) string {
 	return strings.ToLower(strings.Join(strings.Fields(s), " "))
 }
 
-// groupFreeText groups answers by their normalised form, most common first.
-// The label shown for a group is the spelling most people actually used; ties
-// there, and ties on count, break alphabetically so the output is stable across
-// requests rather than following map iteration order.
+// Most common first, labelled with the spelling most people used. Ties break
+// alphabetically so output is stable rather than map-iteration order.
 func groupFreeText(responses []string) []model.FreeTextGroup {
 	type group struct {
 		total    int
@@ -198,7 +179,7 @@ func groupFreeText(responses []string) []model.FreeTextGroup {
 	return out
 }
 
-// dominantVariant picks the most-used original spelling, alphabetical on a tie.
+// Most-used spelling, alphabetical on a tie.
 func dominantVariant(variants map[string]int) string {
 	best := ""
 	bestCount := -1
@@ -210,12 +191,8 @@ func dominantVariant(variants map[string]int) string {
 	return best
 }
 
-// orderingAccuracy reports, for each position in the correct order, how many
-// submissions placed the right item there. `correct` is the item IDs in their
-// correct order; each entry of `submitted` is one submission's order.
-//
-// Submissions of a different length than the correct order still count for the
-// positions they do cover — a truncated answer is wrong, not unreadable.
+// Per position, how many submissions placed the right item there. A submission
+// of a different length still counts for the positions it covers.
 func orderingAccuracy(submitted [][]string, correct []string) []int {
 	perPosition := make([]int, len(correct))
 	for _, order := range submitted {
@@ -228,9 +205,8 @@ func orderingAccuracy(submitted [][]string, correct []string) []int {
 	return perPosition
 }
 
-// decodeOrderingSubmissions parses the stored JSON arrays of item IDs, skipping
-// any row whose payload is not an array of strings. A malformed row is one
-// person's answer, not a reason to fail the whole results page.
+// Skips a malformed payload: that is one person's answer, not a reason to fail
+// the whole page.
 func decodeOrderingSubmissions(payloads [][]byte) [][]string {
 	out := make([][]string, 0, len(payloads))
 	for _, payload := range payloads {
@@ -243,8 +219,7 @@ func decodeOrderingSubmissions(payloads [][]byte) [][]string {
 	return out
 }
 
-// quizResultsInputs is everything the six aggregate queries returned, keyed for
-// per-question lookup.
+// The aggregate query results, keyed for per-question lookup.
 type quizResultsInputs struct {
 	responseCounts map[string]*sqlc.GetQuizResponseCountsByQuestionRow
 	answerCounts   map[string]map[string]int
@@ -253,10 +228,9 @@ type quizResultsInputs struct {
 	ordering       map[string][][]byte
 }
 
-// buildQuestionResults turns one question plus its aggregates into the result
-// type matching its kind. `answers` carries predefined answers for PREDEFINED
-// and ordering items for ORDERING — both live in quiz_predefined_answers, where
-// answer_order doubles as the correct position.
+// `answers` carries predefined answers for PREDEFINED and ordering items for
+// ORDERING: both live in quiz_predefined_answers, answer_order doubling as the
+// correct position.
 func buildQuestionResults(
 	question model.QuizQuestion,
 	answers []*model.QuizPredefinedAnswer,
@@ -299,7 +273,7 @@ func buildQuestionResults(
 	case *model.OrderingQuestion:
 		return buildOrderingResults(question, answers, in.ordering[id], responseCount, correctCount)
 	default:
-		// JSON, and anything added to the enum before this switch catches up.
+		// JSON, and anything added to the enum since.
 		return &model.JSONQuestionResults{
 			Question:      question,
 			ResponseCount: responseCount,
@@ -307,8 +281,7 @@ func buildQuestionResults(
 	}
 }
 
-// buildPredefinedResults keeps every option the question offers, including ones
-// nobody picked — an absent row means zero, not "leave it off the chart".
+// Keeps every option, including unpicked ones: an absent row means zero.
 func buildPredefinedResults(
 	question model.QuizQuestion,
 	answers []*model.QuizPredefinedAnswer,
@@ -340,8 +313,7 @@ func buildOrderingResults(
 	payloads [][]byte,
 	responseCount, correctCount int,
 ) *model.OrderingQuestionResults {
-	// The loader returns items sorted by answer_order, which is the correct
-	// sequence; index i is therefore position i.
+	// Items arrive sorted by answer_order, so index i is position i.
 	correct := make([]string, len(items))
 	for i, item := range items {
 		correct[i] = item.ID
@@ -372,9 +344,7 @@ func buildOrderingResults(
 	}
 }
 
-// loadQuizResultsInputs runs the five per-response aggregate queries and keys
-// each result by question ID. Five queries for the whole page, whatever the
-// question count — there is no per-question round trip here.
+// Five queries for the whole page, whatever the question count.
 func (r *Resolver) loadQuizResultsInputs(ctx context.Context, quizID string) (quizResultsInputs, error) {
 	in := quizResultsInputs{
 		responseCounts: map[string]*sqlc.GetQuizResponseCountsByQuestionRow{},

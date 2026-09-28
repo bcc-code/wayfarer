@@ -33,8 +33,6 @@ func (r *queryResolver) QuizResults(ctx context.Context, quizID string) (*model.
 		return nil, fmt.Errorf("failed to load quiz: %w", err)
 	}
 
-	// Results are aggregate-only, but they still expose how a whole cohort
-	// answered — same bar as reading submissions.
 	if !r.RoleService.CanManageProject(ctx, authUserID, quiz.ProjectID) {
 		return nil, fmt.Errorf("unauthorized to view quiz results")
 	}
@@ -54,8 +52,7 @@ func (r *queryResolver) QuizResults(ctx context.Context, quizID string) (*model.
 		return nil, fmt.Errorf("failed to load quiz questions: %w", err)
 	}
 
-	// Kick every answer-list load off before resolving any thunk, so the
-	// dataloader batches them into one query instead of one per question.
+	// Load all before resolving any thunk, so the dataloader batches them.
 	answerThunks := make([]func() ([]*model.QuizPredefinedAnswer, error), len(questions))
 	for i, question := range questions {
 		answerThunks[i] = r.Loaders.QuizAnswersByQuestionLoader.Load(ctx, question.GetID())
@@ -79,8 +76,7 @@ func (r *queryResolver) QuizResults(ctx context.Context, quizID string) (*model.
 		Questions:        results,
 	}
 
-	// Averages stay null until something has actually been scored, so the panel
-	// can say "ikke scoret ennå" rather than showing a confident 0.
+	// Null until something is scored, rather than a confident 0.
 	if summary.ScoredCount > 0 {
 		avg := summary.AverageScore
 		avgMax := summary.AverageMaxScore

@@ -277,7 +277,7 @@ func TestBuildQuestionResults(t *testing.T) {
 		assert.Equal(t, 7, got.Options[0].Count)
 		assert.Equal(t, 70.0, got.Options[0].Percentage)
 		assert.True(t, got.Options[0].IsCorrect)
-		assert.Equal(t, 0, got.Options[2].Count, "an unpicked option must still appear, at zero")
+		assert.Equal(t, 0, got.Options[2].Count, "unpicked options must still appear")
 		assert.Equal(t, 0.0, got.Options[2].Percentage)
 	})
 
@@ -310,7 +310,7 @@ func TestBuildQuestionResults(t *testing.T) {
 		got, ok := buildQuestionResults(&model.FreeTextQuestion{ID: questionID}, nil, in).(*model.FreeTextQuestionResults)
 		require.True(t, ok)
 		assert.Equal(t, 2, got.DistinctCount)
-		assert.Len(t, got.Responses, 3, "the raw list keeps every answer as submitted")
+		assert.Len(t, got.Responses, 3)
 		assert.Equal(t, 2, got.Groups[0].Count)
 	})
 

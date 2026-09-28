@@ -19,20 +19,10 @@ withDefaults(
 
 <template>
   <!--
-    One row of every results chart on this page, so the blocks read as one
-    system rather than five.
-
-    The bar is a single hue for every row. Shading each bar by its own value
-    would double-encode length as colour and burn the only free channel on
-    information the length already carries; answer options are nominal, so
-    there is no order for a ramp to mean anything.
-
-    Correctness is an icon plus a label, never colour alone — that is the one
-    signal on this page a colourblind presenter must not miss.
-
-    Label above, bar below, rather than label | bar | value on one line: answer
-    texts here run from "Oslo" to a full sentence, and a three-column row either
-    truncates them or collapses the bar to nothing at narrow widths.
+    One hue for every bar: options are nominal, so shading by value would
+    double-encode length as colour. Correctness is an icon plus a word, never
+    colour alone. Label above the bar because answer texts run to full
+    sentences, which a three-column row would truncate.
   -->
   <div>
     <div class="mb-1 flex items-baseline justify-between gap-3">
@@ -53,11 +43,6 @@ withDefaults(
         {{ formatPercent(percentage) }}
       </span>
     </div>
-    <!--
-      role="img" with the row's numbers as its name: the bar is decoration on
-      top of text that already states the value, so a screen reader gets the
-      sentence once rather than an unlabelled graphic.
-    -->
     <div
       class="bg-accented h-2.5 w-full overflow-hidden rounded-sm"
       role="img"

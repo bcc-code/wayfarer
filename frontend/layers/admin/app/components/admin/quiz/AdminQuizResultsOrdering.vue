@@ -28,11 +28,7 @@ defineProps<{
         formatPercent(percentageOfResponses(fullyCorrectCount, responseCount))
       }}
     </p>
-    <!--
-      Per-position accuracy, not the submitted sequences: "how many put this
-      item in its right slot" is what tells the person at the front which step
-      people actually tripped on.
-    -->
+    <!-- Per-position accuracy shows which step people tripped on. -->
     <p class="text-dimmed text-xs">Riktig plassert</p>
     <AdminQuizResultBar
       v-for="entry in items"

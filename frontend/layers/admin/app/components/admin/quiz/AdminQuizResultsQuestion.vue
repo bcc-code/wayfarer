@@ -16,10 +16,7 @@ const typeLabel = computed(() => questionTypeLabel(props.result.__typename))
 
 const copied = ref(false)
 
-/**
- * Tab-separated to the clipboard, because that is what pastes into Keynote and
- * Excel as a table rather than one column of text.
- */
+// TSV: pastes into Keynote and Excel as a table rather than one column.
 async function copyRows() {
   const rows = questionResultRows(props.result)
   if (!rows.length) return
@@ -29,8 +26,7 @@ async function copyRows() {
     copied.value = true
     setTimeout(() => (copied.value = false), 2000)
   } catch {
-    // Clipboard access is denied outside a secure context, and a silent
-    // no-op here reads as a broken button.
+    // Denied outside a secure context; a silent no-op reads as a broken button.
     toast.add({
       title: 'Kunne ikke kopiere',
       description: 'Nettleseren tillot ikke tilgang til utklippstavlen.',

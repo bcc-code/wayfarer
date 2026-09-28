@@ -16,9 +16,7 @@ const props = withDefaults(
   { visibleGroups: 8 },
 )
 
-// A camp of 300 produces a long tail of one-off answers. Showing the top
-// handful keeps the block readable on a projector; the rest are one click away
-// rather than gone.
+// Free text has a long tail of one-off answers; the rest stay one click away.
 const expanded = ref(false)
 const visible = computed(() =>
   expanded.value ? props.groups : props.groups.slice(0, props.visibleGroups),
@@ -69,11 +67,7 @@ const showingRaw = ref(false)
       </UButton>
     </div>
 
-    <!--
-      The raw list keeps every answer exactly as submitted, including the
-      one-offs grouping hides. Capped in height rather than paginated: it is a
-      reference list, not something you read top to bottom.
-    -->
+    <!-- Every answer as submitted, including the one-offs grouping hides. -->
     <ul
       v-if="showingRaw"
       class="bg-elevated max-h-80 space-y-1 overflow-y-auto rounded-md p-3 text-sm"

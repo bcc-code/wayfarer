@@ -134,19 +134,15 @@ const quiz = computed(() =>
 const { data, fetching, error } = useAdminQuizResultsQuery({
   variables: computed(() => ({ quizId: quiz.value?.id ?? '' })),
   pause: computed(() => !isAuthReady.value || !quiz.value?.id),
-  // Results move while a session is running, so never serve a stale copy
-  // without going back to the server for the current one.
+  // Results move while a session runs; never serve a stale copy alone.
   requestPolicy: 'cache-and-network',
 })
 
 const results = computed(() => data.value?.quizResults)
 const questions = computed(() => results.value?.questions ?? [])
 
-/**
- * The header facts. Participants is shown next to submissions rather than
- * instead of it: pooling every session means someone who took the quiz twice
- * counts twice, and showing both makes that visible instead of hiding it.
- */
+// Participants sits beside submissions because pooling sessions counts a
+// repeat taker twice; showing both makes that visible.
 const facts = computed(() => {
   const r = results.value
   if (!r) return []
@@ -157,8 +153,7 @@ const facts = computed(() => {
     { label: 'Sesjoner', value: formatNumber(r.sessionCount) },
   ]
 
-  // Null until something has actually been scored — better an absent fact than
-  // a confident "0 %".
+  // Absent until something is scored, rather than a confident "0 %".
   if (r.averageScore != null && r.averageMaxScore != null) {
     list.push({
       label: 'Snittscore',
@@ -177,11 +172,7 @@ const facts = computed(() => {
 
 const hasResults = computed(() => (results.value?.submissionCount ?? 0) > 0)
 
-/**
- * Builds the CSV in the browser from the query result already on the page —
- * there is no second endpoint, and nothing leaves the panel that isn't already
- * on screen.
- */
+// Built from the query result already on the page; no second endpoint.
 function downloadCsv() {
   const csv = toCsv(questionResultTables(questions.value))
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
@@ -197,8 +188,7 @@ function downloadCsv() {
 </script>
 
 <template>
-  <!-- Capped like the other detail pages: results read as a column, and a
-       full-width row strands each question's bars far from its text. -->
+  <!-- Capped like the other detail pages; bars belong near their text. -->
   <div class="max-w-4xl">
     <AdminQueryState :fetching :error>
       <template v-if="results">

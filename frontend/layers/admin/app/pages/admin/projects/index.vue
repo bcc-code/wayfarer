@@ -36,12 +36,8 @@ const { currentProjects, futureProjects, pastProjects } = useGroupedProjects(
 
 const { canCreateProject } = usePermissions()
 
-/**
- * `auto-fill`, not `auto-fit`: a section holding a single project would
- * otherwise collapse the empty tracks and stretch that one card across the
- * whole row. `min()` keeps the track from overflowing a container narrower
- * than the 18rem floor.
- */
+// `auto-fill`, not `auto-fit`: the latter stretches a lone card across the row.
+// `min()` stops the track overflowing a narrower container.
 const PROJECT_GRID =
   'grid grid-cols-[repeat(auto-fill,minmax(min(300px,100%),1fr))] gap-4'
 </script>

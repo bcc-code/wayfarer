@@ -11776,12 +11776,8 @@ input GrantQuizSessionAccessInput {
     allProjectUsers: Boolean
 }
 `, BuiltIn: false},
-	{Name: "../../../../gql/quiz_results.graphqls", Input: `# Aggregated quiz results for the admin panel.
-#
-# Scope is the whole quiz: every completed submission across every session is
-# pooled. A user who took the quiz in two sessions therefore counts twice in
-# submissionCount but once in participantCount — showing both keeps that visible
-# rather than hidden.
+	{Name: "../../../../gql/quiz_results.graphqls", Input: `# Aggregated quiz results for the admin panel. Scope is the whole quiz: every
+# completed submission across every session is pooled.
 
 # ==================== Result Types ====================
 
@@ -11797,8 +11793,7 @@ type QuizResults {
     """
     participantCount: Int!
     """
-    Distinct sessions those submissions belong to. Submissions created outside a
-    session (M2M imports) are counted in submissionCount but not here.
+    Submissions created outside a session (M2M imports) are not counted here.
     """
     sessionCount: Int!
 
@@ -11810,15 +11805,13 @@ type QuizResults {
 }
 
 """
-Per-question aggregates. One implementation per question type, because the
-question types have genuinely different shapes of answer.
+Per-question aggregates, one implementation per question type.
 """
 interface QuizQuestionResults {
     question: QuizQuestion!
     """
-    Submissions that answered this question. Every percentage on the concrete
-    types is a share of this, never of the quiz-wide submission count — a
-    question people skipped must not read as unpopular answers.
+    Submissions that answered this question. Every percentage below is a share
+    of this, never of the quiz-wide submission count.
     """
     responseCount: Int!
 }
@@ -11841,8 +11834,7 @@ type PredefinedOptionResult {
 }
 
 """
-NUMBER questions store no correct answer, so results describe the distribution
-rather than correctness.
+NUMBER stores no correct answer, so results describe the distribution.
 """
 type NumberQuestionResults implements QuizQuestionResults {
     question: QuizQuestion!
@@ -11862,9 +11854,8 @@ type NumberBucket {
 }
 
 """
-FREE_TEXT questions are not graded. Answers are grouped by a normalised form
-(trimmed, inner whitespace collapsed, case-folded) and the most common original
-spelling is shown.
+Not graded. Grouped by a normalised form (trimmed, whitespace collapsed,
+case-folded), labelled with the most common original spelling.
 """
 type FreeTextQuestionResults implements QuizQuestionResults {
     question: QuizQuestion!
@@ -11887,8 +11878,8 @@ type FreeTextGroup {
 }
 
 """
-ORDERING questions are graded all-or-nothing, so per-position accuracy is what
-shows where people actually went wrong.
+Graded all-or-nothing, so per-position accuracy is what shows where people
+went wrong.
 """
 type OrderingQuestionResults implements QuizQuestionResults {
     question: QuizQuestion!
@@ -11905,8 +11896,8 @@ type OrderingItemResult {
 }
 
 """
-JSON questions hold arbitrary structured data that cannot be summarised
-automatically. Kept in the list so question numbering stays intact.
+Arbitrary structured data, so only a count. Kept in the list so question
+numbering stays intact.
 """
 type JsonQuestionResults implements QuizQuestionResults {
     question: QuizQuestion!
