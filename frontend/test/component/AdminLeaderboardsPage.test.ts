@@ -4,7 +4,10 @@ import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { ref } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import LeaderboardsPage from '../../layers/admin/app/pages/admin/projects/[projectId]/leaderboards/index.vue'
-import { LeaderboardEntityType } from '../../app/api/generated'
+import {
+  LeaderboardEntityType,
+  LeaderboardLimitMode,
+} from '../../app/api/generated'
 
 const { updateConfig } = vi.hoisted(() => ({
   updateConfig: vi.fn().mockResolvedValue({}),
@@ -15,15 +18,17 @@ const configs = [
     name: 'Top five',
     entityType: LeaderboardEntityType.Persons,
     maxEntries: 5,
+    limitMode: LeaderboardLimitMode.Manual,
     sortOrder: 0,
     isActive: true,
     filter: null,
   },
   {
     id: 'LC2',
-    name: 'All teams',
-    entityType: LeaderboardEntityType.Teams,
+    name: 'Automatic local',
+    entityType: LeaderboardEntityType.Persons,
     maxEntries: null,
+    limitMode: LeaderboardLimitMode.ChurchSize,
     sortOrder: 1,
     isActive: true,
     filter: null,
@@ -47,16 +52,25 @@ describe('admin leaderboards page', () => {
   it('preserves configured and unset entry limits when reordering', async () => {
     const wrapper = await mountSuspended(LeaderboardsPage)
     expect(wrapper.text()).toContain('Topp 5')
+    expect(wrapper.text()).toContain('Automatisk etter menighetsstørrelse')
     const draggable = wrapper.findComponent(VueDraggable)
     await draggable.vm.$emit('update:modelValue', [...configs].reverse())
     await draggable.vm.$emit('end')
     expect(updateConfig).toHaveBeenCalledWith({
       id: 'LC1',
-      input: expect.objectContaining({ maxEntries: 5, sortOrder: 1 }),
+      input: expect.objectContaining({
+        maxEntries: 5,
+        limitMode: LeaderboardLimitMode.Manual,
+        sortOrder: 1,
+      }),
     })
     expect(updateConfig).toHaveBeenCalledWith({
       id: 'LC2',
-      input: expect.objectContaining({ maxEntries: null, sortOrder: 0 }),
+      input: expect.objectContaining({
+        maxEntries: null,
+        limitMode: LeaderboardLimitMode.ChurchSize,
+        sortOrder: 0,
+      }),
     })
   })
 })

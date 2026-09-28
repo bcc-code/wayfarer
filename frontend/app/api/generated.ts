@@ -496,6 +496,7 @@ export type CreateLeaderboardConfigInput = {
   eventId?: InputMaybe<Scalars['ID']['input']>;
   filter?: InputMaybe<LeaderboardFilter>;
   isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  limitMode?: InputMaybe<LeaderboardLimitMode>;
   maxEntries?: InputMaybe<Scalars['Int']['input']>;
   name: Scalars['String']['input'];
   projectId: Scalars['ID']['input'];
@@ -973,9 +974,11 @@ export type LeaderboardConfig = {
   isActive: Scalars['Boolean']['output'];
   /**
    * The finished leaderboard, capped before pagination. With no page size, returns
-   * the configured limit, or 100 entries when maxEntries is null.
+   * the automatic church-size limit, the manual maxEntries limit, or 100 entries
+   * when the manual limit is null.
    */
   leaderboard: LeaderboardConnection;
+  limitMode: LeaderboardLimitMode;
   maxEntries?: Maybe<Scalars['Int']['output']>;
   name: Scalars['String']['output'];
   project: Project;
@@ -1091,6 +1094,12 @@ export type LeaderboardFilterView = {
   superTeamId?: Maybe<Scalars['ID']['output']>;
   teamId?: Maybe<Scalars['ID']['output']>;
 };
+
+export enum LeaderboardLimitMode {
+  /** Top N filtered church participants. Requires PERSONS and churchId. */
+  ChurchSize = 'CHURCH_SIZE',
+  Manual = 'MANUAL'
+}
 
 export type MarkdownText = {
   __typename?: 'MarkdownText';
@@ -3269,6 +3278,7 @@ export type UpdateLeaderboardConfigInput = {
   entityType: LeaderboardEntityType;
   filter?: InputMaybe<LeaderboardFilter>;
   isActive: Scalars['Boolean']['input'];
+  limitMode?: InputMaybe<LeaderboardLimitMode>;
   maxEntries?: InputMaybe<Scalars['Int']['input']>;
   name: Scalars['String']['input'];
   sortOrder: Scalars['Int']['input'];
@@ -3581,7 +3591,7 @@ export type LeaderboardEntryFieldsFragment = { __typename?: 'LeaderboardEntry', 
 
 export type LeaderboardEntryWithDescriptionFieldsFragment = { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> };
 
-export type LeaderboardConfigFieldsFragment = { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null };
+export type LeaderboardConfigFieldsFragment = { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, limitMode: LeaderboardLimitMode, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null };
 
 export type PredefinedAnswerFieldsFragment = { __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> };
 
@@ -3889,7 +3899,7 @@ export type UpdateLeaderboardConfigMutationVariables = Exact<{
 }>;
 
 
-export type UpdateLeaderboardConfigMutation = { __typename?: 'Mutation', updateLeaderboardConfig: { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null } };
+export type UpdateLeaderboardConfigMutation = { __typename?: 'Mutation', updateLeaderboardConfig: { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, limitMode: LeaderboardLimitMode, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null } };
 
 export type DeleteLeaderboardConfigMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -4800,14 +4810,14 @@ export type AdminProjectLeaderboardPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminProjectLeaderboardPageQuery = { __typename?: 'Query', leaderboardConfig: { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null } };
+export type AdminProjectLeaderboardPageQuery = { __typename?: 'Query', leaderboardConfig: { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, limitMode: LeaderboardLimitMode, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null } };
 
 export type AdminProjectLeaderboardsQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
 }>;
 
 
-export type AdminProjectLeaderboardsQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, leaderboards: Array<{ __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null }> } };
+export type AdminProjectLeaderboardsQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, leaderboards: Array<{ __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, limitMode: LeaderboardLimitMode, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null }> } };
 
 export type AdminScoresPageQueryVariables = Exact<{
   filter?: InputMaybe<ScoreJournalFilter>;
@@ -5130,6 +5140,7 @@ export const LeaderboardConfigFieldsFragmentDoc = gql`
   id
   name
   entityType
+  limitMode
   maxEntries
   sortOrder
   isActive

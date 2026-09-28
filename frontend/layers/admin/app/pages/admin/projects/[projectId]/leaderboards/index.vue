@@ -80,6 +80,7 @@ async function handleReorder() {
           entityType: config.entityType,
           filter: leaderboardFilterViewToInput(config.filter),
           maxEntries: config.maxEntries ?? null,
+          limitMode: config.limitMode,
           sortOrder: index,
           isActive: config.isActive,
         },
@@ -151,7 +152,10 @@ async function handleReorder() {
               <div class="font-medium">{{ config.name }}</div>
               <div class="text-dimmed flex flex-wrap gap-x-2 text-sm">
                 <span>{{ entityTypeLabels[config.entityType] }}</span>
-                <span v-if="config.maxEntries"
+                <span v-if="config.limitMode === 'CHURCH_SIZE'"
+                  >· Automatisk etter menighetsstørrelse</span
+                >
+                <span v-else-if="config.maxEntries"
                   >· Topp {{ config.maxEntries }}</span
                 >
                 <span v-for="part in describeFilter(config.filter)" :key="part">

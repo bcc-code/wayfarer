@@ -52,6 +52,7 @@ async function handleSubmit(formData: LeaderboardConfigFormData) {
       entityType: formData.entityType,
       filter: formData.filter,
       maxEntries: formData.maxEntries,
+      limitMode: formData.limitMode,
       sortOrder: formData.sortOrder,
       isActive: formData.isActive,
     },
