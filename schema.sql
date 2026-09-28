@@ -291,6 +291,7 @@ CREATE TABLE leaderboard_configs (
     -- grow a field without a migration.
     filter JSONB,
     max_entries INT CHECK (max_entries > 0),
+    limit_mode TEXT NOT NULL DEFAULT 'MANUAL' CHECK (limit_mode IN ('MANUAL', 'CHURCH_SIZE')),
     sort_order INT NOT NULL DEFAULT 0,
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
