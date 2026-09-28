@@ -4,11 +4,9 @@ definePageMeta({
   middleware: [],
 })
 
-const wayfarerToken = useLocalStorage<string>('token', () => null)
-
 onMounted(() => {
-  // Clear the Wayfarer token after Auth0 logout
-  wayfarerToken.value = null
+  // Clear the Wayfarer session after Auth0 logout
+  clearSessionTokens()
   // Redirect to home (will trigger login)
   navigateTo('/', { replace: true })
 })

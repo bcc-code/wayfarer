@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bcc-media/wayfarer/internal/authtoken"
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -405,4 +406,46 @@ func TestValidateToken(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "US01ARZ3NDEKTSV4RRFFQ69G5FAV", claims.UserID)
 	})
+}
+
+func TestJWTAuth_SessionTokenSetsSessionID(t *testing.T) {
+	cfg := testJWTConfig
+	cfg.AccessTokenTTL = time.Hour
+	token, err := authtoken.Sign(cfg, authtoken.NewClaims(cfg, "USER123", "AS123", []string{"user"}, time.Now()))
+	require.NoError(t, err)
+
+	router := gin.New()
+	router.GET("/protected", JWTAuth(cfg), func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"user_id":    c.GetString("user_id"),
+			"session_id": c.GetString("session_id"),
+		})
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), `"session_id":"AS123"`)
+	assert.Contains(t, w.Body.String(), `"user_id":"USER123"`)
+}
+
+func TestJWTAuth_EmergencyRevokedUser(t *testing.T) {
+	cfg := testJWTConfig
+	cfg.RevokedUsers = map[string]time.Time{"USER123": {}}
+
+	router := gin.New()
+	router.GET("/protected", JWTAuth(cfg), func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+
+	for userID, want := range map[string]int{"USER123": http.StatusUnauthorized, "USER456": http.StatusOK} {
+		req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+		req.Header.Set("Authorization", "Bearer "+generateTestToken(userID, "user", time.Hour))
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+		assert.Equal(t, want, w.Code, userID)
+	}
 }

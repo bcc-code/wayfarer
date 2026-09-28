@@ -98,6 +98,8 @@ export default defineNuxtConfig({
     public: {
       apiUrl: 'http://localhost:8080/graphql',
       tokenUrl: 'http://localhost:8080/token',
+      // Base of the /auth/* session endpoints. Empty = derived from apiUrl.
+      authUrl: '',
       auth0Domain: 'login.bcc.no',
       auth0ClientId: '',
       auth0Audience: '',

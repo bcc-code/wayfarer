@@ -39,6 +39,24 @@ type MaintenanceHandler struct {
 	ContentAchievementService *services.ContentAchievementService
 	SSFClient                 *ssf.Client
 	MemberImportService       *services.MemberImportService
+	AuthSessionService        *services.AuthSessionService
+}
+
+// authSessionRetention is how long expired or revoked auth sessions are kept
+// before cleanup, for auditing.
+const authSessionRetention = 30 * 24 * time.Hour
+
+// CleanupAuthSessions deletes auth sessions that expired or were revoked
+// more than authSessionRetention ago.
+func (h *MaintenanceHandler) CleanupAuthSessions(c *gin.Context) {
+	deleted, err := h.AuthSessionService.DeleteStaleSessions(c.Request.Context(), authSessionRetention)
+	if err != nil {
+		slog.Error("maintenance: failed to clean up auth sessions", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to clean up auth sessions"})
+		return
+	}
+	slog.Info("maintenance: cleaned up auth sessions", "deleted", deleted)
+	c.JSON(http.StatusOK, gin.H{"deleted": deleted})
 }
 
 // SyncUserDataResponse contains the results of a user data sync operation

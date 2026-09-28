@@ -12,13 +12,22 @@
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/token` | GET | OAuth callback - exchanges external JWT for Wayfarer JWT |
+| `/auth/exchange` | POST | Body `{"token"}` (login.bcc.no or Brunstad TV JWT). Returns a Wayfarer token pair |
+| `/auth/refresh` | POST | Body `{"refresh_token"}`. Rotates the refresh token and returns a new pair |
+| `/auth/logout` | POST | Body `{"refresh_token"}`. Revokes the session (204) |
+| `/token` | GET | **Deprecated.** Query param `token`; returns a legacy 24h JWT |
 
-Query param: `token` (JWT from Brunstad TV or Auth0)
+Token pair response: `{access_token, access_expires_at, refresh_token, refresh_expires_at}`.
+`/auth/refresh` errors carry a `code`: `token_rotated` (409, reload stored tokens), `invalid_refresh_token` / `revoked` (401, sign in again).
+See `notes/14-auth-sessions.md`.
 
 **Env vars:**
 - `JWT_SECRET` - HMAC secret for signing Wayfarer tokens
+- `JWT_SECRET_PREVIOUS` - Previous secret accepted during rotation
 - `JWT_ISSUER` - JWT issuer claim
+- `JWT_ACCESS_TOKEN_TTL`, `JWT_REFRESH_TOKEN_TTL` - Token lifetimes (7d / ~6 months)
+- `AUTH0_AUDIENCE` - Expected aud of login.bcc.no tokens
+- `AUTH_REVOKED_USERS` - Emergency revocation list
 - `BRUNSTAD_TV_JWKS_URL` - Brunstad TV JWKS endpoint
 - `BRUNSTAD_TV_JWT_ISSUER` - Brunstad TV expected issuer
 - `AUTH0_JWKS_URL` - Auth0 JWKS endpoint

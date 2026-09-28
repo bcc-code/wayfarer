@@ -34,8 +34,13 @@ type Config struct {
 - `DB_CONN_MAX_IDLE_TIME` - Connection max idle time (default: 5m)
 
 ### JWT Configuration
-- `JWT_SECRET` - JWT signing secret (empty for now, not validated)
+- `JWT_SECRET` - HMAC secret for signing and verifying Wayfarer access tokens
+- `JWT_SECRET_PREVIOUS` - Previous secret, still accepted during rotation (selected by the token's `kid`)
 - `JWT_ISSUER` - JWT issuer claim (default: "wayfarer")
+- `JWT_ACCESS_TOKEN_TTL` - Access token lifetime (default: 168h)
+- `JWT_REFRESH_TOKEN_TTL` - Sliding refresh token lifetime (default: 4392h, about 6 months)
+- `AUTH0_AUDIENCE` - Expected `aud` of login.bcc.no tokens (unchecked when empty)
+- `AUTH_REVOKED_USERS` - Emergency revocation list, normally empty. See `notes/14-auth-sessions.md`
 
 ### Log Configuration
 - `LOG_LEVEL` - Log level: debug, info, warn, error (default: info)

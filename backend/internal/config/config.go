@@ -86,8 +86,14 @@ type DatabaseConfig struct {
 
 // JWTConfig holds JWT authentication configuration
 type JWTConfig struct {
-	Secret            string
+	Secret string
+	// PreviousSecret is still accepted for verification (selected by the
+	// token's kid) so JWT_SECRET can be rotated without logging users out.
+	PreviousSecret    string
 	Issuer            string
+	AccessTokenTTL    time.Duration // Lifetime of Wayfarer access tokens
+	RefreshTokenTTL   time.Duration // Sliding lifetime of refresh tokens
+	Auth0Audience     string        // Expected aud of login.bcc.no tokens (empty = not checked)
 	BrunstadTVJWKSURL string
 	BrunstadTVIssuer  string
 	Auth0JWKSURL      string
@@ -98,6 +104,21 @@ type JWTConfig struct {
 	// tolerates a failed boot-time fetch of Auth0JWKSURL — so Auth0JWKSURL
 	// can point at the server itself. Load-test only; never set in production.
 	Auth0LoadtestKey string
+	// RevokedUsers is the emergency kill switch (AUTH_REVOKED_USERS). Maps a
+	// user ID to a cutoff: tokens issued before it are rejected. A zero
+	// cutoff rejects every token for that user. Normally empty.
+	RevokedUsers map[string]time.Time
+}
+
+// IsRevoked reports whether a token for userID issued at issuedAt is blocked
+// by the emergency revocation list. It is on the per-request path, so it is
+// a single map lookup.
+func (c JWTConfig) IsRevoked(userID string, issuedAt time.Time) bool {
+	cutoff, ok := c.RevokedUsers[userID]
+	if !ok {
+		return false
+	}
+	return cutoff.IsZero() || issuedAt.Before(cutoff)
 }
 
 // APIKeyConfig holds API key authentication configuration for external systems
@@ -239,7 +260,12 @@ func Load() (*Config, error) {
 		},
 		JWT: JWTConfig{
 			Secret:            getEnv("JWT_SECRET", ""),
+			PreviousSecret:    getEnv("JWT_SECRET_PREVIOUS", ""),
 			Issuer:            getEnv("JWT_ISSUER", "wayfarer"),
+			AccessTokenTTL:    getEnvAsDuration("JWT_ACCESS_TOKEN_TTL", 7*24*time.Hour),
+			RefreshTokenTTL:   getEnvAsDuration("JWT_REFRESH_TOKEN_TTL", 183*24*time.Hour),
+			Auth0Audience:     getEnv("AUTH0_AUDIENCE", ""),
+			RevokedUsers:      parseRevokedUsers(getEnv("AUTH_REVOKED_USERS", "")),
 			BrunstadTVJWKSURL: getEnv("BRUNSTAD_TV_JWKS_URL", "https://api.brunstad.tv/.well-known/jwks.json"),
 			BrunstadTVIssuer:  getEnv("BRUNSTAD_TV_JWT_ISSUER", "https://api.brunstad.tv/"),
 			Auth0JWKSURL:      getEnv("AUTH0_JWKS_URL", "https://login.bcc.no/.well-known/jwks.json"),
@@ -422,6 +448,35 @@ func parseAPIKeys(value string) map[string]string {
 	}
 
 	return keys
+}
+
+// parseRevokedUsers parses the emergency revocation list.
+// Format: "US01...:2026-10-01T12:00:00Z,US01..." (the cutoff is optional).
+// An entry whose cutoff can't be parsed blocks the user entirely, so a typo
+// never silently lets a revoked user through.
+func parseRevokedUsers(value string) map[string]time.Time {
+	revoked := make(map[string]time.Time)
+	for _, entry := range strings.Split(value, ",") {
+		entry = strings.TrimSpace(entry)
+		if entry == "" {
+			continue
+		}
+		userID, cutoffStr, hasCutoff := strings.Cut(entry, ":")
+		userID = strings.TrimSpace(userID)
+		if userID == "" {
+			continue
+		}
+		var cutoff time.Time
+		if hasCutoff {
+			if parsed, err := time.Parse(time.RFC3339, strings.TrimSpace(cutoffStr)); err == nil {
+				cutoff = parsed
+			} else {
+				fmt.Fprintf(os.Stderr, "config: invalid cutoff in AUTH_REVOKED_USERS for %s, blocking all tokens: %v\n", userID, err)
+			}
+		}
+		revoked[userID] = cutoff
+	}
+	return revoked
 }
 
 // parseLanguages parses comma-separated language codes

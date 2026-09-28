@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -66,6 +67,23 @@ func NewRoleService(queries RoleQuerier, c *cache.CacheWithRegistry) *RoleServic
 // LoadUserRoles loads all roles for a user
 func (s *RoleService) LoadUserRoles(ctx context.Context, userID string) ([]*sqlc.UserRole, error) {
 	return s.queries.GetUserRoles(ctx, userID)
+}
+
+// TokenRoleNames returns the lower-cased role names embedded in a user's
+// access token, defaulting to "user" when the user has no roles.
+func (s *RoleService) TokenRoleNames(ctx context.Context, userID string) ([]string, error) {
+	userRoles, err := s.LoadUserRoles(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user roles: %w", err)
+	}
+	if len(userRoles) == 0 {
+		return []string{strings.ToLower(string(RoleUser))}, nil
+	}
+	roles := make([]string, 0, len(userRoles))
+	for _, role := range userRoles {
+		roles = append(roles, strings.ToLower(role.Role))
+	}
+	return roles, nil
 }
 
 // HasRole checks if a user has a specific global role

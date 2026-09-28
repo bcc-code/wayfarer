@@ -276,6 +276,10 @@ func main() {
 
 	// Initialize RoleService
 	roleService := services.NewRoleService(db.Queries, cacheInstance)
+	authSessionService := services.NewAuthSessionService(db.Queries, roleService, cfg.JWT)
+	if n := len(cfg.JWT.RevokedUsers); n > 0 {
+		slog.Warn("Emergency token revocation list is active", "users", n)
+	}
 	slog.Info("RoleService initialized with caching")
 
 	// Initialize LeaderboardService
@@ -594,8 +598,15 @@ func main() {
 		ContentAchievementService: contentAchievementService,
 		ChurchResolver:            churchResolver,
 		UserSyncService:           userSyncService,
+		SessionService:            authSessionService,
 	}
 	router.GET("/token", authHandler.Callback)
+	authGroup := router.Group("/auth", middleware.MaxBodyBytes(handlers.AuthRequestBodyLimit))
+	{
+		authGroup.POST("/exchange", authHandler.Exchange)
+		authGroup.POST("/refresh", authHandler.Refresh)
+		authGroup.POST("/logout", authHandler.Logout)
+	}
 
 	// Load-test only: serve the simulated-Auth0 JWKS derived from
 	// AUTH0_LOADTEST_PRIVATE_KEY, so AUTH0_JWKS_URL can point back at this
@@ -656,16 +667,19 @@ func main() {
 		ContentAchievementService: contentAchievementService,
 		SSFClient:                 ssfClient,
 		MemberImportService:       memberImportService,
+		AuthSessionService:        authSessionService,
 	}
 	router.POST("/api/maintenance/sync-user-data", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.SyncUserData)
 	router.POST("/api/maintenance/sync-user/:user_id", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.SyncSingleUser)
 	router.POST("/api/maintenance/backfill-ssf-events", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.BackfillSSFEvents)
 	router.POST("/api/maintenance/import-new-members", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.ImportNewMembers)
+	router.POST("/api/maintenance/cleanup-auth-sessions", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.CleanupAuthSessions)
 	slog.Info("Maintenance endpoints registered",
 		"batch_sync", "POST /api/maintenance/sync-user-data",
 		"single_sync", "POST /api/maintenance/sync-user/:user_id",
 		"backfill_ssf", "POST /api/maintenance/backfill-ssf-events",
 		"import_new_members", "POST /api/maintenance/import-new-members",
+		"cleanup_auth_sessions", "POST /api/maintenance/cleanup-auth-sessions",
 	)
 
 	// Quiz scheduler handler for timed session state transitions
@@ -925,6 +939,11 @@ func graphqlHandler(h *handler.Server, languageService *services.LanguageService
 		if roles, exists := c.Get("user_roles"); exists {
 			userRoles = roles.([]string)
 			ctx = context.WithValue(ctx, middleware.UserRolesKey, roles)
+		}
+
+		// Transfer session_id if present (empty for legacy and m2m tokens)
+		if sid, exists := c.Get("session_id"); exists {
+			ctx = context.WithValue(ctx, middleware.SessionIDKey, sid)
 		}
 
 		// Transfer language if present

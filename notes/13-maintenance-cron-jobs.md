@@ -1,11 +1,12 @@
 # Maintenance Cron Jobs
 
-What to schedule, and where. Both need `Authorization: Bearer <API key>`.
+What to schedule, and where. All need `Authorization: Bearer <API key>`.
 
 | Endpoint | What it does |
 |---|---|
 | `POST /api/maintenance/sync-user-data` | Refreshes existing users' data from Members. No `?limit=` = whole table. |
 | `POST /api/maintenance/import-new-members` | Creates users for newly-eligible members (e.g. just turned 12). |
+| `POST /api/maintenance/cleanup-auth-sessions` | Deletes auth sessions expired or revoked more than 30 days ago. |
 
 ## Where they are scheduled
 
@@ -17,6 +18,7 @@ On the prod box, via `ansible/roles/jobs` (systemd timers, schedules in
 | `export-translations` | hourly at :00 | `POST /api/translations/export/all` (`X-Export-Key: $TRANSLATIONS_EXPORT_KEY`) |
 | `sync-ssf` | daily 05:00 | `POST /ssf/sync/hidden-treasures-podcast` (`X-Sync-Key: $SSF_SYNC_KEY`) |
 | `sync-members` | Tue 02:00 (Monday night) | `sync-user-data`, then `import-new-members` (Bearer key from the `cron:` entry in `EXTERNAL_API_KEYS`) |
+| `cleanup-auth-sessions` | Sun 03:00 | `cleanup-auth-sessions` (same Bearer key) |
 
 `export-translations` and `sync-members` report each run to Gatus
 (`interactcron_translations` / `interactcron_members`; per-job tokens in

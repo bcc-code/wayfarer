@@ -96,3 +96,6 @@ wayfarer_jobs:
   - name: sync-members
     on_calendar: "Tue *-*-* 02:00:00 Europe/Oslo"
     gatus_endpoint: interactcron_members
+  # Delete auth sessions expired or revoked more than 30 days ago.
+  - name: cleanup-auth-sessions
+    on_calendar: "Sun *-*-* 03:00:00 Europe/Oslo"

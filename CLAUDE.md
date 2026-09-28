@@ -76,6 +76,7 @@ All primary keys use prefixed ULIDs for better readability and debugging:
 | `SA`   | Score Adjustments            | `ulid.NewScoreAdjustmentID()` |
 | `PS`   | Push Subscriptions           | —                             |
 | `PN`   | Push Notification Log        | —                             |
+| `AS`   | Auth Sessions                | `ulid.NewAuthSessionID()`     |
 
 ### Core Entities
 
