@@ -40,6 +40,19 @@ type AchievementTranslation struct {
 	NotificationText     *string            `json:"notification_text"`
 }
 
+type AuthSession struct {
+	ID                   string             `json:"id"`
+	UserID               string             `json:"user_id"`
+	RefreshTokenHash     []byte             `json:"refresh_token_hash"`
+	PrevRefreshTokenHash []byte             `json:"prev_refresh_token_hash"`
+	RotatedAt            pgtype.Timestamptz `json:"rotated_at"`
+	ExpiresAt            pgtype.Timestamptz `json:"expires_at"`
+	LastUsedAt           pgtype.Timestamptz `json:"last_used_at"`
+	RevokedAt            pgtype.Timestamptz `json:"revoked_at"`
+	UserAgent            *string            `json:"user_agent"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+}
+
 type BulkJob struct {
 	ID             string             `json:"id"`
 	OperationType  string             `json:"operation_type"`

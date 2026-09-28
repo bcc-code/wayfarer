@@ -45,6 +45,7 @@ const (
 	PrefixQuizSessionAccess     = "QX" // Quiz Session Access
 	PrefixBulkJob               = "BJ" // Bulk Jobs
 	PrefixLeaderboardConfig     = "LC" // Leaderboard Configs
+	PrefixAuthSession           = "AS" // Auth Sessions (Wayfarer refresh-token sessions)
 )
 
 // Total ID length: 2 (prefix) + 26 (ULID) = 28 characters
@@ -437,4 +438,14 @@ func IsBulkJobID(id string) bool {
 // IsLeaderboardConfigID validates a leaderboard config ID
 func IsLeaderboardConfigID(id string) bool {
 	return IsValidID(id, PrefixLeaderboardConfig)
+}
+
+// NewAuthSessionID generates a new ID for an auth session (AS prefix)
+func NewAuthSessionID() string {
+	return newID(PrefixAuthSession)
+}
+
+// IsAuthSessionID validates an auth session ID
+func IsAuthSessionID(id string) bool {
+	return IsValidID(id, PrefixAuthSession)
 }

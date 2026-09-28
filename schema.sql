@@ -74,6 +74,25 @@ CREATE TABLE user_roles (
     UNIQUE (user_id, role, church_id, project_id, team_id)
 );
 
+-- Wayfarer login sessions (one per signed-in device). Only the SHA-256 hash
+-- of the refresh token is stored; it rotates on every refresh.
+CREATE TABLE auth_sessions (
+    id CHAR(28) PRIMARY KEY CHECK (id ~ '^AS[0-9A-Z]{26}$'),
+    user_id CHAR(28) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    refresh_token_hash BYTEA NOT NULL UNIQUE,
+    prev_refresh_token_hash BYTEA,        -- for grace window / reuse detection
+    rotated_at TIMESTAMPTZ,
+    expires_at TIMESTAMPTZ NOT NULL,      -- sliding: now() + refresh TTL on each refresh
+    last_used_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    revoked_at TIMESTAMPTZ,
+    user_agent TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    INDEX idx_auth_sessions_user (user_id),
+    INDEX idx_auth_sessions_prev_hash (prev_refresh_token_hash),
+    INDEX idx_auth_sessions_expires (expires_at)
+);
+
 CREATE TABLE projects (
     id CHAR(28) PRIMARY KEY CHECK (id ~ '^PR[0-9A-Z]{26}$'),
     name VARCHAR(255) NOT NULL,

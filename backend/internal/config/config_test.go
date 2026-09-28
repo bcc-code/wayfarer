@@ -123,3 +123,40 @@ func TestGetEnvAsDuration(t *testing.T) {
 		})
 	}
 }
+
+func TestParseRevokedUsers(t *testing.T) {
+	cutoff := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
+
+	t.Run("empty", func(t *testing.T) {
+		assert.Empty(t, parseRevokedUsers(""))
+	})
+
+	t.Run("with and without cutoff", func(t *testing.T) {
+		got := parseRevokedUsers(" USAAA:2026-10-01T12:00:00Z , USBBB ,,")
+		require.Len(t, got, 2)
+		assert.True(t, got["USAAA"].Equal(cutoff))
+		assert.True(t, got["USBBB"].IsZero())
+	})
+
+	t.Run("invalid cutoff blocks entirely", func(t *testing.T) {
+		got := parseRevokedUsers("USAAA:not-a-date")
+		require.Contains(t, got, "USAAA")
+		assert.True(t, got["USAAA"].IsZero())
+	})
+}
+
+func TestJWTConfig_IsRevoked(t *testing.T) {
+	cutoff := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
+	cfg := JWTConfig{RevokedUsers: map[string]time.Time{
+		"USCUTOFF": cutoff,
+		"USBLOCK":  {},
+	}}
+
+	assert.False(t, cfg.IsRevoked("USOTHER", cutoff.Add(-time.Hour)), "unlisted user")
+	assert.True(t, cfg.IsRevoked("USCUTOFF", cutoff.Add(-time.Second)), "issued before cutoff")
+	assert.False(t, cfg.IsRevoked("USCUTOFF", cutoff), "issued at cutoff")
+	assert.False(t, cfg.IsRevoked("USCUTOFF", cutoff.Add(time.Hour)), "issued after cutoff")
+	assert.True(t, cfg.IsRevoked("USBLOCK", time.Now()), "zero cutoff blocks everything")
+
+	assert.False(t, JWTConfig{}.IsRevoked("USANY", time.Now()), "nil map")
+}

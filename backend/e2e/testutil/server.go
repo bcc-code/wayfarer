@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
@@ -12,6 +13,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/graph/api"
 	"github.com/bcc-media/wayfarer/internal/graph/directives"
+	"github.com/bcc-media/wayfarer/internal/handlers"
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/plugins"
@@ -31,6 +33,16 @@ type TestServerConfig struct {
 	LanguageService    *services.LanguageService
 	BulkService        *bulk.Service
 	Loaders            *loaders.Loaders
+}
+
+// TestJWTConfig is the JWT configuration used by the test server.
+func TestJWTConfig() config.JWTConfig {
+	return config.JWTConfig{
+		Secret:          TestJWTSecret,
+		Issuer:          TestJWTIssuer,
+		AccessTokenTTL:  7 * 24 * time.Hour,
+		RefreshTokenTTL: 183 * 24 * time.Hour,
+	}
 }
 
 // NewTestCache creates a cache instance for testing
@@ -72,10 +84,7 @@ func NewTestRouter(cfg TestServerConfig) *gin.Engine {
 	gqlHandler.AddTransport(transport.POST{})
 
 	// JWT config for testing
-	jwtConfig := config.JWTConfig{
-		Secret: TestJWTSecret,
-		Issuer: TestJWTIssuer,
-	}
+	jwtConfig := TestJWTConfig()
 
 	// GraphQL endpoint with language and JWT middleware. In production a
 	// background worker (services.LeaderboardApplyWorker) drains the score
@@ -88,6 +97,15 @@ func NewTestRouter(cfg TestServerConfig) *gin.Engine {
 		drainLeaderboardApplyQueue(cfg.DB),
 		graphqlHandlerWithLanguage(gqlHandler, cfg.LanguageService),
 	)
+
+	// Session endpoints. /auth/exchange needs a real identity provider, so
+	// tests open sessions through AuthSessionService.StartSession directly.
+	authHandler := &handlers.AuthHandler{
+		DB:             cfg.DB,
+		SessionService: services.NewAuthSessionService(cfg.DB.Queries, cfg.RoleService, jwtConfig),
+	}
+	router.POST("/auth/refresh", authHandler.Refresh)
+	router.POST("/auth/logout", authHandler.Logout)
 
 	// Register plugins
 	pluginDeps := plugins.Dependencies{
