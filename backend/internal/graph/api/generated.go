@@ -1434,7 +1434,7 @@ type ContentAchievementResolver interface {
 	Items(ctx context.Context, obj *model.ContentAchievement) ([]model.ContentItem, error)
 	UserCompletedItems(ctx context.Context, obj *model.ContentAchievement) ([]model.ContentItem, error)
 	NextItem(ctx context.Context, obj *model.ContentAchievement) (*model.ContentItem, error)
-
+	TotalItems(ctx context.Context, obj *model.ContentAchievement) (int, error)
 	CompletedItemCount(ctx context.Context, obj *model.ContentAchievement) (int, error)
 	TranslationStatus(ctx context.Context, obj *model.ContentAchievement) ([]model.TranslationFieldStatus, error)
 }
@@ -1902,7 +1902,7 @@ type StreakAchievementResolver interface {
 	Items(ctx context.Context, obj *model.StreakAchievement) ([]model.ContentItem, error)
 	UserCompletedItems(ctx context.Context, obj *model.StreakAchievement) ([]model.ContentItem, error)
 	NextItem(ctx context.Context, obj *model.StreakAchievement) (*model.ContentItem, error)
-
+	TotalItems(ctx context.Context, obj *model.StreakAchievement) (int, error)
 	CompletedItemCount(ctx context.Context, obj *model.StreakAchievement) (int, error)
 	TranslationStatus(ctx context.Context, obj *model.StreakAchievement) ([]model.TranslationFieldStatus, error)
 }
@@ -9805,7 +9805,10 @@ type ContentAchievement implements Achievement {
     items: [ContentItem!]! @goField(forceResolver: true)
     userCompletedItems: [ContentItem!]! @goField(forceResolver: true)
     nextItem: ContentItem @goField(forceResolver: true)
-    totalItems: Int!
+    # Number of items currently required by this achievement.
+    totalItems: Int! @goField(forceResolver: true)
+    # Current user's completed items that still belong to this achievement.
+    # Independent of achievedAt: editing items does not revoke an award.
     completedItemCount: Int! @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
@@ -9835,7 +9838,10 @@ type StreakAchievement implements Achievement {
     items: [ContentItem!]! @goField(forceResolver: true)
     userCompletedItems: [ContentItem!]! @goField(forceResolver: true)
     nextItem: ContentItem @goField(forceResolver: true)
-    totalItems: Int!
+    # Number of items currently required by this achievement.
+    totalItems: Int! @goField(forceResolver: true)
+    # Current user's qualifying completions among the current items.
+    # Deadline rules are applied when completion is recorded.
     completedItemCount: Int! @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
@@ -19209,7 +19215,7 @@ func (ec *executionContext) _ContentAchievement_totalItems(ctx context.Context, 
 		field,
 		ec.fieldContext_ContentAchievement_totalItems,
 		func(ctx context.Context) (any, error) {
-			return obj.TotalItems, nil
+			return ec.resolvers.ContentAchievement().TotalItems(ctx, obj)
 		},
 		nil,
 		ec.marshalNInt2int,
@@ -19222,8 +19228,8 @@ func (ec *executionContext) fieldContext_ContentAchievement_totalItems(_ context
 	fc = &graphql.FieldContext{
 		Object:     "ContentAchievement",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
 		},
@@ -51564,7 +51570,7 @@ func (ec *executionContext) _StreakAchievement_totalItems(ctx context.Context, f
 		field,
 		ec.fieldContext_StreakAchievement_totalItems,
 		func(ctx context.Context) (any, error) {
-			return obj.TotalItems, nil
+			return ec.resolvers.StreakAchievement().TotalItems(ctx, obj)
 		},
 		nil,
 		ec.marshalNInt2int,
@@ -51577,8 +51583,8 @@ func (ec *executionContext) fieldContext_StreakAchievement_totalItems(_ context.
 	fc = &graphql.FieldContext{
 		Object:     "StreakAchievement",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
 		},
@@ -64530,10 +64536,41 @@ func (ec *executionContext) _ContentAchievement(ctx context.Context, sel ast.Sel
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "totalItems":
-			out.Values[i] = ec._ContentAchievement_totalItems(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ContentAchievement_totalItems(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "completedItemCount":
 			field := field
 
@@ -76224,10 +76261,41 @@ func (ec *executionContext) _StreakAchievement(ctx context.Context, sel ast.Sele
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "totalItems":
-			out.Values[i] = ec._StreakAchievement_totalItems(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._StreakAchievement_totalItems(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "completedItemCount":
 			field := field
 

@@ -638,11 +638,34 @@ func (c *CacheWithRegistry) InvalidateAchievement(achievementID string) {
 // invalidateAchievementLocal invalidates achievement cache entries on this instance only
 func (c *CacheWithRegistry) invalidateAchievementLocal(achievementID string) {
 	c.Delete(AchievementKey(achievementID))
+	c.Delete(ContentItemsByAchievementKey(achievementID))
+	c.Delete(StreakItemsByAchievementKey(achievementID))
+	c.Delete(ContentItemCountKey(achievementID))
 
 	// All achievement list/filter queries (any filter combination)
 	// These are invalidated globally since filter query cache keys are hashed
 	c.DeletePrefix(PrefixAchievementsFilter)
 	c.DeletePrefix(PrefixAchievementsCount)
+}
+
+// InvalidateUserAchievementProgress refreshes one user's progress and award state
+// on every instance, without evicting their roles or other users' cached data.
+func (c *CacheWithRegistry) InvalidateUserAchievementProgress(userID string) {
+	c.invalidateUserAchievementProgressLocal(userID)
+	c.broadcast(InvalidationMessage{Type: InvalidationTypeUserAchievementProgress, ID: userID})
+}
+
+func (c *CacheWithRegistry) invalidateUserAchievementProgressLocal(userID string) {
+	// Relationship keys are registered under a user tag, not a literal prefix
+	// such as "usercontent:<userID>".
+	for _, key := range c.registry.GetKeys("user:" + userID) {
+		if strings.HasPrefix(key, PrefixUserContentProgress) ||
+			strings.HasPrefix(key, PrefixUserStreakProgress) ||
+			strings.HasPrefix(key, PrefixUserAchievements) {
+			c.Delete(key)
+		}
+	}
+	c.DeletePrefix(GQLResponseUserPrefix(userID))
 }
 
 // InvalidateQuiz invalidates all cache entries related to a quiz and broadcasts to other instances

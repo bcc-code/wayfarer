@@ -223,12 +223,14 @@ WHERE achievement_id = ANY(@achievement_ids::char(28)[])
 GROUP BY achievement_id;
 
 -- name: GetUserProgressCounts :many
--- Get user progress counts per achievement
-SELECT achievement_id, COUNT(*)::int AS progress_count
-FROM user_content_progress
-WHERE user_id = @user_id::char(28)
-  AND achievement_id = ANY(@achievement_ids::char(28)[])
-GROUP BY achievement_id;
+-- Count only completed items that still belong to the achievement.
+SELECT p.achievement_id, COUNT(*)::int AS progress_count
+FROM user_content_progress p
+JOIN content_achievement_items i
+  ON i.achievement_id = p.achievement_id AND i.external_content_id = p.external_content_id
+WHERE p.user_id = @user_id::char(28)
+  AND p.achievement_id = ANY(@achievement_ids::char(28)[])
+GROUP BY p.achievement_id;
 
 -- ==================== Create Operations ====================
 
@@ -677,12 +679,14 @@ WHERE achievement_id = ANY(@achievement_ids::char(28)[])
 GROUP BY achievement_id;
 
 -- name: GetUserStreakProgressCounts :many
--- Get user progress counts per streak achievement
-SELECT achievement_id, COUNT(*)::int AS progress_count
-FROM user_streak_progress
-WHERE user_id = @user_id::char(28)
-  AND achievement_id = ANY(@achievement_ids::char(28)[])
-GROUP BY achievement_id;
+-- Count only completed items that still belong to the streak achievement.
+SELECT p.achievement_id, COUNT(*)::int AS progress_count
+FROM user_streak_progress p
+JOIN streak_achievement_items i
+  ON i.achievement_id = p.achievement_id AND i.external_content_id = p.external_content_id
+WHERE p.user_id = @user_id::char(28)
+  AND p.achievement_id = ANY(@achievement_ids::char(28)[])
+GROUP BY p.achievement_id;
 
 -- name: GetBulkUserStreakProgress :many
 SELECT user_id, achievement_id, external_content_id, completed_at

@@ -139,7 +139,8 @@
   },
   "achievement": {
     "title": "Premiu",
-    "unlocked": "Realizat!"
+    "unlocked": "Realizat!",
+    "progress": "{completed} din {total} finalizate"
   },
   "feedback": {
     "title": "Dă-ne feedback",

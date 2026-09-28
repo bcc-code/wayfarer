@@ -96,7 +96,8 @@
   },
   "achievement": {
     "title": "Prêmio",
-    "unlocked": "Conquistado"
+    "unlocked": "Conquistado",
+    "progress": "{completed} de {total} concluídos"
   },
   "feedback": {
     "title": "Envie-nos comentários",

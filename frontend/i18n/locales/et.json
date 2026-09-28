@@ -139,7 +139,8 @@
   },
   "achievement": {
     "title": "Autasu",
-    "unlocked": "Saavutatud!"
+    "unlocked": "Saavutatud!",
+    "progress": "{completed}/{total} lõpetatud"
   },
   "feedback": {
     "title": "Anna meile tagasisidet",
