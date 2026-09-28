@@ -63,8 +63,8 @@ const accentColor = computed(() => {
         v-if="project.branding.logoImage?.url"
         :src="project.branding.logoImage.url"
         height="32"
-        width="32"
-        class="rounded"
+        class="h-8 w-auto max-w-24 rounded object-contain"
+        alt=""
       />
       <UBadge
         v-if="isWithinRange(new Date(), project.startDate, project.endDate)"

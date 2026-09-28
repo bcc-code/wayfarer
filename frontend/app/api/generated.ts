@@ -4381,7 +4381,7 @@ export type AdminExternalContentEventsQuery = { __typename?: 'Query', adminExter
 export type AdminProjectSwitcherQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminProjectSwitcherQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, startDate: any, endDate: any } }> } };
+export type AdminProjectSwitcherQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', logoImage?: { __typename?: 'Image', url: string } | null } } }> } };
 
 export type AdminUserPickerSearchQueryVariables = Exact<{
   query?: InputMaybe<Scalars['String']['input']>;
@@ -6622,6 +6622,11 @@ export const AdminProjectSwitcherDocument = gql`
         name
         startDate
         endDate
+        branding {
+          logoImage {
+            url
+          }
+        }
       }
     }
   }
