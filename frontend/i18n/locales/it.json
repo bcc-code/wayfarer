@@ -11,7 +11,8 @@
     "standings": "Nessuna classifica ancora",
     "unit": "Ancora nessuna classifica per la tua unità",
     "challenges": "Nessuna sfida ancora",
-    "pointHistory": "Nessun punto ancora"
+    "pointHistory": "Nessun punto ancora",
+    "rules": "Ancora nessuna regola"
   },
   "auth": {
     "loginButton": "Accedi",

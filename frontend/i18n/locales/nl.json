@@ -11,7 +11,8 @@
     "standings": "Nog geen toplijst",
     "unit": "Nog geen toplijst voor je unit",
     "challenges": "Nog geen uitdagingen",
-    "pointHistory": "Nog geen punten"
+    "pointHistory": "Nog geen punten",
+    "rules": "Nog geen regels toegevoegd"
   },
   "auth": {
     "loginButton": "Inloggen",

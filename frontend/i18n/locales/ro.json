@@ -11,7 +11,8 @@
     "standings": "Niciun clasament nu este încă disponibil",
     "unit": "Niciun clasament nu este încă disponibil pentru unitatea ta",
     "challenges": "Nicio provocare nu este încă disponibilă",
-    "pointHistory": "Încă nu ai niciun punct"
+    "pointHistory": "Încă nu ai niciun punct",
+    "rules": "Nicio regulă nu este încă adăugată"
   },
   "auth": {
     "loginButton": "Conectează-te",
