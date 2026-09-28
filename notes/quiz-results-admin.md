@@ -236,21 +236,54 @@ formatting is unit-tested rather than asserted through the DOM.
 
 ### Frontend
 
-- [ ] 8. `pnpm codegen` after the schema lands
-- [ ] 9. `AdminResultBar.vue` — the shared bar row (label, bar, count, %, tick)
-- [ ] 10. Per-type blocks: `AdminQuizResultsPredefined/Number/FreeText/Ordering/Json.vue`
-- [ ] 11. `results.vue` page — summary header, question list, loading/error via
+- [x] 8. `pnpm codegen` after the schema lands
+- [x] 9. `AdminQuizResultBar.vue` — the shared bar row (label, bar, count, %, tick)
+- [x] 10. Per-type blocks: `AdminQuizResultsPredefined/Number/FreeText/Ordering/Json.vue`,
+      dispatched by `AdminQuizResultsQuestion.vue` (which also owns the card
+      header and the copy button)
+- [x] 11. `results.vue` page — summary header, question list, loading/error via
       `AdminQueryState`
-- [ ] 12. `quizResultsExport.ts` — TSV clipboard + CSV builder (pure)
-- [ ] 13. Unit tests for `quizResultsExport.ts`
-- [ ] 14. Component tests for the per-type blocks (incl. zero-response states)
-- [ ] 15. **Resultater** button on the challenge page, beside **Sesjoner**
-- [ ] 16. `pnpm typecheck`, `pnpm lint`, `pnpm test` — all green
+- [x] 12. `quizResultsExport.ts` — TSV clipboard + CSV builder (pure)
+- [x] 13. Unit tests for `quizResultsExport.ts` (37 cases)
+- [x] 14. Component tests for the bar and every per-type block, including the
+      zero-response and nothing-to-copy states (15 cases)
+- [x] 15. **Resultater** button on the challenge page, beside **Sesjoner**
+- [x] 16. `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` — all green
 
 ### Wrap-up
 
-- [ ] 17. Update this note with anything the implementation changed
-- [ ] 18. Note in `notes/quiz-system-implementation.md` that results aggregation exists
+- [x] 17. Update this note with anything the implementation changed
+- [x] 18. Note in `notes/quiz-system-implementation.md` that results aggregation exists
+
+## What the implementation changed from the plan
+
+- **`gqlgen.yml` has an explicit `schema:` list.** A new `gql/*.graphqls` file is
+  silently ignored until it is added there — no error, the resolver stub simply
+  never appears. `frontend/codegen.ts` globs `../gql/*.graphqls`, so the two
+  disagree; only the backend needs the manual entry.
+- **`question` and `answer` are embedded, not force-resolved.** The resolver has
+  the questions and their answers in hand while assembling, so a `forceResolver`
+  round-trip per row would have re-fetched what it already held. Only
+  `QuizResults.quiz` stays a resolver field (with a `QuizID` extra field), since
+  the page usually does not ask for it.
+- **`GetQuizResultsSummary` returns `scored_count` and COALESCEd averages.**
+  `AVG(...)::float8` over zero rows is NULL, which sqlc types as non-nullable
+  `float64` and which then fails to scan — a quiz with no completed submissions
+  is the *normal* state before a session runs, so this would have broken on
+  first use. `scored_count` is what separates "nothing scored yet" (averages left
+  null) from "the average really is zero".
+- **Five queries, not six.** `GetQuizOrderingResponses` dropped its `is_correct`
+  column: the all-or-nothing count already comes from
+  `GetQuizResponseCountsByQuestion`, and two sources for one number can only
+  disagree.
+- **Bars are a single hue.** Shading each bar by its own value would double-encode
+  length as colour; answer options are nominal, so there is no order for a ramp
+  to carry. Correctness is an icon **and** the word "Riktig", never colour alone.
+- **The CSV carries a UTF-8 BOM**, built via `String.fromCharCode(0xfeff)` —
+  Prettier rewrites a `\uFEFF` escape into the invisible character itself, which
+  then trips eslint's `no-irregular-whitespace`.
+- **`test/unit/routes.test.ts` holds a committed route snapshot.** Adding a page
+  fails it until the snapshot is updated (`vitest -u`).
 
 ## Open risks
 

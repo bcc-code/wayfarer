@@ -30,6 +30,7 @@ exports[`route manifest > matches the committed snapshot 1`] = `
   "admin-projects-projectId-challenges  /admin/projects/:projectId()/challenges  layers/admin/app/pages/admin/projects/[projectId]/challenges/index.vue",
   "admin-projects-projectId-challenges-challengeId  /admin/projects/:projectId()/challenges/:challengeId()  layers/admin/app/pages/admin/projects/[projectId]/challenges/[challengeId]/index.vue",
   "admin-projects-projectId-challenges-challengeId-quiz  /admin/projects/:projectId()/challenges/:challengeId()/quiz  layers/admin/app/pages/admin/projects/[projectId]/challenges/[challengeId]/quiz.vue",
+  "admin-projects-projectId-challenges-challengeId-results  /admin/projects/:projectId()/challenges/:challengeId()/results  layers/admin/app/pages/admin/projects/[projectId]/challenges/[challengeId]/results.vue",
   "admin-projects-projectId-challenges-challengeId-sessions  /admin/projects/:projectId()/challenges/:challengeId()/sessions  layers/admin/app/pages/admin/projects/[projectId]/challenges/[challengeId]/sessions.vue",
   "admin-projects-projectId-challenges-new  /admin/projects/:projectId()/challenges/new  layers/admin/app/pages/admin/projects/[projectId]/challenges/new.vue",
   "admin-projects-projectId-edit  /admin/projects/:projectId()/edit  layers/admin/app/pages/admin/projects/[projectId]/edit.vue",
