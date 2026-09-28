@@ -164,6 +164,9 @@ func filterViewToFilter(view *model.LeaderboardFilterView) *model.LeaderboardFil
 		return nil
 	}
 	filter := &model.LeaderboardFilter{
+		MyChurch:       view.MyChurch,
+		MyTeam:         view.MyTeam,
+		MySuperTeam:    view.MySuperTeam,
 		MinScore:       view.MinScore,
 		MaxScore:       view.MaxScore,
 		ChurchID:       view.ChurchID,
@@ -172,6 +175,9 @@ func filterViewToFilter(view *model.LeaderboardFilterView) *model.LeaderboardFil
 		Gender:         view.Gender,
 		TeamID:         view.TeamID,
 		SuperTeamID:    view.SuperTeamID,
+	}
+	if view.RelativeAgeRange != nil {
+		filter.RelativeAgeRange = &model.RelativeAgeRangeInput{YearsYounger: view.RelativeAgeRange.YearsYounger, YearsOlder: view.RelativeAgeRange.YearsOlder}
 	}
 	if view.AgeRange != nil {
 		filter.AgeRange = &model.AgeRangeInput{Min: view.AgeRange.Min, Max: view.AgeRange.Max}

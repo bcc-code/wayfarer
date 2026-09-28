@@ -546,15 +546,19 @@ type ComplexityRoot struct {
 	}
 
 	LeaderboardFilterView struct {
-		AgeRange       func(childComplexity int) int
-		ChurchCategory func(childComplexity int) int
-		ChurchID       func(childComplexity int) int
-		Country        func(childComplexity int) int
-		Gender         func(childComplexity int) int
-		MaxScore       func(childComplexity int) int
-		MinScore       func(childComplexity int) int
-		SuperTeamID    func(childComplexity int) int
-		TeamID         func(childComplexity int) int
+		AgeRange         func(childComplexity int) int
+		ChurchCategory   func(childComplexity int) int
+		ChurchID         func(childComplexity int) int
+		Country          func(childComplexity int) int
+		Gender           func(childComplexity int) int
+		MaxScore         func(childComplexity int) int
+		MinScore         func(childComplexity int) int
+		MyChurch         func(childComplexity int) int
+		MySuperTeam      func(childComplexity int) int
+		MyTeam           func(childComplexity int) int
+		RelativeAgeRange func(childComplexity int) int
+		SuperTeamID      func(childComplexity int) int
+		TeamID           func(childComplexity int) int
 	}
 
 	MarkdownText struct {
@@ -1183,6 +1187,11 @@ type ComplexityRoot struct {
 	RecalculateResult struct {
 		Awarded func(childComplexity int) int
 		UserIds func(childComplexity int) int
+	}
+
+	RelativeAgeRange struct {
+		YearsOlder   func(childComplexity int) int
+		YearsYounger func(childComplexity int) int
 	}
 
 	RoleScope struct {
@@ -3963,6 +3972,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.LeaderboardFilterView.MinScore(childComplexity), true
+	case "LeaderboardFilterView.myChurch":
+		if e.complexity.LeaderboardFilterView.MyChurch == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardFilterView.MyChurch(childComplexity), true
+	case "LeaderboardFilterView.mySuperTeam":
+		if e.complexity.LeaderboardFilterView.MySuperTeam == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardFilterView.MySuperTeam(childComplexity), true
+	case "LeaderboardFilterView.myTeam":
+		if e.complexity.LeaderboardFilterView.MyTeam == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardFilterView.MyTeam(childComplexity), true
+	case "LeaderboardFilterView.relativeAgeRange":
+		if e.complexity.LeaderboardFilterView.RelativeAgeRange == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardFilterView.RelativeAgeRange(childComplexity), true
 	case "LeaderboardFilterView.superTeamId":
 		if e.complexity.LeaderboardFilterView.SuperTeamID == nil {
 			break
@@ -7940,6 +7973,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.RecalculateResult.UserIds(childComplexity), true
 
+	case "RelativeAgeRange.yearsOlder":
+		if e.complexity.RelativeAgeRange.YearsOlder == nil {
+			break
+		}
+
+		return e.complexity.RelativeAgeRange.YearsOlder(childComplexity), true
+	case "RelativeAgeRange.yearsYounger":
+		if e.complexity.RelativeAgeRange.YearsYounger == nil {
+			break
+		}
+
+		return e.complexity.RelativeAgeRange.YearsYounger(childComplexity), true
+
 	case "RoleScope.church":
 		if e.complexity.RoleScope.Church == nil {
 			break
@@ -9334,6 +9380,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputQuizFilter,
 		ec.unmarshalInputRecordBetResultInput,
 		ec.unmarshalInputRegisterPushSubscriptionInput,
+		ec.unmarshalInputRelativeAgeRangeInput,
 		ec.unmarshalInputRevokeRoleInput,
 		ec.unmarshalInputScoreJournalFilter,
 		ec.unmarshalInputSendPushNotificationInput,
@@ -9627,7 +9674,17 @@ type LeaderboardConnection {
     nearestChurchRivals(first: Int = 3): [LeaderboardEntry!]! @goField(forceResolver: true)
 }
 
+"Age offsets around the viewer’s age, using the leaderboard’s calendar-year age calculation."
+input RelativeAgeRangeInput {
+    yearsYounger: Int!
+    yearsOlder: Int!
+}
+
 input LeaderboardFilter {
+    relativeAgeRange: RelativeAgeRangeInput
+    myChurch: Boolean
+    myTeam: Boolean
+    mySuperTeam: Boolean
     minScore: Int
     maxScore: Int
     churchId: ID
@@ -10735,6 +10792,11 @@ type LeaderboardConfig {
     leaderboard(first: Int, after: String, last: Int, before: String): LeaderboardConnection! @goField(forceResolver: true)
 }
 
+type RelativeAgeRange {
+    yearsYounger: Int!
+    yearsOlder: Int!
+}
+
 # ==================== Filter View (read-side mirror of LeaderboardFilter) ====================
 
 """
@@ -10743,6 +10805,10 @@ Kept as a separate type because GraphQL doesn't allow an ` + "`" + `input` + "`"
 type — mirrors the AgeRange/AgeRangeInput pattern already used elsewhere in this schema.
 """
 type LeaderboardFilterView {
+    relativeAgeRange: RelativeAgeRange
+    myChurch: Boolean
+    myTeam: Boolean
+    mySuperTeam: Boolean
     minScore: Int
     maxScore: Int
     churchId: ID
@@ -24572,6 +24638,14 @@ func (ec *executionContext) fieldContext_LeaderboardConfig_filter(_ context.Cont
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "relativeAgeRange":
+				return ec.fieldContext_LeaderboardFilterView_relativeAgeRange(ctx, field)
+			case "myChurch":
+				return ec.fieldContext_LeaderboardFilterView_myChurch(ctx, field)
+			case "myTeam":
+				return ec.fieldContext_LeaderboardFilterView_myTeam(ctx, field)
+			case "mySuperTeam":
+				return ec.fieldContext_LeaderboardFilterView_mySuperTeam(ctx, field)
 			case "minScore":
 				return ec.fieldContext_LeaderboardFilterView_minScore(ctx, field)
 			case "maxScore":
@@ -25539,6 +25613,128 @@ func (ec *executionContext) fieldContext_LeaderboardEntry_lastScoreAt(_ context.
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeaderboardFilterView_relativeAgeRange(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardFilterView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardFilterView_relativeAgeRange,
+		func(ctx context.Context) (any, error) {
+			return obj.RelativeAgeRange, nil
+		},
+		nil,
+		ec.marshalORelativeAgeRange2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐRelativeAgeRange,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardFilterView_relativeAgeRange(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardFilterView",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "yearsYounger":
+				return ec.fieldContext_RelativeAgeRange_yearsYounger(ctx, field)
+			case "yearsOlder":
+				return ec.fieldContext_RelativeAgeRange_yearsOlder(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelativeAgeRange", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeaderboardFilterView_myChurch(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardFilterView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardFilterView_myChurch,
+		func(ctx context.Context) (any, error) {
+			return obj.MyChurch, nil
+		},
+		nil,
+		ec.marshalOBoolean2ᚖbool,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardFilterView_myChurch(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardFilterView",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeaderboardFilterView_myTeam(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardFilterView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardFilterView_myTeam,
+		func(ctx context.Context) (any, error) {
+			return obj.MyTeam, nil
+		},
+		nil,
+		ec.marshalOBoolean2ᚖbool,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardFilterView_myTeam(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardFilterView",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeaderboardFilterView_mySuperTeam(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardFilterView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardFilterView_mySuperTeam,
+		func(ctx context.Context) (any, error) {
+			return obj.MySuperTeam, nil
+		},
+		nil,
+		ec.marshalOBoolean2ᚖbool,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardFilterView_mySuperTeam(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardFilterView",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -50473,6 +50669,64 @@ func (ec *executionContext) fieldContext_RecalculateResult_userIds(_ context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _RelativeAgeRange_yearsYounger(ctx context.Context, field graphql.CollectedField, obj *model.RelativeAgeRange) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelativeAgeRange_yearsYounger,
+		func(ctx context.Context) (any, error) {
+			return obj.YearsYounger, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelativeAgeRange_yearsYounger(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelativeAgeRange",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelativeAgeRange_yearsOlder(ctx context.Context, field graphql.CollectedField, obj *model.RelativeAgeRange) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelativeAgeRange_yearsOlder,
+		func(ctx context.Context) (any, error) {
+			return obj.YearsOlder, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelativeAgeRange_yearsOlder(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelativeAgeRange",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _RoleScope_type(ctx context.Context, field graphql.CollectedField, obj *model.RoleScope) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -62381,13 +62635,41 @@ func (ec *executionContext) unmarshalInputLeaderboardFilter(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"minScore", "maxScore", "churchId", "country", "churchCategory", "gender", "ageRange", "teamId", "superTeamId"}
+	fieldsInOrder := [...]string{"relativeAgeRange", "myChurch", "myTeam", "mySuperTeam", "minScore", "maxScore", "churchId", "country", "churchCategory", "gender", "ageRange", "teamId", "superTeamId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "relativeAgeRange":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("relativeAgeRange"))
+			data, err := ec.unmarshalORelativeAgeRangeInput2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐRelativeAgeRangeInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RelativeAgeRange = data
+		case "myChurch":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("myChurch"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MyChurch = data
+		case "myTeam":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("myTeam"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MyTeam = data
+		case "mySuperTeam":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("mySuperTeam"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MySuperTeam = data
 		case "minScore":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("minScore"))
 			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
@@ -62636,6 +62918,40 @@ func (ec *executionContext) unmarshalInputRegisterPushSubscriptionInput(ctx cont
 				return it, err
 			}
 			it.Auth = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRelativeAgeRangeInput(ctx context.Context, obj any) (model.RelativeAgeRangeInput, error) {
+	var it model.RelativeAgeRangeInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"yearsYounger", "yearsOlder"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "yearsYounger":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("yearsYounger"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.YearsYounger = data
+		case "yearsOlder":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("yearsOlder"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.YearsOlder = data
 		}
 	}
 
@@ -69280,6 +69596,14 @@ func (ec *executionContext) _LeaderboardFilterView(ctx context.Context, sel ast.
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("LeaderboardFilterView")
+		case "relativeAgeRange":
+			out.Values[i] = ec._LeaderboardFilterView_relativeAgeRange(ctx, field, obj)
+		case "myChurch":
+			out.Values[i] = ec._LeaderboardFilterView_myChurch(ctx, field, obj)
+		case "myTeam":
+			out.Values[i] = ec._LeaderboardFilterView_myTeam(ctx, field, obj)
+		case "mySuperTeam":
+			out.Values[i] = ec._LeaderboardFilterView_mySuperTeam(ctx, field, obj)
 		case "minScore":
 			out.Values[i] = ec._LeaderboardFilterView_minScore(ctx, field, obj)
 		case "maxScore":
@@ -77156,6 +77480,50 @@ func (ec *executionContext) _RecalculateResult(ctx context.Context, sel ast.Sele
 			}
 		case "userIds":
 			out.Values[i] = ec._RecalculateResult_userIds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var relativeAgeRangeImplementors = []string{"RelativeAgeRange"}
+
+func (ec *executionContext) _RelativeAgeRange(ctx context.Context, sel ast.SelectionSet, obj *model.RelativeAgeRange) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, relativeAgeRangeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RelativeAgeRange")
+		case "yearsYounger":
+			out.Values[i] = ec._RelativeAgeRange_yearsYounger(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "yearsOlder":
+			out.Values[i] = ec._RelativeAgeRange_yearsOlder(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -86740,6 +87108,21 @@ func (ec *executionContext) marshalOQuizSubmission2ᚖgithubᚗcomᚋbccᚑmedia
 		return graphql.Null
 	}
 	return ec._QuizSubmission(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalORelativeAgeRange2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐRelativeAgeRange(ctx context.Context, sel ast.SelectionSet, v *model.RelativeAgeRange) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._RelativeAgeRange(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalORelativeAgeRangeInput2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐRelativeAgeRangeInput(ctx context.Context, v any) (*model.RelativeAgeRangeInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputRelativeAgeRangeInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalORoleScope2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐRoleScope(ctx context.Context, sel ast.SelectionSet, v *model.RoleScope) graphql.Marshaler {

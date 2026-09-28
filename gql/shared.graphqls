@@ -169,7 +169,17 @@ type LeaderboardConnection {
     nearestChurchRivals(first: Int = 3): [LeaderboardEntry!]! @goField(forceResolver: true)
 }
 
+"Age offsets around the viewer’s age, using the leaderboard’s calendar-year age calculation."
+input RelativeAgeRangeInput {
+    yearsYounger: Int!
+    yearsOlder: Int!
+}
+
 input LeaderboardFilter {
+    relativeAgeRange: RelativeAgeRangeInput
+    myChurch: Boolean
+    myTeam: Boolean
+    mySuperTeam: Boolean
     minScore: Int
     maxScore: Int
     churchId: ID
