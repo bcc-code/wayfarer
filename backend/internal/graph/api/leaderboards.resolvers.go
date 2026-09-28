@@ -41,6 +41,11 @@ func (r *mutationResolver) CreateLeaderboardConfig(ctx context.Context, input mo
 		return nil, fmt.Errorf("unauthorized to create leaderboard configs in this project")
 	}
 
+	limitMode, err := leaderboardLimitModeToDB(input.LimitMode, input.EntityType, input.Filter, input.MaxEntries)
+	if err != nil {
+		return nil, err
+	}
+
 	maxEntries, err := leaderboardMaxEntriesToDB(input.MaxEntries)
 	if err != nil {
 		return nil, err
@@ -65,6 +70,7 @@ func (r *mutationResolver) CreateLeaderboardConfig(ctx context.Context, input mo
 		Entitytype: string(input.EntityType),
 		Filter:     filterBytes,
 		Maxentries: maxEntries,
+		Limitmode:  limitMode,
 		Sortorder:  sortOrder,
 		Isactive:   input.IsActive,
 	}
@@ -95,6 +101,11 @@ func (r *mutationResolver) UpdateLeaderboardConfig(ctx context.Context, id strin
 		return nil, fmt.Errorf("unauthorized to update leaderboard configs in this project")
 	}
 
+	limitMode, err := leaderboardLimitModeToDB(input.LimitMode, input.EntityType, input.Filter, input.MaxEntries)
+	if err != nil {
+		return nil, err
+	}
+
 	maxEntries, err := leaderboardMaxEntriesToDB(input.MaxEntries)
 	if err != nil {
 		return nil, err
@@ -111,6 +122,7 @@ func (r *mutationResolver) UpdateLeaderboardConfig(ctx context.Context, id strin
 		Entitytype: string(input.EntityType),
 		Filter:     filterBytes,
 		Maxentries: maxEntries,
+		Limitmode:  limitMode,
 		Sortorder:  int32(input.SortOrder),
 		Isactive:   input.IsActive,
 	}
