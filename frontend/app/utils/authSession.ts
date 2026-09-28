@@ -13,9 +13,13 @@
 export const ACCESS_TOKEN_KEY = 'token'
 export const REFRESH_TOKEN_KEY = 'refresh_token'
 
-/** Refresh once the access token is older than this, so the session slides with normal use. */
+/**
+ * Refresh once the access token is older than this (or half its lifetime,
+ * whichever is sooner), so the session slides with normal use without
+ * refreshing on every request when tokens are short-lived.
+ */
 const REFRESH_AFTER_MS = 24 * 60 * 60 * 1000
-/** Also refresh when the access token has less than this left. */
+/** For tokens without an iat (unknown lifetime): refresh when this much is left. */
 const REFRESH_BEFORE_EXPIRY_MS = 24 * 60 * 60 * 1000
 /** After a failed refresh (e.g. offline), wait this long before proactively retrying. */
 const RETRY_COOLDOWN_MS = 60 * 1000
@@ -100,8 +104,10 @@ function decodeClaims(token: string): { iat?: number; exp?: number } | null {
 }
 
 /**
- * Whether the access token is due for a proactive refresh: older than a day,
- * or less than a day from expiring. Only meaningful with a refresh token.
+ * Whether the access token is due for a proactive refresh: once it is older
+ * than a day or half its lifetime, whichever comes first. A 7-day token is
+ * refreshed daily; a 1-hour token every 30 minutes rather than on every
+ * request. Only meaningful with a refresh token.
  */
 export function shouldRefreshAccessToken(
   token: string | null | undefined,
@@ -110,10 +116,14 @@ export function shouldRefreshAccessToken(
   const claims = decodeClaims(token)
   if (!claims || typeof claims.exp !== 'number') return true
   const now = Date.now()
-  if (claims.exp * 1000 - now < REFRESH_BEFORE_EXPIRY_MS) return true
-  return (
-    typeof claims.iat === 'number' && now - claims.iat * 1000 > REFRESH_AFTER_MS
-  )
+  const expiresAt = claims.exp * 1000
+  if (typeof claims.iat !== 'number') {
+    return expiresAt - now < REFRESH_BEFORE_EXPIRY_MS
+  }
+  const issuedAt = claims.iat * 1000
+  const lifetime = expiresAt - issuedAt
+  if (lifetime <= 0) return true
+  return now - issuedAt >= Math.min(REFRESH_AFTER_MS, lifetime / 2)
 }
 
 let lastFailedAt = 0
@@ -196,6 +206,13 @@ async function doRefresh(
     return false
   }
 
+  // The stored session changed while the request was in flight: a logout
+  // (or a login-redirect cleanup) cleared it, or an uncoordinated request
+  // replaced it. Never let this late response restore or clobber it.
+  if (getStoredRefreshToken() !== refreshToken) {
+    return !!getStoredRefreshToken() && !!getStoredAccessToken()
+  }
+
   if (res.ok) {
     storeTokenPair((await res.json()) as SessionTokenPair)
     lastFailedAt = 0
@@ -204,8 +221,9 @@ async function doRefresh(
 
   if (res.status === 409) {
     // Rotated moments ago by a request we couldn't coordinate with (e.g. a
-    // browser without Web Locks). Use what it stored, if anything.
-    return getStoredRefreshToken() !== refreshToken && !!getStoredAccessToken()
+    // browser without Web Locks) that hasn't stored its result yet.
+    lastFailedAt = Date.now()
+    return false
   }
 
   if (res.status === 400 || res.status === 401) {
@@ -218,19 +236,30 @@ async function doRefresh(
   return false
 }
 
-/** Revokes the session on the server (best effort) and clears local tokens. */
+/**
+ * Revokes the session on the server (best effort) and clears local tokens.
+ *
+ * Runs under the same lock as refresh, so a refresh in this or another tab
+ * finishes first and can't restore tokens afterwards. The backend revokes by
+ * the session ID in the token, so even a token rotated moments ago ends the
+ * session.
+ */
 export async function logoutSession(baseUrl: string) {
-  const refreshToken = getStoredRefreshToken()
-  clearSessionTokens()
-  if (!refreshToken) return
-  try {
-    await fetch(`${baseUrl}/logout`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: refreshToken }),
-      keepalive: true,
-    })
-  } catch {
-    // The session expires on its own; nothing else to do.
-  }
+  // Without Web Locks, at least wait for this tab's own refresh.
+  await inflight?.catch(() => false)
+  await withLock(async () => {
+    const refreshToken = getStoredRefreshToken()
+    clearSessionTokens()
+    if (!refreshToken) return
+    try {
+      await fetch(`${baseUrl}/logout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+        keepalive: true,
+      })
+    } catch {
+      // The session expires on its own; nothing else to do.
+    }
+  })
 }

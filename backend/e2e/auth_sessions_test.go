@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/bcc-media/wayfarer/e2e/testutil"
@@ -103,6 +104,62 @@ func TestAuthSessions(t *testing.T) {
 		// Logout is idempotent.
 		rec = postJSON(t, router, "/auth/logout", gin.H{"refresh_token": rotated.RefreshToken})
 		assert.Equal(t, http.StatusNoContent, rec.Code)
+	})
+
+	t.Run("older token after two rotations revokes the session", func(t *testing.T) {
+		a, err := sessions.StartSession(ctx, userID, "victim")
+		require.NoError(t, err)
+		// An attacker holding A rotates A→B→C.
+		b := decodePair(t, postJSON(t, router, "/auth/refresh", gin.H{"refresh_token": a.RefreshToken}))
+		c := decodePair(t, postJSON(t, router, "/auth/refresh", gin.H{"refresh_token": b.RefreshToken}))
+
+		// The legitimate client's A is neither current nor previous.
+		rec := postJSON(t, router, "/auth/refresh", gin.H{"refresh_token": a.RefreshToken})
+		assert.Equal(t, http.StatusUnauthorized, rec.Code)
+
+		// The attacker's chain is dead too.
+		rec = postJSON(t, router, "/auth/refresh", gin.H{"refresh_token": c.RefreshToken})
+		assert.Equal(t, http.StatusUnauthorized, rec.Code)
+	})
+
+	t.Run("logout with an already-rotated token ends the session", func(t *testing.T) {
+		a, err := sessions.StartSession(ctx, userID, "racing-tabs")
+		require.NoError(t, err)
+		b := decodePair(t, postJSON(t, router, "/auth/refresh", gin.H{"refresh_token": a.RefreshToken}))
+
+		rec := postJSON(t, router, "/auth/logout", gin.H{"refresh_token": a.RefreshToken})
+		assert.Equal(t, http.StatusNoContent, rec.Code)
+
+		rec = postJSON(t, router, "/auth/refresh", gin.H{"refresh_token": b.RefreshToken})
+		assert.Equal(t, http.StatusUnauthorized, rec.Code)
+	})
+
+	t.Run("fabricated token with a known session ID cannot revoke it", func(t *testing.T) {
+		a, err := sessions.StartSession(ctx, userID, "target")
+		require.NoError(t, err)
+		// Rotate once so the session has a retired token and a prev hash.
+		live := decodePair(t, postJSON(t, router, "/auth/refresh", gin.H{"refresh_token": a.RefreshToken}))
+
+		// The session ID is public via the access token's sid claim.
+		sessionID := live.RefreshToken[len("wfr_") : len("wfr_")+28]
+		forged := "wfr_" + sessionID + "_" + strings.Repeat("A", 43)
+
+		rec := postJSON(t, router, "/auth/refresh", gin.H{"refresh_token": forged})
+		assert.Equal(t, http.StatusUnauthorized, rec.Code)
+		rec = postJSON(t, router, "/auth/logout", gin.H{"refresh_token": forged})
+		assert.Equal(t, http.StatusNoContent, rec.Code)
+
+		// The real session is untouched.
+		decodePair(t, postJSON(t, router, "/auth/refresh", gin.H{"refresh_token": live.RefreshToken}))
+	})
+
+	t.Run("oversized body is rejected", func(t *testing.T) {
+		huge := make([]byte, 64<<10)
+		for i := range huge {
+			huge[i] = 'A'
+		}
+		rec := postJSON(t, router, "/auth/refresh", gin.H{"refresh_token": string(huge)})
+		assert.Equal(t, http.StatusRequestEntityTooLarge, rec.Code)
 	})
 
 	t.Run("revoking all user sessions", func(t *testing.T) {

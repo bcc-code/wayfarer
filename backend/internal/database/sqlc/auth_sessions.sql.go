@@ -64,13 +64,13 @@ func (q *Queries) DeleteStaleAuthSessions(ctx context.Context, cutoff pgtype.Tim
 	return result.RowsAffected(), nil
 }
 
-const GetAuthSessionByPrevHash = `-- name: GetAuthSessionByPrevHash :one
+const GetAuthSessionByID = `-- name: GetAuthSessionByID :one
 SELECT id, user_id, refresh_token_hash, prev_refresh_token_hash, rotated_at, expires_at, last_used_at, revoked_at, user_agent, created_at FROM auth_sessions
-WHERE prev_refresh_token_hash = $1::bytea
+WHERE id = $1::char(28)
 `
 
-func (q *Queries) GetAuthSessionByPrevHash(ctx context.Context, prevHash []byte) (*AuthSession, error) {
-	row := q.db.QueryRow(ctx, GetAuthSessionByPrevHash, prevHash)
+func (q *Queries) GetAuthSessionByID(ctx context.Context, id string) (*AuthSession, error) {
+	row := q.db.QueryRow(ctx, GetAuthSessionByID, id)
 	var i AuthSession
 	err := row.Scan(
 		&i.ID,
@@ -87,6 +87,27 @@ func (q *Queries) GetAuthSessionByPrevHash(ctx context.Context, prevHash []byte)
 	return &i, err
 }
 
+const IsRetiredAuthSessionToken = `-- name: IsRetiredAuthSessionToken :one
+SELECT EXISTS (
+    SELECT 1 FROM auth_session_retired_tokens
+    WHERE token_hash = $1::bytea
+      AND session_id = $2::char(28)
+)
+`
+
+type IsRetiredAuthSessionTokenParams struct {
+	TokenHash []byte `json:"token_hash"`
+	SessionID string `json:"session_id"`
+}
+
+// Whether a hash was once a refresh token of this session.
+func (q *Queries) IsRetiredAuthSessionToken(ctx context.Context, arg IsRetiredAuthSessionTokenParams) (bool, error) {
+	row := q.db.QueryRow(ctx, IsRetiredAuthSessionToken, arg.TokenHash, arg.SessionID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const RevokeAuthSession = `-- name: RevokeAuthSession :exec
 UPDATE auth_sessions
 SET revoked_at = now()
@@ -95,17 +116,6 @@ WHERE id = $1::char(28) AND revoked_at IS NULL
 
 func (q *Queries) RevokeAuthSession(ctx context.Context, id string) error {
 	_, err := q.db.Exec(ctx, RevokeAuthSession, id)
-	return err
-}
-
-const RevokeAuthSessionByHash = `-- name: RevokeAuthSessionByHash :exec
-UPDATE auth_sessions
-SET revoked_at = now()
-WHERE refresh_token_hash = $1::bytea AND revoked_at IS NULL
-`
-
-func (q *Queries) RevokeAuthSessionByHash(ctx context.Context, refreshTokenHash []byte) error {
-	_, err := q.db.Exec(ctx, RevokeAuthSessionByHash, refreshTokenHash)
 	return err
 }
 
@@ -124,47 +134,45 @@ func (q *Queries) RevokeUserAuthSessions(ctx context.Context, userID string) (in
 }
 
 const RotateAuthSession = `-- name: RotateAuthSession :one
-UPDATE auth_sessions
-SET prev_refresh_token_hash = refresh_token_hash,
-    refresh_token_hash = $1::bytea,
-    rotated_at = now(),
-    last_used_at = now(),
-    expires_at = $2::timestamptz,
-    user_agent = COALESCE($3::text, user_agent)
-WHERE refresh_token_hash = $4::bytea
-  AND revoked_at IS NULL
-  AND expires_at > now()
-RETURNING id, user_id, refresh_token_hash, prev_refresh_token_hash, rotated_at, expires_at, last_used_at, revoked_at, user_agent, created_at
+WITH rotated AS (
+    UPDATE auth_sessions
+    SET prev_refresh_token_hash = refresh_token_hash,
+        refresh_token_hash = $1::bytea,
+        rotated_at = now(),
+        last_used_at = now(),
+        expires_at = $2::timestamptz,
+        user_agent = COALESCE($3::text, user_agent)
+    WHERE auth_sessions.id = $4::char(28)
+      AND auth_sessions.refresh_token_hash = $5::bytea
+      AND auth_sessions.revoked_at IS NULL
+    RETURNING auth_sessions.id, auth_sessions.prev_refresh_token_hash
+)
+INSERT INTO auth_session_retired_tokens (token_hash, session_id)
+SELECT rotated.prev_refresh_token_hash, rotated.id FROM rotated
+RETURNING session_id
 `
 
 type RotateAuthSessionParams struct {
 	NewHash     []byte             `json:"new_hash"`
 	ExpiresAt   pgtype.Timestamptz `json:"expires_at"`
 	UserAgent   *string            `json:"user_agent"`
+	ID          string             `json:"id"`
 	CurrentHash []byte             `json:"current_hash"`
 }
 
-// Atomically swaps the current refresh-token hash for a new one and slides
-// the expiry. Returns no row when the token is unknown, revoked or expired.
-func (q *Queries) RotateAuthSession(ctx context.Context, arg RotateAuthSessionParams) (*AuthSession, error) {
+// Compare-and-swap: replaces the refresh-token hash only if it is still the
+// one the caller validated, slides the expiry, and records the replaced hash
+// as retired, all in one statement. Returns no row when a concurrent
+// request rotated or revoked the session first.
+func (q *Queries) RotateAuthSession(ctx context.Context, arg RotateAuthSessionParams) (string, error) {
 	row := q.db.QueryRow(ctx, RotateAuthSession,
 		arg.NewHash,
 		arg.ExpiresAt,
 		arg.UserAgent,
+		arg.ID,
 		arg.CurrentHash,
 	)
-	var i AuthSession
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.RefreshTokenHash,
-		&i.PrevRefreshTokenHash,
-		&i.RotatedAt,
-		&i.ExpiresAt,
-		&i.LastUsedAt,
-		&i.RevokedAt,
-		&i.UserAgent,
-		&i.CreatedAt,
-	)
-	return &i, err
+	var session_id string
+	err := row.Scan(&session_id)
+	return session_id, err
 }

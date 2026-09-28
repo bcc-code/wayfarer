@@ -74,13 +74,14 @@ CREATE TABLE user_roles (
     UNIQUE (user_id, role, church_id, project_id, team_id)
 );
 
--- Wayfarer login sessions (one per signed-in device). Only the SHA-256 hash
--- of the refresh token is stored; it rotates on every refresh.
+-- Wayfarer login sessions (one per signed-in device). The refresh token is
+-- "wfr_<session id>_<secret>"; only its SHA-256 hash is stored and it rotates
+-- on every refresh.
 CREATE TABLE auth_sessions (
     id CHAR(28) PRIMARY KEY CHECK (id ~ '^AS[0-9A-Z]{26}$'),
     user_id CHAR(28) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    refresh_token_hash BYTEA NOT NULL UNIQUE,
-    prev_refresh_token_hash BYTEA,        -- for grace window / reuse detection
+    refresh_token_hash BYTEA NOT NULL,
+    prev_refresh_token_hash BYTEA,        -- accepted as a benign race for 30s after rotation
     rotated_at TIMESTAMPTZ,
     expires_at TIMESTAMPTZ NOT NULL,      -- sliding: now() + refresh TTL on each refresh
     last_used_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -89,8 +90,18 @@ CREATE TABLE auth_sessions (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
     INDEX idx_auth_sessions_user (user_id),
-    INDEX idx_auth_sessions_prev_hash (prev_refresh_token_hash),
     INDEX idx_auth_sessions_expires (expires_at)
+);
+
+-- Hashes of refresh tokens a session rotated out. A stale token only counts
+-- as theft (and revokes the session) if its hash is here: the session id in
+-- a token is not secret, so it is never trusted on its own.
+CREATE TABLE auth_session_retired_tokens (
+    token_hash BYTEA PRIMARY KEY,
+    session_id CHAR(28) NOT NULL REFERENCES auth_sessions(id) ON DELETE CASCADE,
+    retired_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    INDEX idx_auth_session_retired_tokens_session (session_id)
 );
 
 CREATE TABLE projects (

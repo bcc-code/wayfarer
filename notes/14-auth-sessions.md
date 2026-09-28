@@ -8,7 +8,7 @@ no Auth0 involvement. Design page: https://claude.ai/artifact/9JjKez4ctAceW5VTsQ
 
 | | Access token | Refresh token |
 |---|---|---|
-| Format | HS256 JWT with a `kid` header | `wfr_` + 32 random bytes (base64url) |
+| Format | HS256 JWT with a `kid` header | `wfr_<session id>_<32 random bytes, base64url>` (76 chars) |
 | Lifetime | 7 days (`JWT_ACCESS_TOKEN_TTL`) | ~6 months, sliding (`JWT_REFRESH_TOKEN_TTL`) |
 | Claims / storage | `user_id`, `user_roles`, `sid`, `sub`, `iss`, `aud=wayfarer`, `iat`, `exp` | SHA-256 hash in `auth_sessions` |
 | Checked | Every request, in memory (`internal/authtoken`) | Only by `POST /auth/refresh` |
@@ -22,10 +22,18 @@ Verification costs about 5 µs and does no I/O (see `BenchmarkParse` in `interna
    - It then finds or creates the user.
    - `AuthSessionService.StartSession` inserts an `auth_sessions` row.
 2. Requests send `Authorization: Bearer <access_token>`. `middleware.JWTAuth` puts `user_id`, `user_roles` and `session_id` in the context.
-3. `POST /auth/refresh {refresh_token}` runs one atomic `RotateAuthSession` UPDATE. It swaps the hash, keeps the old one in `prev_refresh_token_hash`, and moves `expires_at` to now + TTL.
-   - If an old token arrives within 30 s of its rotation, the response is **409 `token_rotated`**: another tab won the race, so the client reloads the stored tokens.
-   - If an old token arrives later, it is treated as **reuse**: the session is revoked and the response is **401**.
-4. `POST /auth/logout {refresh_token}` revokes the session (204, idempotent).
+3. `POST /auth/refresh {refresh_token}` loads the session by the ID embedded in the token (primary key).
+   - It then loads roles and signs the new access token **before** committing anything.
+   - Last comes a compare-and-swap `RotateAuthSession` (`WHERE id = … AND refresh_token_hash = <presented>`). In one statement (a CTE), the swap stores the new hash, keeps the old one in `prev_refresh_token_hash`, records it in `auth_session_retired_tokens`, and moves `expires_at` to now + TTL.
+   - A failure before the swap leaves the presented token valid, so the client just retries.
+   - If the presented token is the one rotated out within the last 30 s, or the swap loses a concurrent race, the response is **409 `token_rotated`**: another tab won, so the client reloads the stored tokens.
+   - A token whose hash is in `auth_session_retired_tokens` for that session (e.g. A after an attacker rotated A→B→C) **revokes the session** and returns **401**.
+   - Any other token naming the session is forged and gets **401 with no side effects**. The session ID is not secret (it is also the access token's `sid` claim), so it is never trusted on its own.
+4. `POST /auth/logout {refresh_token}` revokes the session if the token is its current one or one of its retired ones, so a token rotated moments ago still works. Forged or unknown tokens are ignored (204 either way, idempotent).
+
+The `/auth` group caps request bodies at 16 KiB (`middleware.MaxBodyBytes`, 413 when exceeded). The BCC token may be at most 8 KiB and the refresh token at most 128 chars; malformed refresh tokens are rejected without a DB query.
+
+On the frontend, refresh and logout share one Web Lock. Logout waits for a pending refresh before clearing tokens. A refresh response that arrives after the stored session changed (cleared or replaced) is discarded. Proactive refresh starts once the access token is older than a day or half its lifetime, whichever is sooner.
 
 `GET /token` (legacy, 24h JWT without a session) still works during the transition.
 
@@ -54,5 +62,5 @@ m2m tokens have no `kid`, so they have to be re-issued when the secret rotates.
 - `backend/internal/authtoken/`: sign/parse, kid, audience, emergency check
 - `backend/internal/services/auth_session.go`: sessions, rotation, reuse detection
 - `backend/internal/handlers/auth_session.go`: `/auth/*` endpoints
-- `backend/internal/database/queries/auth_sessions.sql`, migration `00104_add_auth_sessions.sql`
+- `backend/internal/database/queries/auth_sessions.sql`, migration `00104_add_auth_sessions.sql` (tables `auth_sessions`, `auth_session_retired_tokens`)
 - `frontend/app/composables/useAuth.ts` + `frontend/app/utils/authSession.ts`: storage, cross-tab refresh

@@ -182,55 +182,55 @@ func (_c *MockAuthSessionQuerier_DeleteStaleAuthSessions_Call) RunAndReturn(run 
 	return _c
 }
 
-// GetAuthSessionByPrevHash provides a mock function for the type MockAuthSessionQuerier
-func (_mock *MockAuthSessionQuerier) GetAuthSessionByPrevHash(ctx context.Context, prevHash []byte) (*sqlc.AuthSession, error) {
-	ret := _mock.Called(ctx, prevHash)
+// GetAuthSessionByID provides a mock function for the type MockAuthSessionQuerier
+func (_mock *MockAuthSessionQuerier) GetAuthSessionByID(ctx context.Context, id string) (*sqlc.AuthSession, error) {
+	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetAuthSessionByPrevHash")
+		panic("no return value specified for GetAuthSessionByID")
 	}
 
 	var r0 *sqlc.AuthSession
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, []byte) (*sqlc.AuthSession, error)); ok {
-		return returnFunc(ctx, prevHash)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*sqlc.AuthSession, error)); ok {
+		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, []byte) *sqlc.AuthSession); ok {
-		r0 = returnFunc(ctx, prevHash)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *sqlc.AuthSession); ok {
+		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*sqlc.AuthSession)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, []byte) error); ok {
-		r1 = returnFunc(ctx, prevHash)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, id)
 	} else {
 		r1 = ret.Error(1)
 	}
 	return r0, r1
 }
 
-// MockAuthSessionQuerier_GetAuthSessionByPrevHash_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetAuthSessionByPrevHash'
-type MockAuthSessionQuerier_GetAuthSessionByPrevHash_Call struct {
+// MockAuthSessionQuerier_GetAuthSessionByID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetAuthSessionByID'
+type MockAuthSessionQuerier_GetAuthSessionByID_Call struct {
 	*mock.Call
 }
 
-// GetAuthSessionByPrevHash is a helper method to define mock.On call
+// GetAuthSessionByID is a helper method to define mock.On call
 //   - ctx context.Context
-//   - prevHash []byte
-func (_e *MockAuthSessionQuerier_Expecter) GetAuthSessionByPrevHash(ctx any, prevHash any) *MockAuthSessionQuerier_GetAuthSessionByPrevHash_Call {
-	return &MockAuthSessionQuerier_GetAuthSessionByPrevHash_Call{Call: _e.mock.On("GetAuthSessionByPrevHash", ctx, prevHash)}
+//   - id string
+func (_e *MockAuthSessionQuerier_Expecter) GetAuthSessionByID(ctx any, id any) *MockAuthSessionQuerier_GetAuthSessionByID_Call {
+	return &MockAuthSessionQuerier_GetAuthSessionByID_Call{Call: _e.mock.On("GetAuthSessionByID", ctx, id)}
 }
 
-func (_c *MockAuthSessionQuerier_GetAuthSessionByPrevHash_Call) Run(run func(ctx context.Context, prevHash []byte)) *MockAuthSessionQuerier_GetAuthSessionByPrevHash_Call {
+func (_c *MockAuthSessionQuerier_GetAuthSessionByID_Call) Run(run func(ctx context.Context, id string)) *MockAuthSessionQuerier_GetAuthSessionByID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 []byte
+		var arg1 string
 		if args[1] != nil {
-			arg1 = args[1].([]byte)
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
@@ -240,12 +240,78 @@ func (_c *MockAuthSessionQuerier_GetAuthSessionByPrevHash_Call) Run(run func(ctx
 	return _c
 }
 
-func (_c *MockAuthSessionQuerier_GetAuthSessionByPrevHash_Call) Return(authSession *sqlc.AuthSession, err error) *MockAuthSessionQuerier_GetAuthSessionByPrevHash_Call {
+func (_c *MockAuthSessionQuerier_GetAuthSessionByID_Call) Return(authSession *sqlc.AuthSession, err error) *MockAuthSessionQuerier_GetAuthSessionByID_Call {
 	_c.Call.Return(authSession, err)
 	return _c
 }
 
-func (_c *MockAuthSessionQuerier_GetAuthSessionByPrevHash_Call) RunAndReturn(run func(ctx context.Context, prevHash []byte) (*sqlc.AuthSession, error)) *MockAuthSessionQuerier_GetAuthSessionByPrevHash_Call {
+func (_c *MockAuthSessionQuerier_GetAuthSessionByID_Call) RunAndReturn(run func(ctx context.Context, id string) (*sqlc.AuthSession, error)) *MockAuthSessionQuerier_GetAuthSessionByID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// IsRetiredAuthSessionToken provides a mock function for the type MockAuthSessionQuerier
+func (_mock *MockAuthSessionQuerier) IsRetiredAuthSessionToken(ctx context.Context, arg sqlc.IsRetiredAuthSessionTokenParams) (bool, error) {
+	ret := _mock.Called(ctx, arg)
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsRetiredAuthSessionToken")
+	}
+
+	var r0 bool
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, sqlc.IsRetiredAuthSessionTokenParams) (bool, error)); ok {
+		return returnFunc(ctx, arg)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, sqlc.IsRetiredAuthSessionTokenParams) bool); ok {
+		r0 = returnFunc(ctx, arg)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, sqlc.IsRetiredAuthSessionTokenParams) error); ok {
+		r1 = returnFunc(ctx, arg)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockAuthSessionQuerier_IsRetiredAuthSessionToken_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsRetiredAuthSessionToken'
+type MockAuthSessionQuerier_IsRetiredAuthSessionToken_Call struct {
+	*mock.Call
+}
+
+// IsRetiredAuthSessionToken is a helper method to define mock.On call
+//   - ctx context.Context
+//   - arg sqlc.IsRetiredAuthSessionTokenParams
+func (_e *MockAuthSessionQuerier_Expecter) IsRetiredAuthSessionToken(ctx any, arg any) *MockAuthSessionQuerier_IsRetiredAuthSessionToken_Call {
+	return &MockAuthSessionQuerier_IsRetiredAuthSessionToken_Call{Call: _e.mock.On("IsRetiredAuthSessionToken", ctx, arg)}
+}
+
+func (_c *MockAuthSessionQuerier_IsRetiredAuthSessionToken_Call) Run(run func(ctx context.Context, arg sqlc.IsRetiredAuthSessionTokenParams)) *MockAuthSessionQuerier_IsRetiredAuthSessionToken_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 sqlc.IsRetiredAuthSessionTokenParams
+		if args[1] != nil {
+			arg1 = args[1].(sqlc.IsRetiredAuthSessionTokenParams)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAuthSessionQuerier_IsRetiredAuthSessionToken_Call) Return(b bool, err error) *MockAuthSessionQuerier_IsRetiredAuthSessionToken_Call {
+	_c.Call.Return(b, err)
+	return _c
+}
+
+func (_c *MockAuthSessionQuerier_IsRetiredAuthSessionToken_Call) RunAndReturn(run func(ctx context.Context, arg sqlc.IsRetiredAuthSessionTokenParams) (bool, error)) *MockAuthSessionQuerier_IsRetiredAuthSessionToken_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -303,63 +369,6 @@ func (_c *MockAuthSessionQuerier_RevokeAuthSession_Call) Return(err error) *Mock
 }
 
 func (_c *MockAuthSessionQuerier_RevokeAuthSession_Call) RunAndReturn(run func(ctx context.Context, id string) error) *MockAuthSessionQuerier_RevokeAuthSession_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// RevokeAuthSessionByHash provides a mock function for the type MockAuthSessionQuerier
-func (_mock *MockAuthSessionQuerier) RevokeAuthSessionByHash(ctx context.Context, refreshTokenHash []byte) error {
-	ret := _mock.Called(ctx, refreshTokenHash)
-
-	if len(ret) == 0 {
-		panic("no return value specified for RevokeAuthSessionByHash")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, []byte) error); ok {
-		r0 = returnFunc(ctx, refreshTokenHash)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// MockAuthSessionQuerier_RevokeAuthSessionByHash_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RevokeAuthSessionByHash'
-type MockAuthSessionQuerier_RevokeAuthSessionByHash_Call struct {
-	*mock.Call
-}
-
-// RevokeAuthSessionByHash is a helper method to define mock.On call
-//   - ctx context.Context
-//   - refreshTokenHash []byte
-func (_e *MockAuthSessionQuerier_Expecter) RevokeAuthSessionByHash(ctx any, refreshTokenHash any) *MockAuthSessionQuerier_RevokeAuthSessionByHash_Call {
-	return &MockAuthSessionQuerier_RevokeAuthSessionByHash_Call{Call: _e.mock.On("RevokeAuthSessionByHash", ctx, refreshTokenHash)}
-}
-
-func (_c *MockAuthSessionQuerier_RevokeAuthSessionByHash_Call) Run(run func(ctx context.Context, refreshTokenHash []byte)) *MockAuthSessionQuerier_RevokeAuthSessionByHash_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 []byte
-		if args[1] != nil {
-			arg1 = args[1].([]byte)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockAuthSessionQuerier_RevokeAuthSessionByHash_Call) Return(err error) *MockAuthSessionQuerier_RevokeAuthSessionByHash_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *MockAuthSessionQuerier_RevokeAuthSessionByHash_Call) RunAndReturn(run func(ctx context.Context, refreshTokenHash []byte) error) *MockAuthSessionQuerier_RevokeAuthSessionByHash_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -431,24 +440,22 @@ func (_c *MockAuthSessionQuerier_RevokeUserAuthSessions_Call) RunAndReturn(run f
 }
 
 // RotateAuthSession provides a mock function for the type MockAuthSessionQuerier
-func (_mock *MockAuthSessionQuerier) RotateAuthSession(ctx context.Context, arg sqlc.RotateAuthSessionParams) (*sqlc.AuthSession, error) {
+func (_mock *MockAuthSessionQuerier) RotateAuthSession(ctx context.Context, arg sqlc.RotateAuthSessionParams) (string, error) {
 	ret := _mock.Called(ctx, arg)
 
 	if len(ret) == 0 {
 		panic("no return value specified for RotateAuthSession")
 	}
 
-	var r0 *sqlc.AuthSession
+	var r0 string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, sqlc.RotateAuthSessionParams) (*sqlc.AuthSession, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, sqlc.RotateAuthSessionParams) (string, error)); ok {
 		return returnFunc(ctx, arg)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, sqlc.RotateAuthSessionParams) *sqlc.AuthSession); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, sqlc.RotateAuthSessionParams) string); ok {
 		r0 = returnFunc(ctx, arg)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*sqlc.AuthSession)
-		}
+		r0 = ret.Get(0).(string)
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, sqlc.RotateAuthSessionParams) error); ok {
 		r1 = returnFunc(ctx, arg)
@@ -488,12 +495,12 @@ func (_c *MockAuthSessionQuerier_RotateAuthSession_Call) Run(run func(ctx contex
 	return _c
 }
 
-func (_c *MockAuthSessionQuerier_RotateAuthSession_Call) Return(authSession *sqlc.AuthSession, err error) *MockAuthSessionQuerier_RotateAuthSession_Call {
-	_c.Call.Return(authSession, err)
+func (_c *MockAuthSessionQuerier_RotateAuthSession_Call) Return(s string, err error) *MockAuthSessionQuerier_RotateAuthSession_Call {
+	_c.Call.Return(s, err)
 	return _c
 }
 
-func (_c *MockAuthSessionQuerier_RotateAuthSession_Call) RunAndReturn(run func(ctx context.Context, arg sqlc.RotateAuthSessionParams) (*sqlc.AuthSession, error)) *MockAuthSessionQuerier_RotateAuthSession_Call {
+func (_c *MockAuthSessionQuerier_RotateAuthSession_Call) RunAndReturn(run func(ctx context.Context, arg sqlc.RotateAuthSessionParams) (string, error)) *MockAuthSessionQuerier_RotateAuthSession_Call {
 	_c.Call.Return(run)
 	return _c
 }

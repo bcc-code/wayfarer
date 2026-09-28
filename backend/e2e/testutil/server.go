@@ -104,8 +104,9 @@ func NewTestRouter(cfg TestServerConfig) *gin.Engine {
 		DB:             cfg.DB,
 		SessionService: services.NewAuthSessionService(cfg.DB.Queries, cfg.RoleService, jwtConfig),
 	}
-	router.POST("/auth/refresh", authHandler.Refresh)
-	router.POST("/auth/logout", authHandler.Logout)
+	authGroup := router.Group("/auth", middleware.MaxBodyBytes(handlers.AuthRequestBodyLimit))
+	authGroup.POST("/refresh", authHandler.Refresh)
+	authGroup.POST("/logout", authHandler.Logout)
 
 	// Register plugins
 	pluginDeps := plugins.Dependencies{

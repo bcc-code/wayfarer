@@ -2,15 +2,18 @@ package handlers
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
+	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/services/mocks"
 	"github.com/gin-gonic/gin"
@@ -37,10 +40,32 @@ func newSessionTestRouter(t *testing.T) (*gin.Engine, *mocks.MockAuthSessionQuer
 		SessionService: services.NewAuthSessionService(sessions, services.NewRoleService(roles, newTestCache()), cfg),
 	}
 	r := gin.New()
-	r.POST("/auth/exchange", h.Exchange)
-	r.POST("/auth/refresh", h.Refresh)
-	r.POST("/auth/logout", h.Logout)
+	g := r.Group("/auth", middleware.MaxBodyBytes(AuthRequestBodyLimit))
+	g.POST("/exchange", h.Exchange)
+	g.POST("/refresh", h.Refresh)
+	g.POST("/logout", h.Logout)
 	return r, sessions, roles
+}
+
+const handlerTestSessionID = "AS01ARZ3NDEKTSV4RRFFQ69G5FAV"
+
+// testRefreshToken is a well-formed refresh token for handlerTestSessionID.
+var testRefreshToken = "wfr_" + handlerTestSessionID + "_" + strings.Repeat("A", 43)
+
+func refreshBody(token string) string {
+	b, _ := json.Marshal(map[string]string{"refresh_token": token})
+	return string(b)
+}
+
+func liveSessionFor(token string) *sqlc.AuthSession {
+	sum := sha256.Sum256([]byte(token))
+	return &sqlc.AuthSession{
+		ID:               handlerTestSessionID,
+		UserID:           "US01ARZ3NDEKTSV4RRFFQ69G5FAV",
+		RefreshTokenHash: sum[:],
+		ExpiresAt:        pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
+		CreatedAt:        pgtype.Timestamptz{Time: time.Now().Add(-time.Hour), Valid: true},
+	}
 }
 
 func doPost(r *gin.Engine, path, body string) *httptest.ResponseRecorder {
@@ -60,20 +85,18 @@ func errorCode(t *testing.T, rec *httptest.ResponseRecorder) string {
 
 func TestRefreshHandler_Success(t *testing.T) {
 	r, sessions, roles := newSessionTestRouter(t)
-	sessions.On("RotateAuthSession", mock.Anything, mock.Anything).Return(&sqlc.AuthSession{
-		ID:        "AS01ARZ3NDEKTSV4RRFFQ69G5FAV",
-		UserID:    "US01ARZ3NDEKTSV4RRFFQ69G5FAV",
-		CreatedAt: pgtype.Timestamptz{Time: time.Now(), Valid: true},
-	}, nil)
+	sessions.On("GetAuthSessionByID", mock.Anything, handlerTestSessionID).Return(liveSessionFor(testRefreshToken), nil)
 	roles.On("GetUserRoles", mock.Anything, "US01ARZ3NDEKTSV4RRFFQ69G5FAV").Return([]*sqlc.UserRole{}, nil)
+	sessions.On("RotateAuthSession", mock.Anything, mock.Anything).Return(handlerTestSessionID, nil)
 
-	rec := doPost(r, "/auth/refresh", `{"refresh_token":"wfr_abc"}`)
+	rec := doPost(r, "/auth/refresh", refreshBody(testRefreshToken))
 	require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
 
 	var pair services.TokenPair
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &pair))
 	assert.NotEmpty(t, pair.AccessToken)
-	assert.NotEqual(t, "wfr_abc", pair.RefreshToken)
+	assert.NotEqual(t, testRefreshToken, pair.RefreshToken)
+	assert.Len(t, pair.RefreshToken, services.RefreshTokenLength)
 }
 
 func TestRefreshHandler_Errors(t *testing.T) {
@@ -90,34 +113,43 @@ func TestRefreshHandler_Errors(t *testing.T) {
 			wantStatus: http.StatusBadRequest,
 		},
 		{
-			name: "unknown token",
-			body: `{"refresh_token":"wfr_abc"}`,
+			name:       "token longer than any refresh token",
+			body:       refreshBody("wfr_" + strings.Repeat("A", 200)),
+			wantStatus: http.StatusBadRequest,
+		},
+		{
+			name:       "malformed token",
+			body:       refreshBody("wfr_abc"),
+			wantStatus: http.StatusUnauthorized,
+			wantCode:   authCodeInvalidRefreshToken,
+		},
+		{
+			name: "unknown session",
+			body: refreshBody(testRefreshToken),
 			setup: func(m *mocks.MockAuthSessionQuerier) {
-				m.On("RotateAuthSession", mock.Anything, mock.Anything).Return(nil, pgx.ErrNoRows)
-				m.On("GetAuthSessionByPrevHash", mock.Anything, mock.Anything).Return(nil, pgx.ErrNoRows)
+				m.On("GetAuthSessionByID", mock.Anything, handlerTestSessionID).Return(nil, pgx.ErrNoRows)
 			},
 			wantStatus: http.StatusUnauthorized,
 			wantCode:   authCodeInvalidRefreshToken,
 		},
 		{
 			name: "just rotated",
-			body: `{"refresh_token":"wfr_abc"}`,
+			body: refreshBody(testRefreshToken),
 			setup: func(m *mocks.MockAuthSessionQuerier) {
-				m.On("RotateAuthSession", mock.Anything, mock.Anything).Return(nil, pgx.ErrNoRows)
-				m.On("GetAuthSessionByPrevHash", mock.Anything, mock.Anything).Return(&sqlc.AuthSession{
-					ID:        "AS01ARZ3NDEKTSV4RRFFQ69G5FAV",
-					ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
-					RotatedAt: pgtype.Timestamptz{Time: time.Now(), Valid: true},
-				}, nil)
+				s := liveSessionFor("wfr_" + handlerTestSessionID + "_" + strings.Repeat("B", 43))
+				sum := sha256.Sum256([]byte(testRefreshToken))
+				s.PrevRefreshTokenHash = sum[:]
+				s.RotatedAt = pgtype.Timestamptz{Time: time.Now(), Valid: true}
+				m.On("GetAuthSessionByID", mock.Anything, handlerTestSessionID).Return(s, nil)
 			},
 			wantStatus: http.StatusConflict,
 			wantCode:   authCodeTokenRotated,
 		},
 		{
 			name: "database failure",
-			body: `{"refresh_token":"wfr_abc"}`,
+			body: refreshBody(testRefreshToken),
 			setup: func(m *mocks.MockAuthSessionQuerier) {
-				m.On("RotateAuthSession", mock.Anything, mock.Anything).Return(nil, errors.New("db down"))
+				m.On("GetAuthSessionByID", mock.Anything, handlerTestSessionID).Return(nil, errors.New("db down"))
 			},
 			wantStatus: http.StatusInternalServerError,
 		},
@@ -138,12 +170,52 @@ func TestRefreshHandler_Errors(t *testing.T) {
 	}
 }
 
+func TestAuthEndpoints_RejectOversizedBodies(t *testing.T) {
+	r, _, _ := newSessionTestRouter(t)
+	huge := `{"token":"` + strings.Repeat("A", AuthRequestBodyLimit) + `"}`
+
+	for _, path := range []string{"/auth/exchange", "/auth/refresh", "/auth/logout"} {
+		t.Run(path, func(t *testing.T) {
+			assert.Equal(t, http.StatusRequestEntityTooLarge, doPost(r, path, huge).Code)
+
+			// Without a Content-Length the limit applies while reading.
+			req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(huge))
+			req.ContentLength = -1
+			rec := httptest.NewRecorder()
+			r.ServeHTTP(rec, req)
+			assert.Equal(t, http.StatusRequestEntityTooLarge, rec.Code)
+		})
+	}
+}
+
+func TestExchangeHandler_RejectsOverlongToken(t *testing.T) {
+	r, _, _ := newSessionTestRouter(t)
+	body := `{"token":"` + strings.Repeat("A", 8193) + `"}`
+	assert.Equal(t, http.StatusBadRequest, doPost(r, "/auth/exchange", body).Code)
+}
+
 func TestLogoutHandler(t *testing.T) {
 	r, sessions, _ := newSessionTestRouter(t)
-	sessions.On("RevokeAuthSessionByHash", mock.Anything, mock.Anything).Return(nil).Once()
+	sessions.On("GetAuthSessionByID", mock.Anything, handlerTestSessionID).Return(liveSessionFor(testRefreshToken), nil).Once()
+	sessions.On("RevokeAuthSession", mock.Anything, handlerTestSessionID).Return(nil).Once()
 
-	assert.Equal(t, http.StatusNoContent, doPost(r, "/auth/logout", `{"refresh_token":"wfr_abc"}`).Code)
+	assert.Equal(t, http.StatusNoContent, doPost(r, "/auth/logout", refreshBody(testRefreshToken)).Code)
+	assert.Equal(t, http.StatusNoContent, doPost(r, "/auth/logout", refreshBody("wfr_abc")).Code, "malformed token is a no-op")
 	assert.Equal(t, http.StatusBadRequest, doPost(r, "/auth/logout", `{}`).Code)
+}
+
+func TestFabricatedTokenCannotRevokeSession(t *testing.T) {
+	forged := "wfr_" + handlerTestSessionID + "_" + strings.Repeat("Z", 43)
+	for _, path := range []string{"/auth/refresh", "/auth/logout"} {
+		t.Run(path, func(t *testing.T) {
+			r, sessions, _ := newSessionTestRouter(t)
+			sessions.On("GetAuthSessionByID", mock.Anything, handlerTestSessionID).Return(liveSessionFor(testRefreshToken), nil)
+			sessions.On("IsRetiredAuthSessionToken", mock.Anything, mock.Anything).Return(false, nil)
+
+			doPost(r, path, refreshBody(forged))
+			sessions.AssertNotCalled(t, "RevokeAuthSession", mock.Anything, mock.Anything)
+		})
+	}
 }
 
 func TestExchangeHandler_RejectsBadInput(t *testing.T) {

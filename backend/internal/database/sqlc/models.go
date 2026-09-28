@@ -53,6 +53,12 @@ type AuthSession struct {
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 }
 
+type AuthSessionRetiredToken struct {
+	TokenHash []byte             `json:"token_hash"`
+	SessionID string             `json:"session_id"`
+	RetiredAt pgtype.Timestamptz `json:"retired_at"`
+}
+
 type BulkJob struct {
 	ID             string             `json:"id"`
 	OperationType  string             `json:"operation_type"`

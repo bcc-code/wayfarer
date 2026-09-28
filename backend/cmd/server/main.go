@@ -601,7 +601,7 @@ func main() {
 		SessionService:            authSessionService,
 	}
 	router.GET("/token", authHandler.Callback)
-	authGroup := router.Group("/auth")
+	authGroup := router.Group("/auth", middleware.MaxBodyBytes(handlers.AuthRequestBodyLimit))
 	{
 		authGroup.POST("/exchange", authHandler.Exchange)
 		authGroup.POST("/refresh", authHandler.Refresh)

@@ -103,10 +103,30 @@ describe('shouldRefreshAccessToken', () => {
     expect(shouldRefreshAccessToken(tokenIssuedAgo(DAY + 60))).toBe(true)
   })
 
-  it('is true when less than a day is left', async () => {
+  it('refreshes a 24h token once past half its lifetime', async () => {
     const { shouldRefreshAccessToken } = await load()
-    // A legacy 24h token issued an hour ago
-    expect(shouldRefreshAccessToken(tokenIssuedAgo(3600, DAY))).toBe(true)
+    expect(shouldRefreshAccessToken(tokenIssuedAgo(3600, DAY))).toBe(false)
+    expect(shouldRefreshAccessToken(tokenIssuedAgo(13 * 3600, DAY))).toBe(true)
+  })
+
+  it('scales the window to short-lived tokens', async () => {
+    const { shouldRefreshAccessToken } = await load()
+    const HOUR = 60 * 60
+    // JWT_ACCESS_TOKEN_TTL=1h: a fresh token must not trigger a refresh on
+    // every request, only past half its lifetime.
+    expect(shouldRefreshAccessToken(tokenIssuedAgo(60, HOUR))).toBe(false)
+    expect(shouldRefreshAccessToken(tokenIssuedAgo(29 * 60, HOUR))).toBe(false)
+    expect(shouldRefreshAccessToken(tokenIssuedAgo(31 * 60, HOUR))).toBe(true)
+  })
+
+  it('falls back to time-left for tokens without iat', async () => {
+    const { shouldRefreshAccessToken } = await load()
+    expect(
+      shouldRefreshAccessToken(makeToken({ exp: nowSeconds() + 2 * DAY })),
+    ).toBe(false)
+    expect(
+      shouldRefreshAccessToken(makeToken({ exp: nowSeconds() + 3600 })),
+    ).toBe(true)
   })
 
   it('is true for missing or malformed tokens', async () => {
@@ -254,6 +274,30 @@ describe('refreshSession', () => {
     await expect(refreshSession('https://api.test/auth')).resolves.toBe(true)
   })
 
+  it('does not restore tokens that were cleared while the request was in flight', async () => {
+    const { refreshSession, clearSessionTokens } = await load()
+    fetchMock.mockImplementation(async () => {
+      clearSessionTokens() // e.g. a login-redirect cleanup outside the lock
+      return jsonResponse(200, pair('late-access', 'wfr_late'))
+    })
+
+    await expect(refreshSession('https://api.test/auth')).resolves.toBe(false)
+    expect(store.has('token')).toBe(false)
+    expect(store.has('refresh_token')).toBe(false)
+  })
+
+  it('does not clobber a session another request replaced mid-flight', async () => {
+    const { refreshSession } = await load()
+    fetchMock.mockImplementation(async () => {
+      store.set('refresh_token', 'wfr_other')
+      store.set('token', 'other-access')
+      return jsonResponse(401, { code: 'invalid_refresh_token' })
+    })
+
+    await expect(refreshSession('https://api.test/auth')).resolves.toBe(true)
+    expect(store.get('refresh_token')).toBe('wfr_other')
+  })
+
   it('returns false without a refresh token', async () => {
     const { refreshSession } = await load()
     store.delete('refresh_token')
@@ -282,6 +326,54 @@ describe('canRefreshProactively', () => {
 })
 
 describe('logoutSession', () => {
+  it('waits for a pending refresh so it cannot restore tokens afterwards', async () => {
+    const { refreshSession, logoutSession } = await load()
+    store.set('token', 'old-access')
+    store.set('refresh_token', 'wfr_old')
+
+    let resolveRefresh!: (r: unknown) => void
+    fetchMock.mockImplementation((url: string) => {
+      if (url.endsWith('/refresh')) {
+        return new Promise((resolve) => (resolveRefresh = resolve))
+      }
+      return Promise.resolve(jsonResponse(204))
+    })
+
+    const refreshing = refreshSession('https://api.test/auth')
+    const loggingOut = logoutSession('https://api.test/auth')
+    // Let the refresh start, then complete it after logout was requested.
+    await vi.advanceTimersByTimeAsync(0)
+    resolveRefresh(jsonResponse(200, pair('new-access', 'wfr_new')))
+    await Promise.all([refreshing, loggingOut])
+
+    expect(store.has('token')).toBe(false)
+    expect(store.has('refresh_token')).toBe(false)
+    // Logout revoked with the token the refresh just stored.
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      'https://api.test/auth/logout',
+      expect.objectContaining({
+        body: JSON.stringify({ refresh_token: 'wfr_new' }),
+      }),
+    )
+  })
+
+  it('runs under the refresh lock', async () => {
+    const { logoutSession } = await load()
+    store.set('refresh_token', 'wfr_1')
+    fetchMock.mockResolvedValue(jsonResponse(204))
+    const request = vi.fn(async (_name: string, fn: () => Promise<void>) =>
+      fn(),
+    )
+    vi.stubGlobal('navigator', { locks: { request } })
+
+    await logoutSession('https://api.test/auth')
+
+    expect(request).toHaveBeenCalledWith(
+      'wayfarer-token-refresh',
+      expect.any(Function),
+    )
+  })
+
   it('clears tokens and revokes the session', async () => {
     const { logoutSession, getStoredAccessToken, getStoredRefreshToken } =
       await load()

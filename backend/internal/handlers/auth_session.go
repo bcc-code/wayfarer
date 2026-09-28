@@ -17,12 +17,34 @@ const (
 	authCodeRevoked             = "revoked"
 )
 
+// AuthRequestBodyLimit caps request bodies on the public /auth endpoints,
+// which are reachable without authentication. BCC access tokens are a few
+// KB at most (bounded to 8 KiB below); refresh tokens are
+// services.RefreshTokenLength bytes.
+const AuthRequestBodyLimit = 16 << 10
+
 type exchangeRequest struct {
-	Token string `json:"token" binding:"required"`
+	Token string `json:"token" binding:"required,max=8192"`
 }
 
 type refreshRequest struct {
-	RefreshToken string `json:"refresh_token" binding:"required"`
+	RefreshToken string `json:"refresh_token" binding:"required,max=128"`
+}
+
+// bindAuthRequest decodes a JSON body, answering 413 when the body limit
+// was hit and 400 for anything else that doesn't validate.
+func bindAuthRequest(c *gin.Context, req any, field string) bool {
+	err := c.ShouldBindJSON(req)
+	if err == nil {
+		return true
+	}
+	var tooLarge *http.MaxBytesError
+	if errors.As(err, &tooLarge) {
+		c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "request body too large"})
+		return false
+	}
+	c.JSON(http.StatusBadRequest, gin.H{"error": field + " is required and must be a valid token"})
+	return false
 }
 
 // Exchange handles POST /auth/exchange. It validates a login.bcc.no (or
@@ -31,8 +53,7 @@ type refreshRequest struct {
 // provider; afterwards the client renews through Refresh.
 func (h *AuthHandler) Exchange(c *gin.Context) {
 	var req exchangeRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "token is required"})
+	if !bindAuthRequest(c, &req, "token") {
 		return
 	}
 	ctx := c.Request.Context()
@@ -63,8 +84,7 @@ func (h *AuthHandler) Exchange(c *gin.Context) {
 // returns a new token pair.
 func (h *AuthHandler) Refresh(c *gin.Context) {
 	var req refreshRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "refresh_token is required"})
+	if !bindAuthRequest(c, &req, "refresh_token") {
 		return
 	}
 
@@ -90,8 +110,7 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 // refresh token and always succeeds for unknown tokens.
 func (h *AuthHandler) Logout(c *gin.Context) {
 	var req refreshRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "refresh_token is required"})
+	if !bindAuthRequest(c, &req, "refresh_token") {
 		return
 	}
 
