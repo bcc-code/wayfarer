@@ -7,23 +7,12 @@ interface ProjectCardProps {
   endDate: string
   branding: {
     logoImage?: { url: string } | null
-    colors: {
-      light: { accent: string }
-      dark: { accent: string }
-    }
   }
 }
 
-const props = defineProps<{
+defineProps<{
   project: ProjectCardProps
 }>()
-
-const colorMode = useColorMode()
-const accentColor = computed(() => {
-  return colorMode.value === 'dark'
-    ? props.project.branding.colors.dark.accent
-    : props.project.branding.colors.light.accent
-})
 </script>
 
 <template>
@@ -32,17 +21,15 @@ const accentColor = computed(() => {
     card in a wide column stretched to ~320px tall for three lines of text and a
     date. Cards in a row still match: the grid stretches them and `h-full`
     carries that down.
+
+    Uniform neutral, deliberately. Tinting each card with its own project accent
+    turned the grid into a patchwork where the colour carried no meaning — the
+    logo already identifies the project, and the accent belongs on that
+    project's own pages.
   -->
   <UCard
-    class="h-full shadow-md"
-    :style="{ '--accent': accentColor }"
-    :ui="{
-      root: accentColor && 'ring-(--accent)/25 hover:ring-(--accent)/50',
-      body: [
-        accentColor && 'bg-(--accent)/5 hover:bg-(--accent)/10',
-        'h-full flex gap-2',
-      ],
-    }"
+    class="hover:ring-accented h-full shadow-md transition"
+    :ui="{ body: 'h-full flex gap-2' }"
   >
     <div class="flex grow flex-col">
       <h3 class="mb-2 font-semibold">
