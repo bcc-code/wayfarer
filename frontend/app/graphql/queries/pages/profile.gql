@@ -47,6 +47,14 @@ query ProfilePage($ageFilter: LeaderboardFilter) {
       achievedAt
       celebratedAt
       points
+      ... on ContentAchievement {
+        totalItems
+        completedItemCount
+      }
+      ... on StreakAchievement {
+        totalItems
+        completedItemCount
+      }
     }
     myPoints
     leaderboard(entityType: PERSONS, filter: $ageFilter) {

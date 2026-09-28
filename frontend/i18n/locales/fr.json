@@ -11,7 +11,8 @@
     "standings": "Aucun classement pour l’instant",
     "unit": "Aucun classement pour ton unité pour l’instant",
     "challenges": "Aucun défi pour l'instant",
-    "pointHistory": "Aucun point pour l’instant"
+    "pointHistory": "Aucun point pour l’instant",
+    "rules": "Pas de règles ajoutées pour l’instant"
   },
   "auth": {
     "loginButton": "Se connecter",
@@ -139,7 +140,8 @@
   },
   "achievement": {
     "title": "Badge",
-    "unlocked": "Débloqué !"
+    "unlocked": "Débloqué !",
+    "progress": "{completed} sur {total} terminés"
   },
   "feedback": {
     "title": "Donne-nous ton avis",

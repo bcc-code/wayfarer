@@ -147,15 +147,12 @@ switches tabs client-side. Consequences to keep in mind:
   what the page already does — `StandingsLocal` computes two boards in one
   query — and the backend caches full boards keyed by
   `(context, contextID, entityType, filter)`, shared with the ad-hoc path.
-- One `first` applies to **all** boards in that query; it cannot vary per
-  config the way the old code used 20 for persons and 500 for teams. Going with
-  `first: 100`.
-  - The real fix is a per-config size limit, which the backend does not have —
-    an admin can define who is on a board but not how many rows it shows. See
-    "Not yet supported: a per-config size limit" in
-    [`leaderboard-configs.md`](./leaderboard-configs.md). Deferred deliberately
-    to keep this PR small; a backend developer will add it, and `BOARD_SIZE`
-    then goes away.
+- Each config has an optional **`maxEntries`** field, editable in the admin
+  form. Blank clears the cap. The standings query omits `first` so the server
+  uses each board's configured limit (or a 100-entry page when unset), including
+  limits above 100. The shared `BOARD_SIZE` constant has been removed.
+- Reorder updates resend `maxEntries` along with the other full-replace fields,
+  so dragging a board cannot clear its limit.
 - Tab switching costs no request, which is a UX gain over the current
   `v-if`-per-tab components.
 

@@ -1,4 +1,4 @@
-query StandingsPage($first: Int) {
+query StandingsPage {
   myCurrentProject {
     id
     myTeam {
@@ -7,7 +7,7 @@ query StandingsPage($first: Int) {
     leaderboards {
       id
       name
-      leaderboard(first: $first) {
+      leaderboard {
         totalCount
         edges {
           node {

@@ -2,19 +2,11 @@
 const { track } = useAnalytics()
 const { t } = useI18n()
 
-/**
- * One `first` covers every board: `leaderboard` is selected once for the whole
- * list, so it cannot vary per config the way the old page used 20 for persons
- * and 500 for teams.
- */
-const BOARD_SIZE = 100
-
 /** The one tab that is not a config — see below. */
 const UNIT_TAB = 'unit'
 
 const { isAuthReady } = useAuthReady()
 const { data, error, fetching } = useStandingsPageQuery({
-  variables: { first: BOARD_SIZE },
   pause: computed(() => !isAuthReady.value),
 })
 

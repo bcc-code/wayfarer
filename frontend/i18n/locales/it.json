@@ -11,7 +11,8 @@
     "standings": "Nessuna classifica ancora",
     "unit": "Ancora nessuna classifica per la tua unità",
     "challenges": "Nessuna sfida ancora",
-    "pointHistory": "Nessun punto ancora"
+    "pointHistory": "Nessun punto ancora",
+    "rules": "Ancora nessuna regola"
   },
   "auth": {
     "loginButton": "Accedi",
@@ -139,7 +140,8 @@
   },
   "achievement": {
     "title": "Premio",
-    "unlocked": "Obiettivo raggiunto!"
+    "unlocked": "Obiettivo raggiunto!",
+    "progress": "{completed} di {total} completati"
   },
   "feedback": {
     "title": "Dacci un feedback",

@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import type { DropdownMenuItem } from '@nuxt/ui'
+import type { AvatarProps, DropdownMenuItem } from '@nuxt/ui'
 import type { RouteLocationRaw } from 'vue-router'
+
+// The switcher marks the active project with a trailing check, so the leading
+// slot stays free for its logo. `projectId` is what the trailing slot matches
+// on; DropdownMenuItem carries no field for it.
+type ProjectMenuItem = DropdownMenuItem & { projectId?: string }
 
 defineProps<{ collapsed?: boolean }>()
 
-// Deliberately lighter than AdminProjectsPage: the switcher needs a label and
-// enough date context to group, not full branding colours.
+// Deliberately lighter than AdminProjectsPage: the switcher needs a label, the
+// logo, and enough date context to group — not the full branding colours.
 gql(`
   query AdminProjectSwitcher {
     projects(first: 100, filter: { archived: false }) {
@@ -15,6 +20,11 @@ gql(`
           name
           startDate
           endDate
+          branding {
+            logoImage {
+              url
+            }
+          }
         }
       }
     }
@@ -53,6 +63,19 @@ const activeProject = computed(() =>
   projects.value.find((project) => project.id === projectId.value),
 )
 
+type SwitcherProject = (typeof projects.value)[number]
+
+// A project without a logo keeps the old layers icon, so the rows stay aligned
+// whether or not branding has been filled in.
+function projectAvatar(project: SwitcherProject): AvatarProps {
+  return {
+    src: project.branding.logoImage?.url ?? undefined,
+    alt: project.name,
+    icon: 'lucide:layers',
+    ui: { root: 'rounded-md', image: 'object-contain' },
+  }
+}
+
 /**
  * Switching keeps you in the same *section* of the new project where that makes
  * sense. A leaf route carries an id (`challengeId`, `superTeamId`) that has no
@@ -71,18 +94,17 @@ function switchTo(targetProjectId: string) {
   } as RouteLocationRaw)
 }
 
-function groupToItems(
-  group: { id: string; name: string }[],
-): DropdownMenuItem[] {
+function groupToItems(group: SwitcherProject[]): ProjectMenuItem[] {
   return group.map((project) => ({
     label: project.name,
-    icon: project.id === projectId.value ? 'lucide:check' : undefined,
+    projectId: project.id,
+    avatar: projectAvatar(project),
     onSelect: () => switchTo(project.id),
   }))
 }
 
-const items = computed<DropdownMenuItem[][]>(() => {
-  const groups: DropdownMenuItem[][] = []
+const items = computed<ProjectMenuItem[][]>(() => {
+  const groups: ProjectMenuItem[][] = []
 
   for (const [label, group] of [
     ['Aktive', currentProjects.value],
@@ -113,12 +135,22 @@ const items = computed<DropdownMenuItem[][]>(() => {
       content: collapsed ? 'w-60' : 'w-(--reka-dropdown-menu-trigger-width)',
     }"
   >
+    <template #item-trailing="{ item }">
+      <UIcon
+        v-if="item.projectId && item.projectId === projectId"
+        name="lucide:check"
+        class="text-dimmed size-5 shrink-0"
+      />
+    </template>
+
     <UButton
       v-bind="{
         label: collapsed ? undefined : (activeProject?.name ?? 'Velg prosjekt'),
         trailingIcon: collapsed ? undefined : 'lucide:chevrons-up-down',
+        ...(activeProject
+          ? { avatar: projectAvatar(activeProject) }
+          : { icon: 'lucide:layers' }),
       }"
-      icon="lucide:layers"
       color="neutral"
       variant="ghost"
       block

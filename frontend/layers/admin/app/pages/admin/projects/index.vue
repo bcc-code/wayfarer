@@ -18,14 +18,6 @@ gql(`
             logoImage {
               url
             }
-            colors {
-              light {
-                accent
-              }
-              dark {
-                accent
-              }
-            }
           }
         }
       }
@@ -43,6 +35,15 @@ const { currentProjects, futureProjects, pastProjects } = useGroupedProjects(
 )
 
 const { canCreateProject } = usePermissions()
+
+/**
+ * `auto-fill`, not `auto-fit`: a section holding a single project would
+ * otherwise collapse the empty tracks and stretch that one card across the
+ * whole row. `min()` keeps the track from overflowing a container narrower
+ * than the 18rem floor.
+ */
+const PROJECT_GRID =
+  'grid grid-cols-[repeat(auto-fill,minmax(min(300px,100%),1fr))] gap-4'
 </script>
 
 <template>
@@ -58,14 +59,10 @@ const { canCreateProject } = usePermissions()
       </UButton>
     </div>
     <AdminQueryState :fetching :error>
-      <!--
-        Container query, not viewport: `lg:` measured the window while the cards
-        live in a panel the sidebar has already taken ~300px out of.
-      -->
-      <div v-if="data" class="@container space-y-12">
+      <div v-if="data" class="space-y-12">
         <section v-if="currentProjects.length > 0">
           <h2 class="mb-4">Aktive prosjekter</h2>
-          <ul class="grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-3">
+          <ul :class="PROJECT_GRID">
             <li v-for="project in currentProjects" :key="project.id">
               <NuxtLink
                 class="block h-full"
@@ -81,7 +78,7 @@ const { canCreateProject } = usePermissions()
         </section>
         <section v-if="futureProjects.length > 0">
           <h2 class="mb-4">Kommende prosjekter</h2>
-          <ul class="grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-3">
+          <ul :class="PROJECT_GRID">
             <li v-for="project in futureProjects" :key="project.id">
               <NuxtLink
                 class="block h-full"
@@ -97,7 +94,7 @@ const { canCreateProject } = usePermissions()
         </section>
         <section v-if="pastProjects.length > 0">
           <h2 class="mb-4">Tidligere prosjekter</h2>
-          <ul class="grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-3">
+          <ul :class="PROJECT_GRID">
             <li
               v-for="project in pastProjects"
               :key="project.id"

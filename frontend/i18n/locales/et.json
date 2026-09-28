@@ -11,7 +11,8 @@
     "standings": "Edetabelit pole veel",
     "unit": "Edetabelit sinu üksuse jaoks pole veel",
     "challenges": "Väljakutseid pole veel",
-    "pointHistory": "Punkte pole veel"
+    "pointHistory": "Punkte pole veel",
+    "rules": "Reegleid pole veel lisatud"
   },
   "auth": {
     "loginButton": "Logi sisse",
@@ -139,7 +140,8 @@
   },
   "achievement": {
     "title": "Autasu",
-    "unlocked": "Saavutatud!"
+    "unlocked": "Saavutatud!",
+    "progress": "{completed}/{total} lõpetatud"
   },
   "feedback": {
     "title": "Anna meile tagasisidet",

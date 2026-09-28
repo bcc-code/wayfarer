@@ -139,7 +139,8 @@
   },
   "achievement": {
     "title": "Saavutus",
-    "unlocked": "Saavutettu!"
+    "unlocked": "Saavutettu!",
+    "progress": "{completed}/{total} suoritettu"
   },
   "feedback": {
     "title": "Anna meille palautetta",

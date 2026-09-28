@@ -2,7 +2,6 @@ package loaders
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
@@ -122,20 +121,6 @@ func convertToSimpleAchievement(row *sqlc.GetAchievementsByIDsRow, hidden bool) 
 }
 
 func convertToContentAchievement(row *sqlc.GetAchievementsByIDsRow, hidden bool) (model.Achievement, error) {
-	// Count content items from JSON if available
-	totalItems := 0
-	if row.ContentItems != nil {
-		var itemsData []map[string]interface{}
-		jsonBytes, err := json.Marshal(row.ContentItems)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal content items: %w", err)
-		}
-		if err := json.Unmarshal(jsonBytes, &itemsData); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal content items: %w", err)
-		}
-		totalItems = len(itemsData)
-	}
-
 	var awardableFrom *scalars.DateTime
 	if row.AwardableFrom.Valid {
 		awardableFrom = &scalars.DateTime{Time: row.AwardableFrom.Time}
@@ -155,28 +140,13 @@ func convertToContentAchievement(row *sqlc.GetAchievementsByIDsRow, hidden bool)
 		ProjectID:            row.ProjectID,
 		EventID:              row.EventID,
 		ChallengeID:          row.ChallengeID,
-		TotalItems:           totalItems,
-		// Items, UserCompletedItems, NextItem, and CompletedItemCount will be populated by resolvers
+		// Items, UserCompletedItems, NextItem, TotalItems, and CompletedItemCount will be populated by resolvers
 	}, nil
 }
 
 func convertToStreakAchievement(row *sqlc.GetAchievementsByIDsRow, hidden bool) (model.Achievement, error) {
 	if row.StreakAchievementID == nil {
 		return nil, fmt.Errorf("streak achievement missing streak data")
-	}
-
-	// Count streak items from JSON if available
-	totalItems := 0
-	if row.StreakItems != nil {
-		var itemsData []map[string]interface{}
-		jsonBytes, err := json.Marshal(row.StreakItems)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal streak items: %w", err)
-		}
-		if err := json.Unmarshal(jsonBytes, &itemsData); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal streak items: %w", err)
-		}
-		totalItems = len(itemsData)
 	}
 
 	var awardableFrom *scalars.DateTime
@@ -198,7 +168,6 @@ func convertToStreakAchievement(row *sqlc.GetAchievementsByIDsRow, hidden bool) 
 		ProjectID:            row.ProjectID,
 		EventID:              row.EventID,
 		ChallengeID:          row.ChallengeID,
-		TotalItems:           totalItems,
 	}, nil
 }
 
