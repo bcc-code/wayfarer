@@ -6,7 +6,12 @@ query AdminExternalContents(
   $first: Int
   $after: String
 ) {
-  externalContents(filter: $filter, sortBy: $sortBy, first: $first, after: $after) {
+  externalContents(
+    filter: $filter
+    sortBy: $sortBy
+    first: $first
+    after: $after
+  ) {
     edges {
       node {
         id
@@ -26,18 +31,6 @@ query AdminExternalContents(
     pageInfo {
       hasNextPage
       endCursor
-    }
-  }
-}
-
-query AdminProjectStreaks($projectId: ID!) {
-  streaks(filter: { projectId: $projectId }, first: 100) {
-    edges {
-      node {
-        id
-        name
-        description
-      }
     }
   }
 }

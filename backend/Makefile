@@ -1,4 +1,4 @@
-.PHONY: help generate migrate seed seed-tui test build clean test-e2e test-e2e-short test-e2e-coverage test-all update-db-url
+.PHONY: help generate migrate seed seed-tui test test-ci test-e2e-ci build clean test-e2e test-e2e-short test-e2e-coverage test-all update-db-url
 
 help: ## Display this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -39,6 +39,12 @@ seed-large: ## Seed database with large dataset for performance testing
 test: ## Run unit tests
 	@echo "Running unit tests..."
 	@go test -v -race ./...
+
+test-ci: ## Run unit tests for CI (quiet output, race detector on, e2e excluded — CI runs it in a parallel job)
+	@go test -race $$(go list ./... | grep -v '/e2e')
+
+test-e2e-ci: ## Run E2E tests for CI (quiet output, requires Docker)
+	@go test -race -timeout 10m ./e2e/...
 
 test-coverage: ## Run tests with coverage report
 	@echo "Running tests with coverage..."
@@ -103,7 +109,7 @@ dev: ## Run development server with Neon branch
 update-db-url: ## Update DATABASE_URL in .env with current Neon branch
 	@echo "Getting connection string for current branch..."
 	@CONNECTION=$$(./scripts/neon-branch.sh) && \
-		sed -i "s|^DATABASE_URL=.*|DATABASE_URL=$$CONNECTION|" .env && \
+		CONNECTION="$$CONNECTION" perl -pi -e 's{^DATABASE_URL=.*}{DATABASE_URL="$$ENV{CONNECTION}"}' .env && \
 		echo "Updated DATABASE_URL in .env"
 
 debug: ## Run debug TUI tool
@@ -149,11 +155,13 @@ jaeger-ps: ## Show Jaeger container status
 
 loadtest-gen: ## Generate JWT tokens for load testing (run after seed-large)
 	@echo "Generating load test tokens..."
-	@go run ./cmd/loadtest/tokengen -limit 1000 -output ./cmd/loadtest/config.json
+	@export DATABASE_URL=$$(./scripts/neon-branch.sh) && \
+		go run ./cmd/loadtest/tokengen -limit 1000 -output ./cmd/loadtest/config.json
 
 loadtest-gen-all: ## Generate tokens for all seeded users (up to 10k)
 	@echo "Generating load test tokens for all users..."
-	@go run ./cmd/loadtest/tokengen -limit 10000 -output ./cmd/loadtest/config.json
+	@export DATABASE_URL=$$(./scripts/neon-branch.sh) && \
+		go run ./cmd/loadtest/tokengen -limit 10000 -output ./cmd/loadtest/config.json
 
 loadtest: loadtest-gen ## Run default load test (50 VUs, 5 minutes)
 	@echo "Running load test..."
@@ -175,6 +183,14 @@ loadtest-leaderboard: loadtest-gen ## Run leaderboard stress test only (100 RPS)
 	@echo "Running leaderboard stress test..."
 	@k6 run --env LEADERBOARD_RPS=100 --env LEADERBOARD_DURATION=5m ./cmd/loadtest/k6/leaderboard.js
 
+loadtest-challenges: loadtest-gen ## Run challenges page load test (50 VUs, 5 minutes)
+	@echo "Running challenges page load test..."
+	@k6 run ./cmd/loadtest/k6/challenges-scenario.js
+
+loadtest-challenges-quick: loadtest-gen ## Run quick challenges page load test (10 VUs, 1 minute)
+	@echo "Running quick challenges page load test..."
+	@k6 run --env CHALLENGES_VUS=10 --env DURATION=1m ./cmd/loadtest/k6/challenges-scenario.js
+
 loadtest-quiz: loadtest-gen ## Run quiz load test (20 VUs, 5 minutes)
 	@echo "Running quiz load test..."
 	@k6 run --env QUIZ_VUS=20 --env DURATION=5m ./cmd/loadtest/k6/quiz-scenario.js
@@ -186,3 +202,20 @@ loadtest-quiz-quick: loadtest-gen ## Run quick quiz load test (5 VUs, 1 minute)
 loadtest-quiz-stress: loadtest-gen-all ## Run quiz stress test (10 RPS, 5 minutes)
 	@echo "Running quiz stress test..."
 	@k6 run --env QUIZ_RPS=10 --env STRESS_DURATION=5m ./cmd/loadtest/k6/quiz-scenario.js
+
+loadtest-quiz-freetext-spike: loadtest-gen-all ## Run free-text quiz spike (10k users enter within 10s)
+	@echo "Running free-text quiz spike test..."
+	@k6 run --env SPIKE_USERS=10000 --env SPIKE_WINDOW=10 ./cmd/loadtest/k6/freetext-quiz-spike.js
+
+# Off-box load testing against the bare-metal bench box: k6 runs on this
+# machine, server + Postgres stay remote. See scripts/loadtest-remote.sh for
+# the LOADTEST_* env knobs (ssh destination, base URL, token count).
+
+loadtest-remote-config: ## Mint loadtest tokens on the bench box and fetch config.json
+	@./scripts/loadtest-remote.sh config
+
+loadtest-remote-smoke: ## Scaled-down off-box rampspike (~200 users) to verify plumbing
+	@./scripts/loadtest-remote.sh smoke
+
+loadtest-remote-rampspike: ## Full 10k ramped QR-stampede spike from this machine
+	@./scripts/loadtest-remote.sh run ramp_offbox

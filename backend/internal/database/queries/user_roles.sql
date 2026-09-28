@@ -84,7 +84,7 @@ WHERE ur.role = @role
 -- name: GetAllRolesForUsers :many
 SELECT ur.user_id, ur.id, ur.role, ur.church_id, ur.project_id, ur.team_id, ur.assigned_by, ur.assigned_at
 FROM user_roles ur
-WHERE ur.user_id = ANY(@user_ids::text[]);
+WHERE ur.user_id = ANY(@user_ids::char(28)[]);
 
 -- name: GetRoleByID :one
 SELECT id, user_id, role, church_id, project_id, team_id, assigned_by, assigned_at

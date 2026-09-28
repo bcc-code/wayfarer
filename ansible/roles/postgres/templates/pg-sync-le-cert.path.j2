@@ -1,0 +1,11 @@
+# Managed by Ansible (roles/postgres)
+[Unit]
+Description=Watch the wayfarer autocert cache for renewed certificates
+
+[Path]
+# autocert writes via temp file + rename, so watch the directory.
+PathModified={{ postgres_tls_autocert_dir }}
+Unit=pg-sync-le-cert.service
+
+[Install]
+WantedBy=multi-user.target

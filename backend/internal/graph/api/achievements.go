@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
@@ -29,6 +28,7 @@ func resolveBulkAwardTarget(
 	userIds []string,
 	teamID *string,
 	achievementID string,
+	force bool,
 ) (*BulkAwardTarget, error) {
 	// Validate input
 	hasUserIds := len(userIds) > 0
@@ -46,6 +46,11 @@ func resolveBulkAwardTarget(
 
 	// Check if achievement is awardable based on awardable_from timestamp
 	if err := isAchievementAwardable(getAchievementAwardableFrom(achievement)); err != nil {
+		return nil, err
+	}
+
+	// Check if project is finished (unless force=true)
+	if err := checkProjectFinished(ctx, loadersInstance, getAchievementProjectID(achievement), force); err != nil {
 		return nil, err
 	}
 
@@ -237,20 +242,6 @@ func convertRowToSimpleAchievement(row *sqlc.GetAchievementsFilteredCursorRow, h
 }
 
 func convertRowToContentAchievement(row *sqlc.GetAchievementsFilteredCursorRow, hidden bool) (model.Achievement, error) {
-	// Count content items from JSON if available
-	totalItems := 0
-	if row.ContentItems != nil {
-		var itemsData []map[string]interface{}
-		jsonBytes, err := json.Marshal(row.ContentItems)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal content items: %w", err)
-		}
-		if err := json.Unmarshal(jsonBytes, &itemsData); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal content items: %w", err)
-		}
-		totalItems = len(itemsData)
-	}
-
 	var awardableFrom *scalars.DateTime
 	if row.AwardableFrom.Valid {
 		awardableFrom = &scalars.DateTime{Time: row.AwardableFrom.Time}
@@ -270,13 +261,12 @@ func convertRowToContentAchievement(row *sqlc.GetAchievementsFilteredCursorRow, 
 		ProjectID:            row.ProjectID,
 		EventID:              row.EventID,
 		ChallengeID:          row.ChallengeID,
-		TotalItems:           totalItems,
-		// Items, UserCompletedItems, NextItem, and CompletedItemCount will be populated by resolvers
+		// Items, UserCompletedItems, NextItem, TotalItems, and CompletedItemCount will be populated by resolvers
 	}, nil
 }
 
 func convertRowToStreakAchievement(row *sqlc.GetAchievementsFilteredCursorRow, hidden bool) (model.Achievement, error) {
-	if row.StreakID == nil || row.NeededStreak == nil {
+	if row.StreakAchievementID == nil {
 		return nil, fmt.Errorf("streak achievement missing streak data")
 	}
 
@@ -299,8 +289,6 @@ func convertRowToStreakAchievement(row *sqlc.GetAchievementsFilteredCursorRow, h
 		ProjectID:            row.ProjectID,
 		EventID:              row.EventID,
 		ChallengeID:          row.ChallengeID,
-		NeededStreak:         int(*row.NeededStreak),
-		StreakID:             *row.StreakID,
 	}, nil
 }
 
@@ -348,18 +336,6 @@ func convertRowToQuizAchievement(row *sqlc.GetAchievementsFilteredCursorRow, hid
 
 // convertPublishedContentAchievementRow converts GetPublishedContentAchievementsByExternalContentRow to ContentAchievement model
 func convertPublishedContentAchievementRow(row *sqlc.GetPublishedContentAchievementsByExternalContentRow) *model.ContentAchievement {
-	// Count content items from JSON if available
-	totalItems := 0
-	if row.ContentItems != nil {
-		var itemsData []map[string]interface{}
-		jsonBytes, err := json.Marshal(row.ContentItems)
-		if err == nil {
-			if err := json.Unmarshal(jsonBytes, &itemsData); err == nil {
-				totalItems = len(itemsData)
-			}
-		}
-	}
-
 	hidden := false
 	if row.Hidden != nil {
 		hidden = *row.Hidden
@@ -384,6 +360,45 @@ func convertPublishedContentAchievementRow(row *sqlc.GetPublishedContentAchievem
 		ProjectID:            row.ProjectID,
 		EventID:              row.EventID,
 		ChallengeID:          row.ChallengeID,
-		TotalItems:           totalItems,
 	}
+}
+
+// convertPublishedStreakAchievementRow converts GetPublishedStreakAchievementsByExternalContentRow to StreakAchievement model
+func convertPublishedStreakAchievementRow(row *sqlc.GetPublishedStreakAchievementsByExternalContentRow) *model.StreakAchievement {
+	hidden := false
+	if row.Hidden != nil {
+		hidden = *row.Hidden
+	}
+
+	var awardableFrom *scalars.DateTime
+	if row.AwardableFrom.Valid {
+		awardableFrom = &scalars.DateTime{Time: row.AwardableFrom.Time}
+	}
+
+	return &model.StreakAchievement{
+		ID:                   row.ID,
+		Name:                 row.Name,
+		DescriptionPending:   row.DescriptionPending,
+		DescriptionCompleted: row.DescriptionCompleted,
+		NotificationText:     row.NotificationText,
+		ImagePending:         row.ImagePending,
+		ImageCompleted:       row.ImageCompleted,
+		Points:               int(row.Points),
+		Hidden:               hidden,
+		AwardableFrom:        awardableFrom,
+		ProjectID:            row.ProjectID,
+		EventID:              row.EventID,
+		ChallengeID:          row.ChallengeID,
+	}
+}
+
+// achievementAwardedUserCount returns how many users have been awarded the
+// achievement. Team and super-team awards are not counted.
+func (r *Resolver) achievementAwardedUserCount(ctx context.Context, achievementID string) (int, error) {
+	thunk := r.Loaders.AchievementAwardedUserCountLoader.Load(ctx, achievementID)
+	count, err := thunk()
+	if err != nil {
+		return 0, fmt.Errorf("failed to load achievement awarded user count: %w", err)
+	}
+	return int(count), nil
 }

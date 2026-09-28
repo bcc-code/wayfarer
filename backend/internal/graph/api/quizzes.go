@@ -115,3 +115,31 @@ func buildQuizCacheKeyParams(filter *model.QuizFilter, first *int, after *string
 
 	return params
 }
+
+// quizReorderStep is one question's new position within a reorder pass.
+type quizReorderStep struct {
+	ID    string
+	Order int32
+}
+
+// quizReorderPasses builds the two passes a reorder needs.
+//
+// `quiz_questions` has UNIQUE (quiz_id, question_order), so writing final
+// positions directly collides the moment two questions swap: the first UPDATE
+// takes an order the second still holds. The first pass parks every question on
+// a negative order — no real position uses those — which leaves the second pass
+// free to assign 1..n in any arrangement.
+func quizReorderPasses(questionIDs []string) [][]quizReorderStep {
+	if len(questionIDs) == 0 {
+		return nil
+	}
+
+	park := make([]quizReorderStep, len(questionIDs))
+	final := make([]quizReorderStep, len(questionIDs))
+	for i, id := range questionIDs {
+		park[i] = quizReorderStep{ID: id, Order: int32(-(i + 1))}
+		final[i] = quizReorderStep{ID: id, Order: int32(i + 1)}
+	}
+
+	return [][]quizReorderStep{park, final}
+}

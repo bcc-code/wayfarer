@@ -1,7 +1,7 @@
 -- name: GetChurchesByIDs :many
 SELECT id, external_id, name, country, category
 FROM churches
-WHERE id = ANY(@ids::text[]);
+WHERE id = ANY(@ids::char(28)[]);
 
 -- name: GetChurchByID :one
 SELECT id, external_id, name, country, category
@@ -23,11 +23,11 @@ LIMIT 1;
 SELECT id, external_id, name, country, category
 FROM churches
 WHERE
-    (@ids::text[] IS NULL OR id = ANY(@ids::text[]))
+    (@ids::char(28)[] IS NULL OR id = ANY(@ids::char(28)[]))
     AND (@country::text = '' OR country = @country::text)
     AND (@category::text = '' OR category = @category::text)
-    AND (@aftercursor::text = '' OR id > @aftercursor::text)
-    AND (@beforecursor::text = '' OR id < @beforecursor::text)
+    AND (@aftercursor::char(28) = '' OR id > @aftercursor::char(28))
+    AND (@beforecursor::char(28) = '' OR id < @beforecursor::char(28))
 ORDER BY
     CASE WHEN @isbackward::bool = true THEN id END DESC,
     CASE WHEN @isbackward::bool = false OR @isbackward::bool IS NULL THEN id END ASC
@@ -37,7 +37,7 @@ LIMIT CASE WHEN @querylimit::int IS NULL THEN NULL ELSE @querylimit::int END;
 SELECT COUNT(*)
 FROM churches
 WHERE
-    (@ids::text[] IS NULL OR id = ANY(@ids::text[]))
+    (@ids::char(28)[] IS NULL OR id = ANY(@ids::char(28)[]))
     AND (@country::text = '' OR country = @country::text)
     AND (@category::text = '' OR category = @category::text);
 

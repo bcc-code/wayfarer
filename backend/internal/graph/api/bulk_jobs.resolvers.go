@@ -14,6 +14,20 @@ import (
 	"github.com/bcc-media/wayfarer/internal/services/bulk"
 )
 
+// RetryBulkJob is the resolver for the retryBulkJob field.
+func (r *mutationResolver) RetryBulkJob(ctx context.Context, id string) (*model.BulkJob, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	if r.BulkService == nil {
+		return nil, fmt.Errorf("bulk service not initialized")
+	}
+
+	return r.BulkService.RetryBulkJob(ctx, id, userID)
+}
+
 // BulkJob is the resolver for the bulkJob field.
 func (r *queryResolver) BulkJob(ctx context.Context, id string) (*model.BulkJob, error) {
 	// Get authenticated user ID from context

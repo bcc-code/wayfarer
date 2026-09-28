@@ -40,11 +40,6 @@ func (s *Seeder) SeedProjects(stats *Stats) error {
 		VALUES ($1, $2, $3, $4, $5, $6)
 	`
 
-	streakQuery := `
-		INSERT INTO streaks (id, project_id, name, description)
-		VALUES ($1, $2, $3, $4)
-	`
-
 	// Color schemes: accent colors for light/dark modes
 	colorSchemes := []struct{ accent string }{
 		{"#E53E3E"}, // Red
@@ -108,9 +103,15 @@ func (s *Seeder) SeedProjects(stats *Stats) error {
 	for i := 0; i < s.Config.NumProjects; i++ {
 		projectID := ulid.NewProjectID()
 
-		// Random project timing
+		// Random project timing. The first project is always active
+		// (started, not ended) — e2e tests award achievements on
+		// ProjectIDs[0], which the backend rejects for ended projects.
 		startOffset := rand.Intn(365) - 180 // -180 to +185 days
 		duration := rand.Intn(120) + 30     // 30-150 days duration
+		if i == 0 {
+			startOffset = -30
+			duration = 365
+		}
 		startDate := time.Now().AddDate(0, 0, startOffset)
 		endDate := startDate.AddDate(0, 0, duration)
 
@@ -194,27 +195,6 @@ func (s *Seeder) SeedProjects(stats *Stats) error {
 
 			s.Data.EventIDs[projectID] = append(s.Data.EventIDs[projectID], eventID)
 			stats.Events++
-		}
-
-		// Create 1-2 streaks per project
-		numStreaks := 1 + rand.Intn(2)
-		for j := 0; j < numStreaks; j++ {
-			streakID := ulid.NewStreakID()
-			streakName := s.Fake.Lorem().Word() + " Streak"
-			streakDesc := "Maintain your streak by completing activities daily!"
-
-			_, err := s.DB.Pool.Exec(s.Ctx, streakQuery,
-				streakID,
-				projectID,
-				streakName,
-				streakDesc,
-			)
-			if err != nil {
-				return err
-			}
-
-			s.Data.StreakIDs[projectID] = append(s.Data.StreakIDs[projectID], streakID)
-			stats.Streaks++
 		}
 
 		if (i+1)%10 == 0 {

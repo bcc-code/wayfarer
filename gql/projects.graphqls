@@ -11,6 +11,13 @@ type Project {
     infoMessageStart: DateTime
     infoMessageEnd: DateTime
     challenges: [Challenge!]! @goField(forceResolver: true)
+    activeChallenges: [Challenge!]! @goField(forceResolver: true)
+    completedChallenges: [Challenge!]! @goField(forceResolver: true)
+    activeChallengesCount: Int! @goField(forceResolver: true)
+    """
+    Ad-hoc leaderboard computed directly from the given entityType/filter at request time.
+    For named, admin-curated leaderboards, see `leaderboards` (LeaderboardConfig) instead.
+    """
     leaderboard(
         entityType: LeaderboardEntityType!
         filter: LeaderboardFilter
@@ -19,6 +26,10 @@ type Project {
         last: Int
         before: String
     ): LeaderboardConnection! @goField(forceResolver: true)
+    """
+    Active leaderboard configs for this project (all configs, including inactive, for admins/superadmins).
+    """
+    leaderboards: [LeaderboardConfig!]! @goField(forceResolver: true)
     events: [Event!]! @goField(forceResolver: true)
     startDate: DateTime!
     endDate: DateTime!
@@ -27,7 +38,6 @@ type Project {
     myChurchTeams: [Team!]! @goField(forceResolver: true)
     myTeam: Team @goField(forceResolver: true)
     achievements: [Achievement!]! @goField(forceResolver: true)
-    streaks: [Streak!]! @goField(forceResolver: true)
     journal(
         filter: ScoreJournalFilter
         first: Int
@@ -38,6 +48,25 @@ type Project {
     myPoints: Int! @goField(forceResolver: true)
     archivedAt: Boolean
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
+    """
+    Daily activity for the last `days` days, oldest first, for trend display.
+    Every day in the window is present, including days with no activity, so the
+    result can be plotted directly without gap-filling on the client.
+    """
+    activityTrend(days: Int = 14): [ProjectActivityPoint!]! @goField(forceResolver: true)
+}
+
+"""
+One day of aggregate activity in a project, derived from the score journal —
+which covers every point award regardless of source, so it reflects challenge
+completions, achievements, quizzes and manual adjustments alike.
+"""
+type ProjectActivityPoint {
+    date: Date!
+    """Points awarded that day."""
+    points: Int!
+    """Distinct users who were awarded points that day."""
+    activeUsers: Int!
 }
 
 # ==================== Project Input Types ====================

@@ -54,28 +54,6 @@ func (s *Service) getDataForEvents(ctx context.Context) ([]common.TranslationDat
 	return toSend, nil
 }
 
-func (s *Service) getDataForStreaks(ctx context.Context) ([]common.TranslationData, error) {
-	rows, err := s.queries.GetStreaksForTranslation(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	toSend := []common.TranslationData{}
-	for _, row := range rows {
-		value := NameDescriptionTranslation{
-			Name:        row.Name,
-			Description: null.StringFrom(row.Description),
-		}
-		toSend = append(toSend, common.TranslationData{
-			Language: "no",
-			Value:    mustToJSON(value),
-			ID:       row.ID, // ULID with SK prefix
-		})
-	}
-
-	return toSend, nil
-}
-
 func (s *Service) getDataForChallenges(ctx context.Context) ([]common.TranslationData, error) {
 	rows, err := s.queries.GetChallengesForTranslation(ctx)
 	if err != nil {

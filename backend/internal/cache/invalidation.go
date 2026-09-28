@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -13,25 +14,39 @@ import (
 // This is necessary because ristretto doesn't natively support prefix-based deletion
 type KeyRegistry struct {
 	mu   sync.RWMutex
-	keys map[string][]string // prefix -> list of keys with that prefix
+	keys map[string]map[string]struct{} // prefix -> set of keys with that prefix
+	// gens holds a per-key registration generation, bumped on every Register.
+	// The async eviction pruner uses it to detect a concurrent re-insert
+	// between its cache check and its unregister (see UnregisterIfGen).
+	gens map[string]uint64
 }
 
 // NewKeyRegistry creates a new key registry
 func NewKeyRegistry() *KeyRegistry {
 	return &KeyRegistry{
-		keys: make(map[string][]string),
+		keys: make(map[string]map[string]struct{}),
+		gens: make(map[string]uint64),
 	}
 }
 
-// Register adds a key to the registry under its prefixes
+// Register adds a key to the registry under its prefixes. Registering the
+// same key multiple times (e.g. concurrent cache misses) is idempotent for
+// the prefix sets but bumps the key's generation.
 func (kr *KeyRegistry) Register(key string) {
 	kr.mu.Lock()
 	defer kr.mu.Unlock()
 
+	kr.gens[key]++
+
 	// Extract all relevant prefixes/tags from the key
 	prefixes := extractPrefixes(key)
 	for _, prefix := range prefixes {
-		kr.keys[prefix] = append(kr.keys[prefix], key)
+		set := kr.keys[prefix]
+		if set == nil {
+			set = make(map[string]struct{})
+			kr.keys[prefix] = set
+		}
+		set[key] = struct{}{}
 	}
 }
 
@@ -39,18 +54,52 @@ func (kr *KeyRegistry) Register(key string) {
 func (kr *KeyRegistry) Unregister(key string) {
 	kr.mu.Lock()
 	defer kr.mu.Unlock()
+	kr.unregisterLocked(key)
+}
 
+func (kr *KeyRegistry) unregisterLocked(key string) {
+	delete(kr.gens, key)
 	prefixes := extractPrefixes(key)
 	for _, prefix := range prefixes {
-		keys := kr.keys[prefix]
-		for i, k := range keys {
-			if k == key {
-				// Remove key from slice
-				kr.keys[prefix] = append(keys[:i], keys[i+1:]...)
-				break
-			}
+		set := kr.keys[prefix]
+		delete(set, key)
+		if len(set) == 0 {
+			delete(kr.keys, prefix)
 		}
 	}
+}
+
+// Gen returns the key's current registration generation, and whether the key
+// is registered at all.
+func (kr *KeyRegistry) Gen(key string) (uint64, bool) {
+	kr.mu.RLock()
+	defer kr.mu.RUnlock()
+	gen, ok := kr.gens[key]
+	return gen, ok
+}
+
+// UnregisterIfGen removes the key only if its registration generation still
+// equals gen — i.e. no Register happened since the caller read that
+// generation. This lets the async eviction pruner drop dead keys without
+// racing a concurrent re-insert into unregistering a live one.
+func (kr *KeyRegistry) UnregisterIfGen(key string, gen uint64) {
+	kr.mu.Lock()
+	defer kr.mu.Unlock()
+	if kr.gens[key] != gen {
+		return
+	}
+	kr.unregisterLocked(key)
+}
+
+// AllKeys returns a snapshot of every registered key.
+func (kr *KeyRegistry) AllKeys() []string {
+	kr.mu.RLock()
+	defer kr.mu.RUnlock()
+	result := make([]string, 0, len(kr.gens))
+	for key := range kr.gens {
+		result = append(result, key)
+	}
+	return result
 }
 
 // GetKeys returns all keys matching the given prefix
@@ -58,9 +107,11 @@ func (kr *KeyRegistry) GetKeys(prefix string) []string {
 	kr.mu.RLock()
 	defer kr.mu.RUnlock()
 
-	keys := kr.keys[prefix]
-	result := make([]string, len(keys))
-	copy(result, keys)
+	set := kr.keys[prefix]
+	result := make([]string, 0, len(set))
+	for key := range set {
+		result = append(result, key)
+	}
 	return result
 }
 
@@ -68,7 +119,8 @@ func (kr *KeyRegistry) GetKeys(prefix string) []string {
 func (kr *KeyRegistry) Clear() {
 	kr.mu.Lock()
 	defer kr.mu.Unlock()
-	kr.keys = make(map[string][]string)
+	kr.keys = make(map[string]map[string]struct{})
+	kr.gens = make(map[string]uint64)
 }
 
 // extractPrefixes extracts all relevant prefixes from a cache key
@@ -77,6 +129,19 @@ func (kr *KeyRegistry) Clear() {
 // - "challenge:project:PROJ123" (all challenges in project)
 func extractPrefixes(key string) []string {
 	prefixes := []string{}
+
+	// Whole-response GraphQL cache keys register under the umbrella prefix
+	// (cleared on project invalidation) and, for per-user entries, under the
+	// exact per-user prefix (cleared on that user's mutations/invalidation).
+	if strings.HasPrefix(key, PrefixGQLResponse) {
+		prefixes = append(prefixes, PrefixGQLResponse)
+		if rest, ok := strings.CutPrefix(key, prefixGQLResponseUser); ok {
+			if i := strings.IndexByte(rest, ':'); i > 0 {
+				prefixes = append(prefixes, prefixGQLResponseUser+rest[:i+1])
+			}
+		}
+		return prefixes
+	}
 
 	// Handle leaderboard keys specially - they need to be registered under
 	// prefixes that match the invalidation patterns in InvalidateProject/InvalidateEvent
@@ -116,11 +181,13 @@ func extractPrefixes(key string) []string {
 		PrefixTeamLeaderboardTags,   // Must be before PrefixTeamMemberLeaderboard and PrefixTeam
 		PrefixTeamMemberLeaderboard, // Must be before PrefixTeam
 		PrefixUser, PrefixChurch, PrefixProject, PrefixEvent, PrefixTeam,
-		PrefixSuperTeam, PrefixChallenge, PrefixAchievement, PrefixStreak,
+		PrefixSuperTeam, PrefixChallenge, PrefixAchievement,
 		PrefixUserProjects, PrefixUserEvents, PrefixTeamMembers, PrefixUserRoles,
 		PrefixUserChallengeEnrollments, PrefixUserChallengeCompletions,
-		PrefixUserContentProgress, PrefixUserAchievements, PrefixUserStreakActivity,
-		PrefixUserConsents, PrefixUserProjectPoints,
+		PrefixUserContentProgress, PrefixUserAchievements, PrefixUserStreakProgress,
+		PrefixUserConsents, PrefixUserProjectPoints, PrefixActiveChallengesCount,
+		PrefixUserTeamInProject, PrefixUserEnrolledChallenges, PrefixUserQuizSessionAccess,
+		PrefixUserActiveQuizSession,
 		PrefixUsersFilter, PrefixUsersCount,
 		PrefixProjectsFilter, PrefixProjectsCount,
 		PrefixEventsFilter, PrefixEventsCount,
@@ -129,7 +196,6 @@ func extractPrefixes(key string) []string {
 		PrefixAchievementsFilter, PrefixAchievementsCount,
 		PrefixChallengesFilter, PrefixChallengesCount,
 		PrefixChurchesFilter, PrefixChurchesCount,
-		PrefixStreaksFilter, PrefixStreaksCount,
 	} {
 		if len(key) >= len(prefix) && key[:len(prefix)] == prefix {
 			prefixes = append(prefixes, prefix)
@@ -157,19 +223,134 @@ type CacheWithRegistry struct {
 	registry *KeyRegistry
 	sync     *CacheSync
 	pool     *pgxpool.Pool
+
+	// evictedKeys feeds the pruneEvictedKeys worker; needsSweep is set when
+	// the queue overflows and a notification is dropped, requesting a full
+	// registry sweep. closeOnce guards the stop channel against double Close,
+	// and done is closed when the worker has exited.
+	evictedKeys chan string
+	needsSweep  atomic.Bool
+	stop        chan struct{}
+	done        chan struct{}
+	closeOnce   sync.Once
 }
 
 // NewCacheWithRegistry creates a cache with key registry support
 func NewCacheWithRegistry(cfg Config) (*CacheWithRegistry, error) {
+	registry := NewKeyRegistry()
+
+	// Prune keys from the registry when ristretto evicts them on its own (TTL
+	// expiry / cost eviction / admission rejection). Without this the registry
+	// grows unbounded and DeletePrefix slows down over time.
+	// Ristretto fires OnReject not only for admission rejections but also for
+	// a duplicate Set of a key it already holds (two concurrent cache misses
+	// storing the same key: the second item is rejected while the first one's
+	// value stays cached). Unregistering unconditionally would strand such a
+	// live entry outside the registry, silently breaking prefix invalidation
+	// for it — so keys must be re-checked against the cache before pruning.
+	// The check cannot run inside the callback itself: ristretto invokes it
+	// while holding internal shard locks, and a Get there deadlocks. The
+	// callback only enqueues; pruneEvictedKeys does the check. When the queue
+	// is full the notification is dropped and a sweep flag is set instead —
+	// the worker then walks the whole registry and prunes every dead key, so
+	// eviction storms cannot leak registrations.
+	evictedKeys := make(chan string, 4096)
+	c := &CacheWithRegistry{
+		registry:    registry,
+		evictedKeys: evictedKeys,
+		stop:        make(chan struct{}),
+		done:        make(chan struct{}),
+	}
+	cfg.onEvictKey = func(key string) {
+		select {
+		case evictedKeys <- key:
+		default:
+			c.needsSweep.Store(true)
+		}
+	}
+
 	cache, err := New(cfg)
 	if err != nil {
 		return nil, err
 	}
+	c.Cache = cache
 
-	return &CacheWithRegistry{
-		Cache:    cache,
-		registry: NewKeyRegistry(),
-	}, nil
+	go c.pruneEvictedKeys()
+	return c, nil
+}
+
+// pruneEvictedKeys unregisters keys that ristretto evicted on its own, but
+// only after confirming the key is really gone — an eviction callback can
+// fire for an item whose key is still live (see NewCacheWithRegistry).
+func (c *CacheWithRegistry) pruneEvictedKeys() {
+	defer close(c.done)
+	sweepTicker := time.NewTicker(pruneSweepInterval)
+	defer sweepTicker.Stop()
+	for {
+		// Prefer stop over further pruning so Close doesn't wait behind a
+		// busy eviction queue.
+		select {
+		case <-c.stop:
+			return
+		default:
+		}
+		select {
+		case key := <-c.evictedKeys:
+			// Batch whatever is already queued so one buffer flush (Wait)
+			// covers all of them.
+			keys := []string{key}
+		batching:
+			for len(keys) < 256 {
+				select {
+				case k := <-c.evictedKeys:
+					keys = append(keys, k)
+				default:
+					break batching
+				}
+			}
+			c.pruneKeys(keys)
+		case <-sweepTicker.C:
+			if c.needsSweep.Swap(false) {
+				c.pruneKeys(c.registry.AllKeys())
+			}
+		case <-c.stop:
+			return
+		}
+	}
+}
+
+// pruneSweepInterval is how often the pruning worker checks whether an
+// overflowed eviction queue requires a full registry sweep.
+const pruneSweepInterval = 30 * time.Second
+
+// pruneKeys unregisters each key that is no longer in the cache. The
+// generation check makes the miss-then-unregister sequence safe against a
+// concurrent re-insert: Register bumps the generation, turning this
+// unregister into a no-op for the freshly stored entry.
+func (c *CacheWithRegistry) pruneKeys(keys []string) {
+	// Flush pending sets first so just-stored values are visible to the Gets
+	// (no-op once the cache is closed).
+	c.Cache.Wait()
+	for _, key := range keys {
+		gen, registered := c.registry.Gen(key)
+		if !registered {
+			continue
+		}
+		if _, ok := c.Cache.Get(key); !ok {
+			c.registry.UnregisterIfGen(key, gen)
+		}
+	}
+}
+
+// Close stops the registry pruning worker, waits for it to exit, and then
+// closes the underlying cache — the worker must never touch a closing
+// ristretto instance.
+func (c *CacheWithRegistry) Close() {
+	c.closeOnce.Do(func() {
+		close(c.stop)
+		<-c.done
+	})
+	c.Cache.Close()
 }
 
 // SetSync configures the cache sync for cross-instance invalidation
@@ -244,12 +425,19 @@ func (c *CacheWithRegistry) invalidateUserLocal(userID string) {
 	// Invalidate content progress, achievements, and streak activity
 	c.DeletePrefix(PrefixUserContentProgress + userID)
 	c.DeletePrefix(PrefixUserAchievements + userID)
-	c.DeletePrefix(PrefixUserStreakActivity + userID)
+	c.DeletePrefix(PrefixUserStreakProgress + userID)
 	// Invalidate user project points cache (myPoints field)
 	c.DeletePrefix(PrefixUserProjectPoints + userID)
+	// Invalidate active challenges count for this user
+	c.DeletePrefix(PrefixActiveChallengesCount + userID)
+	// Invalidate per-user lookup caches (myTeam, enrolled challenges, quiz session access)
+	// These keys are registered under the "user:{userID}" tag, which the
+	// DeletePrefix("user:"+userID) call above already covers.
 	// Invalidate user filter/count queries (gender/church changes affect results)
 	c.DeletePrefix(PrefixUsersFilter)
 	c.DeletePrefix(PrefixUsersCount)
+	// Drop the user's whole-response cache entries (per-user keyed)
+	c.DeletePrefix(GQLResponseUserPrefix(userID))
 }
 
 // InvalidateProject invalidates all cache entries related to a project and broadcasts to other instances
@@ -281,6 +469,11 @@ func (c *CacheWithRegistry) invalidateProjectLocal(projectID string) {
 
 	// Invalidate all team member leaderboards in this project (scores changed)
 	c.DeletePrefix(PrefixTeamMemberLeaderboard)
+
+	// Drop ALL whole-response cache entries: both shared and per-user entries
+	// embed project data (branding, info message, leaderboards), so admin
+	// project edits must surface immediately rather than after the TTL.
+	c.DeletePrefix(PrefixGQLResponse)
 }
 
 // InvalidateEvent invalidates all cache entries related to an event and broadcasts to other instances
@@ -346,6 +539,46 @@ func (c *CacheWithRegistry) InvalidateChallenge(challengeID, projectID string, e
 	c.broadcast(msg)
 }
 
+// InvalidateUserChallengeEnrollment invalidates only the cache entries that one
+// user's own enrollment change can affect.
+//
+// Use this for self-service enroll/unenroll instead of InvalidateChallenge.
+// InvalidateChallenge exists for changes to the challenge *definition* and,
+// because there is no reverse index from a challenge to its enrolled users, it
+// falls back to DeletePrefix over five per-user prefixes — which discards those
+// caches for every user in the system. That blast radius is fine when an admin
+// edits a challenge and ruinous when 4,000 users self-enroll in the same second:
+// each enrollment throws away the enrollment, completion, enrolled-challenge and
+// quiz-access caches that the very next ChallengePage request needs, so the cache
+// never survives long enough to serve anything. Measured on the ramped 10k spike,
+// that turned ChallengePage into a guaranteed miss.
+//
+// A self-enrollment only changes state scoped to (userID, projectID, challengeID),
+// and every one of those keys is directly addressable, so no prefix sweep is
+// needed. Broadcasts the same narrow invalidation to other instances, so
+// multi-replica deployments stay coherent without the InvalidateUser blast
+// radius.
+func (c *CacheWithRegistry) InvalidateUserChallengeEnrollment(userID, projectID, challengeID string) {
+	c.invalidateUserChallengeEnrollmentLocal(userID, projectID, challengeID)
+	c.broadcast(InvalidationMessage{
+		Type: InvalidationTypeUserEnrollment, ID: userID,
+		ProjectID: projectID, ChallengeID: challengeID,
+	})
+}
+
+// invalidateUserChallengeEnrollmentLocal drops the enrollment-scoped keys on
+// this instance only.
+func (c *CacheWithRegistry) invalidateUserChallengeEnrollmentLocal(userID, projectID, challengeID string) {
+	c.Delete(UserChallengeEnrollmentKey(userID, challengeID))
+	c.Delete(UserChallengeCompletionKey(userID, challengeID))
+	c.Delete(UserEnrolledChallengesKey(userID, projectID))
+	c.Delete(UserQuizSessionAccessKey(userID, projectID))
+	c.Delete(ActiveChallengesCountKey(userID, projectID))
+	// The user's whole-response entries embed enrollment state (active
+	// challenge lists, userEnrolledAt) and must not survive the enrollment.
+	c.DeletePrefix(GQLResponseUserPrefix(userID))
+}
+
 // invalidateChallengeLocal invalidates challenge cache entries on this instance only
 func (c *CacheWithRegistry) invalidateChallengeLocal(challengeID, projectID string, eventID *string) {
 	c.Delete(ChallengeKey(challengeID))
@@ -365,6 +598,35 @@ func (c *CacheWithRegistry) invalidateChallengeLocal(challengeID, projectID stri
 	// This is more aggressive but necessary since we don't track reverse index
 	c.DeletePrefix(PrefixUserChallengeEnrollments)
 	c.DeletePrefix(PrefixUserChallengeCompletions)
+	c.DeletePrefix(PrefixUserEnrolledChallenges)
+
+	// Challenge changes can alter the project's quiz set, which the per-user
+	// quiz session access cache is scoped to
+	c.DeletePrefix(PrefixUserQuizSessionAccess)
+
+	// Invalidate active challenges count (user-specific, keyed by project)
+	c.DeletePrefix(PrefixActiveChallengesCount)
+}
+
+// InvalidateLeaderboardConfig invalidates all cache entries related to a leaderboard config and broadcasts to other instances
+func (c *CacheWithRegistry) InvalidateLeaderboardConfig(configID, projectID string, eventID *string) {
+	c.invalidateLeaderboardConfigLocal(configID, projectID, eventID)
+	msg := InvalidationMessage{Type: InvalidationTypeLeaderboardConfig, ID: configID, ProjectID: projectID}
+	if eventID != nil {
+		msg.EventID = *eventID
+	}
+	c.broadcast(msg)
+}
+
+// invalidateLeaderboardConfigLocal invalidates leaderboard config cache entries on this instance only
+func (c *CacheWithRegistry) invalidateLeaderboardConfigLocal(configID, projectID string, eventID *string) {
+	c.Delete(LeaderboardConfigKey(configID))
+
+	// Invalidate config list caches for project and event
+	c.Delete(LeaderboardConfigsByProjectKey(projectID))
+	if eventID != nil {
+		c.Delete(LeaderboardConfigsByEventKey(*eventID))
+	}
 }
 
 // InvalidateAchievement invalidates all cache entries related to an achievement and broadcasts to other instances
@@ -376,11 +638,34 @@ func (c *CacheWithRegistry) InvalidateAchievement(achievementID string) {
 // invalidateAchievementLocal invalidates achievement cache entries on this instance only
 func (c *CacheWithRegistry) invalidateAchievementLocal(achievementID string) {
 	c.Delete(AchievementKey(achievementID))
+	c.Delete(ContentItemsByAchievementKey(achievementID))
+	c.Delete(StreakItemsByAchievementKey(achievementID))
+	c.Delete(ContentItemCountKey(achievementID))
 
 	// All achievement list/filter queries (any filter combination)
 	// These are invalidated globally since filter query cache keys are hashed
 	c.DeletePrefix(PrefixAchievementsFilter)
 	c.DeletePrefix(PrefixAchievementsCount)
+}
+
+// InvalidateUserAchievementProgress refreshes one user's progress and award state
+// on every instance, without evicting their roles or other users' cached data.
+func (c *CacheWithRegistry) InvalidateUserAchievementProgress(userID string) {
+	c.invalidateUserAchievementProgressLocal(userID)
+	c.broadcast(InvalidationMessage{Type: InvalidationTypeUserAchievementProgress, ID: userID})
+}
+
+func (c *CacheWithRegistry) invalidateUserAchievementProgressLocal(userID string) {
+	// Relationship keys are registered under a user tag, not a literal prefix
+	// such as "usercontent:<userID>".
+	for _, key := range c.registry.GetKeys("user:" + userID) {
+		if strings.HasPrefix(key, PrefixUserContentProgress) ||
+			strings.HasPrefix(key, PrefixUserStreakProgress) ||
+			strings.HasPrefix(key, PrefixUserAchievements) {
+			c.Delete(key)
+		}
+	}
+	c.DeletePrefix(GQLResponseUserPrefix(userID))
 }
 
 // InvalidateQuiz invalidates all cache entries related to a quiz and broadcasts to other instances
@@ -408,11 +693,45 @@ func (c *CacheWithRegistry) invalidateQuizLocal(quizID, challengeID string) {
 	c.DeletePrefix(PrefixQuizzesFilter)
 	c.DeletePrefix(PrefixQuizzesCount)
 
+	// Per-user quiz session access and active-session caches may include this quiz
+	c.DeletePrefix(PrefixUserQuizSessionAccess)
+	c.DeletePrefix(PrefixUserActiveQuizSession)
+
 	// Invalidate quiz questions and answers for this quiz
 	c.Delete(QuizQuestionsByQuizKey(quizID))
 
+	// Invalidate quiz achievement criteria for this quiz
+	c.Delete(QuizAchievementsByQuizKey(quizID))
+
 	// Invalidate submissions for this quiz
 	c.Delete(QuizSubmissionsByQuizKey(quizID))
+}
+
+// InvalidateQuizSessionAccess invalidates all per-user quiz session access caches
+// and broadcasts to other instances. Call this when session state changes
+// (open/lock/finish/reopen/delete) or access is granted/revoked.
+func (c *CacheWithRegistry) InvalidateQuizSessionAccess() {
+	c.invalidateQuizSessionAccessLocal()
+	c.broadcast(InvalidationMessage{Type: InvalidationTypeQuizSessionAccess})
+}
+
+// invalidateQuizSessionAccessLocal invalidates quiz session access caches on this instance only
+func (c *CacheWithRegistry) invalidateQuizSessionAccessLocal() {
+	c.DeletePrefix(PrefixUserQuizSessionAccess)
+	c.DeletePrefix(PrefixUserActiveQuizSession)
+}
+
+// InvalidateQuizSession invalidates the cached session row and broadcasts to
+// other instances. Call this whenever session state changes (open/lock/finish/
+// reopen/update/delete), alongside InvalidateQuizSessionAccess for the
+// per-user visibility caches.
+func (c *CacheWithRegistry) InvalidateQuizSession(sessionID string) {
+	c.invalidateQuizSessionLocal(sessionID)
+	c.broadcast(InvalidationMessage{Type: InvalidationTypeQuizSession, ID: sessionID})
+}
+
+func (c *CacheWithRegistry) invalidateQuizSessionLocal(sessionID string) {
+	c.Delete(QuizSessionKey(sessionID))
 }
 
 // InvalidateQuizAnswers invalidates cached answers/ordering items for a question

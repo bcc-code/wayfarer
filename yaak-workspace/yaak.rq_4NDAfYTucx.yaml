@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_4NDAfYTucx
 createdAt: 2026-01-22T11:08:31.396917
-updatedAt: 2026-02-09T09:42:44.832586
+updatedAt: 2026-07-26T16:03:56.621303
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_U4FqjQ2Ma5
 authentication: {}
@@ -12,9 +12,9 @@ body:
     mutation {
       bulkEnrollUsersInChallenge(
         target: {
-          userIds: ["US01KEHNK1AQ69YJWHYWJ1SYR5B1"]
+          allProjectMembers: "PR01KVFKEZAHME694Z0Y3FAE3V9C"
         },
-        challengeId: "CL01KFZWP6GVZEZD78AJ6J4ATHR1"
+        challengeId: "CL01KVFKNC6SYN6CT2Y12XV66JGS"
       ){
         id
       }
@@ -32,3 +32,18 @@ name: Enroll users to challenge
 sortPriority: 1000.0019
 url: ${[ HOST ]}/graphql
 urlParameters: []
+settingSendCookies:
+  enabled: false
+  value: true
+settingStoreCookies:
+  enabled: false
+  value: true
+settingValidateCertificates:
+  enabled: false
+  value: true
+settingFollowRedirects:
+  enabled: false
+  value: true
+settingRequestTimeout:
+  enabled: false
+  value: 0

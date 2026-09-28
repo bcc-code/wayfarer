@@ -1,17 +1,22 @@
 import { SharedArray } from 'k6/data';
-import { sleep } from 'k6';
 
-import { challengesPage } from './queries/challenges.js';
-import { profilePage } from './queries/profile.js';
-import { standingsGlobalPage } from './queries/standings-global.js';
-import { standingsLocalPage } from './queries/standings-local.js';
-import { standingsUnitPage } from './queries/standings-unit.js';
+import { userJourney } from './lib/journey.js';
 
-const config = JSON.parse(open('../config.json'));
+// open()+JSON.parse() must happen inside the SharedArray callback — see
+// freetext-quiz-spike.js for why parsing outside it blows up per-VU RAM.
 const tokens = new SharedArray('tokens', function () {
-    return config.tokens;
+    return JSON.parse(open('../config.json')).tokens;
 });
-const baseUrl = config.baseUrl;
+// Simulated Auth0 tokens (tokengen -auth0-count) for the REALISM auth-dance
+// fraction. SharedArray callbacks must return a non-empty array, so a null
+// placeholder marks "not generated".
+const auth0Tokens = new SharedArray('auth0Tokens', function () {
+    const parsed = JSON.parse(open('../config.json')).auth0Tokens;
+    return parsed && parsed.length > 0 ? parsed : [null];
+});
+const baseUrl = new SharedArray('baseUrl', function () {
+    return [JSON.parse(open('../config.json')).baseUrl];
+})[0];
 
 // Steady load: fast ramp then hold
 export const options = {
@@ -36,23 +41,14 @@ function getRandomToken() {
     return tokens[Math.floor(Math.random() * tokens.length)];
 }
 
+function getRandomAuth0Token() {
+    const entry = auth0Tokens[Math.floor(Math.random() * auth0Tokens.length)];
+    return entry ? entry.token : null;
+}
+
 export default function () {
     const { token } = getRandomToken();
-    const rand = Math.random();
-
-    if (rand < 0.30) {
-        challengesPage(baseUrl, token);
-    } else if (rand < 0.50) {
-        profilePage(baseUrl, token);
-    } else if (rand < 0.70) {
-        standingsGlobalPage(baseUrl, token);
-    } else if (rand < 0.85) {
-        standingsLocalPage(baseUrl, token);
-    } else {
-        standingsUnitPage(baseUrl, token);
-    }
-
-    sleep(Math.random() * 0.5 + 0.1);
+    userJourney(baseUrl, token, getRandomAuth0Token());
 }
 
 export function setup() {

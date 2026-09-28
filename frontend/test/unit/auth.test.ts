@@ -186,15 +186,22 @@ describe('Authentication Flow', () => {
     describe('Login Redirect', () => {
       const LOGIN_URL = 'https://login.example.com/auth'
 
+      // A typed view of the global object, so the window stub these tests
+      // install does not need an `any` cast at every use site.
+      type GlobalWithWindow = typeof globalThis & {
+        window?: { location?: { pathname?: string } }
+      }
+      const globalWithWindow = global as GlobalWithWindow
+
       beforeEach(() => {
         // Reset window.location mock before each test
-        delete (global as any).window
-        ;(global as any).window = {}
+        delete globalWithWindow.window
+        globalWithWindow.window = {}
       })
 
       it('should redirect to login URL with current path', () => {
         const currentPath = '/admin/projects'
-        ;(global as any).window.location = { pathname: currentPath }
+        globalWithWindow.window!.location = { pathname: currentPath }
 
         const navigate = vi.fn()
         const auth = mockUseAuth({
@@ -214,7 +221,7 @@ describe('Authentication Flow', () => {
 
       it('should include redirect parameter in login URL', () => {
         const targetPath = '/challenges/123'
-        ;(global as any).window.location = { pathname: targetPath }
+        globalWithWindow.window!.location = { pathname: targetPath }
 
         const navigate = vi.fn()
         const auth = mockUseAuth({
@@ -232,8 +239,7 @@ describe('Authentication Flow', () => {
       })
 
       it('should handle paths with query params in redirect', () => {
-        const pathWithQuery = '/search?q=test&filter=active'
-        ;(global as any).window.location = { pathname: '/search' }
+        globalWithWindow.window!.location = { pathname: '/search' }
 
         const navigate = vi.fn()
         const auth = mockUseAuth({
@@ -253,8 +259,7 @@ describe('Authentication Flow', () => {
       })
 
       it('should handle paths with hash fragments', () => {
-        const pathWithHash = '/page#section'
-        ;(global as any).window.location = { pathname: '/page' }
+        globalWithWindow.window!.location = { pathname: '/page' }
 
         const navigate = vi.fn()
         const auth = mockUseAuth({
@@ -274,7 +279,7 @@ describe('Authentication Flow', () => {
 
       it('should encode special characters in redirect URL', () => {
         const pathWithSpaces = '/search results/item'
-        ;(global as any).window.location = { pathname: pathWithSpaces }
+        globalWithWindow.window!.location = { pathname: pathWithSpaces }
 
         const navigate = vi.fn()
         const auth = mockUseAuth({
@@ -565,7 +570,7 @@ describe('Authentication Flow', () => {
           cookie.value = token
         })
 
-        const route = mockUseRoute({ token: inputToken })
+        mockUseRoute({ token: inputToken })
         const config = mockUseRuntimeConfig()
 
         const response = await fetch(
@@ -588,7 +593,7 @@ describe('Authentication Flow', () => {
         const setAccessToken = vi.fn()
         const navigate = mockNavigateTo()
 
-        const route = mockUseRoute({ token: inputToken })
+        mockUseRoute({ token: inputToken })
         const config = mockUseRuntimeConfig()
 
         const response = await fetch(
@@ -666,7 +671,7 @@ describe('Authentication Flow', () => {
           .spyOn(console, 'error')
           .mockImplementation(() => {})
 
-        const route = mockUseRoute({ token: invalidToken })
+        mockUseRoute({ token: invalidToken })
         const config = mockUseRuntimeConfig()
 
         try {
@@ -697,7 +702,7 @@ describe('Authentication Flow', () => {
           .spyOn(console, 'error')
           .mockImplementation(() => {})
 
-        const route = mockUseRoute({ token: expiredToken })
+        mockUseRoute({ token: expiredToken })
         const config = mockUseRuntimeConfig()
 
         try {
@@ -729,7 +734,7 @@ describe('Authentication Flow', () => {
           .spyOn(console, 'error')
           .mockImplementation(() => {})
 
-        const route = mockUseRoute({ token: inputToken })
+        mockUseRoute({ token: inputToken })
         const config = mockUseRuntimeConfig()
 
         try {
@@ -762,7 +767,7 @@ describe('Authentication Flow', () => {
           .spyOn(console, 'error')
           .mockImplementation(() => {})
 
-        const route = mockUseRoute({ token: inputToken })
+        mockUseRoute({ token: inputToken })
         const config = mockUseRuntimeConfig()
 
         try {
@@ -791,7 +796,7 @@ describe('Authentication Flow', () => {
         const setAccessToken = vi.fn()
         const navigate = mockNavigateTo()
 
-        const route = mockUseRoute({ token: inputToken })
+        mockUseRoute({ token: inputToken })
         const config = mockUseRuntimeConfig()
 
         const response = await fetch(
@@ -919,7 +924,7 @@ describe('Authentication Flow', () => {
         const fetch = mockFetch()
         fetch.mockRejectedValue(new Error('Network error'))
 
-        const route = mockUseRoute({ token: inputToken })
+        mockUseRoute({ token: inputToken })
         const config = mockUseRuntimeConfig()
 
         try {
@@ -943,7 +948,7 @@ describe('Authentication Flow', () => {
         const fetch = mockFetch()
         fetch.mockRejectedValue(new Error('Validation failed'))
 
-        const route = mockUseRoute({ token: inputToken })
+        mockUseRoute({ token: inputToken })
         const config = mockUseRuntimeConfig()
 
         try {
@@ -966,7 +971,7 @@ describe('Authentication Flow', () => {
         const fetch = mockFetch()
         fetch.mockRejectedValue(new Error('Invalid token'))
 
-        const route = mockUseRoute({ token: inputToken })
+        mockUseRoute({ token: inputToken })
         const config = mockUseRuntimeConfig()
 
         try {
@@ -976,7 +981,7 @@ describe('Authentication Flow', () => {
           if (response && response.token) {
             setAccessToken(response.token)
           }
-        } catch (error) {
+        } catch {
           // Error occurred - don't store token
         }
 
@@ -996,7 +1001,7 @@ describe('Authentication Flow', () => {
           .mockRejectedValueOnce(new Error('Network timeout'))
           .mockResolvedValueOnce({ token: validatedToken })
 
-        const route = mockUseRoute({ token: inputToken })
+        mockUseRoute({ token: inputToken })
         const config = mockUseRuntimeConfig()
 
         // First attempt - fails
@@ -1007,7 +1012,7 @@ describe('Authentication Flow', () => {
           if (response && response.token) {
             setAccessToken(response.token)
           }
-        } catch (error) {
+        } catch {
           // Handle error - user can retry
         }
 
@@ -1026,799 +1031,13 @@ describe('Authentication Flow', () => {
     })
   })
 
-  describe('Global Auth Middleware', () => {
-    describe('Route Protection', () => {
-      it('should allow access to callback page without token', async () => {
-        const cookie = mockUseCookie<string>(null) // No token
-        const loginWithRedirect = vi.fn()
-
-        const auth = mockUseAuth({
-          token: cookie,
-          loginWithRedirect,
-        })
-
-        // Simulate middleware logic
-        const to = { path: '/callback', name: 'callback' }
-
-        // Skip auth check for callback page
-        if (to.path === '/callback') {
-          // Allow access - don't call loginWithRedirect
-        } else if (!auth.token.value) {
-          await loginWithRedirect()
-        }
-
-        expect(loginWithRedirect).not.toHaveBeenCalled()
-      })
-
-      it('should redirect to login when accessing protected route without token', async () => {
-        const cookie = mockUseCookie<string>(null) // No token
-        const loginWithRedirect = vi.fn()
-
-        const auth = mockUseAuth({
-          token: cookie,
-          loginWithRedirect,
-        })
-
-        // Simulate middleware logic for protected route
-        const to = { path: '/admin/projects', name: 'admin-projects' }
-
-        if (to.path !== '/callback') {
-          if (!auth.token.value) {
-            await loginWithRedirect()
-          }
-        }
-
-        expect(loginWithRedirect).toHaveBeenCalled()
-      })
-
-      it('should allow access to protected routes with valid token', async () => {
-        const token = createMockToken()
-        const cookie = mockUseCookie<string>(token)
-        const loginWithRedirect = vi.fn()
-
-        const auth = mockUseAuth({
-          token: cookie,
-          loginWithRedirect,
-        })
-
-        // Simulate middleware logic
-        const to = { path: '/admin/projects', name: 'admin-projects' }
-
-        if (to.path !== '/callback') {
-          if (!auth.token.value) {
-            await loginWithRedirect()
-          }
-        }
-
-        expect(loginWithRedirect).not.toHaveBeenCalled()
-      })
-
-      it('should check token on every navigation', async () => {
-        const cookie = mockUseCookie<string>(null)
-        const loginWithRedirect = vi.fn()
-
-        const auth = mockUseAuth({
-          token: cookie,
-          loginWithRedirect,
-        })
-
-        // First navigation - no token
-        const to1 = { path: '/projects', name: 'projects' }
-        if (to1.path !== '/callback' && !auth.token.value) {
-          await loginWithRedirect()
-        }
-
-        expect(loginWithRedirect).toHaveBeenCalledTimes(1)
-
-        // Set token
-        cookie.value = createMockToken()
-
-        // Second navigation - has token
-        const to2 = { path: '/challenges', name: 'challenges' }
-        if (to2.path !== '/callback' && !auth.token.value) {
-          await loginWithRedirect()
-        }
-
-        // Should still only be called once (from first navigation)
-        expect(loginWithRedirect).toHaveBeenCalledTimes(1)
-      })
-
-      it('should handle navigation to callback route variations', async () => {
-        const cookie = mockUseCookie<string>(null)
-        const loginWithRedirect = vi.fn()
-
-        const auth = mockUseAuth({
-          token: cookie,
-          loginWithRedirect,
-        })
-
-        // Test various callback route scenarios
-        // In real Nuxt, query params are separate from path
-        const callbackRoutes = [
-          { path: '/callback', query: {} },
-          { path: '/callback', query: { token: 'abc123' } },
-          {
-            path: '/callback',
-            query: { token: 'abc', redirect: '/admin' },
-          },
-        ]
-
-        for (const to of callbackRoutes) {
-          if (to.path !== '/callback' && !auth.token.value) {
-            await loginWithRedirect()
-          }
-        }
-
-        // Should never call login for callback paths
-        expect(loginWithRedirect).not.toHaveBeenCalled()
-      })
-
-      it('should handle routes with callback in path but not callback page', async () => {
-        const cookie = mockUseCookie<string>(null)
-        const loginWithRedirect = vi.fn()
-
-        const auth = mockUseAuth({
-          token: cookie,
-          loginWithRedirect,
-        })
-
-        // This contains 'callback' but isn't the callback page
-        const to = {
-          path: '/admin/callback-settings',
-          name: 'callback-settings',
-        }
-
-        // With exact path check, this should redirect (it's not the callback page)
-        if (to.path === '/callback') {
-          // Skip auth
-        } else if (!auth.token.value) {
-          await loginWithRedirect()
-        }
-
-        // SHOULD redirect because path doesn't exactly match '/callback'
-        expect(loginWithRedirect).toHaveBeenCalled()
-      })
-    })
-
-    describe('Token Expiration During Session', () => {
-      it('should detect expired token on navigation', () => {
-        // Create token that expired 1 hour ago
-        const expiredTime = Math.floor(Date.now() / 1000) - 3600
-        const expiredToken = createMockToken({ exp: expiredTime })
-
-        // Parse and check expiration
-        const parts = expiredToken.split('.')
-        const payload = JSON.parse(
-          atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')),
-        )
-        const now = Math.floor(Date.now() / 1000)
-        const isExpired = payload.exp < now
-
-        expect(isExpired).toBe(true)
-      })
-
-      it('should redirect to login on expired token', async () => {
-        const expiredTime = Math.floor(Date.now() / 1000) - 3600
-        const expiredToken = createMockToken({ exp: expiredTime })
-        const cookie = mockUseCookie<string>(expiredToken)
-        const loginWithRedirect = vi.fn()
-
-        const auth = mockUseAuth({
-          token: cookie,
-          loginWithRedirect,
-        })
-
-        const to = { path: '/admin/projects', name: 'admin-projects' }
-
-        // Check if token is expired before allowing access
-        if (auth.token.value) {
-          const parts = auth.token.value.split('.')
-          if (parts.length === 3) {
-            try {
-              const payload = JSON.parse(
-                atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')),
-              )
-              const now = Math.floor(Date.now() / 1000)
-              if (payload.exp && payload.exp < now) {
-                // Token is expired
-                await loginWithRedirect()
-              }
-            } catch (error) {
-              // Invalid token
-              await loginWithRedirect()
-            }
-          }
-        } else {
-          await loginWithRedirect()
-        }
-
-        expect(loginWithRedirect).toHaveBeenCalled()
-      })
-
-      it('should clear expired token from storage', async () => {
-        const expiredTime = Math.floor(Date.now() / 1000) - 3600
-        const expiredToken = createMockToken({ exp: expiredTime })
-        const cookie = mockUseCookie<string>(expiredToken)
-
-        // Check expiration and clear
-        if (cookie.value) {
-          const parts = cookie.value.split('.')
-          if (parts.length === 3) {
-            try {
-              const payload = JSON.parse(
-                atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')),
-              )
-              const now = Math.floor(Date.now() / 1000)
-              if (payload.exp && payload.exp < now) {
-                // Clear expired token
-                cookie.value = null
-              }
-            } catch (error) {
-              // Clear invalid token
-              cookie.value = null
-            }
-          }
-        }
-
-        expect(cookie.value).toBeNull()
-      })
-
-      it('should handle token expiring during user activity', async () => {
-        // Create a token that's already expired
-        const pastExpiry = Math.floor(Date.now() / 1000) - 10
-        const expiredToken = createMockToken({ exp: pastExpiry })
-        const cookie = mockUseCookie<string>()
-        const loginWithRedirect = vi.fn()
-
-        // Initially user has a valid token
-        const validToken = createMockToken()
-        cookie.value = validToken
-
-        const auth = mockUseAuth({
-          token: cookie,
-          loginWithRedirect,
-        })
-
-        // Token was valid
-        let parts = validToken.split('.')
-        let payload = JSON.parse(
-          atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')),
-        )
-        let now = Math.floor(Date.now() / 1000)
-        expect(payload.exp >= now).toBe(true)
-
-        // Token expires (simulate by replacing with expired token)
-        cookie.value = expiredToken
-
-        // Now check if token is expired
-        parts = expiredToken.split('.')
-        payload = JSON.parse(
-          atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')),
-        )
-        now = Math.floor(Date.now() / 1000)
-        const isExpired = payload.exp < now
-
-        expect(isExpired).toBe(true)
-
-        // Should redirect to login
-        if (isExpired) {
-          await loginWithRedirect()
-        }
-
-        expect(loginWithRedirect).toHaveBeenCalled()
-      })
-    })
-  })
-
-  describe('Admin Middleware', () => {
-    describe('Admin Route Protection', () => {
-      it('should allow superadmin to access admin routes', async () => {
-        const token = createMockToken()
-        const superadminUser = createMockUser({
-          roles: [{ role: RoleType.Superadmin, scope: null }],
-        })
-
-        const cookie = mockUseCookie<string>(token)
-        const meRef = ref(superadminUser)
-        const isLoading = ref(false)
-        const loginWithRedirect = vi.fn()
-        const createError = vi.fn()
-
-        const auth = mockUseAuth({
-          token: cookie,
-          me: meRef,
-          isLoading,
-          loginWithRedirect,
-        })
-
-        const to = { path: '/admin/projects', name: 'admin-projects' }
-
-        // Simulate middleware logic
-        if (to.path.startsWith('/admin')) {
-          if (!auth.token.value) {
-            loginWithRedirect()
-          } else {
-            // Wait for loading
-            let attempts = 0
-            while (isLoading.value && attempts < 100) {
-              await new Promise((resolve) => setTimeout(resolve, 10))
-              attempts++
-            }
-
-            if (!auth.me.value) {
-              loginWithRedirect()
-            } else if (!auth.isSuperAdmin.value && !auth.isAdmin.value) {
-              createError({ statusCode: 403 })
-            }
-          }
-        }
-
-        expect(loginWithRedirect).not.toHaveBeenCalled()
-        expect(createError).not.toHaveBeenCalled()
-      })
-
-      it('should allow admin to access admin routes', async () => {
-        const token = createMockToken()
-        const adminUser = createMockUser({
-          roles: [{ role: RoleType.Admin, scope: null }],
-        })
-
-        const cookie = mockUseCookie<string>(token)
-        const meRef = ref(adminUser)
-        const isLoading = ref(false)
-        const loginWithRedirect = vi.fn()
-        const createError = vi.fn()
-
-        const auth = mockUseAuth({
-          token: cookie,
-          me: meRef,
-          isLoading,
-          loginWithRedirect,
-        })
-
-        const to = { path: '/admin', name: 'admin' }
-
-        if (to.path.startsWith('/admin')) {
-          if (!auth.token.value) {
-            loginWithRedirect()
-          } else {
-            let attempts = 0
-            while (isLoading.value && attempts < 100) {
-              await new Promise((resolve) => setTimeout(resolve, 10))
-              attempts++
-            }
-
-            if (!auth.me.value) {
-              loginWithRedirect()
-            } else if (!auth.isSuperAdmin.value && !auth.isAdmin.value) {
-              createError({ statusCode: 403 })
-            }
-          }
-        }
-
-        expect(loginWithRedirect).not.toHaveBeenCalled()
-        expect(createError).not.toHaveBeenCalled()
-      })
-
-      it('should block regular user from admin routes', async () => {
-        const token = createMockToken()
-        const regularUser = createMockUser({
-          roles: [{ role: RoleType.User, scope: null }],
-        })
-
-        const cookie = mockUseCookie<string>(token)
-        const meRef = ref(regularUser)
-        const isLoading = ref(false)
-        const loginWithRedirect = vi.fn()
-        const createError = vi.fn()
-
-        const auth = mockUseAuth({
-          token: cookie,
-          me: meRef,
-          isLoading,
-          loginWithRedirect,
-        })
-
-        const to = { path: '/admin/projects', name: 'admin-projects' }
-
-        if (to.path.startsWith('/admin')) {
-          if (!auth.token.value) {
-            loginWithRedirect()
-          } else {
-            let attempts = 0
-            while (isLoading.value && attempts < 100) {
-              await new Promise((resolve) => setTimeout(resolve, 10))
-              attempts++
-            }
-
-            if (!auth.me.value) {
-              loginWithRedirect()
-            } else if (!auth.isSuperAdmin.value && !auth.isAdmin.value) {
-              createError({
-                statusCode: 403,
-                statusMessage: 'Forbidden',
-                message: 'You do not have permission to access this page',
-              })
-            }
-          }
-        }
-
-        expect(loginWithRedirect).not.toHaveBeenCalled()
-        expect(createError).toHaveBeenCalledWith({
-          statusCode: 403,
-          statusMessage: 'Forbidden',
-          message: 'You do not have permission to access this page',
-        })
-      })
-
-      it('should redirect to login if no token', async () => {
-        const cookie = mockUseCookie<string>(null)
-        const loginWithRedirect = vi.fn()
-
-        const auth = mockUseAuth({
-          token: cookie,
-          loginWithRedirect,
-        })
-
-        const to = { path: '/admin', name: 'admin' }
-
-        if (to.path.startsWith('/admin')) {
-          if (!auth.token.value) {
-            loginWithRedirect()
-          }
-        }
-
-        expect(loginWithRedirect).toHaveBeenCalled()
-      })
-
-      it('should return 403 for non-admin users', async () => {
-        const token = createMockToken()
-        const churchAdminUser = createMockUser({
-          roles: [{ role: RoleType.ChurchAdmin, scope: { churchId: 'CH01' } }],
-        })
-
-        const cookie = mockUseCookie<string>(token)
-        const meRef = ref(churchAdminUser)
-        const isLoading = ref(false)
-        const createError = vi.fn()
-
-        const auth = mockUseAuth({
-          token: cookie,
-          me: meRef,
-          isLoading,
-        })
-
-        const to = { path: '/admin/users', name: 'admin-users' }
-
-        if (to.path.startsWith('/admin')) {
-          if (auth.token.value) {
-            let attempts = 0
-            while (isLoading.value && attempts < 100) {
-              await new Promise((resolve) => setTimeout(resolve, 10))
-              attempts++
-            }
-
-            if (
-              auth.me.value &&
-              !auth.isSuperAdmin.value &&
-              !auth.isAdmin.value
-            ) {
-              createError({ statusCode: 403 })
-            }
-          }
-        }
-
-        expect(createError).toHaveBeenCalledWith({ statusCode: 403 })
-      })
-
-      it('should wait for me query to complete', async () => {
-        const token = createMockToken()
-        const adminUser = createMockUser({
-          roles: [{ role: RoleType.Admin, scope: null }],
-        })
-
-        const cookie = mockUseCookie<string>(token)
-        const meRef = ref<GetMeQuery['me'] | null>(null) // Not loaded yet
-        const isLoading = ref(true)
-        const createError = vi.fn()
-
-        const auth = mockUseAuth({
-          token: cookie,
-          me: meRef,
-          isLoading,
-        })
-
-        const to = { path: '/admin', name: 'admin' }
-
-        // Start middleware check
-        const middlewarePromise = (async () => {
-          if (to.path.startsWith('/admin') && auth.token.value) {
-            let attempts = 0
-            while (isLoading.value && attempts < 100) {
-              await new Promise((resolve) => setTimeout(resolve, 10))
-              attempts++
-            }
-
-            if (
-              auth.me.value &&
-              !auth.isSuperAdmin.value &&
-              !auth.isAdmin.value
-            ) {
-              createError({ statusCode: 403 })
-            }
-          }
-        })()
-
-        // Simulate loading completing after 50ms
-        setTimeout(() => {
-          meRef.value = adminUser
-          isLoading.value = false
-        }, 50)
-
-        await middlewarePromise
-
-        expect(createError).not.toHaveBeenCalled()
-      })
-
-      it('should timeout if me query takes too long', async () => {
-        const token = createMockToken()
-        const cookie = mockUseCookie<string>(token)
-        const meRef = ref<GetMeQuery['me'] | null>(null)
-        const isLoading = ref(true) // Stuck loading
-        const loginWithRedirect = vi.fn()
-
-        const auth = mockUseAuth({
-          token: cookie,
-          me: meRef,
-          isLoading,
-          loginWithRedirect,
-        })
-
-        const to = { path: '/admin', name: 'admin' }
-
-        if (to.path.startsWith('/admin') && auth.token.value) {
-          let attempts = 0
-          while (isLoading.value && attempts < 100) {
-            await new Promise((resolve) => setTimeout(resolve, 10))
-            attempts++
-          }
-
-          // After timeout, me is still null
-          if (!auth.me.value) {
-            loginWithRedirect()
-          }
-        }
-
-        expect(loginWithRedirect).toHaveBeenCalled()
-      })
-
-      it('should handle me query error', async () => {
-        const token = createMockToken()
-        const cookie = mockUseCookie<string>(token)
-        const meRef = ref<GetMeQuery['me'] | null>(null) // Query failed
-        const isLoading = ref(false)
-        const loginWithRedirect = vi.fn()
-
-        const auth = mockUseAuth({
-          token: cookie,
-          me: meRef,
-          isLoading,
-          loginWithRedirect,
-        })
-
-        const to = { path: '/admin', name: 'admin' }
-
-        if (to.path.startsWith('/admin') && auth.token.value) {
-          let attempts = 0
-          while (isLoading.value && attempts < 100) {
-            await new Promise((resolve) => setTimeout(resolve, 10))
-            attempts++
-          }
-
-          if (!auth.me.value) {
-            loginWithRedirect()
-          }
-        }
-
-        expect(loginWithRedirect).toHaveBeenCalled()
-      })
-
-      it('should only check admin routes', async () => {
-        const token = createMockToken()
-        const regularUser = createMockUser({
-          roles: [{ role: RoleType.User, scope: null }],
-        })
-
-        const cookie = mockUseCookie<string>(token)
-        const meRef = ref(regularUser)
-        const createError = vi.fn()
-
-        const auth = mockUseAuth({
-          token: cookie,
-          me: meRef,
-        })
-
-        // Non-admin route
-        const to = { path: '/projects', name: 'projects' }
-
-        // Middleware should return early for non-admin routes
-        if (to.path.startsWith('/admin')) {
-          if (auth.token.value && auth.me.value) {
-            if (!auth.isSuperAdmin.value && !auth.isAdmin.value) {
-              createError({ statusCode: 403 })
-            }
-          }
-        }
-
-        expect(createError).not.toHaveBeenCalled()
-      })
-
-      it('should handle nested admin routes', async () => {
-        const token = createMockToken()
-        const adminUser = createMockUser({
-          roles: [{ role: RoleType.Admin, scope: null }],
-        })
-
-        const cookie = mockUseCookie<string>(token)
-        const meRef = ref(adminUser)
-        const isLoading = ref(false)
-        const createError = vi.fn()
-
-        const auth = mockUseAuth({
-          token: cookie,
-          me: meRef,
-          isLoading,
-        })
-
-        // Deeply nested admin route
-        const to = {
-          path: '/admin/projects/123/challenges/456/edit',
-          name: 'admin-challenge-edit',
-        }
-
-        if (to.path.startsWith('/admin')) {
-          if (auth.token.value) {
-            let attempts = 0
-            while (isLoading.value && attempts < 100) {
-              await new Promise((resolve) => setTimeout(resolve, 10))
-              attempts++
-            }
-
-            if (
-              auth.me.value &&
-              !auth.isSuperAdmin.value &&
-              !auth.isAdmin.value
-            ) {
-              createError({ statusCode: 403 })
-            }
-          }
-        }
-
-        expect(createError).not.toHaveBeenCalled()
-      })
-    })
-
-    describe('Role Changes During Session', () => {
-      it('should detect role removal', () => {
-        // Start with admin user
-        const adminUser = createMockUser({
-          roles: [{ role: RoleType.Admin, scope: null }],
-        })
-        const meRef = ref(adminUser)
-        const auth = mockUseAuth({ me: meRef })
-
-        // Initially has admin role
-        expect(auth.isAdmin.value).toBe(true)
-
-        // Role removed (simulating backend update)
-        meRef.value = createMockUser({
-          roles: [{ role: RoleType.User, scope: null }],
-        })
-
-        // No longer has admin role
-        expect(auth.isAdmin.value).toBe(false)
-      })
-
-      it('should block access after role removal', () => {
-        const token = createMockToken()
-        const meRef = ref(
-          createMockUser({
-            roles: [{ role: RoleType.Admin, scope: null }],
-          }),
-        )
-        const createError = vi.fn()
-
-        const auth = mockUseAuth({
-          token: ref(token),
-          me: meRef,
-        })
-
-        const to = { path: '/admin', name: 'admin' }
-
-        // Initially admin - should have access
-        if (to.path.startsWith('/admin')) {
-          if (
-            auth.me.value &&
-            !auth.isSuperAdmin.value &&
-            !auth.isAdmin.value
-          ) {
-            createError({ statusCode: 403 })
-          }
-        }
-
-        expect(createError).not.toHaveBeenCalled()
-
-        // Role removed
-        meRef.value = createMockUser({
-          roles: [{ role: RoleType.User, scope: null }],
-        })
-
-        // Now should be blocked
-        if (to.path.startsWith('/admin')) {
-          if (
-            auth.me.value &&
-            !auth.isSuperAdmin.value &&
-            !auth.isAdmin.value
-          ) {
-            createError({ statusCode: 403 })
-          }
-        }
-
-        expect(createError).toHaveBeenCalledWith({ statusCode: 403 })
-      })
-
-      it('should allow access after role grant', () => {
-        const token = createMockToken()
-        const meRef = ref(
-          createMockUser({
-            roles: [{ role: RoleType.User, scope: null }],
-          }),
-        )
-        const createError = vi.fn()
-
-        const auth = mockUseAuth({
-          token: ref(token),
-          me: meRef,
-        })
-
-        const to = { path: '/admin', name: 'admin' }
-
-        // Initially not admin - should be blocked
-        if (to.path.startsWith('/admin')) {
-          if (
-            auth.me.value &&
-            !auth.isSuperAdmin.value &&
-            !auth.isAdmin.value
-          ) {
-            createError({ statusCode: 403 })
-          }
-        }
-
-        expect(createError).toHaveBeenCalledWith({ statusCode: 403 })
-
-        // Reset mock
-        createError.mockClear()
-
-        // Admin role granted
-        meRef.value = createMockUser({
-          roles: [{ role: RoleType.Admin, scope: null }],
-        })
-
-        // Now should have access
-        if (to.path.startsWith('/admin')) {
-          if (
-            auth.me.value &&
-            !auth.isSuperAdmin.value &&
-            !auth.isAdmin.value
-          ) {
-            createError({ statusCode: 403 })
-          }
-        }
-
-        expect(createError).not.toHaveBeenCalled()
-      })
-    })
-  })
+  // The 'Global Auth Middleware' and 'Admin Middleware' suites that used to
+  // live here re-implemented the middleware logic inside each test and
+  // asserted against the copy, so they stayed green regardless of what the
+  // real middleware did -- and the copy encoded the wrong rule. They are
+  // replaced by tests that import the real modules:
+  //   test/unit/middleware-auth-global.test.ts
+  //   test/unit/middleware-admin.test.ts
 
   describe('Integration: Full Auth Flow', () => {
     it('should complete full login flow', async () => {
@@ -1891,7 +1110,7 @@ describe('Authentication Flow', () => {
       const LOGIN_URL = 'https://login.example.com/auth'
       const targetPath = '/admin/projects/123'
       const cookie = mockUseCookie<string>(null)
-      const loginWithRedirect = vi.fn()
+      vi.fn()
       const navigate = mockNavigateTo()
 
       const auth = mockUseAuth({
@@ -2041,7 +1260,7 @@ describe('Authentication Flow', () => {
     it('should not expose token in URLs', () => {
       const token = createMockToken()
       const cookie = mockUseCookie<string>(token)
-      const navigate = mockNavigateTo()
+      mockNavigateTo()
 
       const auth = mockUseAuth({ token: cookie })
 
@@ -2049,7 +1268,6 @@ describe('Authentication Flow', () => {
       const to = { path: '/admin/projects', name: 'admin-projects' }
 
       // Token should NOT be in URL
-      const urlWithToken = `/admin/projects?token=${token}`
       const urlWithoutToken = '/admin/projects'
 
       // Only the callback page should have token in URL
@@ -2108,7 +1326,7 @@ describe('Authentication Flow', () => {
       // Backend validates signature
       fetch.mockResolvedValueOnce({ error: 'Invalid signature' })
 
-      const route = mockUseRoute({ token: tamperedToken })
+      mockUseRoute({ token: tamperedToken })
       const config = mockUseRuntimeConfig()
 
       const response = await fetch(
@@ -2177,7 +1395,7 @@ describe('Authentication Flow', () => {
 
     it('should prevent CSRF on token endpoints', async () => {
       const token = 'oauth-token'
-      const fetch = mockFetch()
+      mockFetch()
 
       // In real implementation, CSRF protection would be via:
       // 1. SameSite cookies
@@ -2272,7 +1490,7 @@ describe('Authentication Flow', () => {
       const cookie = mockUseCookie<string>(null)
       const validationCallCount = ref(0)
 
-      const mockValidateToken = vi.fn(async (token: string) => {
+      const mockValidateToken = vi.fn(async (_token: string) => {
         validationCallCount.value++
         await new Promise((resolve) => setTimeout(resolve, 10))
         return { valid: true }

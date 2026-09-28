@@ -63,6 +63,8 @@ func superTeamsByUserBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func
 					ProjectID:   row.ProjectID,
 					Name:        row.Name,
 					Description: description,
+					ImageUrl:    row.ImageUrl,
+					Color:       row.Color,
 				}
 				superTeamsByUser[row.UserID] = append(superTeamsByUser[row.UserID], superTeam)
 			}

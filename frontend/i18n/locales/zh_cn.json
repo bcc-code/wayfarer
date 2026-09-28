@@ -103,15 +103,9 @@
     "privacyPolicy": "隐私政策"
   },
   "standings": {
-    "global": "全球的",
     "unit": "我的团队",
-    "local": "当地的",
     "you": "你",
-    "rules": "规则",
-    "units": "团队",
-    "top": "顶部 {amount}",
-    "u18": "18岁以下",
-    "o18": "18岁以上"
+    "rules": "规则"
   },
   "pointHistory": {
     "pointHistoryButton": "积分历史",
@@ -145,7 +139,8 @@
   },
   "achievement": {
     "title": "成就",
-    "unlocked": "达成！"
+    "unlocked": "达成！",
+    "progress": "已完成 {completed}/{total}"
   },
   "feedback": {
     "title": "请给我们反馈",
@@ -327,7 +322,7 @@
       "reopenBetting": "重新开放投注（竞猜）",
       "makeSureEverybodyBet": "确保所有人都下完注后再结束。",
       "allBetNextStep": "结束投注",
-      "cannotReopenAfterContinue": "<b>重要：</b>如果你关闭了投注，就无法再重新打开了。",
+      "cannotReopenAfterContinue": "重要：如果你关闭了投注，就无法再重新打开了。",
       "step4Title": "播放影片 1",
       "step4Description": "这是在投注结束后进行的。",
       "step5TitleBigScreen": "在大屏上显示 小队任务",

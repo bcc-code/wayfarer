@@ -10,9 +10,18 @@ query StandingsUnitPage {
       memberLeaderboard {
         id
         name
-        tags
-        rank
         score
+        rank
+        tags
+      }
+      superTeam {
+        id
+        name
+        color
+        imageObject {
+          url
+          blurhash
+        }
       }
     }
   }
@@ -21,9 +30,6 @@ query StandingsUnitPage {
 
 /**
  * Execute the StandingsUnitPage query
- * @param {string} baseUrl - Base URL of the GraphQL API
- * @param {string} token - JWT token for authorization
- * @returns {object} HTTP response
  */
 export function standingsUnitPage(baseUrl, token) {
     const response = graphqlRequest(baseUrl, STANDINGS_UNIT_QUERY, {}, token, 'StandingsUnitPage');

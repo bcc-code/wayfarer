@@ -66,3 +66,138 @@ LEFT JOIN user_content_progress ucp ON
     AND ucp.achievement_id = cai.achievement_id
     AND ucp.external_content_id = cai.external_content_id
 WHERE ucp.user_id IS NULL;
+
+-- name: GetMissingContentProgressUserIDs :many
+-- Get distinct user IDs that have missing content progress.
+-- Used to batch users into separate jobs.
+SELECT DISTINCT u.id AS user_id
+FROM external_content_events ece
+INNER JOIN users u ON u.person_uuid = ece.person_id
+INNER JOIN external_content ec ON ec.task_id = ece.task_id
+INNER JOIN content_achievement_items cai ON cai.external_content_id = ec.id
+LEFT JOIN user_content_progress ucp ON
+    ucp.user_id = u.id
+    AND ucp.achievement_id = cai.achievement_id
+    AND ucp.external_content_id = cai.external_content_id
+WHERE ucp.user_id IS NULL
+ORDER BY u.id ASC;
+
+-- name: GetMissingContentEventsForUsers :many
+-- Get events for specific users that are missing content progress.
+-- Used by batched job processing.
+SELECT DISTINCT
+    u.id AS user_id,
+    ece.task_id
+FROM external_content_events ece
+INNER JOIN users u ON u.person_uuid = ece.person_id
+INNER JOIN external_content ec ON ec.task_id = ece.task_id
+INNER JOIN content_achievement_items cai ON cai.external_content_id = ec.id
+LEFT JOIN user_content_progress ucp ON
+    ucp.user_id = u.id
+    AND ucp.achievement_id = cai.achievement_id
+    AND ucp.external_content_id = cai.external_content_id
+WHERE ucp.user_id IS NULL
+AND u.id = ANY(@userids::char(28)[]);
+
+-- ==================== Missing Streak Progress Queries ====================
+-- These queries find users with external_content_events that should have
+-- user_streak_progress but don't. Deadline-aware: only includes events
+-- where consumed_at <= complete_by (or complete_by IS NULL).
+
+-- name: GetMissingStreakProgress :many
+-- Get all affected (user_id, event_count) rows for missing streak progress.
+-- Used for both preview (compute totals in Go, slice for display) and
+-- extracting user IDs for batching in the fix mutation.
+SELECT
+    u.id AS user_id,
+    COUNT(DISTINCT ece.id)::int AS event_count
+FROM external_content_events ece
+INNER JOIN users u ON u.person_uuid = ece.person_id
+INNER JOIN external_content ec ON ec.task_id = ece.task_id
+INNER JOIN streak_achievement_items sai ON sai.external_content_id = ec.id
+LEFT JOIN user_streak_progress usp ON
+    usp.user_id = u.id
+    AND usp.achievement_id = sai.achievement_id
+    AND usp.external_content_id = sai.external_content_id
+WHERE usp.user_id IS NULL
+  AND (ec.complete_by IS NULL OR ece.consumed_at <= ec.complete_by)
+GROUP BY u.id
+ORDER BY event_count DESC, u.id ASC;
+
+-- name: GetMissingStreakEventsForUsers :many
+-- Get missing streak events for specific users, including consumed_at for deadline checks.
+-- Used by batched job processing.
+SELECT DISTINCT
+    u.id AS user_id,
+    ece.task_id,
+    ece.consumed_at
+FROM external_content_events ece
+INNER JOIN users u ON u.person_uuid = ece.person_id
+INNER JOIN external_content ec ON ec.task_id = ece.task_id
+INNER JOIN streak_achievement_items sai ON sai.external_content_id = ec.id
+LEFT JOIN user_streak_progress usp ON
+    usp.user_id = u.id
+    AND usp.achievement_id = sai.achievement_id
+    AND usp.external_content_id = sai.external_content_id
+WHERE usp.user_id IS NULL
+  AND (ec.complete_by IS NULL OR ece.consumed_at <= ec.complete_by)
+  AND u.id = ANY(@userids::char(28)[]);
+
+-- ==================== Missing Score Journal Queries ====================
+-- These queries find external_content_events that are missing score_journal entries.
+-- The score_journal.source_id references external_content.id for content achievements.
+
+-- name: GetMissingScoreJournalPreview :many
+-- Get users with external_content_events for an achievement that are missing score_journal entries.
+-- Each row shows a user ID and how many events are missing score journal entries.
+SELECT
+    u.id AS user_id,
+    COUNT(DISTINCT ece.id)::int AS event_count
+FROM external_content_events ece
+INNER JOIN users u ON u.person_uuid = ece.person_id
+INNER JOIN external_content ec ON ec.task_id = ece.task_id
+INNER JOIN content_achievement_items cai ON cai.external_content_id = ec.id
+WHERE cai.achievement_id = @achievementid::char(28)
+AND NOT EXISTS (
+    SELECT 1
+    FROM score_journal sj
+    WHERE sj.user_id = u.id
+    AND sj.source_id = ec.id
+)
+GROUP BY u.id
+ORDER BY event_count DESC, u.id ASC
+LIMIT CASE WHEN @querylimit::int IS NULL THEN 50 ELSE @querylimit::int END
+OFFSET CASE WHEN @queryoffset::int IS NULL THEN 0 ELSE @queryoffset::int END;
+
+-- name: CountMissingScoreJournalUsers :one
+-- Count how many distinct users are affected by missing score journal entries for an achievement.
+SELECT COUNT(DISTINCT u.id)
+FROM external_content_events ece
+INNER JOIN users u ON u.person_uuid = ece.person_id
+INNER JOIN external_content ec ON ec.task_id = ece.task_id
+INNER JOIN content_achievement_items cai ON cai.external_content_id = ec.id
+WHERE cai.achievement_id = @achievementid::char(28)
+AND NOT EXISTS (
+    SELECT 1
+    FROM score_journal sj
+    WHERE sj.user_id = u.id
+    AND sj.source_id = ec.id
+);
+
+-- name: CountMissingScoreJournalEvents :one
+-- Count how many external_content_events are missing score journal entries for an achievement.
+SELECT COUNT(*)
+FROM (
+    SELECT DISTINCT ece.id
+    FROM external_content_events ece
+    INNER JOIN users u ON u.person_uuid = ece.person_id
+    INNER JOIN external_content ec ON ec.task_id = ece.task_id
+    INNER JOIN content_achievement_items cai ON cai.external_content_id = ec.id
+    WHERE cai.achievement_id = @achievementid::char(28)
+    AND NOT EXISTS (
+        SELECT 1
+        FROM score_journal sj
+        WHERE sj.user_id = u.id
+        AND sj.source_id = ec.id
+    )
+) AS missing;

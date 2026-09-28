@@ -145,6 +145,8 @@ func (r *mutationResolver) UpdateQuizSession(ctx context.Context, id string, inp
 		return nil, fmt.Errorf("failed to update quiz session: %w", err)
 	}
 
+	r.Cache.InvalidateQuizSession(id)
+
 	return convertQuizSessionToModel(row), nil
 }
 
@@ -193,6 +195,8 @@ func (r *mutationResolver) DeleteQuizSession(ctx context.Context, id string) (bo
 		otel.RecordError(span, err)
 		return false, fmt.Errorf("failed to delete quiz session: %w", err)
 	}
+
+	r.Cache.InvalidateQuizSession(id)
 
 	return true, nil
 }
@@ -245,6 +249,10 @@ func (r *mutationResolver) OpenQuizSession(ctx context.Context, id string) (*mod
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to open quiz session: %w", err)
 	}
+
+	// Opening makes the session visible to the bulk access check
+	r.Cache.InvalidateQuizSession(id)
+	r.Cache.InvalidateQuizSessionAccess()
 
 	// Notify clients via Firestore
 	if r.FirebaseService != nil {
@@ -302,6 +310,11 @@ func (r *mutationResolver) LockQuizSession(ctx context.Context, id string) (*mod
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to lock quiz session: %w", err)
 	}
+
+	// Drop the cached session row and per-user session caches so the new
+	// state is visible immediately (startQuizSession checks it)
+	r.Cache.InvalidateQuizSession(id)
+	r.Cache.InvalidateQuizSessionAccess()
 
 	// Notify clients via Firestore
 	if r.FirebaseService != nil {
@@ -392,6 +405,8 @@ func (r *mutationResolver) FinishQuizSession(ctx context.Context, id string) (*m
 		}
 	}
 	r.Cache.InvalidateProject(quiz.ProjectID)
+	r.Cache.InvalidateQuizSession(id)
+	r.Cache.InvalidateQuizSessionAccess()
 
 	// Notify clients via Firestore
 	if r.FirebaseService != nil {
@@ -495,6 +510,11 @@ func (r *mutationResolver) ReopenQuizSession(ctx context.Context, id string) (*m
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to reopen quiz session: %w", err)
 	}
+
+	// Drop the cached session row and per-user session caches so the new
+	// state is visible immediately
+	r.Cache.InvalidateQuizSession(id)
+	r.Cache.InvalidateQuizSessionAccess()
 
 	// Notify clients via Firestore
 	if r.FirebaseService != nil {
@@ -605,6 +625,8 @@ func (r *mutationResolver) RevokeQuizSessionAccess(ctx context.Context, sessionI
 		return false, fmt.Errorf("failed to revoke session access: %w", err)
 	}
 
+	r.Cache.InvalidateQuizSessionAccess()
+
 	return true, nil
 }
 
@@ -649,6 +671,8 @@ func (r *mutationResolver) RevokeAllQuizSessionAccess(ctx context.Context, sessi
 		return false, fmt.Errorf("failed to revoke all session access: %w", err)
 	}
 
+	r.Cache.InvalidateQuizSessionAccess()
+
 	return true, nil
 }
 
@@ -665,9 +689,10 @@ func (r *mutationResolver) StartQuizSession(ctx context.Context, sessionID strin
 	}
 	otel.SetUserID(span, userID)
 
-	// Get session
-	session, err := r.DB.Queries.GetQuizSession(ctx, sessionID)
-	if err != nil {
+	// Get session (Ristretto-cached with a short TTL; state-changing
+	// mutations and the scheduler call InvalidateQuizSession)
+	session, err := r.Loaders.QuizSessionByIDLoader.Load(ctx, sessionID)()
+	if err != nil || session == nil {
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load session: %w", err)
 	}
@@ -711,8 +736,8 @@ func (r *mutationResolver) StartQuizSession(ctx context.Context, sessionID strin
 		return nil, fmt.Errorf("quiz not found")
 	}
 
-	// Get quiz questions
-	questions, err := r.DB.Queries.GetQuizQuestionsByQuizID(ctx, session.QuizID)
+	// Get quiz questions (Ristretto-cached static data)
+	questions, err := r.Loaders.QuizQuestionsByQuizLoader.Load(ctx, session.QuizID)()
 	if err != nil {
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load quiz questions: %w", err)
@@ -725,7 +750,7 @@ func (r *mutationResolver) StartQuizSession(ctx context.Context, sessionID strin
 	// Build question order (optionally randomized)
 	questionIDs := make([]string, len(questions))
 	for i, q := range questions {
-		questionIDs[i] = q.ID
+		questionIDs[i] = q.GetID()
 	}
 
 	if quiz.RandomizeQuestions {
@@ -743,8 +768,8 @@ func (r *mutationResolver) StartQuizSession(ctx context.Context, sessionID strin
 	// Calculate max score
 	var maxScore int32
 	for _, q := range questions {
-		if q.Points != nil {
-			maxScore += *q.Points
+		if q.GetPoints() != nil {
+			maxScore += int32(*q.GetPoints())
 		}
 	}
 

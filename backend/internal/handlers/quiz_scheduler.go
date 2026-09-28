@@ -89,6 +89,13 @@ func (h *QuizSchedulerHandler) processOpenTransitions(ctx context.Context) (int,
 			continue
 		}
 
+		// Drop the cached session row and per-user session caches so the
+		// transition is visible immediately
+		if h.Cache != nil {
+			h.Cache.InvalidateQuizSession(session.ID)
+			h.Cache.InvalidateQuizSessionAccess()
+		}
+
 		// Get quiz for project ID
 		quiz, err := h.DB.Queries.GetQuizByID(ctx, session.QuizID)
 		if err != nil {
@@ -134,6 +141,13 @@ func (h *QuizSchedulerHandler) processLockTransitions(ctx context.Context) (int,
 			)
 			errors++
 			continue
+		}
+
+		// Drop the cached session row and per-user session caches so the
+		// transition is visible immediately (startQuizSession checks state)
+		if h.Cache != nil {
+			h.Cache.InvalidateQuizSession(session.ID)
+			h.Cache.InvalidateQuizSessionAccess()
 		}
 
 		// Get quiz for project ID
@@ -192,6 +206,13 @@ func (h *QuizSchedulerHandler) processFinishTransitions(ctx context.Context) (in
 				"session_id", session.ID,
 				"error", err,
 			)
+		}
+
+		// Drop the cached session row and per-user session caches so the
+		// transition is visible immediately
+		if h.Cache != nil {
+			h.Cache.InvalidateQuizSession(session.ID)
+			h.Cache.InvalidateQuizSessionAccess()
 		}
 
 		// Invalidate cache for affected users

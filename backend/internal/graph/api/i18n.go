@@ -85,34 +85,6 @@ func (r *Resolver) LoadEventWithTranslation(ctx context.Context, id string) (*mo
 	return &translated, nil
 }
 
-// LoadStreakWithTranslation loads a streak and applies translation for the requested language
-func (r *Resolver) LoadStreakWithTranslation(ctx context.Context, id string) (*model.Streak, error) {
-	streak, err := r.Loaders.StreakByIDLoader.Load(ctx, id)()
-	if err != nil {
-		return nil, err
-	}
-
-	lang := middleware.GetLanguage(ctx)
-	if lang == middleware.DefaultLanguage {
-		return streak, nil
-	}
-
-	trans, _ := r.Loaders.TranslationLoader.Load(ctx, loaders.TranslationKey{
-		EntityType: "streak",
-		EntityID:   id,
-		LangCode:   lang,
-	})()
-
-	if trans == nil {
-		return streak, nil
-	}
-
-	translated := *streak
-	translated.Name = applyStringTranslation(trans.Name, streak.Name)
-	translated.Description = applyStringTranslation(trans.Description, streak.Description)
-	return &translated, nil
-}
-
 // LoadChallengeWithTranslation loads a challenge and applies translation for the requested language
 func (r *Resolver) LoadChallengeWithTranslation(ctx context.Context, id string) (model.Challenge, error) {
 	challenge, err := r.Loaders.ChallengeByIDLoader.Load(ctx, id)()
@@ -231,6 +203,37 @@ func (r *Resolver) ApplyTranslationToEvent(ctx context.Context, event *model.Eve
 	return &translated
 }
 
+// applyTranslationsToChallenges applies translations to a slice of challenges in a single batch.
+// Modifies the slice in-place by replacing elements with their translated versions.
+func (r *Resolver) applyTranslationsToChallenges(ctx context.Context, challenges []model.Challenge) {
+	if len(challenges) == 0 {
+		return
+	}
+
+	lang := middleware.GetLanguage(ctx)
+	if lang == middleware.DefaultLanguage {
+		return
+	}
+
+	keys := make([]loaders.TranslationKey, len(challenges))
+	for i, ch := range challenges {
+		keys[i] = loaders.TranslationKey{
+			EntityType: "challenge",
+			EntityID:   getChallengeID(ch),
+			LangCode:   lang,
+		}
+	}
+
+	thunk := r.Loaders.TranslationLoader.LoadMany(ctx, keys)
+	translations, _ := thunk()
+
+	for i, trans := range translations {
+		if trans != nil {
+			challenges[i] = applyChallengeTranslation(challenges[i], trans)
+		}
+	}
+}
+
 // ApplyTranslationToChallenge applies translation to an already-loaded challenge
 func (r *Resolver) ApplyTranslationToChallenge(ctx context.Context, challenge model.Challenge) model.Challenge {
 	if challenge == nil {
@@ -253,33 +256,6 @@ func (r *Resolver) ApplyTranslationToChallenge(ctx context.Context, challenge mo
 	}
 
 	return applyChallengeTranslation(challenge, trans)
-}
-
-// ApplyTranslationToStreak applies translation to an already-loaded streak
-func (r *Resolver) ApplyTranslationToStreak(ctx context.Context, streak *model.Streak) *model.Streak {
-	if streak == nil {
-		return nil
-	}
-
-	lang := middleware.GetLanguage(ctx)
-	if lang == middleware.DefaultLanguage {
-		return streak
-	}
-
-	trans, _ := r.Loaders.TranslationLoader.Load(ctx, loaders.TranslationKey{
-		EntityType: "streak",
-		EntityID:   streak.ID,
-		LangCode:   lang,
-	})()
-
-	if trans == nil {
-		return streak
-	}
-
-	translated := *streak
-	translated.Name = applyStringTranslation(trans.Name, streak.Name)
-	translated.Description = applyStringTranslation(trans.Description, streak.Description)
-	return &translated
 }
 
 // Note: Article and Track translations are now handled via ExternalContent

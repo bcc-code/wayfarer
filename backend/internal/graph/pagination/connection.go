@@ -498,74 +498,6 @@ func buildChurchPageInfo(params BuildChurchConnectionParams, edges []model.Churc
 	return pageInfo
 }
 
-// BuildStreakConnectionParams holds parameters for building a streak connection
-type BuildStreakConnectionParams struct {
-	Streaks         []model.Streak
-	RequestedFirst  *int
-	RequestedLast   *int
-	RequestedAfter  *string
-	RequestedBefore *string
-	TotalCount      int
-	HasMore         bool
-}
-
-// BuildStreakConnection builds a GraphQL Streak connection with edges and page info
-func BuildStreakConnection(params BuildStreakConnectionParams) *model.StreakConnection {
-	edges := make([]model.StreakEdge, len(params.Streaks))
-	for i, streak := range params.Streaks {
-		edges[i] = model.StreakEdge{
-			Cursor: EncodeCursor(streak.ID),
-			Node:   &streak,
-		}
-	}
-
-	pageInfo := buildStreakPageInfo(params, edges)
-
-	return &model.StreakConnection{
-		Edges:      edges,
-		PageInfo:   pageInfo,
-		TotalCount: params.TotalCount,
-	}
-}
-
-// buildStreakPageInfo constructs the PageInfo for streaks
-func buildStreakPageInfo(params BuildStreakConnectionParams, edges []model.StreakEdge) *model.PageInfo {
-	pageInfo := &model.PageInfo{
-		HasNextPage:     false,
-		HasPreviousPage: false,
-		StartCursor:     nil,
-		EndCursor:       nil,
-	}
-
-	if len(edges) == 0 {
-		return pageInfo
-	}
-
-	// Set start and end cursors
-	startCursor := edges[0].Cursor
-	endCursor := edges[len(edges)-1].Cursor
-	pageInfo.StartCursor = &startCursor
-	pageInfo.EndCursor = &endCursor
-
-	// Determine hasNextPage
-	if params.RequestedFirst != nil {
-		pageInfo.HasNextPage = params.HasMore
-	}
-
-	// Determine hasPreviousPage
-	if params.RequestedLast != nil {
-		pageInfo.HasPreviousPage = params.HasMore
-		// If we're paginating backward with a 'before' cursor, there must be a next page
-		if params.RequestedBefore != nil && *params.RequestedBefore != "" {
-			pageInfo.HasNextPage = true
-		}
-	} else if params.RequestedAfter != nil && *params.RequestedAfter != "" {
-		pageInfo.HasPreviousPage = true
-	}
-
-	return pageInfo
-}
-
 // BuildScoreJournalConnectionParams holds parameters for building a score journal connection
 type BuildScoreJournalConnectionParams struct {
 	ScoreJournals   []*model.ScoreJournal
@@ -828,6 +760,74 @@ func buildBulkJobPageInfo(params BuildBulkJobConnectionParams, edges []model.Bul
 	if params.RequestedLast != nil {
 		pageInfo.HasPreviousPage = params.HasMore
 		// If we're paginating backward with a 'before' cursor, there must be a next page
+		if params.RequestedBefore != nil && *params.RequestedBefore != "" {
+			pageInfo.HasNextPage = true
+		}
+	} else if params.RequestedAfter != nil && *params.RequestedAfter != "" {
+		pageInfo.HasPreviousPage = true
+	}
+
+	return pageInfo
+}
+
+// BuildLeaderboardConfigConnectionParams holds parameters for building a leaderboard config connection
+type BuildLeaderboardConfigConnectionParams struct {
+	Configs         []*model.LeaderboardConfig
+	RequestedFirst  *int
+	RequestedLast   *int
+	RequestedAfter  *string
+	RequestedBefore *string
+	TotalCount      int
+	HasMore         bool
+}
+
+// BuildLeaderboardConfigConnection constructs a Relay-style connection from query results.
+// Unlike Challenge (an interface with several concrete types, requiring a caller-supplied
+// parallel timestamp slice), LeaderboardConfig is a single concrete struct that already
+// carries CreatedAt, so the cursor timestamp is read directly off each config.
+func BuildLeaderboardConfigConnection(params BuildLeaderboardConfigConnectionParams) *model.LeaderboardConfigConnection {
+	edges := make([]model.LeaderboardConfigEdge, len(params.Configs))
+	for i, config := range params.Configs {
+		cursor := EncodeLeaderboardConfigCursor(config.CreatedAt.Time, config.ID)
+		edges[i] = model.LeaderboardConfigEdge{
+			Cursor: cursor,
+			Node:   config,
+		}
+	}
+
+	pageInfo := buildLeaderboardConfigPageInfo(params, edges)
+
+	return &model.LeaderboardConfigConnection{
+		Edges:      edges,
+		PageInfo:   pageInfo,
+		TotalCount: params.TotalCount,
+	}
+}
+
+// buildLeaderboardConfigPageInfo constructs the PageInfo for leaderboard configs
+func buildLeaderboardConfigPageInfo(params BuildLeaderboardConfigConnectionParams, edges []model.LeaderboardConfigEdge) *model.PageInfo {
+	pageInfo := &model.PageInfo{
+		HasNextPage:     false,
+		HasPreviousPage: false,
+		StartCursor:     nil,
+		EndCursor:       nil,
+	}
+
+	if len(edges) == 0 {
+		return pageInfo
+	}
+
+	startCursor := edges[0].Cursor
+	endCursor := edges[len(edges)-1].Cursor
+	pageInfo.StartCursor = &startCursor
+	pageInfo.EndCursor = &endCursor
+
+	if params.RequestedFirst != nil {
+		pageInfo.HasNextPage = params.HasMore
+	}
+
+	if params.RequestedLast != nil {
+		pageInfo.HasPreviousPage = params.HasMore
 		if params.RequestedBefore != nil && *params.RequestedBefore != "" {
 			pageInfo.HasNextPage = true
 		}

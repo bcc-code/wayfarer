@@ -184,10 +184,10 @@ func TestAchievements(t *testing.T) {
 	})
 
 	t.Run("admin can create streak achievement", func(t *testing.T) {
-		// First, get a streak ID from seeded data
-		streakResp := client.WithAuth(adminToken).MustExecute(t, `
-			query GetStreaks($filter: StreakFilter) {
-				streaks(filter: $filter, first: 1) {
+		// Get an external content ID from seeded data
+		contentResp := client.WithAuth(adminToken).MustExecute(t, `
+			query GetExternalContents($filter: ExternalContentFilter!) {
+				externalContents(filter: $filter, first: 1) {
 					edges {
 						node {
 							id
@@ -196,51 +196,50 @@ func TestAchievements(t *testing.T) {
 				}
 			}
 		`, map[string]any{
-			"filter": map[string]any{
-				"projectId": projectID,
-			},
+			"filter": map[string]any{},
 		})
-		require.False(t, streakResp.HasErrors(), "unexpected error: %s", streakResp.ErrorMessage())
+		require.False(t, contentResp.HasErrors(), "unexpected error: %s", contentResp.ErrorMessage())
 
-		var streakResult struct {
-			Streaks struct {
+		var contentResult struct {
+			ExternalContents struct {
 				Edges []struct {
 					Node struct {
 						ID string `json:"id"`
 					} `json:"node"`
 				} `json:"edges"`
-			} `json:"streaks"`
+			} `json:"externalContents"`
 		}
-		require.NoError(t, streakResp.UnmarshalData(&streakResult))
+		require.NoError(t, contentResp.UnmarshalData(&contentResult))
 
-		if len(streakResult.Streaks.Edges) == 0 {
-			t.Skip("No streaks available for streak achievement test")
+		if len(contentResult.ExternalContents.Edges) == 0 {
+			t.Skip("No external content available for streak achievement test")
 		}
 
-		streakID := streakResult.Streaks.Edges[0].Node.ID
+		ecID := contentResult.ExternalContents.Edges[0].Node.ID
 
 		resp := client.WithAuth(adminToken).MustExecute(t, `
 			mutation CreateStreakAchievement($input: CreateStreakAchievementInput!) {
 				createStreakAchievement(input: $input) {
 					id
 					name
-					neededStreak
+					totalItems
 					points
 				}
 			}
 		`, map[string]any{
 			"input": map[string]any{
 				"name":                 "Test Streak Achievement",
-				"descriptionPending":   "Maintain a 7-day streak",
-				"descriptionCompleted": "You maintained the streak!",
+				"descriptionPending":   "Complete all content before deadlines",
+				"descriptionCompleted": "You completed all content on time!",
 				"notificationText":     "Streak completed!",
 				"imagePending":         "https://example.com/pending.png",
 				"imageCompleted":       "https://example.com/completed.png",
 				"projectId":            projectID,
 				"points":               75,
 				"hidden":               false,
-				"neededStreak":         7,
-				"streakId":             streakID,
+				"items": []map[string]any{
+					{"externalContentId": ecID},
+				},
 			},
 		})
 
@@ -248,17 +247,17 @@ func TestAchievements(t *testing.T) {
 
 		var result struct {
 			CreateStreakAchievement struct {
-				ID           string `json:"id"`
-				Name         string `json:"name"`
-				NeededStreak int    `json:"neededStreak"`
-				Points       int    `json:"points"`
+				ID         string `json:"id"`
+				Name       string `json:"name"`
+				TotalItems int    `json:"totalItems"`
+				Points     int    `json:"points"`
 			} `json:"createStreakAchievement"`
 		}
 		require.NoError(t, resp.UnmarshalData(&result))
 
 		assert.NotEmpty(t, result.CreateStreakAchievement.ID)
 		assert.Equal(t, "Test Streak Achievement", result.CreateStreakAchievement.Name)
-		assert.Equal(t, 7, result.CreateStreakAchievement.NeededStreak)
+		assert.Equal(t, 1, result.CreateStreakAchievement.TotalItems)
 	})
 
 	t.Run("user cannot create achievement", func(t *testing.T) {

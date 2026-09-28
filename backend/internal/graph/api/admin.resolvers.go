@@ -13,6 +13,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/pubsub"
 	"github.com/bcc-media/wayfarer/internal/services"
 )
 
@@ -22,9 +23,104 @@ func (r *mutationResolver) ClearAllCache(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-// FixMissingContentProgress is the resolver for the fixMissingContentProgress field.
-func (r *mutationResolver) FixMissingContentProgress(ctx context.Context) (*model.FixMissingContentProgressResult, error) {
-	return r.Resolver.fixMissingContentProgress(ctx)
+// FixMissingContentProgressAsync is the resolver for the fixMissingContentProgressAsync field.
+func (r *mutationResolver) FixMissingContentProgressAsync(ctx context.Context) ([]model.BulkJob, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Get all affected user IDs
+	affectedUserIDs, err := r.DB.Queries.GetMissingContentProgressUserIDs(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get affected users: %w", err)
+	}
+
+	if len(affectedUserIDs) == 0 {
+		return nil, fmt.Errorf("no missing content progress to fix")
+	}
+
+	// Batch users into chunks of 250 and create a job for each
+	var jobs []model.BulkJob
+	for i := 0; i < len(affectedUserIDs); i += fixMissingContentProgressUserBatchSize {
+		end := i + fixMissingContentProgressUserBatchSize
+		if end > len(affectedUserIDs) {
+			end = len(affectedUserIDs)
+		}
+		batch := affectedUserIDs[i:end]
+
+		job, err := r.BulkService.CreateBulkJobAndPublish(
+			ctx,
+			userID,
+			nil, // No project scope - this is a global maintenance operation
+			len(batch),
+			pubsub.FixMissingContentProgressParams{
+				UserIDs: batch,
+			},
+		)
+		if err != nil {
+			// Log and continue to create other jobs
+			continue
+		}
+		jobs = append(jobs, *job)
+	}
+
+	if len(jobs) == 0 {
+		return nil, fmt.Errorf("failed to create any batch jobs")
+	}
+	return jobs, nil
+}
+
+// FixMissingStreakProgressAsync is the resolver for the fixMissingStreakProgressAsync field.
+func (r *mutationResolver) FixMissingStreakProgressAsync(ctx context.Context) ([]model.BulkJob, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Get all affected rows and extract user IDs
+	rows, err := r.DB.Queries.GetMissingStreakProgress(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get affected users: %w", err)
+	}
+
+	if len(rows) == 0 {
+		return nil, fmt.Errorf("no missing streak progress to fix")
+	}
+
+	affectedUserIDs := make([]string, len(rows))
+	for i, row := range rows {
+		affectedUserIDs[i] = row.UserID
+	}
+
+	// Batch users into chunks and create a job for each
+	var jobs []model.BulkJob
+	for i := 0; i < len(affectedUserIDs); i += fixMissingStreakProgressUserBatchSize {
+		end := i + fixMissingStreakProgressUserBatchSize
+		if end > len(affectedUserIDs) {
+			end = len(affectedUserIDs)
+		}
+		batch := affectedUserIDs[i:end]
+
+		job, err := r.BulkService.CreateBulkJobAndPublish(
+			ctx,
+			userID,
+			nil,
+			len(batch),
+			pubsub.FixMissingStreakProgressParams{
+				UserIDs: batch,
+			},
+		)
+		if err != nil {
+			continue
+		}
+		jobs = append(jobs, *job)
+	}
+
+	if len(jobs) == 0 {
+		return nil, fmt.Errorf("failed to create any batch jobs")
+	}
+	return jobs, nil
 }
 
 // AdminDashboardStats is the resolver for the adminDashboardStats field.
@@ -205,4 +301,24 @@ func (r *queryResolver) ChurchAdminStatistics(ctx context.Context) (*model.Churc
 // PreviewMissingContentProgress is the resolver for the previewMissingContentProgress field.
 func (r *queryResolver) PreviewMissingContentProgress(ctx context.Context, first *int, after *string) (*model.MissingContentProgressPreview, error) {
 	return r.Resolver.previewMissingContentProgress(ctx, first, after)
+}
+
+// PreviewMissingScoreJournal is the resolver for the previewMissingScoreJournal field.
+func (r *queryResolver) PreviewMissingScoreJournal(ctx context.Context, achievementID string, first *int, after *string) (*model.MissingScoreJournalPreview, error) {
+	return r.Resolver.previewMissingScoreJournal(ctx, achievementID, first, after)
+}
+
+// PreviewMissingStreakProgress is the resolver for the previewMissingStreakProgress field.
+func (r *queryResolver) PreviewMissingStreakProgress(ctx context.Context) (*model.MissingStreakProgressPreview, error) {
+	return r.Resolver.previewMissingStreakProgress(ctx)
+}
+
+// AdminCheckAchievementProgress is the resolver for the adminCheckAchievementProgress field.
+func (r *queryResolver) AdminCheckAchievementProgress(ctx context.Context, userID string, achievementID string) (*model.AdminAchievementProgress, error) {
+	return r.Resolver.adminCheckAchievementProgress(ctx, userID, achievementID)
+}
+
+// AdminExternalContentEvents is the resolver for the adminExternalContentEvents field.
+func (r *queryResolver) AdminExternalContentEvents(ctx context.Context, userID string, externalContentID string) ([]model.AdminExternalContentEvent, error) {
+	return r.Resolver.adminExternalContentEvents(ctx, userID, externalContentID)
 }

@@ -6,10 +6,7 @@ package api
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"sort"
-	"time"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
@@ -20,7 +17,6 @@ import (
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/ulid"
-	pgx "github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -423,102 +419,47 @@ func (r *projectResolver) InfoMessage(ctx context.Context, obj *model.Project) (
 
 // Challenges is the resolver for the challenges field.
 func (r *projectResolver) Challenges(ctx context.Context, obj *model.Project) ([]model.Challenge, error) {
-	thunk := r.Loaders.ChallengesByProjectLoader.Load(ctx, obj.ID)
-	challenges, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load challenges: %w", err)
-	}
+	return r.getFilteredChallenges(ctx, obj.ID, challengeFilterAll)
+}
 
+// ActiveChallenges is the resolver for the activeChallenges field.
+func (r *projectResolver) ActiveChallenges(ctx context.Context, obj *model.Project) ([]model.Challenge, error) {
+	return r.getFilteredChallenges(ctx, obj.ID, challengeFilterActive)
+}
+
+// CompletedChallenges is the resolver for the completedChallenges field.
+func (r *projectResolver) CompletedChallenges(ctx context.Context, obj *model.Project) ([]model.Challenge, error) {
+	return r.getFilteredChallenges(ctx, obj.ID, challengeFilterCompleted)
+}
+
+// ActiveChallengesCount is the resolver for the activeChallengesCount field.
+func (r *projectResolver) ActiveChallengesCount(ctx context.Context, obj *model.Project) (int, error) {
 	userID, _ := middleware.GetUserID(ctx)
 
-	result := make([]model.Challenge, 0, len(challenges))
-	for _, ch := range challenges {
-		// For quiz challenges, check session access first
-		if _, ok := ch.(*model.QuizChallenge); ok && userID != "" {
-			quizThunk := r.Loaders.QuizByChallengeIDLoader.Load(ctx, ch.GetID())
-			quiz, err := quizThunk()
-			if err == nil && quiz != nil {
-				hasAccess, err := r.DB.Queries.UserHasAccessToVisibleSession(ctx, sqlc.UserHasAccessToVisibleSessionParams{
-					Quizid: quiz.ID,
-					Userid: userID,
-				})
-				if err == nil && hasAccess {
-					// Session access grants visibility regardless of publishedAt
-					result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
-					continue
-				}
+	// Check cache for authenticated users
+	if userID != "" {
+		cacheKey := cache.ActiveChallengesCountKey(userID, obj.ID)
+		if cached, ok := r.Cache.Get(cacheKey); ok {
+			if count, ok := cached.(int); ok {
+				return count, nil
 			}
-			// Quiz without session access: skip this challenge entirely
-			continue
 		}
-
-		// Check publishedAt
-		publishedAt := getChallengePublishedAt(ch)
-		if publishedAt == nil || publishedAt.After(time.Now()) {
-			continue // Skip unpublished
-		}
-
-		// Check visibility (enrolled OR visible_at in past)
-		visibleAt := getChallengeVisibleAt(ch)
-		isVisible := visibleAt != nil && !visibleAt.After(time.Now())
-
-		if !isVisible && userID != "" {
-			enrolled, err := r.DB.Queries.IsUserEnrolledInChallenge(ctx, sqlc.IsUserEnrolledInChallengeParams{
-				Userid:      userID,
-				Challengeid: ch.GetID(),
-			})
-			if err != nil || !enrolled {
-				continue // Skip not enrolled
-			}
-		} else if !isVisible {
-			continue // Skip not visible
-		}
-
-		result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
 	}
 
-	// Sort by enrollment time if user is authenticated
-	if userID != "" && len(result) > 0 {
-		// Build keys for enrollment timestamp lookup
-		keys := make([]loaders.UserChallengeKey, len(result))
-		for i, ch := range result {
-			keys[i] = loaders.UserChallengeKey{UserID: userID, ChallengeID: ch.GetID()}
-		}
-
-		// Load all enrollment timestamps in batch
-		thunk := r.Loaders.UserChallengeEnrollmentTimestampLoader.LoadMany(ctx, keys)
-		timestamps, _ := thunk()
-		enrollmentTimes := make(map[string]*time.Time)
-		for i, ts := range timestamps {
-			enrollmentTimes[result[i].GetID()] = ts
-		}
-
-		// Sort: enrolled first (by enrolled_at DESC), then non-enrolled (by published_at DESC)
-		sort.Slice(result, func(i, j int) bool {
-			tsI := enrollmentTimes[result[i].GetID()]
-			tsJ := enrollmentTimes[result[j].GetID()]
-
-			// Enrolled challenges come first
-			if (tsI != nil) != (tsJ != nil) {
-				return tsI != nil
-			}
-
-			// Both enrolled: sort by enrolled_at DESC
-			if tsI != nil && tsJ != nil {
-				return tsI.After(*tsJ)
-			}
-
-			// Both not enrolled: sort by published_at DESC
-			pubI := result[i].GetPublishedAt()
-			pubJ := result[j].GetPublishedAt()
-			if pubI != nil && pubJ != nil {
-				return pubI.Time.After(pubJ.Time)
-			}
-			return pubI != nil // Non-nil published_at comes first
-		})
+	challenges, err := r.getFilteredChallenges(ctx, obj.ID, challengeFilterActive)
+	if err != nil {
+		return 0, err
 	}
 
-	return result, nil
+	count := len(challenges)
+
+	// Cache the result for authenticated users
+	if userID != "" {
+		cacheKey := cache.ActiveChallengesCountKey(userID, obj.ID)
+		r.Cache.Set(cacheKey, count)
+	}
+
+	return count, nil
 }
 
 // Leaderboard is the resolver for the leaderboard field.
@@ -547,20 +488,18 @@ func (r *projectResolver) Leaderboard(ctx context.Context, obj *model.Project, e
 		return nil, fmt.Errorf("failed to get project leaderboard: %w", err)
 	}
 
-	// Apply PERSONS leaderboard restrictions - dynamic limit based on totalCount
-	if entityType == model.LeaderboardEntityTypePersons {
-		result := FilterPersonLeaderboardEntries(entries, totalCount, first, after)
-		entries = result.Entries
-		first = result.AdjustedFirst
-	}
-
 	// Build connection
-	connection, err := buildLeaderboardConnection(ctx, entries, meEntry, totalCount, currentUserID, entityType, obj.ID, r.Loaders, first, last, after, before)
+	connection, err := buildLeaderboardConnection(ctx, entries, meEntry, totalCount, currentUserID, entityType, obj.ID, r.Loaders, first, last, after, before, obj.ID, false, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build leaderboard connection: %w", err)
 	}
 
 	return connection, nil
+}
+
+// Leaderboards is the resolver for the leaderboards field.
+func (r *projectResolver) Leaderboards(ctx context.Context, obj *model.Project) ([]model.LeaderboardConfig, error) {
+	return r.getVisibleLeaderboardConfigsByProject(ctx, obj.ID)
 }
 
 // Events is the resolver for the events field.
@@ -650,37 +589,7 @@ func (r *projectResolver) MyTeam(ctx context.Context, obj *model.Project) (*mode
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
-	// Query user's team in this project
-	row, err := r.DB.Queries.GetUserTeamByProjectID(ctx, sqlc.GetUserTeamByProjectIDParams{
-		Userid:    currentUserID,
-		Projectid: obj.ID,
-	})
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil // User not in any team in this project
-		}
-		return nil, fmt.Errorf("failed to fetch user's team: %w", err)
-	}
-
-	// Convert to GraphQL model
-	description := ""
-	if row.Description != nil {
-		description = *row.Description
-	}
-
-	var superTeamID *string
-	if row.SuperTeamID != nil {
-		superTeamID = row.SuperTeamID
-	}
-
-	return &model.Team{
-		ID:          row.ID,
-		ProjectID:   row.ProjectID,
-		Name:        row.Name,
-		Description: description,
-		SuperTeamID: superTeamID,
-		JoinCode:    row.JoinCode,
-	}, nil
+	return r.getUserTeamInProject(ctx, currentUserID, obj.ID)
 }
 
 // Achievements is the resolver for the achievements field.
@@ -695,23 +604,6 @@ func (r *projectResolver) Achievements(ctx context.Context, obj *model.Project) 
 	result := make([]model.Achievement, len(achievements))
 	for i, a := range achievements {
 		result[i] = r.ApplyTranslationToAchievement(ctx, a)
-	}
-
-	return result, nil
-}
-
-// Streaks is the resolver for the streaks field.
-func (r *projectResolver) Streaks(ctx context.Context, obj *model.Project) ([]model.Streak, error) {
-	thunk := r.Loaders.StreaksByProjectLoader.Load(ctx, obj.ID)
-	streaks, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load streaks: %w", err)
-	}
-
-	result := make([]model.Streak, len(streaks))
-	for i, s := range streaks {
-		translated := r.ApplyTranslationToStreak(ctx, s)
-		result[i] = *translated
 	}
 
 	return result, nil
@@ -750,11 +642,9 @@ func (r *projectResolver) MyPoints(ctx context.Context, obj *model.Project) (int
 		}
 	}
 
-	// Query database using existing GetUserScore
-	score, err := r.DB.Queries.GetUserScore(ctx, sqlc.GetUserScoreParams{
+	score, err := r.DB.Queries.GetUserProjectScore(ctx, sqlc.GetUserProjectScoreParams{
 		UserID:    userID,
 		ProjectID: obj.ID,
-		EventID:   "", // Empty = all events in project
 	})
 	if err != nil {
 		return 0, fmt.Errorf("failed to get user score: %w", err)
@@ -770,6 +660,11 @@ func (r *projectResolver) MyPoints(ctx context.Context, obj *model.Project) (int
 // TranslationStatus is the resolver for the translationStatus field.
 func (r *projectResolver) TranslationStatus(ctx context.Context, obj *model.Project) ([]model.TranslationFieldStatus, error) {
 	return r.projectTranslationStatus(ctx, obj.ID)
+}
+
+// ActivityTrend is the resolver for the activityTrend field.
+func (r *projectResolver) ActivityTrend(ctx context.Context, obj *model.Project, days *int) ([]model.ProjectActivityPoint, error) {
+	return r.activityTrend(ctx, obj.ID, days)
 }
 
 // Project is the resolver for the project field.

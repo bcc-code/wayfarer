@@ -46,6 +46,11 @@ func (r *externalChallengeResolver) UserEnrolledAt(ctx context.Context, obj *mod
 	return r.getUserChallengeEnrolledAt(ctx, obj.ID)
 }
 
+// CompletionCount is the resolver for the completionCount field.
+func (r *externalChallengeResolver) CompletionCount(ctx context.Context, obj *model.ExternalChallenge) (int, error) {
+	return r.challengeCompletionCount(ctx, obj.ID)
+}
+
 // TranslationStatus is the resolver for the translationStatus field.
 func (r *externalChallengeResolver) TranslationStatus(ctx context.Context, obj *model.ExternalChallenge) ([]model.TranslationFieldStatus, error) {
 	return r.challengeTranslationStatus(ctx, obj.ID)
@@ -596,20 +601,45 @@ func (r *mutationResolver) EnrollInChallenge(ctx context.Context, challengeID st
 		return nil, fmt.Errorf("failed to enroll in challenge: %w", err)
 	}
 
-	fmt.Printf("DEBUG: enrolledAt.Valid=%v, enrolledAt.Time=%v\n", enrolledAt.Valid, enrolledAt.Time)
-
-	// Cache invalidation
-	r.Cache.InvalidateUser(userID)
+	// Cache invalidation. A self-enrollment only changes this one user's state,
+	// so invalidate the per-user keys directly instead of calling
+	// InvalidateChallenge — that falls back to prefix sweeps which discard the
+	// enrollment and quiz-access caches for *every* user, so under a spike of
+	// concurrent self-enrollments the cache never survives to serve the
+	// ChallengePage request that immediately follows. See
+	// cache.InvalidateUserChallengeEnrollment for the measured effect.
 	projectID := getChallengeProjectID(challenge)
-	eventID := getChallengeEventID(challenge)
-	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
+	r.Cache.InvalidateUserChallengeEnrollment(userID, projectID, challengeID)
 
 	// Prime the cache with the enrollment timestamp AFTER invalidation
 	if enrolledAt.Valid {
 		ts := enrolledAt.Time
-		cacheKey := cache.UserChallengeEnrollmentKey(userID, challengeID)
-		r.Cache.Set(cacheKey, &ts)
-		fmt.Printf("DEBUG: Set cache key=%s, value=%v\n", cacheKey, ts)
+		r.Cache.Set(cache.UserChallengeEnrollmentKey(userID, challengeID), &ts)
+	}
+
+	// Grant quiz session access for quiz challenges. The quiz comes from the
+	// cached loader rather than a direct query: this runs on every enrollment,
+	// and quiz definitions are static relative to a QR-code stampede.
+	if _, ok := challenge.(*model.QuizChallenge); ok {
+		quiz, err := r.Loaders.QuizByChallengeIDLoader.Load(ctx, challengeID)()
+		if err == nil && quiz != nil {
+			sessions, err := r.DB.Queries.GetQuizSessionsByQuiz(ctx, sqlc.GetQuizSessionsByQuizParams{
+				Quizid: quiz.ID,
+				State:  "",
+			})
+			if err == nil {
+				for _, session := range sessions {
+					_, _ = r.DB.Queries.CreateQuizSessionAccess(ctx, sqlc.CreateQuizSessionAccessParams{
+						ID:         ulid.NewQuizSessionAccessID(),
+						Sessionid:  session.ID,
+						Userid:     userID,
+						Grantedby:  userID,
+						Sourcetype: "DIRECT",
+						Sourceid:   &challengeID,
+					})
+				}
+			}
+		}
 	}
 
 	// Return challenge with translations
@@ -1180,6 +1210,11 @@ func (r *pluginChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model
 	return r.getUserChallengeEnrolledAt(ctx, obj.ID)
 }
 
+// CompletionCount is the resolver for the completionCount field.
+func (r *pluginChallengeResolver) CompletionCount(ctx context.Context, obj *model.PluginChallenge) (int, error) {
+	return r.challengeCompletionCount(ctx, obj.ID)
+}
+
 // TranslationStatus is the resolver for the translationStatus field.
 func (r *pluginChallengeResolver) TranslationStatus(ctx context.Context, obj *model.PluginChallenge) ([]model.TranslationFieldStatus, error) {
 	return r.challengeTranslationStatus(ctx, obj.ID)
@@ -1339,6 +1374,11 @@ func (r *quizChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.Q
 	return r.getUserChallengeEnrolledAt(ctx, obj.ID)
 }
 
+// CompletionCount is the resolver for the completionCount field.
+func (r *quizChallengeResolver) CompletionCount(ctx context.Context, obj *model.QuizChallenge) (int, error) {
+	return r.challengeCompletionCount(ctx, obj.ID)
+}
+
 // TranslationStatus is the resolver for the translationStatus field.
 func (r *quizChallengeResolver) TranslationStatus(ctx context.Context, obj *model.QuizChallenge) ([]model.TranslationFieldStatus, error) {
 	return r.challengeTranslationStatus(ctx, obj.ID)
@@ -1378,6 +1418,11 @@ func (r *simpleChallengeResolver) UserCompletedAt(ctx context.Context, obj *mode
 // UserEnrolledAt is the resolver for the userEnrolledAt field.
 func (r *simpleChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.SimpleChallenge) (*scalars.DateTime, error) {
 	return r.getUserChallengeEnrolledAt(ctx, obj.ID)
+}
+
+// CompletionCount is the resolver for the completionCount field.
+func (r *simpleChallengeResolver) CompletionCount(ctx context.Context, obj *model.SimpleChallenge) (int, error) {
+	return r.challengeCompletionCount(ctx, obj.ID)
 }
 
 // TranslationStatus is the resolver for the translationStatus field.

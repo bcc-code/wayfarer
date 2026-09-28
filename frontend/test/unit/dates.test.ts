@@ -6,7 +6,7 @@ import {
   isWithinRange,
   extractDateOnly,
   formatDateWithTimezone,
-} from '../../app/utils/dates'
+} from '../../layers/admin/app/utils/dates'
 
 describe('dates utilities', () => {
   describe('formatDate', () => {

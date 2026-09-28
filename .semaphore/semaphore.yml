@@ -1,0 +1,123 @@
+version: v1.0
+name: Wayfarer CI
+agent:
+  machine:
+    type: e1-standard-4
+    os_image: ubuntu2204
+fail_fast:
+  stop:
+    when: "true"
+auto_cancel:
+  running:
+    when: "true"
+blocks:
+  - name: Backend tests
+    dependencies: []
+    # Skipped blocks count as passed, so Build release still runs.
+    # gql/ is included: schema edits regenerate backend code.
+    run:
+      when: "change_in(['/backend/', '/gql/'], {default_branch: 'main'})"
+    task:
+      prologue:
+        commands:
+          - checkout
+          - sem-version go 1.25
+      # Jobs in a block run in parallel on separate VMs, so unit and e2e
+      # tests overlap instead of running serially.
+      jobs:
+        - name: unit tests
+          commands:
+            - cd backend
+            - cache restore go-mod
+            - go mod download
+            # prefix-restore picks the most recent go-build-* key;
+            # store is keyed per commit since existing keys are never updated
+            - cache restore go-build
+            - make test-ci
+            - cache store go-mod ~/go/pkg/mod
+            - cache store go-build-$SEMAPHORE_GIT_SHA ~/.cache/go-build
+        - name: e2e tests
+          commands:
+            - cd backend
+            # overlap the postgres image pull with compilation
+            - docker pull postgres:16-alpine > /dev/null 2>&1 &
+            - cache restore go-mod
+            - go mod download
+            - cache restore go-build
+            - make test-e2e-ci
+            - cache store go-build-e2e-$SEMAPHORE_GIT_SHA ~/.cache/go-build
+  - name: Frontend tests
+    dependencies: []
+    # Skipped blocks count as passed, so Build release still runs.
+    # gql/ is included: schema edits regenerate app/api/generated.ts.
+    run:
+      when: "change_in(['/frontend/', '/gql/'], {default_branch: 'main'})"
+    task:
+      prologue:
+        commands:
+          - checkout
+          - sem-version node 22
+          - corepack enable && corepack prepare pnpm@latest --activate
+          - cd frontend
+          - cache restore pnpm-store
+          - pnpm install --frozen-lockfile
+          - cache store pnpm-store ~/.local/share/pnpm/store
+      # Jobs in a block run in parallel on separate VMs.
+      jobs:
+        - name: lint + typecheck
+          commands:
+            # `pnpm lint` runs eslint with --fix, which would "pass" by
+            # rewriting files. Call eslint directly so CI is read-only.
+            - pnpm exec eslint .
+            # nuxt generate does not typecheck, so this is the only gate that
+            # catches a stale route name or a bad useRoute('...') argument.
+            - pnpm typecheck
+        - name: unit tests
+          commands:
+            - pnpm test:unit
+        - name: component tests
+          commands:
+            - pnpm test:component
+  - name: Build release
+    dependencies:
+      - Backend tests
+      - Frontend tests
+    task:
+      # Semaphore secret "wayfarer-frontend-build" provides the NUXT_PUBLIC_*
+      # env vars baked into the SPA bundle (see frontend/.env.example) and
+      # SENTRY_AUTH_TOKEN for sourcemap upload.
+      secrets:
+        - name: wayfarer-frontend-build
+      env_vars:
+        - name: NODE_OPTIONS
+          value: "--max-old-space-size=6144"
+      prologue:
+        commands:
+          - checkout
+          - sem-version go 1.25
+          - sem-version node 22
+          - export APP_VERSION=$SEMAPHORE_GIT_SHA
+      jobs:
+        - name: build binary + frontend
+          commands:
+            - corepack enable && corepack prepare pnpm@latest --activate
+            - cd frontend
+            - cache restore pnpm-store
+            - pnpm install --frozen-lockfile
+            - cache store pnpm-store ~/.local/share/pnpm/store
+            - pnpm run build
+            - cd ..
+            - cd backend
+            - cache restore go-mod
+            - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o wayfarer-server ./cmd/server
+            - cd ..
+            - mkdir -p release
+            - cp backend/wayfarer-server release/
+            - cp -r frontend/.output/public release/static
+            - 'tar -czf "release-${SEMAPHORE_GIT_SHA}.tar.gz" -C release .'
+            - 'artifact push workflow "release-${SEMAPHORE_GIT_SHA}.tar.gz"'
+promotions:
+  - name: Deploy to interact-prod
+    pipeline_file: deploy.yml
+    auto_promote:
+      when: result = 'passed' and branch = 'main'

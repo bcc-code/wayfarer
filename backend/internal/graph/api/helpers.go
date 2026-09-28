@@ -20,6 +20,61 @@ func timeToDateTime(t *time.Time) *scalars.DateTime {
 	return &scalars.DateTime{Time: *t}
 }
 
+// defaultNearestChurchRivals is used when the client omits the `first`
+// argument on LeaderboardConnection.nearestChurchRivals.
+const defaultNearestChurchRivals = 3
+
+// resolveNearestChurchRivals runs the rivals scan only when a
+// client selects this field — using the lookup context buildLeaderboardConnection
+// stashed on obj. Returns empty for non-PERSONS connections (RivalsUserID unset)
+func resolveNearestChurchRivals(ctx context.Context, svc *services.LeaderboardService, obj *model.LeaderboardConnection, first *int) ([]model.LeaderboardEntry, error) {
+	n := defaultNearestChurchRivals
+	if first != nil {
+		n = *first
+	}
+
+	rivalsParams := services.LeaderboardParams{
+		ContextID: obj.RivalsContextID,
+		Filter:    obj.RivalsFilter,
+		UserID:    obj.RivalsUserID,
+	}
+	rivals, err := svc.NearestChurchRivals(ctx, rivalsParams, obj.RivalsIsEvent, n)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get nearest church rivals: %w", err)
+	}
+
+	result := make([]model.LeaderboardEntry, len(rivals))
+	for i, entry := range rivals {
+		rank := int(entry.Rank)
+		result[i] = model.LeaderboardEntry{
+			ID:          entry.EntityID,
+			Name:        entry.Name,
+			Description: entry.Description,
+			Score:       entry.Score,
+			Rank:        &rank,
+			Tags:        []model.LeaderboardEntryTag{},
+			Image:       entry.Image,
+			LastScoreAt: timeToDateTime(entry.LastScoreAt),
+		}
+	}
+	return result, nil
+}
+
+// rivalsLookupFor returns the rivals lookup context for a LeaderboardConnection
+// populated only for PERSONS boards; zero-valued otherwise, which NearestChurchRivals treats as "skip"
+func rivalsLookupFor(
+	entityType model.LeaderboardEntityType,
+	contextID string,
+	isEvent bool,
+	filter *model.LeaderboardFilter,
+	currentUserID string,
+) (rivalsContextID string, rivalsIsEvent bool, rivalsFilter *model.LeaderboardFilter, rivalsUserID string) {
+	if entityType != model.LeaderboardEntityTypePersons {
+		return "", false, nil, ""
+	}
+	return contextID, isEvent, filter, currentUserID
+}
+
 // resolveProjectByID is a helper function to load a project by ID using the dataloader
 // and applies translations for the requested language
 func resolveProjectByID(ctx context.Context, r *Resolver, projectID string) (*model.Project, error) {
@@ -182,7 +237,6 @@ func preloadViewerContext(
 	return viewerCtx, nil
 }
 
-// buildLeaderboardConnection builds a GraphQL connection from leaderboard entries
 func buildLeaderboardConnection(
 	ctx context.Context,
 	entries []services.LeaderboardEntry,
@@ -196,6 +250,9 @@ func buildLeaderboardConnection(
 	last *int,
 	after *string,
 	before *string,
+	rivalsContextID string,
+	rivalsIsEvent bool,
+	rivalsFilter *model.LeaderboardFilter,
 ) (*model.LeaderboardConnection, error) {
 	// Determine if there are more entries
 	hasMore := false
@@ -275,92 +332,18 @@ func buildLeaderboardConnection(
 		}
 	}
 
+	rivalsCtxID, rivalsEvent, rivalsFlt, rivalsUser := rivalsLookupFor(entityType, rivalsContextID, rivalsIsEvent, rivalsFilter, currentUserID)
+
 	return &model.LeaderboardConnection{
-		Edges:      edges,
-		PageInfo:   pageInfo,
-		TotalCount: totalCount,
-		Me:         me,
+		Edges:           edges,
+		PageInfo:        pageInfo,
+		TotalCount:      totalCount,
+		Me:              me,
+		RivalsContextID: rivalsCtxID,
+		RivalsIsEvent:   rivalsEvent,
+		RivalsFilter:    rivalsFlt,
+		RivalsUserID:    rivalsUser,
 	}, nil
-}
-
-// CalculatePersonLeaderboardLimit returns the maximum number of entries a normal user can see
-// in a PERSONS type leaderboard, based on the total number of entries in the filtered leaderboard.
-// Rules:
-//   - totalCount >= 50: show top 20
-//   - 20 <= totalCount < 50: show top 10
-//   - totalCount < 20: show top 3
-func CalculatePersonLeaderboardLimit(totalCount int) int {
-	if totalCount >= 50 {
-		return 20
-	} else if totalCount >= 20 {
-		return 10
-	}
-	return 3
-}
-
-// PersonLeaderboardFilterResult contains the result of filtering person leaderboard entries
-type PersonLeaderboardFilterResult struct {
-	Entries       []services.LeaderboardEntry
-	AdjustedFirst *int
-}
-
-// FilterPersonLeaderboardEntries filters leaderboard entries for normal users
-// to only include entries with rank <= dynamic limit based on totalCount.
-// It also adjusts the 'first' pagination parameter accordingly.
-func FilterPersonLeaderboardEntries(
-	entries []services.LeaderboardEntry,
-	totalCount int,
-	first *int,
-	after *string,
-) PersonLeaderboardFilterResult {
-	maxLimit := CalculatePersonLeaderboardLimit(totalCount)
-
-	// Filter entries to only include those with rank <= max
-	filteredEntries := make([]services.LeaderboardEntry, 0, len(entries))
-	for _, entry := range entries {
-		if entry.Rank <= int64(maxLimit) {
-			filteredEntries = append(filteredEntries, entry)
-		}
-	}
-
-	adjustedFirst := first
-
-	// Adjust first param to cap at remaining entries up to max rank
-	if after != nil && *after != "" {
-		afterRank, err := parseRankCursor(*after)
-		if err == nil {
-			remaining := maxLimit - int(afterRank)
-			if remaining <= 0 {
-				// All entries beyond limit, return empty
-				return PersonLeaderboardFilterResult{
-					Entries:       nil,
-					AdjustedFirst: first,
-				}
-			}
-			if first != nil && *first > remaining {
-				cappedFirst := remaining
-				adjustedFirst = &cappedFirst
-			}
-		}
-	} else {
-		// No after cursor, cap first at max
-		if first == nil || *first > maxLimit {
-			cappedFirst := maxLimit
-			adjustedFirst = &cappedFirst
-		}
-	}
-
-	return PersonLeaderboardFilterResult{
-		Entries:       filteredEntries,
-		AdjustedFirst: adjustedFirst,
-	}
-}
-
-// parseRankCursor parses a rank cursor string to int64
-func parseRankCursor(cursor string) (int64, error) {
-	var rank int64
-	_, err := fmt.Sscanf(cursor, "%d", &rank)
-	return rank, err
 }
 
 // resolveImageByURL loads image metadata by URL using the dataloader.

@@ -1,0 +1,20 @@
+# Managed by Ansible (roles/postgres)
+# TYPE  DATABASE        USER            ADDRESS                   METHOD
+
+# Local admin access for the postgres superuser only
+local   all             postgres                                  peer
+
+# Loopback: password auth (scram)
+host    all             all             127.0.0.1/32              scram-sha-256
+host    all             all             ::1/128                   scram-sha-256
+
+# Tailnet (WireGuard-encrypted): read-only backup role only
+{% for cidr in tailnet_cidrs %}
+host    all             {{ backup_db_user }}          {{ cidr }}    scram-sha-256
+{% endfor %}
+
+# External clients (public internet): TLS required, read-only roles only
+{% for ip in postgres_external_clients %}
+hostssl all             {{ backup_db_user }}          {{ ip }}/32    scram-sha-256
+hostssl all             {{ metabase_db_user }}        {{ ip }}/32    scram-sha-256
+{% endfor %}

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { ref } from 'vue'
-import useGroupedProjects from '../../app/composables/useGroupedProjects'
+import useGroupedProjects from '../../layers/admin/app/composables/useGroupedProjects'
 
 type Project = { id: string; startDate: string; endDate: string }
 
@@ -52,10 +52,7 @@ describe('useGroupedProjects', () => {
       const grouped = useGroupedProjects(projects)
 
       expect(grouped.currentProjects.value).toHaveLength(2)
-      expect(grouped.currentProjects.value.map((p) => p.id)).toEqual([
-        '1',
-        '2',
-      ])
+      expect(grouped.currentProjects.value.map((p) => p.id)).toEqual(['1', '2'])
     })
 
     it('should include projects that started today', () => {

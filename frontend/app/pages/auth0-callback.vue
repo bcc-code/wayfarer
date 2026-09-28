@@ -25,10 +25,10 @@ onMounted(async () => {
 
   try {
     // Wait for Auth0 SDK to be ready before handling callback
-    // This prevents "Invalid state" errors when SDK hasn't loaded stored state yet
-    while (auth0.isLoading.value) {
-      await new Promise((resolve) => setTimeout(resolve, 10))
-    }
+    // This prevents "Invalid state" errors when SDK hasn't loaded stored state yet.
+    // Bounded so a stalled SDK init can't hang the callback page forever — on
+    // timeout the code below falls through to the unauthenticated branch.
+    await until(auth0.isLoading).toBe(false, { timeout: 10_000 })
 
     // Check if we have Auth0 callback params (code and state)
     const hasCallbackParams = route.query.code && route.query.state
@@ -38,7 +38,7 @@ onMounted(async () => {
     if (hasCallbackParams) {
       // Handle the Auth0 callback and get the redirect target
       const result = await auth0.handleRedirectCallback()
-      targetUrl = result.appState?.target || '/'
+      targetUrl = result.appState?.targetUrl || '/'
     }
 
     // Exchange Auth0 token for Wayfarer JWT if authenticated

@@ -1,7 +1,7 @@
-import * as Sentry from "@sentry/nuxt";
- 
+import * as Sentry from '@sentry/nuxt'
+
 Sentry.init({
-  dsn: "https://a84ef55e626a228d04a301448f3e2973@o4507803294892032.ingest.de.sentry.io/4510569771368528",
+  dsn: 'https://a84ef55e626a228d04a301448f3e2973@o4507803294892032.ingest.de.sentry.io/4510569771368528',
 
   // We recommend adjusting this value in production, or using tracesSampler
   // for finer control
@@ -16,4 +16,4 @@ Sentry.init({
 
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: false,
-});
+})

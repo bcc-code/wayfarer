@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { usePagination } from '../../app/composables/usePagination'
-import type { Connection } from '../../app/composables/usePagination'
+import { usePagination } from '../../layers/admin/app/composables/usePagination'
+import type { Connection } from '../../layers/admin/app/composables/usePagination'
 
 describe('usePagination', () => {
   describe('initialization', () => {

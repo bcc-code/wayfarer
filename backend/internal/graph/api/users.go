@@ -175,6 +175,11 @@ func buildUserFilterParams(filter *model.UserFilter, limit *int, offset *int) sq
 func buildUserFilterParamsCursor(filter *model.UserFilter, first *int, after *string, last *int, before *string) (sqlc.GetUsersFilteredCursorParams, error) {
 	params := sqlc.GetUsersFilteredCursorParams{}
 
+	// Initialize filter if nil
+	if filter == nil {
+		filter = &model.UserFilter{}
+	}
+
 	// Apply filters
 	if filter.Query != nil && *filter.Query != "" {
 		params.Query = *filter.Query
@@ -252,6 +257,11 @@ func buildUserFilterParamsCursor(filter *model.UserFilter, first *int, after *st
 // buildCountFilterParams converts GraphQL filter to count query parameters
 func buildCountFilterParams(filter *model.UserFilter) sqlc.CountUsersFilteredParams {
 	params := sqlc.CountUsersFilteredParams{}
+
+	// Initialize filter if nil
+	if filter == nil {
+		filter = &model.UserFilter{}
+	}
 
 	// Apply filters
 	if filter.Query != nil && *filter.Query != "" {
@@ -338,4 +348,24 @@ func buildCacheKeyParams(filter *model.UserFilter, first *int, after *string, la
 	}
 
 	return params
+}
+
+// mapUserPointsByProject converts the per-project point rows into GraphQL
+// models. Projects netting to zero are kept: "0 poeng" for a project someone
+// participated in is a real answer, unlike the project being absent.
+func mapUserPointsByProject(
+	rows []*sqlc.GetUserPointsByProjectRow,
+) []model.UserProjectPoints {
+	points := make([]model.UserProjectPoints, 0, len(rows))
+	for _, row := range rows {
+		if row == nil {
+			continue
+		}
+		points = append(points, model.UserProjectPoints{
+			ProjectID:   row.ProjectID,
+			ProjectName: row.ProjectName,
+			Points:      int(row.Points),
+		})
+	}
+	return points
 }

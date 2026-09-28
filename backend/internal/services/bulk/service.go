@@ -15,6 +15,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/pubsub"
+	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -22,13 +23,14 @@ import (
 
 // Service handles bulk operations for challenges and achievements
 type Service struct {
-	DB              *database.DB
-	Cache           *cache.CacheWithRegistry
-	Loaders         *loaders.Loaders
-	PushService     *push.Service
-	FirebaseService *firebase.Service
-	Publisher       *pubsub.Publisher
-	Logger          *slog.Logger
+	DB                        *database.DB
+	Cache                     *cache.CacheWithRegistry
+	Loaders                   *loaders.Loaders
+	PushService               *push.Service
+	FirebaseService           *firebase.Service
+	Publisher                 *pubsub.Publisher
+	Logger                    *slog.Logger
+	ContentAchievementService *services.ContentAchievementService
 }
 
 // NewService creates a new bulk operations service
@@ -40,15 +42,17 @@ func NewService(
 	firebaseService *firebase.Service,
 	publisher *pubsub.Publisher,
 	logger *slog.Logger,
+	contentAchievementService *services.ContentAchievementService,
 ) *Service {
 	return &Service{
-		DB:              db,
-		Cache:           cache,
-		Loaders:         loaders,
-		PushService:     pushService,
-		FirebaseService: firebaseService,
-		Publisher:       publisher,
-		Logger:          logger,
+		DB:                        db,
+		Cache:                     cache,
+		Loaders:                   loaders,
+		PushService:               pushService,
+		FirebaseService:           firebaseService,
+		Publisher:                 publisher,
+		Logger:                    logger,
+		ContentAchievementService: contentAchievementService,
 	}
 }
 
@@ -71,12 +75,18 @@ func (s *Service) CreateBulkJobAndPublish(
 		return nil, fmt.Errorf("failed to marshal params: %w", err)
 	}
 
+	// Convert createdBy to pointer (nil for M2M users who pass empty string)
+	var createdByPtr *string
+	if createdBy != "" {
+		createdByPtr = &createdBy
+	}
+
 	// Create job record
 	createParams := sqlc.CreateBulkJobParams{
 		ID:            jobID,
 		Operationtype: string(operationType),
 		Status:        string(pubsub.JobStatusPending),
-		Createdby:     createdBy,
+		Createdby:     createdByPtr,
 		Projectid:     projectID,
 		Inputparams:   paramsJSON,
 		Totalcount:    int32(totalCount),
@@ -123,6 +133,73 @@ func (s *Service) CreateBulkJobAndPublish(
 		// Mark as failed since we can't process async
 		s.DB.Queries.MarkBulkJobFailed(ctx, sqlc.MarkBulkJobFailedParams{
 			ID:           jobID,
+			Errormessage: "pub/sub is disabled, async processing not available",
+		})
+		return nil, fmt.Errorf("pub/sub is disabled, use synchronous mutation instead")
+	}
+
+	return convertBulkJobRowToModel(row), nil
+}
+
+// RetryBulkJob creates a new bulk job with the same parameters as an existing job and publishes it.
+func (s *Service) RetryBulkJob(ctx context.Context, jobID string, createdBy string) (*model.BulkJob, error) {
+	// Fetch original job
+	originalJob, err := s.DB.Queries.GetBulkJobByID(ctx, jobID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get original bulk job: %w", err)
+	}
+
+	// Generate new job ID
+	newJobID := ulid.NewBulkJobID()
+
+	// Convert createdBy to pointer
+	var createdByPtr *string
+	if createdBy != "" {
+		createdByPtr = &createdBy
+	}
+
+	// Create new job with same params
+	row, err := s.DB.Queries.CreateBulkJob(ctx, sqlc.CreateBulkJobParams{
+		ID:            newJobID,
+		Operationtype: originalJob.OperationType,
+		Status:        string(pubsub.JobStatusPending),
+		Createdby:     createdByPtr,
+		Projectid:     originalJob.ProjectID,
+		Inputparams:   originalJob.InputParams,
+		Totalcount:    originalJob.TotalCount,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create retry bulk job: %w", err)
+	}
+
+	// Publish to Pub/Sub
+	if s.Publisher != nil && s.Publisher.IsEnabled() {
+		msg := pubsub.BulkOperationMessage{
+			JobID:         newJobID,
+			OperationType: pubsub.OperationType(originalJob.OperationType),
+			CreatedBy:     createdBy,
+			Params:        originalJob.InputParams,
+		}
+		if originalJob.ProjectID != nil {
+			msg.ProjectID = *originalJob.ProjectID
+		}
+
+		messageID, err := s.Publisher.PublishBulkOperation(ctx, msg)
+		if err != nil {
+			s.DB.Queries.MarkBulkJobFailed(ctx, sqlc.MarkBulkJobFailedParams{
+				ID:           newJobID,
+				Errormessage: fmt.Sprintf("failed to publish to pub/sub: %v", err),
+			})
+			return nil, fmt.Errorf("failed to publish to pub/sub: %w", err)
+		}
+
+		s.DB.Queries.UpdateBulkJobMessageID(ctx, sqlc.UpdateBulkJobMessageIDParams{
+			ID:        newJobID,
+			Messageid: messageID,
+		})
+	} else {
+		s.DB.Queries.MarkBulkJobFailed(ctx, sqlc.MarkBulkJobFailedParams{
+			ID:           newJobID,
 			Errormessage: "pub/sub is disabled, async processing not available",
 		})
 		return nil, fmt.Errorf("pub/sub is disabled, use synchronous mutation instead")
@@ -894,10 +971,226 @@ func (s *Service) GrantQuizSessionAccess(ctx context.Context, params pubsub.Bulk
 		}
 	}
 
+	if successCount > 0 {
+		s.Cache.InvalidateQuizSessionAccess()
+	}
+
 	// 3. Firebase notification
 	if s.FirebaseService != nil && successCount > 0 {
 		go s.FirebaseService.NotifyProjectQuizSessions(context.Background(), params.ProjectID)
 	}
+
+	return successCount, failureCount, nil
+}
+
+// CreateBulkScoreAdjustments creates score journal entries for multiple users in batches
+func (s *Service) CreateBulkScoreAdjustments(
+	ctx context.Context,
+	params pubsub.BulkScoreAdjustmentParams,
+) (int, int, error) {
+	if len(params.Adjustments) == 0 {
+		return 0, 0, nil
+	}
+
+	s.Logger.Info("CreateBulkScoreAdjustments: starting",
+		"project_id", params.ProjectID,
+		"event_id", params.EventID,
+		"adjustment_count", len(params.Adjustments),
+		"awarded_by", params.AwardedBy,
+	)
+
+	// Determine awarded_by pointer (nil for M2M)
+	var awardedByPtr *string
+	if params.AwardedBy != "" {
+		awardedByPtr = &params.AwardedBy
+	}
+
+	// Convert eventID to pointer
+	var eventIDPtr *string
+	if params.EventID != "" {
+		eventIDPtr = &params.EventID
+	}
+
+	successCount := 0
+	failureCount := 0
+
+	// Process in batches of 100
+	for i := 0; i < len(params.Adjustments); i += pubsub.BatchSize {
+		end := i + pubsub.BatchSize
+		if end > len(params.Adjustments) {
+			end = len(params.Adjustments)
+		}
+		batch := params.Adjustments[i:end]
+
+		s.Logger.Debug("CreateBulkScoreAdjustments: processing batch",
+			"batch_start", i,
+			"batch_size", len(batch),
+		)
+
+		// Prepare arrays for batch insert
+		ids := make([]string, len(batch))
+		userIDs := make([]string, len(batch))
+		points := make([]int32, len(batch))
+		reasons := make([]string, len(batch))
+
+		for j, adj := range batch {
+			ids[j] = ulid.NewScoreJournalID()
+			userIDs[j] = adj.UserID
+			points[j] = adj.Points
+			reasons[j] = adj.Reason
+		}
+
+		// Execute batch insert
+		_, err := s.DB.Queries.CreateBulkScoreAdjustmentBatch(ctx, sqlc.CreateBulkScoreAdjustmentBatchParams{
+			Ids:       ids,
+			ProjectID: params.ProjectID,
+			UserIds:   userIDs,
+			EventID:   eventIDPtr,
+			Points:    points,
+			Reasons:   reasons,
+			AwardedBy: awardedByPtr,
+		})
+		if err != nil {
+			s.Logger.Error("Failed to create bulk score adjustments",
+				"batch_start", i,
+				"batch_size", len(batch),
+				"project_id", params.ProjectID,
+				"project_id_len", len(params.ProjectID),
+				"event_id", params.EventID,
+				"event_id_len", len(params.EventID),
+				"first_user_id", userIDs[0],
+				"first_user_id_len", len(userIDs[0]),
+				"first_id", ids[0],
+				"first_id_len", len(ids[0]),
+				"error", err,
+			)
+			failureCount += len(batch)
+			continue
+		}
+
+		successCount += len(batch)
+
+		// Cache invalidation per batch
+		for _, adj := range batch {
+			s.Cache.InvalidateUser(adj.UserID)
+		}
+	}
+
+	// Invalidate project and event caches once at end
+	s.Cache.InvalidateProject(params.ProjectID)
+	if params.EventID != "" {
+		s.Cache.InvalidateEvent(params.EventID)
+	}
+
+	s.Logger.Info("CreateBulkScoreAdjustments: completed",
+		"project_id", params.ProjectID,
+		"success_count", successCount,
+		"failure_count", failureCount,
+	)
+
+	return successCount, failureCount, nil
+}
+
+// FixMissingContentProgress processes missing content events using the ContentAchievementService.
+// This ensures all hooks (cache invalidation, webhooks, push notifications, Firebase, score journals) are triggered.
+func (s *Service) FixMissingContentProgress(ctx context.Context, params pubsub.FixMissingContentProgressParams) (int, int, error) {
+	if len(params.UserIDs) == 0 {
+		return 0, 0, nil
+	}
+
+	// Get missing events for the specific users in this batch
+	events, err := s.DB.Queries.GetMissingContentEventsForUsers(ctx, params.UserIDs)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to get missing content events: %w", err)
+	}
+
+	if len(events) == 0 {
+		return 0, 0, nil
+	}
+
+	// Track unique users for Firebase notification
+	userSet := make(map[string]bool)
+	for _, event := range events {
+		userSet[event.UserID] = true
+	}
+
+	s.Logger.Info("FixMissingContentProgress: processing missing content events",
+		"event_count", len(events),
+		"user_count", len(userSet),
+		"batch_user_count", len(params.UserIDs))
+
+	successCount := 0
+	failureCount := 0
+
+	// Process each event using the ContentAchievementService
+	for _, event := range events {
+		s.ContentAchievementService.ProcessContentEvent(ctx, event.UserID, event.TaskID)
+		successCount++
+	}
+
+	// Notify Firebase for content updates for each affected user
+	if s.FirebaseService != nil {
+		for userID := range userSet {
+			go s.FirebaseService.NotifyUserContent(context.Background(), userID)
+		}
+	}
+
+	s.Logger.Info("FixMissingContentProgress: completed",
+		"success_count", successCount,
+		"failure_count", failureCount,
+		"users_notified", len(userSet))
+
+	return successCount, failureCount, nil
+}
+
+// FixMissingStreakProgress processes missing streak events using the ContentAchievementService.
+// Uses the original consumed_at timestamp for correct deadline enforcement.
+func (s *Service) FixMissingStreakProgress(ctx context.Context, params pubsub.FixMissingStreakProgressParams) (int, int, error) {
+	if len(params.UserIDs) == 0 {
+		return 0, 0, nil
+	}
+
+	events, err := s.DB.Queries.GetMissingStreakEventsForUsers(ctx, params.UserIDs)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to get missing streak events: %w", err)
+	}
+
+	if len(events) == 0 {
+		return 0, 0, nil
+	}
+
+	userSet := make(map[string]bool)
+	for _, event := range events {
+		userSet[event.UserID] = true
+	}
+
+	s.Logger.Info("FixMissingStreakProgress: processing missing streak events",
+		"event_count", len(events),
+		"user_count", len(userSet),
+		"batch_user_count", len(params.UserIDs))
+
+	successCount := 0
+	failureCount := 0
+
+	for _, event := range events {
+		if !event.ConsumedAt.Valid {
+			failureCount++
+			continue
+		}
+		s.ContentAchievementService.ProcessStreakEvent(ctx, event.UserID, event.TaskID, event.ConsumedAt.Time)
+		successCount++
+	}
+
+	if s.FirebaseService != nil {
+		for userID := range userSet {
+			go s.FirebaseService.NotifyUserContent(context.Background(), userID)
+		}
+	}
+
+	s.Logger.Info("FixMissingStreakProgress: completed",
+		"success_count", successCount,
+		"failure_count", failureCount,
+		"users_notified", len(userSet))
 
 	return successCount, failureCount, nil
 }

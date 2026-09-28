@@ -48,3 +48,7 @@ extend type Query {
     myBulkJobs(limit: Int): [BulkJob!]!
     bulkJobs(filter: BulkJobFilter, first: Int, after: String, last: Int, before: String): BulkJobConnection! @requireRole(roles: ["admin", "superadmin"])
 }
+
+extend type Mutation {
+    retryBulkJob(id: ID!): BulkJob! @requireRole(roles: ["admin", "superadmin"])
+}

@@ -1,0 +1,45 @@
+/**
+ * Admin Layout Theme
+ *
+ * Nuxt UI design tokens for the admin interface. The palettes themselves are
+ * chosen in `app/app.config.ts`; this file only picks which shade of each ramp
+ * the semantic token resolves to, which app.config cannot express (it always
+ * maps to 500).
+ *
+ * Nuxt UI generates the full `--ui-color-<role>-<shade>` ramp at runtime from
+ * app.config, each with a literal fallback, so these references always resolve.
+ * It injects them inside `@layer theme`, and unlayered CSS beats any layer, so
+ * the declarations below win without needing extra specificity.
+ *
+ * The semantic colours are declared here rather than left to the default
+ * because `assets/styles/user.css` sets `--ui-success` and `--ui-error` on
+ * `:root` from the user app's brand accents — a lime `#9ed63c` for success —
+ * and those bleed into the admin panel once that layout has been visited.
+ *
+ * Used by: frontend/app/layouts/admin.vue
+ */
+
+:root {
+  --ui-primary: #5d0045;
+  --ui-radius: 0.3rem;
+
+  /* One step deeper than Nuxt UI's default 500: on the light tints that
+     `subtle` badges and alerts use, 500 reads as neon and sits low on
+     contrast. */
+  --ui-success: var(--ui-color-success-600);
+  --ui-error: var(--ui-color-error-600);
+  --ui-warning: var(--ui-color-warning-600);
+  --ui-info: var(--ui-color-info-600);
+}
+
+.dark {
+  --ui-primary: #ffaedf;
+
+  /* 400 on dark, where the tints are dark and a 600 would disappear. This
+     matches Nuxt UI's own dark default, restated so the light/dark pairing is
+     visible in one place and survives a change to that default. */
+  --ui-success: var(--ui-color-success-400);
+  --ui-error: var(--ui-color-error-400);
+  --ui-warning: var(--ui-color-warning-400);
+  --ui-info: var(--ui-color-info-400);
+}

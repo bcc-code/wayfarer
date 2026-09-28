@@ -229,7 +229,9 @@ export function createMockFetchResponse<T = unknown>(
  * expect(navigate.mock.calls[0][0]).toBe('/admin')
  */
 export function mockNavigateTo() {
-  return vi.fn((to: string | { path: string }, options?: unknown) => {
+  // Params are declared to mirror navigateTo's signature; the mock records
+  // them via vi.fn rather than using them.
+  return vi.fn((_to: string | { path: string }, _options?: unknown) => {
     // Return a promise like the real navigateTo
     return Promise.resolve()
   })

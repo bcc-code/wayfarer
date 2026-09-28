@@ -176,3 +176,52 @@ if err := db.Ping(ctx); err != nil {
 ```
 
 Test database provided: see .env file
+
+## `schema.sql` is a partial reference, not the schema (2026-09-21)
+
+`schema.sql` at the repo root is described as the reference schema, and CLAUDE.md
+points at it for entity structure. **It documents 46 of the 83 tables the
+migrations create.** The authority is always
+`backend/internal/database/migrations/` — that is also what sqlc reads
+(`sqlc.yaml`: `schema: "./internal/database/migrations"`), so codegen is
+unaffected by the drift. Only humans reading `schema.sql` are misled.
+
+`score_journal` was added on 2026-09-21 while building the project activity
+trend. Still missing, as of that date:
+
+```
+bulk_jobs, external_content_events, file_uploads, leaderboard_apply_queue,
+leaderboard_configs, leaderboard_event_{churches,persons,superteams,teams},
+leaderboard_project_{churches,persons,superteams,teams},
+listening_achievements, listening_achievement_tracks,
+listening_achievement_track_translations, pending_consent_events,
+phrase_async_jobs, quiz_sessions, quiz_session_access, reading_achievements,
+reading_achievement_articles, reading_achievement_article_translations,
+settings, ssf_content, ssf_content_translations, streaks, streak_relevant_days,
+streak_translations, super_team_translations, team_translations,
+translation_hashes, user_challenge_enrollments, user_consents,
+user_listening_progress, user_reading_progress, user_streak_activity
+```
+
+Several of those are entities CLAUDE.md documents in detail — `streaks`,
+`user_streak_activity`, `reading_achievements`, `user_reading_progress` — so the
+gap is not confined to incidental tables.
+
+**Do not hand-patch the remaining 37.** Transcribing by hand is how the file got
+into this state, and it is actively error-prone: `score_journal`'s `source_type`
+CHECK was replaced by three later migrations, so copying the `CREATE TABLE` from
+migration 00017 would have documented a constraint missing `QUIZ`, `PLUGIN` and
+`BET`. The fix is to generate it — run the migrations against a scratch database
+and `pg_dump --schema-only` — which also keeps it honest from then on. Worth a
+`make schema` target so it cannot drift again.
+
+Reproduce the gap with:
+
+```bash
+grep -oiE "^CREATE TABLE (IF NOT EXISTS )?[a-z_]+" schema.sql |
+  awk '{print tolower($NF)}' | sort -u > /tmp/a
+grep -rhoiE "CREATE TABLE (IF NOT EXISTS )?[a-z_]+" \
+  backend/internal/database/migrations/*.sql |
+  awk '{print tolower($NF)}' | sort -u > /tmp/b
+comm -13 /tmp/a /tmp/b
+```

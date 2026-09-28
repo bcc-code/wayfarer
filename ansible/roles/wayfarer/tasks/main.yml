@@ -1,0 +1,77 @@
+---
+# Native (proxyless) blue/green deployment layout for the wayfarer server.
+# Semaphore CI ships releases into /opt/wayfarer/releases/<sha> and runs
+# bin/deploy.sh, which starts the inactive color (SO_REUSEPORT lets both bind
+# the shared port), health-checks it on its private admin port, then retires
+# the old color. This role provisions everything except the secret env file:
+# /opt/wayfarer/wayfarer.env is placed manually (contains real secrets) and
+# must include SERVER_REUSEPORT=true and the TLS settings.
+
+- name: Create wayfarer directory layout
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /opt/wayfarer
+    - /opt/wayfarer/bin
+    - /opt/wayfarer/releases
+    - /opt/wayfarer/color
+    - /opt/wayfarer/autocert
+
+- name: Install per-color environment files (admin port, split DB pool)
+  ansible.builtin.copy:
+    dest: "/opt/wayfarer/env.{{ item.color }}"
+    content: |
+      # Per-color overrides for wayfarer@{{ item.color }} (managed by Ansible).
+      ADMIN_ADDR=127.0.0.1:{{ item.admin_port }}
+      # Both colors run concurrently during a deploy; size the pool so
+      # blue+green together (460) stay inside postgres max_connections (500).
+      DB_MAX_OPEN_CONNS=230
+      DB_MAX_IDLE_CONNS=230
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - { color: blue, admin_port: 9441 }
+    - { color: green, admin_port: 9442 }
+
+- name: Install wayfarer systemd unit template
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/wayfarer@.service
+    content: |
+      [Unit]
+      Description=Wayfarer backend (%i)
+      After=network-online.target postgresql.service
+      Wants=network-online.target
+
+      [Service]
+      Type=simple
+      WorkingDirectory=/opt/wayfarer
+      EnvironmentFile=/opt/wayfarer/wayfarer.env
+      EnvironmentFile=/opt/wayfarer/env.%i
+      Environment=STATIC_FILES_PATH=/opt/wayfarer/color/%i/static
+      ExecStart=/opt/wayfarer/color/%i/wayfarer-server
+      Restart=on-failure
+      RestartSec=2
+      LimitNOFILE=65535
+      # Graceful drain: Go's srv.Shutdown handles SIGTERM; give in-flight
+      # requests time before SIGKILL.
+      TimeoutStopSec=30
+
+      [Install]
+      WantedBy=multi-user.target
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd (wayfarer)
+
+- name: Install blue/green deploy script
+  ansible.builtin.copy:
+    src: deploy.sh
+    dest: /opt/wayfarer/bin/deploy.sh
+    owner: root
+    group: root
+    mode: "0755"

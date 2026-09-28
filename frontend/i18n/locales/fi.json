@@ -103,15 +103,9 @@
     "privacyPolicy": "Tietosuojakäytäntö"
   },
   "standings": {
-    "global": "Maailmanlaajuisesti",
     "unit": "Oma yksikköni",
-    "local": "Paikallisesti",
     "you": "Sinä",
-    "rules": "Säännöt",
-    "units": "Yksiköt",
-    "top": "Top {amount}",
-    "u18": "U18",
-    "o18": "O18"
+    "rules": "Säännöt"
   },
   "pointHistory": {
     "pointHistoryButton": "Pistehistoria",
@@ -145,7 +139,8 @@
   },
   "achievement": {
     "title": "Saavutus",
-    "unlocked": "Saavutettu!"
+    "unlocked": "Saavutettu!",
+    "progress": "{completed}/{total} suoritettu"
   },
   "feedback": {
     "title": "Anna meille palautetta",

@@ -1,24 +1,24 @@
 -- name: GetQuizQuestionsByQuizID :many
 SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, created_at, updated_at
 FROM quiz_questions
-WHERE quiz_id = @quizid::text
+WHERE quiz_id = @quizid::char(28)
 ORDER BY question_order ASC;
 
 -- name: GetQuizQuestionsByQuizIDs :many
 SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, created_at, updated_at
 FROM quiz_questions
-WHERE quiz_id = ANY(@quiz_ids::text[])
+WHERE quiz_id = ANY(@quiz_ids::char(28)[])
 ORDER BY quiz_id, question_order ASC;
 
 -- name: GetQuizQuestionByID :one
 SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, created_at, updated_at
 FROM quiz_questions
-WHERE id = @id::text;
+WHERE id = @id::char(28);
 
 -- name: GetQuizQuestionsByIDs :many
 SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, created_at, updated_at
 FROM quiz_questions
-WHERE id = ANY(@ids::text[]);
+WHERE id = ANY(@ids::char(28)[]);
 
 -- name: CreateQuizQuestion :one
 INSERT INTO quiz_questions (
@@ -76,40 +76,40 @@ SET
     betting_min_absolute = COALESCE(sqlc.narg('bettingminabsolute')::int, betting_min_absolute),
     betting_max_absolute = COALESCE(sqlc.narg('bettingmaxabsolute')::int, betting_max_absolute),
     updated_at = now()
-WHERE id = @id::text
+WHERE id = @id::char(28)
 RETURNING id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, created_at, updated_at;
 
 -- name: DeleteQuizQuestion :exec
 DELETE FROM quiz_questions
-WHERE id = @id::text;
+WHERE id = @id::char(28);
 
 -- name: UpdateQuizQuestionOrder :exec
 UPDATE quiz_questions
 SET
     question_order = @questionorder::int,
     updated_at = now()
-WHERE id = @id::text;
+WHERE id = @id::char(28);
 
 -- name: DeleteQuizQuestionTranslations :exec
 DELETE FROM quiz_question_translations
-WHERE question_id = @questionid::text;
+WHERE question_id = @questionid::char(28);
 
 -- name: GetPredefinedAnswersByQuestionID :many
 SELECT id, question_id, answer_text, is_correct, answer_order, created_at
 FROM quiz_predefined_answers
-WHERE question_id = @questionid::text
+WHERE question_id = @questionid::char(28)
 ORDER BY answer_order ASC;
 
 -- name: GetPredefinedAnswersByQuestionIDs :many
 SELECT id, question_id, answer_text, is_correct, answer_order, created_at
 FROM quiz_predefined_answers
-WHERE question_id = ANY(@question_ids::text[])
+WHERE question_id = ANY(@question_ids::char(28)[])
 ORDER BY question_id, answer_order ASC;
 
 -- name: GetPredefinedAnswersByIDs :many
 SELECT id, question_id, answer_text, is_correct, answer_order, created_at
 FROM quiz_predefined_answers
-WHERE id = ANY(@ids::text[]);
+WHERE id = ANY(@ids::char(28)[]);
 
 -- name: CreatePredefinedAnswer :one
 INSERT INTO quiz_predefined_answers (
@@ -130,8 +130,8 @@ RETURNING id, question_id, answer_text, is_correct, answer_order, created_at;
 
 -- name: DeletePredefinedAnswersByQuestion :exec
 DELETE FROM quiz_predefined_answers
-WHERE question_id = @questionid::text;
+WHERE question_id = @questionid::char(28);
 
 -- name: DeletePredefinedAnswerTranslations :exec
 DELETE FROM quiz_answer_translations
-WHERE answer_id = @answerid::text;
+WHERE answer_id = @answerid::char(28);

@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_EnrollInChallenge
 createdAt: 2025-12-08T12:00:00
-updatedAt: 2025-12-08T08:36:16.607357
+updatedAt: 2026-03-20T08:55:00.752918
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_ChallengeEnroll
 authentication: {}
@@ -21,7 +21,7 @@ body:
     }
   variables: |
     {
-      "challengeId": "CL01K9VZ87EPZMZMK17E9KM7ZH8Z"
+      "challengeId": "CL01KH3FKP1NWP0A4R8FH0A1DTVV"
     }
 bodyType: graphql
 description: User self-enrollment in a challenge

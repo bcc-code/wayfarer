@@ -52,6 +52,30 @@ input CreateTeamScoreAdjustmentInput {
     reason: String
 }
 
+# Individual score adjustment item for bulk operations
+input BulkScoreAdjustmentItemInput {
+    userId: ID!
+    points: Int!
+    reason: String
+}
+
+# Async bulk score adjustment - supports different points/reason per user
+input AsyncBulkScoreAdjustmentInput {
+    projectId: ID!
+    eventId: ID
+    adjustments: [BulkScoreAdjustmentItemInput!]!
+}
+
+# Async bulk score adjustment by target - all targets get same points
+input AsyncBulkScoreAdjustmentByTargetInput {
+    projectId: ID!
+    eventId: ID
+    target: EnrollmentTargetInput!
+    points: Int!
+    distributionMode: TeamScoreDistributionMode!
+    reason: String
+}
+
 # ==================== Score Pagination ====================
 
 type ScoreJournalEdge {
@@ -78,4 +102,6 @@ extend type Mutation {
     createScoreAdjustment(input: CreateScoreAdjustmentInput!): ScoreJournal! @requireRole(roles: ["m2m", "admin", "superadmin"])
     createTeamScoreAdjustment(input: CreateTeamScoreAdjustmentInput!): [ScoreJournal!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
     deleteScoreJournalEntry(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    asyncBulkScoreAdjustment(input: AsyncBulkScoreAdjustmentInput!): BulkJob! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    asyncBulkScoreAdjustmentByTarget(input: AsyncBulkScoreAdjustmentByTargetInput!): BulkJob! @requireRole(roles: ["m2m", "admin", "superadmin"])
 }

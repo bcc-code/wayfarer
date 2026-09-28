@@ -77,10 +77,15 @@ func NewTestRouter(cfg TestServerConfig) *gin.Engine {
 		Issuer: TestJWTIssuer,
 	}
 
-	// GraphQL endpoint with language and JWT middleware
+	// GraphQL endpoint with language and JWT middleware. In production a
+	// background worker (services.LeaderboardApplyWorker) drains the score
+	// outbox queue (migration 00101); tests need deterministic reads, so the
+	// queue is drained synchronously after every request instead — same SQL
+	// path (drain_leaderboard_apply_queue), no async race in assertions.
 	router.POST("/graphql",
 		middleware.LanguageExtractor(),
 		middleware.JWTAuth(jwtConfig),
+		drainLeaderboardApplyQueue(cfg.DB),
 		graphqlHandlerWithLanguage(gqlHandler, cfg.LanguageService),
 	)
 
@@ -95,6 +100,27 @@ func NewTestRouter(cfg TestServerConfig) *gin.Engine {
 	plugins.RegisterPlugin(router, pluginDeps, nil, ladder_to_heaven.NewPlugin(ladder_to_heaven.Config{}))
 
 	return router
+}
+
+// drainLeaderboardApplyQueue applies all queued leaderboard score deltas
+// after the request completes, so a subsequent read sees them (see the
+// comment at the /graphql route registration).
+func drainLeaderboardApplyQueue(db *database.DB) gin.HandlerFunc {
+	drain := func(c *gin.Context) {
+		for {
+			applied, err := db.Queries.DrainLeaderboardApplyQueue(c.Request.Context(), 500)
+			if err != nil || applied < 500 {
+				return
+			}
+		}
+	}
+	return func(c *gin.Context) {
+		// Before: apply score rows tests inserted directly into the DB.
+		drain(c)
+		c.Next()
+		// After: apply rows this request's mutations enqueued.
+		drain(c)
+	}
 }
 
 // graphqlHandlerWithLanguage wraps a GraphQL handler for use with Gin, including language sync
@@ -160,6 +186,13 @@ func SetupTestServer(ctx context.Context, dbMgr *TestDBManager) (*gin.Engine, fu
 		return nil, nil, err
 	}
 
+	// Create content achievement service for tests (without push or webhooks)
+	contentAchievementService := &services.ContentAchievementService{
+		DB:      dbMgr.DB,
+		Cache:   testCache,
+		Loaders: dataLoaders,
+	}
+
 	// Create bulk service (without pub/sub for testing - sync processing only)
 	bulkService := bulk.NewService(
 		dbMgr.DB,
@@ -169,6 +202,7 @@ func SetupTestServer(ctx context.Context, dbMgr *TestDBManager) (*gin.Engine, fu
 		nil, // FirebaseService
 		nil, // Publisher
 		logger,
+		contentAchievementService,
 	)
 
 	// Create router
@@ -218,6 +252,13 @@ func SetupTestServerWithCache(ctx context.Context, dbMgr *TestDBManager) (*gin.E
 		return nil, nil, nil, err
 	}
 
+	// Create content achievement service for tests (without push or webhooks)
+	contentAchievementService := &services.ContentAchievementService{
+		DB:      dbMgr.DB,
+		Cache:   testCache,
+		Loaders: dataLoaders,
+	}
+
 	// Create bulk service (without pub/sub for testing - sync processing only)
 	bulkService := bulk.NewService(
 		dbMgr.DB,
@@ -227,6 +268,7 @@ func SetupTestServerWithCache(ctx context.Context, dbMgr *TestDBManager) (*gin.E
 		nil, // FirebaseService
 		nil, // Publisher
 		logger,
+		contentAchievementService,
 	)
 
 	// Create router

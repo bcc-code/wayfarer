@@ -74,7 +74,7 @@ type MockQuerier_CreatePushNotificationLog_Call struct {
 // CreatePushNotificationLog is a helper method to define mock.On call
 //   - ctx context.Context
 //   - params sqlc.CreatePushNotificationLogParams
-func (_e *MockQuerier_Expecter) CreatePushNotificationLog(ctx interface{}, params interface{}) *MockQuerier_CreatePushNotificationLog_Call {
+func (_e *MockQuerier_Expecter) CreatePushNotificationLog(ctx any, params any) *MockQuerier_CreatePushNotificationLog_Call {
 	return &MockQuerier_CreatePushNotificationLog_Call{Call: _e.mock.On("CreatePushNotificationLog", ctx, params)}
 }
 
@@ -142,7 +142,7 @@ type MockQuerier_CreatePushSubscription_Call struct {
 // CreatePushSubscription is a helper method to define mock.On call
 //   - ctx context.Context
 //   - params sqlc.CreatePushSubscriptionParams
-func (_e *MockQuerier_Expecter) CreatePushSubscription(ctx interface{}, params interface{}) *MockQuerier_CreatePushSubscription_Call {
+func (_e *MockQuerier_Expecter) CreatePushSubscription(ctx any, params any) *MockQuerier_CreatePushSubscription_Call {
 	return &MockQuerier_CreatePushSubscription_Call{Call: _e.mock.On("CreatePushSubscription", ctx, params)}
 }
 
@@ -199,7 +199,7 @@ type MockQuerier_DeletePushSubscriptionByEndpoint_Call struct {
 // DeletePushSubscriptionByEndpoint is a helper method to define mock.On call
 //   - ctx context.Context
 //   - endpoint string
-func (_e *MockQuerier_Expecter) DeletePushSubscriptionByEndpoint(ctx interface{}, endpoint interface{}) *MockQuerier_DeletePushSubscriptionByEndpoint_Call {
+func (_e *MockQuerier_Expecter) DeletePushSubscriptionByEndpoint(ctx any, endpoint any) *MockQuerier_DeletePushSubscriptionByEndpoint_Call {
 	return &MockQuerier_DeletePushSubscriptionByEndpoint_Call{Call: _e.mock.On("DeletePushSubscriptionByEndpoint", ctx, endpoint)}
 }
 
@@ -256,7 +256,7 @@ type MockQuerier_DeletePushSubscriptionByID_Call struct {
 // DeletePushSubscriptionByID is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id string
-func (_e *MockQuerier_Expecter) DeletePushSubscriptionByID(ctx interface{}, id interface{}) *MockQuerier_DeletePushSubscriptionByID_Call {
+func (_e *MockQuerier_Expecter) DeletePushSubscriptionByID(ctx any, id any) *MockQuerier_DeletePushSubscriptionByID_Call {
 	return &MockQuerier_DeletePushSubscriptionByID_Call{Call: _e.mock.On("DeletePushSubscriptionByID", ctx, id)}
 }
 
@@ -323,7 +323,7 @@ type MockQuerier_GetAllSubscribedUserIDs_Call struct {
 
 // GetAllSubscribedUserIDs is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockQuerier_Expecter) GetAllSubscribedUserIDs(ctx interface{}) *MockQuerier_GetAllSubscribedUserIDs_Call {
+func (_e *MockQuerier_Expecter) GetAllSubscribedUserIDs(ctx any) *MockQuerier_GetAllSubscribedUserIDs_Call {
 	return &MockQuerier_GetAllSubscribedUserIDs_Call{Call: _e.mock.On("GetAllSubscribedUserIDs", ctx)}
 }
 
@@ -386,7 +386,7 @@ type MockQuerier_GetEnabledSubscriptionsForUsers_Call struct {
 // GetEnabledSubscriptionsForUsers is a helper method to define mock.On call
 //   - ctx context.Context
 //   - params sqlc.GetEnabledSubscriptionsForUsersParams
-func (_e *MockQuerier_Expecter) GetEnabledSubscriptionsForUsers(ctx interface{}, params interface{}) *MockQuerier_GetEnabledSubscriptionsForUsers_Call {
+func (_e *MockQuerier_Expecter) GetEnabledSubscriptionsForUsers(ctx any, params any) *MockQuerier_GetEnabledSubscriptionsForUsers_Call {
 	return &MockQuerier_GetEnabledSubscriptionsForUsers_Call{Call: _e.mock.On("GetEnabledSubscriptionsForUsers", ctx, params)}
 }
 
@@ -454,7 +454,7 @@ type MockQuerier_GetPushSubscriptionByEndpoint_Call struct {
 // GetPushSubscriptionByEndpoint is a helper method to define mock.On call
 //   - ctx context.Context
 //   - endpoint string
-func (_e *MockQuerier_Expecter) GetPushSubscriptionByEndpoint(ctx interface{}, endpoint interface{}) *MockQuerier_GetPushSubscriptionByEndpoint_Call {
+func (_e *MockQuerier_Expecter) GetPushSubscriptionByEndpoint(ctx any, endpoint any) *MockQuerier_GetPushSubscriptionByEndpoint_Call {
 	return &MockQuerier_GetPushSubscriptionByEndpoint_Call{Call: _e.mock.On("GetPushSubscriptionByEndpoint", ctx, endpoint)}
 }
 
@@ -522,7 +522,7 @@ type MockQuerier_GetPushSubscriptionsByUserID_Call struct {
 // GetPushSubscriptionsByUserID is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userid string
-func (_e *MockQuerier_Expecter) GetPushSubscriptionsByUserID(ctx interface{}, userid interface{}) *MockQuerier_GetPushSubscriptionsByUserID_Call {
+func (_e *MockQuerier_Expecter) GetPushSubscriptionsByUserID(ctx any, userid any) *MockQuerier_GetPushSubscriptionsByUserID_Call {
 	return &MockQuerier_GetPushSubscriptionsByUserID_Call{Call: _e.mock.On("GetPushSubscriptionsByUserID", ctx, userid)}
 }
 
@@ -590,7 +590,7 @@ type MockQuerier_GetUserIDsInEvents_Call struct {
 // GetUserIDsInEvents is a helper method to define mock.On call
 //   - ctx context.Context
 //   - eventids []string
-func (_e *MockQuerier_Expecter) GetUserIDsInEvents(ctx interface{}, eventids interface{}) *MockQuerier_GetUserIDsInEvents_Call {
+func (_e *MockQuerier_Expecter) GetUserIDsInEvents(ctx any, eventids any) *MockQuerier_GetUserIDsInEvents_Call {
 	return &MockQuerier_GetUserIDsInEvents_Call{Call: _e.mock.On("GetUserIDsInEvents", ctx, eventids)}
 }
 
@@ -658,7 +658,7 @@ type MockQuerier_GetUserIDsInProjects_Call struct {
 // GetUserIDsInProjects is a helper method to define mock.On call
 //   - ctx context.Context
 //   - projectids []string
-func (_e *MockQuerier_Expecter) GetUserIDsInProjects(ctx interface{}, projectids interface{}) *MockQuerier_GetUserIDsInProjects_Call {
+func (_e *MockQuerier_Expecter) GetUserIDsInProjects(ctx any, projectids any) *MockQuerier_GetUserIDsInProjects_Call {
 	return &MockQuerier_GetUserIDsInProjects_Call{Call: _e.mock.On("GetUserIDsInProjects", ctx, projectids)}
 }
 
@@ -726,7 +726,7 @@ type MockQuerier_GetUserIDsInTeams_Call struct {
 // GetUserIDsInTeams is a helper method to define mock.On call
 //   - ctx context.Context
 //   - teamids []string
-func (_e *MockQuerier_Expecter) GetUserIDsInTeams(ctx interface{}, teamids interface{}) *MockQuerier_GetUserIDsInTeams_Call {
+func (_e *MockQuerier_Expecter) GetUserIDsInTeams(ctx any, teamids any) *MockQuerier_GetUserIDsInTeams_Call {
 	return &MockQuerier_GetUserIDsInTeams_Call{Call: _e.mock.On("GetUserIDsInTeams", ctx, teamids)}
 }
 
@@ -794,7 +794,7 @@ type MockQuerier_GetUserNotificationPreferences_Call struct {
 // GetUserNotificationPreferences is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userid string
-func (_e *MockQuerier_Expecter) GetUserNotificationPreferences(ctx interface{}, userid interface{}) *MockQuerier_GetUserNotificationPreferences_Call {
+func (_e *MockQuerier_Expecter) GetUserNotificationPreferences(ctx any, userid any) *MockQuerier_GetUserNotificationPreferences_Call {
 	return &MockQuerier_GetUserNotificationPreferences_Call{Call: _e.mock.On("GetUserNotificationPreferences", ctx, userid)}
 }
 
@@ -860,7 +860,7 @@ type MockQuerier_IsNotificationTypeEnabled_Call struct {
 // IsNotificationTypeEnabled is a helper method to define mock.On call
 //   - ctx context.Context
 //   - params sqlc.IsNotificationTypeEnabledParams
-func (_e *MockQuerier_Expecter) IsNotificationTypeEnabled(ctx interface{}, params interface{}) *MockQuerier_IsNotificationTypeEnabled_Call {
+func (_e *MockQuerier_Expecter) IsNotificationTypeEnabled(ctx any, params any) *MockQuerier_IsNotificationTypeEnabled_Call {
 	return &MockQuerier_IsNotificationTypeEnabled_Call{Call: _e.mock.On("IsNotificationTypeEnabled", ctx, params)}
 }
 
@@ -917,7 +917,7 @@ type MockQuerier_UpdatePushNotificationLogStats_Call struct {
 // UpdatePushNotificationLogStats is a helper method to define mock.On call
 //   - ctx context.Context
 //   - params sqlc.UpdatePushNotificationLogStatsParams
-func (_e *MockQuerier_Expecter) UpdatePushNotificationLogStats(ctx interface{}, params interface{}) *MockQuerier_UpdatePushNotificationLogStats_Call {
+func (_e *MockQuerier_Expecter) UpdatePushNotificationLogStats(ctx any, params any) *MockQuerier_UpdatePushNotificationLogStats_Call {
 	return &MockQuerier_UpdatePushNotificationLogStats_Call{Call: _e.mock.On("UpdatePushNotificationLogStats", ctx, params)}
 }
 
@@ -985,7 +985,7 @@ type MockQuerier_UpdatePushSubscription_Call struct {
 // UpdatePushSubscription is a helper method to define mock.On call
 //   - ctx context.Context
 //   - params sqlc.UpdatePushSubscriptionParams
-func (_e *MockQuerier_Expecter) UpdatePushSubscription(ctx interface{}, params interface{}) *MockQuerier_UpdatePushSubscription_Call {
+func (_e *MockQuerier_Expecter) UpdatePushSubscription(ctx any, params any) *MockQuerier_UpdatePushSubscription_Call {
 	return &MockQuerier_UpdatePushSubscription_Call{Call: _e.mock.On("UpdatePushSubscription", ctx, params)}
 }
 
@@ -1053,7 +1053,7 @@ type MockQuerier_UpsertNotificationPreference_Call struct {
 // UpsertNotificationPreference is a helper method to define mock.On call
 //   - ctx context.Context
 //   - params sqlc.UpsertNotificationPreferenceParams
-func (_e *MockQuerier_Expecter) UpsertNotificationPreference(ctx interface{}, params interface{}) *MockQuerier_UpsertNotificationPreference_Call {
+func (_e *MockQuerier_Expecter) UpsertNotificationPreference(ctx any, params any) *MockQuerier_UpsertNotificationPreference_Call {
 	return &MockQuerier_UpsertNotificationPreference_Call{Call: _e.mock.On("UpsertNotificationPreference", ctx, params)}
 }
 

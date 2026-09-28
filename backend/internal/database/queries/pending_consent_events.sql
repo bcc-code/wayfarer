@@ -17,4 +17,4 @@ WHERE members_id = @members_id::text;
 
 -- name: DeletePendingConsentEvent :exec
 DELETE FROM pending_consent_events
-WHERE id = @id::text;
+WHERE id = @id::char(28);

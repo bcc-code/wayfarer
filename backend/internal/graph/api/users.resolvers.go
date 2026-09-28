@@ -113,6 +113,26 @@ func (r *mutationResolver) UnlockUserChurch(ctx context.Context, userID string) 
 
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
+	// Check for M2M role from JWT token (M2M users don't exist in the database)
+	userRoles := middleware.GetUserRoles(ctx)
+	isM2M := false
+	for _, role := range userRoles {
+		if role == "m2m" {
+			isM2M = true
+			break
+		}
+	}
+
+	// M2M users can access any user
+	if isM2M {
+		requestedUserThunk := r.Loaders.UserByIDLoader.Load(ctx, id)
+		requestedUser, err := requestedUserThunk()
+		if err != nil {
+			return nil, fmt.Errorf("failed to load requested user: %w", err)
+		}
+		return requestedUser, nil
+	}
+
 	// Get current user ID from context
 	currentUserID, ok := middleware.GetUserID(ctx)
 	if !ok || currentUserID == "" {
@@ -143,20 +163,33 @@ func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error
 
 // Users is the resolver for the users field.
 func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter, first *int, after *string, last *int, before *string) (*model.UserConnection, error) {
-	// Validate user authentication and get basic info
-	userInfo, err := validateUserAccess(ctx, r.Loaders.UserByIDLoader)
-	if err != nil {
-		return nil, err
+	// Check for M2M role from JWT token (M2M users don't exist in the database)
+	userRoles := middleware.GetUserRoles(ctx)
+	isM2M := false
+	for _, role := range userRoles {
+		if role == "m2m" {
+			isM2M = true
+			break
+		}
 	}
 
-	// Check what permissions the user has
-	perms, err := checkUserPermissions(ctx, r.RoleService, userInfo, filter)
-	if err != nil {
-		return nil, err
-	}
+	// M2M users bypass normal user validation and have unfiltered access
+	if !isM2M {
+		// Validate user authentication and get basic info
+		userInfo, err := validateUserAccess(ctx, r.Loaders.UserByIDLoader)
+		if err != nil {
+			return nil, err
+		}
 
-	// Apply permission-based filters
-	filter = applyPermissionFilters(filter, perms)
+		// Check what permissions the user has
+		perms, err := checkUserPermissions(ctx, r.RoleService, userInfo, filter)
+		if err != nil {
+			return nil, err
+		}
+
+		// Apply permission-based filters
+		filter = applyPermissionFilters(filter, perms)
+	}
 
 	// Build cache key from filter and pagination parameters
 	cacheKeyParams := buildCacheKeyParams(filter, first, after, last, before)
@@ -420,17 +453,13 @@ func (r *userResolver) Roles(ctx context.Context, obj *model.User) ([]model.User
 	return result, nil
 }
 
-// Points is the resolver for the points field.
-func (r *userResolver) Points(ctx context.Context, obj *model.User, projectID string) (int, error) {
-	score, err := r.DB.Queries.GetUserScore(ctx, sqlc.GetUserScoreParams{
-		UserID:    obj.ID,
-		ProjectID: projectID,
-		EventID:   "",
-	})
+// PointsByProject is the resolver for the pointsByProject field.
+func (r *userResolver) PointsByProject(ctx context.Context, obj *model.User) ([]model.UserProjectPoints, error) {
+	rows, err := r.DB.Queries.GetUserPointsByProject(ctx, obj.ID)
 	if err != nil {
-		return 0, fmt.Errorf("failed to get user score: %w", err)
+		return nil, fmt.Errorf("failed to get points by project for user %s: %w", obj.ID, err)
 	}
-	return int(score), nil
+	return mapUserPointsByProject(rows), nil
 }
 
 // User returns UserResolver implementation.

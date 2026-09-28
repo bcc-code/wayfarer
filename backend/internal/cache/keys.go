@@ -11,19 +11,28 @@ import (
 // Key prefixes for different entity types
 // These prefixes enable tag-based invalidation by matching prefix patterns
 const (
+	// Whole-response GraphQL cache (see graph/api/response_cache.go).
+	// Shared entries are identical for every caller; user entries embed the
+	// calling user's ID and are dropped on that user's mutations and on user
+	// invalidation.
+	PrefixGQLResponse       = "gqlresponse:"
+	PrefixGQLResponseShared = "gqlresponse:shared:"
+	prefixGQLResponseUser   = "gqlresponse:user:"
+
 	// Core entities
-	PrefixUser           = "user:"
-	PrefixChurch         = "church:"
-	PrefixProject        = "project:"
-	PrefixEvent          = "event:"
-	PrefixTeam           = "team:"
-	PrefixSuperTeam      = "superteam:"
-	PrefixChallenge      = "challenge:"
-	PrefixAchievement    = "achievement:"
-	PrefixStreak         = "streak:"
-	PrefixQuiz           = "quiz:"
-	PrefixQuizSession    = "quizsession:"
-	PrefixQuizSubmission = "quizsubmission:"
+	PrefixUser               = "user:"
+	PrefixChurch             = "church:"
+	PrefixProject            = "project:"
+	PrefixEvent              = "event:"
+	PrefixTeam               = "team:"
+	PrefixSuperTeam          = "superteam:"
+	PrefixChallenge          = "challenge:"
+	PrefixLeaderboardConfig  = "leaderboardconfig:"
+	PrefixAchievement        = "achievement:"
+	PrefixUserStreakProgress = "userstreakprogress:"
+	PrefixQuiz               = "quiz:"
+	PrefixQuizSession        = "quizsession:"
+	PrefixQuizSubmission     = "quizsubmission:"
 
 	// Relationship/Junction tables
 	PrefixUserProjects       = "userprojects:"
@@ -40,7 +49,6 @@ const (
 	PrefixUserChallengeCompletions = "userchallenges:"
 	PrefixUserChallengeEnrollments = "userchallengeenrollments:"
 	PrefixUserContentProgress      = "usercontent:"
-	PrefixUserStreakActivity       = "userstreak:"
 
 	// Computed data
 	PrefixLeaderboard           = "leaderboard:"
@@ -67,8 +75,6 @@ const (
 	PrefixChallengesCount       = "challengescount:"
 	PrefixChurchesFilter        = "churchesfilter:"
 	PrefixChurchesCount         = "churchescount:"
-	PrefixStreaksFilter         = "streaksfilter:"
-	PrefixStreaksCount          = "streakscount:"
 	PrefixQuizzesFilter         = "quizzesfilter:"
 	PrefixQuizzesCount          = "quizzescount:"
 	PrefixQuizSubmissionsFilter = "quizsubmissionsfilter:"
@@ -105,6 +111,15 @@ const (
 
 	// User project points (myPoints field)
 	PrefixUserProjectPoints = "userprojectpoints:"
+
+	// Active challenges count per user+project
+	PrefixActiveChallengesCount = "activechallengescount:"
+
+	// Per-user lookup caches for hot per-request queries
+	PrefixUserTeamInProject      = "userteam:"
+	PrefixUserEnrolledChallenges = "userenrolledchallenges:"
+	PrefixUserQuizSessionAccess  = "userquizaccess:"
+	PrefixUserActiveQuizSession  = "useractivesession:"
 )
 
 // Key builders for different entity types
@@ -216,6 +231,21 @@ func ChallengesByEventKey(eventID string) string {
 	return fmt.Sprintf("%s:event:%s", PrefixChallenge, eventID)
 }
 
+// LeaderboardConfigKey builds a cache key for a leaderboard config by ID
+func LeaderboardConfigKey(configID string) string {
+	return PrefixLeaderboardConfig + configID
+}
+
+// LeaderboardConfigsByProjectKey builds a cache key for leaderboard configs in a project
+func LeaderboardConfigsByProjectKey(projectID string) string {
+	return fmt.Sprintf("%s:project:%s", PrefixLeaderboardConfig, projectID)
+}
+
+// LeaderboardConfigsByEventKey builds a cache key for leaderboard configs in an event
+func LeaderboardConfigsByEventKey(eventID string) string {
+	return fmt.Sprintf("%s:event:%s", PrefixLeaderboardConfig, eventID)
+}
+
 // AchievementKey builds a cache key for an achievement by ID
 func AchievementKey(achievementID string) string {
 	return PrefixAchievement + achievementID
@@ -241,24 +271,14 @@ func UserContentProgressKey(userID, achievementID string) string {
 	return fmt.Sprintf("%s%s:%s", PrefixUserContentProgress, userID, achievementID)
 }
 
-// StreakKey builds a cache key for a streak by ID
-func StreakKey(streakID string) string {
-	return PrefixStreak + streakID
+// StreakItemsByAchievementKey builds a cache key for streak items by achievement ID
+func StreakItemsByAchievementKey(achievementID string) string {
+	return fmt.Sprintf("%s:streakitems:%s", PrefixAchievement, achievementID)
 }
 
-// StreaksByProjectKey builds a cache key for streaks in a project
-func StreaksByProjectKey(projectID string) string {
-	return fmt.Sprintf("%s:project:%s", PrefixStreak, projectID)
-}
-
-// RelevantDaysByStreakKey builds a cache key for relevant days by streak
-func RelevantDaysByStreakKey(streakID string) string {
-	return fmt.Sprintf("%s:relevant_days:%s", PrefixStreak, streakID)
-}
-
-// UserStreakActivityKey builds a cache key for user streak activity
-func UserStreakActivityKey(userID string, streakID string) string {
-	return fmt.Sprintf("%s%s:%s", PrefixUserStreakActivity, userID, streakID)
+// UserStreakProgressKey builds a cache key for user streak progress
+func UserStreakProgressKey(userID, achievementID string) string {
+	return fmt.Sprintf("%s%s:%s", PrefixUserStreakProgress, userID, achievementID)
 }
 
 // QuizKey builds a cache key for a quiz by ID
@@ -286,6 +306,12 @@ func QuizSessionKey(sessionID string) string {
 	return PrefixQuizSession + sessionID
 }
 
+// UserActiveQuizSessionKey builds a cache key for the user's active (visible)
+// session for a quiz
+func UserActiveQuizSessionKey(userID, quizID string) string {
+	return fmt.Sprintf("%s%s:%s", PrefixUserActiveQuizSession, userID, quizID)
+}
+
 // QuizSubmissionKey builds a cache key for a quiz submission by ID
 func QuizSubmissionKey(submissionID string) string {
 	return PrefixQuizSubmission + submissionID
@@ -311,6 +337,11 @@ func QuizAnswersByQuestionKey(questionID string) string {
 	return fmt.Sprintf("%sanswers:%s", PrefixQuiz, questionID)
 }
 
+// QuizAchievementsByQuizKey builds a cache key for the quiz achievement criteria of a quiz
+func QuizAchievementsByQuizKey(quizID string) string {
+	return fmt.Sprintf("%squizachievements:%s", PrefixQuiz, quizID)
+}
+
 // QuizResponsesBySubmissionKey builds a cache key for responses by submission
 func QuizResponsesBySubmissionKey(submissionID string) string {
 	return fmt.Sprintf("%sresponses:%s", PrefixQuizSubmission, submissionID)
@@ -334,6 +365,27 @@ func UserChallengeEnrollmentKey(userID string, challengeID string) string {
 // UserChallengeCompletionKey builds a cache key for user challenge completion timestamp
 func UserChallengeCompletionKey(userID string, challengeID string) string {
 	return fmt.Sprintf("%s%s:%s", PrefixUserChallengeCompletions, userID, challengeID)
+}
+
+// ActiveChallengesCountKey builds a cache key for the active challenges count per user+project
+func ActiveChallengesCountKey(userID string, projectID string) string {
+	return fmt.Sprintf("%s%s:%s", PrefixActiveChallengesCount, userID, projectID)
+}
+
+// UserTeamInProjectKey builds a cache key for the user's team ID in a project (myTeam field).
+// The value is the team ID only; team details are cached separately under TeamKey.
+func UserTeamInProjectKey(userID string, projectID string) string {
+	return fmt.Sprintf("%s%s:%s", PrefixUserTeamInProject, userID, projectID)
+}
+
+// UserEnrolledChallengesKey builds a cache key for the user's enrolled challenge IDs in a project
+func UserEnrolledChallengesKey(userID string, projectID string) string {
+	return fmt.Sprintf("%s%s:%s", PrefixUserEnrolledChallenges, userID, projectID)
+}
+
+// UserQuizSessionAccessKey builds a cache key for the quiz IDs a user has session access to in a project
+func UserQuizSessionAccessKey(userID string, projectID string) string {
+	return fmt.Sprintf("%s%s:%s", PrefixUserQuizSessionAccess, userID, projectID)
 }
 
 // TeamMembersByTeamKey builds a cache key for team members
@@ -431,9 +483,11 @@ func ExtractUserTag(key string) (string, bool) {
 	prefixes := []string{
 		PrefixUserProjects, PrefixUserEvents, PrefixUserRoles,
 		PrefixUserContentProgress, PrefixUserAchievements,
-		PrefixUserStreakActivity, PrefixUserChallengeEnrollments,
+		PrefixUserStreakProgress, PrefixUserChallengeEnrollments,
 		PrefixUserChallengeCompletions, PrefixUserConsents,
-		PrefixUserProjectPoints,
+		PrefixUserProjectPoints, PrefixActiveChallengesCount,
+		PrefixUserTeamInProject, PrefixUserEnrolledChallenges,
+		PrefixUserQuizSessionAccess, PrefixUserActiveQuizSession,
 	}
 	for _, prefix := range prefixes {
 		if strings.HasPrefix(key, prefix) {
@@ -964,68 +1018,6 @@ func ChurchesCountKey(params map[string]string) string {
 	return PrefixChurchesCount + hashStr
 }
 
-// StreaksFilterKey builds a cache key for filtered streaks query results
-func StreaksFilterKey(params map[string]string) string {
-	if len(params) == 0 {
-		return PrefixStreaksFilter + "all"
-	}
-
-	// Sort keys for deterministic ordering
-	keys := make([]string, 0, len(params))
-	for k := range params {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	// Build deterministic string from sorted key-value pairs
-	var builder strings.Builder
-	for i, k := range keys {
-		if i > 0 {
-			builder.WriteString(":")
-		}
-		builder.WriteString(k)
-		builder.WriteString("=")
-		builder.WriteString(params[k])
-	}
-
-	// Hash the parameter string for a shorter key
-	hash := sha256.Sum256([]byte(builder.String()))
-	hashStr := hex.EncodeToString(hash[:])[:16]
-
-	return PrefixStreaksFilter + hashStr
-}
-
-// StreaksCountKey builds a cache key for filtered streaks count query results
-func StreaksCountKey(params map[string]string) string {
-	if len(params) == 0 {
-		return PrefixStreaksCount + "all"
-	}
-
-	// Sort keys for deterministic ordering
-	keys := make([]string, 0, len(params))
-	for k := range params {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	// Build deterministic string from sorted key-value pairs
-	var builder strings.Builder
-	for i, k := range keys {
-		if i > 0 {
-			builder.WriteString(":")
-		}
-		builder.WriteString(k)
-		builder.WriteString("=")
-		builder.WriteString(params[k])
-	}
-
-	// Hash the parameter string for a shorter key
-	hash := sha256.Sum256([]byte(builder.String()))
-	hashStr := hex.EncodeToString(hash[:])[:16]
-
-	return PrefixStreaksCount + hashStr
-}
-
 // LeaderboardKey builds a cache key for leaderboard query results (user-agnostic)
 // context: "project" or "event"
 // contextID: project ID or event ID
@@ -1275,4 +1267,11 @@ func ScoreJournalKey(id string) string {
 // UserProjectPointsKey builds a cache key for a user's points in a project (myPoints field)
 func UserProjectPointsKey(userID, projectID string) string {
 	return fmt.Sprintf("%s%s:%s", PrefixUserProjectPoints, userID, projectID)
+}
+
+// GQLResponseUserPrefix builds the per-user response-cache key prefix. All of
+// a user's whole-response entries live under it, so a single DeletePrefix
+// drops them (on the user's own mutations and on user invalidation).
+func GQLResponseUserPrefix(userID string) string {
+	return prefixGQLResponseUser + userID + ":"
 }

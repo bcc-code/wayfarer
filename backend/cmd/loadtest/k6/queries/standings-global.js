@@ -30,11 +30,6 @@ query StandingsGlobalPage($entityType: LeaderboardEntityType!, $filter: Leaderbo
 
 /**
  * Execute the StandingsGlobalPage query
- * @param {string} baseUrl - Base URL of the GraphQL API
- * @param {string} token - JWT token for authorization
- * @param {string} entityType - Leaderboard entity type (PERSONS, TEAMS, SUPER_TEAMS)
- * @param {number} first - Number of entries to fetch
- * @returns {object} HTTP response
  */
 export function standingsGlobalPage(baseUrl, token, entityType = 'PERSONS', first = 50) {
     const variables = {

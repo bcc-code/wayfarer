@@ -1,0 +1,26 @@
+fragment LeaderboardConfigFields on LeaderboardConfig {
+  id
+  name
+  entityType
+  maxEntries
+  sortOrder
+  isActive
+  event {
+    id
+    name
+  }
+  filter {
+    minScore
+    maxScore
+    churchId
+    country
+    churchCategory
+    gender
+    ageRange {
+      min
+      max
+    }
+    teamId
+    superTeamId
+  }
+}

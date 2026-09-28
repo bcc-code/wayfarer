@@ -1,17 +1,17 @@
 -- name: GetQuizAchievementByAchievementID :one
 SELECT achievement_id, quiz_id, min_score_percentage, require_completion
 FROM quiz_achievements
-WHERE achievement_id = @achievementid::text;
+WHERE achievement_id = @achievementid::char(28);
 
 -- name: GetQuizAchievementsByQuizID :many
 SELECT achievement_id, quiz_id, min_score_percentage, require_completion
 FROM quiz_achievements
-WHERE quiz_id = @quizid::text;
+WHERE quiz_id = @quizid::char(28);
 
 -- name: GetQuizAchievementsByQuizIDs :many
 SELECT achievement_id, quiz_id, min_score_percentage, require_completion
 FROM quiz_achievements
-WHERE quiz_id = ANY(@quiz_ids::text[]);
+WHERE quiz_id = ANY(@quiz_ids::char(28)[]);
 
 -- name: CreateQuizAchievement :one
 INSERT INTO quiz_achievements (
@@ -30,7 +30,7 @@ RETURNING achievement_id, quiz_id, min_score_percentage, require_completion;
 
 -- name: DeleteQuizAchievement :exec
 DELETE FROM quiz_achievements
-WHERE achievement_id = @achievementid::text;
+WHERE achievement_id = @achievementid::char(28);
 
 -- name: UpsertQuizAchievement :one
 INSERT INTO quiz_achievements (

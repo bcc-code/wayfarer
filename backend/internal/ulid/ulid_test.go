@@ -22,12 +22,13 @@ func TestNewIDs(t *testing.T) {
 		{"NewEventID", NewEventID, PrefixEvent, IsEventID},
 		{"NewSuperTeamID", NewSuperTeamID, PrefixSuperTeam, IsSuperTeamID},
 		{"NewTeamID", NewTeamID, PrefixTeam, IsTeamID},
-		{"NewStreakID", NewStreakID, PrefixStreak, IsStreakID},
+		{"NewStreakAchievementItemID", NewStreakAchievementItemID, PrefixStreakAchievementItem, IsStreakAchievementItemID},
 		{"NewChallengeID", NewChallengeID, PrefixChallenge, IsChallengeID},
 		{"NewAchievementID", NewAchievementID, PrefixAchievement, IsAchievementID},
 		{"NewContentItemID", NewContentItemID, PrefixContentItem, IsContentItemID},
 		{"NewScoreJournalID", NewScoreJournalID, PrefixScoreJournal, IsScoreJournalID},
 		{"NewUserFeedbackID", NewUserFeedbackID, PrefixUserFeedback, IsUserFeedbackID},
+		{"NewLeaderboardConfigID", NewLeaderboardConfigID, PrefixLeaderboardConfig, IsLeaderboardConfigID},
 	}
 
 	for _, tt := range tests {

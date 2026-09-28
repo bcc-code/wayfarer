@@ -28,6 +28,8 @@ type SuperTeam {
     id: ID!
     name: String!
     description: String!
+    imageObject: Image @goField(forceResolver: true)
+    color: String
     members(first: Int, after: String, last: Int, before: String): UserConnection! @goField(forceResolver: true)
     parentProject: Project! @goField(forceResolver: true)
     teams: [Team!]! @goField(forceResolver: true)
@@ -49,12 +51,16 @@ input UpdateTeamInput {
 input CreateSuperTeamInput {
     name: String!
     description: String!
+    imageUrl: String
+    color: String
     teamIds: [ID!]
 }
 
 input UpdateSuperTeamInput {
     name: String
     description: String
+    imageUrl: String
+    color: String
 }
 
 input TeamFilter {

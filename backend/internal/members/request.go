@@ -35,7 +35,7 @@ func sendRequest[t any](ctx context.Context, client *Client, req *http.Request) 
 		}
 
 		if 200 > res.StatusCode || res.StatusCode > 299 {
-			return nil, fmt.Errorf("members API returned status %d: %s", res.StatusCode, string(body))
+			return nil, newStatusError(res.StatusCode, body)
 		}
 
 		return body, err

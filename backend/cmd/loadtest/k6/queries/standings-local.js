@@ -1,7 +1,7 @@
 import { graphqlRequest, checkGraphQLResponse } from '../lib/graphql.js';
 
 const STANDINGS_LOCAL_QUERY = `
-query StandingsLocalPage($entityType: LeaderboardEntityType!, $filter: LeaderboardFilter) {
+query StandingsLocalPage($filter: LeaderboardFilter, $first: Int) {
   me {
     church {
       id
@@ -10,7 +10,27 @@ query StandingsLocalPage($entityType: LeaderboardEntityType!, $filter: Leaderboa
   }
   myCurrentProject {
     id
-    leaderboard(entityType: $entityType, filter: $filter) {
+    personLeaderboard: leaderboard(entityType: PERSONS, filter: $filter, first: $first) {
+      totalCount
+      edges {
+        node {
+          id
+          name
+          score
+          rank
+          tags
+        }
+      }
+      me {
+        id
+        name
+        score
+        rank
+        tags
+      }
+    }
+    unitLeaderboard: leaderboard(entityType: TEAMS, filter: $filter, first: $first) {
+      totalCount
       edges {
         node {
           id
@@ -33,15 +53,11 @@ query StandingsLocalPage($entityType: LeaderboardEntityType!, $filter: Leaderboa
 `;
 
 /**
- * Execute the StandingsLocalPage query
- * @param {string} baseUrl - Base URL of the GraphQL API
- * @param {string} token - JWT token for authorization
- * @param {string} entityType - Leaderboard entity type (PERSONS, TEAMS)
- * @returns {object} HTTP response
+ * Execute the StandingsLocalPage query (dual leaderboard: persons + teams)
  */
-export function standingsLocalPage(baseUrl, token, entityType = 'PERSONS') {
+export function standingsLocalPage(baseUrl, token, first = 50) {
     const variables = {
-        entityType: entityType,
+        first: first,
     };
     const response = graphqlRequest(baseUrl, STANDINGS_LOCAL_QUERY, variables, token, 'StandingsLocalPage');
     checkGraphQLResponse(response, 'StandingsLocalPage');

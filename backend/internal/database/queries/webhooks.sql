@@ -25,16 +25,16 @@ INSERT INTO webhooks (
 
 -- name: GetWebhookByID :one
 SELECT * FROM webhooks
-WHERE id = @id::text;
+WHERE id = @id::char(28);
 
 -- name: GetWebhooksByProjectID :many
 SELECT * FROM webhooks
-WHERE project_id = @projectid::text
+WHERE project_id = @projectid::char(28)
 ORDER BY created_at DESC;
 
 -- name: GetActiveWebhooksByProjectAndEvent :many
 SELECT * FROM webhooks
-WHERE project_id = @projectid::text
+WHERE project_id = @projectid::char(28)
   AND event_type = @eventtype::text
   AND active = true
 ORDER BY created_at DESC;
@@ -59,12 +59,12 @@ SET
     active = COALESCE(sqlc.narg('active')::bool, active),
     secret = CASE WHEN sqlc.narg('updatesecret')::bool = true THEN sqlc.narg('secret')::text ELSE secret END,
     updated_at = now()
-WHERE id = @id::text
+WHERE id = @id::char(28)
 RETURNING *;
 
 -- name: DeleteWebhook :exec
 DELETE FROM webhooks
-WHERE id = @id::text;
+WHERE id = @id::char(28);
 
 -- Webhook Logs
 
@@ -91,10 +91,10 @@ INSERT INTO webhook_logs (
 
 -- name: GetWebhookLogsByWebhookID :many
 SELECT * FROM webhook_logs
-WHERE webhook_id = @webhookid::text
+WHERE webhook_id = @webhookid::char(28)
 ORDER BY created_at DESC
 LIMIT @limitcount::int;
 
 -- name: CountWebhookLogsByWebhookID :one
 SELECT COUNT(*) FROM webhook_logs
-WHERE webhook_id = @webhookid::text;
+WHERE webhook_id = @webhookid::char(28);

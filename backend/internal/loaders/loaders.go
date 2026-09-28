@@ -36,10 +36,11 @@ type Loaders struct {
 	ChallengeByIDLoader                      *dataloader.Loader[string, model.Challenge]
 	ChallengesByProjectLoader                *dataloader.Loader[string, []model.Challenge]
 	ChallengesByEventLoader                  *dataloader.Loader[string, []model.Challenge]
-	StreakByIDLoader                         *dataloader.Loader[string, *model.Streak]
-	StreaksByProjectLoader                   *dataloader.Loader[string, []*model.Streak]
-	RelevantDaysByStreakLoader               *dataloader.Loader[string, []model.DateRange]
-	UserStreakActivityLoader                 *dataloader.Loader[UserStreakActivityKey, []*sqlc.UserStreakActivity]
+	LeaderboardConfigByIDLoader              *dataloader.Loader[string, *model.LeaderboardConfig]
+	LeaderboardConfigsByProjectLoader        *dataloader.Loader[string, []*model.LeaderboardConfig]
+	LeaderboardConfigsByEventLoader          *dataloader.Loader[string, []*model.LeaderboardConfig]
+	StreakItemsByAchievementLoader           *dataloader.Loader[string, []*model.ContentItem]
+	UserStreakProgressLoader                 *dataloader.Loader[UserAchievementKey, []*sqlc.UserStreakProgress]
 	UserContentProgressLoader                *dataloader.Loader[UserAchievementKey, []*sqlc.UserContentProgress]
 	UserAchievementTimestampLoader           *dataloader.Loader[UserAchievementKey, *time.Time]
 	UserAchievementCelebratedTimestampLoader *dataloader.Loader[UserAchievementKey, *time.Time]
@@ -62,17 +63,27 @@ type Loaders struct {
 	ExternalContentTranslationsLoader        *dataloader.Loader[string, []model.ExternalContentTranslation]
 	ImageMetadataByURLLoader                 *dataloader.Loader[string, *model.Image]
 	ScoreJournalByIDLoader                   *dataloader.Loader[string, *model.ScoreJournal]
+	UserProjectScoreLoader                   *dataloader.Loader[UserProjectKey, int64]
+	UserTeamIDInProjectLoader                *dataloader.Loader[UserProjectKey, string]
+	UserEnrolledChallengeIDsLoader           *dataloader.Loader[UserProjectKey, map[string]bool]
+	UserAccessibleQuizIDsLoader              *dataloader.Loader[UserProjectKey, map[string]bool]
+	UserActiveQuizSessionLoader              *dataloader.Loader[UserQuizKey, *sqlc.QuizSession]
+	ChallengeCompletionCountLoader           *dataloader.Loader[string, int64]
+	AchievementAwardedUserCountLoader        *dataloader.Loader[string, int64]
 }
 
 // newBatchedLoader creates a new batched dataloader with standard configuration:
-// - Batch capacity of 100
-// - Cache disabled (we rely on Ristretto cache in batch functions instead)
+//   - Batch capacity of 100
+//   - Cache disabled (we rely on Ristretto cache in batch functions instead)
+//   - 2ms batch window (library default is 16ms; resolvers await several loaders
+//     sequentially, so the default adds tens of ms of pure wait per request)
 func newBatchedLoader[K comparable, V any](
 	batchFunc func(context.Context, []K) []*dataloader.Result[V],
 ) *dataloader.Loader[K, V] {
 	return dataloader.NewBatchedLoader(
 		batchFunc,
 		dataloader.WithBatchCapacity[K, V](100),
+		dataloader.WithWait[K, V](2*time.Millisecond),
 		dataloader.WithCache[K, V](&dataloader.NoCache[K, V]{}), // Disable internal cache, use Ristretto instead
 	)
 }
@@ -104,10 +115,11 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		ChallengeByIDLoader:                      newBatchedLoader(challengeByIDBatchFunc(db, cache)),
 		ChallengesByProjectLoader:                newBatchedLoader(challengesByProjectBatchFunc(db, cache)),
 		ChallengesByEventLoader:                  newBatchedLoader(challengesByEventBatchFunc(db, cache)),
-		StreakByIDLoader:                         newBatchedLoader(streakByIDBatchFunc(db, cache)),
-		StreaksByProjectLoader:                   newBatchedLoader(streaksByProjectBatchFunc(db, cache)),
-		RelevantDaysByStreakLoader:               newBatchedLoader(relevantDaysByStreakBatchFunc(db, cache)),
-		UserStreakActivityLoader:                 newBatchedLoader(userStreakActivityBatchFunc(db, cache)),
+		LeaderboardConfigByIDLoader:              newBatchedLoader(leaderboardConfigByIDBatchFunc(db, cache)),
+		LeaderboardConfigsByProjectLoader:        newBatchedLoader(leaderboardConfigsByProjectBatchFunc(db, cache)),
+		LeaderboardConfigsByEventLoader:          newBatchedLoader(leaderboardConfigsByEventBatchFunc(db, cache)),
+		StreakItemsByAchievementLoader:           newBatchedLoader(streakItemsByAchievementBatchFunc(db, cache)),
+		UserStreakProgressLoader:                 newBatchedLoader(userStreakProgressBatchFunc(db, cache)),
 		UserContentProgressLoader:                newBatchedLoader(userContentProgressBatchFunc(db, cache)),
 		UserAchievementTimestampLoader:           newBatchedLoader(userAchievementTimestampBatchFunc(db, cache)),
 		UserAchievementCelebratedTimestampLoader: newBatchedLoader(userAchievementCelebratedTimestampBatchFunc(db, cache)),
@@ -130,5 +142,12 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		ExternalContentTranslationsLoader:        newBatchedLoader(externalContentTranslationsBatchFunc(db, cache)),
 		ImageMetadataByURLLoader:                 newBatchedLoader(imageMetadataByURLBatchFunc(db, cache)),
 		ScoreJournalByIDLoader:                   newBatchedLoader(scoreJournalByIDBatchFunc(db, cache)),
+		UserProjectScoreLoader:                   newBatchedLoader(userProjectScoreBatchFunc(db)),
+		UserTeamIDInProjectLoader:                newBatchedLoader(userTeamIDInProjectBatchFunc(db, cache)),
+		UserEnrolledChallengeIDsLoader:           newBatchedLoader(userEnrolledChallengeIDsBatchFunc(db, cache)),
+		UserAccessibleQuizIDsLoader:              newBatchedLoader(userAccessibleQuizIDsBatchFunc(db, cache)),
+		UserActiveQuizSessionLoader:              newBatchedLoader(userActiveQuizSessionBatchFunc(db, cache)),
+		ChallengeCompletionCountLoader:           newBatchedLoader(challengeCompletionCountBatchFunc(db)),
+		AchievementAwardedUserCountLoader:        newBatchedLoader(achievementAwardedUserCountBatchFunc(db)),
 	}
 }

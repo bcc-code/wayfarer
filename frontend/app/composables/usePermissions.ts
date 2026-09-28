@@ -95,7 +95,7 @@ export function usePermissions() {
    * - Church admins can see users from their church
    */
   const canAccessUsers = computed(() => {
-    return isSuperAdmin.value || isAdmin.value || isChurchAdmin.value
+    return isSuperAdmin.value
   })
 
   /**
@@ -104,14 +104,25 @@ export function usePermissions() {
    * - Project admins can see teams in their projects
    */
   const canAccessTeams = computed(() => {
-    return isSuperAdmin.value || isAdmin.value || isProjectAdmin.value
+    // Not project admins: `project_admin` is accepted by exactly one server
+    // operation (`updateProject`), so every team action would 403. They used to
+    // see the nav entry and be bounced by the page's `superadmin` middleware.
+    return isSuperAdmin.value || isAdmin.value
   })
 
   /**
    * Can access the consents page
    */
   const canAccessConsents = computed(() => {
-    return isSuperAdmin.value || isAdmin.value
+    return isSuperAdmin.value
+  })
+
+  /**
+   * Can access a church detail page. Reached from a user's detail page; there
+   * is no church list.
+   */
+  const canAccessChurches = computed(() => {
+    return isSuperAdmin.value
   })
 
   /**
@@ -144,14 +155,17 @@ export function usePermissions() {
    * - Project admins can manage scores for their projects
    */
   const canManageScores = computed(() => {
-    return isSuperAdmin.value || isAdmin.value || isProjectAdmin.value
+    // `createScoreAdjustment` is @requireRole(["m2m","admin","superadmin"]), so
+    // including project admins let them fill in the form and take a 403.
+    return isSuperAdmin.value || isAdmin.value
   })
 
   /**
    * Can manage scores for a specific project
    */
-  const canManageScoresFor = (projectId: string) => {
-    return isSuperAdmin.value || isAdmin.value || hasProjectAdminFor(projectId)
+  const canManageScoresFor = (_projectId: string) => {
+    // Scored per project in the UI, but the server gates on role alone.
+    return isSuperAdmin.value || isAdmin.value
   }
 
   /**
@@ -206,15 +220,18 @@ export function usePermissions() {
   /**
    * Can create teams for a project
    */
-  const canCreateTeamFor = (projectId: string) => {
-    return isSuperAdmin.value || isAdmin.value || hasProjectAdminFor(projectId)
+  const canCreateTeamFor = (_projectId: string) => {
+    // `createTeam` is @requireRole(["admin","superadmin","church_admin"]).
+    return isSuperAdmin.value || isAdmin.value
   }
 
   /**
    * Can manage a specific team
    */
-  const canManageTeam = (_teamId?: string) => {
-    // TODO: Add project-based permission check when team's project is available
+  const canManageTeam = () => {
+    // Previously carried a TODO about adding a project-scoped check once the
+    // team's project was known. It is not needed: no team mutation accepts
+    // `project_admin`, so the answer is role-only.
     return isSuperAdmin.value || isAdmin.value
   }
 
@@ -258,6 +275,13 @@ export function usePermissions() {
     return isSuperAdmin.value
   })
 
+  /**
+   * Can check achievement progress for users (superadmin only)
+   */
+  const canCheckAchievements = computed(() => {
+    return isSuperAdmin.value
+  })
+
   return {
     // Scoped helpers
     hasProjectAdminFor,
@@ -274,6 +298,7 @@ export function usePermissions() {
     canAccessUsers,
     canAccessTeams,
     canAccessConsents,
+    canAccessChurches,
     canAccessFeedback,
     canDeleteFeedback,
     canForwardFeedback,
@@ -295,5 +320,6 @@ export function usePermissions() {
     canToggleLeaderboardExclusion,
     canManageChurchAdmins,
     canAccessMaintenance,
+    canCheckAchievements,
   }
 }

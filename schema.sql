@@ -137,6 +137,8 @@ CREATE TABLE super_teams (
     project_id CHAR(28) NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     description TEXT,
+    image_url VARCHAR(500),
+    color VARCHAR(7),
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     INDEX idx_super_teams_project (project_id)
@@ -158,24 +160,7 @@ CREATE TABLE teams (
     INDEX idx_teams_leaderboard_excluded (leaderboard_excluded) WHERE leaderboard_excluded = true
 );
 
-CREATE TABLE streaks (
-    id CHAR(28) PRIMARY KEY CHECK (id ~ '^SK[0-9A-Z]{26}$'),
-    project_id CHAR(28) NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    name VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now(),
-    INDEX idx_streaks_project (project_id)
-);
-
-CREATE TABLE streak_relevant_days (
-    id CHAR(28) PRIMARY KEY CHECK (id ~ '^SD[0-9A-Z]{26}$'),
-    streak_id CHAR(28) NOT NULL REFERENCES streaks(id) ON DELETE CASCADE,
-    start_date DATE NOT NULL,
-    end_date DATE NOT NULL,
-    INDEX idx_streak_relevant_days_streak (streak_id),
-    CHECK (end_date >= start_date)
-);
+-- Streaks table removed in migration 00099 (streak achievements now use external content with deadlines)
 
 CREATE TABLE challenges (
     id CHAR(28) PRIMARY KEY CHECK (id ~ '^CL[0-9A-Z]{26}$'),
@@ -253,9 +238,35 @@ CREATE TABLE content_achievement_items (
 );
 
 CREATE TABLE streak_achievements (
-    achievement_id CHAR(28) PRIMARY KEY REFERENCES achievements(id) ON DELETE CASCADE,
-    streak_id CHAR(28) NOT NULL REFERENCES streaks(id) ON DELETE CASCADE,
-    needed_streak INT NOT NULL CHECK (needed_streak > 0)
+    achievement_id CHAR(28) PRIMARY KEY REFERENCES achievements(id) ON DELETE CASCADE
+);
+
+CREATE TABLE streak_achievement_items (
+    id CHAR(28) PRIMARY KEY CHECK (id ~ '^SI[0-9A-Z]{26}$'),
+    achievement_id CHAR(28) NOT NULL REFERENCES streak_achievements(achievement_id) ON DELETE CASCADE,
+    external_content_id CHAR(28) NOT NULL REFERENCES external_content(id) ON DELETE CASCADE,
+    sort_order INT NOT NULL DEFAULT 0,
+    INDEX idx_streak_items_achievement (achievement_id),
+    INDEX idx_streak_items_external_content (external_content_id),
+    UNIQUE (achievement_id, external_content_id)
+);
+
+CREATE TABLE leaderboard_configs (
+    id CHAR(28) PRIMARY KEY CHECK (id ~ '^LC[0-9A-Z]{26}$'),
+    project_id CHAR(28) NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    event_id CHAR(28) REFERENCES events(id) ON DELETE SET NULL,
+    name VARCHAR(255) NOT NULL,
+    entity_type VARCHAR(20) NOT NULL CHECK (entity_type IN ('PERSONS', 'TEAMS', 'SUPERTEAMS', 'CHURCHES')),
+    -- Same shape as the GraphQL `LeaderboardFilter` input, so the filter can
+    -- grow a field without a migration.
+    filter JSONB,
+    max_entries INT CHECK (max_entries > 0),
+    sort_order INT NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    INDEX idx_leaderboard_configs_project (project_id),
+    INDEX idx_leaderboard_configs_event (event_id)
 );
 
 -- ==================== Junction Tables ====================
@@ -340,18 +351,64 @@ CREATE TABLE user_content_progress (
     INDEX idx_user_content_progress_user_achievement (user_id, achievement_id)
 );
 
-CREATE TABLE user_streak_activity (
+CREATE TABLE user_streak_progress (
     user_id CHAR(28) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    streak_id CHAR(28) NOT NULL REFERENCES streaks(id) ON DELETE CASCADE,
-    activity_date DATE NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    PRIMARY KEY (user_id, streak_id, activity_date),
-    INDEX idx_streak_activity_user (user_id),
-    INDEX idx_streak_activity_streak (streak_id),
-    INDEX idx_streak_activity_date (activity_date)
+    achievement_id CHAR(28) NOT NULL REFERENCES streak_achievements(achievement_id) ON DELETE CASCADE,
+    external_content_id CHAR(28) NOT NULL REFERENCES external_content(id) ON DELETE CASCADE,
+    completed_at TIMESTAMPTZ DEFAULT now(),
+    PRIMARY KEY (user_id, achievement_id, external_content_id),
+    INDEX idx_user_streak_progress_user (user_id),
+    INDEX idx_user_streak_progress_achievement (achievement_id),
+    INDEX idx_user_streak_progress_content (external_content_id),
+    INDEX idx_user_streak_progress_user_achievement (user_id, achievement_id)
 );
 
 -- ==================== Audit/Activity Log ====================
+
+-- Every point award, from any source. Scores are derived from this table plus
+-- score_adjustments; there are no pre-aggregated score columns.
+-- Transcribed from migrations 00017 (create) + 00036/00061/00092, which each
+-- replaced the source_type CHECK — the list below is the current one. Note that
+-- 00061's filename says "deadline_bonus" but it adds PLUGIN.
+CREATE TABLE score_journal (
+    id CHAR(28) PRIMARY KEY CHECK (id ~ '^SJ[0-9A-Z]{26}$'),
+
+    -- Required relationships
+    project_id CHAR(28) NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    user_id CHAR(28) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+
+    -- Optional relationships
+    event_id CHAR(28) REFERENCES events(id) ON DELETE SET NULL,
+    challenge_id CHAR(28) REFERENCES challenges(id) ON DELETE SET NULL,
+
+    -- Points and source tracking
+    points INT NOT NULL,
+    source_type VARCHAR(50) NOT NULL CHECK (source_type IN ('ACHIEVEMENT', 'MANUAL', 'QUIZ', 'PLUGIN', 'BET')),
+    source_id CHAR(28),  -- achievement_id when source_type is ACHIEVEMENT
+
+    -- Metadata
+    reason TEXT,
+    awarded_by CHAR(28) REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT now(),
+
+    INDEX idx_score_journal_project (project_id),
+    INDEX idx_score_journal_user (user_id),
+    INDEX idx_score_journal_event (event_id),
+    INDEX idx_score_journal_challenge (challenge_id),
+    INDEX idx_score_journal_source (source_type, source_id),
+    INDEX idx_score_journal_time (created_at)
+);
+
+-- Covering indexes for leaderboard aggregation (migrations 00045, 00100).
+-- Kept as standalone statements because the inline INDEX syntax used above has
+-- no place for INCLUDE.
+CREATE INDEX idx_score_journal_project_user
+    ON score_journal(project_id, user_id) INCLUDE (points);
+CREATE INDEX idx_score_journal_user_project_event
+    ON score_journal(user_id, project_id, event_id) INCLUDE (points);
+
+-- A trigger (create_score_journal_entry_for_achievement, migration 00017)
+-- inserts a row here automatically when a user achievement is awarded.
 
 CREATE TABLE score_adjustments (
     id CHAR(28) PRIMARY KEY CHECK (id ~ '^SA[0-9A-Z]{26}$'),
@@ -393,15 +450,7 @@ CREATE TABLE event_translations (
     PRIMARY KEY (event_id, language_code)
 );
 
-CREATE TABLE streak_translations (
-    streak_id CHAR(28) NOT NULL REFERENCES streaks(id) ON DELETE CASCADE,
-    language_code VARCHAR(10) NOT NULL,
-    name VARCHAR(255),
-    description TEXT,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now(),
-    PRIMARY KEY (streak_id, language_code)
-);
+-- streak_translations table removed in migration 00099
 
 CREATE TABLE challenge_translations (
     challenge_id CHAR(28) NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,

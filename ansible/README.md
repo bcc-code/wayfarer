@@ -1,0 +1,116 @@
+# Interact prod server provisioning
+
+Ansible setup for the Interact (Wayfarer) prod box at `49.12.121.62`
+(`interact.bcc.no` / `interact.bcc.media`, Debian 13). **Warning:** this box doubles as the
+loadtest bench (see `notes` about `make loadtest-remote-*`); running this
+playbook reconfigures Postgres and the firewall on it.
+
+## What it does
+
+| Role        | Purpose |
+| ----------- | ------- |
+| `hardening` | apt upgrade + unattended security upgrades, sshd hardening (key-only, root stays allowed with keys for existing tooling), fail2ban, sysctl hardening |
+| `tuning`    | load-test base tuning: nofile 65535 (limits.d + systemd default), somaxconn/syn-backlog 8192, wider ephemeral port range, tcp_tw_reuse, nf_conntrack_max 131072 (ufw stateful tracking), CPU governor pinned to `performance` |
+| `firewall`  | ufw: deny incoming by default; allow 22 (rate-limited), 80 (ACME http-01), 443 (native TLS), 5432 from `postgres_external_clients` only; tailnet traffic on `tailscale0` + UDP 41641 |
+| `tailscale` | Installs Tailscale from the official apt repo and joins the tailnet (first join needs `tailscale_authkey`; a no-op once the node is Running) |
+| `postgres`  | PostgreSQL 17 from Debian repos, scram-only auth, listens on loopback + tailscale IPs (+ public IP when `postgres_external_clients` is set), SSL on with the app's Let's Encrypt cert (synced by `pg-sync-le-cert`); backup role over the tailnet, backup/metabase over TLS from external clients, tuning derived from host RAM/CPUs, pg_stat_statements |
+| `interact`  | Creates the `interact` database and role for the app |
+| `backup`    | Read-only `backup` and `metabase` roles (`pg_read_all_data` + stats/settings). `backup` is for off-box `pg_dump` over the tailnet; both are admitted from `postgres_external_clients` over TLS only |
+| `wayfarer`  | Native (proxyless) blue/green deploy layout: `wayfarer@{blue,green}` systemd units sharing the port via SO_REUSEPORT, per-color admin/health ports (9441/9442), split DB pools, `bin/deploy.sh` invoked by Semaphore CI (`.semaphore/`). Secret env `/opt/wayfarer/wayfarer.env` is placed manually |
+| `jobs`      | systemd timers replacing Cloud Scheduler: `export-translations` (hourly), `sync-ssf` (daily 05:00), `sync-members` (Monday night, Tue 02:00; all Europe/Oslo). `/opt/wayfarer/bin/wayfarer-job` POSTs to the app with keys read from `wayfarer.env`; needs a `cron:<key>` entry in `EXTERNAL_API_KEYS` |
+
+## Prerequisites
+
+```sh
+ansible-galaxy collection install -r requirements.yml
+```
+
+DNS for `interact.bcc.no` and `interact.bcc.media` must point at
+`49.12.121.62` before the wayfarer server first starts with TLS enabled, or
+ACME issuance will fail (both names are in `TLS_AUTO_DOMAINS`).
+
+## Secrets
+
+The Interact, backup and metabase DB passwords must be provided; the playbook refuses
+the `CHANGE_ME` placeholder. Either:
+
+```sh
+# one-off
+ansible-playbook site.yml -e interact_db_password=... -e backup_db_password=... -e metabase_db_password=...
+
+# or with vault: put vault_interact_db_password in an encrypted vars file
+ansible-vault create group_vars/interact/vault.yml   # vault_interact_db_password, vault_backup_db_password, vault_metabase_db_password
+ansible-playbook site.yml --ask-vault-pass
+```
+
+For the **first** tailnet join, also pass a Tailscale auth key (generate a
+pre-authorized one at <https://login.tailscale.com/admin/settings/keys>):
+
+```sh
+ansible-playbook site.yml -e tailscale_authkey=tskey-auth-...   # or vault_tailscale_authkey
+```
+
+Once the node shows up as Running, reruns don't need the key.
+
+## Run
+
+```sh
+make deps      # once: install ansible collections
+make ping      # connectivity check
+make dry-run   # --check --diff
+make deploy    # everything
+make postgres  # any single role by name (hardening/tuning/firewall/tailscale/postgres/interact/backup/wayfarer/jobs)
+```
+
+The Makefile picks up the DB passwords from `$INTERACT_DB_PASSWORD` and
+`$BACKUP_DB_PASSWORD`, and the Tailscale auth key from `$TAILSCALE_AUTHKEY` if set; otherwise use vault as
+described above.
+
+## Design notes / gotchas
+
+- **TLS lives in the app:** the wayfarer server terminates TLS natively on
+  443 and answers ACME http-01 challenges on 80 (certs self-renew under
+  `/opt/wayfarer/autocert`). No proxy in front.
+- **App → Postgres:** the app runs natively on the box and reaches the
+  database at `127.0.0.1:5432`, database/user `interact`, scram auth.
+- **Postgres exposure:** `listen_addresses` is loopback plus the node's
+  Tailscale IPs (read from `tailscale ip` at play time). Postgres may start
+  before tailscaled on boot, so `net.ipv{4,6}.ip_nonlocal_bind = 1` lets it
+  bind those addresses before they exist. `pg_hba.conf` admits the `backup`
+  role from the Tailscale ranges (`tailnet_cidrs`); `interact`/`postgres`
+  stay loopback-only. Changing
+  `listen_addresses` restarts Postgres (brief app connection drop).
+- **External clients (public internet):** the IPs in
+  `postgres_external_clients` (currently `85.112.141.130`) get a ufw allow
+  on 5432, and Postgres also binds the box's public IPv4. `pg_hba` admits
+  them only as `backup`/`metabase` and only over TLS (`hostssl`); plaintext
+  connections are rejected. Postgres serves the wayfarer server's Let's
+  Encrypt cert for `postgres_tls_domain`: autocert keeps key+chain in one PEM
+  under `/opt/wayfarer/autocert`, and `/usr/local/sbin/pg-sync-le-cert`
+  splits it into `/etc/postgresql/17/main/tls/` and reloads Postgres. A
+  systemd path unit runs it on renewal, a daily timer as backstop. Until the
+  app has a cert, a snakeoil fallback is served. Connect with verification:
+  `psql "host=interact.bcc.media dbname=interact user=metabase sslmode=verify-full sslrootcert=system"`.
+- **Backups over the tailnet:** from any tailnet machine,
+  `pg_dump -Fc -h <box tailscale IP> -U backup -d interact -f interact.dump`.
+- **Dokploy/Docker removal:** this playbook no longer installs Dokploy, but
+  it doesn't uninstall an existing install either. On a box previously
+  provisioned with it, tear down Dokploy/Traefik/Docker swarm by hand (or
+  re-image) — otherwise Traefik still holds 80/443 and blocks the app.
+  Watch for host-local leftovers that assumed the Docker bridge, e.g. a
+  `loadtest.env` pointing at `host.docker.internal:5432` (now `127.0.0.1`).
+- **Scheduled jobs:** `systemctl list-timers 'wayfarer-job-*'` shows the
+  next runs; `journalctl -u wayfarer-job-sync-ssf` shows output; run one now
+  with `systemctl start wayfarer-job-sync-ssf`. Schedules live in
+  `wayfarer_jobs` (`group_vars/all.yml`). A job with `gatus_endpoint` pushes
+  success/failure to Gatus after each run (`ExecStopPost` hook); tokens
+  are per job in `vault_gatus_tokens` (keyed by job name), written to
+  `/opt/wayfarer/jobs.d/<job>.env` (0600).
+- **Postgres tuning** is computed from Ansible facts at run time
+  (25% RAM shared_buffers, SSD planner costs, parallelism per vCPU) in
+  `roles/postgres/templates/90-tuning.conf.j2`. Changing `max_connections`
+  requires a Postgres restart (the role's handler does this).
+- The existing bench setup (`wayfarer.service`, `bench` DB user) is left
+  untouched by this playbook, but the pg_hba rewrite is opinionated — if the
+  bench DB auth breaks, add its entries to
+  `roles/postgres/templates/pg_hba.conf.j2`.

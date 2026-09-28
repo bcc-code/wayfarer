@@ -66,6 +66,7 @@ steps:
       - |
         if [ -n "$_STATIC_BUCKET" ]; then
           gsutil -m rsync -r /workspace/static-files $_STATIC_BUCKET
+          gsutil setmeta -h "Cache-Control:no-cache" $_STATIC_BUCKET/service-worker.js
           echo "Synced static files to $_STATIC_BUCKET"
         else
           echo "Skipping bucket sync: _STATIC_BUCKET not configured"
@@ -115,6 +116,8 @@ images:
 options:
   substitutionOption: ALLOW_LOOSE
   logging: CLOUD_LOGGING_ONLY
+  # More RAM (8GB) so the Nuxt build's raised heap fits; also speeds the build up.
+  machineType: E2_HIGHCPU_8
 substitutions:
   _AR_HOSTNAME: europe-west3-docker.pkg.dev
   _AR_REPOSITORY: cloud-run-source-deploy

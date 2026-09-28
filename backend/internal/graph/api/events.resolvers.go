@@ -7,7 +7,6 @@ package api
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
@@ -22,61 +21,7 @@ import (
 
 // Challenges is the resolver for the challenges field.
 func (r *eventResolver) Challenges(ctx context.Context, obj *model.Event) ([]model.Challenge, error) {
-	thunk := r.Loaders.ChallengesByEventLoader.Load(ctx, obj.ID)
-	challenges, err := thunk()
-	if err != nil {
-		return nil, err
-	}
-
-	userID, _ := middleware.GetUserID(ctx)
-
-	result := make([]model.Challenge, 0, len(challenges))
-	for _, ch := range challenges {
-		// For quiz challenges, check session access first
-		if _, ok := ch.(*model.QuizChallenge); ok && userID != "" {
-			quizThunk := r.Loaders.QuizByChallengeIDLoader.Load(ctx, ch.GetID())
-			quiz, err := quizThunk()
-			if err == nil && quiz != nil {
-				hasAccess, err := r.DB.Queries.UserHasAccessToVisibleSession(ctx, sqlc.UserHasAccessToVisibleSessionParams{
-					Quizid: quiz.ID,
-					Userid: userID,
-				})
-				if err == nil && hasAccess {
-					// Session access grants visibility regardless of publishedAt
-					result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
-					continue
-				}
-			}
-			// Quiz without session access: skip this challenge entirely
-			continue
-		}
-
-		// Check publishedAt
-		publishedAt := getChallengePublishedAt(ch)
-		if publishedAt == nil || publishedAt.After(time.Now()) {
-			continue // Skip unpublished
-		}
-
-		// Check visibility (enrolled OR visible_at in past)
-		visibleAt := getChallengeVisibleAt(ch)
-		isVisible := visibleAt != nil && !visibleAt.After(time.Now())
-
-		if !isVisible && userID != "" {
-			enrolled, err := r.DB.Queries.IsUserEnrolledInChallenge(ctx, sqlc.IsUserEnrolledInChallengeParams{
-				Userid:      userID,
-				Challengeid: ch.GetID(),
-			})
-			if err != nil || !enrolled {
-				continue // Skip not enrolled
-			}
-		} else if !isVisible {
-			continue // Skip not visible
-		}
-
-		result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
-	}
-
-	return result, nil
+	return r.getVisibleEventChallenges(ctx, obj)
 }
 
 // Leaderboard is the resolver for the leaderboard field.
@@ -105,20 +50,18 @@ func (r *eventResolver) Leaderboard(ctx context.Context, obj *model.Event, entit
 		return nil, fmt.Errorf("failed to get event leaderboard: %w", err)
 	}
 
-	// Apply PERSONS leaderboard restrictions - dynamic limit based on totalCount
-	if entityType == model.LeaderboardEntityTypePersons {
-		result := FilterPersonLeaderboardEntries(entries, totalCount, first, after)
-		entries = result.Entries
-		first = result.AdjustedFirst
-	}
-
 	// Build connection
-	connection, err := buildLeaderboardConnection(ctx, entries, meEntry, totalCount, currentUserID, entityType, obj.ProjectID, r.Loaders, first, last, after, before)
+	connection, err := buildLeaderboardConnection(ctx, entries, meEntry, totalCount, currentUserID, entityType, obj.ProjectID, r.Loaders, first, last, after, before, obj.ID, true, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build leaderboard connection: %w", err)
 	}
 
 	return connection, nil
+}
+
+// Leaderboards is the resolver for the leaderboards field.
+func (r *eventResolver) Leaderboards(ctx context.Context, obj *model.Event) ([]model.LeaderboardConfig, error) {
+	return r.getVisibleLeaderboardConfigsByEvent(ctx, obj.ID)
 }
 
 // ParentProject is the resolver for the parentProject field.

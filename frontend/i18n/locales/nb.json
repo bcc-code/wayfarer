@@ -11,7 +11,8 @@
     "standings": "Ingen toppliste ennå",
     "unit": "Ingen toppliste for din unit ennå",
     "challenges": "Ingen utfordringer ennå",
-    "pointHistory": "Ingen poeng ennå"
+    "pointHistory": "Ingen poeng ennå",
+    "rules": "Ingen regler lagt til ennå"
   },
   "auth": {
     "loginButton": "Logg inn",
@@ -103,15 +104,9 @@
     "privacyPolicy": "Personvernerklæring"
   },
   "standings": {
-    "global": "Globalt",
     "unit": "Min unit",
-    "local": "Lokalt",
     "you": "Deg",
-    "rules": "Regler",
-    "units": "Units",
-    "top": "Topp {amount}",
-    "u18": "U18",
-    "o18": "O18"
+    "rules": "Regler"
   },
   "pointHistory": {
     "pointHistoryButton": "Poenghistorikk",
@@ -145,7 +140,8 @@
   },
   "achievement": {
     "title": "Utmerkelse",
-    "unlocked": "Oppnådd!"
+    "unlocked": "Oppnådd!",
+    "progress": "{completed} av {total} fullført"
   },
   "feedback": {
     "title": "Gi oss tilbakemelding",

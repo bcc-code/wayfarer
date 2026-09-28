@@ -171,8 +171,7 @@ cleanupOutdatedCaches()
 const denylist = [/^\/service-worker.js$/, /^\/manifest-(.*).webmanifest$/]
 
 registerRoute(
-  ({ request, sameOrigin }) =>
-    sameOrigin && request.destination === 'manifest',
+  ({ request, sameOrigin }) => sameOrigin && request.destination === 'manifest',
   new NetworkFirst({
     cacheName: 'webmanifest',
     plugins: [

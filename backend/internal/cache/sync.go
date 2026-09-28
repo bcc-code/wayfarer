@@ -24,15 +24,27 @@ const (
 type InvalidationType string
 
 const (
-	InvalidationTypeUser        InvalidationType = "user"
-	InvalidationTypeProject     InvalidationType = "project"
-	InvalidationTypeEvent       InvalidationType = "event"
-	InvalidationTypeTeam        InvalidationType = "team"
-	InvalidationTypeSuperTeam   InvalidationType = "superteam"
-	InvalidationTypeChallenge   InvalidationType = "challenge"
-	InvalidationTypeAchievement InvalidationType = "achievement"
-	InvalidationTypeQuiz        InvalidationType = "quiz"
-	InvalidationTypeClear       InvalidationType = "clear"
+	InvalidationTypeUser              InvalidationType = "user"
+	InvalidationTypeProject           InvalidationType = "project"
+	InvalidationTypeEvent             InvalidationType = "event"
+	InvalidationTypeTeam              InvalidationType = "team"
+	InvalidationTypeSuperTeam         InvalidationType = "superteam"
+	InvalidationTypeChallenge         InvalidationType = "challenge"
+	InvalidationTypeAchievement       InvalidationType = "achievement"
+	InvalidationTypeLeaderboardConfig InvalidationType = "leaderboardconfig"
+	InvalidationTypeQuiz              InvalidationType = "quiz"
+	InvalidationTypeClear             InvalidationType = "clear"
+
+	InvalidationTypeQuizSessionAccess InvalidationType = "quizsessionaccess"
+	InvalidationTypeQuizSession       InvalidationType = "quizsession"
+
+	// Narrow self-enrollment invalidation: (user, project, challenge) scoped,
+	// deliberately NOT the full user invalidation (see
+	// InvalidateUserChallengeEnrollment for the measured blast-radius cost).
+	InvalidationTypeUserEnrollment InvalidationType = "userenroll"
+
+	// Progress updates must also invalidate other instances before the next read.
+	InvalidationTypeUserAchievementProgress InvalidationType = "userachievementprogress"
 )
 
 // InvalidationMessage is the payload sent via NOTIFY
@@ -213,8 +225,22 @@ func (s *CacheSync) applyInvalidation(msg InvalidationMessage) {
 		s.cache.invalidateChallengeLocal(msg.ID, msg.ProjectID, eventID)
 	case InvalidationTypeAchievement:
 		s.cache.invalidateAchievementLocal(msg.ID)
+	case InvalidationTypeUserAchievementProgress:
+		s.cache.invalidateUserAchievementProgressLocal(msg.ID)
+	case InvalidationTypeLeaderboardConfig:
+		var eventID *string
+		if msg.EventID != "" {
+			eventID = &msg.EventID
+		}
+		s.cache.invalidateLeaderboardConfigLocal(msg.ID, msg.ProjectID, eventID)
 	case InvalidationTypeQuiz:
 		s.cache.invalidateQuizLocal(msg.ID, msg.ChallengeID)
+	case InvalidationTypeUserEnrollment:
+		s.cache.invalidateUserChallengeEnrollmentLocal(msg.ID, msg.ProjectID, msg.ChallengeID)
+	case InvalidationTypeQuizSessionAccess:
+		s.cache.invalidateQuizSessionAccessLocal()
+	case InvalidationTypeQuizSession:
+		s.cache.invalidateQuizSessionLocal(msg.ID)
 	case InvalidationTypeClear:
 		s.cache.Clear()
 	default:

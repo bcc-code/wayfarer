@@ -83,10 +83,9 @@ func ValidateBet(
 	}
 
 	// Get user's current project score
-	score, err := queries.GetUserScore(ctx, sqlc.GetUserScoreParams{
+	score, err := queries.GetUserProjectScore(ctx, sqlc.GetUserProjectScoreParams{
 		UserID:    userID,
 		ProjectID: projectID,
-		EventID:   "", // Project-level score, not event-specific
 	})
 	if err != nil {
 		return fmt.Errorf("failed to get user score: %w", err)

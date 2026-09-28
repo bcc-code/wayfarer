@@ -4,12 +4,16 @@
  */
 export function useAuthReady(providedRoute?: { path: string }) {
   const token = useLocalStorage<string>('token', () => null)
-  const currentRoute = providedRoute || useRoute()
+  // `useRouter().currentRoute` rather than `useRoute()`: this also runs inside
+  // route middleware (via useAuth), where `useRoute()` warns that it returns
+  // the route being navigated *away* from. That is the value we want either
+  // way — the flag only pauses queries while the app sits on a callback page —
+  // and the ref stays reactive, so the computed updates once navigation lands.
+  const router = useRouter()
 
   const isAuthReady = computed(() => {
-    const isAuthPage =
-      currentRoute.path === '/auth0-callback' ||
-      currentRoute.path === '/logout-callback'
+    const path = providedRoute?.path ?? router.currentRoute.value.path
+    const isAuthPage = path === '/auth0-callback' || path === '/logout-callback'
     return !!token.value && !isAuthPage
   })
 

@@ -30,6 +30,7 @@ type Achievement interface {
 	GetPoints() int
 	GetHidden() bool
 	GetAwardableFrom() *scalars.DateTime
+	GetAwardedUserCount() int
 	GetTranslationStatus() []TranslationFieldStatus
 }
 
@@ -52,6 +53,7 @@ type Challenge interface {
 	GetRequiresSuperTeamMembership() bool
 	GetUserCompletedAt() *scalars.DateTime
 	GetUserEnrolledAt() *scalars.DateTime
+	GetCompletionCount() int
 	GetTranslationStatus() []TranslationFieldStatus
 }
 
@@ -104,6 +106,23 @@ type AchievementFilter struct {
 	Ids       []string `json:"ids,omitempty"`
 }
 
+type AdminAchievementItemProgress struct {
+	ContentItem             *ContentItem      `json:"contentItem"`
+	Completed               bool              `json:"completed"`
+	CompletedAt             *scalars.DateTime `json:"completedAt,omitempty"`
+	CompleteBy              *scalars.DateTime `json:"completeBy,omitempty"`
+	CompletedWithinDeadline *bool             `json:"completedWithinDeadline,omitempty"`
+}
+
+type AdminAchievementProgress struct {
+	Achievement    Achievement                    `json:"achievement"`
+	AlreadyAwarded bool                           `json:"alreadyAwarded"`
+	AwardedAt      *scalars.DateTime              `json:"awardedAt,omitempty"`
+	Items          []AdminAchievementItemProgress `json:"items"`
+	CompletedCount int                            `json:"completedCount"`
+	TotalCount     int                            `json:"totalCount"`
+}
+
 type AdminDashboardStats struct {
 	TotalUsers          int `json:"totalUsers"`
 	TotalProjects       int `json:"totalProjects"`
@@ -111,6 +130,16 @@ type AdminDashboardStats struct {
 	TotalPointsAwarded  int `json:"totalPointsAwarded"`
 	NewUsersLast7Days   int `json:"newUsersLast7Days"`
 	ActiveProjectsCount int `json:"activeProjectsCount"`
+}
+
+type AdminExternalContentEvent struct {
+	ID              string            `json:"id"`
+	TaskID          string            `json:"taskId"`
+	PlanID          string            `json:"planId"`
+	Source          string            `json:"source"`
+	ReceivedAt      scalars.DateTime  `json:"receivedAt"`
+	ConsumedAt      *scalars.DateTime `json:"consumedAt,omitempty"`
+	ContentProgress *float64          `json:"contentProgress,omitempty"`
 }
 
 type AgeGroupStats struct {
@@ -134,6 +163,21 @@ type AssignRoleInput struct {
 	Role      RoleType   `json:"role"`
 	ScopeType *ScopeType `json:"scopeType,omitempty"`
 	ScopeID   *string    `json:"scopeId,omitempty"`
+}
+
+type AsyncBulkScoreAdjustmentByTargetInput struct {
+	ProjectID        string                    `json:"projectId"`
+	EventID          *string                   `json:"eventId,omitempty"`
+	Target           *EnrollmentTargetInput    `json:"target"`
+	Points           int                       `json:"points"`
+	DistributionMode TeamScoreDistributionMode `json:"distributionMode"`
+	Reason           *string                   `json:"reason,omitempty"`
+}
+
+type AsyncBulkScoreAdjustmentInput struct {
+	ProjectID   string                         `json:"projectId"`
+	EventID     *string                        `json:"eventId,omitempty"`
+	Adjustments []BulkScoreAdjustmentItemInput `json:"adjustments"`
 }
 
 type Branding struct {
@@ -182,6 +226,12 @@ type BulkJobFilter struct {
 	OperationType *string        `json:"operationType,omitempty"`
 	ProjectID     *string        `json:"projectId,omitempty"`
 	CreatedBy     *string        `json:"createdBy,omitempty"`
+}
+
+type BulkScoreAdjustmentItemInput struct {
+	UserID string  `json:"userId"`
+	Points int     `json:"points"`
+	Reason *string `json:"reason,omitempty"`
 }
 
 type ChallengeConnection struct {
@@ -324,6 +374,7 @@ type ContentAchievement struct {
 	Points               int                      `json:"points"`
 	Hidden               bool                     `json:"hidden"`
 	AwardableFrom        *scalars.DateTime        `json:"awardableFrom,omitempty"`
+	AwardedUserCount     int                      `json:"awardedUserCount"`
 	Items                []ContentItem            `json:"items"`
 	UserCompletedItems   []ContentItem            `json:"userCompletedItems"`
 	NextItem             *ContentItem             `json:"nextItem,omitempty"`
@@ -353,6 +404,7 @@ func (this ContentAchievement) GetCelebratedAt() *scalars.DateTime  { return thi
 func (this ContentAchievement) GetPoints() int                      { return this.Points }
 func (this ContentAchievement) GetHidden() bool                     { return this.Hidden }
 func (this ContentAchievement) GetAwardableFrom() *scalars.DateTime { return this.AwardableFrom }
+func (this ContentAchievement) GetAwardedUserCount() int            { return this.AwardedUserCount }
 func (this ContentAchievement) GetTranslationStatus() []TranslationFieldStatus {
 	if this.TranslationStatus == nil {
 		return nil
@@ -435,6 +487,17 @@ type CreateEventInput struct {
 	Description string           `json:"description"`
 	StartDate   scalars.DateTime `json:"startDate"`
 	EndDate     scalars.DateTime `json:"endDate"`
+}
+
+type CreateLeaderboardConfigInput struct {
+	ProjectID  string                `json:"projectId"`
+	EventID    *string               `json:"eventId,omitempty"`
+	Name       string                `json:"name"`
+	EntityType LeaderboardEntityType `json:"entityType"`
+	Filter     *LeaderboardFilter    `json:"filter,omitempty"`
+	MaxEntries *int                  `json:"maxEntries,omitempty"`
+	SortOrder  *int                  `json:"sortOrder,omitempty"`
+	IsActive   *bool                 `json:"isActive,omitempty"`
 }
 
 type CreateOrderingItemInput struct {
@@ -543,32 +606,26 @@ type CreateSimpleAchievementInput struct {
 }
 
 type CreateStreakAchievementInput struct {
-	Name                 string            `json:"name"`
-	DescriptionPending   string            `json:"descriptionPending"`
-	DescriptionCompleted string            `json:"descriptionCompleted"`
-	NotificationText     string            `json:"notificationText"`
-	ImagePending         string            `json:"imagePending"`
-	ImageCompleted       string            `json:"imageCompleted"`
-	ProjectID            string            `json:"projectId"`
-	EventID              *string           `json:"eventId,omitempty"`
-	ChallengeID          *string           `json:"challengeId,omitempty"`
-	Points               int               `json:"points"`
-	Hidden               bool              `json:"hidden"`
-	AwardableFrom        *scalars.DateTime `json:"awardableFrom,omitempty"`
-	NeededStreak         int               `json:"neededStreak"`
-	StreakID             string            `json:"streakId"`
-}
-
-type CreateStreakInput struct {
-	Name         string           `json:"name"`
-	Description  string           `json:"description"`
-	ProjectID    string           `json:"projectId"`
-	RelevantDays []DateRangeInput `json:"relevantDays"`
+	Name                 string             `json:"name"`
+	DescriptionPending   string             `json:"descriptionPending"`
+	DescriptionCompleted string             `json:"descriptionCompleted"`
+	NotificationText     string             `json:"notificationText"`
+	ImagePending         string             `json:"imagePending"`
+	ImageCompleted       string             `json:"imageCompleted"`
+	ProjectID            string             `json:"projectId"`
+	EventID              *string            `json:"eventId,omitempty"`
+	ChallengeID          *string            `json:"challengeId,omitempty"`
+	Points               int                `json:"points"`
+	Hidden               bool               `json:"hidden"`
+	AwardableFrom        *scalars.DateTime  `json:"awardableFrom,omitempty"`
+	Items                []ContentItemInput `json:"items"`
 }
 
 type CreateSuperTeamInput struct {
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
+	ImageURL    *string  `json:"imageUrl,omitempty"`
+	Color       *string  `json:"color,omitempty"`
 	TeamIds     []string `json:"teamIds,omitempty"`
 }
 
@@ -605,16 +662,6 @@ type CreateWebhookInput struct {
 	Secret           *string          `json:"secret,omitempty"`
 }
 
-type DateRange struct {
-	Start scalars.Date `json:"start"`
-	End   scalars.Date `json:"end"`
-}
-
-type DateRangeInput struct {
-	Start scalars.Date `json:"start"`
-	End   scalars.Date `json:"end"`
-}
-
 type DeviceMetadata struct {
 	UserAgent    string  `json:"userAgent"`
 	Platform     string  `json:"platform"`
@@ -635,11 +682,15 @@ type EnrollmentTargetInput struct {
 }
 
 type Event struct {
-	ID                string                   `json:"id"`
-	Name              string                   `json:"name"`
-	Description       string                   `json:"description"`
-	Challenges        []Challenge              `json:"challenges"`
-	Leaderboard       *LeaderboardConnection   `json:"leaderboard"`
+	ID          string      `json:"id"`
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	Challenges  []Challenge `json:"challenges"`
+	// Ad-hoc leaderboard computed directly from the given entityType/filter at request time.
+	// For named, admin-curated leaderboards, see `leaderboards` (LeaderboardConfig) instead.
+	Leaderboard *LeaderboardConnection `json:"leaderboard"`
+	// Active leaderboard configs for this event (all configs, including inactive, for admins/superadmins).
+	Leaderboards      []LeaderboardConfig      `json:"leaderboards"`
 	StartDate         scalars.DateTime         `json:"startDate"`
 	EndDate           scalars.DateTime         `json:"endDate"`
 	ParentProject     *Project                 `json:"parentProject"`
@@ -687,6 +738,7 @@ type ExternalChallenge struct {
 	RequiresSuperTeamMembership bool                     `json:"requiresSuperTeamMembership"`
 	UserCompletedAt             *scalars.DateTime        `json:"userCompletedAt,omitempty"`
 	UserEnrolledAt              *scalars.DateTime        `json:"userEnrolledAt,omitempty"`
+	CompletionCount             int                      `json:"completionCount"`
 	TranslationStatus           []TranslationFieldStatus `json:"translationStatus"`
 	URL                         string                   `json:"url"`
 	EventID                     *string                  `json:"-"`
@@ -713,6 +765,7 @@ func (this ExternalChallenge) GetRequiresSuperTeamMembership() bool {
 }
 func (this ExternalChallenge) GetUserCompletedAt() *scalars.DateTime { return this.UserCompletedAt }
 func (this ExternalChallenge) GetUserEnrolledAt() *scalars.DateTime  { return this.UserEnrolledAt }
+func (this ExternalChallenge) GetCompletionCount() int               { return this.CompletionCount }
 func (this ExternalChallenge) GetTranslationStatus() []TranslationFieldStatus {
 	if this.TranslationStatus == nil {
 		return nil
@@ -956,11 +1009,55 @@ func (this JSONResponse) GetPointsEarned() *int            { return this.PointsE
 func (this JSONResponse) GetBetAmount() *int               { return this.BetAmount }
 func (this JSONResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
 
+type LeaderboardConfig struct {
+	ID         string                 `json:"id"`
+	Project    *Project               `json:"project"`
+	Event      *Event                 `json:"event,omitempty"`
+	Name       string                 `json:"name"`
+	EntityType LeaderboardEntityType  `json:"entityType"`
+	Filter     *LeaderboardFilterView `json:"filter,omitempty"`
+	MaxEntries *int                   `json:"maxEntries,omitempty"`
+	SortOrder  int                    `json:"sortOrder"`
+	IsActive   bool                   `json:"isActive"`
+	CreatedAt  scalars.DateTime       `json:"createdAt"`
+	UpdatedAt  scalars.DateTime       `json:"updatedAt"`
+	// The finished leaderboard, capped before pagination. With no page size, returns
+	// the configured limit, or 100 entries when maxEntries is null.
+	Leaderboard *LeaderboardConnection `json:"leaderboard"`
+	EventID     *string                `json:"-"`
+	ProjectID   string                 `json:"-"`
+}
+
+type LeaderboardConfigConnection struct {
+	Edges      []LeaderboardConfigEdge `json:"edges"`
+	PageInfo   *PageInfo               `json:"pageInfo"`
+	TotalCount int                     `json:"totalCount"`
+}
+
+type LeaderboardConfigEdge struct {
+	Cursor string             `json:"cursor"`
+	Node   *LeaderboardConfig `json:"node"`
+}
+
+type LeaderboardConfigFilter struct {
+	ProjectID *string  `json:"projectId,omitempty"`
+	EventID   *string  `json:"eventId,omitempty"`
+	IsActive  *bool    `json:"isActive,omitempty"`
+	Ids       []string `json:"ids,omitempty"`
+}
+
 type LeaderboardConnection struct {
 	Edges      []LeaderboardEdge `json:"edges"`
 	PageInfo   *PageInfo         `json:"pageInfo"`
 	TotalCount int               `json:"totalCount"`
 	Me         *LeaderboardEntry `json:"me,omitempty"`
+	// Nearest same-church entries ranked above the viewer on a PERSONS leaderboard.
+	// Empty for other entity types or when the viewer isn't on the board.
+	NearestChurchRivals []LeaderboardEntry `json:"nearestChurchRivals"`
+	RivalsContextID     string             `json:"-"`
+	RivalsFilter        *LeaderboardFilter `json:"-"`
+	RivalsIsEvent       bool               `json:"-"`
+	RivalsUserID        string             `json:"-"`
 }
 
 type LeaderboardEdge struct {
@@ -992,6 +1089,21 @@ type LeaderboardFilter struct {
 	SuperTeamID    *string         `json:"superTeamId,omitempty"`
 }
 
+// Read-only mirror of the `LeaderboardFilter` input, applied to this leaderboard.
+// Kept as a separate type because GraphQL doesn't allow an `input` type as an output field's
+// type — mirrors the AgeRange/AgeRangeInput pattern already used elsewhere in this schema.
+type LeaderboardFilterView struct {
+	MinScore       *int            `json:"minScore,omitempty"`
+	MaxScore       *int            `json:"maxScore,omitempty"`
+	ChurchID       *string         `json:"churchId,omitempty"`
+	Country        *string         `json:"country,omitempty"`
+	ChurchCategory *ChurchCategory `json:"churchCategory,omitempty"`
+	Gender         *Gender         `json:"gender,omitempty"`
+	AgeRange       *AgeRange       `json:"ageRange,omitempty"`
+	TeamID         *string         `json:"teamId,omitempty"`
+	SuperTeamID    *string         `json:"superTeamId,omitempty"`
+}
+
 type MissingContentProgressPreview struct {
 	AffectedUsers []MissingContentProgressUser `json:"affectedUsers"`
 	TotalUsers    int                          `json:"totalUsers"`
@@ -999,6 +1111,28 @@ type MissingContentProgressPreview struct {
 }
 
 type MissingContentProgressUser struct {
+	User       *User `json:"user"`
+	EventCount int   `json:"eventCount"`
+}
+
+type MissingScoreJournalPreview struct {
+	AffectedUsers []MissingScoreJournalUser `json:"affectedUsers"`
+	TotalUsers    int                       `json:"totalUsers"`
+	TotalEvents   int                       `json:"totalEvents"`
+}
+
+type MissingScoreJournalUser struct {
+	User       *User `json:"user"`
+	EventCount int   `json:"eventCount"`
+}
+
+type MissingStreakProgressPreview struct {
+	AffectedUsers []MissingStreakProgressUser `json:"affectedUsers"`
+	TotalUsers    int                         `json:"totalUsers"`
+	TotalEvents   int                         `json:"totalEvents"`
+}
+
+type MissingStreakProgressUser struct {
 	User       *User `json:"user"`
 	EventCount int   `json:"eventCount"`
 }
@@ -1165,6 +1299,7 @@ type PluginChallenge struct {
 	RequiresSuperTeamMembership bool                     `json:"requiresSuperTeamMembership"`
 	UserCompletedAt             *scalars.DateTime        `json:"userCompletedAt,omitempty"`
 	UserEnrolledAt              *scalars.DateTime        `json:"userEnrolledAt,omitempty"`
+	CompletionCount             int                      `json:"completionCount"`
 	TranslationStatus           []TranslationFieldStatus `json:"translationStatus"`
 	PluginChallengeID           string                   `json:"pluginChallengeId"`
 	EventID                     *string                  `json:"-"`
@@ -1191,6 +1326,7 @@ func (this PluginChallenge) GetRequiresSuperTeamMembership() bool {
 }
 func (this PluginChallenge) GetUserCompletedAt() *scalars.DateTime { return this.UserCompletedAt }
 func (this PluginChallenge) GetUserEnrolledAt() *scalars.DateTime  { return this.UserEnrolledAt }
+func (this PluginChallenge) GetCompletionCount() int               { return this.CompletionCount }
 func (this PluginChallenge) GetTranslationStatus() []TranslationFieldStatus {
 	if this.TranslationStatus == nil {
 		return nil
@@ -1273,15 +1409,22 @@ func (this PredefinedResponse) GetBetAmount() *int               { return this.B
 func (this PredefinedResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
 
 type Project struct {
-	ID                string                   `json:"id"`
-	Name              string                   `json:"name"`
-	Description       string                   `json:"description"`
-	Rules             *MarkdownText            `json:"rules,omitempty"`
-	InfoMessage       *MarkdownText            `json:"infoMessage,omitempty"`
-	InfoMessageStart  *scalars.DateTime        `json:"infoMessageStart,omitempty"`
-	InfoMessageEnd    *scalars.DateTime        `json:"infoMessageEnd,omitempty"`
-	Challenges        []Challenge              `json:"challenges"`
-	Leaderboard       *LeaderboardConnection   `json:"leaderboard"`
+	ID                    string            `json:"id"`
+	Name                  string            `json:"name"`
+	Description           string            `json:"description"`
+	Rules                 *MarkdownText     `json:"rules,omitempty"`
+	InfoMessage           *MarkdownText     `json:"infoMessage,omitempty"`
+	InfoMessageStart      *scalars.DateTime `json:"infoMessageStart,omitempty"`
+	InfoMessageEnd        *scalars.DateTime `json:"infoMessageEnd,omitempty"`
+	Challenges            []Challenge       `json:"challenges"`
+	ActiveChallenges      []Challenge       `json:"activeChallenges"`
+	CompletedChallenges   []Challenge       `json:"completedChallenges"`
+	ActiveChallengesCount int               `json:"activeChallengesCount"`
+	// Ad-hoc leaderboard computed directly from the given entityType/filter at request time.
+	// For named, admin-curated leaderboards, see `leaderboards` (LeaderboardConfig) instead.
+	Leaderboard *LeaderboardConnection `json:"leaderboard"`
+	// Active leaderboard configs for this project (all configs, including inactive, for admins/superadmins).
+	Leaderboards      []LeaderboardConfig      `json:"leaderboards"`
 	Events            []Event                  `json:"events"`
 	StartDate         scalars.DateTime         `json:"startDate"`
 	EndDate           scalars.DateTime         `json:"endDate"`
@@ -1290,13 +1433,27 @@ type Project struct {
 	MyChurchTeams     []Team                   `json:"myChurchTeams"`
 	MyTeam            *Team                    `json:"myTeam,omitempty"`
 	Achievements      []Achievement            `json:"achievements"`
-	Streaks           []Streak                 `json:"streaks"`
 	Journal           *ScoreJournalConnection  `json:"journal"`
 	MyPoints          int                      `json:"myPoints"`
 	ArchivedAt        *bool                    `json:"archivedAt,omitempty"`
 	TranslationStatus []TranslationFieldStatus `json:"translationStatus"`
-	InfoMessageRaw    *string                  `json:"-"`
-	RulesRaw          *string                  `json:"-"`
+	// Daily activity for the last `days` days, oldest first, for trend display.
+	// Every day in the window is present, including days with no activity, so the
+	// result can be plotted directly without gap-filling on the client.
+	ActivityTrend  []ProjectActivityPoint `json:"activityTrend"`
+	InfoMessageRaw *string                `json:"-"`
+	RulesRaw       *string                `json:"-"`
+}
+
+// One day of aggregate activity in a project, derived from the score journal —
+// which covers every point award regardless of source, so it reflects challenge
+// completions, achievements, quizzes and manual adjustments alike.
+type ProjectActivityPoint struct {
+	Date scalars.Date `json:"date"`
+	// Points awarded that day.
+	Points int `json:"points"`
+	// Distinct users who were awarded points that day.
+	ActiveUsers int `json:"activeUsers"`
 }
 
 type ProjectConnection struct {
@@ -1377,6 +1534,7 @@ type QuizAchievement struct {
 	Points               int                      `json:"points"`
 	Hidden               bool                     `json:"hidden"`
 	AwardableFrom        *scalars.DateTime        `json:"awardableFrom,omitempty"`
+	AwardedUserCount     int                      `json:"awardedUserCount"`
 	Quiz                 *Quiz                    `json:"quiz,omitempty"`
 	MinScorePercentage   *int                     `json:"minScorePercentage,omitempty"`
 	RequireCompletion    bool                     `json:"requireCompletion"`
@@ -1405,6 +1563,7 @@ func (this QuizAchievement) GetCelebratedAt() *scalars.DateTime  { return this.C
 func (this QuizAchievement) GetPoints() int                      { return this.Points }
 func (this QuizAchievement) GetHidden() bool                     { return this.Hidden }
 func (this QuizAchievement) GetAwardableFrom() *scalars.DateTime { return this.AwardableFrom }
+func (this QuizAchievement) GetAwardedUserCount() int            { return this.AwardedUserCount }
 func (this QuizAchievement) GetTranslationStatus() []TranslationFieldStatus {
 	if this.TranslationStatus == nil {
 		return nil
@@ -1436,6 +1595,7 @@ type QuizChallenge struct {
 	RequiresSuperTeamMembership bool                     `json:"requiresSuperTeamMembership"`
 	UserCompletedAt             *scalars.DateTime        `json:"userCompletedAt,omitempty"`
 	UserEnrolledAt              *scalars.DateTime        `json:"userEnrolledAt,omitempty"`
+	CompletionCount             int                      `json:"completionCount"`
 	TranslationStatus           []TranslationFieldStatus `json:"translationStatus"`
 	Quiz                        *Quiz                    `json:"quiz"`
 	EventID                     *string                  `json:"-"`
@@ -1462,6 +1622,7 @@ func (this QuizChallenge) GetRequiresSuperTeamMembership() bool {
 }
 func (this QuizChallenge) GetUserCompletedAt() *scalars.DateTime { return this.UserCompletedAt }
 func (this QuizChallenge) GetUserEnrolledAt() *scalars.DateTime  { return this.UserEnrolledAt }
+func (this QuizChallenge) GetCompletionCount() int               { return this.CompletionCount }
 func (this QuizChallenge) GetTranslationStatus() []TranslationFieldStatus {
 	if this.TranslationStatus == nil {
 		return nil
@@ -1678,6 +1839,7 @@ type SimpleAchievement struct {
 	Points               int                      `json:"points"`
 	Hidden               bool                     `json:"hidden"`
 	AwardableFrom        *scalars.DateTime        `json:"awardableFrom,omitempty"`
+	AwardedUserCount     int                      `json:"awardedUserCount"`
 	TranslationStatus    []TranslationFieldStatus `json:"translationStatus"`
 	ChallengeID          *string                  `json:"-"`
 	EventID              *string                  `json:"-"`
@@ -1702,6 +1864,7 @@ func (this SimpleAchievement) GetCelebratedAt() *scalars.DateTime  { return this
 func (this SimpleAchievement) GetPoints() int                      { return this.Points }
 func (this SimpleAchievement) GetHidden() bool                     { return this.Hidden }
 func (this SimpleAchievement) GetAwardableFrom() *scalars.DateTime { return this.AwardableFrom }
+func (this SimpleAchievement) GetAwardedUserCount() int            { return this.AwardedUserCount }
 func (this SimpleAchievement) GetTranslationStatus() []TranslationFieldStatus {
 	if this.TranslationStatus == nil {
 		return nil
@@ -1733,6 +1896,7 @@ type SimpleChallenge struct {
 	RequiresSuperTeamMembership bool                     `json:"requiresSuperTeamMembership"`
 	UserCompletedAt             *scalars.DateTime        `json:"userCompletedAt,omitempty"`
 	UserEnrolledAt              *scalars.DateTime        `json:"userEnrolledAt,omitempty"`
+	CompletionCount             int                      `json:"completionCount"`
 	TranslationStatus           []TranslationFieldStatus `json:"translationStatus"`
 	AllowSelfCompletion         bool                     `json:"allowSelfCompletion"`
 	EventID                     *string                  `json:"-"`
@@ -1759,6 +1923,7 @@ func (this SimpleChallenge) GetRequiresSuperTeamMembership() bool {
 }
 func (this SimpleChallenge) GetUserCompletedAt() *scalars.DateTime { return this.UserCompletedAt }
 func (this SimpleChallenge) GetUserEnrolledAt() *scalars.DateTime  { return this.UserEnrolledAt }
+func (this SimpleChallenge) GetCompletionCount() int               { return this.CompletionCount }
 func (this SimpleChallenge) GetTranslationStatus() []TranslationFieldStatus {
 	if this.TranslationStatus == nil {
 		return nil
@@ -1771,18 +1936,6 @@ func (this SimpleChallenge) GetTranslationStatus() []TranslationFieldStatus {
 }
 
 func (SimpleChallenge) IsScoreSource() {}
-
-type Streak struct {
-	ID                string                   `json:"id"`
-	Name              string                   `json:"name"`
-	Description       string                   `json:"description"`
-	Status            int                      `json:"status"`
-	RelevantDays      []DateRange              `json:"relevantDays"`
-	ListenedDays      []StreakDay              `json:"listenedDays"`
-	Project           *Project                 `json:"project"`
-	TranslationStatus []TranslationFieldStatus `json:"translationStatus"`
-	ProjectID         string                   `json:"-"`
-}
 
 type StreakAchievement struct {
 	ID                   string                   `json:"id"`
@@ -1799,12 +1952,16 @@ type StreakAchievement struct {
 	Challenge            Challenge                `json:"challenge,omitempty"`
 	AchievedAt           *scalars.DateTime        `json:"achievedAt,omitempty"`
 	CelebratedAt         *scalars.DateTime        `json:"celebratedAt,omitempty"`
-	NeededStreak         int                      `json:"neededStreak"`
 	Points               int                      `json:"points"`
 	Hidden               bool                     `json:"hidden"`
 	AwardableFrom        *scalars.DateTime        `json:"awardableFrom,omitempty"`
+	AwardedUserCount     int                      `json:"awardedUserCount"`
+	Items                []ContentItem            `json:"items"`
+	UserCompletedItems   []ContentItem            `json:"userCompletedItems"`
+	NextItem             *ContentItem             `json:"nextItem,omitempty"`
+	TotalItems           int                      `json:"totalItems"`
+	CompletedItemCount   int                      `json:"completedItemCount"`
 	TranslationStatus    []TranslationFieldStatus `json:"translationStatus"`
-	Streak               *Streak                  `json:"streak"`
 	ChallengeID          *string                  `json:"-"`
 	EventID              *string                  `json:"-"`
 	ProjectID            string                   `json:"-"`
@@ -1829,6 +1986,7 @@ func (this StreakAchievement) GetCelebratedAt() *scalars.DateTime  { return this
 func (this StreakAchievement) GetPoints() int                      { return this.Points }
 func (this StreakAchievement) GetHidden() bool                     { return this.Hidden }
 func (this StreakAchievement) GetAwardableFrom() *scalars.DateTime { return this.AwardableFrom }
+func (this StreakAchievement) GetAwardedUserCount() int            { return this.AwardedUserCount }
 func (this StreakAchievement) GetTranslationStatus() []TranslationFieldStatus {
 	if this.TranslationStatus == nil {
 		return nil
@@ -1841,27 +1999,6 @@ func (this StreakAchievement) GetTranslationStatus() []TranslationFieldStatus {
 }
 
 func (StreakAchievement) IsScoreSource() {}
-
-type StreakConnection struct {
-	Edges      []StreakEdge `json:"edges"`
-	PageInfo   *PageInfo    `json:"pageInfo"`
-	TotalCount int          `json:"totalCount"`
-}
-
-type StreakDay struct {
-	Date   scalars.Date `json:"date"`
-	Active bool         `json:"active"`
-}
-
-type StreakEdge struct {
-	Cursor string  `json:"cursor"`
-	Node   *Streak `json:"node"`
-}
-
-type StreakFilter struct {
-	ProjectID *string  `json:"projectId,omitempty"`
-	Ids       []string `json:"ids,omitempty"`
-}
 
 type SubmitFeedbackInput struct {
 	Message      string          `json:"message"`
@@ -1886,9 +2023,12 @@ type SuperTeam struct {
 	ID            string          `json:"id"`
 	Name          string          `json:"name"`
 	Description   string          `json:"description"`
+	ImageObject   *Image          `json:"imageObject,omitempty"`
+	Color         *string         `json:"color,omitempty"`
 	Members       *UserConnection `json:"members"`
 	ParentProject *Project        `json:"parentProject"`
 	Teams         []Team          `json:"teams"`
+	ImageUrl      *string         `json:"-"`
 	ProjectID     string          `json:"-"`
 }
 
@@ -2033,6 +2173,15 @@ type UpdateEventInput struct {
 	EndDate     *scalars.DateTime `json:"endDate,omitempty"`
 }
 
+type UpdateLeaderboardConfigInput struct {
+	Name       string                `json:"name"`
+	EntityType LeaderboardEntityType `json:"entityType"`
+	Filter     *LeaderboardFilter    `json:"filter,omitempty"`
+	MaxEntries *int                  `json:"maxEntries,omitempty"`
+	SortOrder  int                   `json:"sortOrder"`
+	IsActive   bool                  `json:"isActive"`
+}
+
 type UpdateProjectInput struct {
 	Name             *string           `json:"name,omitempty"`
 	Description      *string           `json:"description,omitempty"`
@@ -2106,30 +2255,25 @@ type UpdateQuizSessionInput struct {
 }
 
 type UpdateStreakAchievementInput struct {
-	Name                 *string           `json:"name,omitempty"`
-	DescriptionPending   *string           `json:"descriptionPending,omitempty"`
-	DescriptionCompleted *string           `json:"descriptionCompleted,omitempty"`
-	NotificationText     *string           `json:"notificationText,omitempty"`
-	ImagePending         *string           `json:"imagePending,omitempty"`
-	ImageCompleted       *string           `json:"imageCompleted,omitempty"`
-	EventID              *string           `json:"eventId,omitempty"`
-	ChallengeID          *string           `json:"challengeId,omitempty"`
-	Points               *int              `json:"points,omitempty"`
-	Hidden               *bool             `json:"hidden,omitempty"`
-	AwardableFrom        *scalars.DateTime `json:"awardableFrom,omitempty"`
-	NeededStreak         *int              `json:"neededStreak,omitempty"`
-	StreakID             *string           `json:"streakId,omitempty"`
-}
-
-type UpdateStreakInput struct {
-	Name         *string          `json:"name,omitempty"`
-	Description  *string          `json:"description,omitempty"`
-	RelevantDays []DateRangeInput `json:"relevantDays,omitempty"`
+	Name                 *string            `json:"name,omitempty"`
+	DescriptionPending   *string            `json:"descriptionPending,omitempty"`
+	DescriptionCompleted *string            `json:"descriptionCompleted,omitempty"`
+	NotificationText     *string            `json:"notificationText,omitempty"`
+	ImagePending         *string            `json:"imagePending,omitempty"`
+	ImageCompleted       *string            `json:"imageCompleted,omitempty"`
+	EventID              *string            `json:"eventId,omitempty"`
+	ChallengeID          *string            `json:"challengeId,omitempty"`
+	Points               *int               `json:"points,omitempty"`
+	Hidden               *bool              `json:"hidden,omitempty"`
+	AwardableFrom        *scalars.DateTime  `json:"awardableFrom,omitempty"`
+	Items                []ContentItemInput `json:"items,omitempty"`
 }
 
 type UpdateSuperTeamInput struct {
 	Name        *string `json:"name,omitempty"`
 	Description *string `json:"description,omitempty"`
+	ImageURL    *string `json:"imageUrl,omitempty"`
+	Color       *string `json:"color,omitempty"`
 }
 
 type UpdateTeamInput struct {
@@ -2170,6 +2314,9 @@ type User struct {
 	Language          string            `json:"language"`
 	CreatedAt         scalars.DateTime  `json:"createdAt"`
 	Points            int               `json:"points"`
+	// Point totals per project, most recently active first. `points(projectId:)`
+	// takes one project at a time, and the set is not known up front.
+	PointsByProject []UserProjectPoints `json:"pointsByProject"`
 }
 
 type UserConnection struct {
@@ -2231,6 +2378,13 @@ type UserFilter struct {
 	EventID   *string  `json:"eventId,omitempty"`
 	TeamID    *string  `json:"teamId,omitempty"`
 	Ids       []string `json:"ids,omitempty"`
+}
+
+// A user's point total within one project.
+type UserProjectPoints struct {
+	ProjectID   string `json:"projectId"`
+	ProjectName string `json:"projectName"`
+	Points      int    `json:"points"`
 }
 
 type UserRole struct {

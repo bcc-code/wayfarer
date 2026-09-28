@@ -220,49 +220,42 @@ func (s *Seeder) seedStreakAchievements(projectID string, stats *Stats) error {
 		VALUES ($1, 'STREAK', $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	`
 
-	streakQuery := `
-		INSERT INTO streak_achievements (achievement_id, streak_id, needed_streak)
-		VALUES ($1, $2, $3)
+	junctionQuery := `
+		INSERT INTO streak_achievements (achievement_id)
+		VALUES ($1)
 	`
 
-	// Create one streak achievement per streak
-	for _, streakID := range s.Data.StreakIDs[projectID] {
-		achievementID := ulid.NewAchievementID()
-		name := "Streak Master"
-		descriptionPending := "Maintain your streak to earn this achievement."
-		descriptionCompleted := "You maintained your streak and earned this achievement!"
-		imageURL := fmt.Sprintf("https://placecats.com/bella/%d/%d", 300+rand.Intn(100), 300+rand.Intn(100))
-		points := 100 + rand.Intn(200)
+	// Create one streak achievement per project
+	achievementID := ulid.NewAchievementID()
+	name := "Streak Master"
+	descriptionPending := "Complete all content before the deadlines."
+	descriptionCompleted := "You completed all content on time!"
+	imageURL := fmt.Sprintf("https://placecats.com/bella/%d/%d", 300+rand.Intn(100), 300+rand.Intn(100))
+	points := 100 + rand.Intn(200)
 
-		_, err := s.DB.Pool.Exec(s.Ctx, achievementQuery,
-			achievementID,
-			projectID,
-			nil,
-			nil,
-			name,
-			descriptionPending,
-			descriptionCompleted,
-			imageURL,
-			imageURL,
-			points,
-		)
-		if err != nil {
-			return err
-		}
-
-		requiredDays := 7 + rand.Intn(22) // 7-28 days
-		_, err = s.DB.Pool.Exec(s.Ctx, streakQuery,
-			achievementID,
-			streakID,
-			requiredDays,
-		)
-		if err != nil {
-			return err
-		}
-
-		s.Data.AchievementIDs[projectID] = append(s.Data.AchievementIDs[projectID], achievementID)
-		stats.Achievements++
+	_, err := s.DB.Pool.Exec(s.Ctx, achievementQuery,
+		achievementID,
+		projectID,
+		nil,
+		nil,
+		name,
+		descriptionPending,
+		descriptionCompleted,
+		imageURL,
+		imageURL,
+		points,
+	)
+	if err != nil {
+		return err
 	}
+
+	_, err = s.DB.Pool.Exec(s.Ctx, junctionQuery, achievementID)
+	if err != nil {
+		return err
+	}
+
+	s.Data.AchievementIDs[projectID] = append(s.Data.AchievementIDs[projectID], achievementID)
+	stats.Achievements++
 
 	return nil
 }

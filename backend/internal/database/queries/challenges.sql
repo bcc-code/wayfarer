@@ -1,12 +1,12 @@
 -- name: GetChallengesByIDs :many
 SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 FROM challenges
-WHERE id = ANY(@ids::text[]);
+WHERE id = ANY(@ids::char(28)[]);
 
 -- name: GetChallengesByProjectIDs :many
 SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 FROM challenges
-WHERE project_id = ANY(@project_ids::text[])
+WHERE project_id = ANY(@project_ids::char(28)[])
     AND published_at IS NOT NULL
     AND published_at <= NOW()
 ORDER BY project_id, published_at DESC;
@@ -16,13 +16,13 @@ ORDER BY project_id, published_at DESC;
 -- Visibility filtering must be done at the application layer.
 SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 FROM challenges
-WHERE project_id = ANY(@project_ids::text[])
+WHERE project_id = ANY(@project_ids::char(28)[])
 ORDER BY project_id, COALESCE(published_at, created_at) DESC;
 
 -- name: GetChallengesByEventIDs :many
 SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 FROM challenges
-WHERE event_id = ANY(@event_ids::text[])
+WHERE event_id = ANY(@event_ids::char(28)[])
     AND published_at IS NOT NULL
     AND published_at <= NOW()
 ORDER BY event_id, published_at DESC;
@@ -32,7 +32,7 @@ ORDER BY event_id, published_at DESC;
 -- Visibility filtering must be done at the application layer.
 SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 FROM challenges
-WHERE event_id = ANY(@event_ids::text[])
+WHERE event_id = ANY(@event_ids::char(28)[])
 ORDER BY event_id, COALESCE(published_at, created_at) DESC;
 
 -- name: GetChallengesFilteredCursor :many
@@ -40,9 +40,9 @@ ORDER BY event_id, COALESCE(published_at, created_at) DESC;
 SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 FROM challenges
 WHERE
-    (@ids::text[] IS NULL OR id = ANY(@ids::text[]))
-    AND (@projectid::text = '' OR project_id = @projectid::text)
-    AND (@eventid::text = '' OR event_id = @eventid::text)
+    (@ids::char(28)[] IS NULL OR id = ANY(@ids::char(28)[]))
+    AND (@projectid::char(28) = '' OR project_id = @projectid::char(28))
+    AND (@eventid::char(28) = '' OR event_id = @eventid::char(28))
     AND (@challengetype::text = '' OR challenge_type = @challengetype::text)
     AND (@publishedafter::timestamptz IS NULL OR published_at >= @publishedafter::timestamptz)
     AND (@publishedbefore::timestamptz IS NULL OR published_at <= @publishedbefore::timestamptz)
@@ -65,9 +65,9 @@ LIMIT CASE WHEN @querylimit::int IS NULL THEN NULL ELSE @querylimit::int END;
 SELECT COUNT(DISTINCT id)
 FROM challenges
 WHERE
-    (@ids::text[] IS NULL OR id = ANY(@ids::text[]))
-    AND (@projectid::text = '' OR project_id = @projectid::text)
-    AND (@eventid::text = '' OR event_id = @eventid::text)
+    (@ids::char(28)[] IS NULL OR id = ANY(@ids::char(28)[]))
+    AND (@projectid::char(28) = '' OR project_id = @projectid::char(28))
+    AND (@eventid::char(28) = '' OR event_id = @eventid::char(28))
     AND (@challengetype::text = '' OR challenge_type = @challengetype::text)
     AND (@publishedafter::timestamptz IS NULL OR published_at >= @publishedafter::timestamptz)
     AND (@publishedbefore::timestamptz IS NULL OR published_at <= @publishedbefore::timestamptz);
@@ -132,27 +132,27 @@ SET
     requires_super_team_membership = COALESCE(sqlc.narg('requiressuperteammembership')::bool, requires_super_team_membership),
     plugin_challenge_id = COALESCE(sqlc.narg('pluginchallengeid')::text, plugin_challenge_id),
     updated_at = now()
-WHERE id = @id::text
+WHERE id = @id::char(28)
 RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at;
 
 -- name: DeleteChallenge :exec
 DELETE FROM challenges
-WHERE id = @id::text;
+WHERE id = @id::char(28);
 
 -- name: PublishChallenge :one
 UPDATE challenges
 SET
     published_at = @publishedat::timestamptz,
     updated_at = now()
-WHERE id = @id::text
+WHERE id = @id::char(28)
 RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at;
 
 -- name: AssignChallengeToEvent :one
 UPDATE challenges
 SET
-    event_id = @eventid::text,
+    event_id = @eventid::char(28),
     updated_at = now()
-WHERE id = @id::text
+WHERE id = @id::char(28)
 RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at;
 
 -- name: BulkPublishChallenges :many
@@ -160,7 +160,7 @@ UPDATE challenges
 SET
     published_at = @publishedat::timestamptz,
     updated_at = now()
-WHERE id = ANY(@ids::text[])
+WHERE id = ANY(@ids::char(28)[])
 RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at;
 
 -- name: BulkCreateChallenges :many
@@ -209,7 +209,7 @@ SET
     visible_at = COALESCE(sqlc.narg('visibleat')::timestamptz, visible_at),
     started_at = COALESCE(sqlc.narg('startedat')::timestamptz, started_at),
     updated_at = now()
-WHERE id = @id::text
+WHERE id = @id::char(28)
 RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at;
 
 -- name: UpdateChallengeRequirements :one
@@ -218,11 +218,11 @@ SET
     requires_team_membership = COALESCE(sqlc.narg('requiresteammembership')::bool, requires_team_membership),
     requires_super_team_membership = COALESCE(sqlc.narg('requiressuperteammembership')::bool, requires_super_team_membership),
     updated_at = now()
-WHERE id = @id::text
+WHERE id = @id::char(28)
 RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at;
 
 -- name: GetQuizByChallengeID :one
-SELECT * FROM quizzes WHERE challenge_id = @challengeid::text;
+SELECT * FROM quizzes WHERE challenge_id = @challengeid::char(28);
 
 -- name: GetChallengeByPluginChallengeID :one
 SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, notification_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at

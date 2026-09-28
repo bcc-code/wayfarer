@@ -1,0 +1,46 @@
+{% set mem_mb = ansible_facts['memtotal_mb'] | int -%}
+{% set cpus = ansible_facts['processor_vcpus'] | int -%}
+# Managed by Ansible (roles/postgres). Tuned from host facts:
+# {{ cpus }} vCPUs, {{ mem_mb }} MB RAM, SSD storage.
+
+listen_addresses = '{{ postgres_listen_addresses }}'
+max_connections = {{ postgres_max_connections }}
+
+# --- Security ---
+password_encryption = scram-sha-256
+# External clients reach us over the public internet; pg_hba requires TLS
+# for them (hostssl). The files hold the wayfarer server's Let's Encrypt
+# cert for {{ postgres_tls_domain }} (synced by pg-sync-le-cert), so clients
+# can use sslmode=verify-full.
+ssl = on
+ssl_cert_file = '{{ postgres_tls_dir }}/server.crt'
+ssl_key_file = '{{ postgres_tls_dir }}/server.key'
+
+# --- Memory ---
+shared_buffers = {{ (mem_mb * 0.25) | int }}MB
+effective_cache_size = {{ (mem_mb * 0.6) | int }}MB
+# Per sort/hash node; keep modest since the app shares this host.
+work_mem = {{ [(mem_mb * 1024 / (postgres_max_connections * 4)) | int, 65536] | min }}kB
+maintenance_work_mem = {{ [(mem_mb * 0.05) | int, 1024] | min }}MB
+
+# --- WAL / checkpoints ---
+wal_compression = on
+min_wal_size = 1GB
+max_wal_size = 4GB
+checkpoint_completion_target = 0.9
+
+# --- Planner (NVMe/SSD) ---
+random_page_cost = 1.1
+effective_io_concurrency = 200
+
+# --- Parallelism ---
+max_worker_processes = {{ cpus }}
+max_parallel_workers = {{ cpus }}
+max_parallel_workers_per_gather = {{ [cpus // 2, 4] | min }}
+
+# --- Observability ---
+shared_preload_libraries = 'pg_stat_statements'
+track_io_timing = on
+log_min_duration_statement = 500ms
+log_checkpoints = on
+log_lock_waits = on

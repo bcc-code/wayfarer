@@ -20,6 +20,9 @@ interface Achievement {
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
+    # Users who have been awarded it. Team and super-team awards are counted
+    # separately and not included here.
+    awardedUserCount: Int! @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
@@ -43,6 +46,9 @@ type SimpleAchievement implements Achievement {
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
+    # Users who have been awarded it. Team and super-team awards are counted
+    # separately and not included here.
+    awardedUserCount: Int! @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
@@ -64,11 +70,17 @@ type ContentAchievement implements Achievement {
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
+    # Users who have been awarded it. Team and super-team awards are counted
+    # separately and not included here.
+    awardedUserCount: Int! @goField(forceResolver: true)
     # Content-specific fields
     items: [ContentItem!]! @goField(forceResolver: true)
     userCompletedItems: [ContentItem!]! @goField(forceResolver: true)
     nextItem: ContentItem @goField(forceResolver: true)
-    totalItems: Int!
+    # Number of items currently required by this achievement.
+    totalItems: Int! @goField(forceResolver: true)
+    # Current user's completed items that still belong to this achievement.
+    # Independent of achievedAt: editing items does not revoke an award.
     completedItemCount: Int! @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
@@ -88,12 +100,22 @@ type StreakAchievement implements Achievement {
     challenge: Challenge @goField(forceResolver: true)
     achievedAt: DateTime @goField(forceResolver: true)
     celebratedAt: DateTime @goField(forceResolver: true)
-    neededStreak: Int!
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
+    # Users who have been awarded it. Team and super-team awards are counted
+    # separately and not included here.
+    awardedUserCount: Int! @goField(forceResolver: true)
+    # Content items with deadlines (external_content.complete_by)
+    items: [ContentItem!]! @goField(forceResolver: true)
+    userCompletedItems: [ContentItem!]! @goField(forceResolver: true)
+    nextItem: ContentItem @goField(forceResolver: true)
+    # Number of items currently required by this achievement.
+    totalItems: Int! @goField(forceResolver: true)
+    # Current user's qualifying completions among the current items.
+    # Deadline rules are applied when completion is recorded.
+    completedItemCount: Int! @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
-    streak: Streak! @goField(forceResolver: true)
 }
 
 type QuizAchievement implements Achievement {
@@ -114,6 +136,9 @@ type QuizAchievement implements Achievement {
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
+    # Users who have been awarded it. Team and super-team awards are counted
+    # separately and not included here.
+    awardedUserCount: Int! @goField(forceResolver: true)
     quiz: Quiz @goField(forceResolver: true)
     minScorePercentage: Int
     requireCompletion: Boolean!
@@ -166,8 +191,7 @@ input CreateStreakAchievementInput {
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
-    neededStreak: Int!
-    streakId: ID!
+    items: [ContentItemInput!]!
 }
 
 input CreateQuizAchievementInput {
@@ -228,8 +252,7 @@ input UpdateStreakAchievementInput {
     points: Int
     hidden: Boolean
     awardableFrom: DateTime
-    neededStreak: Int
-    streakId: ID
+    items: [ContentItemInput!]
 }
 
 input UpdateQuizAchievementInput {
@@ -296,23 +319,28 @@ extend type Mutation {
     reorderAchievements(projectId: ID!, achievementIds: [ID!]!): [Achievement!]! @requireRole(roles: ["admin", "superadmin"])
 
     # Award/revoke (M2M)
-    awardAchievement(userId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    awardAchievement(userId: ID!, achievementId: ID!, force: Boolean): Achievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
     revokeAchievement(userId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
-    bulkAwardAchievements(userIds: [ID!], teamId: ID, achievementId: ID!): [Achievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    bulkAwardAchievements(userIds: [ID!], teamId: ID, achievementId: ID!, force: Boolean): [Achievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
     # Content progress (M2M) - marks content completed across ALL published achievements containing this content
     markContentItemCompleted(userId: ID!, externalContentId: ID!): [ContentAchievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
     unmarkContentItemCompleted(userId: ID!, externalContentId: ID!): [ContentAchievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
-    # Streak tracking (M2M)
-    recordStreakActivity(userId: ID!, achievementId: ID!, currentStreak: Int!): StreakAchievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    # Streak progress (M2M) - marks content completed across ALL published streak achievements containing this content
+    # Enforces external_content.complete_by deadline unless force=true
+    markStreakItemCompleted(userId: ID!, externalContentId: ID!, force: Boolean): [StreakAchievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    unmarkStreakItemCompleted(userId: ID!, externalContentId: ID!): [StreakAchievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
     # Mark achievement as celebrated (any authenticated user)
     markAchievementCelebrated(achievementId: ID!): Boolean!
 
     # Force recalculate content achievements - awards achievements to users who completed all items but weren't awarded
-    recalculateContentAchievements(projectId: ID!, achievementId: ID!): RecalculateResult! @requireRole(roles: ["admin", "superadmin"])
+    recalculateContentAchievements(projectId: ID!, achievementId: ID!, force: Boolean): RecalculateResult! @requireRole(roles: ["admin", "superadmin"])
+
+    # Force recalculate streak achievements - awards achievements to users who completed all items before deadlines but weren't awarded
+    recalculateStreakAchievements(projectId: ID!, achievementId: ID!, force: Boolean): RecalculateResult! @requireRole(roles: ["admin", "superadmin"])
 
     # Async bulk operations - returns BulkJob for tracking progress
-    bulkAwardAchievementsAsync(userIds: [ID!], teamId: ID, achievementId: ID!): BulkJob! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    bulkAwardAchievementsAsync(userIds: [ID!], teamId: ID, achievementId: ID!, force: Boolean): BulkJob! @requireRole(roles: ["m2m", "admin", "superadmin"])
 }

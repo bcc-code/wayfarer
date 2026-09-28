@@ -162,6 +162,11 @@ type LeaderboardConnection {
     pageInfo: PageInfo!
     totalCount: Int!
     me: LeaderboardEntry
+    """
+    Nearest same-church entries ranked above the viewer on a PERSONS leaderboard.
+    Empty for other entity types or when the viewer isn't on the board.
+    """
+    nearestChurchRivals(first: Int = 3): [LeaderboardEntry!]! @goField(forceResolver: true)
 }
 
 input LeaderboardFilter {

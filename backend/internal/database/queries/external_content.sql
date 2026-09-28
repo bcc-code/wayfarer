@@ -102,11 +102,11 @@ WHERE
 SELECT * FROM external_content WHERE id = @id;
 
 -- name: GetExternalContentByIDs :many
-SELECT * FROM external_content WHERE id = ANY(@ids::text[]);
+SELECT * FROM external_content WHERE id = ANY(@ids::char(28)[]);
 
 -- name: GetExternalContentTranslationsByContentIDs :many
 SELECT * FROM external_content_translations
-WHERE external_content_id = ANY(@externalcontentids::text[]);
+WHERE external_content_id = ANY(@externalcontentids::char(28)[]);
 
 -- ==================== Bulk Upsert Queries ====================
 

@@ -1,17 +1,15 @@
 import { SharedArray } from 'k6/data';
-import { sleep } from 'k6';
 
-import { challengesPage } from './queries/challenges.js';
-import { profilePage } from './queries/profile.js';
-import { standingsGlobalPage } from './queries/standings-global.js';
-import { standingsLocalPage } from './queries/standings-local.js';
-import { standingsUnitPage } from './queries/standings-unit.js';
+import { userJourney } from './lib/journey.js';
 
-const config = JSON.parse(open('../config.json'));
+// open()+JSON.parse() must happen inside the SharedArray callback — see
+// freetext-quiz-spike.js for why parsing outside it blows up per-VU RAM.
 const tokens = new SharedArray('tokens', function () {
-    return config.tokens;
+    return JSON.parse(open('../config.json')).tokens;
 });
-const baseUrl = config.baseUrl;
+const baseUrl = new SharedArray('baseUrl', function () {
+    return [JSON.parse(open('../config.json')).baseUrl];
+})[0];
 
 // Spike test: fast ramp to high VUs
 export const options = {
@@ -20,8 +18,8 @@ export const options = {
             executor: 'ramping-vus',
             startVUs: 0,
             stages: [
-                { duration: '5s', target: parseInt(__ENV.SPIKE_PEAK) || 500 },
-                { duration: __ENV.SPIKE_HOLD || '2m', target: parseInt(__ENV.SPIKE_PEAK) || 500 },
+                { duration: '5s', target: 10000 },
+                { duration: __ENV.SPIKE_HOLD || '2m', target: 10000 },
                 { duration: '5s', target: 0 },
             ],
         },
@@ -39,21 +37,7 @@ function getRandomToken() {
 
 export default function () {
     const { token } = getRandomToken();
-    const rand = Math.random();
-
-    if (rand < 0.30) {
-        challengesPage(baseUrl, token);
-    } else if (rand < 0.50) {
-        profilePage(baseUrl, token);
-    } else if (rand < 0.70) {
-        standingsGlobalPage(baseUrl, token);
-    } else if (rand < 0.85) {
-        standingsLocalPage(baseUrl, token);
-    } else {
-        standingsUnitPage(baseUrl, token);
-    }
-
-    sleep(Math.random() * 0.5 + 0.1);
+    userJourney(baseUrl, token);
 }
 
 export function setup() {

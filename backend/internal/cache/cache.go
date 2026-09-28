@@ -23,6 +23,19 @@ type Config struct {
 	BufferItems int64
 	// DefaultTTL is the default expiration time for cache entries
 	DefaultTTL time.Duration
+
+	// onEvictKey, if set, is called with the original string key whenever ristretto
+	// evicts or rejects an entry. It lets a KeyRegistry prune keys that ristretto
+	// removed on its own (TTL expiry / cost eviction), which it otherwise never
+	// learns about. Set internally by NewCacheWithRegistry.
+	onEvictKey func(key string)
+}
+
+// registryEntry wraps every cached value so the original string key can be
+// recovered in ristretto's eviction callbacks (which only expose the hashed key).
+type registryEntry struct {
+	key   string
+	value interface{}
 }
 
 // DefaultConfig returns sensible defaults for cache configuration
@@ -37,11 +50,27 @@ func DefaultConfig() Config {
 
 // New creates a new cache instance with the given configuration
 func New(cfg Config) (*Cache, error) {
+	// When a key-eviction hook is configured, recover the original string key from
+	// the wrapped value and forward it. OnEvict covers TTL/cost eviction; OnReject
+	// covers admission rejection — both remove the value ristretto held for us.
+	var onEvict, onReject func(*ristretto.Item)
+	if cfg.onEvictKey != nil {
+		hook := func(item *ristretto.Item) {
+			if entry, ok := item.Value.(*registryEntry); ok {
+				cfg.onEvictKey(entry.key)
+			}
+		}
+		onEvict = hook
+		onReject = hook
+	}
+
 	cache, err := ristretto.NewCache(&ristretto.Config{
 		NumCounters: cfg.NumCounters,
 		MaxCost:     cfg.MaxCost,
 		BufferItems: cfg.BufferItems,
 		Metrics:     true, // Enable metrics for monitoring
+		OnEvict:     onEvict,
+		OnReject:    onReject,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ristretto cache: %w", err)
@@ -55,7 +84,14 @@ func New(cfg Config) (*Cache, error) {
 
 // Get retrieves a value from the cache
 func (c *Cache) Get(key string) (interface{}, bool) {
-	return c.cache.Get(key)
+	raw, ok := c.cache.Get(key)
+	if !ok {
+		return nil, false
+	}
+	if entry, ok := raw.(*registryEntry); ok {
+		return entry.value, true
+	}
+	return raw, true
 }
 
 // Set stores a value in the cache with the default TTL
@@ -65,8 +101,9 @@ func (c *Cache) Set(key string, value interface{}) bool {
 
 // SetWithTTL stores a value in the cache with a custom TTL
 func (c *Cache) SetWithTTL(key string, value interface{}, ttl time.Duration) bool {
-	// Cost of 1 per item (can be customized based on actual size if needed)
-	return c.cache.SetWithTTL(key, value, 1, ttl)
+	// Cost of 1 per item (can be customized based on actual size if needed).
+	// The value is wrapped so eviction callbacks can recover the string key.
+	return c.cache.SetWithTTL(key, &registryEntry{key: key, value: value}, 1, ttl)
 }
 
 // Delete removes a value from the cache

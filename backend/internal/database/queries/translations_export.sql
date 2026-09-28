@@ -9,10 +9,6 @@ WHERE archived = false;
 SELECT id, name, description
 FROM events;
 
--- name: GetStreaksForTranslation :many
-SELECT id, name, description
-FROM streaks;
-
 -- name: GetChallengesForTranslation :many
 SELECT id, name, description, button_text, notification_text
 FROM challenges
@@ -30,13 +26,13 @@ FROM quizzes;
 -- name: GetQuizQuestionsForTranslation :many
 SELECT id, question_text
 FROM quiz_questions
-WHERE quiz_id = @quiz_id::text
+WHERE quiz_id = @quiz_id::char(28)
 ORDER BY question_order;
 
 -- name: GetQuizAnswersForTranslation :many
 SELECT id, answer_text
 FROM quiz_predefined_answers
-WHERE question_id = @question_id::text
+WHERE question_id = @question_id::char(28)
 ORDER BY answer_order;
 
 -- name: GetConsentsForTranslation :many

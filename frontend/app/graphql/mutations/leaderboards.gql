@@ -1,0 +1,20 @@
+mutation CreateLeaderboardConfig($input: CreateLeaderboardConfigInput!) {
+  createLeaderboardConfig(input: $input) {
+    id
+  }
+}
+
+# `UpdateLeaderboardConfigInput` is full-replace, not a patch. The caller
+# resends the complete state; null clears `filter` and `maxEntries`.
+mutation UpdateLeaderboardConfig(
+  $id: ID!
+  $input: UpdateLeaderboardConfigInput!
+) {
+  updateLeaderboardConfig(id: $id, input: $input) {
+    ...LeaderboardConfigFields
+  }
+}
+
+mutation DeleteLeaderboardConfig($id: ID!) {
+  deleteLeaderboardConfig(id: $id)
+}

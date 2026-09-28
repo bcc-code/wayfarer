@@ -10,7 +10,7 @@ FROM users u
 WHERE NOT EXISTS (
     SELECT 1 FROM team_members tm
     JOIN teams t ON tm.team_id = t.id
-    WHERE tm.user_id = u.id AND t.project_id = @project_id::text
+    WHERE tm.user_id = u.id AND t.project_id = @project_id::char(28)
 )
 ORDER BY u.id;
 
@@ -20,7 +20,7 @@ FROM users u
 WHERE NOT EXISTS (
     SELECT 1 FROM team_members tm
     JOIN teams t ON tm.team_id = t.id
-    WHERE tm.user_id = u.id AND t.project_id = @project_id::text
+    WHERE tm.user_id = u.id AND t.project_id = @project_id::char(28)
 );
 
 -- name: GetRandomUserIDs :many
@@ -38,7 +38,7 @@ SELECT COUNT(*)::int FROM churches;
 -- name: GetTeamsWithoutLeadForProject :many
 SELECT t.id
 FROM teams t
-WHERE t.project_id = @project_id::text
+WHERE t.project_id = @project_id::char(28)
   AND NOT EXISTS (
     SELECT 1 FROM user_roles ur
     WHERE ur.team_id = t.id AND ur.role = 'TEAM_LEAD'
@@ -48,15 +48,15 @@ ORDER BY t.id;
 -- name: GetRandomMemberForTeams :many
 SELECT DISTINCT ON (tm.team_id) tm.team_id, tm.user_id
 FROM team_members tm
-WHERE tm.team_id = ANY(@team_ids::text[])
+WHERE tm.team_id = ANY(@team_ids::char(28)[])
 ORDER BY tm.team_id, random();
 
 -- name: DeleteTeamLeadsForProject :exec
 DELETE FROM user_roles
 WHERE role = 'TEAM_LEAD'
   AND team_id IN (
-    SELECT id FROM teams WHERE project_id = @project_id::text
+    SELECT id FROM teams WHERE project_id = @project_id::char(28)
   );
 
 -- name: GetTeamIDsForProject :many
-SELECT id FROM teams WHERE project_id = @project_id::text ORDER BY id;
+SELECT id FROM teams WHERE project_id = @project_id::char(28) ORDER BY id;

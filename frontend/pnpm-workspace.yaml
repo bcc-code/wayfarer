@@ -1,0 +1,14 @@
+minimumReleaseAge: 1440
+allowBuilds:
+  '@firebase/util': true
+  '@parcel/watcher': true
+  '@posthog/cli': true
+  '@sentry/cli': true
+  browser-tabs-lock: true
+  core-js: false
+  esbuild: true
+  maplibre-gl: true
+  protobufjs: true
+  sharp: true
+  unrs-resolver: true
+  vue-demi: true

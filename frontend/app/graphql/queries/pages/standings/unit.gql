@@ -7,6 +7,15 @@ query StandingsUnitPage {
       memberLeaderboard {
         ...LeaderboardEntryFields
       }
+      superTeam {
+        id
+        name
+        color
+        imageObject {
+          url
+          blurhash
+        }
+      }
     }
   }
 }

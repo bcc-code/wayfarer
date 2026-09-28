@@ -25,7 +25,7 @@ INSERT INTO file_uploads (
 
 -- name: GetFileUpload :one
 SELECT * FROM file_uploads
-WHERE id = @id::text;
+WHERE id = @id::char(28);
 
 -- name: ListFileUploads :many
 SELECT * FROM file_uploads
@@ -35,7 +35,7 @@ OFFSET @offset_count::int;
 
 -- name: GetFileUploadsByUser :many
 SELECT * FROM file_uploads
-WHERE uploaded_by = @uploaded_by::text
+WHERE uploaded_by = @uploaded_by::char(28)
 ORDER BY created_at DESC
 LIMIT @limit_count::int
 OFFSET @offset_count::int;

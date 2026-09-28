@@ -17,7 +17,7 @@ type mockQueriesForBetting struct {
 	err   error
 }
 
-func (m *mockQueriesForBetting) GetUserScore(ctx context.Context, params sqlc.GetUserScoreParams) (int64, error) {
+func (m *mockQueriesForBetting) GetUserProjectScore(ctx context.Context, params sqlc.GetUserProjectScoreParams) (int64, error) {
 	if m.err != nil {
 		return 0, m.err
 	}
@@ -340,10 +340,9 @@ func validateBetWithMockQueries(
 	}
 
 	// Get user's current project score using mock
-	score, err := mockQueries.GetUserScore(ctx, sqlc.GetUserScoreParams{
+	score, err := mockQueries.GetUserProjectScore(ctx, sqlc.GetUserProjectScoreParams{
 		UserID:    userID,
 		ProjectID: projectID,
-		EventID:   "",
 	})
 	if err != nil {
 		return err

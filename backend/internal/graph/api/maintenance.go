@@ -3,11 +3,9 @@ package api
 import (
 	"context"
 	"fmt"
-	"log/slog"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
-	"github.com/bcc-media/wayfarer/internal/services"
 )
 
 // previewMissingContentProgress retrieves a preview of users with missing content progress records.
@@ -67,57 +65,101 @@ func (r *Resolver) previewMissingContentProgress(ctx context.Context, first *int
 	}, nil
 }
 
-// fixMissingContentProgress processes missing content events using the existing ContentAchievementService.
-// This ensures all hooks (cache invalidation, webhooks, push notifications, Firebase, score journals) are triggered.
-func (r *Resolver) fixMissingContentProgress(ctx context.Context) (*model.FixMissingContentProgressResult, error) {
-	// Get all missing events with user and task info
-	events, err := r.DB.Queries.GetMissingContentEventsForProcessing(ctx)
+// previewMissingStreakProgress retrieves a preview of users with missing streak progress records.
+// Runs a single query and computes totals in Go to avoid redundant expensive joins.
+func (r *Resolver) previewMissingStreakProgress(ctx context.Context) (*model.MissingStreakProgressPreview, error) {
+	rows, err := r.DB.Queries.GetMissingStreakProgress(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get missing content events: %w", err)
+		return nil, fmt.Errorf("failed to get missing streak progress: %w", err)
 	}
 
-	if len(events) == 0 {
-		return &model.FixMissingContentProgressResult{
-			UsersFixed:             0,
-			ProgressRecordsCreated: 0,
-			AchievementsAwarded:    0,
-		}, nil
+	totalUsers := len(rows)
+	totalEvents := 0
+	for _, row := range rows {
+		totalEvents += int(row.EventCount)
 	}
 
-	// Count unique users
-	userSet := make(map[string]bool)
-	for _, event := range events {
-		userSet[event.UserID] = true
+	// Slice first 50 for display
+	displayRows := rows
+	if len(displayRows) > 50 {
+		displayRows = displayRows[:50]
 	}
 
-	slog.Info("maintenance: processing missing content events",
-		"event_count", len(events),
-		"user_count", len(userSet))
+	affectedUsers := make([]model.MissingStreakProgressUser, 0, len(displayRows))
+	for _, row := range displayRows {
+		userThunk := r.Loaders.UserByIDLoader.Load(ctx, row.UserID)
+		user, err := userThunk()
+		if err != nil {
+			continue
+		}
 
-	// Create ContentAchievementService to handle processing
-	// This handles: progress records, cache invalidation, achievement awards,
-	// score journals, push notifications, and Firebase notifications
-	contentAchievementService := &services.ContentAchievementService{
-		DB:             r.DB,
-		Cache:          r.Cache,
-		PushService:    r.PushService,
-		Loaders:        r.Loaders,
-		WebhookService: r.WebhookService,
+		affectedUsers = append(affectedUsers, model.MissingStreakProgressUser{
+			User:       user,
+			EventCount: int(row.EventCount),
+		})
 	}
 
-	// Process each event using the existing service
-	for _, event := range events {
-		contentAchievementService.ProcessContentEvent(ctx, event.UserID, event.TaskID)
+	return &model.MissingStreakProgressPreview{
+		AffectedUsers: affectedUsers,
+		TotalUsers:    totalUsers,
+		TotalEvents:   totalEvents,
+	}, nil
+}
+
+// previewMissingScoreJournal retrieves a preview of users with missing score journal entries for a content achievement.
+func (r *Resolver) previewMissingScoreJournal(ctx context.Context, achievementID string, first *int, after *string) (*model.MissingScoreJournalPreview, error) {
+	limit := 50
+	if first != nil && *first > 0 && *first <= 100 {
+		limit = *first
 	}
 
-	// Notify Firebase for content updates for each affected user
-	for userID := range userSet {
-		go r.FirebaseService.NotifyUserContent(context.Background(), userID)
+	offset := 0
+	// After cursor is just the offset as a string for simplicity
+	if after != nil && *after != "" {
+		if _, err := fmt.Sscanf(*after, "%d", &offset); err == nil {
+			offset++
+		}
 	}
 
-	return &model.FixMissingContentProgressResult{
-		UsersFixed:             len(userSet),
-		ProgressRecordsCreated: len(events),
-		AchievementsAwarded:    0, // Tracked internally by the service via logs
+	// Get preview rows
+	rows, err := r.DB.Queries.GetMissingScoreJournalPreview(ctx, sqlc.GetMissingScoreJournalPreviewParams{
+		Achievementid: achievementID,
+		Querylimit:    int32(limit),
+		Queryoffset:   int32(offset),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get missing score journal preview: %w", err)
+	}
+
+	// Get counts
+	totalUsers, err := r.DB.Queries.CountMissingScoreJournalUsers(ctx, achievementID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count affected users: %w", err)
+	}
+
+	totalEvents, err := r.DB.Queries.CountMissingScoreJournalEvents(ctx, achievementID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count affected events: %w", err)
+	}
+
+	// Build affected users list with User objects loaded via DataLoader
+	affectedUsers := make([]model.MissingScoreJournalUser, 0, len(rows))
+	for _, row := range rows {
+		userThunk := r.Loaders.UserByIDLoader.Load(ctx, row.UserID)
+		user, err := userThunk()
+		if err != nil {
+			continue
+		}
+
+		affectedUsers = append(affectedUsers, model.MissingScoreJournalUser{
+			User:       user,
+			EventCount: int(row.EventCount),
+		})
+	}
+
+	return &model.MissingScoreJournalPreview{
+		AffectedUsers: affectedUsers,
+		TotalUsers:    int(totalUsers),
+		TotalEvents:   int(totalEvents),
 	}, nil
 }

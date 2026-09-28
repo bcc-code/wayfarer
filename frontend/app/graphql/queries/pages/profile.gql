@@ -48,21 +48,29 @@ query ProfilePage($ageFilter: LeaderboardFilter) {
       celebratedAt
       points
       ... on ContentAchievement {
-        nextItem {
-          id
-          sortOrder
-          externalContent {
-            id
-            title
-            url
-          }
-        }
+        totalItems
+        completedItemCount
+      }
+      ... on StreakAchievement {
+        totalItems
+        completedItemCount
       }
     }
     myPoints
     leaderboard(entityType: PERSONS, filter: $ageFilter) {
       me {
         rank
+      }
+    }
+    myTeam {
+      superTeam {
+        id
+        name
+        color
+        imageObject {
+          url
+          blurhash
+        }
       }
     }
   }

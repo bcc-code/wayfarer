@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -21,6 +22,7 @@ import (
 	"github.com/MicahParks/jwkset"
 	"github.com/MicahParks/keyfunc/v3"
 	"github.com/bcc-media/wayfarer/internal/auth0"
+	"github.com/bcc-media/wayfarer/internal/autotls"
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database"
@@ -29,6 +31,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/directives"
 	"github.com/bcc-media/wayfarer/internal/handlers"
 	"github.com/bcc-media/wayfarer/internal/loaders"
+	"github.com/bcc-media/wayfarer/internal/loadtestauth"
 	"github.com/bcc-media/wayfarer/internal/logger"
 	"github.com/bcc-media/wayfarer/internal/members"
 	"github.com/bcc-media/wayfarer/internal/middleware"
@@ -36,6 +39,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/plugins"
 	"github.com/bcc-media/wayfarer/internal/plugins/ladder_to_heaven"
 	"github.com/bcc-media/wayfarer/internal/pubsub"
+	"github.com/bcc-media/wayfarer/internal/reuseport"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/services/bulk"
 	"github.com/bcc-media/wayfarer/internal/services/email"
@@ -116,12 +120,33 @@ func main() {
 	// Initialize JWKS for Auth0 (login.bcc.no) JWT validation
 	// Use custom storage with SkipAll to handle X5T validation issues in Auth0's JWKS
 	// Core security (RSA signature verification, expiration) is still enforced by JWT parsing
-	auth0Storage, err := jwkset.NewStorageFromHTTP(cfg.JWT.Auth0JWKSURL, jwkset.HTTPClientStorageOptions{
+	auth0Options := jwkset.HTTPClientStorageOptions{
 		Ctx: ctx,
 		ValidateOptions: jwkset.JWKValidateOptions{
 			SkipAll: true, // Skip JWK validation that fails with Auth0's X5T mismatch
 		},
-	})
+	}
+	var loadtestJWKS []byte
+	if cfg.JWT.Auth0LoadtestKey != "" {
+		// Load-test mode: derive the JWKS from the shared load-test key and
+		// serve it at /jwks.json ourselves, so the boot-time fetch of
+		// Auth0JWKSURL may target this very process. Tolerate the failed
+		// first fetch and refresh in the background; the keyfunc client also
+		// re-fetches on an unknown kid.
+		key, err := loadtestauth.ParsePrivateKey(cfg.JWT.Auth0LoadtestKey)
+		if err != nil {
+			slog.Error("Failed to parse AUTH0_LOADTEST_PRIVATE_KEY", "error", err)
+			os.Exit(1)
+		}
+		loadtestJWKS, err = loadtestauth.BuildJWKS(&key.PublicKey)
+		if err != nil {
+			slog.Error("Failed to build load-test JWKS", "error", err)
+			os.Exit(1)
+		}
+		auth0Options.NoErrorReturnFirstHTTPReq = true
+		auth0Options.RefreshInterval = 30 * time.Second
+	}
+	auth0Storage, err := jwkset.NewStorageFromHTTP(cfg.JWT.Auth0JWKSURL, auth0Options)
 	if err != nil {
 		slog.Error("Failed to create Auth0 JWKS storage", "error", err)
 		os.Exit(1)
@@ -138,6 +163,7 @@ func main() {
 
 	// Initialize Auth0 client for Members API token management
 	var membersClient *members.Client
+	var maintenanceMembersClient *members.Client
 	if cfg.Auth0.Domain != "" && cfg.Auth0.ClientID != "" && cfg.Members.Domain != "" {
 		auth0Client := auth0.New(auth0.Config{
 			Domain:       cfg.Auth0.Domain,
@@ -147,17 +173,31 @@ func main() {
 
 		// Create circuit breaker for Members API
 		membersBreaker := gobreaker.NewCircuitBreaker[[]byte](gobreaker.Settings{
-			Name:    "members-api",
-			Timeout: 2 * time.Second,
+			Name:         "members-api",
+			Timeout:      2 * time.Second,
+			IsSuccessful: members.IsBreakerSuccess,
 		})
 
-		// Initialize Members API client
+		// Members API client for interactive paths (login, admin-triggered single-user resync)
 		membersClient = members.New(
 			members.Config{Domain: cfg.Members.Domain},
 			auth0Client,
 			membersBreaker,
 		)
-		slog.Info("Members API client initialized", "domain", cfg.Members.Domain)
+
+		// Isolated client + breaker for the batch maintenance sync, so its failures can't trip the breaker interactive logins depend on
+		maintenanceMembersBreaker := gobreaker.NewCircuitBreaker[[]byte](gobreaker.Settings{
+			Name:         "members-api-maintenance",
+			Timeout:      2 * time.Second,
+			IsSuccessful: members.IsBreakerSuccess,
+		})
+		maintenanceMembersClient = members.New(
+			members.Config{Domain: cfg.Members.Domain},
+			auth0Client,
+			maintenanceMembersBreaker,
+		)
+
+		slog.Info("Members API clients initialized", "domain", cfg.Members.Domain)
 	} else {
 		slog.Warn("Members API client not initialized - missing configuration")
 	}
@@ -290,6 +330,30 @@ func main() {
 		slog.Warn("Firebase service not initialized - missing configuration")
 	}
 
+	// Keep a Firebase custom token cached for every user in the current project.
+	// Minting is a local RSA-2048 signature (~1ms of CPU); a spike of cold users
+	// hitting firebaseToken at once turns that into thousands of signatures per
+	// second — a CPU profile of the 10k-user quiz spike attributed ~25% of all
+	// server CPU to it. Rotating in the background costs a handful of signatures
+	// per second and makes the request path a cache hit.
+	var tokenWarmer *services.FirebaseTokenWarmer
+	if firebaseService != nil {
+		tokenWarmer = services.NewFirebaseTokenWarmer(firebaseService, db.Queries, cacheInstance, settingsService)
+		if tokenWarmer != nil {
+			tokenWarmer.Start(ctx)
+			defer tokenWarmer.Stop()
+			slog.Info("Firebase token warmer started")
+		}
+	}
+
+	// Leaderboard apply worker: drains the score-delta outbox filled by the
+	// score_journal INSERT trigger (migration 00101) outside request
+	// transactions. Replaces the synchronous 38-statement trigger fan-out.
+	leaderboardApplyWorker := services.NewLeaderboardApplyWorker(db.Queries)
+	leaderboardApplyWorker.Start(ctx)
+	defer leaderboardApplyWorker.Stop()
+	slog.Info("Leaderboard apply worker started")
+
 	// Initialize Email service for feedback forwarding
 	var emailService *email.Service
 	if cfg.Resend.APIKey != "" {
@@ -330,10 +394,23 @@ func main() {
 		WebhookService: webhookService,
 	}
 
-	// Church resolver (shared between auth, maintenance, and sync)
+	// Church resolver (shared between auth and sync)
 	churchResolver := &services.ChurchResolver{
 		DB:            db,
 		MembersClient: membersClient,
+	}
+
+	// Church resolver backed by the isolated maintenance Members client, for the same reason
+	maintenanceChurchResolver := &services.ChurchResolver{
+		DB:            db,
+		MembersClient: maintenanceMembersClient,
+	}
+
+	// Member import service, backed by the isolated maintenance Members client since it
+	// fetches in bulk (not concurrently) but still shouldn't share a breaker with logins
+	memberImportService := &services.MemberImportService{
+		DB:            db,
+		MembersClient: maintenanceMembersClient,
 	}
 
 	// User sync service
@@ -355,6 +432,7 @@ func main() {
 		firebaseService,
 		pubsubPublisher,
 		lgr,
+		contentAchievementService,
 	)
 	slog.Info("Bulk operations service initialized")
 
@@ -389,6 +467,10 @@ func main() {
 	apiHandler.Use(extension.AutomaticPersistedQuery{
 		Cache: lru.New[string](100),
 	})
+	// Whole-response cache for queries whose result is identical for every
+	// caller (currently the current-project bootstrap query). 30s TTL bounds
+	// staleness after admin edits.
+	apiHandler.Use(api.ResponseCache{Cache: cacheInstance, TTL: 30 * time.Second})
 	apiHandler.SetQueryCache(lru.New[*ast.QueryDocument](1000))
 
 	// Add OpenTelemetry tracing for GraphQL operations
@@ -397,12 +479,29 @@ func main() {
 		slog.Info("OpenTelemetry GraphQL instrumentation enabled")
 	}
 
-	// Set up Gin router
+	// Set up Gin router. In production, skip gin's per-request access logger:
+	// it writes one line per request to stdout synchronously (release mode
+	// does not disable it), which at load-test rates is thousands of journald
+	// writes per second.
+	var router *gin.Engine
 	if cfg.Server.Environment == "production" {
 		gin.SetMode(gin.ReleaseMode)
+		router = gin.New()
+		router.Use(gin.Recovery())
+	} else {
+		router = gin.Default()
 	}
 
-	router := gin.Default()
+	// Aggregated per-route request stats (served at /metrics/http) plus
+	// error/slow-request logging — the production replacement for gin's
+	// per-request access log.
+	httpStats := middleware.NewHTTPStats()
+	router.Use(httpStats.Middleware())
+	if cfg.Server.HTTPStatsFile != "" {
+		httpStats.StartDumper(ctx, cfg.Server.HTTPStatsFile, cfg.Server.HTTPStatsInterval)
+		slog.Info("HTTP stats dumper enabled",
+			"file", cfg.Server.HTTPStatsFile, "interval", cfg.Server.HTTPStatsInterval)
+	}
 
 	// Add OpenTelemetry middleware for HTTP tracing
 	if cfg.OTEL.Enabled {
@@ -424,6 +523,18 @@ func main() {
 	// TODO: Actually check things, like DB connection
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	// Aggregated HTTP request stats (counts, status classes, latency
+	// percentiles per route since boot). Loopback-only: the route inventory
+	// and traffic volumes are operational data, not public API — read it on
+	// the host (curl localhost) or over an SSH tunnel.
+	router.GET("/metrics/http", func(c *gin.Context) {
+		if ip := net.ParseIP(c.ClientIP()); ip == nil || !ip.IsLoopback() {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+			return
+		}
+		c.JSON(http.StatusOK, httpStats.Snapshot())
 	})
 
 	// Cache metrics endpoint
@@ -486,6 +597,16 @@ func main() {
 	}
 	router.GET("/token", authHandler.Callback)
 
+	// Load-test only: serve the simulated-Auth0 JWKS derived from
+	// AUTH0_LOADTEST_PRIVATE_KEY, so AUTH0_JWKS_URL can point back at this
+	// server (no sidecar or file needed). See internal/loadtestauth.
+	if loadtestJWKS != nil {
+		slog.Info("Serving load-test JWKS", "route", "/jwks.json")
+		router.GET("/jwks.json", func(c *gin.Context) {
+			c.Data(http.StatusOK, "application/json", loadtestJWKS)
+		})
+	}
+
 	// Webhook handler for external content events
 	webhookHandler := &handlers.WebhookHandler{
 		DB:                        db,
@@ -529,19 +650,22 @@ func main() {
 	maintenanceHandler := &handlers.MaintenanceHandler{
 		DB:                        db,
 		Cache:                     cacheInstance,
-		MembersClient:             membersClient,
-		ChurchResolver:            churchResolver,
+		MembersClient:             maintenanceMembersClient,
+		ChurchResolver:            maintenanceChurchResolver,
 		AuthHandler:               authHandler,
 		ContentAchievementService: contentAchievementService,
 		SSFClient:                 ssfClient,
+		MemberImportService:       memberImportService,
 	}
 	router.POST("/api/maintenance/sync-user-data", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.SyncUserData)
 	router.POST("/api/maintenance/sync-user/:user_id", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.SyncSingleUser)
 	router.POST("/api/maintenance/backfill-ssf-events", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.BackfillSSFEvents)
+	router.POST("/api/maintenance/import-new-members", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.ImportNewMembers)
 	slog.Info("Maintenance endpoints registered",
 		"batch_sync", "POST /api/maintenance/sync-user-data",
 		"single_sync", "POST /api/maintenance/sync-user/:user_id",
 		"backfill_ssf", "POST /api/maintenance/backfill-ssf-events",
+		"import_new_members", "POST /api/maintenance/import-new-members",
 	)
 
 	// Quiz scheduler handler for timed session state transitions
@@ -663,13 +787,98 @@ func main() {
 		MaxHeaderBytes: 1 << 20, // 1 MB
 	}
 
+	// Native TLS modes (no fronting proxy): ACME with automatic issuance and
+	// renewal (TLS_AUTO_DOMAINS), or static cert files (TLS_CERT_FILE/KEY).
+	tlsMode := "off"
+	switch {
+	case len(cfg.Server.TLSAutoDomains) > 0:
+		tlsMode = "acme"
+		acmeManager, err := autotls.New(cfg.Server.TLSAutoDomains, cfg.Server.TLSAutoCacheDir, cfg.Server.TLSAutoEmail)
+		if err != nil {
+			slog.Error("Failed to configure ACME TLS", "error", err)
+			os.Exit(1)
+		}
+		srv.TLSConfig = acmeManager.TLSConfig()
+		slog.Info("ACME TLS enabled",
+			"domains", cfg.Server.TLSAutoDomains,
+			"cache", cfg.Server.TLSAutoCacheDir,
+		)
+		if cfg.Server.TLSAutoHTTPAddr != "" {
+			// http-01 fallback + HTTPS redirect.
+			go func() {
+				httpSrv := &http.Server{
+					Addr:         cfg.Server.TLSAutoHTTPAddr,
+					Handler:      acmeManager.HTTPHandler(),
+					ReadTimeout:  10 * time.Second,
+					WriteTimeout: 10 * time.Second,
+				}
+				if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+					slog.Error("ACME HTTP challenge listener failed", "error", err)
+				}
+			}()
+		}
+	case cfg.Server.TLSCertFile != "" && cfg.Server.TLSKeyFile != "":
+		tlsMode = "static"
+	}
+
+	// SO_REUSEPORT for blue/green deploys: a second instance binds the same
+	// port during the overlap and the kernel splits new connections.
+	var listener net.Listener
+	if cfg.Server.ReusePort {
+		listener, err = reuseport.Listen(ctx, addr)
+		if err != nil {
+			slog.Error("Failed to bind with SO_REUSEPORT", "error", err)
+			os.Exit(1)
+		}
+	}
+
+	// Per-instance admin listener (deploy health gate): /health with a real
+	// DB ping. Private (bind to loopback); never routed through the shared port.
+	if cfg.Server.AdminAddr != "" {
+		adminMux := http.NewServeMux()
+		adminMux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+			pingCtx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+			defer cancel()
+			if err := db.Pool.Ping(pingCtx); err != nil {
+				http.Error(w, fmt.Sprintf(`{"status":"db unreachable: %v"}`, err), http.StatusServiceUnavailable)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprint(w, `{"status":"ok"}`)
+		})
+		adminSrv := &http.Server{Addr: cfg.Server.AdminAddr, Handler: adminMux, ReadTimeout: 5 * time.Second}
+		go func() {
+			slog.Info("Admin listener started", "address", cfg.Server.AdminAddr)
+			if err := adminSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				slog.Error("Admin listener failed", "error", err)
+			}
+		}()
+	}
+
 	// Start server in a goroutine
 	go func() {
 		slog.Info("Starting server",
 			"address", addr,
 			"environment", cfg.Server.Environment,
+			"tls", tlsMode,
+			"reuseport", cfg.Server.ReusePort,
 		)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		var err error
+		switch {
+		case listener != nil && tlsMode == "acme":
+			err = srv.ServeTLS(listener, "", "") // certs come from srv.TLSConfig
+		case listener != nil && tlsMode == "static":
+			err = srv.ServeTLS(listener, cfg.Server.TLSCertFile, cfg.Server.TLSKeyFile)
+		case listener != nil:
+			err = srv.Serve(listener)
+		case tlsMode == "acme":
+			err = srv.ListenAndServeTLS("", "")
+		case tlsMode == "static":
+			err = srv.ListenAndServeTLS(cfg.Server.TLSCertFile, cfg.Server.TLSKeyFile)
+		default:
+			err = srv.ListenAndServe()
+		}
+		if err != nil && err != http.ErrServerClosed {
 			slog.Error("Server failed to start", "error", err)
 			os.Exit(1)
 		}
