@@ -51,6 +51,15 @@ export function leaderboardFilterViewToInput(
   if (!view) return null
 
   const filter: LeaderboardFilter = {}
+  if (view.myChurch) filter.myChurch = true
+  if (view.myTeam) filter.myTeam = true
+  if (view.mySuperTeam) filter.mySuperTeam = true
+  if (view.relativeAgeRange) {
+    filter.relativeAgeRange = {
+      yearsYounger: view.relativeAgeRange.yearsYounger,
+      yearsOlder: view.relativeAgeRange.yearsOlder,
+    }
+  }
 
   if (view.minScore != null) filter.minScore = view.minScore
   if (view.maxScore != null) filter.maxScore = view.maxScore
@@ -78,6 +87,14 @@ export function summarizeLeaderboardFilter(view: FilterView): string[] {
   if (!view) return []
 
   const parts: string[] = []
+  if (view.myChurch) parts.push('Min menighet')
+  if (view.myTeam) parts.push('Mitt lag')
+  if (view.mySuperTeam) parts.push('Mitt superlag')
+  if (view.relativeAgeRange) {
+    parts.push(
+      `Min alder −${view.relativeAgeRange.yearsYounger}/+${view.relativeAgeRange.yearsOlder} år`,
+    )
+  }
 
   if (view.ageRange) parts.push(`${view.ageRange.min}–${view.ageRange.max} år`)
   if (view.gender) parts.push(GENDER_LABELS[view.gender])

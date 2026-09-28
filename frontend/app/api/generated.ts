@@ -907,9 +907,8 @@ export type FreeTextQuestion = QuizQuestion & {
 };
 
 /**
- * FREE_TEXT questions are not graded. Answers are grouped by a normalised form
- * (trimmed, inner whitespace collapsed, case-folded) and the most common original
- * spelling is shown.
+ * Not graded. Grouped by a normalised form (trimmed, whitespace collapsed,
+ * case-folded), labelled with the most common original spelling.
  */
 export type FreeTextQuestionResults = QuizQuestionResults & {
   __typename?: 'FreeTextQuestionResults';
@@ -974,8 +973,8 @@ export type JsonQuestion = QuizQuestion & {
 };
 
 /**
- * JSON questions hold arbitrary structured data that cannot be summarised
- * automatically. Kept in the list so question numbering stays intact.
+ * Arbitrary structured data, so only a count. Kept in the list so question
+ * numbering stays intact.
  */
 export type JsonQuestionResults = QuizQuestionResults & {
   __typename?: 'JsonQuestionResults';
@@ -1103,6 +1102,10 @@ export type LeaderboardFilter = {
   gender?: InputMaybe<Gender>;
   maxScore?: InputMaybe<Scalars['Int']['input']>;
   minScore?: InputMaybe<Scalars['Int']['input']>;
+  myChurch?: InputMaybe<Scalars['Boolean']['input']>;
+  mySuperTeam?: InputMaybe<Scalars['Boolean']['input']>;
+  myTeam?: InputMaybe<Scalars['Boolean']['input']>;
+  relativeAgeRange?: InputMaybe<RelativeAgeRangeInput>;
   superTeamId?: InputMaybe<Scalars['ID']['input']>;
   teamId?: InputMaybe<Scalars['ID']['input']>;
 };
@@ -1121,6 +1124,10 @@ export type LeaderboardFilterView = {
   gender?: Maybe<Gender>;
   maxScore?: Maybe<Scalars['Int']['output']>;
   minScore?: Maybe<Scalars['Int']['output']>;
+  myChurch?: Maybe<Scalars['Boolean']['output']>;
+  mySuperTeam?: Maybe<Scalars['Boolean']['output']>;
+  myTeam?: Maybe<Scalars['Boolean']['output']>;
+  relativeAgeRange?: Maybe<RelativeAgeRange>;
   superTeamId?: Maybe<Scalars['ID']['output']>;
   teamId?: Maybe<Scalars['ID']['output']>;
 };
@@ -2107,10 +2114,7 @@ export type NumberQuestion = QuizQuestion & {
   translationStatus: Array<TranslationFieldStatus>;
 };
 
-/**
- * NUMBER questions store no correct answer, so results describe the distribution
- * rather than correctness.
- */
+/** NUMBER stores no correct answer, so results describe the distribution. */
 export type NumberQuestionResults = QuizQuestionResults & {
   __typename?: 'NumberQuestionResults';
   average?: Maybe<Scalars['Float']['output']>;
@@ -2161,8 +2165,8 @@ export type OrderingQuestion = QuizQuestion & {
 };
 
 /**
- * ORDERING questions are graded all-or-nothing, so per-position accuracy is what
- * shows where people actually went wrong.
+ * Graded all-or-nothing, so per-position accuracy is what shows where people
+ * went wrong.
  */
 export type OrderingQuestionResults = QuizQuestionResults & {
   __typename?: 'OrderingQuestionResults';
@@ -2896,16 +2900,12 @@ export type QuizQuestion = {
   translationStatus: Array<TranslationFieldStatus>;
 };
 
-/**
- * Per-question aggregates. One implementation per question type, because the
- * question types have genuinely different shapes of answer.
- */
+/** Per-question aggregates, one implementation per question type. */
 export type QuizQuestionResults = {
   question: QuizQuestion;
   /**
-   * Submissions that answered this question. Every percentage on the concrete
-   * types is a share of this, never of the quiz-wide submission count — a
-   * question people skipped must not read as unpopular answers.
+   * Submissions that answered this question. Every percentage below is a share
+   * of this, never of the quiz-wide submission count.
    */
   responseCount: Scalars['Int']['output'];
 };
@@ -2938,10 +2938,7 @@ export type QuizResults = {
   participantCount: Scalars['Int']['output'];
   questions: Array<QuizQuestionResults>;
   quiz: Quiz;
-  /**
-   * Distinct sessions those submissions belong to. Submissions created outside a
-   * session (M2M imports) are counted in submissionCount but not here.
-   */
+  /** Submissions created outside a session (M2M imports) are not counted here. */
   sessionCount: Scalars['Int']['output'];
   /** Completed submissions across all sessions. */
   submissionCount: Scalars['Int']['output'];
@@ -3020,6 +3017,18 @@ export type RegisterPushSubscriptionInput = {
   auth: Scalars['String']['input'];
   endpoint: Scalars['String']['input'];
   p256dh: Scalars['String']['input'];
+};
+
+export type RelativeAgeRange = {
+  __typename?: 'RelativeAgeRange';
+  yearsOlder: Scalars['Int']['output'];
+  yearsYounger: Scalars['Int']['output'];
+};
+
+/** Age offsets around the viewer’s age, using the leaderboard’s calendar-year age calculation. */
+export type RelativeAgeRangeInput = {
+  yearsOlder: Scalars['Int']['input'];
+  yearsYounger: Scalars['Int']['input'];
 };
 
 export type RevokeRoleInput = {
@@ -3712,7 +3721,7 @@ export type LeaderboardEntryFieldsFragment = { __typename?: 'LeaderboardEntry', 
 
 export type LeaderboardEntryWithDescriptionFieldsFragment = { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> };
 
-export type LeaderboardConfigFieldsFragment = { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null };
+export type LeaderboardConfigFieldsFragment = { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', myChurch?: boolean | null, myTeam?: boolean | null, mySuperTeam?: boolean | null, minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, relativeAgeRange?: { __typename?: 'RelativeAgeRange', yearsYounger: number, yearsOlder: number } | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null };
 
 export type PredefinedAnswerFieldsFragment = { __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> };
 
@@ -4020,7 +4029,7 @@ export type UpdateLeaderboardConfigMutationVariables = Exact<{
 }>;
 
 
-export type UpdateLeaderboardConfigMutation = { __typename?: 'Mutation', updateLeaderboardConfig: { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null } };
+export type UpdateLeaderboardConfigMutation = { __typename?: 'Mutation', updateLeaderboardConfig: { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', myChurch?: boolean | null, myTeam?: boolean | null, mySuperTeam?: boolean | null, minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, relativeAgeRange?: { __typename?: 'RelativeAgeRange', yearsYounger: number, yearsOlder: number } | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null } };
 
 export type DeleteLeaderboardConfigMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -4986,14 +4995,14 @@ export type AdminProjectLeaderboardPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminProjectLeaderboardPageQuery = { __typename?: 'Query', leaderboardConfig: { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null } };
+export type AdminProjectLeaderboardPageQuery = { __typename?: 'Query', leaderboardConfig: { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', myChurch?: boolean | null, myTeam?: boolean | null, mySuperTeam?: boolean | null, minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, relativeAgeRange?: { __typename?: 'RelativeAgeRange', yearsYounger: number, yearsOlder: number } | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null } };
 
 export type AdminProjectLeaderboardsQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
 }>;
 
 
-export type AdminProjectLeaderboardsQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, leaderboards: Array<{ __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null }> } };
+export type AdminProjectLeaderboardsQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, leaderboards: Array<{ __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', myChurch?: boolean | null, myTeam?: boolean | null, mySuperTeam?: boolean | null, minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, relativeAgeRange?: { __typename?: 'RelativeAgeRange', yearsYounger: number, yearsOlder: number } | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null }> } };
 
 export type AdminScoresPageQueryVariables = Exact<{
   filter?: InputMaybe<ScoreJournalFilter>;
@@ -5324,6 +5333,13 @@ export const LeaderboardConfigFieldsFragmentDoc = gql`
     name
   }
   filter {
+    relativeAgeRange {
+      yearsYounger
+      yearsOlder
+    }
+    myChurch
+    myTeam
+    mySuperTeam
     minScore
     maxScore
     churchId

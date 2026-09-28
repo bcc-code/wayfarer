@@ -269,3 +269,35 @@ describe('AdminLeaderboardConfigForm', () => {
     })
   })
 })
+
+it('round-trips relative filters and hides their fixed counterparts', async () => {
+  const filter = {
+    myChurch: true,
+    myTeam: true,
+    mySuperTeam: true,
+    relativeAgeRange: { yearsYounger: 0, yearsOlder: 3 },
+  }
+  const wrapper = await mount({
+    initialData: { ...initialData, filter },
+    isEditMode: true,
+  })
+  for (const name of [
+    'filter.churchId',
+    'filter.teamId',
+    'filter.superTeamId',
+    'filter.ageMin',
+    'filter.ageMax',
+  ])
+    expect(fieldNames(wrapper)).not.toContain(name)
+  const form = wrapper.findComponent({ name: 'UForm' })
+  const schema = form.props('schema') as ZodType
+  expect(schema.safeParse(form.props('state')).success).toBe(true)
+  await submit(wrapper, form.props('state'))
+  expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({ filter })
+  expect(
+    schema.safeParse({
+      ...form.props('state'),
+      entityType: LeaderboardEntityType.Churches,
+    }).success,
+  ).toBe(false)
+})

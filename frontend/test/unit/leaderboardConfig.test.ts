@@ -126,3 +126,28 @@ describe('LEADERBOARD_ENTITY_TYPE_LABELS', () => {
     }
   })
 })
+
+it('preserves relative filters and removes nested GraphQL metadata', () => {
+  const filter = {
+    myChurch: true,
+    myTeam: true,
+    mySuperTeam: true,
+    relativeAgeRange: {
+      __typename: 'RelativeAgeRange' as const,
+      yearsYounger: 0,
+      yearsOlder: 3,
+    },
+  }
+  expect(leaderboardFilterViewToInput(filter)).toEqual({
+    myChurch: true,
+    myTeam: true,
+    mySuperTeam: true,
+    relativeAgeRange: { yearsYounger: 0, yearsOlder: 3 },
+  })
+  expect(summarizeLeaderboardFilter(filter)).toEqual([
+    'Min menighet',
+    'Mitt lag',
+    'Mitt superlag',
+    'Min alder −0/+3 år',
+  ])
+})
