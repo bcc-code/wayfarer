@@ -28,7 +28,19 @@
      values `--ui-bg-inverted` already flips between, so `text-inverted` stays
      the correct pair on a solid surface. */
   --ui-primary: var(--ui-color-neutral-900);
-  --ui-radius: 0.3rem;
+
+  /* Nuxt UI derives the whole `--radius-*` scale from this one token
+     (`sm` = 1x, `md` = 1.5x, `lg` = 2x, `3xl` = 6x), so it sets how soft every
+     panel, control and tag in the panel reads. 0.5rem puts a `rounded-lg`
+     surface at 16px — the softness the dashboards this is modelled on use, and
+     far enough from a square corner that the glass reads as a card.
+
+     This was previously held at 0.3rem out of concern for the user-facing
+     Design* components. They turn out not to use the derived scale: the whole
+     user layer reaches it three times, and the one that matters
+     (`DesignSwitch`'s `rounded-3xl` on a 24px-tall pill) is clamped to a
+     half-height radius at either value. */
+  --ui-radius: 0.5rem;
 
   /* One step deeper than Nuxt UI's default 500: on the light tints that
      `subtle` badges and alerts use, 500 reads as neon and sits low on

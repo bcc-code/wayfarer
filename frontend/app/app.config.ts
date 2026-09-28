@@ -33,6 +33,16 @@ const divide = 'divide-black/8 dark:divide-white/8'
 // A translucent overlay filling the viewport. It hazes rather than frosts, so
 // it carries a blur of its own rather than the material's.
 const overlay = `bg-glass backdrop-blur-sm ${solid}`
+// A small surface lifted off the chrome behind it: opaque white on light,
+// where the lift is carried by the shadow, and a thin wash on dark, where a
+// shadow would be invisible and the ring does the work instead. This is the
+// move the reference dashboards use for anything currently selected.
+const raised =
+  'bg-default shadow-sm dark:bg-control-hover dark:shadow-none ' + ring
+// The same, addressed at a pseudo-element for components that paint their
+// surface on `before` rather than on the element itself.
+const raisedBefore =
+  'before:bg-default before:shadow-sm before:ring before:ring-black/8 dark:before:bg-control-hover dark:before:shadow-none dark:before:ring-white/10'
 
 export default defineAppConfig({
   ui: {
@@ -50,15 +60,31 @@ export default defineAppConfig({
       warning: 'amber',
       info: 'blue',
     },
+    badge: {
+      // A tag reads as a tag rather than a small button when it is fully
+      // rounded. The radius lives on the size variants in the theme, so it has
+      // to be beaten from a compound variant — a slot would be applied before
+      // them and lose. The horizontal padding grows with it: a full radius eats
+      // its own corners, and `px-2` leaves the label touching them.
+      compoundVariants: [
+        { size: 'xs', class: { base: 'rounded-full px-2' } },
+        { size: 'sm', class: { base: 'rounded-full px-2.5' } },
+        { size: 'md', class: { base: 'rounded-full px-2.5' } },
+        { size: 'lg', class: { base: 'rounded-full px-3' } },
+        { size: 'xl', class: { base: 'rounded-full px-3' } },
+      ],
+    },
     button: {
       slots: {
         base: 'cursor-pointer',
       },
       compoundVariants: [
+        // The reference's secondary action: a white chip with a hairline and a
+        // shadow under it, standing beside the one solid button on the page.
         {
           color: 'neutral',
           variant: 'outline',
-          class: ring,
+          class: `${ring} shadow-sm dark:shadow-none`,
         },
         {
           color: 'neutral',
@@ -72,6 +98,21 @@ export default defineAppConfig({
           class: 'hover:bg-control active:bg-control',
         },
       ],
+    },
+    card: {
+      // Only the deltas: `extend` concatenates onto the theme's own classes and
+      // tailwind-merge settles the conflicts, so the ring and divide colours
+      // swap to the glass hairline while the rest of the variant survives.
+      slots: {
+        root: 'shadow-sm dark:shadow-none',
+      },
+      variants: {
+        variant: {
+          outline: { root: `${ring} ${divide}` },
+          subtle: { root: `${ring} ${divide}` },
+          soft: { root: divide },
+        },
+      },
     },
     checkbox: {
       slots: {
@@ -114,6 +155,14 @@ export default defineAppConfig({
       slots: {
         labelWrapper: 'justify-start gap-2',
         label: 'grow',
+      },
+    },
+    input: {
+      variants: {
+        variant: {
+          outline: `${ring} shadow-xs dark:shadow-none`,
+          subtle: ring,
+        },
       },
     },
     kbd: {
@@ -180,15 +229,17 @@ export default defineAppConfig({
           },
         },
         // `primary` is monochrome (admin.css), so the active link's text no
-        // longer separates it from its neighbours on colour alone. A surface
-        // one step above the hover one carries the position instead, and still
-        // reads as current while a neighbour is under the cursor.
+        // longer separates it from its neighbours on colour alone. The
+        // reference dashboards answer this the same way: the current item is a
+        // chip raised off the rail rather than a coloured label. `ring` and
+        // `shadow` are separate box-shadow layers, so both compose on the one
+        // pseudo-element that paints the link's surface.
         {
           disabled: false,
           active: true,
           variant: 'pill',
           class: {
-            link: 'before:bg-control-hover',
+            link: raisedBefore,
           },
         },
       ],
@@ -261,6 +312,16 @@ export default defineAppConfig({
         },
       ],
     },
+    table: {
+      slots: {
+        // The header is a band rather than a row of bold text on the same
+        // surface as the data, which is what separates the reference's tables
+        // from a list that happens to have a first row.
+        th: 'bg-elevated/40 first:rounded-s-md last:rounded-e-md',
+        tbody: divide,
+        tr: divide,
+      },
+    },
     tabs: {
       slots: {
         trigger: 'w-full rounded-full',
@@ -286,7 +347,9 @@ export default defineAppConfig({
           color: 'neutral',
           variant: 'pill',
           class: {
-            indicator: 'bg-white dark:bg-control shadow-sm',
+            // The same raised chip the sidebar marks its current item with, so
+            // a segmented control and the nav say "you are here" the same way.
+            indicator: raised,
             trigger: [
               'data-[state=active]:text-highlighted',
               'hover:data-[state=inactive]:not-disabled:bg-glass',
