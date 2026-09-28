@@ -17,7 +17,7 @@ playbook reconfigures Postgres and the firewall on it.
 | `interact`  | Creates the `interact` database and role for the app |
 | `backup`    | Read-only `backup` and `metabase` roles (`pg_read_all_data` + stats/settings). `backup` is for off-box `pg_dump` over the tailnet; both are admitted from `postgres_external_clients` over TLS only |
 | `wayfarer`  | Native (proxyless) blue/green deploy layout: `wayfarer@{blue,green}` systemd units sharing the port via SO_REUSEPORT, per-color admin/health ports (9441/9442), split DB pools, `bin/deploy.sh` invoked by Semaphore CI (`.semaphore/`). Secret env `/opt/wayfarer/wayfarer.env` is placed manually |
-| `jobs`      | systemd timers replacing Cloud Scheduler: `export-translations` (hourly), `sync-ssf` (daily 05:00), `sync-members` (Monday night, Tue 02:00; all Europe/Oslo). `/opt/wayfarer/bin/wayfarer-job` POSTs to the app with keys read from `wayfarer.env`; needs a `cron:<key>` entry in `EXTERNAL_API_KEYS` |
+| `jobs`      | systemd timers replacing Cloud Scheduler: `export-translations` (hourly), `sync-ssf` (daily 05:00), `sync-members` (Monday night, Tue 02:00), `cleanup-auth-sessions` (Sun 03:00; all Europe/Oslo). `/opt/wayfarer/bin/wayfarer-job` POSTs to the app with keys read from `wayfarer.env`; needs a `cron:<key>` entry in `EXTERNAL_API_KEYS` |
 
 ## Prerequisites
 
