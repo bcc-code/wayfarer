@@ -62,5 +62,5 @@ m2m tokens have no `kid`, so they have to be re-issued when the secret rotates.
 - `backend/internal/authtoken/`: sign/parse, kid, audience, emergency check
 - `backend/internal/services/auth_session.go`: sessions, rotation, reuse detection
 - `backend/internal/handlers/auth_session.go`: `/auth/*` endpoints
-- `backend/internal/database/queries/auth_sessions.sql`, migration `00104_add_auth_sessions.sql` (tables `auth_sessions`, `auth_session_retired_tokens`)
+- `backend/internal/database/queries/auth_sessions.sql`, migration `00105_add_auth_sessions.sql` (tables `auth_sessions`, `auth_session_retired_tokens`)
 - `frontend/app/composables/useAuth.ts` + `frontend/app/utils/authSession.ts`: storage, cross-tab refresh
