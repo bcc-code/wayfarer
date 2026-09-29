@@ -69,6 +69,15 @@ useAdminPage(() => state.name)
 const hasColor = ref(false)
 const colorValue = ref('#000000')
 
+// The teams list saves separately, but leaving with either half unsaved
+// loses work just the same.
+const { markSaved } = useUnsavedChanges(() => ({
+  ...state,
+  hasColor: hasColor.value,
+  colorValue: colorValue.value,
+  selectedTeamIds: selectedTeamIds.value,
+}))
+
 watch(data, () => {
   if (data.value) {
     const st = data.value.superteam
@@ -86,6 +95,8 @@ const selectedTeamIds = ref<string[]>([])
 watch(data, () => {
   if (data.value) {
     selectedTeamIds.value = data.value.superteam.teams.map((t) => t.id)
+    // What the server holds, not an edit.
+    nextTick(markSaved)
   }
 })
 
@@ -119,6 +130,7 @@ async function handleSave() {
     return
   }
 
+  markSaved()
   toast.add({
     title: 'Suksess',
     description: 'Superteam oppdatert',
@@ -141,6 +153,7 @@ async function handleAssignTeams() {
     return
   }
 
+  markSaved()
   toast.add({
     title: 'Suksess',
     description: 'Lag tilordnet',

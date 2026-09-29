@@ -9,6 +9,11 @@ const confirm = vi.fn(() => Promise.resolve(true))
 mockNuxtImport('useConfirm', () => () => ({ confirm }))
 mockNuxtImport('useToast', () => () => ({ add: vi.fn() }))
 
+const leaveGuards: (() => unknown)[] = []
+mockNuxtImport('onBeforeRouteLeave', () => (guard: () => unknown) => {
+  leaveGuards.push(guard)
+})
+
 const question = (id: string, text: string, order: number, points: number) => ({
   id,
   questionType: QuizQuestionType.Predefined,
@@ -52,6 +57,7 @@ describe('AdminQuizForm', () => {
   beforeEach(() => {
     confirm.mockClear()
     confirm.mockResolvedValue(true)
+    leaveGuards.length = 0
   })
 
   // Neither number alone answers "what is this quiz worth".
@@ -224,6 +230,27 @@ describe('AdminQuizForm', () => {
     expect(saved.questions[0]).toMatchObject({ id: 'QQ1', points: 100 })
     // The question it was not editing is untouched.
     expect(saved.questions[1]).toMatchObject({ id: 'QQ2', points: 5 })
+  })
+
+  // Half-written questions are the most expensive thing to lose on this page.
+  it('asks before leaving with unsaved changes', async () => {
+    const wrapper = await mount()
+
+    wrapper.vm.state.completionPoints = 75
+
+    await leaveGuards[0]?.()
+    expect(confirm).toHaveBeenCalled()
+  })
+
+  // The page owns the save, so it tells the form when the two agree again.
+  it('stops asking once the page says the save landed', async () => {
+    const wrapper = await mount()
+
+    wrapper.vm.state.completionPoints = 75
+    ;(wrapper.vm as unknown as { markSaved: () => void }).markSaved()
+
+    await expect(leaveGuards[0]?.()).resolves.toBe(true)
+    expect(confirm).not.toHaveBeenCalled()
   })
 
   // A point that lands because nobody changed it is not a deliberate score.

@@ -61,9 +61,6 @@ const props = defineProps<{
   saving?: boolean
 }>()
 
-/** Lets the page clear the guard once a save has landed. */
-const dirty = defineModel<boolean>('dirty', { default: false })
-
 const emit = defineEmits<{
   save: [data: QuizFormData]
 }>()
@@ -108,6 +105,14 @@ const questions = ref<QuizQuestionFormData[]>(
   withKeys(props.quizData?.questions ?? []),
 )
 
+const { markSaved } = useUnsavedChanges(() => ({
+  ...state,
+  questions: questions.value,
+}))
+
+/** The page owns the save, so only it knows when the form matches the server. */
+defineExpose({ markSaved })
+
 watch(
   () => props.quizData,
   (data) => {
@@ -121,28 +126,12 @@ watch(
       state.allowRetakes = data.allowRetakes
       state.completionPoints = data.completionPoints
       questions.value = withKeys(data.questions)
+      // What the server holds, not an edit.
+      nextTick(markSaved)
     }
   },
   { once: true },
 )
-
-// Anything the user touched after the initial load counts as unsaved work.
-watch(
-  [state, questions],
-  () => {
-    dirty.value = true
-  },
-  { deep: true },
-)
-
-onBeforeRouteLeave(async () => {
-  if (!dirty.value) return true
-  return confirm({
-    title: 'Forlate quizen med ulagrede endringer?',
-    description: 'Spørsmålene du har lagt til eller endret blir ikke lagret.',
-    confirmLabel: 'Forlat siden',
-  })
-})
 
 const editingQuestion = ref<QuizQuestionFormData | null>(null)
 const isAddingQuestion = ref(false)

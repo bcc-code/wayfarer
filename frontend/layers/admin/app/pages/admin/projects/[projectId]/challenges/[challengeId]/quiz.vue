@@ -177,7 +177,7 @@ const quizData = computed<QuizFormData | undefined>(() => {
 const isNewQuiz = computed(() => !quizData.value?.id)
 
 const saving = ref(false)
-const formDirty = ref(false)
+const form = useTemplateRef('form')
 
 /** Shared by add and update; the two inputs take the same shape. */
 function questionInput(question: QuizQuestionFormData) {
@@ -337,7 +337,7 @@ async function saveQuiz(quizFormData: QuizFormData) {
       title: isNewQuiz.value ? 'Quiz opprettet' : 'Quiz oppdatert',
       color: 'success',
     })
-    formDirty.value = false
+    form.value?.markSaved()
 
     navigateTo({
       name: 'admin-projects-projectId-challenges-challengeId',
@@ -384,7 +384,7 @@ const isQuizChallenge = computed(() => {
               {{ isNewQuiz ? 'Opprett quiz' : 'Rediger quiz' }}
             </h1>
             <AdminQuizForm
-              v-model:dirty="formDirty"
+              ref="form"
               :saving
               :quiz-data="quizData"
               :project-id="route.params.projectId"

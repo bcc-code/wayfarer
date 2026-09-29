@@ -21,6 +21,12 @@ const state = reactive({
 const hasColor = ref(false)
 const colorValue = ref('#000000')
 
+const { markSaved } = useUnsavedChanges(() => ({
+  ...state,
+  hasColor: hasColor.value,
+  colorValue: colorValue.value,
+}))
+
 async function handleSubmit() {
   const response = await executeMutation({
     projectId: route.params.projectId,
@@ -41,6 +47,7 @@ async function handleSubmit() {
     return
   }
 
+  markSaved()
   toast.add({
     title: 'Suksess',
     description: 'Superteam opprettet',

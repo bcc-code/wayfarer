@@ -141,6 +141,8 @@ const state = reactive<Schema>({
   infoMessageEnd: undefined,
 })
 
+const { markSaved } = useUnsavedChanges(() => ({ ...state }))
+
 watch(
   () => data.value,
   (d) => {
@@ -157,6 +159,8 @@ watch(
       state.infoMessage = d.project.infoMessage?.markdown
       state.infoMessageStart = toLocalDatetimeLocal(d.project.infoMessageStart)
       state.infoMessageEnd = toLocalDatetimeLocal(d.project.infoMessageEnd)
+      // What the server holds, not an edit.
+      nextTick(markSaved)
     }
   },
   { once: true },
@@ -169,6 +173,8 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
   if (!event.data) {
     return
   }
+
+  markSaved()
 
   // Convert nullish logo/banner to empty string so backend can clear them
   // Convert datetime-local values to ISO strings

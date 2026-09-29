@@ -114,7 +114,7 @@ intend to do; rows marked **done** have landed.
 | --- | --------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | 1   | `fix`     | Sign-in carries the page you asked for through the token exchange — **done**                                                 |
 | 2   | `fix`     | Form controls draw the accented hairline instead of the glass one — **done**                                                 |
-| 3   | `fix`     | `useUnsavedChanges` guard on the challenge, achievement and leaderboard forms — **done**                                     |
+| 3   | `fix`     | `useUnsavedChanges` on every admin form that edits something — **done**                                                      |
 | 4   | `later`   | Polish — revisit once the blocking items are done                                                                            |
 | 5   | `fix`     | Help-text pass; specifics in #10, #11, #15, #16, #24                                                                         |
 | 7   | `fix`     | Default challenge type → Quiz — **done**                                                                                     |
@@ -198,8 +198,11 @@ intend to do; rows marked **done** have landed.
   - #3 is a composable rather than a flag per form: dirtiness is a comparison
     against a baseline, because an admin form fills itself in when its query
     resolves and a first-change flag would make every page warn on the way out.
-    Still to do: the superteam, event, team and project pages, and folding
-    `AdminQuizForm`'s bespoke guard into the same composable
+    Now on every admin form with editable state: challenge, achievement,
+    leaderboard, quiz, both superteam pages, both event pages, project new and
+    edit, and consent new. `AdminQuizForm`'s bespoke guard is gone — it exposes
+    `markSaved` and the quiz page calls it after a save lands, which replaced
+    the `v-model:dirty` round trip
 - 2026-09-29 — #25: project content ("Navn" → "Tittel") on the challenge, quiz,
   achievement and leaderboard forms. People and groups — teams, superteams,
   users, churches — and quiz sessions keep "Navn"
