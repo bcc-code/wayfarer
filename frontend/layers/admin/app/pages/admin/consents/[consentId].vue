@@ -134,9 +134,9 @@ async function publishConsent() {
 }
 </script>
 
+<!-- Capped tighter than the data pages: this one is mostly prose, and the
+     body preview at full panel width is unreadable. -->
 <template>
-  <!-- Capped tighter than the data pages: this one is mostly prose, and the
-       body preview at full panel width is unreadable. -->
   <div class="max-w-4xl">
     <AdminQueryState :fetching :error>
       <div v-if="data" class="space-y-8">

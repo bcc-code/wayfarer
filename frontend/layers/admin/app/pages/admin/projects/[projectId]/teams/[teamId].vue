@@ -289,9 +289,9 @@ async function handleToggleLeaderboardExclusion(excluded: boolean) {
 }
 </script>
 
+<!-- Capped: at full panel width each row's delete button sat far from the
+     member it deletes. -->
 <template>
-  <!-- Capped: at full panel width each row's delete button sat far from the
-       member it deletes. -->
   <div class="max-w-6xl">
     <AdminQueryState :fetching :error>
       <div v-if="data" class="space-y-8">

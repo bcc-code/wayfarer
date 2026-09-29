@@ -187,8 +187,8 @@ function downloadCsv() {
 }
 </script>
 
+<!-- Capped like the other detail pages; bars belong near their text. -->
 <template>
-  <!-- Capped like the other detail pages; bars belong near their text. -->
   <div class="max-w-4xl">
     <AdminQueryState :fetching :error>
       <template v-if="results">
