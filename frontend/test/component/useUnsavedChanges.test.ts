@@ -1,7 +1,7 @@
 // @vitest-environment nuxt
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
-import { defineComponent, reactive, h } from 'vue'
+import { defineComponent, reactive, ref, h } from 'vue'
 
 const confirm = vi.fn(() => Promise.resolve(true))
 mockNuxtImport('useConfirm', () => () => ({ confirm }))
@@ -21,12 +21,38 @@ const host = (setup: (state: Record<string, unknown>) => unknown) =>
     render: () => h('div'),
   })
 
+/**
+ * Regression: the baseline used to be taken while the component was setting
+ * up, so a snapshot reading a ref declared below the call threw "can't access
+ * lexical declaration before initialization" — in production, on the
+ * superteam page, where the teams list is declared after the form state.
+ */
+const lateDeclaration = defineComponent({
+  setup() {
+    const api = useUnsavedChanges(() => ({ teams: teams.value }))
+    // Declared after the call, as a form's later refs are. Reading it while
+    // the component sets up throws; the baseline is taken on mount instead.
+    const teams = ref<string[]>([])
+    return { ...api, teams }
+  },
+  render: () => h('div'),
+})
+
 beforeEach(() => {
   confirm.mockClear()
   leaveGuards.length = 0
 })
 
 describe('useUnsavedChanges', () => {
+  it('does not read the form while the component is setting up', async () => {
+    const wrapper = await mountSuspended(lateDeclaration)
+
+    expect(wrapper.vm.isDirty).toBe(false)
+
+    wrapper.vm.teams.push('TM1')
+    expect(wrapper.vm.isDirty).toBe(true)
+  })
+
   it('lets an untouched form go without asking', async () => {
     const wrapper = await mountSuspended(
       host((state) => useUnsavedChanges(() => ({ ...state }))),

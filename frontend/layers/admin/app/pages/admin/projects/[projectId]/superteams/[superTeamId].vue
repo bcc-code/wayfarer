@@ -69,15 +69,6 @@ useAdminPage(() => state.name)
 const hasColor = ref(false)
 const colorValue = ref('#000000')
 
-// The teams list saves separately, but leaving with either half unsaved
-// loses work just the same.
-const { markSaved } = useUnsavedChanges(() => ({
-  ...state,
-  hasColor: hasColor.value,
-  colorValue: colorValue.value,
-  selectedTeamIds: selectedTeamIds.value,
-}))
-
 watch(data, () => {
   if (data.value) {
     const st = data.value.superteam
@@ -99,6 +90,15 @@ watch(data, () => {
     nextTick(markSaved)
   }
 })
+
+// The teams list saves separately, but leaving with either half unsaved
+// loses work just the same.
+const { markSaved } = useUnsavedChanges(() => ({
+  ...state,
+  hasColor: hasColor.value,
+  colorValue: colorValue.value,
+  selectedTeamIds: selectedTeamIds.value,
+}))
 
 const availableTeams = computed(() => {
   if (!data.value) return []

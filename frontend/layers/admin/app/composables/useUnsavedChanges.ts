@@ -6,14 +6,25 @@
  * would set a flag and make every page warn on the way out. Take the snapshot
  * again with `markSaved()` whenever the form legitimately matches what is
  * stored — after initial data arrives, and after a save lands.
+ *
+ * The first snapshot is taken on mount, not while the component is setting
+ * up. A form's state is spread across several refs, and reading one that is
+ * declared below this call throws "can't access lexical declaration before
+ * initialization" — which it did, on the superteam page, in production.
  */
 export function useUnsavedChanges(snapshot: () => unknown) {
   const { confirm } = useConfirm()
 
   const serialise = () => JSON.stringify(snapshot())
-  const baseline = ref(serialise())
+  const baseline = ref<string>()
 
-  const isDirty = computed(() => serialise() !== baseline.value)
+  onMounted(() => {
+    baseline.value = serialise()
+  })
+
+  const isDirty = computed(
+    () => baseline.value !== undefined && serialise() !== baseline.value,
+  )
 
   function markSaved() {
     baseline.value = serialise()
