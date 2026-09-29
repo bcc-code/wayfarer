@@ -37,10 +37,6 @@ gql(`
   query AdminLeaderboardConfigFormOptions($projectId: ID!) {
     project(id: $projectId) {
       id
-      events {
-        id
-        name
-      }
     }
     teams(filter: { projectId: $projectId }, first: 500) {
       edges {
@@ -75,12 +71,6 @@ const { data: options } = useAdminLeaderboardConfigFormOptionsQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
-const eventItems = computed(() =>
-  (options.value?.project.events ?? []).map((event) => ({
-    label: event.name,
-    value: event.id,
-  })),
-)
 const teamItems = computed(() =>
   (options.value?.teams.edges ?? []).map((edge) => ({
     label: edge.node.name,
@@ -305,25 +295,9 @@ function clearFilter() {
         </UFormField>
 
         <UFormField
-          v-if="!isEditMode"
-          name="eventId"
-          label="Arrangement"
-          help="La stå tom for en tavle på prosjektnivå. Kan ikke endres senere."
-        >
-          <USelectMenu
-            v-model="state.eventId"
-            :items="eventItems"
-            value-key="value"
-            placeholder="Hele prosjektet"
-            clear
-            class="w-full"
-          />
-        </UFormField>
-
-        <UFormField
           name="maxEntries"
-          label="Maks antall oppføringer"
-          help="La stå tom for ingen grense. Egen plassering og nærmeste rivaler vises i tillegg."
+          label="Hvor mange vises på tavlen"
+          help="Skriv 10 for en topp 10-liste. La stå tom for å vise alle. Deltakeren ser sin egen plassering og de nærmeste rivalene uansett."
         >
           <UInput
             v-model.number="state.maxEntries"
@@ -332,18 +306,6 @@ function clearFilter() {
             :max="2147483647"
             :step="1"
             placeholder="Ingen grense"
-            class="w-full"
-          />
-        </UFormField>
-
-        <UFormField
-          name="sortOrder"
-          label="Rekkefølge"
-          help="Lav verdi vises først."
-        >
-          <UInput
-            v-model.number="state.sortOrder"
-            type="number"
             class="w-full"
           />
         </UFormField>
@@ -366,7 +328,11 @@ function clearFilter() {
       </template>
 
       <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-        <UFormField name="filter.ageMin" label="Alder fra">
+        <UFormField
+          name="filter.ageMin"
+          label="Yngste alder"
+          help="Alder regnes etter fødselsår, ikke bursdag."
+        >
           <UInput
             v-model.number="state.filter.ageMin"
             type="number"
@@ -374,7 +340,11 @@ function clearFilter() {
             class="w-full"
           />
         </UFormField>
-        <UFormField name="filter.ageMax" label="Alder til">
+        <UFormField
+          name="filter.ageMax"
+          label="Eldste alder"
+          help="Denne alderen er med."
+        >
           <UInput
             v-model.number="state.filter.ageMax"
             type="number"

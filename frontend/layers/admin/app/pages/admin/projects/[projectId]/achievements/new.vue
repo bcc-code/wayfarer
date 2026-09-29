@@ -113,7 +113,7 @@ async function handleSubmit(formData: AchievementFormData) {
     color: 'success',
   })
   navigateTo({
-    name: 'admin-projects-projectId',
+    name: 'admin-projects-projectId-achievements',
     params: { projectId: route.params.projectId },
   })
 }

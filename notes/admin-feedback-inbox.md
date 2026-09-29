@@ -131,11 +131,11 @@ intend to do; rows marked **done** have landed.
 | 17  | `fix`     | Question dialog is no longer dismissible by click-outside or Esc — **done**                                                  |
 | 18  | `later`   | Needs backend work; no one is blocked on it                                                                                  |
 | 19  | `later`   | Product decision deferred (decision 2) — write it up separately                                                              |
-| 20  | `fix`     | Redirect to achievement list after create                                                                                    |
-| 21  | `fix`     | Hide superteam description (decision 3)                                                                                      |
-| 22  | `fix`     | Rework superteam color field                                                                                                 |
-| 23  | `fix`     | Hide leaderboard event + ordering (decision 3)                                                                               |
-| 24  | `fix`     | Relabel limit field + help text                                                                                              |
+| 20  | `fix`     | Create now lands on the achievement list — **done**                                                                          |
+| 21  | `fix`     | Superteam description removed from both forms; value carried through — **done**                                              |
+| 22  | `fix`     | Colour is a labelled choice with the picker under it, not a bare checkbox — **done**                                         |
+| 23  | `fix`     | Leaderboard event scope and sort position hidden; sort position still saved — **done**                                       |
+| 24  | `fix`     | Limit is now "Hvor mange vises på tavlen", with a topp 10 example — **done**                                                 |
 
 ## Log
 
@@ -183,6 +183,8 @@ intend to do; rows marked **done** have landed.
   original stayed in the list — no error, and the dialog closed as if it had
   worked. Predates this week's work; the old `points: 1` default hid part of it
   because a value was always sent. Covered by a regression test
+- 2026-09-29 — batch 3 (#20–#24) implemented. The leaderboard form no longer
+  queries the project's events at all, since nothing else on it used them
 - 2026-09-29 — #25: project content ("Navn" → "Tittel") on the challenge, quiz,
   achievement and leaderboard forms. People and groups — teams, superteams,
   users, churches — and quiz sessions keep "Navn"

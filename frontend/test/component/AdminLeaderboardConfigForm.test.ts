@@ -1,6 +1,7 @@
 // @vitest-environment nuxt
 import { describe, it, expect } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
+import { flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
 import type { ZodType } from 'zod'
 import AdminLeaderboardConfigForm from '../../layers/admin/app/components/admin/leaderboard/AdminLeaderboardConfigForm.vue'
@@ -113,15 +114,38 @@ describe('AdminLeaderboardConfigForm', () => {
     )
   })
 
-  // Event scope is fixed at creation — `UpdateLeaderboardConfigInput` has no
-  // `eventId` — so offering the picker in edit mode invites a change that
-  // cannot be saved.
-  it('offers the event picker only when creating', async () => {
+  // Events are not in use yet, and the scope could only ever be set at
+  // creation — `UpdateLeaderboardConfigInput` has no `eventId`. The manual sort
+  // position went the same way.
+  it('offers neither event scope nor sort position', async () => {
     const creating = await mount()
-    expect(fieldNames(creating)).toContain('eventId')
-
     const editing = await mount({ initialData, isEditMode: true })
-    expect(fieldNames(editing)).not.toContain('eventId')
+
+    for (const wrapper of [creating, editing]) {
+      expect(fieldNames(wrapper)).not.toContain('eventId')
+      expect(fieldNames(wrapper)).not.toContain('sortOrder')
+    }
+  })
+
+  // The bounds are inclusive and counted off the birth year, which nothing in
+  // "Alder fra"/"Alder til" said.
+  it('says how the age bounds are counted', async () => {
+    const wrapper = await mount()
+
+    const text = wrapper.text()
+    expect(text).toContain('Yngste alder')
+    expect(text).toContain('Eldste alder')
+    expect(text).toContain('Alder regnes etter fødselsår, ikke bursdag')
+  })
+
+  // Hidden, not dropped: an existing board keeps the position it was given.
+  it('saves the sort position it was given', async () => {
+    const wrapper = await mount({ initialData, isEditMode: true })
+
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({ sortOrder: 2 })
   })
 
   it('fills the form from an existing config, ageRange flattened', async () => {
@@ -133,7 +157,6 @@ describe('AdminLeaderboardConfigForm', () => {
         .props('modelValue')
 
     expect(valueOf('name', 'UInput')).toBe('Topp 20')
-    expect(valueOf('sortOrder', 'UInput')).toBe(2)
     expect(valueOf('maxEntries', 'UInput')).toBe(20)
     expect(valueOf('isActive', 'USwitch')).toBe(false)
     expect(valueOf('filter.ageMin', 'UInput')).toBe(13)
@@ -153,7 +176,6 @@ describe('AdminLeaderboardConfigForm', () => {
     const wrapper = await mount()
 
     for (const name of [
-      'eventId',
       'filter.gender',
       'filter.churchCategory',
       'filter.churchId',
