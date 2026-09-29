@@ -97,15 +97,15 @@ const genderItems = GENDER_ITEMS
 
 /**
  * An optional field is unset when it is falsy. Which falsy value depends on the
- * control: an emptied `UInput` gives `''`, and a cleared `USelectMenu` gives
- * `null`. `buildFilter` tests truthiness rather than a specific sentinel so
- * both read the same.
+ * control: an empty `UInputNumber` gives `undefined`, an emptied `UInput` `''`,
+ * and a cleared `USelectMenu` `null`. `buildFilter` tests truthiness rather
+ * than a specific sentinel so all three read the same.
  *
  * An explicit "Alle" *item* is not an option — reka-ui rejects a `SelectItem`
  * with an empty-string value, because it reserves that value for "cleared".
  * Hence `clear` on every optional picker.
  */
-const optionalNumber = z.union([z.number().int(), z.literal('')]).optional()
+const optionalNumber = z.number().int().optional()
 const optionalText = z.string().optional()
 const optionalId = z.string().nullish()
 
@@ -123,9 +123,7 @@ const schema = z
     name: z.string().min(1, 'Tittel er påkrevd'),
     entityType: z.nativeEnum(LeaderboardEntityType),
     eventId: optionalId,
-    maxEntries: z
-      .union([z.number().int().min(1).max(2147483647), z.literal('')])
-      .optional(),
+    maxEntries: z.number().int().min(1).max(2147483647).optional(),
     sortOrder: z.number().int('Rekkefølge må være et heltall'),
     isActive: z.boolean(),
     filter: z.object({
@@ -179,14 +177,14 @@ type Schema = z.infer<typeof schema>
 
 function emptyFilter(): Schema['filter'] {
   return {
-    minScore: '',
-    maxScore: '',
+    minScore: undefined,
+    maxScore: undefined,
     churchId: null,
     country: '',
     churchCategory: null,
     gender: null,
-    ageMin: '',
-    ageMax: '',
+    ageMin: undefined,
+    ageMax: undefined,
     teamId: null,
     superTeamId: null,
   }
@@ -196,7 +194,7 @@ const state = reactive<Schema>({
   name: '',
   entityType: LeaderboardEntityType.Persons,
   eventId: null,
-  maxEntries: '',
+  maxEntries: undefined,
   sortOrder: 0,
   isActive: true,
   filter: emptyFilter(),
@@ -211,20 +209,20 @@ watch(
     state.name = config.name
     state.entityType = config.entityType
     state.eventId = config.event?.id ?? null
-    state.maxEntries = config.maxEntries ?? ''
+    state.maxEntries = config.maxEntries ?? undefined
     state.sortOrder = config.sortOrder
     state.isActive = config.isActive
     // `LeaderboardFilterView` on the way out, `LeaderboardFilter` on the way
     // in — same fields, so the mapping is field-by-field in both directions.
     state.filter = {
-      minScore: config.filter?.minScore ?? '',
-      maxScore: config.filter?.maxScore ?? '',
+      minScore: config.filter?.minScore ?? undefined,
+      maxScore: config.filter?.maxScore ?? undefined,
       churchId: config.filter?.churchId ?? null,
       country: config.filter?.country ?? '',
       churchCategory: config.filter?.churchCategory ?? null,
       gender: config.filter?.gender ?? null,
-      ageMin: config.filter?.ageRange?.min ?? '',
-      ageMax: config.filter?.ageRange?.max ?? '',
+      ageMin: config.filter?.ageRange?.min ?? undefined,
+      ageMax: config.filter?.ageRange?.max ?? undefined,
       teamId: config.filter?.teamId ?? null,
       superTeamId: config.filter?.superTeamId ?? null,
     }
@@ -304,9 +302,8 @@ function clearFilter() {
           label="Hvor mange vises på tavlen"
           help="Skriv 10 for en topp 10-liste. La stå tom for å vise alle. Deltakeren ser sin egen plassering og de nærmeste rivalene uansett."
         >
-          <UInput
-            v-model.number="state.maxEntries"
-            type="number"
+          <UInputNumber
+            v-model="state.maxEntries"
             :min="1"
             :max="2147483647"
             :step="1"
@@ -338,9 +335,8 @@ function clearFilter() {
           label="Yngste alder"
           help="Alder regnes etter fødselsår, ikke bursdag."
         >
-          <UInput
-            v-model.number="state.filter.ageMin"
-            type="number"
+          <UInputNumber
+            v-model="state.filter.ageMin"
             placeholder="Ingen grense"
             class="w-full"
           />
@@ -350,26 +346,23 @@ function clearFilter() {
           label="Eldste alder"
           help="Denne alderen er med."
         >
-          <UInput
-            v-model.number="state.filter.ageMax"
-            type="number"
+          <UInputNumber
+            v-model="state.filter.ageMax"
             placeholder="Ingen grense"
             class="w-full"
           />
         </UFormField>
 
         <UFormField name="filter.minScore" label="Min. poeng">
-          <UInput
-            v-model.number="state.filter.minScore"
-            type="number"
+          <UInputNumber
+            v-model="state.filter.minScore"
             placeholder="Ingen grense"
             class="w-full"
           />
         </UFormField>
         <UFormField name="filter.maxScore" label="Maks poeng">
-          <UInput
-            v-model.number="state.filter.maxScore"
-            type="number"
+          <UInputNumber
+            v-model="state.filter.maxScore"
             placeholder="Ingen grense"
             class="w-full"
           />

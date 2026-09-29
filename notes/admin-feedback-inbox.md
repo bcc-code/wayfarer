@@ -115,7 +115,7 @@ intend to do; rows marked **done** have landed.
 | 1   | `fix`     | Sign-in carries the page you asked for through the token exchange — **done**                                                 |
 | 2   | `fix`     | Form controls draw the accented hairline instead of the glass one — **done**                                                 |
 | 3   | `fix`     | `useUnsavedChanges` on every admin form that edits something — **done**                                                      |
-| 4   | `later`   | Polish — revisit once the blocking items are done                                                                            |
+| 4   | `fix`     | Number fields are steppers; small buttons have a real target. Colour on clickable things deliberately not done — see the log |
 | 5   | `fix`     | Help-text pass; specifics in #10, #11, #15, #16, #24                                                                         |
 | 7   | `fix`     | Default challenge type → Quiz — **done**                                                                                     |
 | 8   | `fix`     | Explain each challenge type in the selector — **done**                                                                       |
@@ -203,6 +203,23 @@ intend to do; rows marked **done** have landed.
     edit, and consent new. `AdminQuizForm`'s bespoke guard is gone — it exposes
     `markSaved` and the quiz page calls it after a save lands, which replaced
     the `v-model:dirty` round trip
+- 2026-09-29 — #4 done, in two of its three parts:
+  - **Number fields**: every `UInput type="number"` in the admin (20 of them)
+    is now `UInputNumber`, which is the stepper P2 asked for. It holds
+    `undefined` when empty, so the leaderboard form's `''` sentinel for unset
+    numbers is gone with it — schema, defaults and fixtures all now say
+    `undefined`.
+  - **Button sizes**: the theme's `xs` is 24px tall, the floor WCAG 2.2 allows
+    and what an icon-only row action lands on. `xs` and `sm` now carry a
+    minimum square target (28px and 32px) set once in `app.config.ts`.
+  - **Colour on clickable things**: deliberately not done. It contradicts the
+    neutral-interface decision this branch is built on (commits `1a5528a2`,
+    `b178ba44`). Affordance was improved by size and hit area instead. Reopen
+    only as a decision about the palette, not as a polish item.
+- 2026-09-29 — project sidebar reordered: Oversikt, Utfordringer, Utmerkelser,
+  Ledertavler first, then Lag, Superlag, Poeng, Arrangement, Innstillinger.
+  Pinned by a test so the order stays deliberate. Separately, preview ideas are
+  written up in [`admin-preview-opportunities.md`](./admin-preview-opportunities.md)
 - 2026-09-29 — #25: project content ("Navn" → "Tittel") on the challenge, quiz,
   achievement and leaderboard forms. People and groups — teams, superteams,
   users, churches — and quiz sessions keep "Navn"

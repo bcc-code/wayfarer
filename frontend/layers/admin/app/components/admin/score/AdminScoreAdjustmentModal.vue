@@ -86,12 +86,7 @@ async function handleSubmit() {
           required
           description="Bruk negative verdier for å trekke fra poeng"
         >
-          <UInput
-            v-model.number="points"
-            type="number"
-            class="w-full"
-            placeholder="100"
-          />
+          <UInputNumber v-model="points" class="w-full" placeholder="100" />
         </UFormField>
 
         <UFormField label="Grunn">

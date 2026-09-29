@@ -310,9 +310,8 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
         <AdminSection title="Poeng og synlighet">
           <div class="flex flex-col gap-6">
             <UFormField name="points" label="Poeng for utmerkelsen">
-              <UInput
-                v-model.number="state.points"
-                type="number"
+              <UInputNumber
+                v-model="state.points"
                 size="xl"
                 required
                 class="w-full"

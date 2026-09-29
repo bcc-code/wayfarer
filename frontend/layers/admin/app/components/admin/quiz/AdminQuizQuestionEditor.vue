@@ -299,27 +299,24 @@ function handleSave() {
     <template v-if="localQuestion.questionType === QuizQuestionType.Number">
       <div class="grid grid-cols-3 gap-4">
         <UFormField name="minValue" label="Minimumsverdi">
-          <UInput
-            v-model.number="localQuestion.minValue"
-            type="number"
+          <UInputNumber
+            v-model="localQuestion.minValue"
             size="xl"
             class="w-full"
           />
         </UFormField>
 
         <UFormField name="maxValue" label="Maksimumsverdi">
-          <UInput
-            v-model.number="localQuestion.maxValue"
-            type="number"
+          <UInputNumber
+            v-model="localQuestion.maxValue"
             size="xl"
             class="w-full"
           />
         </UFormField>
 
         <UFormField name="stepValue" label="Steg">
-          <UInput
-            v-model.number="localQuestion.stepValue"
-            type="number"
+          <UInputNumber
+            v-model="localQuestion.stepValue"
             size="xl"
             class="w-full"
           />
@@ -402,12 +399,7 @@ function handleSave() {
         label="Poeng"
         help="Gis når deltakeren treffer helt riktig."
       >
-        <UInput
-          v-model.number="localQuestion.points"
-          type="number"
-          size="xl"
-          class="w-full"
-        />
+        <UInputNumber v-model="localQuestion.points" size="xl" class="w-full" />
       </UFormField>
 
       <UFormField
@@ -416,9 +408,8 @@ function handleSave() {
         hint="(valgfritt)"
         help="Den strengeste av denne og quizens egen grense gjelder."
       >
-        <UInput
-          v-model.number="localQuestion.timeoutSeconds"
-          type="number"
+        <UInputNumber
+          v-model="localQuestion.timeoutSeconds"
           size="xl"
           class="w-full"
         />
@@ -442,9 +433,8 @@ function handleSave() {
             </label>
             <div class="grid grid-cols-2 gap-4 mt-2">
               <UFormField name="bettingMinPercentage" label="Min %">
-                <UInput
-                  v-model.number="localQuestion.bettingMinPercentage"
-                  type="number"
+                <UInputNumber
+                  v-model="localQuestion.bettingMinPercentage"
                   :min="0"
                   :max="100"
                   size="xl"
@@ -453,9 +443,8 @@ function handleSave() {
               </UFormField>
 
               <UFormField name="bettingMaxPercentage" label="Maks %">
-                <UInput
-                  v-model.number="localQuestion.bettingMaxPercentage"
-                  type="number"
+                <UInputNumber
+                  v-model="localQuestion.bettingMaxPercentage"
                   :min="0"
                   :max="100"
                   size="xl"
@@ -471,9 +460,8 @@ function handleSave() {
             </label>
             <div class="grid grid-cols-2 gap-4 mt-2">
               <UFormField name="bettingMinAbsolute" label="Min poeng">
-                <UInput
-                  v-model.number="localQuestion.bettingMinAbsolute"
-                  type="number"
+                <UInputNumber
+                  v-model="localQuestion.bettingMinAbsolute"
                   :min="0"
                   size="xl"
                   class="w-full"
@@ -481,9 +469,8 @@ function handleSave() {
               </UFormField>
 
               <UFormField name="bettingMaxAbsolute" label="Maks poeng">
-                <UInput
-                  v-model.number="localQuestion.bettingMaxAbsolute"
-                  type="number"
+                <UInputNumber
+                  v-model="localQuestion.bettingMaxAbsolute"
                   :min="0"
                   size="xl"
                   class="w-full"

@@ -214,7 +214,9 @@ describe('AdminQuizForm', () => {
 
     // The dialog teleports, so drive it through the editor's own subtree.
     const editor = wrapper.findComponent({ name: 'AdminQuizQuestionEditor' })
-    await editor.findAll('input[type="number"]')[0]?.setValue('100')
+    await editor
+      .findAllComponents({ name: 'UInputNumber' })[0]
+      ?.vm.$emit('update:modelValue', 100)
     await editor
       .findAll('button')
       .find((button) => button.text().includes('Oppdater spørsmål'))

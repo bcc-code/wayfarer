@@ -359,9 +359,8 @@ const questionPoints = computed(() =>
           label="Fullføringspoeng"
           help="Gis til alle som fullfører quizen, uansett hvor mange svar som er riktige. Kommer i tillegg til poengene for de enkelte spørsmålene."
         >
-          <UInput
-            v-model.number="state.completionPoints"
-            type="number"
+          <UInputNumber
+            v-model="state.completionPoints"
             size="xl"
             required
             class="w-full"
@@ -374,9 +373,8 @@ const questionPoints = computed(() =>
           hint="(valgfritt)"
           help="Gjelder hele quizen. Spørsmål kan i tillegg ha sin egen tidsbegrensning, og den strengeste av de to gjelder."
         >
-          <UInput
-            v-model.number="state.timeoutSeconds"
-            type="number"
+          <UInputNumber
+            v-model="state.timeoutSeconds"
             size="xl"
             class="w-full"
           />
