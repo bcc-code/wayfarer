@@ -324,7 +324,9 @@ const showCreateModal = ref(false)
             >
               Avbryt
             </UButton>
-            <UButton color="error" @click="handleDelete">Slett</UButton>
+            <UButton icon="lucide:trash-2" color="error" @click="handleDelete"
+              >Slett</UButton
+            >
           </div>
         </div>
       </template>

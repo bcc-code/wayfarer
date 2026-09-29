@@ -176,7 +176,9 @@ function updateDarkColor(key: ColorKey, value: string) {
 
 <template>
   <UModal title="Temaredigering" fullscreen>
-    <UButton variant="soft" block>Åpne temaredigering</UButton>
+    <UButton icon="lucide:palette" variant="soft" block
+      >Åpne temaredigering</UButton
+    >
 
     <template #body>
       <div class="flex flex-col gap-6">

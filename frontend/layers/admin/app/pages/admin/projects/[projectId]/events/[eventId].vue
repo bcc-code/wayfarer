@@ -176,7 +176,9 @@ async function deleteEvent() {
               v-model:start="state.startDate"
               v-model:end="state.endDate"
             />
-            <UButton type="submit" size="lg" block>Lagre endringer</UButton>
+            <UButton icon="lucide:check" type="submit" size="lg" block
+              >Lagre endringer</UButton
+            >
             <UButton
               color="error"
               variant="ghost"

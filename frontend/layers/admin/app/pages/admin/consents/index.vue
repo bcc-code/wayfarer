@@ -87,6 +87,7 @@ const columns: TableColumn<ConsentRow>[] = [
         <template #actions-cell="{ row }">
           <div class="flex justify-end">
             <UButton
+              icon="lucide:pencil"
               variant="ghost"
               :to="{
                 name: 'admin-consents-consentId',

@@ -369,6 +369,7 @@ function handleSave() {
               :delay-duration="200"
             >
               <UButton
+                icon="lucide:x"
                 size="xs"
                 variant="ghost"
                 color="error"

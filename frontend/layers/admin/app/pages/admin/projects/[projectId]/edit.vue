@@ -296,7 +296,9 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
             class="w-full"
           />
         </UFormField>
-        <UButton type="submit" size="lg" block>Lagre endringer</UButton>
+        <UButton icon="lucide:check" type="submit" size="lg" block
+          >Lagre endringer</UButton
+        >
       </UForm>
     </div>
   </div>

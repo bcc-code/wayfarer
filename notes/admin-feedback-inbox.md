@@ -216,6 +216,11 @@ intend to do; rows marked **done** have landed.
     neutral-interface decision this branch is built on (commits `1a5528a2`,
     `b178ba44`). Affordance was improved by size and hit area instead. Reopen
     only as a decision about the palette, not as a polish item.
+  - **Icons on actions**: 36 named actions across the panel had none — every
+    "Rediger" row action, "Slett", "Publiser", "Tildel rolle", the reset and
+    repair actions, and the submit button on every form (a plus while
+    creating, a check while editing). Dismissive actions are deliberately left
+    bare: an icon on "Avbryt" competes with the action beside it.
 - 2026-09-29 — project sidebar reordered: Oversikt, Utfordringer, Utmerkelser,
   Ledertavler first, then Lag, Superlag, Poeng, Arrangement, Innstillinger.
   Pinned by a test so the order stays deliberate. Separately, preview ideas are

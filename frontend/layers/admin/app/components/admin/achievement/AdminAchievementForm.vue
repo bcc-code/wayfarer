@@ -369,7 +369,13 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
           </p>
         </AdminSection>
 
-        <UButton type="submit" size="lg" block>{{ submitLabel }}</UButton>
+        <UButton
+          :icon="isEditMode ? 'lucide:check' : 'lucide:plus'"
+          type="submit"
+          size="lg"
+          block
+          >{{ submitLabel }}</UButton
+        >
       </UForm>
 
       <!-- Sticky: it used to scroll away before you reached the points and

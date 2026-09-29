@@ -414,7 +414,13 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
           </AdminTranslatableFormField>
         </AdminSection>
 
-        <UButton type="submit" size="lg" block>{{ submitLabel }}</UButton>
+        <UButton
+          :icon="isEditMode ? 'lucide:check' : 'lucide:plus'"
+          type="submit"
+          size="lg"
+          block
+          >{{ submitLabel }}</UButton
+        >
       </UForm>
 
       <!-- Sticky: by the time you reach the timestamps the preview would

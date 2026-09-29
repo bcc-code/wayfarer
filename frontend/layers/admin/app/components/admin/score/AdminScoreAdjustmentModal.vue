@@ -114,6 +114,7 @@ async function handleSubmit() {
           Avbryt
         </UButton>
         <UButton
+          icon="lucide:plus"
           :disabled="!canSubmit"
           :loading="fetching"
           @click="handleSubmit"

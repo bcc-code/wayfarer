@@ -26,6 +26,7 @@ const isTruncated = computed(() => props.totalCount > props.entries.length)
   <AdminSection title="Tilbakemeldinger" :count="totalCount">
     <template #actions>
       <UButton
+        icon="lucide:arrow-right"
         variant="link"
         size="sm"
         :to="{ name: 'admin-feedback', query: { userId } }"

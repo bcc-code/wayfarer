@@ -235,7 +235,11 @@ function toggleTeam(teamId: string) {
             </UFormField>
 
             <div class="flex gap-2">
-              <UButton type="submit" :disabled="!state.name">
+              <UButton
+                icon="lucide:check"
+                type="submit"
+                :disabled="!state.name"
+              >
                 Lagre endringer
               </UButton>
             </div>

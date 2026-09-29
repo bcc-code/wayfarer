@@ -367,6 +367,7 @@ const isQuizChallenge = computed(() => {
               Denne utfordringen er ikke en quiz-utfordring.
             </p>
             <UButton
+              icon="lucide:arrow-left"
               class="mt-4"
               :to="{
                 name: 'admin-projects-projectId-challenges-challengeId',

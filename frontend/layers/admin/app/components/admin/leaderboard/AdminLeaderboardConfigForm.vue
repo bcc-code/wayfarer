@@ -324,7 +324,12 @@ function clearFilter() {
 
     <AdminSection title="Filter">
       <template #actions>
-        <UButton variant="ghost" size="sm" @click="clearFilter">
+        <UButton
+          icon="lucide:rotate-ccw"
+          variant="ghost"
+          size="sm"
+          @click="clearFilter"
+        >
           Nullstill filter
         </UButton>
       </template>
@@ -430,6 +435,12 @@ function clearFilter() {
       </div>
     </AdminSection>
 
-    <UButton type="submit" size="lg" block>{{ submitLabel }}</UButton>
+    <UButton
+      :icon="isEditMode ? 'lucide:check' : 'lucide:plus'"
+      type="submit"
+      size="lg"
+      block
+      >{{ submitLabel }}</UButton
+    >
   </UForm>
 </template>
