@@ -60,15 +60,38 @@ picker. Related: [`admin-feedback-inbox.md`](./admin-feedback-inbox.md) #22.
 - **Consents** — the body is markdown like the project rules, but a consent is
   written once per project and read by legal, not designed.
 
-## One thing to decide first
+## Decided: the real components, not replicas (2026-09-29)
 
-The two previews that exist are **replicas**: `AdminChallengeCardPreview` is the
-admin layer's own rendering of a challenge card, not the user layer's
-`ChallengeCard`. That is a second copy of the design to keep in step, and it is
-already how the panel drifted from the app once.
+Every preview renders the participant app's own components, imported through
+`#layers/user/app/...`. What stays in the admin layer is the **adapter**: the
+form holds a draft, the components are typed against the query that feeds the
+app, and the preview maps one to the other.
 
-`frontend/CLAUDE.md` permits the other approach — the admin layer may import
-from `layers/user` for exactly this reason, and nothing does today. Deciding
-between "replica" and "the real component in a themed frame" before building
-more previews is worth more than any single preview on the list, because every
-one of them multiplies the choice.
+`AdminThemedPreview` is a width and the project's palette, nothing else. The
+390px cap is the viewport the user layer's breakpoints are drawn for, so the
+content is judged at a width a participant will actually see.
+
+It deliberately paints no surface. A phone mockup with a bezel was tried and
+reverted — at a real phone's aspect ratio the frame is mostly empty box — and
+so was the plain bordered frame that replaced it: a challenge card already
+carries its own rounded surface, and a frame around it is just two borders. A
+preview that _is_ a screen rather than a card (the quiz question, the
+achievement) paints its own background.
+
+Three things this needs, learned building the first two:
+
+- `AdminThemedPreview` is `inert`. The real components carry real links and
+  buttons; without it, clicking a preview navigates the admin into the
+  participant app, and tabbing strands the keyboard inside a picture. The one
+  opt-out (`interactive`) exists for `AdminAchievementPreview`, which still
+  keeps a state switcher inside the screen, and goes away with it.
+- A draft has no ids. The quiz preview gives answers and ordering items
+  positional ones, because the components key on them.
+- Shared markup that is not a component yet has to become one. The question
+  heading lived inline in `QuizChallenge`; it is now
+  `QuizQuestionHeading`, used by both. Extracting beats copying — the copy is
+  what this note was written to stop.
+
+**Done:** the challenge card (#0, was a replica) and the quiz question editor
+(#1). Still a replica: `AdminAchievementPreview`. `AchievementBadge` brings a
+sheet, a mutation and confetti with it, so converting it is its own pass.

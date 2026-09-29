@@ -24,6 +24,11 @@ gql(`
       project {
         id
         name
+        branding {
+          colors {
+            ...BrandingColorsFields
+          }
+        }
       }
       ... on QuizChallenge {
         quiz {
@@ -386,6 +391,7 @@ const isQuizChallenge = computed(() => {
             </h1>
             <AdminQuizForm
               ref="form"
+              :colors="data.challenge.project.branding.colors"
               :saving
               :quiz-data="quizData"
               :project-id="route.params.projectId"

@@ -5,6 +5,8 @@ import { validateQuizQuestion } from '../../../utils/quizQuestionValidation'
 
 const props = defineProps<{
   question: QuizQuestionFormData
+  /** Passed to the preview frame; without it the preview is unbranded. */
+  colors?: Colors
   questionTypeOptions: {
     value: QuizQuestionType
     label: string
@@ -170,327 +172,350 @@ function handleSave() {
 </script>
 
 <template>
-  <div class="space-y-5">
-    <UFormField
-      name="questionType"
-      label="Spørsmålstype"
-      :help="question.id ? 'Typen kan ikke endres etterpå' : undefined"
-    >
-      <USelect
-        v-model="localQuestion.questionType"
-        :items="questionTypeOptions"
-        :disabled="!!question.id"
-        :ui="{ itemDescription: 'text-clip whitespace-normal' }"
-        class="w-full"
-      />
-    </UFormField>
+  <!-- `@container`, not a fixed split: the preview only earns a column of its
+       own once the dialog is wide enough for both. -->
+  <div class="@container">
+    <div class="grid gap-6 @4xl:grid-cols-[minmax(0,1fr)_26rem]">
+      <div class="space-y-5">
+        <UFormField
+          name="questionType"
+          label="Spørsmålstype"
+          :help="question.id ? 'Typen kan ikke endres etterpå' : undefined"
+        >
+          <USelect
+            v-model="localQuestion.questionType"
+            :items="questionTypeOptions"
+            :disabled="!!question.id"
+            :ui="{ itemDescription: 'text-clip whitespace-normal' }"
+            class="w-full"
+          />
+        </UFormField>
 
-    <AdminTranslatableFormField
-      name="questionText"
-      label="Spørsmålstekst"
-      :translation-status="question.translationStatus"
-    >
-      <UTextarea
-        v-model="localQuestion.questionText"
-        class="w-full"
-        autoresize
-        required
-      />
-    </AdminTranslatableFormField>
+        <AdminTranslatableFormField
+          name="questionText"
+          label="Spørsmålstekst"
+          :translation-status="question.translationStatus"
+        >
+          <UTextarea
+            v-model="localQuestion.questionText"
+            class="w-full"
+            autoresize
+            required
+          />
+        </AdminTranslatableFormField>
 
-    <!-- The answers are the question, so they come before the scoring and
+        <!-- The answers are the question, so they come before the scoring and
          betting settings rather than after them. -->
-    <template v-if="localQuestion.questionType === QuizQuestionType.Predefined">
-      <div class="space-y-3">
-        <div class="flex items-start justify-between gap-4">
-          <div>
-            <p class="text-sm font-medium">Svaralternativer</p>
-            <p class="text-muted text-xs">
-              Kryss av for riktig(e) svar. Dra for å endre rekkefølgen.
-            </p>
-          </div>
-        </div>
-
-        <!-- Sits with the answers: it changes what checking them means. -->
-        <UCheckbox
-          v-model="localQuestion.allowMultipleSelection"
-          label="Tillat flere svar"
-          description="Brukeren kan velge mer enn ett alternativ."
-        />
-
-        <VueDraggable
-          v-model="localQuestion.predefinedAnswers!"
-          handle=".answer-handle"
-          ghost-class="opacity-50"
-          :animation="200"
-          class="space-y-2"
-          @end="renumberAnswers"
+        <template
+          v-if="localQuestion.questionType === QuizQuestionType.Predefined"
         >
-          <div
-            v-for="(answer, index) in localQuestion.predefinedAnswers"
-            :key="answer.localKey"
-            class="flex items-start gap-2"
-          >
-            <div
-              class="answer-handle text-muted mt-2 cursor-grab active:cursor-grabbing"
-              :aria-label="`Flytt svar ${index + 1}`"
-            >
-              <UIcon name="lucide:grip-vertical" class="size-5" />
+          <div class="space-y-3">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="text-sm font-medium">Svaralternativer</p>
+                <p class="text-muted text-xs">
+                  Kryss av for riktig(e) svar. Dra for å endre rekkefølgen.
+                </p>
+              </div>
             </div>
-            <!-- `mt-2.5` lines the checkbox up with the first line of a wrapped
-                 answer rather than the middle of the box. -->
+
+            <!-- Sits with the answers: it changes what checking them means. -->
             <UCheckbox
-              v-model="answer.isCorrect"
-              class="mt-2.5"
-              :aria-label="`Marker svar ${index + 1} som riktig`"
+              v-model="localQuestion.allowMultipleSelection"
+              label="Tillat flere svar"
+              description="Brukeren kan velge mer enn ett alternativ."
             />
-            <div class="flex min-w-0 flex-1 flex-col gap-1">
-              <!-- Answers are whole sentences; a single-line input hid the end
-                   of most of them. -->
-              <UTextarea
-                v-model="answer.answerText"
-                placeholder="Svartekst"
-                class="w-full"
-                autoresize
-                :rows="1"
-              />
-              <!-- Read off the answer, not `props…[index]`: after a drag the
-                   local index no longer matches the prop array. -->
-              <AdminTranslationIndicator
-                v-if="answer.translationStatus?.length"
-                :translation-status="answer.translationStatus"
-                field-name="answerText"
-              />
-            </div>
-            <UTooltip
-              :text="
-                canRemoveAnswer
-                  ? `Fjern svar ${index + 1}`
-                  : 'Et flervalgsspørsmål trenger minst to svar'
-              "
-              :delay-duration="200"
+
+            <VueDraggable
+              v-model="localQuestion.predefinedAnswers!"
+              handle=".answer-handle"
+              ghost-class="opacity-50"
+              :animation="200"
+              class="space-y-2"
+              @end="renumberAnswers"
             >
-              <UButton
-                class="mt-1.5"
-                size="xs"
-                variant="ghost"
-                color="error"
-                icon="lucide:x"
-                :aria-label="`Fjern svar ${index + 1}`"
-                :disabled="!canRemoveAnswer"
-                @click="removeAnswer(index)"
-              />
-            </UTooltip>
-          </div>
-        </VueDraggable>
-
-        <UButton
-          size="xs"
-          variant="ghost"
-          icon="lucide:plus"
-          @click="addAnswer"
-        >
-          Legg til svaralternativ
-        </UButton>
-      </div>
-    </template>
-
-    <!-- Number Question Options -->
-    <template v-if="localQuestion.questionType === QuizQuestionType.Number">
-      <div class="grid grid-cols-3 gap-4">
-        <UFormField name="minValue" label="Minimumsverdi">
-          <UInputNumber
-            v-model="localQuestion.minValue"
-            size="xl"
-            class="w-full"
-          />
-        </UFormField>
-
-        <UFormField name="maxValue" label="Maksimumsverdi">
-          <UInputNumber
-            v-model="localQuestion.maxValue"
-            size="xl"
-            class="w-full"
-          />
-        </UFormField>
-
-        <UFormField name="stepValue" label="Steg">
-          <UInputNumber
-            v-model="localQuestion.stepValue"
-            size="xl"
-            class="w-full"
-          />
-        </UFormField>
-      </div>
-    </template>
-
-    <!-- Ordering Question Options -->
-    <template v-if="localQuestion.questionType === QuizQuestionType.Ordering">
-      <div class="space-y-3">
-        <label class="text-sm font-medium">
-          Elementer (i riktig rekkefølge)
-        </label>
-
-        <p class="text-xs text-muted">
-          Dra for å endre rekkefølge. Rekkefølgen i listen er den korrekte
-          rekkefølgen.
-        </p>
-
-        <VueDraggable
-          v-model="localQuestion.orderingItems!"
-          handle=".drag-handle"
-          ghost-class="opacity-50"
-          :animation="200"
-          @end="handleOrderingReorder"
-        >
-          <div
-            v-for="(item, index) in localQuestion.orderingItems"
-            :key="index"
-            class="flex items-center gap-3 mb-2"
-          >
-            <div
-              class="drag-handle text-muted cursor-grab active:cursor-grabbing"
-            >
-              <UIcon name="lucide:grip-vertical" class="size-5" />
-            </div>
-            <span class="text-sm text-muted w-6">{{ index + 1 }}.</span>
-            <UInput
-              v-model="item.itemText"
-              placeholder="Elementtekst"
-              size="xl"
-              class="flex-1"
-            />
-            <UTooltip
-              :text="
-                canRemoveOrderingItem
-                  ? `Fjern element ${index + 1}`
-                  : 'Et rekkefølgespørsmål trenger minst to elementer'
-              "
-              :delay-duration="200"
-            >
-              <UButton
-                icon="lucide:x"
-                size="xs"
-                variant="ghost"
-                color="error"
-                :disabled="!canRemoveOrderingItem"
-                @click="removeOrderingItem(index)"
+              <div
+                v-for="(answer, index) in localQuestion.predefinedAnswers"
+                :key="answer.localKey"
+                class="flex items-start gap-2"
               >
-                Fjern
-              </UButton>
-            </UTooltip>
-          </div>
-        </VueDraggable>
+                <div
+                  class="answer-handle text-muted mt-2 cursor-grab active:cursor-grabbing"
+                  :aria-label="`Flytt svar ${index + 1}`"
+                >
+                  <UIcon name="lucide:grip-vertical" class="size-5" />
+                </div>
+                <!-- `mt-2.5` lines the checkbox up with the first line of a wrapped
+                 answer rather than the middle of the box. -->
+                <UCheckbox
+                  v-model="answer.isCorrect"
+                  class="mt-2.5"
+                  :aria-label="`Marker svar ${index + 1} som riktig`"
+                />
+                <div class="flex min-w-0 flex-1 flex-col gap-1">
+                  <!-- Answers are whole sentences; a single-line input hid the end
+                   of most of them. -->
+                  <UTextarea
+                    v-model="answer.answerText"
+                    placeholder="Svartekst"
+                    class="w-full"
+                    autoresize
+                    :rows="1"
+                  />
+                  <!-- Read off the answer, not `props…[index]`: after a drag the
+                   local index no longer matches the prop array. -->
+                  <AdminTranslationIndicator
+                    v-if="answer.translationStatus?.length"
+                    :translation-status="answer.translationStatus"
+                    field-name="answerText"
+                  />
+                </div>
+                <UTooltip
+                  :text="
+                    canRemoveAnswer
+                      ? `Fjern svar ${index + 1}`
+                      : 'Et flervalgsspørsmål trenger minst to svar'
+                  "
+                  :delay-duration="200"
+                >
+                  <UButton
+                    class="mt-1.5"
+                    size="xs"
+                    variant="ghost"
+                    color="error"
+                    icon="lucide:x"
+                    :aria-label="`Fjern svar ${index + 1}`"
+                    :disabled="!canRemoveAnswer"
+                    @click="removeAnswer(index)"
+                  />
+                </UTooltip>
+              </div>
+            </VueDraggable>
 
-        <UButton
-          size="xs"
-          variant="ghost"
-          icon="lucide:plus"
-          @click="addOrderingItem"
+            <UButton
+              size="xs"
+              variant="ghost"
+              icon="lucide:plus"
+              @click="addAnswer"
+            >
+              Legg til svaralternativ
+            </UButton>
+          </div>
+        </template>
+
+        <!-- Number Question Options -->
+        <template v-if="localQuestion.questionType === QuizQuestionType.Number">
+          <div class="grid grid-cols-3 gap-4">
+            <UFormField name="minValue" label="Minimumsverdi">
+              <UInputNumber
+                v-model="localQuestion.minValue"
+                size="xl"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField name="maxValue" label="Maksimumsverdi">
+              <UInputNumber
+                v-model="localQuestion.maxValue"
+                size="xl"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField name="stepValue" label="Steg">
+              <UInputNumber
+                v-model="localQuestion.stepValue"
+                size="xl"
+                class="w-full"
+              />
+            </UFormField>
+          </div>
+        </template>
+
+        <!-- Ordering Question Options -->
+        <template
+          v-if="localQuestion.questionType === QuizQuestionType.Ordering"
         >
-          Legg til element
-        </UButton>
-      </div>
-    </template>
-
-    <div class="grid grid-cols-2 gap-4">
-      <UFormField
-        v-if="canEarnPoints"
-        name="points"
-        label="Poeng"
-        help="Gis når deltakeren treffer helt riktig."
-      >
-        <UInputNumber v-model="localQuestion.points" size="xl" class="w-full" />
-      </UFormField>
-
-      <UFormField
-        name="timeoutSeconds"
-        label="Tidsbegrensning (sekunder)"
-        hint="(valgfritt)"
-        help="Den strengeste av denne og quizens egen grense gjelder."
-      >
-        <UInputNumber
-          v-model="localQuestion.timeoutSeconds"
-          size="xl"
-          class="w-full"
-        />
-      </UFormField>
-    </div>
-
-    <!-- Last, and boxed as one block: betting is a subsystem of its own, and
-         it was previously the only boxed field in the dialog. -->
-    <div class="border-default space-y-4 rounded-lg border p-4">
-      <UCheckbox
-        v-model="localQuestion.bettingEnabled"
-        label="Aktiver betting"
-        description="Brukeren kan satse poeng på svaret sitt."
-      />
-
-      <template v-if="localQuestion.bettingEnabled">
-        <div class="space-y-4 pl-6">
-          <div>
+          <div class="space-y-3">
             <label class="text-sm font-medium">
-              Prosent-grenser (valgfritt)
+              Elementer (i riktig rekkefølge)
             </label>
-            <div class="grid grid-cols-2 gap-4 mt-2">
-              <UFormField name="bettingMinPercentage" label="Min %">
-                <UInputNumber
-                  v-model="localQuestion.bettingMinPercentage"
-                  :min="0"
-                  :max="100"
-                  size="xl"
-                  class="w-full"
-                />
-              </UFormField>
 
-              <UFormField name="bettingMaxPercentage" label="Maks %">
-                <UInputNumber
-                  v-model="localQuestion.bettingMaxPercentage"
-                  :min="0"
-                  :max="100"
+            <p class="text-xs text-muted">
+              Dra for å endre rekkefølge. Rekkefølgen i listen er den korrekte
+              rekkefølgen.
+            </p>
+
+            <VueDraggable
+              v-model="localQuestion.orderingItems!"
+              handle=".drag-handle"
+              ghost-class="opacity-50"
+              :animation="200"
+              @end="handleOrderingReorder"
+            >
+              <div
+                v-for="(item, index) in localQuestion.orderingItems"
+                :key="index"
+                class="flex items-center gap-3 mb-2"
+              >
+                <div
+                  class="drag-handle text-muted cursor-grab active:cursor-grabbing"
+                >
+                  <UIcon name="lucide:grip-vertical" class="size-5" />
+                </div>
+                <span class="text-sm text-muted w-6">{{ index + 1 }}.</span>
+                <UInput
+                  v-model="item.itemText"
+                  placeholder="Elementtekst"
                   size="xl"
-                  class="w-full"
+                  class="flex-1"
                 />
-              </UFormField>
-            </div>
+                <UTooltip
+                  :text="
+                    canRemoveOrderingItem
+                      ? `Fjern element ${index + 1}`
+                      : 'Et rekkefølgespørsmål trenger minst to elementer'
+                  "
+                  :delay-duration="200"
+                >
+                  <UButton
+                    icon="lucide:x"
+                    size="xs"
+                    variant="ghost"
+                    color="error"
+                    :disabled="!canRemoveOrderingItem"
+                    @click="removeOrderingItem(index)"
+                  >
+                    Fjern
+                  </UButton>
+                </UTooltip>
+              </div>
+            </VueDraggable>
+
+            <UButton
+              size="xs"
+              variant="ghost"
+              icon="lucide:plus"
+              @click="addOrderingItem"
+            >
+              Legg til element
+            </UButton>
           </div>
+        </template>
 
-          <div>
-            <label class="text-sm font-medium">
-              Absolutte grenser (valgfritt)
-            </label>
-            <div class="grid grid-cols-2 gap-4 mt-2">
-              <UFormField name="bettingMinAbsolute" label="Min poeng">
-                <UInputNumber
-                  v-model="localQuestion.bettingMinAbsolute"
-                  :min="0"
-                  size="xl"
-                  class="w-full"
-                />
-              </UFormField>
+        <div class="grid grid-cols-2 gap-4">
+          <UFormField
+            v-if="canEarnPoints"
+            name="points"
+            label="Poeng"
+            help="Gis når deltakeren treffer helt riktig."
+          >
+            <UInputNumber
+              v-model="localQuestion.points"
+              size="xl"
+              class="w-full"
+            />
+          </UFormField>
 
-              <UFormField name="bettingMaxAbsolute" label="Maks poeng">
-                <UInputNumber
-                  v-model="localQuestion.bettingMaxAbsolute"
-                  :min="0"
-                  size="xl"
-                  class="w-full"
-                />
-              </UFormField>
-            </div>
-          </div>
+          <UFormField
+            name="timeoutSeconds"
+            label="Tidsbegrensning (sekunder)"
+            hint="(valgfritt)"
+            help="Den strengeste av denne og quizens egen grense gjelder."
+          >
+            <UInputNumber
+              v-model="localQuestion.timeoutSeconds"
+              size="xl"
+              class="w-full"
+            />
+          </UFormField>
         </div>
-      </template>
-    </div>
 
-    <div class="flex items-center justify-end gap-3 pt-2">
-      <p v-if="validationError" class="text-error mr-auto text-sm">
-        {{ validationError }}
-      </p>
-      <UButton variant="ghost" @click="emit('cancel')">Avbryt</UButton>
-      <UButton :disabled="!!validationError" @click="handleSave">
-        {{ question.id ? 'Oppdater' : 'Legg til' }} spørsmål
-      </UButton>
+        <!-- Last, and boxed as one block: betting is a subsystem of its own, and
+         it was previously the only boxed field in the dialog. -->
+        <div class="border-default space-y-4 rounded-lg border p-4">
+          <UCheckbox
+            v-model="localQuestion.bettingEnabled"
+            label="Aktiver betting"
+            description="Brukeren kan satse poeng på svaret sitt."
+          />
+
+          <template v-if="localQuestion.bettingEnabled">
+            <div class="space-y-4 pl-6">
+              <div>
+                <label class="text-sm font-medium">
+                  Prosent-grenser (valgfritt)
+                </label>
+                <div class="grid grid-cols-2 gap-4 mt-2">
+                  <UFormField name="bettingMinPercentage" label="Min %">
+                    <UInputNumber
+                      v-model="localQuestion.bettingMinPercentage"
+                      :min="0"
+                      :max="100"
+                      size="xl"
+                      class="w-full"
+                    />
+                  </UFormField>
+
+                  <UFormField name="bettingMaxPercentage" label="Maks %">
+                    <UInputNumber
+                      v-model="localQuestion.bettingMaxPercentage"
+                      :min="0"
+                      :max="100"
+                      size="xl"
+                      class="w-full"
+                    />
+                  </UFormField>
+                </div>
+              </div>
+
+              <div>
+                <label class="text-sm font-medium">
+                  Absolutte grenser (valgfritt)
+                </label>
+                <div class="grid grid-cols-2 gap-4 mt-2">
+                  <UFormField name="bettingMinAbsolute" label="Min poeng">
+                    <UInputNumber
+                      v-model="localQuestion.bettingMinAbsolute"
+                      :min="0"
+                      size="xl"
+                      class="w-full"
+                    />
+                  </UFormField>
+
+                  <UFormField name="bettingMaxAbsolute" label="Maks poeng">
+                    <UInputNumber
+                      v-model="localQuestion.bettingMaxAbsolute"
+                      :min="0"
+                      size="xl"
+                      class="w-full"
+                    />
+                  </UFormField>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <p v-if="validationError" class="text-error mr-auto text-sm">
+            {{ validationError }}
+          </p>
+          <UButton variant="ghost" @click="emit('cancel')">Avbryt</UButton>
+          <UButton :disabled="!!validationError" @click="handleSave">
+            {{ question.id ? 'Oppdater' : 'Legg til' }} spørsmål
+          </UButton>
+        </div>
+      </div>
+
+      <!-- Sticky: the answers are the part you are shaping, and by the time you
+           reach the betting settings the preview would have scrolled away. -->
+      <aside class="top-0 h-fit @4xl:sticky">
+        <p class="text-muted mb-2 text-xs">Slik ser deltakeren spørsmålet</p>
+        <AdminThemedPreview :colors>
+          <AdminQuizQuestionPreview :question="localQuestion" />
+        </AdminThemedPreview>
+      </aside>
     </div>
   </div>
 </template>

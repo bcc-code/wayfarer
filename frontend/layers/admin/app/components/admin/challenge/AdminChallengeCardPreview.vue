@@ -1,47 +1,55 @@
 <script setup lang="ts">
-defineProps<{
+import ChallengeCard from '#layers/user/app/components/challenges/ChallengeCard.vue'
+
+/**
+ * The challenge as a participant will see it — the user layer's own
+ * `ChallengeCard`, not a copy of it. A replica drifts: this panel had one, and
+ * it had already lost the card's completed state and its empty-image
+ * behaviour.
+ *
+ * What is left here is the adapter. The card reads a challenge off the query
+ * that feeds the app; the form holds a draft, so the missing half is filled in
+ * with what a freshly created challenge would have.
+ */
+const props = defineProps<{
   challenge: {
+    type?: ChallengeType
     name?: string
     description?: string
     image?: string
+    url?: string
     buttonText?: string
   }
 }>()
+
+const typenames: Record<ChallengeType, string> = {
+  [ChallengeType.Simple]: 'SimpleChallenge',
+  [ChallengeType.External]: 'ExternalChallenge',
+  [ChallengeType.Quiz]: 'QuizChallenge',
+  [ChallengeType.Plugin]: 'PluginChallenge',
+}
+
+// Shaped like the query result the card is typed against. The cast is the
+// point of the adapter: a draft has no id, no completion and no submissions,
+// and the card only reads them.
+const preview = computed(
+  () =>
+    ({
+      __typename: typenames[props.challenge.type ?? ChallengeType.Simple],
+      id: 'preview',
+      name: props.challenge.name ?? '',
+      description: props.challenge.description ?? '',
+      buttonText: props.challenge.buttonText ?? '',
+      imageObject: props.challenge.image
+        ? { url: props.challenge.image }
+        : null,
+      url: props.challenge.url ?? '',
+      userCompletedAt: null,
+      quiz: { userSubmissions: [] },
+    }) as unknown as InstanceType<typeof ChallengeCard>['$props']['challenge'],
+)
 </script>
 
 <template>
-  <div class="max-w-md">
-    <div class="shadow-large rounded-card overflow-clip">
-      <div
-        v-if="challenge.image"
-        class="bg-accent aspect-[1.25] w-full overflow-hidden"
-      >
-        <img :src="challenge.image" class="size-full object-cover" />
-      </div>
-      <div
-        v-else
-        class="bg-accent aspect-[1.25] w-full flex items-center justify-center text-on-accent/50"
-      >
-        Ingen bilde
-      </div>
-      <div class="bg-background-raised p-default gap-default space-y-default">
-        <div class="space-y-small">
-          <h3 class="text-heading">
-            {{ challenge.name || 'Challenge Name' }}
-          </h3>
-          <div
-            v-if="challenge.description"
-            class="text-label"
-            v-html="challenge.description"
-          />
-          <div v-else class="text-label text-text-muted">Ingen beskrivelse</div>
-        </div>
-        <div class="mt-auto grid">
-          <DesignButton size="large">
-            {{ challenge.buttonText || 'Button Text' }}
-          </DesignButton>
-        </div>
-      </div>
-    </div>
-  </div>
+  <ChallengeCard :challenge="preview" />
 </template>

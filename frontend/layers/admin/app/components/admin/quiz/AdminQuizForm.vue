@@ -56,6 +56,8 @@ export interface QuizQuestionFormData {
 
 const props = defineProps<{
   quizData?: QuizFormData
+  /** The project's own palette, so the preview is dressed as the app is. */
+  colors?: Colors
   projectId: string
   challengeId?: string
   saving?: boolean
@@ -420,7 +422,7 @@ const questionPoints = computed(() =>
     <UModal
       :open="!!editingQuestion"
       :dismissible="false"
-      :ui="{ content: 'max-w-3xl' }"
+      :ui="{ content: 'max-w-5xl' }"
       @update:open="(open) => !open && cancelEdit()"
     >
       <template #header>
@@ -436,6 +438,7 @@ const questionPoints = computed(() =>
         <AdminQuizQuestionEditor
           v-if="editingQuestion"
           :question="editingQuestion"
+          :colors
           :question-type-options="questionTypeOptions"
           @save="saveQuestion"
           @cancel="cancelEdit"

@@ -380,7 +380,11 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
 
       <!-- Sticky: it used to scroll away before you reached the points and
            visibility fields. -->
-      <AdminThemedPreview :colors="colors" class="top-6 h-fit @4xl:sticky">
+      <AdminThemedPreview
+        :colors="colors"
+        interactive
+        class="top-6 h-fit @4xl:sticky"
+      >
         <AdminAchievementPreview :achievement="state" />
       </AdminThemedPreview>
     </div>

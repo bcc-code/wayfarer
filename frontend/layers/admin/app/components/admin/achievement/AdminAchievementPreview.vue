@@ -8,7 +8,7 @@ const state = ref<'pending' | 'completed'>('pending')
 
 <template>
   <div
-    class="border-default bg-background-default aspect-1/2 w-[400px] overflow-clip rounded-xl border text-start p-list-outside"
+    class="bg-background-default min-h-[26rem] w-full overflow-clip rounded-xl text-start p-list-outside"
   >
     <div
       class="flex h-full flex-col items-center justify-center gap-6 relative"

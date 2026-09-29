@@ -4824,16 +4824,16 @@ export type AdminChallengeQuizPageQueryVariables = Exact<{
 
 
 export type AdminChallengeQuizPageQuery = { __typename?: 'Query', challenge:
-    | { __typename: 'ExternalChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
-    | { __typename: 'PluginChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename: 'ExternalChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'PluginChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
     | { __typename: 'QuizChallenge', id: string, name: string, quiz: { __typename?: 'Quiz', id: string, name: string, description: string, image?: string | null, timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, questions: Array<
           | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
           | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
           | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
           | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string, correctOrder?: number | null }>, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
           | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }>, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
-        > }, project: { __typename?: 'Project', id: string, name: string } }
-    | { __typename: 'SimpleChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
+        > }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'SimpleChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
    };
 
 export type ReorderQuizQuestionsMutationVariables = Exact<{
@@ -7815,6 +7815,11 @@ export const AdminChallengeQuizPageDocument = gql`
     project {
       id
       name
+      branding {
+        colors {
+          ...BrandingColorsFields
+        }
+      }
     }
     ... on QuizChallenge {
       quiz {
@@ -7834,7 +7839,8 @@ export const AdminChallengeQuizPageDocument = gql`
     }
   }
 }
-    ${QuizQuestionFieldsFragmentDoc}`;
+    ${BrandingColorsFieldsFragmentDoc}
+${QuizQuestionFieldsFragmentDoc}`;
 
 export function useAdminChallengeQuizPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminChallengeQuizPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminChallengeQuizPageQuery, AdminChallengeQuizPageQueryVariables | undefined>({ query: AdminChallengeQuizPageDocument, variables: undefined, ...options });

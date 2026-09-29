@@ -176,10 +176,19 @@ describe('AdminQuizQuestionEditor', () => {
       ]),
     )
 
-    const text = wrapper.text()
-    expect(text.indexOf('Legg til svaralternativ')).toBeGreaterThan(
-      text.indexOf('Peter'),
-    )
+    // By document position, not by text: the answers live in textareas, whose
+    // values never reach `text()`, and the preview repeats them further down.
+    const list = wrapper.findComponent({ name: 'VueDraggable' }).element
+    const button = wrapper
+      .findAll('button')
+      .find((candidate) =>
+        candidate.text().includes('Legg til svaralternativ'),
+      )!
+
+    expect(
+      list.compareDocumentPosition(button.element) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
   })
 
   // Points are awarded off `is_correct`, which free text and number answers
