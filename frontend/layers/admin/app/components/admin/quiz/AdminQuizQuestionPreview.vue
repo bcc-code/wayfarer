@@ -64,7 +64,12 @@ const common = computed(() => ({
 </script>
 
 <template>
-  <div class="bg-background-default text-text-default rounded-xl p-4">
+  <!-- A phone screen's shape: this preview is a whole screen, so judging it
+       in a box of some other proportion says little about how much of it the
+       question fills. Taller content scrolls, as it does on the phone. -->
+  <div
+    class="bg-background-default text-text-default aspect-[9/19.5] overflow-y-auto rounded-xl p-4"
+  >
     <QuizQuestionHeading
       :question-text="question.questionText || 'Spørsmålstekst'"
       :index="index ?? 0"
