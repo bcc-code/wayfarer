@@ -191,7 +191,7 @@ const challengeTypeOptions = [
   {
     value: ChallengeType.Quiz,
     label: 'Quiz',
-    description: 'Spørsmål med svar. Poeng regnes ut automatisk.',
+    description: 'Spørsmål med svar.',
   },
   {
     value: ChallengeType.Simple,
@@ -207,7 +207,7 @@ const challengeTypeOptions = [
   {
     value: ChallengeType.Plugin,
     label: 'Plugin',
-    description: 'Utfordring som styres av et annet system enn Wayfarer.',
+    description: 'Utfordring som styres av et annet system enn Interact.',
   },
 ]
 
