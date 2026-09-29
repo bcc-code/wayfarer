@@ -2,10 +2,13 @@
  * Nuxt UI component theming.
  *
  * The surface treatment is adapted from the Nuxt UI calendar template
- * (github.com/nuxt-ui-templates/calendar), rebuilt on stock Tailwind: the glass
- * colours are theme tokens (`bg-glass`, `bg-control`, `bg-well`) declared in
- * `assets/styles/main.css`, and the material is plain `backdrop-*` utilities
- * rather than the bespoke one the reference defines.
+ * (github.com/nuxt-ui-templates/calendar), rebuilt on stock Tailwind: the
+ * colours are theme tokens (`bg-control`, `bg-well`) declared in
+ * `assets/styles/main.css`.
+ *
+ * Anything that floats over the page — a dialog, a menu, the sidebar — is
+ * opaque. The reference frosts them, and this panel did too until reading a
+ * dialog meant reading it against whatever happened to be behind it.
  *
  * This config is global, but in practice it only dresses the admin panel: the
  * user-facing app runs on the Design* system and uses barely any U* components.
@@ -18,13 +21,13 @@
 // The hairline that frames a piece of glass. Surfaces only — a form control
 // draws the theme's `ring-accented` instead, which you can actually see.
 const ring = 'ring ring-black/8 dark:ring-white/10'
-// Turns the material solid for anyone who asks for less transparency. The
-// variant is declared in main.css; applying it here means every surface built
-// from `content` opts out in one place.
+// Drops the blur behind the overlay for anyone who asks for less
+// transparency. The variant is declared in main.css.
 const solid =
   'reduceTransparency:bg-default reduceTransparency:backdrop-blur-none'
-// A surface that floats over the body.
-const content = `bg-glass backdrop-blur-xl backdrop-saturate-150 backdrop-brightness-105 ${solid} ${ring} shadow-2xl`
+// A surface that floats over the body. Opaque: text on it has to be readable
+// whatever it is covering.
+const content = `bg-default ${ring} shadow-2xl`
 // The same hairline in border form, for a section ruled off inside a surface.
 const border = 'border-black/8 dark:border-white/10'
 // Rules inside glass. `divide-default` is an opaque border colour, which reads
