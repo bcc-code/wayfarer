@@ -1,7 +1,7 @@
 // @vitest-environment nuxt
 import { describe, it, expect } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { UCheckbox, UInput, UModal, UTextarea } from '#components'
+import { UButton, UCheckbox, UInput, UModal, UTextarea } from '#components'
 
 /**
  * A form control has to have a visible edge. The panel's glass hairline
@@ -36,5 +36,22 @@ describe('floating surfaces', () => {
     expect(dialog?.className).toContain('bg-default')
     expect(dialog?.className).not.toContain('backdrop-blur')
     wrapper.unmount()
+  })
+})
+
+/**
+ * The theme's smallest button is 24px tall, which is the floor WCAG 2.2 allows
+ * and is what an icon-only row action lands on.
+ */
+describe('small buttons', () => {
+  it.each([
+    ['xs', 'min-h-7'],
+    ['sm', 'min-h-8'],
+  ])('gives a %s button a target you can hit', async (size, expected) => {
+    const wrapper = await mountSuspended(UButton, {
+      props: { size, icon: 'lucide:pencil' },
+    })
+
+    expect(wrapper.html()).toContain(expected)
   })
 })

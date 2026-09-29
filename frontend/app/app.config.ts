@@ -81,6 +81,16 @@ export default defineAppConfig({
       slots: {
         base: 'cursor-pointer',
       },
+      variants: {
+        // The theme's `xs` is 24px tall — the smallest target WCAG 2.2 allows,
+        // with nothing to spare, and an icon-only one is the easiest thing in
+        // the panel to miss. A floor per size leaves the padding and the text
+        // alone and only grows the ones that come out too small.
+        size: {
+          xs: { base: 'min-h-7 min-w-7' },
+          sm: { base: 'min-h-8 min-w-8' },
+        },
+      },
       compoundVariants: [
         // The reference's secondary action: a white chip with a hairline and a
         // shadow under it, standing beside the one solid button on the page.
