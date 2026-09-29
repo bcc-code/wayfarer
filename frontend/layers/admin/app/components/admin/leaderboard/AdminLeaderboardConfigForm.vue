@@ -130,7 +130,7 @@ const optionalId = z.string().nullish()
  */
 const schema = z
   .object({
-    name: z.string().min(1, 'Navn er påkrevd'),
+    name: z.string().min(1, 'Tittel er påkrevd'),
     entityType: z.nativeEnum(LeaderboardEntityType),
     eventId: optionalId,
     maxEntries: z
@@ -287,7 +287,7 @@ function clearFilter() {
   >
     <AdminSection title="Ledertavle">
       <div class="flex flex-col gap-6">
-        <UFormField name="name" label="Navn">
+        <UFormField name="name" label="Tittel">
           <UInput v-model="state.name" size="xl" required class="w-full" />
         </UFormField>
 

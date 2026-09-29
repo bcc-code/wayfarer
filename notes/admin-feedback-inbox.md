@@ -14,7 +14,8 @@ Related notes:
 - [`quiz-results-admin.md`](./quiz-results-admin.md) — the results/analytics view
 
 Severity: `!!` correctness/data problem · `!` real friction · `~` nice-to-have
-Source: `P1`, `P2`, `P3` = tester 1/2/3 (see raw feedback).
+Source: `P1`, `P2`, `P3` = tester 1/2/3 (see raw feedback); `muntlig` =
+relayed in conversation, not written down below.
 
 ## Decisions (2026-09-29)
 
@@ -41,13 +42,14 @@ keep the payload.
 
 ### Cross-cutting
 
-| #   | Sev | Item                                                                                                                                    | Source |
-| --- | --- | --------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| 1   | `!` | Signing in lands on the normal user app (and into the bible study); had to retype `/admin` in the URL to get back                       | P1     |
-| 2   | `!` | Poor contrast on checkbox borders — probably applies to all input types                                                                 | P3     |
-| 3   | `!` | No confirmation when navigating away with unsaved changes                                                                               | P3     |
-| 4   | `~` | Clickable things need clearer affordance: button sizes, colors on interactive elements, proper number-picker fields                     | P2     |
-| 5   | `!` | Help texts need a pass overall — they must be understandable without knowing the data model (see #10, #11, #15, #16, #24 for specifics) | P2, P3 |
+| #   | Sev | Item                                                                                                                                    | Source  |
+| --- | --- | --------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| 1   | `!` | Signing in lands on the normal user app (and into the bible study); had to retype `/admin` in the URL to get back                       | P1      |
+| 2   | `!` | Poor contrast on checkbox borders — probably applies to all input types                                                                 | P3      |
+| 3   | `!` | No confirmation when navigating away with unsaved changes                                                                               | P3      |
+| 4   | `~` | Clickable things need clearer affordance: button sizes, colors on interactive elements, proper number-picker fields                     | P2      |
+| 5   | `!` | Help texts need a pass overall — they must be understandable without knowing the data model (see #10, #11, #15, #16, #24 for specifics) | P2, P3  |
+| 25  | `!` | Content is labelled "Navn"; it should be "Tittel" — challenges, quizzes and the like                                                    | muntlig |
 
 Overall verdict from P2: "OK+ UI, bra nok for et adminpanel behind the scenes",
 just not as friendly as it could be. Nothing in the feedback says the admin is
@@ -105,33 +107,33 @@ hard to get through — P2 got the job done quickly.
 ## Status
 
 Verdict: `fix` · `later` · `wontfix` · `needs-discussion`. "Plan" is what we
-intend to do, not what has shipped — nothing below is implemented yet.
+intend to do; rows marked **done** have landed.
 
-| #   | Verdict | Plan |
-| --- | ------- | ---- |
-| 1   | `fix` | Redirect admins to /admin after sign-in |
-| 2   | `fix` | Input border contrast, app-wide |
-| 3   | `fix` | Unsaved-changes guard on admin forms |
-| 4   | `later` | Polish — revisit once the blocking items are done |
-| 5   | `fix` | Help-text pass; specifics in #10, #11, #15, #16, #24 |
-| 7   | `fix` | Default challenge type → Quiz |
-| 8   | `fix` | Explain each challenge type in the selector |
-| 9   | `fix` | Hide event selector (decision 3) |
-| 10  | `fix` | Default publish time to now, hide or reword |
-| 11  | `fix` | Reword notification help text |
-| 12  | `fix` | Quiz page leads with questions |
-| 13  | `fix` | Hide quiz title/description/image (decision 3) |
-| 14  | `fix` | Move "Legg til svaralternativ" below the list |
-| 15  | `fix` | Help text on question type |
-| 16  | `fix` | Help text on question points |
-| 17  | `fix` | Question modal not dismissible by click-outside/Esc |
-| 18  | `later` | Needs backend work; no one is blocked on it |
-| 19  | `later` | Product decision deferred (decision 2) — write it up separately |
-| 20  | `fix` | Redirect to achievement list after create |
-| 21  | `fix` | Hide superteam description (decision 3) |
-| 22  | `fix` | Rework superteam color field |
-| 23  | `fix` | Hide leaderboard event + ordering (decision 3) |
-| 24  | `fix` | Relabel limit field + help text |
+| #   | Verdict | Plan                                                                             |
+| --- | ------- | -------------------------------------------------------------------------------- |
+| 1   | `fix`   | Redirect admins to /admin after sign-in                                          |
+| 2   | `fix`   | Input border contrast, app-wide                                                  |
+| 3   | `fix`   | Unsaved-changes guard on admin forms                                             |
+| 4   | `later` | Polish — revisit once the blocking items are done                                |
+| 5   | `fix`   | Help-text pass; specifics in #10, #11, #15, #16, #24                             |
+| 7   | `fix`   | Default challenge type → Quiz — **done**                                         |
+| 8   | `fix`   | Explain each challenge type in the selector — **done**                           |
+| 9   | `fix`   | Hide event selector (decision 3) — **done**                                      |
+| 10  | `fix`   | Publishing time removed; "Synlig fra" replaced by a visibility choice — **done** |
+| 11  | `fix`   | Reword notification help text — **done**                                         |
+| 12  | `fix`   | Quiz page leads with questions                                                   |
+| 13  | `fix`   | Hide quiz title/description/image (decision 3)                                   |
+| 14  | `fix`   | Move "Legg til svaralternativ" below the list                                    |
+| 15  | `fix`   | Help text on question type                                                       |
+| 16  | `fix`   | Help text on question points                                                     |
+| 17  | `fix`   | Question modal not dismissible by click-outside/Esc                              |
+| 18  | `later` | Needs backend work; no one is blocked on it                                      |
+| 19  | `later` | Product decision deferred (decision 2) — write it up separately                  |
+| 20  | `fix`   | Redirect to achievement list after create                                        |
+| 21  | `fix`   | Hide superteam description (decision 3)                                          |
+| 22  | `fix`   | Rework superteam color field                                                     |
+| 23  | `fix`   | Hide leaderboard event + ordering (decision 3)                                   |
+| 24  | `fix`   | Relabel limit field + help text                                                  |
 
 ## Log
 
@@ -140,6 +142,15 @@ intend to do, not what has shipped — nothing below is implemented yet.
   #19 verified against the backend
 - 2026-09-29 — open decisions settled; verdicts assigned. 20 items to fix,
   4 deferred (#4, #18, #19)
+- 2026-09-29 — batch 1 (challenge creation: #7–#11) implemented. Found and
+  fixed on the way: a new challenge was created with an empty `visible_at`,
+  which the API reads as "only enrolled users ever see it" — new challenges are
+  now visible to everyone unless the organiser says otherwise, and the choice is
+  explicit in the form. Also fixed: the create page sent `endTime`/`visibleAt`
+  as bare local time, which the API parses as UTC
+- 2026-09-29 — #25: project content ("Navn" → "Tittel") on the challenge, quiz,
+  achievement and leaderboard forms. People and groups — teams, superteams,
+  users, churches — and quiz sessions keep "Navn"
 
 ---
 

@@ -53,7 +53,7 @@ export interface ChallengeFormData {
 const schema = z
   .object({
     type: z.nativeEnum(ChallengeType),
-    name: z.string().min(1, 'Navn er påkrevd'),
+    name: z.string().min(1, 'Tittel er påkrevd'),
     description: z.string().optional(),
     image: z.string().optional(),
     url: z
@@ -72,7 +72,6 @@ const schema = z
     buttonText: z.string().optional(),
     publishedAt: z.string().optional(),
     endTime: z.string().optional(),
-    visibleAt: z.string().optional(),
     startedAt: z.string().optional(),
     allowSelfCompletion: z.boolean().optional(),
     pluginChallengeId: z.string().optional(),
@@ -100,7 +99,7 @@ const schema = z
 type Schema = z.infer<typeof schema>
 
 const state = reactive<Schema>({
-  type: props.initialData?.type ?? ChallengeType.Simple,
+  type: props.initialData?.type ?? ChallengeType.Quiz,
   name: props.initialData?.name ?? '',
   description: props.initialData?.description,
   image: props.initialData?.image,
@@ -108,12 +107,50 @@ const state = reactive<Schema>({
   buttonText: props.initialData?.buttonText ?? '',
   publishedAt: props.initialData?.publishedAt,
   endTime: props.initialData?.endTime,
-  visibleAt: props.initialData?.visibleAt,
   startedAt: props.initialData?.startedAt,
   allowSelfCompletion: props.initialData?.allowSelfCompletion ?? false,
   pluginChallengeId: props.initialData?.pluginChallengeId,
   notificationText: props.initialData?.notificationText ?? '',
 })
+
+/**
+ * Visibility is stored as a single nullable timestamp, which is unreadable as
+ * a form field — see `challengeVisibility.ts`. Quiz challenges ignore it
+ * entirely (they are shown to whoever has access to a quiz session), so the
+ * control is only offered for the types it actually governs.
+ *
+ * A challenge being created starts visible: the stored default is an empty
+ * timestamp, which means the opposite and is nobody's intent.
+ */
+const visibility = ref<ChallengeVisibility>(
+  props.initialData
+    ? visibilityFromVisibleAt(props.initialData.visibleAt)
+    : 'everyone',
+)
+const scheduledVisibleAt = ref(
+  visibility.value === 'scheduled' ? props.initialData?.visibleAt : undefined,
+)
+
+const visibilityOptions = [
+  {
+    value: 'everyone',
+    label: 'Alle deltakere',
+    description: 'Ligger i utfordringslista for alle i prosjektet.',
+  },
+  {
+    value: 'enrolled',
+    label: 'Bare de som er meldt på',
+    description:
+      'Skjult i lista. Deltakeren må skanne QR-koden eller få lenken.',
+  },
+  {
+    value: 'scheduled',
+    label: 'Fra et tidspunkt',
+    description: 'Skjult fram til tidspunktet. Før det ser bare påmeldte den.',
+  },
+]
+
+const governsVisibility = computed(() => state.type !== ChallengeType.Quiz)
 
 // Update state when initialData changes (for edit mode after data loads)
 watch(
@@ -128,8 +165,10 @@ watch(
       state.buttonText = data.buttonText
       state.publishedAt = data.publishedAt
       state.endTime = data.endTime
-      state.visibleAt = data.visibleAt
       state.startedAt = data.startedAt
+      visibility.value = visibilityFromVisibleAt(data.visibleAt)
+      scheduledVisibleAt.value =
+        visibility.value === 'scheduled' ? data.visibleAt : undefined
       state.allowSelfCompletion = data.allowSelfCompletion ?? false
       state.pluginChallengeId = data.pluginChallengeId
       state.notificationText = data.notificationText ?? ''
@@ -138,11 +177,30 @@ watch(
   { once: true },
 )
 
+// Quiz first: it is the default and by far the most common type, and the
+// others read as unfamiliar jargon without the one-liner.
 const challengeTypeOptions = [
-  { value: ChallengeType.Simple, label: 'Enkel' },
-  { value: ChallengeType.External, label: 'Ekstern' },
-  { value: ChallengeType.Quiz, label: 'Quiz' },
-  { value: ChallengeType.Plugin, label: 'Plugin' },
+  {
+    value: ChallengeType.Quiz,
+    label: 'Quiz',
+    description: 'Spørsmål med svar. Poeng regnes ut automatisk.',
+  },
+  {
+    value: ChallengeType.Simple,
+    label: 'Enkel',
+    description:
+      'En oppgave uten innhold i appen. Deltakeren huker den av selv, eller en admin gjør det.',
+  },
+  {
+    value: ChallengeType.External,
+    label: 'Ekstern',
+    description: 'Sender deltakeren videre til en annen nettside.',
+  },
+  {
+    value: ChallengeType.Plugin,
+    label: 'Plugin',
+    description: 'Utfordring som styres av et annet system enn Wayfarer.',
+  },
 ]
 
 watch(
@@ -164,6 +222,15 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
   if (event.data) {
     emit('submit', {
       ...event.data,
+      // A quiz keeps whatever it has: the field does nothing for that type,
+      // so writing to it would only churn existing data.
+      visibleAt: governsVisibility.value
+        ? visibleAtForVisibility(
+            visibility.value,
+            scheduledVisibleAt.value,
+            props.initialData?.visibleAt,
+          )
+        : props.initialData?.visibleAt,
     })
   }
 }
@@ -189,15 +256,18 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
               label="Utfordringstype"
               :help="isEditMode ? 'Typen kan ikke endres etterpå' : undefined"
             >
+              <!-- Item descriptions are truncated to one line by default,
+                   and these are sentences. -->
               <USelect
                 v-model="state.type"
                 :items="challengeTypeOptions"
                 :disabled="isEditMode"
+                :ui="{ itemDescription: 'text-clip whitespace-normal' }"
                 class="w-full"
               />
             </UFormField>
             <AdminTranslatableFormField
-              label="Navn"
+              label="Tittel"
               :translation-status="translationStatus"
               name="name"
             >
@@ -276,24 +346,32 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
           </UFormField>
         </AdminSection>
 
-        <AdminSection title="Tidspunkt">
+        <AdminSection title="Synlighet">
           <div class="flex flex-col gap-6">
             <UFormField
-              name="publishedAt"
-              label="Publiseringstidspunkt"
-              hint="(valgfritt - standard: nå)"
-              help="Når utfordringen blir tilgjengelig for brukere"
+              v-if="governsVisibility"
+              name="visibility"
+              label="Hvem ser utfordringen"
+              help="Påmeldt betyr at deltakeren har skannet QR-koden til utfordringen, åpnet lenken til den, eller blitt lagt til av en admin."
             >
-              <AdminDateTimeField v-model="state.publishedAt" />
+              <USelect
+                v-model="visibility"
+                :items="visibilityOptions"
+                :ui="{ itemDescription: 'text-clip whitespace-normal' }"
+                class="w-full"
+              />
             </UFormField>
             <UFormField
-              name="visibleAt"
+              v-if="governsVisibility && visibility === 'scheduled'"
+              name="scheduledVisibleAt"
               label="Synlig fra"
-              hint="(valgfritt)"
-              help="Når utfordringen blir synlig for brukere. Før dette ser bare påmeldte den."
             >
-              <AdminDateTimeField v-model="state.visibleAt" />
+              <AdminDateTimeField v-model="scheduledVisibleAt" />
             </UFormField>
+            <p v-if="!governsVisibility" class="text-muted text-sm">
+              En quiz vises for de som har tilgang til en quiz-sesjon. Styr hvem
+              som slipper til fra Sesjoner, ikke herfra.
+            </p>
             <UFormField
               name="endTime"
               label="Sluttid"
@@ -311,7 +389,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
             :translation-status="translationStatus"
             name="notificationText"
             hint="(valgfritt)"
-            help="Tekst som vises i push-varsler når admin melder bruker på utfordringen. La feltet stå tomt for ingen varsling."
+            help="Push-varselet deltakeren får når en admin melder dem på utfordringen. Tomt felt betyr at ingen varsel sendes."
           >
             <UTextarea
               v-model="state.notificationText"

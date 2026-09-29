@@ -79,7 +79,7 @@ const withKeys = (list: QuizQuestionFormData[]) =>
   list.map((question) => ({ ...question, localKey: nextKey() }))
 
 const schema = z.object({
-  name: z.string().min(1, 'Navn er påkrevd'),
+  name: z.string().min(1, 'Tittel er påkrevd'),
   description: z.string().min(1, 'Beskrivelse er påkrevd'),
   image: z.string().optional(),
   timeoutSeconds: z.number().optional(),
@@ -262,7 +262,7 @@ const questionPoints = computed(() =>
     <AdminSection title="Quiz-innstillinger">
       <div class="flex flex-col gap-6">
         <AdminTranslatableFormField
-          label="Quiz-navn"
+          label="Tittel"
           :translation-status="translationStatus"
           name="name"
         >

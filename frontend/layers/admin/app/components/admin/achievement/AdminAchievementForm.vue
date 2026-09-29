@@ -74,7 +74,7 @@ const emit = defineEmits<{
 
 // Common fields schema
 const schema = z.object({
-  name: z.string().min(1, 'Navn er påkrevd'),
+  name: z.string().min(1, 'Tittel er påkrevd'),
   descriptionPending: z.string().min(1, 'Beskrivelse er påkrevd'),
   descriptionCompleted: z.string().min(1, 'Beskrivelse er påkrevd'),
   notificationText: z.string().min(1, 'Varslingstekst er påkrevd'),
@@ -221,7 +221,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
         <AdminSection title="Innhold">
           <div class="flex flex-col gap-6">
             <AdminTranslatableFormField
-              label="Navn"
+              label="Tittel"
               :translation-status="translationStatus"
               name="name"
             >
