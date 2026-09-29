@@ -127,7 +127,7 @@ intend to do; rows marked **done** have landed.
 | 26  | `wontfix` | The setting works — the warning saying otherwise was wrong and is gone; the checkbox now explains it                         |
 | 14  | `fix`     | "Legg til svaralternativ" moved under the list (same for ordering items) — **done**                                          |
 | 15  | `fix`     | Help text on question type, with the grading rule per type — **done**                                                        |
-| 16  | `fix`     | Help text on question points — **done**                                                                                      |
+| 16  | `fix`     | Points field hidden for the types that cannot earn any; help text on the rest — **done**                                     |
 | 17  | `fix`     | Question dialog is no longer dismissible by click-outside or Esc — **done**                                                  |
 | 18  | `later`   | Needs backend work; no one is blocked on it                                                                                  |
 | 19  | `later`   | Product decision deferred (decision 2) — write it up separately                                                              |
@@ -167,6 +167,22 @@ intend to do; rows marked **done** have landed.
   old "Ikke i bruk ennå" warning was simply wrong; the checkbox is back with a
   description of when the order is drawn. Whether any existing quiz has it
   enabled is a database question, not answerable from the code
+- 2026-09-29 — question type copy rewritten in plain language, and the points
+  field is now hidden for Fritekst and Tall, which no grading path can score.
+  Any points value left over from an earlier type choice is dropped on save.
+  **Follow-up worth its own item:** `StartQuizSession` sums `points` over every
+  question when it computes `max_score` (`quiz_sessions.resolvers.go:768`),
+  with no type filter, while the M2M `CreateQuizSubmission` filters by type
+  (`quizzes.resolvers.go:1506`) — and includes Number, which is not graded
+  either. Existing quizzes with points on an ungradable question therefore show
+  participants a max score they cannot reach
+- 2026-09-29 — **bug found and fixed while testing the points field**: editing
+  an existing question discarded every change. `AdminQuizQuestionEditor`
+  rebuilt the question without its `localKey`, and `AdminQuizForm.saveQuestion`
+  matches on exactly that key, so the edit matched nothing and the untouched
+  original stayed in the list — no error, and the dialog closed as if it had
+  worked. Predates this week's work; the old `points: 1` default hid part of it
+  because a value was always sent. Covered by a regression test
 - 2026-09-29 — #25: project content ("Navn" → "Tittel") on the challenge, quiz,
   achievement and leaderboard forms. People and groups — teams, superteams,
   users, churches — and quiz sessions keep "Navn"

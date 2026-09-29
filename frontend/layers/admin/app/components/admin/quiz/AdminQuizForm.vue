@@ -153,7 +153,6 @@ function addQuestion() {
     questionType: QuizQuestionType.Predefined,
     questionText: '',
     questionOrder: questions.value.length + 1,
-    points: 1,
     allowMultipleSelection: false,
     predefinedAnswers: [
       { answerText: '', isCorrect: true, answerOrder: 1 },
@@ -238,31 +237,29 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
   })
 }
 
-// Only the automatically graded types can award points: a response is worth
-// its question's points when `is_correct` is true, and free text and number
-// answers are stored ungraded.
+// What each type is; what it is worth belongs with the points field, which
+// sits in the same dialog.
 const questionTypeOptions = [
   {
     value: QuizQuestionType.Predefined,
     label: 'Flervalg',
-    description: 'Faste svaralternativer. Rettes automatisk.',
+    description: 'Du lager svaralternativene, og deltakeren velger.',
   },
   {
     value: QuizQuestionType.FreeText,
     label: 'Fritekst',
-    description:
-      'Deltakeren skriver svaret selv. Rettes ikke, og gir ingen poeng.',
+    description: 'Deltakeren skriver svaret med egne ord.',
   },
   {
     value: QuizQuestionType.Number,
     label: 'Tall',
-    description: 'Deltakeren oppgir et tall. Rettes ikke, og gir ingen poeng.',
+    description: 'Deltakeren svarer med et tall.',
   },
   {
     value: QuizQuestionType.Ordering,
     label: 'Rekkefølge',
     description:
-      'Deltakeren sorterer leddene. Rettes automatisk, hele rekkefølgen må stemme.',
+      'Du legger inn elementene i riktig rekkefølge, og deltakeren drar dem på plass.',
   },
 ]
 

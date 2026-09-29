@@ -192,6 +192,36 @@ describe('AdminQuizQuestionEditor', () => {
       ]),
     )
 
-    expect(wrapper.text()).toContain('rettes automatisk og er helt riktig')
+    expect(wrapper.text()).toContain('Gis når deltakeren treffer helt riktig')
+  })
+
+  it.each([
+    ['Fritekst', QuizQuestionType.FreeText],
+    ['Tall', QuizQuestionType.Number],
+  ])('offers no points field for %s', async (_label, questionType) => {
+    const wrapper = await mount({
+      questionType,
+      questionText: 'Hva husker du best?',
+      questionOrder: 1,
+    })
+
+    expect(wrapper.text()).not.toContain('Poeng')
+  })
+
+  // A number left behind by an earlier type choice would still count towards
+  // the max score a participant is shown, while never paying out.
+  it('drops points a question type cannot earn', async () => {
+    const wrapper = await mount({
+      questionType: QuizQuestionType.FreeText,
+      questionText: 'Hva husker du best?',
+      questionOrder: 1,
+      points: 10,
+    })
+
+    await saveButton(wrapper).trigger('click')
+
+    expect(wrapper.emitted('save')?.[0]?.[0]).toMatchObject({
+      points: undefined,
+    })
   })
 })

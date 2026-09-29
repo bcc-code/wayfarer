@@ -195,6 +195,49 @@ describe('AdminQuizForm', () => {
     )
   })
 
+  // Regression: the editor rebuilt the question without its `localKey`, so the
+  // list matched nothing and put the untouched original back. Every change made
+  // in the dialog was dropped, silently.
+  it('keeps what was typed when an existing question is edited', async () => {
+    const wrapper = await mount()
+
+    const edit = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('Rediger'))
+    await edit?.trigger('click')
+
+    // The dialog teleports, so drive it through the editor's own subtree.
+    const editor = wrapper.findComponent({ name: 'AdminQuizQuestionEditor' })
+    await editor.findAll('input[type="number"]')[0]?.setValue('100')
+    await editor
+      .findAll('button')
+      .find((button) => button.text().includes('Oppdater spørsmål'))
+      ?.trigger('click')
+    await flushPromises()
+
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    const saved = wrapper.emitted('save')?.[0]?.[0] as {
+      questions: { id?: string; points?: number }[]
+    }
+    expect(saved.questions[0]).toMatchObject({ id: 'QQ1', points: 100 })
+    // The question it was not editing is untouched.
+    expect(saved.questions[1]).toMatchObject({ id: 'QQ2', points: 5 })
+  })
+
+  // A point that lands because nobody changed it is not a deliberate score.
+  it('adds a question with no points set', async () => {
+    const wrapper = await mount()
+
+    await addQuestion(wrapper)
+    const question = wrapper
+      .findComponent({ name: 'AdminQuizQuestionEditor' })
+      .props('question') as { points?: number }
+
+    expect(question.points).toBeUndefined()
+  })
+
   // The editor shows these; the list is owned here.
   it('explains each question type to the editor', async () => {
     const wrapper = await mount()

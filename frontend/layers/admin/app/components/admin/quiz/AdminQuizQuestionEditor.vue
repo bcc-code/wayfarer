@@ -108,6 +108,19 @@ function handleOrderingReorder() {
   })
 }
 
+/**
+ * Free text and number answers are stored ungraded — no grading path ever sets
+ * `is_correct` on them — so their points can never pay out. The field is not
+ * offered, and any value from an earlier type choice is dropped on save:
+ * a stored number would still count towards the max score a participant is
+ * shown while being unreachable.
+ */
+const canEarnPoints = computed(
+  () =>
+    localQuestion.questionType === QuizQuestionType.Predefined ||
+    localQuestion.questionType === QuizQuestionType.Ordering,
+)
+
 /** Shown in the editor, so the reason a save is blocked is visible. */
 const validationError = computed(() => validateQuizQuestion(localQuestion))
 
@@ -124,11 +137,15 @@ function handleSave() {
   // Clean up data based on question type - only include relevant fields
   const cleanedQuestion: QuizQuestionFormData = {
     id: localQuestion.id,
+    // The list matches on `localKey`. Dropping it here meant an edited
+    // question matched nothing and was discarded on close, so everything typed
+    // in the dialog was lost without a word.
+    localKey: localQuestion.localKey,
     questionType: localQuestion.questionType,
     questionText: localQuestion.questionText,
     questionOrder: localQuestion.questionOrder,
     timeoutSeconds: toOptionalNumber(localQuestion.timeoutSeconds),
-    points: localQuestion.points,
+    points: canEarnPoints.value ? localQuestion.points : undefined,
     bettingEnabled: localQuestion.bettingEnabled,
     bettingMinPercentage: toOptionalNumber(localQuestion.bettingMinPercentage),
     bettingMaxPercentage: toOptionalNumber(localQuestion.bettingMaxPercentage),
@@ -350,7 +367,7 @@ function handleSave() {
               :text="
                 canRemoveOrderingItem
                   ? `Fjern element ${index + 1}`
-                  : 'Et rekkefølgespørsmål trenger minst to ledd'
+                  : 'Et rekkefølgespørsmål trenger minst to elementer'
               "
               :delay-duration="200"
             >
@@ -380,9 +397,10 @@ function handleSave() {
 
     <div class="grid grid-cols-2 gap-4">
       <UFormField
+        v-if="canEarnPoints"
         name="points"
         label="Poeng"
-        help="Gis bare når svaret rettes automatisk og er helt riktig."
+        help="Gis når deltakeren treffer helt riktig."
       >
         <UInput
           v-model.number="localQuestion.points"
