@@ -4529,6 +4529,13 @@ export type AdminLeaderboardConfigFormOptionsQueryVariables = Exact<{
 
 export type AdminLeaderboardConfigFormOptionsQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string }, teams: { __typename?: 'TeamConnection', edges: Array<{ __typename?: 'TeamEdge', node: { __typename?: 'Team', id: string, name: string } }> }, superteams: { __typename?: 'SuperTeamConnection', edges: Array<{ __typename?: 'SuperTeamEdge', node: { __typename?: 'SuperTeam', id: string, name: string } }> }, churches: { __typename?: 'ChurchConnection', edges: Array<{ __typename?: 'ChurchEdge', node: { __typename?: 'Church', id: string, name: string } }> } };
 
+export type AdminLeaderboardPreviewQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type AdminLeaderboardPreviewQuery = { __typename?: 'Query', leaderboardConfig: { __typename?: 'LeaderboardConfig', id: string, name: string, leaderboard: { __typename?: 'LeaderboardConnection', totalCount: number, edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } | null, nearestChurchRivals: Array<{ __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> }> } } };
+
 export type AdminProjectEngagementQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
 }>;
@@ -4975,7 +4982,7 @@ export type AdminProjectLeaderboardPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminProjectLeaderboardPageQuery = { __typename?: 'Query', leaderboardConfig: { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null } };
+export type AdminProjectLeaderboardPageQuery = { __typename?: 'Query', leaderboardConfig: { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, maxEntries?: number | null, sortOrder: number, isActive: boolean, project: { __typename?: 'Project', id: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } }, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null } };
 
 export type AdminProjectLeaderboardsQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
@@ -6901,6 +6908,32 @@ export const AdminLeaderboardConfigFormOptionsDocument = gql`
 export function useAdminLeaderboardConfigFormOptionsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminLeaderboardConfigFormOptionsQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminLeaderboardConfigFormOptionsQuery, AdminLeaderboardConfigFormOptionsQueryVariables | undefined>({ query: AdminLeaderboardConfigFormOptionsDocument, variables: undefined, ...options });
 };
+export const AdminLeaderboardPreviewDocument = gql`
+    query AdminLeaderboardPreview($id: ID!) {
+  leaderboardConfig(id: $id) {
+    id
+    name
+    leaderboard {
+      totalCount
+      edges {
+        node {
+          ...LeaderboardEntryWithDescriptionFields
+        }
+      }
+      me {
+        ...LeaderboardEntryWithDescriptionFields
+      }
+      nearestChurchRivals {
+        ...LeaderboardEntryWithDescriptionFields
+      }
+    }
+  }
+}
+    ${LeaderboardEntryWithDescriptionFieldsFragmentDoc}`;
+
+export function useAdminLeaderboardPreviewQuery(options?: Omit<Urql.UseQueryArgs<never, AdminLeaderboardPreviewQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminLeaderboardPreviewQuery, AdminLeaderboardPreviewQueryVariables | undefined>({ query: AdminLeaderboardPreviewDocument, variables: undefined, ...options });
+};
 export const AdminProjectEngagementDocument = gql`
     query AdminProjectEngagement($projectId: ID!) {
   challenges(first: 50, filter: {projectId: $projectId}) {
@@ -8140,9 +8173,18 @@ export const AdminProjectLeaderboardPageDocument = gql`
     query AdminProjectLeaderboardPage($id: ID!) {
   leaderboardConfig(id: $id) {
     ...LeaderboardConfigFields
+    project {
+      id
+      branding {
+        colors {
+          ...BrandingColorsFields
+        }
+      }
+    }
   }
 }
-    ${LeaderboardConfigFieldsFragmentDoc}`;
+    ${LeaderboardConfigFieldsFragmentDoc}
+${BrandingColorsFieldsFragmentDoc}`;
 
 export function useAdminProjectLeaderboardPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectLeaderboardPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectLeaderboardPageQuery, AdminProjectLeaderboardPageQueryVariables | undefined>({ query: AdminProjectLeaderboardPageDocument, variables: undefined, ...options });

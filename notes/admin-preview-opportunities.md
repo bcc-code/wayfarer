@@ -33,12 +33,22 @@ configured filter rather than a render of form state.
 
 ### 3. Push notification text
 
+**Caveat found later:** there is no real component to reuse here — a push
+notification is drawn by the OS, not by the app — so this one is a mock by
+necessity, the only place on the list where the replica rule does not apply.
+
 `notificationText` on both the challenge and the achievement form is written
 blind, and it is the one field that reaches a participant's lock screen. A mock
 notification — app name, title, body, truncated where the OS truncates — is
 cheap and needs no user components at all.
 
 ### 4. Project rules and info message
+
+**Caveat found later:** `ProjectInfoBanner` takes `{ markdown, html }` and the
+HTML comes from the backend (`MarkdownText.html`). A preview of _unsaved_
+markdown therefore needs either a round trip or a client-side renderer, and no
+markdown library is installed. Previewing the last-saved version is free; the
+live draft is not.
 
 Both are markdown, rendered to HTML by the backend (`MarkdownText.html`) and
 shown in a drawer (`ProjectRules`). The editor shows the markdown; the drawer
@@ -52,6 +62,15 @@ A superteam's colour only means something next to the other superteams. A
 preview of the standings row, or the superteam card, is what makes an organiser
 pick a colour that is distinguishable rather than one that looks nice in a
 picker. Related: [`admin-feedback-inbox.md`](./admin-feedback-inbox.md) #22.
+
+### 6. Project branding
+
+`AdminProjectThemeEditor` already previews the palette as swatches on a mock
+screen. Rendering a real screen in the chosen colours — the challenge card and
+a standings row, which is most of what a participant looks at — would answer
+"does this palette work" rather than "what are these colours". The pieces are
+in place: both components are already used in previews elsewhere, and
+`AdminThemedPreview` is exactly the frame for it.
 
 ### Probably not worth it
 
@@ -92,6 +111,37 @@ Three things this needs, learned building the first two:
   `QuizQuestionHeading`, used by both. Extracting beats copying — the copy is
   what this note was written to stop.
 
-**Done:** the challenge card (#0, was a replica) and the quiz question editor
-(#1). Still a replica: `AdminAchievementPreview`. `AchievementBadge` brings a
-sheet, a mutation and confetti with it, so converting it is its own pass.
+**Done.** Every preview on the list below is built, except the project rules
+and the superteam (the latter set aside as not needed yet):
+
+| Preview           | Where                   | Real component                          |
+| ----------------- | ----------------------- | --------------------------------------- |
+| Challenge card    | challenge form          | `ChallengeCard`                         |
+| Quiz question     | question dialog         | `Quiz*Question` + `QuizQuestionHeading` |
+| Leaderboard       | leaderboard edit page   | `StandingsBoard`                        |
+| Achievement       | achievement form        | `AchievementDetails`                    |
+| Project home page | project settings        | `ProfileProjectCard`                    |
+| Push notification | challenge + achievement | none — see below                        |
+
+Two of them needed a component extracted first, the same move both times: the
+markup existed but was inline. `QuizQuestionHeading` came out of
+`QuizChallenge`, and `AchievementDetails` out of `AchievementBadge` — the badge
+keeps the drawer, the analytics and the confetti, and the contents are now
+shared. That also retired `AdminThemedPreview`'s `interactive` escape hatch:
+the achievement's pending/completed switcher moved out to the form, where
+preview chrome belongs.
+
+Two limits worth knowing:
+
+- **The leaderboard preview shows the saved configuration.** The server
+  computes a board from the stored filter and there is no query that takes an
+  unsaved one, so edits appear after saving. The label above the preview says
+  so. A `previewLeaderboard(filter:)` query would fix it; that is backend work.
+- **The push notification is a mock.** A notification is drawn by the OS, so
+  there is no component to reuse. It mirrors the payload the backend sends —
+  title from the name, body from the notification text — and clamps to two
+  lines as a phone does.
+
+The project settings preview is fed from the **draft**, not from what is
+stored, so a banner and a palette can be judged before saving. That was the
+point of the branding idea and it came free with the home-page preview.

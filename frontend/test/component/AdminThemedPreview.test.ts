@@ -37,17 +37,13 @@ describe('AdminThemedPreview', () => {
     expect(wrapper.html()).not.toContain('aspect-')
   })
 
-  // The previews render the real components, links included.
-  it('is not interactive by default', async () => {
+  // The previews render the real components, links included. A preview's own
+  // controls belong outside the frame, which is where the achievement form
+  // keeps its state switcher.
+  it('is never interactive', async () => {
     const wrapper = await mount()
 
     expect(wrapper.find('[inert]').exists()).toBe(true)
-  })
-
-  it('can be opened up for a preview that carries its own controls', async () => {
-    const wrapper = await mount({ interactive: true })
-
-    expect(wrapper.find('[inert]').exists()).toBe(false)
   })
 
   it('paints the project palette onto the screen', async () => {

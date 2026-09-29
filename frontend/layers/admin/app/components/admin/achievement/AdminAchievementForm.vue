@@ -114,6 +114,9 @@ const requireCompletion = ref<boolean>(
 )
 
 // Update state when initialData changes (for edit mode after data loads)
+/** Which state the preview shows; a draft has never been earned. */
+const previewState = ref<'pending' | 'completed'>('pending')
+
 const { markSaved } = useUnsavedChanges(() => ({
   ...state,
   contentItems: contentItems.value,
@@ -380,13 +383,33 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
 
       <!-- Sticky: it used to scroll away before you reached the points and
            visibility fields. -->
-      <AdminThemedPreview
-        :colors="colors"
-        interactive
-        class="top-6 h-fit @4xl:sticky"
-      >
-        <AdminAchievementPreview :achievement="state" />
-      </AdminThemedPreview>
+      <aside class="top-6 h-fit @4xl:sticky">
+        <!-- The switcher belongs to the preview, not to the achievement, so
+             it sits outside the frame — which is inert, and is the app. -->
+        <USelect
+          v-model="previewState"
+          :items="[
+            { value: 'pending', label: 'Ikke oppnådd' },
+            { value: 'completed', label: 'Oppnådd' },
+          ]"
+          class="mb-2"
+        />
+        <AdminThemedPreview :colors="colors">
+          <AdminAchievementPreview
+            :achievement="state"
+            :achieved="previewState === 'completed'"
+          />
+        </AdminThemedPreview>
+
+        <div class="mt-4 w-[390px] max-w-full">
+          <p class="text-muted mb-2 text-xs">Varselet når den oppnås</p>
+          <AdminPushNotificationPreview
+            :title="state.name"
+            :body="state.notificationText"
+            :icon="state.imageCompleted || state.imagePending"
+          />
+        </div>
+      </aside>
     </div>
   </div>
 </template>

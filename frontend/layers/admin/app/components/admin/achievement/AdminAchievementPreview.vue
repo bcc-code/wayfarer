@@ -1,87 +1,48 @@
 <script setup lang="ts">
-defineProps<{
-  achievement: Partial<Achievement>
+import AchievementDetails from '#layers/user/app/components/achievements/AchievementDetails.vue'
+
+/**
+ * The achievement as a participant opens it, rendered by the participant
+ * app's own `AchievementDetails`.
+ *
+ * The adapter is the whole component: the app reads an achievement off a
+ * query, the form holds a draft, and which of the two images and descriptions
+ * applies depends on whether it has been earned — which the form's own
+ * switcher decides, because a draft has never been earned by anyone.
+ */
+const props = defineProps<{
+  achievement: {
+    name?: string
+    descriptionPending?: string
+    descriptionCompleted?: string
+    imagePending?: string
+    imageCompleted?: string
+    points?: number
+  }
+  /** Which of the two states to show. */
+  achieved?: boolean
 }>()
 
-const state = ref<'pending' | 'completed'>('pending')
+const preview = computed(() => ({
+  name: props.achievement.name || 'Utmerkelse',
+  descriptionPending: props.achievement.descriptionPending || '',
+  descriptionCompleted: props.achievement.descriptionCompleted || '',
+  points: props.achievement.points,
+  // Any timestamp will do: the app only asks whether there is one.
+  achievedAt: props.achieved ? new Date().toISOString() : null,
+  imagePendingObject: props.achievement.imagePending
+    ? { url: props.achievement.imagePending }
+    : null,
+  imageCompletedObject: props.achievement.imageCompleted
+    ? { url: props.achievement.imageCompleted }
+    : null,
+}))
 </script>
 
 <template>
   <div
-    class="bg-background-default aspect-[9/19.5] w-full overflow-y-auto rounded-xl text-start p-list-outside"
+    class="bg-background-default aspect-[9/19.5] w-full overflow-y-auto rounded-xl p-list-outside"
   >
-    <!-- The state switcher is the preview's own control, not part of the
-         achievement, so it sits above it rather than floating over the
-         image. Sized to content: a fixed height left the badge stranded in
-         the middle of an empty box. -->
-    <div class="flex h-full flex-col items-center gap-6">
-      <USelect
-        v-model="state"
-        :items="[
-          { value: 'pending', label: 'Ikke fullført' },
-          { value: 'completed', label: 'Fullført' },
-        ]"
-      />
-      <div class="flex flex-1 flex-col items-center justify-center gap-6">
-        <div
-          :class="[
-            'grid aspect-square size-55 place-items-center overflow-hidden rounded-full',
-            { 'shadow-large': state === 'completed' },
-          ]"
-        >
-          <img
-            v-if="achievement.imageCompleted && state === 'completed'"
-            :src="achievement.imageCompleted"
-            class="size-full object-cover"
-          />
-          <img
-            v-else-if="achievement.imagePending"
-            :src="achievement.imagePending"
-            class="size-full object-cover"
-          />
-          <img
-            v-else
-            src="/images/achievement-placeholder.png"
-            class="size-full object-cover"
-          />
-        </div>
-        <div class="flex flex-col items-center gap-1 text-center text-balance">
-          <h3 class="text-heading">
-            {{ achievement.name || 'Achievement Name' }}
-          </h3>
-          <p
-            v-if="state === 'completed' && achievement.descriptionCompleted"
-            class="text-label"
-          >
-            {{ achievement.descriptionCompleted }}
-          </p>
-          <p
-            v-else-if="state === 'pending' && achievement.descriptionPending"
-            class="text-label"
-          >
-            {{ achievement.descriptionPending }}
-          </p>
-          <p v-else class="text-label text-text-muted">Ingen beskrivelse</p>
-        </div>
-        <template v-if="achievement.points">
-          <div
-            v-if="state === 'completed'"
-            class="rounded-full bg-background-indent py-2 px-3 text-label text-accent-contrast"
-          >
-            +{{ formatNumber(achievement.points ?? 0) }} {{ $t('points') }}
-          </div>
-          <div
-            v-else
-            class="rounded-full bg-background-indent py-2 px-3 text-label text-text-muted"
-          >
-            {{
-              $t('givesYouXPoints', {
-                points: formatNumber(achievement.points ?? 0),
-              })
-            }}
-          </div>
-        </template>
-      </div>
-    </div>
+    <AchievementDetails :achievement="preview" />
   </div>
 </template>

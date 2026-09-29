@@ -425,9 +425,20 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
 
       <!-- Sticky: by the time you reach the timestamps the preview would
            otherwise have scrolled away. -->
-      <AdminThemedPreview :colors="colors" class="top-6 h-fit @4xl:sticky">
-        <AdminChallengeCardPreview :challenge="state" />
-      </AdminThemedPreview>
+      <aside class="top-6 h-fit space-y-4 @4xl:sticky">
+        <AdminThemedPreview :colors="colors">
+          <AdminChallengeCardPreview :challenge="state" />
+        </AdminThemedPreview>
+
+        <div class="w-[390px] max-w-full">
+          <p class="text-muted mb-2 text-xs">Varselet ved påmelding</p>
+          <AdminPushNotificationPreview
+            :title="state.name"
+            :body="state.notificationText"
+            :icon="state.image"
+          />
+        </div>
+      </aside>
     </div>
   </div>
 </template>

@@ -210,12 +210,14 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
 </script>
 
 <template>
-  <div>
-    <div>
+  <div class="@container">
+    <!-- `@container` above, as the other forms: the preview only earns a
+         column of its own once the page is wide enough for both. -->
+    <div class="grid gap-8 @4xl:grid-cols-[minmax(0,28rem)_minmax(0,1fr)]">
       <UForm
         :state
         :schema="schema"
-        class="flex max-w-md flex-col gap-8"
+        class="flex flex-col gap-8"
         @submit.prevent="updateProject"
       >
         <UFormField name="branding.logo" label="Logo" hint="(valgfritt)">
@@ -300,6 +302,18 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
           >Lagre endringer</UButton
         >
       </UForm>
+
+      <!-- Fed from the draft, not from what is stored: the point is to judge a
+           banner and a palette before saving them. -->
+      <aside class="top-6 h-fit @4xl:sticky">
+        <p class="text-muted mb-2 text-xs">Forsiden med disse innstillingene</p>
+        <AdminThemedPreview :colors="state.branding.colors">
+          <AdminProjectHomePreview
+            :project-name="state.name"
+            :banner="state.branding.banner"
+          />
+        </AdminThemedPreview>
+      </aside>
     </div>
   </div>
 </template>
