@@ -79,8 +79,17 @@ export default defineNuxtRouteMiddleware(async (to) => {
       lastRedirectTime.value = now
 
       // Authenticated with Auth0 but no Wayfarer token
-      // This can happen on page refresh - redirect to callback to exchange token
-      return navigateTo('/auth0-callback', { replace: true })
+      // This can happen on page refresh - redirect to callback to exchange token.
+      // The callback has no Auth0 params to read a target from on this path, so
+      // the page being asked for travels with it: without that, an admin whose
+      // token had expired was dropped on the user app's front page.
+      return navigateTo(
+        {
+          path: '/auth0-callback',
+          query: { redirect: safeRedirectPath(to.fullPath) },
+        },
+        { replace: true },
+      )
     } else {
       // Not authenticated - redirect to login page
       // Clear redirect attempts on successful login flow

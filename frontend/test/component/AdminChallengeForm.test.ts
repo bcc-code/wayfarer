@@ -1,9 +1,17 @@
 // @vitest-environment nuxt
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import AdminChallengeForm from '../../layers/admin/app/components/admin/challenge/AdminChallengeForm.vue'
 import { ChallengeType } from '../../app/api/generated'
+
+const confirm = vi.fn(() => Promise.resolve(true))
+mockNuxtImport('useConfirm', () => () => ({ confirm }))
+
+const leaveGuards: (() => unknown)[] = []
+mockNuxtImport('onBeforeRouteLeave', () => (guard: () => unknown) => {
+  leaveGuards.push(guard)
+})
 
 const base = {
   name: 'Dagens oppgave',
@@ -25,6 +33,8 @@ async function submit(wrapper: {
 }
 
 beforeEach(() => {
+  confirm.mockClear()
+  leaveGuards.length = 0
   vi.useFakeTimers()
   vi.setSystemTime(new Date('2026-06-15T12:00:00'))
 })
@@ -186,6 +196,33 @@ describe('AdminChallengeForm', () => {
     expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({
       description: '<p>Les <b>Matteus 5</b></p>',
     })
+  })
+
+  // Half an hour of writing a challenge, thrown away by a misclick in the nav.
+  it('asks before leaving with unsaved changes', async () => {
+    const wrapper = await mountSuspended(AdminChallengeForm, {
+      props: { submitLabel: base.submitLabel, initialData: simple },
+    })
+
+    const inputs = wrapper.findAllComponents({ name: 'UInput' })
+    await inputs[0]?.vm.$emit('update:modelValue', 'Noe helt annet')
+
+    await leaveGuards[0]?.()
+    expect(confirm).toHaveBeenCalled()
+  })
+
+  // The edit page fills the form in when its query resolves. That is not an
+  // edit, and warning about it would train people to click through the dialog.
+  it('does not ask when the form only loaded its data', async () => {
+    const wrapper = await mountSuspended(AdminChallengeForm, {
+      props: { submitLabel: base.submitLabel },
+    })
+
+    await wrapper.setProps({ initialData: simple })
+    await flushPromises()
+
+    await expect(leaveGuards[0]?.()).resolves.toBe(true)
+    expect(confirm).not.toHaveBeenCalled()
   })
 
   // Publishing time is always "now" in practice; it was only ever noise.

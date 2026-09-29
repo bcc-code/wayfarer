@@ -15,8 +15,8 @@
  * token, including the user-facing Design* components.
  */
 
-// The hairline that frames a piece of glass. On its own it goes on a control,
-// which sits on the chrome it belongs to rather than lifting off it.
+// The hairline that frames a piece of glass. Surfaces only — a form control
+// draws the theme's `ring-accented` instead, which you can actually see.
 const ring = 'ring ring-black/8 dark:ring-white/10'
 // Turns the material solid for anyone who asks for less transparency. The
 // variant is declared in main.css; applying it here means every surface built
@@ -116,9 +116,12 @@ export default defineAppConfig({
     },
     checkbox: {
       slots: {
-        // `size-5!` and the larger label are Wayfarer's own; the rounding and
-        // ring come from the reference.
-        base: ['size-5!', 'rounded-xs', ring],
+        // `size-5!` and the larger label are Wayfarer's own; the rounding
+        // comes from the reference. The hairline does not: a control you are
+        // meant to find and click needs an edge you can see, so the box keeps
+        // the theme's `ring-accented` rather than the glass hairline. Testers
+        // could not make out an unchecked box against the panel behind it.
+        base: ['size-5!', 'rounded-xs'],
         label: 'text-base leading-tight font-normal',
       },
     },
@@ -160,8 +163,11 @@ export default defineAppConfig({
     input: {
       variants: {
         variant: {
-          outline: `${ring} shadow-xs dark:shadow-none`,
-          subtle: ring,
+          // Only the lift. The edge stays the theme's `ring-accented`, for the
+          // same reason as the checkbox above — and it is what the untouched
+          // textarea and select already draw, so every field in a form now
+          // has the same edge.
+          outline: 'shadow-xs dark:shadow-none',
         },
       },
     },

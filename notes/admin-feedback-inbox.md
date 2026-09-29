@@ -112,9 +112,9 @@ intend to do; rows marked **done** have landed.
 
 | #   | Verdict   | Plan                                                                                                                         |
 | --- | --------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| 1   | `fix`     | Redirect admins to /admin after sign-in                                                                                      |
-| 2   | `fix`     | Input border contrast, app-wide                                                                                              |
-| 3   | `fix`     | Unsaved-changes guard on admin forms                                                                                         |
+| 1   | `fix`     | Sign-in carries the page you asked for through the token exchange — **done**                                                 |
+| 2   | `fix`     | Form controls draw the accented hairline instead of the glass one — **done**                                                 |
+| 3   | `fix`     | `useUnsavedChanges` guard on the challenge, achievement and leaderboard forms — **done**                                     |
 | 4   | `later`   | Polish — revisit once the blocking items are done                                                                            |
 | 5   | `fix`     | Help-text pass; specifics in #10, #11, #15, #16, #24                                                                         |
 | 7   | `fix`     | Default challenge type → Quiz — **done**                                                                                     |
@@ -185,6 +185,21 @@ intend to do; rows marked **done** have landed.
   because a value was always sent. Covered by a regression test
 - 2026-09-29 — batch 3 (#20–#24) implemented. The leaderboard form no longer
   queries the project's events at all, since nothing else on it used them
+- 2026-09-29 — batch 4 (#1–#3) implemented.
+  - #1 was not the login redirect: `/login?redirect=` already worked. The hole
+    was the other branch — a live Auth0 session with an expired Wayfarer token
+    went to `/auth0-callback` with no target at all, and the callback defaulted
+    to `/`. The page now travels in the query, through `safeRedirectPath` so the
+    parameter cannot send anyone off-site.
+  - #2 was one override: `app.config.ts` replaced the checkbox's and input's
+    `ring-accented` with the glass hairline (`ring-black/8 dark:ring-white/10`),
+    which textarea and select never had — so a form's fields did not even agree
+    with each other. Controls now keep the theme's edge; surfaces keep the glass.
+  - #3 is a composable rather than a flag per form: dirtiness is a comparison
+    against a baseline, because an admin form fills itself in when its query
+    resolves and a first-change flag would make every page warn on the way out.
+    Still to do: the superteam, event, team and project pages, and folding
+    `AdminQuizForm`'s bespoke guard into the same composable
 - 2026-09-29 — #25: project content ("Navn" → "Tittel") on the challenge, quiz,
   achievement and leaderboard forms. People and groups — teams, superteams,
   users, churches — and quiz sessions keep "Navn"
