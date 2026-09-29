@@ -144,4 +144,17 @@ Two limits worth knowing:
 
 The project settings preview is fed from the **draft**, not from what is
 stored, so a banner and a palette can be judged before saving. That was the
-point of the branding idea and it came free with the home-page preview.
+point of the branding idea and it came free with the home-page preview. The
+info banner is the exception on that page: its HTML is rendered by the server
+from the stored markdown, so it shows the last saved version, and the form says
+so. It is given a project id of its own (`preview`) because the real banner
+hides itself once dismissed, and a preview that renders nothing answers no
+question.
+
+The theme editor was already built on real components — it samples buttons, a
+leaderboard and the text tones, side by side in light and dark, which is more
+than any single screen shows. What changed is the frame: it drew its own
+(`w-[400px]`, `aspect-1/2`, a border) and pushed the palette in as inline
+styles. It now goes through `AdminThemedPreview` like everything else, which
+gained a `mode` prop for pinning a preview to light or dark. That deleted two
+twelve-line style maps and made the sampler inert, which it was not.

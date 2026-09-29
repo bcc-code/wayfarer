@@ -311,8 +311,12 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
           <AdminProjectHomePreview
             :project-name="state.name"
             :banner="state.branding.banner"
+            :info-message="data?.project.infoMessage"
           />
         </AdminThemedPreview>
+        <p v-if="data?.project.infoMessage" class="text-muted mt-2 text-xs">
+          Info-meldingen vises som sist lagret, og uten tidsvinduet.
+        </p>
       </aside>
     </div>
   </div>
