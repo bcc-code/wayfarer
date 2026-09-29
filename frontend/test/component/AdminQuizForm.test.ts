@@ -1,6 +1,7 @@
 // @vitest-environment nuxt
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
+import { flushPromises } from '@vue/test-utils'
 import { QuizQuestionType } from '../../app/api/generated'
 import AdminQuizForm from '../../layers/admin/app/components/admin/quiz/AdminQuizForm.vue'
 
@@ -36,6 +37,13 @@ const mount = () =>
   mountSuspended(AdminQuizForm, {
     props: { quizData, projectId: 'PR1', challengeId: 'CL1' },
   })
+
+const addQuestion = async (wrapper: Awaited<ReturnType<typeof mount>>) => {
+  const button = wrapper
+    .findAll('button')
+    .find((candidate) => candidate.text().includes('Legg til spørsmål'))
+  await button?.trigger('click')
+}
 
 const rows = (wrapper: Awaited<ReturnType<typeof mount>>) =>
   wrapper.findAll('.drag-handle').map((handle) => handle.element.parentElement)
@@ -102,10 +110,13 @@ describe('AdminQuizForm', () => {
 
   // `randomizeQuestions` is stored and exposed but nothing orders questions by
   // it, so the setting is labelled as having no effect rather than pretending.
-  it('says the randomise setting is not in use', async () => {
+  // The order is drawn per participant when a session submission is created,
+  // and the submission's stored order is what the quiz renders.
+  it('says when the random order is drawn', async () => {
     const wrapper = await mount()
 
-    expect(wrapper.text()).toContain('Ikke i bruk ennå')
+    expect(wrapper.text()).toContain('Tilfeldig spørsmålsrekkefølge')
+    expect(wrapper.text()).toContain('trukket når de starter quizen')
   })
 
   // Editing question 7 of 12 should say so.
@@ -138,5 +149,61 @@ describe('AdminQuizForm', () => {
 
     expect(wrapper.text()).toContain('Vis riktige svar')
     expect(wrapper.text()).toContain('bare én gang')
+    // Completion points land whatever the answers were.
+    expect(wrapper.text()).toContain('uansett hvor mange svar som er riktige')
+  })
+
+  // You come to this page to write questions, not to set a timeout.
+  it('leads with the questions, not the settings', async () => {
+    const wrapper = await mount()
+
+    const titles = wrapper
+      .findAllComponents({ name: 'AdminSection' })
+      .map((section) => section.props('title'))
+
+    expect(titles).toEqual(['Spørsmål', 'Innstillinger'])
+  })
+
+  // Title, description and image are the challenge's; a second place to write
+  // them is what made this page hard to read.
+  it('does not ask again for what the challenge already says', async () => {
+    const wrapper = await mount()
+
+    expect(wrapper.text()).not.toContain('Tittel')
+    expect(wrapper.text()).not.toContain('Beskrivelse')
+    expect(wrapper.text()).not.toContain('Bilde')
+  })
+
+  it('saves the inherited title and description untouched', async () => {
+    const wrapper = await mount()
+
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(wrapper.emitted('save')?.[0]?.[0]).toMatchObject({
+      name: 'Quiz 1',
+      description: 'Beskrivelse',
+    })
+  })
+
+  // A stray click outside the dialog would throw away a half-written question.
+  it('does not let the question dialog be dismissed by accident', async () => {
+    const wrapper = await mount()
+
+    expect(wrapper.findComponent({ name: 'UModal' }).props('dismissible')).toBe(
+      false,
+    )
+  })
+
+  // The editor shows these; the list is owned here.
+  it('explains each question type to the editor', async () => {
+    const wrapper = await mount()
+
+    await addQuestion(wrapper)
+    const options = wrapper
+      .findComponent({ name: 'AdminQuizQuestionEditor' })
+      .props('questionTypeOptions') as { description?: string }[]
+
+    expect(options.every((option) => option.description)).toBe(true)
   })
 })

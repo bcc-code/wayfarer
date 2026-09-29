@@ -4832,7 +4832,7 @@ export type AdminChallengeQuizPageQuery = { __typename?: 'Query', challenge:
           | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
           | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string, correctOrder?: number | null }>, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
           | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }>, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
-        >, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }, project: { __typename?: 'Project', id: string, name: string } }
+        > }, project: { __typename?: 'Project', id: string, name: string } }
     | { __typename: 'SimpleChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
    };
 
@@ -7834,15 +7834,11 @@ export const AdminChallengeQuizPageDocument = gql`
         questions {
           ...QuizQuestionFields
         }
-        translationStatus {
-          ...TranslationStatus
-        }
       }
     }
   }
 }
-    ${QuizQuestionFieldsFragmentDoc}
-${TranslationStatusFragmentDoc}`;
+    ${QuizQuestionFieldsFragmentDoc}`;
 
 export function useAdminChallengeQuizPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminChallengeQuizPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminChallengeQuizPageQuery, AdminChallengeQuizPageQueryVariables | undefined>({ query: AdminChallengeQuizPageDocument, variables: undefined, ...options });

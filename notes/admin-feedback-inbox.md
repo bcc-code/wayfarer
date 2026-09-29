@@ -68,15 +68,16 @@ hard to get through — P2 got the job done quickly.
 
 ### Quiz — editor
 
-| #   | Sev | Item                                                                                                                                                                                                                                                                | Source |
-| --- | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| 12  | `!` | After creating a quiz, the landing page does not make the next step obvious. It opens on the quiz name you just entered (editable, but not what you came for), while description and image appear to have "disappeared". The page should lead with adding questions | P1     |
-| 13  | `~` | Hide quiz title, description and image — not in use today (same page as #12; hiding them is one way to fix it)                                                                                                                                                      | P3     |
-| 14  | `!` | "Legg til svaralternativ" should sit below the list of alternatives, not above it                                                                                                                                                                                   | P3     |
-| 15  | `!` | Question type needs a help text                                                                                                                                                                                                                                     | P3     |
-| 16  | `!` | Question points need a help text                                                                                                                                                                                                                                    | P3     |
-| 17  | `!` | The question editor modal must not be closeable by accident — losing a half-written question to a stray click or Esc                                                                                                                                                | P3     |
-| 18  | `~` | Per-question images, not just a quiz thumbnail — enables "who is this?" style questions and visual answer alternatives                                                                                                                                              | P2     |
+| #   | Sev | Item                                                                                                                                                                                                                                                                | Source  |
+| --- | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| 12  | `!` | After creating a quiz, the landing page does not make the next step obvious. It opens on the quiz name you just entered (editable, but not what you came for), while description and image appear to have "disappeared". The page should lead with adding questions | P1      |
+| 13  | `~` | Hide quiz title, description and image — not in use today (same page as #12; hiding them is one way to fix it)                                                                                                                                                      | P3      |
+| 14  | `!` | "Legg til svaralternativ" should sit below the list of alternatives, not above it                                                                                                                                                                                   | P3      |
+| 15  | `!` | Question type needs a help text                                                                                                                                                                                                                                     | P3      |
+| 16  | `!` | Question points need a help text                                                                                                                                                                                                                                    | P3      |
+| 26  | `~` | Hide "Tilfeldig spørsmålsrekkefølge" until the backend honours it — **premise was wrong, see the log**                                                                                                                                                              | muntlig |
+| 17  | `!` | The question editor modal must not be closeable by accident — losing a half-written question to a stray click or Esc                                                                                                                                                | P3      |
+| 18  | `~` | Per-question images, not just a quiz thumbnail — enables "who is this?" style questions and visual answer alternatives                                                                                                                                              | P2      |
 
 ### Quiz — behaviour
 
@@ -109,31 +110,32 @@ hard to get through — P2 got the job done quickly.
 Verdict: `fix` · `later` · `wontfix` · `needs-discussion`. "Plan" is what we
 intend to do; rows marked **done** have landed.
 
-| #   | Verdict | Plan                                                                             |
-| --- | ------- | -------------------------------------------------------------------------------- |
-| 1   | `fix`   | Redirect admins to /admin after sign-in                                          |
-| 2   | `fix`   | Input border contrast, app-wide                                                  |
-| 3   | `fix`   | Unsaved-changes guard on admin forms                                             |
-| 4   | `later` | Polish — revisit once the blocking items are done                                |
-| 5   | `fix`   | Help-text pass; specifics in #10, #11, #15, #16, #24                             |
-| 7   | `fix`   | Default challenge type → Quiz — **done**                                         |
-| 8   | `fix`   | Explain each challenge type in the selector — **done**                           |
-| 9   | `fix`   | Hide event selector (decision 3) — **done**                                      |
-| 10  | `fix`   | Publishing time removed; "Synlig fra" replaced by a visibility choice — **done** |
-| 11  | `fix`   | Reword notification help text — **done**                                         |
-| 12  | `fix`   | Quiz page leads with questions                                                   |
-| 13  | `fix`   | Hide quiz title/description/image (decision 3)                                   |
-| 14  | `fix`   | Move "Legg til svaralternativ" below the list                                    |
-| 15  | `fix`   | Help text on question type                                                       |
-| 16  | `fix`   | Help text on question points                                                     |
-| 17  | `fix`   | Question modal not dismissible by click-outside/Esc                              |
-| 18  | `later` | Needs backend work; no one is blocked on it                                      |
-| 19  | `later` | Product decision deferred (decision 2) — write it up separately                  |
-| 20  | `fix`   | Redirect to achievement list after create                                        |
-| 21  | `fix`   | Hide superteam description (decision 3)                                          |
-| 22  | `fix`   | Rework superteam color field                                                     |
-| 23  | `fix`   | Hide leaderboard event + ordering (decision 3)                                   |
-| 24  | `fix`   | Relabel limit field + help text                                                  |
+| #   | Verdict   | Plan                                                                                                                         |
+| --- | --------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `fix`     | Redirect admins to /admin after sign-in                                                                                      |
+| 2   | `fix`     | Input border contrast, app-wide                                                                                              |
+| 3   | `fix`     | Unsaved-changes guard on admin forms                                                                                         |
+| 4   | `later`   | Polish — revisit once the blocking items are done                                                                            |
+| 5   | `fix`     | Help-text pass; specifics in #10, #11, #15, #16, #24                                                                         |
+| 7   | `fix`     | Default challenge type → Quiz — **done**                                                                                     |
+| 8   | `fix`     | Explain each challenge type in the selector — **done**                                                                       |
+| 9   | `fix`     | Hide event selector (decision 3) — **done**                                                                                  |
+| 10  | `fix`     | Publishing time removed; "Synlig fra" replaced by a visibility choice — **done**                                             |
+| 11  | `fix`     | Reword notification help text — **done**                                                                                     |
+| 12  | `fix`     | Quiz page leads with questions; settings moved below — **done**                                                              |
+| 13  | `fix`     | Title, description and image removed from the quiz form; inherited from the challenge and carried through on save — **done** |
+| 26  | `wontfix` | The setting works — the warning saying otherwise was wrong and is gone; the checkbox now explains it                         |
+| 14  | `fix`     | "Legg til svaralternativ" moved under the list (same for ordering items) — **done**                                          |
+| 15  | `fix`     | Help text on question type, with the grading rule per type — **done**                                                        |
+| 16  | `fix`     | Help text on question points — **done**                                                                                      |
+| 17  | `fix`     | Question dialog is no longer dismissible by click-outside or Esc — **done**                                                  |
+| 18  | `later`   | Needs backend work; no one is blocked on it                                                                                  |
+| 19  | `later`   | Product decision deferred (decision 2) — write it up separately                                                              |
+| 20  | `fix`     | Redirect to achievement list after create                                                                                    |
+| 21  | `fix`     | Hide superteam description (decision 3)                                                                                      |
+| 22  | `fix`     | Rework superteam color field                                                                                                 |
+| 23  | `fix`     | Hide leaderboard event + ordering (decision 3)                                                                               |
+| 24  | `fix`     | Relabel limit field + help text                                                                                              |
 
 ## Log
 
@@ -148,6 +150,23 @@ intend to do; rows marked **done** have landed.
   now visible to everyone unless the organiser says otherwise, and the choice is
   explicit in the form. Also fixed: the create page sent `endTime`/`visibleAt`
   as bare local time, which the API parses as UTC
+- 2026-09-29 — batch 2 (quiz editor: #12–#17) implemented. While writing the
+  help texts, confirmed against the backend that only Flervalg and Rekkefølge
+  are graded automatically — free text and number answers are stored with
+  `is_correct` NULL and therefore never earn their question's points. The type
+  and points help texts now say so
+- 2026-09-29 — copy fixes on the quiz settings: completion points now say they
+  are given to everyone who finishes regardless of score, and #26 hides the
+  randomise switch rather than explaining that it does nothing
+- 2026-09-29 — #26 reverted after checking the backend. `randomize_questions`
+  **is** honoured: `StartQuizSession` shuffles the question order into the
+  submission (`quiz_sessions.resolvers.go:756`), `QuizSubmission.orderedQuestions`
+  returns that stored order (`quizzes.resolvers.go:2813`), and the user app
+  renders exactly that list (`QuizChallenge.vue:233`). Only the M2M
+  `CreateQuizSubmission` deliberately keeps the canonical order. The admin form's
+  old "Ikke i bruk ennå" warning was simply wrong; the checkbox is back with a
+  description of when the order is drawn. Whether any existing quiz has it
+  enabled is a database question, not answerable from the code
 - 2026-09-29 — #25: project content ("Navn" → "Tittel") on the challenge, quiz,
   achievement and leaderboard forms. People and groups — teams, superteams,
   users, churches — and quiz sessions keep "Navn"

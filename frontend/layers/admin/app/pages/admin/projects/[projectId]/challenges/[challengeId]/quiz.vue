@@ -39,9 +39,6 @@ gql(`
           questions {
             ...QuizQuestionFields
           }
-          translationStatus {
-            ...TranslationStatus
-          }
         }
       }
     }
@@ -390,11 +387,6 @@ const isQuizChallenge = computed(() => {
               v-model:dirty="formDirty"
               :saving
               :quiz-data="quizData"
-              :translation-status="
-                data?.challenge.__typename === 'QuizChallenge'
-                  ? (data.challenge.quiz?.translationStatus ?? [])
-                  : []
-              "
               :project-id="route.params.projectId"
               :challenge-id="route.params.challengeId"
               @save="saveQuiz"

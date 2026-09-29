@@ -165,4 +165,33 @@ describe('AdminQuizQuestionEditor', () => {
       text.indexOf('Aktiver betting'),
     )
   })
+
+  // The button that adds to a list belongs under the list, where the next
+  // alternative will appear.
+  it('puts the add button under the alternatives', async () => {
+    const wrapper = await mount(
+      predefined([
+        { answerText: 'Paulus', isCorrect: true, answerOrder: 1 },
+        { answerText: 'Peter', isCorrect: false, answerOrder: 2 },
+      ]),
+    )
+
+    const text = wrapper.text()
+    expect(text.indexOf('Legg til svaralternativ')).toBeGreaterThan(
+      text.indexOf('Peter'),
+    )
+  })
+
+  // Points are awarded off `is_correct`, which free text and number answers
+  // never get.
+  it('says when points are actually awarded', async () => {
+    const wrapper = await mount(
+      predefined([
+        { answerText: 'Paulus', isCorrect: true, answerOrder: 1 },
+        { answerText: 'Peter', isCorrect: false, answerOrder: 2 },
+      ]),
+    )
+
+    expect(wrapper.text()).toContain('rettes automatisk og er helt riktig')
+  })
 })

@@ -5,7 +5,11 @@ import { validateQuizQuestion } from '../../../utils/quizQuestionValidation'
 
 const props = defineProps<{
   question: QuizQuestionFormData
-  questionTypeOptions: { value: QuizQuestionType; label: string }[]
+  questionTypeOptions: {
+    value: QuizQuestionType
+    label: string
+    description?: string
+  }[]
 }>()
 
 const emit = defineEmits<{
@@ -159,6 +163,7 @@ function handleSave() {
         v-model="localQuestion.questionType"
         :items="questionTypeOptions"
         :disabled="!!question.id"
+        :ui="{ itemDescription: 'text-clip whitespace-normal' }"
         class="w-full"
       />
     </UFormField>
@@ -187,14 +192,6 @@ function handleSave() {
               Kryss av for riktig(e) svar. Dra for å endre rekkefølgen.
             </p>
           </div>
-          <UButton
-            size="xs"
-            variant="ghost"
-            icon="lucide:plus"
-            @click="addAnswer"
-          >
-            Legg til svar
-          </UButton>
         </div>
 
         <!-- Sits with the answers: it changes what checking them means. -->
@@ -269,6 +266,15 @@ function handleSave() {
             </UTooltip>
           </div>
         </VueDraggable>
+
+        <UButton
+          size="xs"
+          variant="ghost"
+          icon="lucide:plus"
+          @click="addAnswer"
+        >
+          Legg til svaralternativ
+        </UButton>
       </div>
     </template>
 
@@ -307,14 +313,9 @@ function handleSave() {
     <!-- Ordering Question Options -->
     <template v-if="localQuestion.questionType === QuizQuestionType.Ordering">
       <div class="space-y-3">
-        <div class="flex items-center justify-between">
-          <label class="text-sm font-medium">
-            Elementer (i riktig rekkefølge)
-          </label>
-          <UButton size="xs" variant="ghost" @click="addOrderingItem">
-            Legg til element
-          </UButton>
-        </div>
+        <label class="text-sm font-medium">
+          Elementer (i riktig rekkefølge)
+        </label>
 
         <p class="text-xs text-muted">
           Dra for å endre rekkefølge. Rekkefølgen i listen er den korrekte
@@ -365,11 +366,24 @@ function handleSave() {
             </UTooltip>
           </div>
         </VueDraggable>
+
+        <UButton
+          size="xs"
+          variant="ghost"
+          icon="lucide:plus"
+          @click="addOrderingItem"
+        >
+          Legg til element
+        </UButton>
       </div>
     </template>
 
     <div class="grid grid-cols-2 gap-4">
-      <UFormField name="points" label="Poeng">
+      <UFormField
+        name="points"
+        label="Poeng"
+        help="Gis bare når svaret rettes automatisk og er helt riktig."
+      >
         <UInput
           v-model.number="localQuestion.points"
           type="number"
