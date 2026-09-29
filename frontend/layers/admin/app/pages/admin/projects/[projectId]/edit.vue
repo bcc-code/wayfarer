@@ -253,7 +253,7 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
           hint="(valgfritt)"
           help="Forklar hvordan brukere samler poeng"
         >
-          <MarkdownEditor v-model="state.rules" />
+          <AdminRichTextEditor v-model="state.rules" />
         </AdminTranslatableFormField>
         <AdminTranslatableFormField
           label="Info-melding"
@@ -262,7 +262,7 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
           hint="(valgfritt)"
           help="Vises som banner på forsiden. Brukere kan lukke den."
         >
-          <MarkdownEditor v-model="state.infoMessage" />
+          <AdminRichTextEditor v-model="state.infoMessage" />
         </AdminTranslatableFormField>
         <UFormField
           name="infoMessageStart"

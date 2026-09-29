@@ -222,6 +222,13 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
   if (event.data) {
     emit('submit', {
       ...event.data,
+      // The editor leaves an empty paragraph behind when cleared; storing it
+      // would render as a gap in the app. Empty, not undefined: undefined
+      // means "leave as is" on update, so a cleared description must survive
+      // as a value.
+      description: isBlankHtml(event.data.description)
+        ? ''
+        : event.data.description,
       // A quiz keeps whatever it has: the field does nothing for that type,
       // so writing to it would only churn existing data.
       visibleAt: governsVisibility.value
@@ -278,12 +285,10 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
               :translation-status="translationStatus"
               name="description"
               hint="(valgfritt)"
-              help="Støtter HTML-formatering"
             >
-              <UTextarea
+              <AdminRichTextEditor
                 v-model="state.description"
-                class="w-full"
-                autoresize
+                content-type="html"
               />
             </AdminTranslatableFormField>
             <UFormField name="image" label="Bilde" hint="(valgfritt)">

@@ -147,6 +147,47 @@ describe('AdminChallengeForm', () => {
     })
   })
 
+  // The field stores HTML, so it should not be a raw HTML textarea.
+  it('edits the description as rich text', async () => {
+    const wrapper = await mountSuspended(AdminChallengeForm, {
+      props: { submitLabel: base.submitLabel, initialData: simple },
+    })
+
+    expect(wrapper.findComponent({ name: 'UEditor' }).exists()).toBe(true)
+    expect(wrapper.text()).not.toContain('Støtter HTML-formatering')
+  })
+
+  // Clearing the editor leaves an empty paragraph, which would render as a gap.
+  it('saves a cleared description as empty, not as an empty paragraph', async () => {
+    const wrapper = await mountSuspended(AdminChallengeForm, {
+      props: {
+        submitLabel: base.submitLabel,
+        initialData: { ...simple, description: '<p></p>' },
+      },
+    })
+
+    await submit(wrapper)
+
+    expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({
+      description: '',
+    })
+  })
+
+  it('keeps a description that has content', async () => {
+    const wrapper = await mountSuspended(AdminChallengeForm, {
+      props: {
+        submitLabel: base.submitLabel,
+        initialData: { ...simple, description: '<p>Les <b>Matteus 5</b></p>' },
+      },
+    })
+
+    await submit(wrapper)
+
+    expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({
+      description: '<p>Les <b>Matteus 5</b></p>',
+    })
+  })
+
   // Publishing time is always "now" in practice; it was only ever noise.
   it('no longer asks for a publishing time', async () => {
     const wrapper = await mountSuspended(AdminChallengeForm, {
