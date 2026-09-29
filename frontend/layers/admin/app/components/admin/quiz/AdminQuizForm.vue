@@ -56,14 +56,12 @@ export interface QuizQuestionFormData {
 
 const props = defineProps<{
   quizData?: QuizFormData
-  translationStatus?: TranslationStatusFragment[]
+  /** The project's own palette, so the preview is dressed as the app is. */
+  colors?: Colors
   projectId: string
   challengeId?: string
   saving?: boolean
 }>()
-
-/** Lets the page clear the guard once a save has landed. */
-const dirty = defineModel<boolean>('dirty', { default: false })
 
 const emit = defineEmits<{
   save: [data: QuizFormData]
@@ -78,9 +76,12 @@ const nextKey = () => `q${++keySeq}`
 const withKeys = (list: QuizQuestionFormData[]) =>
   list.map((question) => ({ ...question, localKey: nextKey() }))
 
+// Title, description and image are not edited here — they are inherited from
+// the challenge and would be a second, conflicting place to write the same
+// copy. They stay in the form state so a save carries them through untouched.
 const schema = z.object({
-  name: z.string().min(1, 'Navn er påkrevd'),
-  description: z.string().min(1, 'Beskrivelse er påkrevd'),
+  name: z.string(),
+  description: z.string(),
   image: z.string().optional(),
   timeoutSeconds: z.number().optional(),
   randomizeQuestions: z.boolean(),
@@ -106,6 +107,14 @@ const questions = ref<QuizQuestionFormData[]>(
   withKeys(props.quizData?.questions ?? []),
 )
 
+const { markSaved } = useUnsavedChanges(() => ({
+  ...state,
+  questions: questions.value,
+}))
+
+/** The page owns the save, so only it knows when the form matches the server. */
+defineExpose({ markSaved })
+
 watch(
   () => props.quizData,
   (data) => {
@@ -119,28 +128,12 @@ watch(
       state.allowRetakes = data.allowRetakes
       state.completionPoints = data.completionPoints
       questions.value = withKeys(data.questions)
+      // What the server holds, not an edit.
+      nextTick(markSaved)
     }
   },
   { once: true },
 )
-
-// Anything the user touched after the initial load counts as unsaved work.
-watch(
-  [state, questions],
-  () => {
-    dirty.value = true
-  },
-  { deep: true },
-)
-
-onBeforeRouteLeave(async () => {
-  if (!dirty.value) return true
-  return confirm({
-    title: 'Forlate quizen med ulagrede endringer?',
-    description: 'Spørsmålene du har lagt til eller endret blir ikke lagret.',
-    confirmLabel: 'Forlat siden',
-  })
-})
 
 const editingQuestion = ref<QuizQuestionFormData | null>(null)
 const isAddingQuestion = ref(false)
@@ -151,7 +144,6 @@ function addQuestion() {
     questionType: QuizQuestionType.Predefined,
     questionText: '',
     questionOrder: questions.value.length + 1,
-    points: 1,
     allowMultipleSelection: false,
     predefinedAnswers: [
       { answerText: '', isCorrect: true, answerOrder: 1 },
@@ -236,11 +228,30 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
   })
 }
 
+// What each type is; what it is worth belongs with the points field, which
+// sits in the same dialog.
 const questionTypeOptions = [
-  { value: QuizQuestionType.Predefined, label: 'Flervalg' },
-  { value: QuizQuestionType.FreeText, label: 'Fritekst' },
-  { value: QuizQuestionType.Number, label: 'Tall' },
-  { value: QuizQuestionType.Ordering, label: 'Rekkefølge' },
+  {
+    value: QuizQuestionType.Predefined,
+    label: 'Flervalg',
+    description: 'Du lager svaralternativene, og deltakeren velger.',
+  },
+  {
+    value: QuizQuestionType.FreeText,
+    label: 'Fritekst',
+    description: 'Deltakeren skriver svaret med egne ord.',
+  },
+  {
+    value: QuizQuestionType.Number,
+    label: 'Tall',
+    description: 'Deltakeren svarer med et tall.',
+  },
+  {
+    value: QuizQuestionType.Ordering,
+    label: 'Rekkefølge',
+    description:
+      'Du legger inn elementene i riktig rekkefølge, og deltakeren drar dem på plass.',
+  },
 ]
 
 // One source for the labels; the list used to repeat them in a ternary chain.
@@ -259,95 +270,6 @@ const questionPoints = computed(() =>
     class="max-w-3xl space-y-8"
     @submit.prevent="handleSubmit"
   >
-    <AdminSection title="Quiz-innstillinger">
-      <div class="flex flex-col gap-6">
-        <AdminTranslatableFormField
-          label="Quiz-navn"
-          :translation-status="translationStatus"
-          name="name"
-        >
-          <UInput v-model="state.name" size="xl" required class="w-full" />
-        </AdminTranslatableFormField>
-
-        <AdminTranslatableFormField
-          label="Beskrivelse"
-          :translation-status="translationStatus"
-          name="description"
-        >
-          <UTextarea
-            v-model="state.description"
-            class="w-full"
-            autoresize
-            required
-          />
-        </AdminTranslatableFormField>
-
-        <UFormField name="image" label="Bilde" hint="(valgfritt)">
-          <AdminFileUpload v-model="state.image" />
-        </UFormField>
-
-        <UFormField
-          name="completionPoints"
-          label="Fullføringspoeng"
-          help="Gis i tillegg til poengene for de enkelte spørsmålene."
-        >
-          <UInput
-            v-model.number="state.completionPoints"
-            type="number"
-            size="xl"
-            required
-            class="w-full"
-          />
-        </UFormField>
-
-        <UFormField
-          name="timeoutSeconds"
-          label="Tidsbegrensning (sekunder)"
-          hint="(valgfritt)"
-          help="Gjelder hele quizen. Spørsmål kan i tillegg ha sin egen tidsbegrensning, og den strengeste av de to gjelder."
-        >
-          <UInput
-            v-model.number="state.timeoutSeconds"
-            type="number"
-            size="xl"
-            class="w-full"
-          />
-        </UFormField>
-
-        <div class="space-y-4">
-          <UFormField name="randomizeQuestions">
-            <UCheckbox
-              v-model="state.randomizeQuestions"
-              label="Tilfeldig spørsmålsrekkefølge"
-            />
-            <!-- The value is stored and exposed in the API, but nothing orders
-                 questions by it: they always arrive sorted by question_order.
-                 Saying so beats a setting that quietly does nothing. -->
-            <p class="text-warning mt-1 ml-6 text-xs">
-              Ikke i bruk ennå — spørsmålene vises alltid i rekkefølgen
-              nedenfor.
-            </p>
-          </UFormField>
-
-          <UFormField name="revealCorrectAnswers">
-            <UCheckbox
-              v-model="state.revealCorrectAnswers"
-              label="Vis riktige svar"
-              description="Brukeren ser hva som var riktig – underveis, i resultatet og når quizen leses om igjen. Uten dette får de bare en bekreftelse på at svarene er levert."
-            />
-          </UFormField>
-
-          <UFormField name="allowRetakes">
-            <UCheckbox
-              v-model="state.allowRetakes"
-              label="Tillat brukere å ta quizen på nytt"
-              description="Uten dette kan hver bruker levere quizen bare én gang."
-            />
-          </UFormField>
-        </div>
-      </div>
-    </AdminSection>
-
     <AdminSection title="Spørsmål" :count="questions.length">
       <template #actions>
         <!-- Soft: "Lagre quiz" is this page's primary action, and two solid
@@ -432,6 +354,62 @@ const questionPoints = computed(() =>
       </div>
     </AdminSection>
 
+    <AdminSection title="Innstillinger">
+      <div class="flex flex-col gap-6">
+        <UFormField
+          name="completionPoints"
+          label="Fullføringspoeng"
+          help="Gis til alle som fullfører quizen, uansett hvor mange svar som er riktige. Kommer i tillegg til poengene for de enkelte spørsmålene."
+        >
+          <UInputNumber
+            v-model="state.completionPoints"
+            size="xl"
+            required
+            class="w-full"
+          />
+        </UFormField>
+
+        <UFormField
+          name="timeoutSeconds"
+          label="Tidsbegrensning (sekunder)"
+          hint="(valgfritt)"
+          help="Gjelder hele quizen. Spørsmål kan i tillegg ha sin egen tidsbegrensning, og den strengeste av de to gjelder."
+        >
+          <UInputNumber
+            v-model="state.timeoutSeconds"
+            size="xl"
+            class="w-full"
+          />
+        </UFormField>
+
+        <div class="space-y-4">
+          <UFormField name="randomizeQuestions">
+            <UCheckbox
+              v-model="state.randomizeQuestions"
+              label="Tilfeldig spørsmålsrekkefølge"
+              description="Hver deltaker får sin egen rekkefølge, trukket når de starter quizen. Uten dette får alle rekkefølgen ovenfor."
+            />
+          </UFormField>
+
+          <UFormField name="revealCorrectAnswers">
+            <UCheckbox
+              v-model="state.revealCorrectAnswers"
+              label="Vis riktige svar"
+              description="Brukeren ser hva som var riktig – underveis, i resultatet og når quizen leses om igjen. Uten dette får de bare en bekreftelse på at svarene er levert."
+            />
+          </UFormField>
+
+          <UFormField name="allowRetakes">
+            <UCheckbox
+              v-model="state.allowRetakes"
+              label="Tillat brukere å ta quizen på nytt"
+              description="Uten dette kan hver bruker levere quizen bare én gang."
+            />
+          </UFormField>
+        </div>
+      </div>
+    </AdminSection>
+
     <UButton type="submit" size="lg" block :loading="saving">
       Lagre quiz
     </UButton>
@@ -439,9 +417,12 @@ const questionPoints = computed(() =>
     <!-- A dialog, per the panel's page-or-dialog rule: editing one question is
          an action on the list you are looking at, and the list stays visible
          behind it. -->
+    <!-- Not dismissible: a click outside or an Esc would throw away a
+         half-written question. Avbryt and Lagre are the ways out. -->
     <UModal
       :open="!!editingQuestion"
-      :ui="{ content: 'max-w-3xl' }"
+      :dismissible="false"
+      :ui="{ content: 'max-w-5xl' }"
       @update:open="(open) => !open && cancelEdit()"
     >
       <template #header>
@@ -457,6 +438,7 @@ const questionPoints = computed(() =>
         <AdminQuizQuestionEditor
           v-if="editingQuestion"
           :question="editingQuestion"
+          :colors
           :question-type-options="questionTypeOptions"
           @save="saveQuestion"
           @cancel="cancelEdit"

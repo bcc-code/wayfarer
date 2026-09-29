@@ -10,6 +10,14 @@ gql(`
   query AdminProjectLeaderboardPage($id: ID!) {
     leaderboardConfig(id: $id) {
       ...LeaderboardConfigFields
+      project {
+        id
+        branding {
+          colors {
+            ...BrandingColorsFields
+          }
+        }
+      }
     }
   }
 `)
@@ -117,13 +125,32 @@ async function handleDelete() {
             Slett
           </UButton>
         </div>
-        <AdminLeaderboardConfigForm
-          :project-id="route.params.projectId"
-          :initial-data="config"
-          is-edit-mode
-          submit-label="Lagre endringer"
-          @submit="handleSubmit"
-        />
+        <!-- `@container`, as the other forms: the preview only earns a column
+             of its own once the page is wide enough for both. -->
+        <div class="@container">
+          <div
+            class="grid gap-8 @4xl:grid-cols-[minmax(0,42rem)_minmax(0,1fr)]"
+          >
+            <AdminLeaderboardConfigForm
+              :project-id="route.params.projectId"
+              :initial-data="config"
+              is-edit-mode
+              submit-label="Lagre endringer"
+              @submit="handleSubmit"
+            />
+
+            <aside class="top-6 h-fit @4xl:sticky">
+              <p class="text-muted mb-2 text-xs">
+                Slik ser tavlen ut nå. Endringer vises etter at du har lagret.
+              </p>
+              <AdminThemedPreview :colors="config.project.branding.colors">
+                <AdminLeaderboardPreview
+                  :config-id="route.params.leaderboardId"
+                />
+              </AdminThemedPreview>
+            </aside>
+          </div>
+        </div>
       </div>
     </AdminQueryState>
   </div>

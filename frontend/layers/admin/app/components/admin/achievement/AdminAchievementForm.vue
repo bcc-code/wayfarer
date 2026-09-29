@@ -74,7 +74,7 @@ const emit = defineEmits<{
 
 // Common fields schema
 const schema = z.object({
-  name: z.string().min(1, 'Navn er påkrevd'),
+  name: z.string().min(1, 'Tittel er påkrevd'),
   descriptionPending: z.string().min(1, 'Beskrivelse er påkrevd'),
   descriptionCompleted: z.string().min(1, 'Beskrivelse er påkrevd'),
   notificationText: z.string().min(1, 'Varslingstekst er påkrevd'),
@@ -114,6 +114,18 @@ const requireCompletion = ref<boolean>(
 )
 
 // Update state when initialData changes (for edit mode after data loads)
+/** Which state the preview shows; a draft has never been earned. */
+const previewState = ref<'pending' | 'completed'>('pending')
+
+const { markSaved } = useUnsavedChanges(() => ({
+  ...state,
+  contentItems: contentItems.value,
+  streakItems: streakItems.value,
+  quizId: quizId.value,
+  minScorePercentage: minScorePercentage.value,
+  requireCompletion: requireCompletion.value,
+}))
+
 watch(
   () => props.initialData,
   (data) => {
@@ -133,6 +145,8 @@ watch(
       quizId.value = data.quizId
       minScorePercentage.value = data.minScorePercentage
       requireCompletion.value = data.requireCompletion ?? true
+      // What the server holds, not an edit.
+      nextTick(markSaved)
     }
   },
   { once: true },
@@ -194,6 +208,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
       break
   }
 
+  markSaved()
   emit('submit', formData)
 }
 </script>
@@ -221,7 +236,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
         <AdminSection title="Innhold">
           <div class="flex flex-col gap-6">
             <AdminTranslatableFormField
-              label="Navn"
+              label="Tittel"
               :translation-status="translationStatus"
               name="name"
             >
@@ -298,9 +313,8 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
         <AdminSection title="Poeng og synlighet">
           <div class="flex flex-col gap-6">
             <UFormField name="points" label="Poeng for utmerkelsen">
-              <UInput
-                v-model.number="state.points"
-                type="number"
+              <UInputNumber
+                v-model="state.points"
                 size="xl"
                 required
                 class="w-full"
@@ -358,14 +372,44 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
           </p>
         </AdminSection>
 
-        <UButton type="submit" size="lg" block>{{ submitLabel }}</UButton>
+        <UButton
+          :icon="isEditMode ? 'lucide:check' : 'lucide:plus'"
+          type="submit"
+          size="lg"
+          block
+          >{{ submitLabel }}</UButton
+        >
       </UForm>
 
       <!-- Sticky: it used to scroll away before you reached the points and
            visibility fields. -->
-      <AdminThemedPreview :colors="colors" class="top-6 h-fit @4xl:sticky">
-        <AdminAchievementPreview :achievement="state" />
-      </AdminThemedPreview>
+      <aside class="top-6 h-fit @4xl:sticky">
+        <!-- The switcher belongs to the preview, not to the achievement, so
+             it sits outside the frame — which is inert, and is the app. -->
+        <USelect
+          v-model="previewState"
+          :items="[
+            { value: 'pending', label: 'Ikke oppnådd' },
+            { value: 'completed', label: 'Oppnådd' },
+          ]"
+          class="mb-2"
+        />
+        <AdminThemedPreview :colors="colors">
+          <AdminAchievementPreview
+            :achievement="state"
+            :achieved="previewState === 'completed'"
+          />
+        </AdminThemedPreview>
+
+        <div class="mt-4 w-[390px] max-w-full">
+          <p class="text-muted mb-2 text-xs">Varselet når den oppnås</p>
+          <AdminPushNotificationPreview
+            :title="state.name"
+            :body="state.notificationText"
+            :icon="state.imageCompleted || state.imagePending"
+          />
+        </div>
+      </aside>
     </div>
   </div>
 </template>

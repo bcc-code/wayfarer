@@ -141,6 +141,8 @@ const state = reactive<Schema>({
   infoMessageEnd: undefined,
 })
 
+const { markSaved } = useUnsavedChanges(() => ({ ...state }))
+
 watch(
   () => data.value,
   (d) => {
@@ -157,6 +159,8 @@ watch(
       state.infoMessage = d.project.infoMessage?.markdown
       state.infoMessageStart = toLocalDatetimeLocal(d.project.infoMessageStart)
       state.infoMessageEnd = toLocalDatetimeLocal(d.project.infoMessageEnd)
+      // What the server holds, not an edit.
+      nextTick(markSaved)
     }
   },
   { once: true },
@@ -169,6 +173,8 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
   if (!event.data) {
     return
   }
+
+  markSaved()
 
   // Convert nullish logo/banner to empty string so backend can clear them
   // Convert datetime-local values to ISO strings
@@ -204,12 +210,14 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
 </script>
 
 <template>
-  <div>
-    <div>
+  <div class="@container">
+    <!-- `@container` above, as the other forms: the preview only earns a
+         column of its own once the page is wide enough for both. -->
+    <div class="grid gap-8 @4xl:grid-cols-[minmax(0,28rem)_minmax(0,1fr)]">
       <UForm
         :state
         :schema="schema"
-        class="flex max-w-md flex-col gap-8"
+        class="flex flex-col gap-8"
         @submit.prevent="updateProject"
       >
         <UFormField name="branding.logo" label="Logo" hint="(valgfritt)">
@@ -253,7 +261,7 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
           hint="(valgfritt)"
           help="Forklar hvordan brukere samler poeng"
         >
-          <MarkdownEditor v-model="state.rules" />
+          <AdminRichTextEditor v-model="state.rules" />
         </AdminTranslatableFormField>
         <AdminTranslatableFormField
           label="Info-melding"
@@ -262,7 +270,7 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
           hint="(valgfritt)"
           help="Vises som banner på forsiden. Brukere kan lukke den."
         >
-          <MarkdownEditor v-model="state.infoMessage" />
+          <AdminRichTextEditor v-model="state.infoMessage" />
         </AdminTranslatableFormField>
         <UFormField
           name="infoMessageStart"
@@ -290,8 +298,26 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
             class="w-full"
           />
         </UFormField>
-        <UButton type="submit" size="lg" block>Lagre endringer</UButton>
+        <UButton icon="lucide:check" type="submit" size="lg" block
+          >Lagre endringer</UButton
+        >
       </UForm>
+
+      <!-- Fed from the draft, not from what is stored: the point is to judge a
+           banner and a palette before saving them. -->
+      <aside class="top-6 h-fit @4xl:sticky">
+        <p class="text-muted mb-2 text-xs">Forsiden med disse innstillingene</p>
+        <AdminThemedPreview :colors="state.branding.colors">
+          <AdminProjectHomePreview
+            :project-name="state.name"
+            :banner="state.branding.banner"
+            :info-message="data?.project.infoMessage"
+          />
+        </AdminThemedPreview>
+        <p v-if="data?.project.infoMessage" class="text-muted mt-2 text-xs">
+          Info-meldingen vises som sist lagret, og uten tidsvinduet.
+        </p>
+      </aside>
     </div>
   </div>
 </template>

@@ -165,4 +165,72 @@ describe('AdminQuizQuestionEditor', () => {
       text.indexOf('Aktiver betting'),
     )
   })
+
+  // The button that adds to a list belongs under the list, where the next
+  // alternative will appear.
+  it('puts the add button under the alternatives', async () => {
+    const wrapper = await mount(
+      predefined([
+        { answerText: 'Paulus', isCorrect: true, answerOrder: 1 },
+        { answerText: 'Peter', isCorrect: false, answerOrder: 2 },
+      ]),
+    )
+
+    // By document position, not by text: the answers live in textareas, whose
+    // values never reach `text()`, and the preview repeats them further down.
+    const list = wrapper.findComponent({ name: 'VueDraggable' }).element
+    const button = wrapper
+      .findAll('button')
+      .find((candidate) =>
+        candidate.text().includes('Legg til svaralternativ'),
+      )!
+
+    expect(
+      list.compareDocumentPosition(button.element) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+
+  // Points are awarded off `is_correct`, which free text and number answers
+  // never get.
+  it('says when points are actually awarded', async () => {
+    const wrapper = await mount(
+      predefined([
+        { answerText: 'Paulus', isCorrect: true, answerOrder: 1 },
+        { answerText: 'Peter', isCorrect: false, answerOrder: 2 },
+      ]),
+    )
+
+    expect(wrapper.text()).toContain('Gis når deltakeren treffer helt riktig')
+  })
+
+  it.each([
+    ['Fritekst', QuizQuestionType.FreeText],
+    ['Tall', QuizQuestionType.Number],
+  ])('offers no points field for %s', async (_label, questionType) => {
+    const wrapper = await mount({
+      questionType,
+      questionText: 'Hva husker du best?',
+      questionOrder: 1,
+    })
+
+    expect(wrapper.text()).not.toContain('Poeng')
+  })
+
+  // A number left behind by an earlier type choice would still count towards
+  // the max score a participant is shown, while never paying out.
+  it('drops points a question type cannot earn', async () => {
+    const wrapper = await mount({
+      questionType: QuizQuestionType.FreeText,
+      questionText: 'Hva husker du best?',
+      questionOrder: 1,
+      points: 10,
+    })
+
+    await saveButton(wrapper).trigger('click')
+
+    expect(wrapper.emitted('save')?.[0]?.[0]).toMatchObject({
+      points: undefined,
+    })
+  })
 })

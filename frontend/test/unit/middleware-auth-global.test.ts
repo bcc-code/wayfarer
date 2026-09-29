@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ref, type Ref } from 'vue'
 import { createMockToken } from '../utils/auth-mocks'
+import { safeRedirectPath } from '../../app/utils/redirect'
 
 /**
  * Global auth middleware tests.
@@ -45,6 +46,8 @@ function stubGlobals(tokenIsExpired = false) {
   vi.stubGlobal('refreshSession', refreshSession)
   vi.stubGlobal('getStoredAccessToken', () => storage.token?.value ?? null)
   vi.stubGlobal('authBaseUrl', () => 'https://api.test/auth')
+  // The real one: the page being asked for has to survive the hop.
+  vi.stubGlobal('safeRedirectPath', safeRedirectPath)
   vi.stubGlobal('useRuntimeConfig', () => ({
     public: { apiUrl: 'https://api.test/graphql' },
   }))
@@ -134,9 +137,27 @@ describe('middleware/auth.global', () => {
 
     await middleware(route('/challenges'))
 
-    expect(navigateTo).toHaveBeenCalledWith('/auth0-callback', {
-      replace: true,
-    })
+    expect(navigateTo).toHaveBeenCalledWith(
+      { path: '/auth0-callback', query: { redirect: '/challenges' } },
+      { replace: true },
+    )
+  })
+
+  // An admin whose token had expired used to land on the user app's front
+  // page, and had to type /admin again.
+  it('keeps the page being asked for across the token exchange', async () => {
+    const middleware = await loadMiddleware()
+    auth0.isAuthenticated.value = true
+
+    await middleware(route('/admin/projects/PR1'))
+
+    expect(navigateTo).toHaveBeenCalledWith(
+      {
+        path: '/auth0-callback',
+        query: { redirect: '/admin/projects/PR1' },
+      },
+      { replace: true },
+    )
   })
 
   it('clears an expired token and re-exchanges it', async () => {
@@ -147,9 +168,10 @@ describe('middleware/auth.global', () => {
     await middleware(route('/challenges'))
 
     expect(storage.token!.value).toBeNull()
-    expect(navigateTo).toHaveBeenCalledWith('/auth0-callback', {
-      replace: true,
-    })
+    expect(navigateTo).toHaveBeenCalledWith(
+      { path: '/auth0-callback', query: { redirect: '/challenges' } },
+      { replace: true },
+    )
   })
 
   describe('Wayfarer session refresh', () => {

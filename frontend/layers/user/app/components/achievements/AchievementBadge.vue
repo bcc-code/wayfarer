@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { vConfetti } from '@neoconfetti/vue'
-
 type ProjectCardAchievement =
   ProfilePageQuery['myCurrentProject']['achievements'][number]
 
@@ -8,7 +6,6 @@ const props = defineProps<{
   achievement: ProjectCardAchievement
 }>()
 
-const { t } = useI18n()
 const { track } = useAnalytics()
 const { openAchievementId, clearOpenAchievementId, celebrating } =
   useAchievementSheet()
@@ -17,33 +14,6 @@ const { executeMutation: markCelebrated } =
 
 const open = ref(false)
 const showConfetti = ref(false)
-
-// Awards persist even if the required items change later. Only pending
-// achievements show progress toward the current requirements.
-const progress = computed(() => {
-  const achievement = props.achievement
-  if (
-    achievement.achievedAt ||
-    (achievement.__typename !== 'ContentAchievement' &&
-      achievement.__typename !== 'StreakAchievement') ||
-    achievement.totalItems <= 0
-  ) {
-    return null
-  }
-  return {
-    completed: achievement.completedItemCount,
-    total: achievement.totalItems,
-  }
-})
-
-const progressLabel = computed(() =>
-  progress.value
-    ? t('achievement.progress', {
-        completed: formatNumber(progress.value.completed),
-        total: formatNumber(progress.value.total),
-      })
-    : null,
-)
 
 // Determine which image to show based on achievement state
 const currentImage = computed(() => {
@@ -91,14 +61,6 @@ watch(
   },
   { immediate: true },
 )
-
-function descriptionFor(achievement: ProjectCardAchievement) {
-  if (achievement.achievedAt) {
-    return achievement.descriptionCompleted
-  } else {
-    return achievement.descriptionPending
-  }
-}
 </script>
 
 <template>
@@ -122,52 +84,7 @@ function descriptionFor(achievement: ProjectCardAchievement) {
         />
       </button>
       <template #content>
-        <div
-          class="relative flex h-full flex-col items-center justify-center gap-6 overflow-hidden"
-        >
-          <div v-if="showConfetti" v-confetti />
-          <div
-            :class="[
-              'grid aspect-square size-55 place-items-center overflow-hidden rounded-full',
-              { 'shadow-large': achievement.achievedAt },
-            ]"
-          >
-            <DesignImage
-              :image="currentImage"
-              :alt="achievement.name"
-              fallback="/images/achievement-placeholder.png"
-              class="size-full"
-            />
-          </div>
-          <div
-            class="flex flex-col items-center gap-1 text-center text-balance"
-          >
-            <h3 class="text-heading" v-html="achievement.name" />
-            <p class="text-label" v-html="descriptionFor(achievement)" />
-            <p
-              v-if="progressLabel"
-              class="text-label tabular-nums text-text-muted"
-            >
-              {{ progressLabel }}
-            </p>
-          </div>
-          <div
-            v-if="achievement.achievedAt && achievement.points"
-            class="rounded-full bg-background-indent py-2 px-3 text-label text-accent-contrast"
-          >
-            +{{ formatNumber(achievement.points) }} {{ $t('points') }}
-          </div>
-          <div
-            v-else-if="achievement.points"
-            class="rounded-full bg-background-indent py-2 px-3 text-label text-text-muted"
-          >
-            {{
-              $t('givesYouXPoints', {
-                points: formatNumber(achievement.points),
-              })
-            }}
-          </div>
-        </div>
+        <AchievementDetails :achievement :confetti="showConfetti" />
       </template>
     </DesignDrawer>
   </div>

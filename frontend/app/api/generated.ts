@@ -907,9 +907,8 @@ export type FreeTextQuestion = QuizQuestion & {
 };
 
 /**
- * FREE_TEXT questions are not graded. Answers are grouped by a normalised form
- * (trimmed, inner whitespace collapsed, case-folded) and the most common original
- * spelling is shown.
+ * Not graded. Grouped by a normalised form (trimmed, whitespace collapsed,
+ * case-folded), labelled with the most common original spelling.
  */
 export type FreeTextQuestionResults = QuizQuestionResults & {
   __typename?: 'FreeTextQuestionResults';
@@ -974,8 +973,8 @@ export type JsonQuestion = QuizQuestion & {
 };
 
 /**
- * JSON questions hold arbitrary structured data that cannot be summarised
- * automatically. Kept in the list so question numbering stays intact.
+ * Arbitrary structured data, so only a count. Kept in the list so question
+ * numbering stays intact.
  */
 export type JsonQuestionResults = QuizQuestionResults & {
   __typename?: 'JsonQuestionResults';
@@ -2107,10 +2106,7 @@ export type NumberQuestion = QuizQuestion & {
   translationStatus: Array<TranslationFieldStatus>;
 };
 
-/**
- * NUMBER questions store no correct answer, so results describe the distribution
- * rather than correctness.
- */
+/** NUMBER stores no correct answer, so results describe the distribution. */
 export type NumberQuestionResults = QuizQuestionResults & {
   __typename?: 'NumberQuestionResults';
   average?: Maybe<Scalars['Float']['output']>;
@@ -2161,8 +2157,8 @@ export type OrderingQuestion = QuizQuestion & {
 };
 
 /**
- * ORDERING questions are graded all-or-nothing, so per-position accuracy is what
- * shows where people actually went wrong.
+ * Graded all-or-nothing, so per-position accuracy is what shows where people
+ * went wrong.
  */
 export type OrderingQuestionResults = QuizQuestionResults & {
   __typename?: 'OrderingQuestionResults';
@@ -2896,16 +2892,12 @@ export type QuizQuestion = {
   translationStatus: Array<TranslationFieldStatus>;
 };
 
-/**
- * Per-question aggregates. One implementation per question type, because the
- * question types have genuinely different shapes of answer.
- */
+/** Per-question aggregates, one implementation per question type. */
 export type QuizQuestionResults = {
   question: QuizQuestion;
   /**
-   * Submissions that answered this question. Every percentage on the concrete
-   * types is a share of this, never of the quiz-wide submission count — a
-   * question people skipped must not read as unpopular answers.
+   * Submissions that answered this question. Every percentage below is a share
+   * of this, never of the quiz-wide submission count.
    */
   responseCount: Scalars['Int']['output'];
 };
@@ -2938,10 +2930,7 @@ export type QuizResults = {
   participantCount: Scalars['Int']['output'];
   questions: Array<QuizQuestionResults>;
   quiz: Quiz;
-  /**
-   * Distinct sessions those submissions belong to. Submissions created outside a
-   * session (M2M imports) are counted in submissionCount but not here.
-   */
+  /** Submissions created outside a session (M2M imports) are not counted here. */
   sessionCount: Scalars['Int']['output'];
   /** Completed submissions across all sessions. */
   submissionCount: Scalars['Int']['output'];
@@ -4538,7 +4527,14 @@ export type AdminLeaderboardConfigFormOptionsQueryVariables = Exact<{
 }>;
 
 
-export type AdminLeaderboardConfigFormOptionsQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, events: Array<{ __typename?: 'Event', id: string, name: string }> }, teams: { __typename?: 'TeamConnection', edges: Array<{ __typename?: 'TeamEdge', node: { __typename?: 'Team', id: string, name: string } }> }, superteams: { __typename?: 'SuperTeamConnection', edges: Array<{ __typename?: 'SuperTeamEdge', node: { __typename?: 'SuperTeam', id: string, name: string } }> }, churches: { __typename?: 'ChurchConnection', edges: Array<{ __typename?: 'ChurchEdge', node: { __typename?: 'Church', id: string, name: string } }> } };
+export type AdminLeaderboardConfigFormOptionsQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string }, teams: { __typename?: 'TeamConnection', edges: Array<{ __typename?: 'TeamEdge', node: { __typename?: 'Team', id: string, name: string } }> }, superteams: { __typename?: 'SuperTeamConnection', edges: Array<{ __typename?: 'SuperTeamEdge', node: { __typename?: 'SuperTeam', id: string, name: string } }> }, churches: { __typename?: 'ChurchConnection', edges: Array<{ __typename?: 'ChurchEdge', node: { __typename?: 'Church', id: string, name: string } }> } };
+
+export type AdminLeaderboardPreviewQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type AdminLeaderboardPreviewQuery = { __typename?: 'Query', leaderboardConfig: { __typename?: 'LeaderboardConfig', id: string, name: string, leaderboard: { __typename?: 'LeaderboardConnection', totalCount: number, edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } | null, nearestChurchRivals: Array<{ __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> }> } } };
 
 export type AdminProjectEngagementQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
@@ -4835,16 +4831,16 @@ export type AdminChallengeQuizPageQueryVariables = Exact<{
 
 
 export type AdminChallengeQuizPageQuery = { __typename?: 'Query', challenge:
-    | { __typename: 'ExternalChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
-    | { __typename: 'PluginChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename: 'ExternalChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'PluginChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
     | { __typename: 'QuizChallenge', id: string, name: string, quiz: { __typename?: 'Quiz', id: string, name: string, description: string, image?: string | null, timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, questions: Array<
           | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
           | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
           | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
           | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string, correctOrder?: number | null }>, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
           | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }>, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
-        >, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }, project: { __typename?: 'Project', id: string, name: string } }
-    | { __typename: 'SimpleChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
+        > }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'SimpleChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
    };
 
 export type ReorderQuizQuestionsMutationVariables = Exact<{
@@ -4950,7 +4946,7 @@ export type AdminProjectChallengeNewPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminProjectChallengeNewPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } }, events: { __typename?: 'EventConnection', edges: Array<{ __typename?: 'EventEdge', node: { __typename?: 'Event', id: string, name: string } }> } };
+export type AdminProjectChallengeNewPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } };
 
 export type AdminProjectEditPageQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
@@ -4986,7 +4982,7 @@ export type AdminProjectLeaderboardPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminProjectLeaderboardPageQuery = { __typename?: 'Query', leaderboardConfig: { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null } };
+export type AdminProjectLeaderboardPageQuery = { __typename?: 'Query', leaderboardConfig: { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, maxEntries?: number | null, sortOrder: number, isActive: boolean, project: { __typename?: 'Project', id: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } }, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null } };
 
 export type AdminProjectLeaderboardsQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
@@ -6881,10 +6877,6 @@ export const AdminLeaderboardConfigFormOptionsDocument = gql`
     query AdminLeaderboardConfigFormOptions($projectId: ID!) {
   project(id: $projectId) {
     id
-    events {
-      id
-      name
-    }
   }
   teams(filter: {projectId: $projectId}, first: 500) {
     edges {
@@ -6915,6 +6907,32 @@ export const AdminLeaderboardConfigFormOptionsDocument = gql`
 
 export function useAdminLeaderboardConfigFormOptionsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminLeaderboardConfigFormOptionsQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminLeaderboardConfigFormOptionsQuery, AdminLeaderboardConfigFormOptionsQueryVariables | undefined>({ query: AdminLeaderboardConfigFormOptionsDocument, variables: undefined, ...options });
+};
+export const AdminLeaderboardPreviewDocument = gql`
+    query AdminLeaderboardPreview($id: ID!) {
+  leaderboardConfig(id: $id) {
+    id
+    name
+    leaderboard {
+      totalCount
+      edges {
+        node {
+          ...LeaderboardEntryWithDescriptionFields
+        }
+      }
+      me {
+        ...LeaderboardEntryWithDescriptionFields
+      }
+      nearestChurchRivals {
+        ...LeaderboardEntryWithDescriptionFields
+      }
+    }
+  }
+}
+    ${LeaderboardEntryWithDescriptionFieldsFragmentDoc}`;
+
+export function useAdminLeaderboardPreviewQuery(options?: Omit<Urql.UseQueryArgs<never, AdminLeaderboardPreviewQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminLeaderboardPreviewQuery, AdminLeaderboardPreviewQueryVariables | undefined>({ query: AdminLeaderboardPreviewDocument, variables: undefined, ...options });
 };
 export const AdminProjectEngagementDocument = gql`
     query AdminProjectEngagement($projectId: ID!) {
@@ -7830,6 +7848,11 @@ export const AdminChallengeQuizPageDocument = gql`
     project {
       id
       name
+      branding {
+        colors {
+          ...BrandingColorsFields
+        }
+      }
     }
     ... on QuizChallenge {
       quiz {
@@ -7845,15 +7868,12 @@ export const AdminChallengeQuizPageDocument = gql`
         questions {
           ...QuizQuestionFields
         }
-        translationStatus {
-          ...TranslationStatus
-        }
       }
     }
   }
 }
-    ${QuizQuestionFieldsFragmentDoc}
-${TranslationStatusFragmentDoc}`;
+    ${BrandingColorsFieldsFragmentDoc}
+${QuizQuestionFieldsFragmentDoc}`;
 
 export function useAdminChallengeQuizPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminChallengeQuizPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminChallengeQuizPageQuery, AdminChallengeQuizPageQueryVariables | undefined>({ query: AdminChallengeQuizPageDocument, variables: undefined, ...options });
@@ -8035,14 +8055,6 @@ export const AdminProjectChallengeNewPageDocument = gql`
       }
     }
   }
-  events(first: 100, filter: {projectId: $projectId}) {
-    edges {
-      node {
-        id
-        name
-      }
-    }
-  }
 }
     ${BrandingColorsFieldsFragmentDoc}`;
 
@@ -8161,9 +8173,18 @@ export const AdminProjectLeaderboardPageDocument = gql`
     query AdminProjectLeaderboardPage($id: ID!) {
   leaderboardConfig(id: $id) {
     ...LeaderboardConfigFields
+    project {
+      id
+      branding {
+        colors {
+          ...BrandingColorsFields
+        }
+      }
+    }
   }
 }
-    ${LeaderboardConfigFieldsFragmentDoc}`;
+    ${LeaderboardConfigFieldsFragmentDoc}
+${BrandingColorsFieldsFragmentDoc}`;
 
 export function useAdminProjectLeaderboardPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectLeaderboardPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectLeaderboardPageQuery, AdminProjectLeaderboardPageQueryVariables | undefined>({ query: AdminProjectLeaderboardPageDocument, variables: undefined, ...options });

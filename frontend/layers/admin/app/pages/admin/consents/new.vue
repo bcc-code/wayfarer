@@ -40,10 +40,13 @@ const state = reactive<Schema>({
   managedBy: '',
 })
 
+const { markSaved } = useUnsavedChanges(() => ({ ...state }))
+
 const { executeMutation: createConsent } = useCreateConsentMutation()
 const toast = useToast()
 
 async function handleSubmit(event: FormSubmitEvent<Schema>) {
+  markSaved()
   if (!event.data) return
 
   const result = await createConsent({

@@ -619,23 +619,11 @@ const progressResults = computed(() => {
       <div
         v-show="!isBettingEnabled || sessionState !== QuizSessionState.Locked"
       >
-        <div
-          class="flex flex-col items-center justify-center py-3 px-medium gap-1 text-center"
-        >
-          <p v-if="questions.length > 1" class="text-caption text-text-muted">
-            {{
-              $t('quiz.questionNumber', {
-                current: currentQuestionIndex + 1,
-                total: questions.length,
-              })
-            }}
-          </p>
-          <h1
-            class="text-heading limitedHeight:text-label text-text-default text-balance"
-          >
-            {{ currentQuestion.questionText }}
-          </h1>
-        </div>
+        <QuizQuestionHeading
+          :question-text="currentQuestion.questionText"
+          :index="currentQuestionIndex"
+          :total="questions.length"
+        />
         <QuizPredefinedQuestion
           v-if="currentQuestion.__typename === 'PredefinedQuestion'"
           ref="currentQuestionRef"
