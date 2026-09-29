@@ -1,5 +1,10 @@
 <script setup lang="ts">
 const props = defineProps<{
+  /**
+   * Pins the preview to one mode instead of following the panel's. The theme
+   * editor shows light and dark at once, which is the whole point of it.
+   */
+  mode?: 'light' | 'dark'
   colors?: {
     light: {
       accent: string
@@ -37,8 +42,8 @@ const colorMode = useColorMode()
 const themeStyles = computed(() => {
   if (!props.colors) return {}
 
-  const colors =
-    colorMode.value === 'dark' ? props.colors.dark : props.colors.light
+  const mode = props.mode ?? (colorMode.value === 'dark' ? 'dark' : 'light')
+  const colors = props.colors[mode]
 
   return {
     '--color-accent': colors.accent,

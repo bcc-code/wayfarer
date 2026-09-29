@@ -119,40 +119,6 @@ function importTheme() {
   input.click()
 }
 
-const lightStyles = computed(() => {
-  return {
-    '--color-accent': modelValue.value.light.accent,
-    '--color-accent-contrast': modelValue.value.light.accentContrast,
-    '--color-on-accent': modelValue.value.light.onAccent,
-    '--color-background-default': modelValue.value.light.backgroundDefault,
-    '--color-background-raised': modelValue.value.light.backgroundRaised,
-    '--color-background-indent': modelValue.value.light.backgroundIndent,
-    '--color-text-default': modelValue.value.light.textDefault,
-    '--color-text-muted': modelValue.value.light.textMuted,
-    '--color-text-hint': modelValue.value.light.textHint,
-    '--color-shadow-default': modelValue.value.light.shadowDefault,
-    '--color-shadow-blank': modelValue.value.light.shadowBlank,
-    '--color-border-default': modelValue.value.light.borderDefault,
-  }
-})
-
-const darkStyles = computed(() => {
-  return {
-    '--color-accent': modelValue.value.dark.accent,
-    '--color-accent-contrast': modelValue.value.dark.accentContrast,
-    '--color-on-accent': modelValue.value.dark.onAccent,
-    '--color-background-default': modelValue.value.dark.backgroundDefault,
-    '--color-background-raised': modelValue.value.dark.backgroundRaised,
-    '--color-background-indent': modelValue.value.dark.backgroundIndent,
-    '--color-text-default': modelValue.value.dark.textDefault,
-    '--color-text-muted': modelValue.value.dark.textMuted,
-    '--color-text-hint': modelValue.value.dark.textHint,
-    '--color-shadow-default': modelValue.value.dark.shadowDefault,
-    '--color-shadow-blank': modelValue.value.dark.shadowBlank,
-    '--color-border-default': modelValue.value.dark.borderDefault,
-  }
-})
-
 function updateLightColor(key: ColorKey, value: string) {
   modelValue.value = {
     ...modelValue.value,
@@ -200,11 +166,15 @@ function updateDarkColor(key: ColorKey, value: string) {
           <div class="flex shrink-0 gap-4">
             <div class="text-center">
               <p class="text-muted mb-2 text-sm">Lys</p>
-              <AdminProjectThemePreview :style="lightStyles" />
+              <AdminThemedPreview :colors="modelValue" mode="light">
+                <AdminProjectThemePreview />
+              </AdminThemedPreview>
             </div>
             <div class="text-center">
               <p class="text-muted mb-2 text-sm">Mørk</p>
-              <AdminProjectThemePreview :style="darkStyles" />
+              <AdminThemedPreview :colors="modelValue" mode="dark">
+                <AdminProjectThemePreview />
+              </AdminThemedPreview>
             </div>
           </div>
           <div>
