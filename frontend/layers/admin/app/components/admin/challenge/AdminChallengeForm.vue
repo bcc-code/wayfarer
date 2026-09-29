@@ -152,6 +152,12 @@ const visibilityOptions = [
 
 const governsVisibility = computed(() => state.type !== ChallengeType.Quiz)
 
+const { markSaved } = useUnsavedChanges(() => ({
+  ...state,
+  visibility: visibility.value,
+  scheduledVisibleAt: scheduledVisibleAt.value,
+}))
+
 // Update state when initialData changes (for edit mode after data loads)
 watch(
   () => props.initialData,
@@ -169,6 +175,8 @@ watch(
       visibility.value = visibilityFromVisibleAt(data.visibleAt)
       scheduledVisibleAt.value =
         visibility.value === 'scheduled' ? data.visibleAt : undefined
+      // What the server holds, not an edit.
+      nextTick(markSaved)
       state.allowSelfCompletion = data.allowSelfCompletion ?? false
       state.pluginChallengeId = data.pluginChallengeId
       state.notificationText = data.notificationText ?? ''
@@ -220,6 +228,7 @@ const challengeTypeLabel = computed(
 
 function handleSubmit(event: FormSubmitEvent<Schema>) {
   if (event.data) {
+    markSaved()
     emit('submit', {
       ...event.data,
       // The editor leaves an empty paragraph behind when cleared; storing it

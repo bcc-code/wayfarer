@@ -114,6 +114,15 @@ const requireCompletion = ref<boolean>(
 )
 
 // Update state when initialData changes (for edit mode after data loads)
+const { markSaved } = useUnsavedChanges(() => ({
+  ...state,
+  contentItems: contentItems.value,
+  streakItems: streakItems.value,
+  quizId: quizId.value,
+  minScorePercentage: minScorePercentage.value,
+  requireCompletion: requireCompletion.value,
+}))
+
 watch(
   () => props.initialData,
   (data) => {
@@ -133,6 +142,8 @@ watch(
       quizId.value = data.quizId
       minScorePercentage.value = data.minScorePercentage
       requireCompletion.value = data.requireCompletion ?? true
+      // What the server holds, not an edit.
+      nextTick(markSaved)
     }
   },
   { once: true },
@@ -194,6 +205,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
       break
   }
 
+  markSaved()
   emit('submit', formData)
 }
 </script>

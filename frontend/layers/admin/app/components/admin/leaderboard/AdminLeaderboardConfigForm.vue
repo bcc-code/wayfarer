@@ -202,6 +202,8 @@ const state = reactive<Schema>({
   filter: emptyFilter(),
 })
 
+const { markSaved } = useUnsavedChanges(() => ({ ...state }))
+
 watch(
   () => props.initialData,
   (config) => {
@@ -226,6 +228,8 @@ watch(
       teamId: config.filter?.teamId ?? null,
       superTeamId: config.filter?.superTeamId ?? null,
     }
+    // What the server holds, not an edit.
+    nextTick(markSaved)
   },
   { immediate: true },
 )
@@ -250,6 +254,7 @@ function buildFilter(filter: Schema['filter']): LeaderboardFilter | null {
 }
 
 function onSubmit(event: FormSubmitEvent<Schema>) {
+  markSaved()
   emit('submit', {
     name: event.data.name,
     entityType: event.data.entityType,
