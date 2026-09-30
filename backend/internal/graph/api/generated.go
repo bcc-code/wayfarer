@@ -251,6 +251,7 @@ type ComplexityRoot struct {
 		Key               func(childComplexity int) int
 		ManagedBy         func(childComplexity int) int
 		ManagementType    func(childComplexity int) int
+		Project           func(childComplexity int) int
 		PublishedAt       func(childComplexity int) int
 		ShortText         func(childComplexity int) int
 		Title             func(childComplexity int) int
@@ -624,7 +625,7 @@ type ComplexityRoot struct {
 		ClearAllCache                               func(childComplexity int) int
 		CompleteChallenge                           func(childComplexity int, userID string, challengeID string, completedAt *scalars.DateTime) int
 		CreateChallenge                             func(childComplexity int, projectID string, eventID *string, input model.CreateChallengeInput) int
-		CreateConsent                               func(childComplexity int, key string, title string, shortText *string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string) int
+		CreateConsent                               func(childComplexity int, key string, title string, shortText *string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string, projectID *string) int
 		CreateContentAchievement                    func(childComplexity int, input model.CreateContentAchievementInput) int
 		CreateContentAchievementFromExternalContent func(childComplexity int, input model.CreateContentAchievementFromExternalContentInput) int
 		CreateEvent                                 func(childComplexity int, projectID string, input model.CreateEventInput) int
@@ -1494,6 +1495,7 @@ type BrandingResolver interface {
 type ConsentResolver interface {
 	Body(ctx context.Context, obj *model.Consent) (*model.MarkdownText, error)
 
+	Project(ctx context.Context, obj *model.Consent) (*model.Project, error)
 	UserHistory(ctx context.Context, obj *model.Consent) ([]model.UserConsentHistoryEntry, error)
 	TranslationStatus(ctx context.Context, obj *model.Consent) ([]model.TranslationFieldStatus, error)
 }
@@ -1667,7 +1669,7 @@ type MutationResolver interface {
 	AsyncBulkScoreAdjustmentByTarget(ctx context.Context, input model.AsyncBulkScoreAdjustmentByTargetInput) (*model.BulkJob, error)
 	AcceptConsent(ctx context.Context, consentID string) (*model.UserConsent, error)
 	RejectConsent(ctx context.Context, consentID string) (*model.UserConsent, error)
-	CreateConsent(ctx context.Context, key string, title string, shortText *string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string) (*model.Consent, error)
+	CreateConsent(ctx context.Context, key string, title string, shortText *string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string, projectID *string) (*model.Consent, error)
 	UpdateConsent(ctx context.Context, id string, title *string, shortText *string, body *string, url *string, publishedAt *scalars.DateTime, managedBy *string) (*model.Consent, error)
 	AdminSetUserConsent(ctx context.Context, userID string, consentID string, action model.ConsentAction) (*model.UserConsentHistoryEntry, error)
 	CreateQuiz(ctx context.Context, input model.CreateQuizInput) (*model.Quiz, error)
@@ -2663,6 +2665,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Consent.ManagementType(childComplexity), true
+	case "Consent.project":
+		if e.complexity.Consent.Project == nil {
+			break
+		}
+
+		return e.complexity.Consent.Project(childComplexity), true
 	case "Consent.publishedAt":
 		if e.complexity.Consent.PublishedAt == nil {
 			break
@@ -4398,7 +4406,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateConsent(childComplexity, args["key"].(string), args["title"].(string), args["shortText"].(*string), args["body"].(string), args["url"].(*string), args["publishedAt"].(*scalars.DateTime), args["isRemote"].(*bool), args["managedBy"].(*string)), true
+		return e.complexity.Mutation.CreateConsent(childComplexity, args["key"].(string), args["title"].(string), args["shortText"].(*string), args["body"].(string), args["url"].(*string), args["publishedAt"].(*scalars.DateTime), args["isRemote"].(*bool), args["managedBy"].(*string), args["projectId"].(*string)), true
 	case "Mutation.createContentAchievement":
 		if e.complexity.Mutation.CreateContentAchievement == nil {
 			break
@@ -11153,6 +11161,7 @@ type Consent {
     publishedAt: DateTime
     managementType: ConsentManagementType!
     managedBy: String
+    project: Project @goField(forceResolver: true)
     userHistory: [UserConsentHistoryEntry!]! @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
@@ -11212,6 +11221,7 @@ extend type Mutation {
         publishedAt: DateTime
         isRemote: Boolean
         managedBy: String
+        projectId: ID
     ): Consent! @requireRole(roles: ["admin", "superadmin"])
 
     # Update an existing consent (admin action)
@@ -13079,6 +13089,11 @@ func (ec *executionContext) field_Mutation_createConsent_args(ctx context.Contex
 		return nil, err
 	}
 	args["managedBy"] = arg7
+	arg8, err := graphql.ProcessArgField(ctx, rawArgs, "projectId", ec.unmarshalOID2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["projectId"] = arg8
 	return args, nil
 }
 
@@ -18783,6 +18798,89 @@ func (ec *executionContext) fieldContext_Consent_managedBy(_ context.Context, fi
 	return fc, nil
 }
 
+func (ec *executionContext) _Consent_project(ctx context.Context, field graphql.CollectedField, obj *model.Consent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Consent_project,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Consent().Project(ctx, obj)
+		},
+		nil,
+		ec.marshalOProject2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐProject,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Consent_project(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Consent",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Project_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Project_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Project_description(ctx, field)
+			case "rules":
+				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
+			case "challenges":
+				return ec.fieldContext_Project_challenges(ctx, field)
+			case "activeChallenges":
+				return ec.fieldContext_Project_activeChallenges(ctx, field)
+			case "completedChallenges":
+				return ec.fieldContext_Project_completedChallenges(ctx, field)
+			case "activeChallengesCount":
+				return ec.fieldContext_Project_activeChallengesCount(ctx, field)
+			case "leaderboard":
+				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "leaderboards":
+				return ec.fieldContext_Project_leaderboards(ctx, field)
+			case "events":
+				return ec.fieldContext_Project_events(ctx, field)
+			case "startDate":
+				return ec.fieldContext_Project_startDate(ctx, field)
+			case "endDate":
+				return ec.fieldContext_Project_endDate(ctx, field)
+			case "branding":
+				return ec.fieldContext_Project_branding(ctx, field)
+			case "teams":
+				return ec.fieldContext_Project_teams(ctx, field)
+			case "myChurchTeams":
+				return ec.fieldContext_Project_myChurchTeams(ctx, field)
+			case "myTeam":
+				return ec.fieldContext_Project_myTeam(ctx, field)
+			case "achievements":
+				return ec.fieldContext_Project_achievements(ctx, field)
+			case "journal":
+				return ec.fieldContext_Project_journal(ctx, field)
+			case "myPoints":
+				return ec.fieldContext_Project_myPoints(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Project_archivedAt(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Project_translationStatus(ctx, field)
+			case "activityTrend":
+				return ec.fieldContext_Project_activityTrend(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Consent_userHistory(ctx context.Context, field graphql.CollectedField, obj *model.Consent) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -18907,6 +19005,8 @@ func (ec *executionContext) fieldContext_ConsentStatus_pendingConsents(_ context
 				return ec.fieldContext_Consent_managementType(ctx, field)
 			case "managedBy":
 				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "project":
+				return ec.fieldContext_Consent_project(ctx, field)
 			case "userHistory":
 				return ec.fieldContext_Consent_userHistory(ctx, field)
 			case "translationStatus":
@@ -33123,7 +33223,7 @@ func (ec *executionContext) _Mutation_createConsent(ctx context.Context, field g
 		ec.fieldContext_Mutation_createConsent,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().CreateConsent(ctx, fc.Args["key"].(string), fc.Args["title"].(string), fc.Args["shortText"].(*string), fc.Args["body"].(string), fc.Args["url"].(*string), fc.Args["publishedAt"].(*scalars.DateTime), fc.Args["isRemote"].(*bool), fc.Args["managedBy"].(*string))
+			return ec.resolvers.Mutation().CreateConsent(ctx, fc.Args["key"].(string), fc.Args["title"].(string), fc.Args["shortText"].(*string), fc.Args["body"].(string), fc.Args["url"].(*string), fc.Args["publishedAt"].(*scalars.DateTime), fc.Args["isRemote"].(*bool), fc.Args["managedBy"].(*string), fc.Args["projectId"].(*string))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -33178,6 +33278,8 @@ func (ec *executionContext) fieldContext_Mutation_createConsent(ctx context.Cont
 				return ec.fieldContext_Consent_managementType(ctx, field)
 			case "managedBy":
 				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "project":
+				return ec.fieldContext_Consent_project(ctx, field)
 			case "userHistory":
 				return ec.fieldContext_Consent_userHistory(ctx, field)
 			case "translationStatus":
@@ -33263,6 +33365,8 @@ func (ec *executionContext) fieldContext_Mutation_updateConsent(ctx context.Cont
 				return ec.fieldContext_Consent_managementType(ctx, field)
 			case "managedBy":
 				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "project":
+				return ec.fieldContext_Consent_project(ctx, field)
 			case "userHistory":
 				return ec.fieldContext_Consent_userHistory(ctx, field)
 			case "translationStatus":
@@ -43947,6 +44051,8 @@ func (ec *executionContext) fieldContext_Query_consents(_ context.Context, field
 				return ec.fieldContext_Consent_managementType(ctx, field)
 			case "managedBy":
 				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "project":
+				return ec.fieldContext_Consent_project(ctx, field)
 			case "userHistory":
 				return ec.fieldContext_Consent_userHistory(ctx, field)
 			case "translationStatus":
@@ -44003,6 +44109,8 @@ func (ec *executionContext) fieldContext_Query_consent(ctx context.Context, fiel
 				return ec.fieldContext_Consent_managementType(ctx, field)
 			case "managedBy":
 				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "project":
+				return ec.fieldContext_Consent_project(ctx, field)
 			case "userHistory":
 				return ec.fieldContext_Consent_userHistory(ctx, field)
 			case "translationStatus":
@@ -44069,6 +44177,8 @@ func (ec *executionContext) fieldContext_Query_pendingConsents(_ context.Context
 				return ec.fieldContext_Consent_managementType(ctx, field)
 			case "managedBy":
 				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "project":
+				return ec.fieldContext_Consent_project(ctx, field)
 			case "userHistory":
 				return ec.fieldContext_Consent_userHistory(ctx, field)
 			case "translationStatus":
@@ -56267,6 +56377,8 @@ func (ec *executionContext) fieldContext_UserConsent_consent(_ context.Context, 
 				return ec.fieldContext_Consent_managementType(ctx, field)
 			case "managedBy":
 				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "project":
+				return ec.fieldContext_Consent_project(ctx, field)
 			case "userHistory":
 				return ec.fieldContext_Consent_userHistory(ctx, field)
 			case "translationStatus":
@@ -56409,6 +56521,8 @@ func (ec *executionContext) fieldContext_UserConsentHistoryEntry_consent(_ conte
 				return ec.fieldContext_Consent_managementType(ctx, field)
 			case "managedBy":
 				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "project":
+				return ec.fieldContext_Consent_project(ctx, field)
 			case "userHistory":
 				return ec.fieldContext_Consent_userHistory(ctx, field)
 			case "translationStatus":
@@ -65983,6 +66097,39 @@ func (ec *executionContext) _Consent(ctx context.Context, sel ast.SelectionSet, 
 			}
 		case "managedBy":
 			out.Values[i] = ec._Consent_managedBy(ctx, field, obj)
+		case "project":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Consent_project(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "userHistory":
 			field := field
 

@@ -364,6 +364,7 @@ export type Consent = {
   key: Scalars['String']['output'];
   managedBy?: Maybe<Scalars['String']['output']>;
   managementType: ConsentManagementType;
+  project?: Maybe<Project>;
   publishedAt?: Maybe<Scalars['DateTime']['output']>;
   shortText: Scalars['String']['output'];
   title: Scalars['String']['output'];
@@ -907,9 +908,8 @@ export type FreeTextQuestion = QuizQuestion & {
 };
 
 /**
- * FREE_TEXT questions are not graded. Answers are grouped by a normalised form
- * (trimmed, inner whitespace collapsed, case-folded) and the most common original
- * spelling is shown.
+ * Not graded. Grouped by a normalised form (trimmed, whitespace collapsed,
+ * case-folded), labelled with the most common original spelling.
  */
 export type FreeTextQuestionResults = QuizQuestionResults & {
   __typename?: 'FreeTextQuestionResults';
@@ -974,8 +974,8 @@ export type JsonQuestion = QuizQuestion & {
 };
 
 /**
- * JSON questions hold arbitrary structured data that cannot be summarised
- * automatically. Kept in the list so question numbering stays intact.
+ * Arbitrary structured data, so only a count. Kept in the list so question
+ * numbering stays intact.
  */
 export type JsonQuestionResults = QuizQuestionResults & {
   __typename?: 'JsonQuestionResults';
@@ -1485,6 +1485,7 @@ export type MutationCreateConsentArgs = {
   isRemote?: InputMaybe<Scalars['Boolean']['input']>;
   key: Scalars['String']['input'];
   managedBy?: InputMaybe<Scalars['String']['input']>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
   publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
   shortText?: InputMaybe<Scalars['String']['input']>;
   title: Scalars['String']['input'];
@@ -2107,10 +2108,7 @@ export type NumberQuestion = QuizQuestion & {
   translationStatus: Array<TranslationFieldStatus>;
 };
 
-/**
- * NUMBER questions store no correct answer, so results describe the distribution
- * rather than correctness.
- */
+/** NUMBER stores no correct answer, so results describe the distribution. */
 export type NumberQuestionResults = QuizQuestionResults & {
   __typename?: 'NumberQuestionResults';
   average?: Maybe<Scalars['Float']['output']>;
@@ -2161,8 +2159,8 @@ export type OrderingQuestion = QuizQuestion & {
 };
 
 /**
- * ORDERING questions are graded all-or-nothing, so per-position accuracy is what
- * shows where people actually went wrong.
+ * Graded all-or-nothing, so per-position accuracy is what shows where people
+ * went wrong.
  */
 export type OrderingQuestionResults = QuizQuestionResults & {
   __typename?: 'OrderingQuestionResults';
@@ -2896,16 +2894,12 @@ export type QuizQuestion = {
   translationStatus: Array<TranslationFieldStatus>;
 };
 
-/**
- * Per-question aggregates. One implementation per question type, because the
- * question types have genuinely different shapes of answer.
- */
+/** Per-question aggregates, one implementation per question type. */
 export type QuizQuestionResults = {
   question: QuizQuestion;
   /**
-   * Submissions that answered this question. Every percentage on the concrete
-   * types is a share of this, never of the quiz-wide submission count — a
-   * question people skipped must not read as unpopular answers.
+   * Submissions that answered this question. Every percentage below is a share
+   * of this, never of the quiz-wide submission count.
    */
   responseCount: Scalars['Int']['output'];
 };
@@ -2938,10 +2932,7 @@ export type QuizResults = {
   participantCount: Scalars['Int']['output'];
   questions: Array<QuizQuestionResults>;
   quiz: Quiz;
-  /**
-   * Distinct sessions those submissions belong to. Submissions created outside a
-   * session (M2M imports) are counted in submissionCount but not here.
-   */
+  /** Submissions created outside a session (M2M imports) are not counted here. */
   sessionCount: Scalars['Int']['output'];
   /** Completed submissions across all sessions. */
   submissionCount: Scalars['Int']['output'];

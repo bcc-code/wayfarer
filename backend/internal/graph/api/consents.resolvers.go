@@ -25,6 +25,16 @@ func (r *consentResolver) Body(ctx context.Context, obj *model.Consent) (*model.
 	}, nil
 }
 
+// Project is the resolver for the project field.
+func (r *consentResolver) Project(ctx context.Context, obj *model.Consent) (*model.Project, error) {
+	// Nil means the consent applies to every project, so there is nothing to resolve
+	if obj.ProjectID == nil || *obj.ProjectID == "" {
+		return nil, nil
+	}
+
+	return r.LoadProjectWithTranslation(ctx, *obj.ProjectID)
+}
+
 // UserHistory is the resolver for the userHistory field.
 func (r *consentResolver) UserHistory(ctx context.Context, obj *model.Consent) ([]model.UserConsentHistoryEntry, error) {
 	// Get user ID from context
@@ -216,11 +226,16 @@ func (r *mutationResolver) RejectConsent(ctx context.Context, consentID string) 
 }
 
 // CreateConsent is the resolver for the createConsent field.
-func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title string, shortText *string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string) (*model.Consent, error) {
+func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title string, shortText *string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string, projectID *string) (*model.Consent, error) {
 	// Get next version for this consent key
 	nextVersion, err := r.DB.Queries.GetNextVersionForConsentKey(ctx, key)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get next version: %w", err)
+	}
+
+	consentProjectID, err := r.resolveConsentProject(ctx, key, projectID)
+	if err != nil {
+		return nil, err
 	}
 
 	var publishedAtPG pgtype.Timestamptz
@@ -231,6 +246,10 @@ func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title 
 	var isRemoteBool bool
 	if isRemote != nil {
 		isRemoteBool = *isRemote
+	}
+
+	if err := validateConsentScope(isRemoteBool, consentProjectID); err != nil {
+		return nil, err
 	}
 
 	// Default short text to empty string if not provided
@@ -251,13 +270,14 @@ func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title 
 		PublishedAt: publishedAtPG,
 		IsRemote:    isRemoteBool,
 		ManagedBy:   managedBy,
+		ProjectID:   consentProjectID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create consent: %w", err)
 	}
 
 	// Invalidate latest consents cache
-	r.Cache.Delete(cache.LatestConsentsKey())
+	r.Cache.DeletePrefix(cache.PrefixLatestConsents)
 
 	var publishedAtOut *scalars.DateTime
 	if consent.PublishedAt.Valid {
@@ -281,6 +301,7 @@ func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title 
 		PublishedAt:    publishedAtOut,
 		ManagementType: managementType,
 		ManagedBy:      consent.ManagedBy,
+		ProjectID:      consent.ProjectID,
 	}, nil
 }
 
@@ -323,7 +344,7 @@ func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *
 
 	// Invalidate caches
 	r.Cache.Delete(cache.ConsentKey(id))
-	r.Cache.Delete(cache.LatestConsentsKey())
+	r.Cache.DeletePrefix(cache.PrefixLatestConsents)
 
 	var publishedAtOut *scalars.DateTime
 	if consent.PublishedAt.Valid {
@@ -347,6 +368,7 @@ func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *
 		PublishedAt:    publishedAtOut,
 		ManagementType: managementType,
 		ManagedBy:      consent.ManagedBy,
+		ProjectID:      consent.ProjectID,
 	}, nil
 }
 
@@ -449,6 +471,7 @@ func (r *queryResolver) Consents(ctx context.Context) ([]model.Consent, error) {
 			PublishedAt:    publishedAt,
 			ManagementType: managementType,
 			ManagedBy:      row.ManagedBy,
+			ProjectID:      row.ProjectID,
 		}
 
 		// Apply translation
@@ -470,7 +493,16 @@ func (r *queryResolver) PendingConsents(ctx context.Context) ([]model.Consent, e
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
-	rows, err := r.DB.Queries.GetMissingConsentsForUserWithRejections(ctx, userID)
+	// Pending is relative to the current project, plus consents that apply everywhere
+	projectID, err := r.Settings.GetCurrentProjectID(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current project ID: %w", err)
+	}
+
+	rows, err := r.DB.Queries.GetMissingConsentsForUserWithRejections(ctx, sqlc.GetMissingConsentsForUserWithRejectionsParams{
+		UserID:    userID,
+		ProjectID: projectID,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pending consents: %w", err)
 	}
@@ -499,6 +531,7 @@ func (r *queryResolver) PendingConsents(ctx context.Context) ([]model.Consent, e
 			PublishedAt:    publishedAt,
 			ManagementType: managementType,
 			ManagedBy:      row.ManagedBy,
+			ProjectID:      row.ProjectID,
 		}
 
 		// Apply translation
