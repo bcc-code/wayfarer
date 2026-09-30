@@ -2,15 +2,13 @@
 import type { AvatarProps, DropdownMenuItem } from '@nuxt/ui'
 import type { RouteLocationRaw } from 'vue-router'
 
-// The switcher marks the active project with a trailing check, so the leading
-// slot stays free for its logo. `projectId` is what the trailing slot matches
-// on; DropdownMenuItem carries no field for it.
+// `projectId` is what the trailing check matches on; DropdownMenuItem has no
+// field for it.
 type ProjectMenuItem = DropdownMenuItem & { projectId?: string }
 
 defineProps<{ collapsed?: boolean }>()
 
-// Deliberately lighter than AdminProjectsPage: the switcher needs a label, the
-// logo, and enough date context to group — not the full branding colours.
+// Lighter than AdminProjectsPage: no branding colours needed here.
 gql(`
   query AdminProjectSwitcher {
     projects(first: 100, filter: { archived: false }) {
@@ -65,8 +63,7 @@ const activeProject = computed(() =>
 
 type SwitcherProject = (typeof projects.value)[number]
 
-// A project without a logo keeps the old layers icon, so the rows stay aligned
-// whether or not branding has been filled in.
+// The icon fallback keeps rows aligned when a project has no logo.
 function projectAvatar(project: SwitcherProject): AvatarProps {
   return {
     src: project.branding.logoImage?.url ?? undefined,

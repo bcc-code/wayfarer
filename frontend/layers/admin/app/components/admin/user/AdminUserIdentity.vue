@@ -295,6 +295,7 @@ async function handleUnlock() {
         <template v-else>
           <span class="text-dimmed">Ikke låst</span>
           <UButton
+            icon="lucide:lock"
             size="xs"
             variant="soft"
             color="neutral"

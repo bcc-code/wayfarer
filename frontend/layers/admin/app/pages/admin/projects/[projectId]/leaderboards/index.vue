@@ -170,6 +170,7 @@ async function handleReorder() {
               Inaktiv
             </UBadge>
             <UButton
+              icon="lucide:pencil"
               variant="ghost"
               size="sm"
               :to="{

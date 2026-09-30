@@ -314,3 +314,20 @@ closed — previously such challenges sat in the Active tab forever.
 Mechanism: `GetBulkUsersSessionAccessQuizIDsByProject` returns
 `has_live_session` per (user, quiz); the `UserAccessibleQuizIDsLoader` map
 value carries it (presence in the map = access, value = live session).
+
+## Results Aggregation (Admin)
+
+Aggregated, admin-only quiz results live alongside the rest of the quiz system:
+
+- **Schema**: `gql/quiz_results.graphqls` — `quizResults(quizId:)` returning
+  `QuizResults` and a `QuizQuestionResults` interface with one implementation per
+  question type. Registered in `backend/gqlgen.yml`'s explicit `schema:` list.
+- **Queries**: `backend/internal/database/queries/quiz_results.sql` — five
+  aggregate queries covering the whole page, pooling every completed submission
+  across every session.
+- **Shaping**: `backend/internal/graph/api/quiz_results.go` — pure helpers for
+  number stats/buckets, free-text grouping and ordering accuracy.
+- **Admin page**: `challenges/[challengeId]/results.vue`, linked from the
+  challenge header beside **Sesjoner**.
+
+Design decisions and their reasoning are in `notes/quiz-results-admin.md`.

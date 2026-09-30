@@ -247,6 +247,20 @@ async function handleDelete() {
           <UButton
             v-if="data.challenge.__typename === 'QuizChallenge'"
             variant="soft"
+            icon="lucide:chart-no-axes-column"
+            :to="{
+              name: 'admin-projects-projectId-challenges-challengeId-results',
+              params: {
+                projectId: route.params.projectId,
+                challengeId: route.params.challengeId,
+              },
+            }"
+          >
+            Resultater
+          </UButton>
+          <UButton
+            v-if="data.challenge.__typename === 'QuizChallenge'"
+            variant="soft"
             icon="lucide:list-checks"
             :to="{
               name: 'admin-projects-projectId-challenges-challengeId-sessions',
@@ -262,7 +276,12 @@ async function handleDelete() {
             :challenge-id="route.params.challengeId"
             :challenge-name="data.challenge.name"
           />
-          <UButton variant="soft" color="error" @click="handleDelete">
+          <UButton
+            icon="lucide:trash-2"
+            variant="soft"
+            color="error"
+            @click="handleDelete"
+          >
             Slett
           </UButton>
         </div>

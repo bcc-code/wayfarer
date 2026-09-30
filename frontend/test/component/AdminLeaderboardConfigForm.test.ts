@@ -1,6 +1,7 @@
 // @vitest-environment nuxt
 import { describe, it, expect } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
+import { flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
 import type { ZodType } from 'zod'
 import AdminLeaderboardConfigForm from '../../layers/admin/app/components/admin/leaderboard/AdminLeaderboardConfigForm.vue'
@@ -51,17 +52,17 @@ const initialData = {
   },
 }
 
-// `''` from an emptied UInput, `null` from a cleared USelectMenu — the two
-// shapes the controls actually produce for "unset".
+// `undefined` from an empty stepper field, `null` from a cleared USelectMenu —
+// the two shapes the controls actually produce for "unset".
 const emptyFilterState = {
-  minScore: '',
-  maxScore: '',
+  minScore: undefined,
+  maxScore: undefined,
   churchId: null,
   country: '',
   churchCategory: null,
   gender: null,
-  ageMin: '',
-  ageMax: '',
+  ageMin: undefined,
+  ageMax: undefined,
   teamId: null,
   superTeamId: null,
 }
@@ -115,15 +116,38 @@ describe('AdminLeaderboardConfigForm', () => {
     )
   })
 
-  // Event scope is fixed at creation — `UpdateLeaderboardConfigInput` has no
-  // `eventId` — so offering the picker in edit mode invites a change that
-  // cannot be saved.
-  it('offers the event picker only when creating', async () => {
+  // Events are not in use yet, and the scope could only ever be set at
+  // creation — `UpdateLeaderboardConfigInput` has no `eventId`. The manual sort
+  // position went the same way.
+  it('offers neither event scope nor sort position', async () => {
     const creating = await mount()
-    expect(fieldNames(creating)).toContain('eventId')
-
     const editing = await mount({ initialData, isEditMode: true })
-    expect(fieldNames(editing)).not.toContain('eventId')
+
+    for (const wrapper of [creating, editing]) {
+      expect(fieldNames(wrapper)).not.toContain('eventId')
+      expect(fieldNames(wrapper)).not.toContain('sortOrder')
+    }
+  })
+
+  // The bounds are inclusive and counted off the birth year, which nothing in
+  // "Alder fra"/"Alder til" said.
+  it('says how the age bounds are counted', async () => {
+    const wrapper = await mount()
+
+    const text = wrapper.text()
+    expect(text).toContain('Yngste alder')
+    expect(text).toContain('Eldste alder')
+    expect(text).toContain('Alder regnes etter fødselsår, ikke bursdag')
+  })
+
+  // Hidden, not dropped: an existing board keeps the position it was given.
+  it('saves the sort position it was given', async () => {
+    const wrapper = await mount({ initialData, isEditMode: true })
+
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({ sortOrder: 2 })
   })
 
   it('fills the form from an existing config, ageRange flattened', async () => {
@@ -135,11 +159,10 @@ describe('AdminLeaderboardConfigForm', () => {
         .props('modelValue')
 
     expect(valueOf('name', 'UInput')).toBe('Topp 20')
-    expect(valueOf('sortOrder', 'UInput')).toBe(2)
-    expect(valueOf('maxEntries', 'UInput')).toBe(20)
+    expect(valueOf('maxEntries', 'UInputNumber')).toBe(20)
     expect(valueOf('isActive', 'USwitch')).toBe(false)
-    expect(valueOf('filter.ageMin', 'UInput')).toBe(13)
-    expect(valueOf('filter.ageMax', 'UInput')).toBe(18)
+    expect(valueOf('filter.ageMin', 'UInputNumber')).toBe(13)
+    expect(valueOf('filter.ageMax', 'UInputNumber')).toBe(18)
     expect(valueOf('filter.gender', 'USelectMenu')).toBe(Gender.Female)
     expect(valueOf('filter.churchCategory', 'USelectMenu')).toBe(
       ChurchCategory.Xl,
@@ -155,7 +178,6 @@ describe('AdminLeaderboardConfigForm', () => {
     const wrapper = await mount()
 
     for (const name of [
-      'eventId',
       'filter.gender',
       'filter.churchCategory',
       'filter.churchId',
@@ -198,28 +220,30 @@ describe('AdminLeaderboardConfigForm', () => {
     const form = wrapper.findComponent({ name: 'UForm' })
     const state = form.props('state')
     const input = field(wrapper, 'maxEntries')!.findComponent({
-      name: 'UInput',
+      name: 'UInputNumber',
     })
     await input.vm.$emit('update:modelValue', 5)
     await submit(wrapper, { ...state })
     expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({ maxEntries: 5 })
-    await input.vm.$emit('update:modelValue', '')
+    // What a stepper field holds once you clear it.
+    await input.vm.$emit('update:modelValue', undefined)
     await submit(wrapper, { ...state })
     expect(wrapper.emitted('submit')?.[1]?.[0]).toMatchObject({
       maxEntries: null,
     })
   })
 
-  it('accepts only positive integer limits or a blank field', async () => {
+  // A stepper field holds `undefined` when empty, never `''`.
+  it('accepts only positive integer limits or an empty field', async () => {
     const wrapper = await mount({ initialData, isEditMode: true })
     const form = wrapper.findComponent({ name: 'UForm' })
     const schema = form.props('schema') as ZodType
-    for (const maxEntries of [0, -1, 1.5, 2147483648]) {
+    for (const maxEntries of [0, -1, 1.5, 2147483648, '']) {
       expect(
         schema.safeParse({ ...form.props('state'), maxEntries }).success,
       ).toBe(false)
     }
-    for (const maxEntries of ['', 1, 150]) {
+    for (const maxEntries of [undefined, 1, 150]) {
       expect(
         schema.safeParse({ ...form.props('state'), maxEntries }).success,
       ).toBe(true)

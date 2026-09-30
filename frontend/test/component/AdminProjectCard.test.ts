@@ -73,7 +73,6 @@ describe('AdminProjectCard', () => {
 
     const img = wrapper.find('img')
     expect(img.attributes('src')).toBe('https://cdn.example/spring.png')
-    // Non-square logos must letterbox rather than stretch to the 32px box.
     expect(img.classes()).toContain('object-contain')
   })
 
@@ -82,8 +81,6 @@ describe('AdminProjectCard', () => {
       props: { project: project() },
     })
 
-    // The card used to paint ring and body from branding.colors, turning the
-    // grid into a patchwork. Nothing may bind a per-project colour again.
     expect(wrapper.html()).not.toMatch(/--accent|ring-\(|bg-\(/)
   })
 })

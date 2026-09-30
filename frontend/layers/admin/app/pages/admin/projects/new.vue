@@ -94,6 +94,8 @@ const state = reactive<Schema>({
   },
 })
 
+const { markSaved } = useUnsavedChanges(() => ({ ...state }))
+
 const { executeMutation } = useCreateProjectMutation()
 const toast = useToast()
 
@@ -114,6 +116,7 @@ async function createProject(event: FormSubmitEvent<Schema>) {
     if (!response.data) {
       return
     }
+    markSaved()
     navigateTo({
       name: 'admin-projects-projectId',
       params: { projectId: response.data.createProject.id },
