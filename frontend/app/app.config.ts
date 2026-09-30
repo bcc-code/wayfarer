@@ -2,10 +2,13 @@
  * Nuxt UI component theming.
  *
  * The surface treatment is adapted from the Nuxt UI calendar template
- * (github.com/nuxt-ui-templates/calendar), rebuilt on stock Tailwind: the glass
- * colours are theme tokens (`bg-glass`, `bg-control`, `bg-well`) declared in
- * `assets/styles/main.css`, and the material is plain `backdrop-*` utilities
- * rather than the bespoke one the reference defines.
+ * (github.com/nuxt-ui-templates/calendar), rebuilt on stock Tailwind: the
+ * colours are theme tokens (`bg-control`, `bg-well`) declared in
+ * `assets/styles/main.css`.
+ *
+ * Anything that floats over the page — a dialog, a menu, the sidebar — is
+ * opaque. The reference frosts them, and this panel did too until reading a
+ * dialog meant reading it against whatever happened to be behind it.
  *
  * This config is global, but in practice it only dresses the admin panel: the
  * user-facing app runs on the Design* system and uses barely any U* components.
@@ -15,16 +18,16 @@
  * token, including the user-facing Design* components.
  */
 
-// The hairline that frames a piece of glass. On its own it goes on a control,
-// which sits on the chrome it belongs to rather than lifting off it.
+// The hairline that frames a piece of glass. Surfaces only — a form control
+// draws the theme's `ring-accented` instead, which you can actually see.
 const ring = 'ring ring-black/8 dark:ring-white/10'
-// Turns the material solid for anyone who asks for less transparency. The
-// variant is declared in main.css; applying it here means every surface built
-// from `content` opts out in one place.
+// Drops the blur behind the overlay for anyone who asks for less
+// transparency. The variant is declared in main.css.
 const solid =
   'reduceTransparency:bg-default reduceTransparency:backdrop-blur-none'
-// A surface that floats over the body.
-const content = `bg-glass backdrop-blur-xl backdrop-saturate-150 backdrop-brightness-105 ${solid} ${ring} shadow-2xl`
+// A surface that floats over the body. Opaque: text on it has to be readable
+// whatever it is covering.
+const content = `bg-default ${ring} shadow-2xl`
 // The same hairline in border form, for a section ruled off inside a surface.
 const border = 'border-black/8 dark:border-white/10'
 // Rules inside glass. `divide-default` is an opaque border colour, which reads
@@ -33,11 +36,25 @@ const divide = 'divide-black/8 dark:divide-white/8'
 // A translucent overlay filling the viewport. It hazes rather than frosts, so
 // it carries a blur of its own rather than the material's.
 const overlay = `bg-glass backdrop-blur-sm ${solid}`
+// A small surface lifted off the chrome behind it: opaque white on light,
+// where the lift is carried by the shadow, and a thin wash on dark, where a
+// shadow would be invisible and the ring does the work instead. This is the
+// move the reference dashboards use for anything currently selected.
+const raised =
+  'bg-default shadow-sm dark:bg-control-hover dark:shadow-none ' + ring
+// The same, addressed at a pseudo-element for components that paint their
+// surface on `before` rather than on the element itself.
+const raisedBefore =
+  'before:bg-default before:shadow-sm before:ring before:ring-black/8 dark:before:bg-control-hover dark:before:shadow-none dark:before:ring-white/10'
 
 export default defineAppConfig({
   ui: {
     colors: {
-      primary: 'emerald',
+      // The admin panel resolves `--ui-primary` to ink (admin.css), so the ramp
+      // behind it is only reached by a `primary-<shade>` utility. Keeping it on
+      // the neutral scale means such a utility lands in the same family rather
+      // than reintroducing a hue nothing else uses.
+      primary: 'zinc',
       neutral: 'zinc',
       // Semantic palettes for the admin panel. Softer hues than the Nuxt UI
       // defaults; the shade they resolve to is set per mode in admin.css.
@@ -46,15 +63,41 @@ export default defineAppConfig({
       warning: 'amber',
       info: 'blue',
     },
+    badge: {
+      // A tag reads as a tag rather than a small button when it is fully
+      // rounded. The radius lives on the size variants in the theme, so it has
+      // to be beaten from a compound variant — a slot would be applied before
+      // them and lose. The horizontal padding grows with it: a full radius eats
+      // its own corners, and `px-2` leaves the label touching them.
+      compoundVariants: [
+        { size: 'xs', class: { base: 'rounded-full px-2' } },
+        { size: 'sm', class: { base: 'rounded-full px-2.5' } },
+        { size: 'md', class: { base: 'rounded-full px-2.5' } },
+        { size: 'lg', class: { base: 'rounded-full px-3' } },
+        { size: 'xl', class: { base: 'rounded-full px-3' } },
+      ],
+    },
     button: {
       slots: {
         base: 'cursor-pointer',
       },
+      variants: {
+        // The theme's `xs` is 24px tall — the smallest target WCAG 2.2 allows,
+        // with nothing to spare, and an icon-only one is the easiest thing in
+        // the panel to miss. A floor per size leaves the padding and the text
+        // alone and only grows the ones that come out too small.
+        size: {
+          xs: { base: 'min-h-7 min-w-7' },
+          sm: { base: 'min-h-8 min-w-8' },
+        },
+      },
       compoundVariants: [
+        // The reference's secondary action: a white chip with a hairline and a
+        // shadow under it, standing beside the one solid button on the page.
         {
           color: 'neutral',
           variant: 'outline',
-          class: ring,
+          class: `${ring} shadow-sm dark:shadow-none`,
         },
         {
           color: 'neutral',
@@ -69,11 +112,29 @@ export default defineAppConfig({
         },
       ],
     },
+    card: {
+      // Only the deltas: `extend` concatenates onto the theme's own classes and
+      // tailwind-merge settles the conflicts, so the ring and divide colours
+      // swap to the glass hairline while the rest of the variant survives.
+      slots: {
+        root: 'shadow-sm dark:shadow-none',
+      },
+      variants: {
+        variant: {
+          outline: { root: `${ring} ${divide}` },
+          subtle: { root: `${ring} ${divide}` },
+          soft: { root: divide },
+        },
+      },
+    },
     checkbox: {
       slots: {
-        // `size-5!` and the larger label are Wayfarer's own; the rounding and
-        // ring come from the reference.
-        base: ['size-5!', 'rounded-xs', ring],
+        // `size-5!` and the larger label are Wayfarer's own; the rounding
+        // comes from the reference. The hairline does not: a control you are
+        // meant to find and click needs an edge you can see, so the box keeps
+        // the theme's `ring-accented` rather than the glass hairline. Testers
+        // could not make out an unchecked box against the panel behind it.
+        base: ['size-5!', 'rounded-xs'],
         label: 'text-base leading-tight font-normal',
       },
     },
@@ -110,6 +171,17 @@ export default defineAppConfig({
       slots: {
         labelWrapper: 'justify-start gap-2',
         label: 'grow',
+      },
+    },
+    input: {
+      variants: {
+        variant: {
+          // Only the lift. The edge stays the theme's `ring-accented`, for the
+          // same reason as the checkbox above — and it is what the untouched
+          // textarea and select already draw, so every field in a form now
+          // has the same edge.
+          outline: 'shadow-xs dark:shadow-none',
+        },
       },
     },
     kbd: {
@@ -173,6 +245,20 @@ export default defineAppConfig({
           variant: 'pill',
           class: {
             link: 'hover:before:bg-control',
+          },
+        },
+        // `primary` is monochrome (admin.css), so the active link's text no
+        // longer separates it from its neighbours on colour alone. The
+        // reference dashboards answer this the same way: the current item is a
+        // chip raised off the rail rather than a coloured label. `ring` and
+        // `shadow` are separate box-shadow layers, so both compose on the one
+        // pseudo-element that paints the link's surface.
+        {
+          disabled: false,
+          active: true,
+          variant: 'pill',
+          class: {
+            link: raisedBefore,
           },
         },
       ],
@@ -245,6 +331,16 @@ export default defineAppConfig({
         },
       ],
     },
+    table: {
+      slots: {
+        // The header is a band rather than a row of bold text on the same
+        // surface as the data, which is what separates the reference's tables
+        // from a list that happens to have a first row.
+        th: 'bg-elevated/40 first:rounded-s-md last:rounded-e-md',
+        tbody: divide,
+        tr: divide,
+      },
+    },
     tabs: {
       slots: {
         trigger: 'w-full rounded-full',
@@ -270,7 +366,9 @@ export default defineAppConfig({
           color: 'neutral',
           variant: 'pill',
           class: {
-            indicator: 'bg-white dark:bg-control shadow-sm',
+            // The same raised chip the sidebar marks its current item with, so
+            // a segmented control and the nav say "you are here" the same way.
+            indicator: raised,
             trigger: [
               'data-[state=active]:text-highlighted',
               'hover:data-[state=inactive]:not-disabled:bg-glass',

@@ -134,9 +134,9 @@ async function publishConsent() {
 }
 </script>
 
+<!-- Capped tighter than the data pages: this one is mostly prose, and the
+     body preview at full panel width is unreadable. -->
 <template>
-  <!-- Capped tighter than the data pages: this one is mostly prose, and the
-       body preview at full panel width is unreadable. -->
   <div class="max-w-4xl">
     <AdminQueryState :fetching :error>
       <div v-if="data" class="space-y-8">
@@ -155,13 +155,19 @@ async function publishConsent() {
           <div class="flex shrink-0 gap-2">
             <UButton
               v-if="!data.consent.publishedAt"
+              icon="lucide:send"
               variant="soft"
               color="success"
               @click="publishConsent"
             >
               Publiser
             </UButton>
-            <UButton v-if="!isEditing" variant="soft" @click="startEditing">
+            <UButton
+              v-if="!isEditing"
+              icon="lucide:pencil"
+              variant="soft"
+              @click="startEditing"
+            >
               Rediger
             </UButton>
           </div>
@@ -220,7 +226,9 @@ async function publishConsent() {
                of the section instead. -->
           <div class="flex justify-end gap-3 pt-4">
             <UButton variant="ghost" @click="cancelEditing">Avbryt</UButton>
-            <UButton @click="saveChanges">Lagre endringer</UButton>
+            <UButton icon="lucide:check" @click="saveChanges"
+              >Lagre endringer</UButton
+            >
           </div>
         </AdminSection>
 
@@ -280,7 +288,7 @@ async function publishConsent() {
                   :href="data.consent.url"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="text-primary hover:underline"
+                  class="admin-link"
                 >
                   {{ data.consent.url }}
                 </a>

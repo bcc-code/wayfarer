@@ -169,7 +169,9 @@ async function saveChanges() {
 
             <div class="flex justify-end gap-2 pt-4">
               <UButton variant="ghost" @click="cancelEditing">Avbryt</UButton>
-              <UButton @click="saveChanges">Lagre endringer</UButton>
+              <UButton icon="lucide:check" @click="saveChanges"
+                >Lagre endringer</UButton
+              >
             </div>
           </div>
         </AdminSection>

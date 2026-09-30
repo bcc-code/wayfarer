@@ -276,7 +276,12 @@ async function handleDelete() {
             :challenge-id="route.params.challengeId"
             :challenge-name="data.challenge.name"
           />
-          <UButton variant="soft" color="error" @click="handleDelete">
+          <UButton
+            icon="lucide:trash-2"
+            variant="soft"
+            color="error"
+            @click="handleDelete"
+          >
             Slett
           </UButton>
         </div>

@@ -194,6 +194,7 @@ const columns: TableColumn<
         <template #actions-cell="{ row }">
           <div class="flex justify-end">
             <UButton
+              icon="lucide:pencil"
               variant="ghost"
               :to="{
                 name: 'admin-projects-projectId-teams-teamId',

@@ -73,6 +73,31 @@ describe('admin nav model', () => {
       ])
     })
 
+    // Ordered by who reaches for what: what an organiser builds a study out
+    // of comes first, then the groups it runs over, then support and the
+    // setup that happens once.
+    it('leads the project nav with the entries an organiser uses', () => {
+      const perms = permissions({
+        canAccessTeams: true,
+        canAccessScores: true,
+        canEditProject: true,
+      })
+
+      expect(
+        labels(visibleNavItems(PROJECT_NAV, perms, { projectId: 'PR1' })),
+      ).toEqual([
+        'Oversikt',
+        'Utfordringer',
+        'Utmerkelser',
+        'Ledertavler',
+        'Lag',
+        'Superlag',
+        'Poeng',
+        'Arrangement',
+        'Innstillinger',
+      ])
+    })
+
     it('passes the project context to project-scoped predicates', () => {
       const perms = permissions({ canEditProject: true })
 

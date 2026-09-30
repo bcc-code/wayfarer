@@ -180,6 +180,7 @@ async function handleRemove() {
         <div class="ms-auto flex items-center gap-3">
           <UButton
             v-if="row.removableConsentId"
+            icon="lucide:x"
             color="neutral"
             variant="soft"
             size="sm"
@@ -219,7 +220,9 @@ async function handleRemove() {
           <UButton variant="ghost" color="neutral" @click="closeRemoveModal">
             Avbryt
           </UButton>
-          <UButton color="error" @click="handleRemove">Fjern samtykke</UButton>
+          <UButton icon="lucide:x" color="error" @click="handleRemove"
+            >Fjern samtykke</UButton
+          >
         </div>
       </template>
     </UModal>

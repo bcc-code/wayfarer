@@ -14,7 +14,7 @@ const typeOptions = [
   {
     value: 'SIMPLE' as AchievementType,
     label: 'Enkel',
-    description: 'Enkel utmerkelse med navn og poeng',
+    description: 'Enkel utmerkelse med tittel og poeng',
   },
   {
     value: 'CONTENT' as AchievementType,

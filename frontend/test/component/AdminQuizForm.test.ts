@@ -1,12 +1,18 @@
 // @vitest-environment nuxt
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
+import { flushPromises } from '@vue/test-utils'
 import { QuizQuestionType } from '../../app/api/generated'
 import AdminQuizForm from '../../layers/admin/app/components/admin/quiz/AdminQuizForm.vue'
 
 const confirm = vi.fn(() => Promise.resolve(true))
 mockNuxtImport('useConfirm', () => () => ({ confirm }))
 mockNuxtImport('useToast', () => () => ({ add: vi.fn() }))
+
+const leaveGuards: (() => unknown)[] = []
+mockNuxtImport('onBeforeRouteLeave', () => (guard: () => unknown) => {
+  leaveGuards.push(guard)
+})
 
 const question = (id: string, text: string, order: number, points: number) => ({
   id,
@@ -37,6 +43,13 @@ const mount = () =>
     props: { quizData, projectId: 'PR1', challengeId: 'CL1' },
   })
 
+const addQuestion = async (wrapper: Awaited<ReturnType<typeof mount>>) => {
+  const button = wrapper
+    .findAll('button')
+    .find((candidate) => candidate.text().includes('Legg til spørsmål'))
+  await button?.trigger('click')
+}
+
 const rows = (wrapper: Awaited<ReturnType<typeof mount>>) =>
   wrapper.findAll('.drag-handle').map((handle) => handle.element.parentElement)
 
@@ -44,6 +57,7 @@ describe('AdminQuizForm', () => {
   beforeEach(() => {
     confirm.mockClear()
     confirm.mockResolvedValue(true)
+    leaveGuards.length = 0
   })
 
   // Neither number alone answers "what is this quiz worth".
@@ -102,10 +116,13 @@ describe('AdminQuizForm', () => {
 
   // `randomizeQuestions` is stored and exposed but nothing orders questions by
   // it, so the setting is labelled as having no effect rather than pretending.
-  it('says the randomise setting is not in use', async () => {
+  // The order is drawn per participant when a session submission is created,
+  // and the submission's stored order is what the quiz renders.
+  it('says when the random order is drawn', async () => {
     const wrapper = await mount()
 
-    expect(wrapper.text()).toContain('Ikke i bruk ennå')
+    expect(wrapper.text()).toContain('Tilfeldig spørsmålsrekkefølge')
+    expect(wrapper.text()).toContain('trukket når de starter quizen')
   })
 
   // Editing question 7 of 12 should say so.
@@ -138,5 +155,127 @@ describe('AdminQuizForm', () => {
 
     expect(wrapper.text()).toContain('Vis riktige svar')
     expect(wrapper.text()).toContain('bare én gang')
+    // Completion points land whatever the answers were.
+    expect(wrapper.text()).toContain('uansett hvor mange svar som er riktige')
+  })
+
+  // You come to this page to write questions, not to set a timeout.
+  it('leads with the questions, not the settings', async () => {
+    const wrapper = await mount()
+
+    const titles = wrapper
+      .findAllComponents({ name: 'AdminSection' })
+      .map((section) => section.props('title'))
+
+    expect(titles).toEqual(['Spørsmål', 'Innstillinger'])
+  })
+
+  // Title, description and image are the challenge's; a second place to write
+  // them is what made this page hard to read.
+  it('does not ask again for what the challenge already says', async () => {
+    const wrapper = await mount()
+
+    expect(wrapper.text()).not.toContain('Tittel')
+    expect(wrapper.text()).not.toContain('Beskrivelse')
+    expect(wrapper.text()).not.toContain('Bilde')
+  })
+
+  it('saves the inherited title and description untouched', async () => {
+    const wrapper = await mount()
+
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(wrapper.emitted('save')?.[0]?.[0]).toMatchObject({
+      name: 'Quiz 1',
+      description: 'Beskrivelse',
+    })
+  })
+
+  // A stray click outside the dialog would throw away a half-written question.
+  it('does not let the question dialog be dismissed by accident', async () => {
+    const wrapper = await mount()
+
+    expect(wrapper.findComponent({ name: 'UModal' }).props('dismissible')).toBe(
+      false,
+    )
+  })
+
+  // Regression: the editor rebuilt the question without its `localKey`, so the
+  // list matched nothing and put the untouched original back. Every change made
+  // in the dialog was dropped, silently.
+  it('keeps what was typed when an existing question is edited', async () => {
+    const wrapper = await mount()
+
+    const edit = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('Rediger'))
+    await edit?.trigger('click')
+
+    // The dialog teleports, so drive it through the editor's own subtree.
+    const editor = wrapper.findComponent({ name: 'AdminQuizQuestionEditor' })
+    await editor
+      .findAllComponents({ name: 'UInputNumber' })[0]
+      ?.vm.$emit('update:modelValue', 100)
+    await editor
+      .findAll('button')
+      .find((button) => button.text().includes('Oppdater spørsmål'))
+      ?.trigger('click')
+    await flushPromises()
+
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    const saved = wrapper.emitted('save')?.[0]?.[0] as {
+      questions: { id?: string; points?: number }[]
+    }
+    expect(saved.questions[0]).toMatchObject({ id: 'QQ1', points: 100 })
+    // The question it was not editing is untouched.
+    expect(saved.questions[1]).toMatchObject({ id: 'QQ2', points: 5 })
+  })
+
+  // Half-written questions are the most expensive thing to lose on this page.
+  it('asks before leaving with unsaved changes', async () => {
+    const wrapper = await mount()
+
+    wrapper.vm.state.completionPoints = 75
+
+    await leaveGuards[0]?.()
+    expect(confirm).toHaveBeenCalled()
+  })
+
+  // The page owns the save, so it tells the form when the two agree again.
+  it('stops asking once the page says the save landed', async () => {
+    const wrapper = await mount()
+
+    wrapper.vm.state.completionPoints = 75
+    ;(wrapper.vm as unknown as { markSaved: () => void }).markSaved()
+
+    await expect(leaveGuards[0]?.()).resolves.toBe(true)
+    expect(confirm).not.toHaveBeenCalled()
+  })
+
+  // A point that lands because nobody changed it is not a deliberate score.
+  it('adds a question with no points set', async () => {
+    const wrapper = await mount()
+
+    await addQuestion(wrapper)
+    const question = wrapper
+      .findComponent({ name: 'AdminQuizQuestionEditor' })
+      .props('question') as { points?: number }
+
+    expect(question.points).toBeUndefined()
+  })
+
+  // The editor shows these; the list is owned here.
+  it('explains each question type to the editor', async () => {
+    const wrapper = await mount()
+
+    await addQuestion(wrapper)
+    const options = wrapper
+      .findComponent({ name: 'AdminQuizQuestionEditor' })
+      .props('questionTypeOptions') as { description?: string }[]
+
+    expect(options.every((option) => option.description)).toBe(true)
   })
 })

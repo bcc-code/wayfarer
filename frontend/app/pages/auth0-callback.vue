@@ -33,12 +33,18 @@ onMounted(async () => {
     // Check if we have Auth0 callback params (code and state)
     const hasCallbackParams = route.query.code && route.query.state
 
-    let targetUrl = '/'
+    // Arriving from the auth middleware rather than from Auth0 — an expired
+    // Wayfarer token on a live Auth0 session — there are no params to read a
+    // target from, so the middleware passes the page along in the query.
+    let targetUrl = safeRedirectPath(route.query.redirect, '/') as string
 
     if (hasCallbackParams) {
       // Handle the Auth0 callback and get the redirect target
       const result = await auth0.handleRedirectCallback()
-      targetUrl = result.appState?.targetUrl || '/'
+      targetUrl = safeRedirectPath(
+        result.appState?.targetUrl,
+        targetUrl,
+      ) as string
     }
 
     // Exchange Auth0 token for Wayfarer JWT if authenticated

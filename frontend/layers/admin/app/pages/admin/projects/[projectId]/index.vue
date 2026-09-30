@@ -114,9 +114,9 @@ onMounted(() => {
 })
 </script>
 
+<!-- Capped like the other detail pages: a full-width row of five tiles
+     strands each count far from its label. -->
 <template>
-  <!-- Capped like the other detail pages: a full-width row of five tiles
-       strands each count far from its label. -->
   <div class="max-w-6xl">
     <AdminQueryState :fetching="fetchingProject" :error>
       <template v-if="project">
