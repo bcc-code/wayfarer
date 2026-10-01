@@ -1,5 +1,11 @@
 # Persisted, admin-managed leaderboard definitions
 
+enum LeaderboardLimitMode {
+    MANUAL
+    "Top N filtered church participants. Requires PERSONS and churchId."
+    CHURCH_SIZE
+}
+
 # ==================== LeaderboardConfig Type ====================
 
 type LeaderboardConfig {
@@ -9,6 +15,7 @@ type LeaderboardConfig {
     name: String!
     entityType: LeaderboardEntityType!
     filter: LeaderboardFilterView
+    limitMode: LeaderboardLimitMode!
     maxEntries: Int
     sortOrder: Int!
     isActive: Boolean!
@@ -16,7 +23,8 @@ type LeaderboardConfig {
     updatedAt: DateTime!
     """
     The finished leaderboard, capped before pagination. With no page size, returns
-    the configured limit, or 100 entries when maxEntries is null.
+    the automatic church-size limit, the manual maxEntries limit, or 100 entries
+    when the manual limit is null.
     """
     leaderboard(first: Int, after: String, last: Int, before: String): LeaderboardConnection! @goField(forceResolver: true)
 }
@@ -48,6 +56,7 @@ input CreateLeaderboardConfigInput {
     name: String!
     entityType: LeaderboardEntityType!
     filter: LeaderboardFilter
+    limitMode: LeaderboardLimitMode = MANUAL
     maxEntries: Int
     sortOrder: Int
     isActive: Boolean
@@ -57,6 +66,7 @@ input UpdateLeaderboardConfigInput {
     name: String!
     entityType: LeaderboardEntityType!
     filter: LeaderboardFilter
+    limitMode: LeaderboardLimitMode = MANUAL
     maxEntries: Int
     sortOrder: Int!
     isActive: Boolean!

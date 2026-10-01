@@ -4,7 +4,12 @@ import type {
   LeaderboardConfigFieldsFragment,
   LeaderboardFilter,
 } from '~/api/generated'
-import { ChurchCategory, Gender, LeaderboardEntityType } from '~/api/generated'
+import {
+  ChurchCategory,
+  Gender,
+  LeaderboardEntityType,
+  LeaderboardLimitMode,
+} from '~/api/generated'
 import z from 'zod'
 
 const props = defineProps<{
@@ -27,6 +32,7 @@ export interface LeaderboardConfigFormData {
   name: string
   entityType: LeaderboardEntityType
   eventId: string | null
+  limitMode: LeaderboardLimitMode
   maxEntries: number | null
   sortOrder: number
   isActive: boolean
@@ -123,6 +129,7 @@ const schema = z
     name: z.string().min(1, 'Tittel er påkrevd'),
     entityType: z.nativeEnum(LeaderboardEntityType),
     eventId: optionalId,
+    limitMode: z.nativeEnum(LeaderboardLimitMode),
     maxEntries: z.number().int().min(1).max(2147483647).optional(),
     sortOrder: z.number().int('Rekkefølge må være et heltall'),
     isActive: z.boolean(),
@@ -140,6 +147,22 @@ const schema = z
     }),
   })
   .superRefine((value, ctx) => {
+    if (value.limitMode === LeaderboardLimitMode.ChurchSize) {
+      if (value.entityType !== LeaderboardEntityType.Persons) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['entityType'],
+          message: 'Automatisk grense krever en persontavle',
+        })
+      }
+      if (!value.filter.churchId) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['filter', 'churchId'],
+          message: 'Velg en menighet for automatisk grense',
+        })
+      }
+    }
     const { minScore, maxScore, ageMin, ageMax } = value.filter
     const hasMin = typeof ageMin === 'number'
     const hasMax = typeof ageMax === 'number'
@@ -194,6 +217,7 @@ const state = reactive<Schema>({
   name: '',
   entityType: LeaderboardEntityType.Persons,
   eventId: null,
+  limitMode: LeaderboardLimitMode.ChurchSize,
   maxEntries: undefined,
   sortOrder: 0,
   isActive: true,
@@ -210,6 +234,7 @@ watch(
     state.entityType = config.entityType
     state.eventId = config.event?.id ?? null
     state.maxEntries = config.maxEntries ?? undefined
+    state.limitMode = config.limitMode ?? LeaderboardLimitMode.Manual
     state.sortOrder = config.sortOrder
     state.isActive = config.isActive
     // `LeaderboardFilterView` on the way out, `LeaderboardFilter` on the way
@@ -257,8 +282,12 @@ function onSubmit(event: FormSubmitEvent<Schema>) {
     name: event.data.name,
     entityType: event.data.entityType,
     eventId: event.data.eventId || null,
+    limitMode: event.data.limitMode,
     maxEntries:
-      typeof event.data.maxEntries === 'number' ? event.data.maxEntries : null,
+      event.data.limitMode === LeaderboardLimitMode.Manual &&
+      typeof event.data.maxEntries === 'number'
+        ? event.data.maxEntries
+        : null,
     sortOrder: event.data.sortOrder,
     isActive: event.data.isActive,
     filter: buildFilter(event.data.filter),
@@ -297,7 +326,32 @@ function clearFilter() {
           />
         </UFormField>
 
+        <UFormField name="limitMode" label="Antall plasseringer">
+          <USelect
+            v-model="state.limitMode"
+            :items="[
+              {
+                label: 'Automatisk etter menighetsstørrelse',
+                value: LeaderboardLimitMode.ChurchSize,
+              },
+              { label: 'Manuell grense', value: LeaderboardLimitMode.Manual },
+            ]"
+            value-key="value"
+            class="w-full"
+          />
+        </UFormField>
+        <p
+          v-if="state.limitMode === LeaderboardLimitMode.ChurchSize"
+          class="text-sm text-muted"
+        >
+          Gjelder persontavler med valgt menighet. Antall deltakere i den
+          filtrerte tavlen bestemmer grensen: under 20: topp 3; 20–49: topp 10;
+          50–99: topp 20; 100–199: topp 50; 200 eller flere: topp 100. Egen
+          plassering og nærmeste rivaler vises i tillegg.
+        </p>
+
         <UFormField
+          v-if="state.limitMode === LeaderboardLimitMode.Manual"
           name="maxEntries"
           label="Hvor mange vises på tavlen"
           help="Skriv 10 for en topp 10-liste. La stå tom for å vise alle. Deltakeren ser sin egen plassering og de nærmeste rivalene uansett."

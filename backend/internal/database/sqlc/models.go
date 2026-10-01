@@ -273,6 +273,7 @@ type LeaderboardConfig struct {
 	CreatedAt  pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
 	MaxEntries *int32             `json:"max_entries"`
+	LimitMode  string             `json:"limit_mode"`
 }
 
 type LeaderboardEventChurch struct {

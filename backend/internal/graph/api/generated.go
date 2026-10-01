@@ -502,6 +502,7 @@ type ComplexityRoot struct {
 		ID          func(childComplexity int) int
 		IsActive    func(childComplexity int) int
 		Leaderboard func(childComplexity int, first *int, after *string, last *int, before *string) int
+		LimitMode   func(childComplexity int) int
 		MaxEntries  func(childComplexity int) int
 		Name        func(childComplexity int) int
 		Project     func(childComplexity int) int
@@ -3754,6 +3755,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.LeaderboardConfig.Leaderboard(childComplexity, args["first"].(*int), args["after"].(*string), args["last"].(*int), args["before"].(*string)), true
+	case "LeaderboardConfig.limitMode":
+		if e.complexity.LeaderboardConfig.LimitMode == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardConfig.LimitMode(childComplexity), true
 	case "LeaderboardConfig.maxEntries":
 		if e.complexity.LeaderboardConfig.MaxEntries == nil {
 			break
@@ -10714,6 +10721,12 @@ extend type Mutation {
 `, BuiltIn: false},
 	{Name: "../../../../gql/leaderboards.graphqls", Input: `# Persisted, admin-managed leaderboard definitions
 
+enum LeaderboardLimitMode {
+    MANUAL
+    "Top N filtered church participants. Requires PERSONS and churchId."
+    CHURCH_SIZE
+}
+
 # ==================== LeaderboardConfig Type ====================
 
 type LeaderboardConfig {
@@ -10723,6 +10736,7 @@ type LeaderboardConfig {
     name: String!
     entityType: LeaderboardEntityType!
     filter: LeaderboardFilterView
+    limitMode: LeaderboardLimitMode!
     maxEntries: Int
     sortOrder: Int!
     isActive: Boolean!
@@ -10730,7 +10744,8 @@ type LeaderboardConfig {
     updatedAt: DateTime!
     """
     The finished leaderboard, capped before pagination. With no page size, returns
-    the configured limit, or 100 entries when maxEntries is null.
+    the automatic church-size limit, the manual maxEntries limit, or 100 entries
+    when the manual limit is null.
     """
     leaderboard(first: Int, after: String, last: Int, before: String): LeaderboardConnection! @goField(forceResolver: true)
 }
@@ -10762,6 +10777,7 @@ input CreateLeaderboardConfigInput {
     name: String!
     entityType: LeaderboardEntityType!
     filter: LeaderboardFilter
+    limitMode: LeaderboardLimitMode = MANUAL
     maxEntries: Int
     sortOrder: Int
     isActive: Boolean
@@ -10771,6 +10787,7 @@ input UpdateLeaderboardConfigInput {
     name: String!
     entityType: LeaderboardEntityType!
     filter: LeaderboardFilter
+    limitMode: LeaderboardLimitMode = MANUAL
     maxEntries: Int
     sortOrder: Int!
     isActive: Boolean!
@@ -20138,6 +20155,8 @@ func (ec *executionContext) fieldContext_Event_leaderboards(_ context.Context, f
 				return ec.fieldContext_LeaderboardConfig_entityType(ctx, field)
 			case "filter":
 				return ec.fieldContext_LeaderboardConfig_filter(ctx, field)
+			case "limitMode":
+				return ec.fieldContext_LeaderboardConfig_limitMode(ctx, field)
 			case "maxEntries":
 				return ec.fieldContext_LeaderboardConfig_maxEntries(ctx, field)
 			case "sortOrder":
@@ -24597,6 +24616,35 @@ func (ec *executionContext) fieldContext_LeaderboardConfig_filter(_ context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _LeaderboardConfig_limitMode(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardConfig) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardConfig_limitMode,
+		func(ctx context.Context) (any, error) {
+			return obj.LimitMode, nil
+		},
+		nil,
+		ec.marshalNLeaderboardLimitMode2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardLimitMode,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardConfig_limitMode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardConfig",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type LeaderboardLimitMode does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _LeaderboardConfig_maxEntries(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardConfig) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -24963,6 +25011,8 @@ func (ec *executionContext) fieldContext_LeaderboardConfigEdge_node(_ context.Co
 				return ec.fieldContext_LeaderboardConfig_entityType(ctx, field)
 			case "filter":
 				return ec.fieldContext_LeaderboardConfig_filter(ctx, field)
+			case "limitMode":
+				return ec.fieldContext_LeaderboardConfig_limitMode(ctx, field)
 			case "maxEntries":
 				return ec.fieldContext_LeaderboardConfig_maxEntries(ctx, field)
 			case "sortOrder":
@@ -31554,6 +31604,8 @@ func (ec *executionContext) fieldContext_Mutation_createLeaderboardConfig(ctx co
 				return ec.fieldContext_LeaderboardConfig_entityType(ctx, field)
 			case "filter":
 				return ec.fieldContext_LeaderboardConfig_filter(ctx, field)
+			case "limitMode":
+				return ec.fieldContext_LeaderboardConfig_limitMode(ctx, field)
 			case "maxEntries":
 				return ec.fieldContext_LeaderboardConfig_maxEntries(ctx, field)
 			case "sortOrder":
@@ -31639,6 +31691,8 @@ func (ec *executionContext) fieldContext_Mutation_updateLeaderboardConfig(ctx co
 				return ec.fieldContext_LeaderboardConfig_entityType(ctx, field)
 			case "filter":
 				return ec.fieldContext_LeaderboardConfig_filter(ctx, field)
+			case "limitMode":
+				return ec.fieldContext_LeaderboardConfig_limitMode(ctx, field)
 			case "maxEntries":
 				return ec.fieldContext_LeaderboardConfig_maxEntries(ctx, field)
 			case "sortOrder":
@@ -41028,6 +41082,8 @@ func (ec *executionContext) fieldContext_Project_leaderboards(_ context.Context,
 				return ec.fieldContext_LeaderboardConfig_entityType(ctx, field)
 			case "filter":
 				return ec.fieldContext_LeaderboardConfig_filter(ctx, field)
+			case "limitMode":
+				return ec.fieldContext_LeaderboardConfig_limitMode(ctx, field)
 			case "maxEntries":
 				return ec.fieldContext_LeaderboardConfig_maxEntries(ctx, field)
 			case "sortOrder":
@@ -43330,6 +43386,8 @@ func (ec *executionContext) fieldContext_Query_leaderboardConfig(ctx context.Con
 				return ec.fieldContext_LeaderboardConfig_entityType(ctx, field)
 			case "filter":
 				return ec.fieldContext_LeaderboardConfig_filter(ctx, field)
+			case "limitMode":
+				return ec.fieldContext_LeaderboardConfig_limitMode(ctx, field)
 			case "maxEntries":
 				return ec.fieldContext_LeaderboardConfig_maxEntries(ctx, field)
 			case "sortOrder":
@@ -60759,7 +60817,11 @@ func (ec *executionContext) unmarshalInputCreateLeaderboardConfigInput(ctx conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"projectId", "eventId", "name", "entityType", "filter", "maxEntries", "sortOrder", "isActive"}
+	if _, present := asMap["limitMode"]; !present {
+		asMap["limitMode"] = "MANUAL"
+	}
+
+	fieldsInOrder := [...]string{"projectId", "eventId", "name", "entityType", "filter", "limitMode", "maxEntries", "sortOrder", "isActive"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -60801,6 +60863,13 @@ func (ec *executionContext) unmarshalInputCreateLeaderboardConfigInput(ctx conte
 				return it, err
 			}
 			it.Filter = data
+		case "limitMode":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limitMode"))
+			data, err := ec.unmarshalOLeaderboardLimitMode2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardLimitMode(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LimitMode = data
 		case "maxEntries":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxEntries"))
 			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
@@ -63560,7 +63629,11 @@ func (ec *executionContext) unmarshalInputUpdateLeaderboardConfigInput(ctx conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "entityType", "filter", "maxEntries", "sortOrder", "isActive"}
+	if _, present := asMap["limitMode"]; !present {
+		asMap["limitMode"] = "MANUAL"
+	}
+
+	fieldsInOrder := [...]string{"name", "entityType", "filter", "limitMode", "maxEntries", "sortOrder", "isActive"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -63588,6 +63661,13 @@ func (ec *executionContext) unmarshalInputUpdateLeaderboardConfigInput(ctx conte
 				return it, err
 			}
 			it.Filter = data
+		case "limitMode":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limitMode"))
+			data, err := ec.unmarshalOLeaderboardLimitMode2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardLimitMode(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LimitMode = data
 		case "maxEntries":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxEntries"))
 			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
@@ -68866,6 +68946,11 @@ func (ec *executionContext) _LeaderboardConfig(ctx context.Context, sel ast.Sele
 			}
 		case "filter":
 			out.Values[i] = ec._LeaderboardConfig_filter(ctx, field, obj)
+		case "limitMode":
+			out.Values[i] = ec._LeaderboardConfig_limitMode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "maxEntries":
 			out.Values[i] = ec._LeaderboardConfig_maxEntries(ctx, field, obj)
 		case "sortOrder":
@@ -83408,6 +83493,16 @@ func (ec *executionContext) marshalNLeaderboardEntryTag2ᚕgithubᚗcomᚋbccᚑ
 	return ret
 }
 
+func (ec *executionContext) unmarshalNLeaderboardLimitMode2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardLimitMode(ctx context.Context, v any) (model.LeaderboardLimitMode, error) {
+	var res model.LeaderboardLimitMode
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNLeaderboardLimitMode2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardLimitMode(ctx context.Context, sel ast.SelectionSet, v model.LeaderboardLimitMode) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) marshalNMarkdownText2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMarkdownText(ctx context.Context, sel ast.SelectionSet, v model.MarkdownText) graphql.Marshaler {
 	return ec._MarkdownText(ctx, sel, &v)
 }
@@ -86673,6 +86768,22 @@ func (ec *executionContext) marshalOLeaderboardFilterView2ᚖgithubᚗcomᚋbcc�
 		return graphql.Null
 	}
 	return ec._LeaderboardFilterView(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOLeaderboardLimitMode2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardLimitMode(ctx context.Context, v any) (*model.LeaderboardLimitMode, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.LeaderboardLimitMode)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOLeaderboardLimitMode2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardLimitMode(ctx context.Context, sel ast.SelectionSet, v *model.LeaderboardLimitMode) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) marshalOMarkdownText2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMarkdownText(ctx context.Context, sel ast.SelectionSet, v *model.MarkdownText) graphql.Marshaler {
