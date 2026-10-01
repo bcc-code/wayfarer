@@ -163,6 +163,10 @@ const { data, fetching } = useMyPageQuery({
 - Use CVA (Class Variance Authority) for component variants
 - Use `withDefaults(defineProps<...>(), {...})` for prop defaults
 - Global components go in `components/global/`, feature components in feature folders
+- **`UInputNumber` is vertical only** — stacked chevrons, never the horizontal
+  `−`/`+` pair. `app/app.config.ts` sets `orientation: 'vertical'` as the
+  default via `ui.inputNumber.defaultVariants`, so leave the prop off the tag;
+  do not pass `orientation="horizontal"`.
 
 ### GraphQL
 
