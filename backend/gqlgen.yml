@@ -334,6 +334,8 @@ models:
     extraFields:
       BodyMarkdown:
         type: string
+      ProjectID:
+        type: "*string"
 
   UserConsent:
     fields:

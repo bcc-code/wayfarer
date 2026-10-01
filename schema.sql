@@ -522,12 +522,20 @@ CREATE TABLE consents (
     published_at TIMESTAMPTZ,
     managed_by VARCHAR(100),
     is_remote BOOLEAN DEFAULT false NOT NULL,
+    -- Project this consent applies to; NULL means it applies to every project.
+    -- RESTRICT (not CASCADE like events/teams) because user_consent_history
+    -- references consents with RESTRICT: accepted consents are legal records.
+    project_id CHAR(28) REFERENCES projects(id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     UNIQUE (key, version),
+    -- Remote consents are managed by an external system with no notion of
+    -- projects, so they are always global.
+    CHECK (is_remote = false OR project_id IS NULL),
     INDEX idx_consents_key (key),
     INDEX idx_consents_published (published_at) WHERE published_at IS NOT NULL,
-    INDEX idx_consents_is_remote (is_remote) WHERE is_remote = true
+    INDEX idx_consents_is_remote (is_remote) WHERE is_remote = true,
+    INDEX idx_consents_project (project_id) WHERE project_id IS NOT NULL
 );
 
 CREATE TABLE consent_translations (
