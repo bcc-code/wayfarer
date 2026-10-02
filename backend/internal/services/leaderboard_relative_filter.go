@@ -15,33 +15,67 @@ func hasRelativeFilter(f *model.LeaderboardFilter) bool {
 	return f != nil && (enabled(f.MyChurch) || enabled(f.MyTeam) || enabled(f.MySuperTeam) || f.RelativeAgeRange != nil)
 }
 
+// relativeFilterRule describes one viewer-relative filter: the fixed filter it
+// cannot be combined with and the leaderboard entity types it supports.
+type relativeFilterRule struct {
+	field            string // GraphQL name of the relative filter
+	isSet            bool
+	conflictingField string // GraphQL name of the fixed filter it replaces
+	hasConflict      bool
+	allowedEntities  []model.LeaderboardEntityType
+	allowedLabel     string // human-readable allowedEntities, for errors
+}
+
 // ValidateLeaderboardRelativeFilter rejects combinations the leaderboard queries
 // cannot apply, rather than silently showing a broader leaderboard.
 func ValidateLeaderboardRelativeFilter(filter *model.LeaderboardFilter, entity model.LeaderboardEntityType) error {
 	if filter == nil {
 		return nil
 	}
-	persons := []model.LeaderboardEntityType{model.LeaderboardEntityTypePersons}
-	rules := []struct {
-		name, conflict string
-		set, conflicts bool
-		entities       []model.LeaderboardEntityType
-		entitiesLabel  string
-	}{
-		{"relativeAgeRange", "ageRange", filter.RelativeAgeRange != nil, filter.AgeRange != nil, persons, "persons"},
-		{"myChurch", "churchId", enabled(filter.MyChurch), filter.ChurchID != nil, []model.LeaderboardEntityType{model.LeaderboardEntityTypePersons, model.LeaderboardEntityTypeTeams}, "persons or teams"},
-		{"myTeam", "teamId", enabled(filter.MyTeam), filter.TeamID != nil, persons, "persons"},
-		{"mySuperTeam", "superTeamId", enabled(filter.MySuperTeam), filter.SuperTeamID != nil, persons, "persons"},
+	personsOnly := []model.LeaderboardEntityType{model.LeaderboardEntityTypePersons}
+	rules := []relativeFilterRule{
+		{
+			field:            "relativeAgeRange",
+			isSet:            filter.RelativeAgeRange != nil,
+			conflictingField: "ageRange",
+			hasConflict:      filter.AgeRange != nil,
+			allowedEntities:  personsOnly,
+			allowedLabel:     "persons",
+		},
+		{
+			field:            "myChurch",
+			isSet:            enabled(filter.MyChurch),
+			conflictingField: "churchId",
+			hasConflict:      filter.ChurchID != nil,
+			allowedEntities:  []model.LeaderboardEntityType{model.LeaderboardEntityTypePersons, model.LeaderboardEntityTypeTeams},
+			allowedLabel:     "persons or teams",
+		},
+		{
+			field:            "myTeam",
+			isSet:            enabled(filter.MyTeam),
+			conflictingField: "teamId",
+			hasConflict:      filter.TeamID != nil,
+			allowedEntities:  personsOnly,
+			allowedLabel:     "persons",
+		},
+		{
+			field:            "mySuperTeam",
+			isSet:            enabled(filter.MySuperTeam),
+			conflictingField: "superTeamId",
+			hasConflict:      filter.SuperTeamID != nil,
+			allowedEntities:  personsOnly,
+			allowedLabel:     "persons",
+		},
 	}
 	for _, rule := range rules {
-		if !rule.set {
+		if !rule.isSet {
 			continue
 		}
-		if rule.conflicts {
-			return fmt.Errorf("%s cannot be combined with %s", rule.name, rule.conflict)
+		if rule.hasConflict {
+			return fmt.Errorf("%s cannot be combined with %s", rule.field, rule.conflictingField)
 		}
-		if !slices.Contains(rule.entities, entity) {
-			return fmt.Errorf("%s requires a %s leaderboard", rule.name, rule.entitiesLabel)
+		if !slices.Contains(rule.allowedEntities, entity) {
+			return fmt.Errorf("%s requires a %s leaderboard", rule.field, rule.allowedLabel)
 		}
 	}
 	if age := filter.RelativeAgeRange; age != nil && (age.YearsYounger < 0 || age.YearsOlder < 0 || age.YearsYounger > 150 || age.YearsOlder > 150) {
