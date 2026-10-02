@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"slices"
-	"time"
 
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 )
@@ -12,7 +11,7 @@ import (
 func enabled(value *bool) bool { return value != nil && *value }
 
 func hasRelativeFilter(f *model.LeaderboardFilter) bool {
-	return f != nil && (enabled(f.MyChurch) || enabled(f.MyTeam) || enabled(f.MySuperTeam) || f.RelativeAgeRange != nil)
+	return f != nil && (enabled(f.MyChurch) || enabled(f.MyTeam) || enabled(f.MySuperTeam))
 }
 
 // relativeFilterRule describes one viewer-relative filter: the fixed filter it
@@ -34,14 +33,6 @@ func ValidateLeaderboardRelativeFilter(filter *model.LeaderboardFilter, entity m
 	}
 	personsOnly := []model.LeaderboardEntityType{model.LeaderboardEntityTypePersons}
 	rules := []relativeFilterRule{
-		{
-			field:            "relativeAgeRange",
-			isSet:            filter.RelativeAgeRange != nil,
-			conflictingField: "ageRange",
-			hasConflict:      filter.AgeRange != nil,
-			allowedEntities:  personsOnly,
-			allowedLabel:     "persons",
-		},
 		{
 			field:            "myChurch",
 			isSet:            enabled(filter.MyChurch),
@@ -78,9 +69,6 @@ func ValidateLeaderboardRelativeFilter(filter *model.LeaderboardFilter, entity m
 			return fmt.Errorf("%s requires a %s leaderboard", rule.field, rule.allowedLabel)
 		}
 	}
-	if age := filter.RelativeAgeRange; age != nil && (age.YearsYounger < 0 || age.YearsOlder < 0 || age.YearsYounger > 150 || age.YearsOlder > 150) {
-		return fmt.Errorf("relative age offsets must be between 0 and 150")
-	}
 	return nil
 }
 
@@ -99,27 +87,18 @@ func (s *LeaderboardService) resolveRelativeFilter(ctx context.Context, params L
 		return params, false, fmt.Errorf("relative leaderboard filters require an authenticated user")
 	}
 	resolved := *filter
-	resolved.MyChurch, resolved.MyTeam, resolved.MySuperTeam, resolved.RelativeAgeRange = nil, nil, nil, nil
+	resolved.MyChurch, resolved.MyTeam, resolved.MySuperTeam = nil, nil, nil
 	params.Filter = &resolved
 
-	if enabled(filter.MyChurch) || filter.RelativeAgeRange != nil {
+	if enabled(filter.MyChurch) {
 		user, err := s.loaders.UserByIDLoader.Load(ctx, params.UserID)()
 		if err != nil {
 			return params, false, err
 		}
-		if user == nil || (enabled(filter.MyChurch) && user.ChurchID == "") {
+		if user == nil || user.ChurchID == "" {
 			return params, true, nil
 		}
-		if enabled(filter.MyChurch) {
-			resolved.ChurchID = &user.ChurchID
-		}
-		if offsets := filter.RelativeAgeRange; offsets != nil {
-			age, err := viewerAge(user.Birthdate)
-			if err != nil {
-				return params, false, err
-			}
-			resolved.AgeRange = &model.AgeRangeInput{Min: max(0, age-offsets.YearsYounger), Max: age + offsets.YearsOlder}
-		}
+		resolved.ChurchID = &user.ChurchID
 	}
 
 	if !enabled(filter.MyTeam) && !enabled(filter.MySuperTeam) {
@@ -148,15 +127,6 @@ func (s *LeaderboardService) resolveRelativeFilter(ctx context.Context, params L
 		}
 	}
 	return params, false, nil
-}
-
-// viewerAge returns the viewer's age as a calendar-year difference.
-func viewerAge(birthdate string) (int, error) {
-	born, err := time.Parse("2006-01-02", birthdate)
-	if err != nil {
-		return 0, fmt.Errorf("cannot resolve viewer age: %w", err)
-	}
-	return time.Now().Year() - born.Year(), nil
 }
 
 // idInProject returns the ID of the first item belonging to projectID, or nil.

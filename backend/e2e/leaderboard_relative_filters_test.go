@@ -22,8 +22,8 @@ func TestLeaderboardConfigRelativeFilters(t *testing.T) {
 	t.Cleanup(client.Close)
 	admin, err := testutil.GenerateAdminToken(userAdult20ID)
 	require.NoError(t, err)
-	response := client.WithAuth(admin).MustExecute(t, `mutation($input:CreateLeaderboardConfigInput!){createLeaderboardConfig(input:$input){id filter{myChurch myTeam relativeAgeRange{yearsYounger yearsOlder}}}}`, map[string]any{"input": map[string]any{
-		"projectId": testProjectID, "name": "My peers", "entityType": "PERSONS", "filter": map[string]any{"myChurch": true, "myTeam": true, "relativeAgeRange": map[string]any{"yearsYounger": 3, "yearsOlder": 2}},
+	response := client.WithAuth(admin).MustExecute(t, `mutation($input:CreateLeaderboardConfigInput!){createLeaderboardConfig(input:$input){id filter{myChurch myTeam ageRange{min max}}}}`, map[string]any{"input": map[string]any{
+		"projectId": testProjectID, "name": "U18 in my team", "entityType": "PERSONS", "filter": map[string]any{"myChurch": true, "myTeam": true, "ageRange": map[string]any{"min": 12, "max": 17}},
 	}})
 	require.False(t, response.HasErrors(), response.ErrorMessage())
 	var created struct {
@@ -31,24 +31,25 @@ func TestLeaderboardConfigRelativeFilters(t *testing.T) {
 			ID     string
 			Filter struct {
 				MyChurch, MyTeam bool
-				RelativeAgeRange struct{ YearsYounger, YearsOlder int }
+				AgeRange         struct{ Min, Max int }
 			}
 		}
 	}
 	require.NoError(t, response.UnmarshalData(&created))
 	require.True(t, created.CreateLeaderboardConfig.Filter.MyChurch)
 	require.True(t, created.CreateLeaderboardConfig.Filter.MyTeam)
-	require.Equal(t, 3, created.CreateLeaderboardConfig.Filter.RelativeAgeRange.YearsYounger)
-	const query = `query($id:ID!){leaderboardConfig(id:$id){filter{myTeam relativeAgeRange{yearsYounger yearsOlder}} leaderboard{totalCount edges{node{id}} me{id} nearestChurchRivals{id}}}}`
+	require.Equal(t, 17, created.CreateLeaderboardConfig.Filter.AgeRange.Max)
+	const query = `query($id:ID!){leaderboardConfig(id:$id){filter{myTeam ageRange{min max}} leaderboard{totalCount edges{node{id}} me{id} nearestChurchRivals{id}}}}`
 	// Same persisted config, different viewers, then the original viewer again:
-	// both the loader cache and leaderboard cache must preserve viewer isolation.
+	// the age group is fixed, so every viewer in the church and team sees the
+	// same board, whatever their own age.
 	for _, tc := range []struct {
 		id   string
 		want []string
 	}{
-		{userAdult20ID, []string{userYoung17ID, userAdult20ID, userAdult22ID}},
-		{userSenior30ID, []string{userSenior30ID}},
-		{userAdult20ID, []string{userYoung17ID, userAdult20ID, userAdult22ID}},
+		{userAdult20ID, []string{userYoung16ID, userYoung17ID}},
+		{userSenior30ID, []string{userYoung16ID, userYoung17ID}},
+		{userAdult20ID, []string{userYoung16ID, userYoung17ID}},
 	} {
 		token, err := testutil.GenerateAdminToken(tc.id)
 		require.NoError(t, err)

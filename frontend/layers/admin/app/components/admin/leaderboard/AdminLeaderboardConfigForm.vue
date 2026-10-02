@@ -94,6 +94,7 @@ const churchItems = computed(() =>
 const entityTypeItems = LEADERBOARD_ENTITY_TYPE_ITEMS
 const churchCategoryItems = CHURCH_CATEGORY_ITEMS
 const genderItems = GENDER_ITEMS
+const ageGroups = LEADERBOARD_AGE_GROUPS
 
 /**
  * An optional field is unset when it is falsy. Which falsy value depends on the
@@ -130,9 +131,6 @@ const schema = z
       myChurch: z.boolean().optional(),
       myTeam: z.boolean().optional(),
       mySuperTeam: z.boolean().optional(),
-      relativeAge: z.boolean().optional(),
-      yearsYounger: z.number().int().min(0).max(150).optional(),
-      yearsOlder: z.number().int().min(0).max(150).optional(),
       minScore: optionalNumber,
       maxScore: optionalNumber,
       churchId: optionalId,
@@ -148,7 +146,7 @@ const schema = z
   .superRefine((value, ctx) => {
     const { minScore, maxScore, ageMin, ageMax } = value.filter
     const persons = value.entityType === LeaderboardEntityType.Persons
-    for (const key of ['myTeam', 'mySuperTeam', 'relativeAge'] as const) {
+    for (const key of ['myTeam', 'mySuperTeam'] as const) {
       if (value.filter[key] && !persons) {
         ctx.addIssue({
           code: 'custom',
@@ -168,34 +166,19 @@ const schema = z
         message: 'Krever en person- eller lagtavle',
       })
     }
-    if (value.filter.relativeAge) {
-      for (const key of ['yearsYounger', 'yearsOlder'] as const) {
-        if (value.filter[key] == null)
-          ctx.addIssue({
-            code: 'custom',
-            path: ['filter', key],
-            message: 'Antall år er påkrevd',
-          })
-      }
-    }
     const hasMin = typeof ageMin === 'number'
     const hasMax = typeof ageMax === 'number'
 
     // `AgeRangeInput` has `min: Int!` / `max: Int!` — half an age range cannot
     // be sent, so it has to be rejected here rather than quietly dropped.
-    if (!value.filter.relativeAge && hasMin !== hasMax) {
+    if (hasMin !== hasMax) {
       ctx.addIssue({
         code: 'custom',
         path: ['filter', hasMin ? 'ageMax' : 'ageMin'],
         message: 'Aldersgrense krever både fra og til',
       })
     }
-    if (
-      !value.filter.relativeAge &&
-      hasMin &&
-      hasMax &&
-      (ageMin as number) > (ageMax as number)
-    ) {
+    if (hasMin && hasMax && (ageMin as number) > (ageMax as number)) {
       ctx.addIssue({
         code: 'custom',
         path: ['filter', 'ageMax'],
@@ -222,9 +205,6 @@ function emptyFilter(): Schema['filter'] {
     myChurch: false,
     myTeam: false,
     mySuperTeam: false,
-    relativeAge: false,
-    yearsYounger: 3,
-    yearsOlder: 3,
     minScore: undefined,
     maxScore: undefined,
     churchId: null,
@@ -266,9 +246,6 @@ watch(
       myChurch: config.filter?.myChurch ?? false,
       myTeam: config.filter?.myTeam ?? false,
       mySuperTeam: config.filter?.mySuperTeam ?? false,
-      relativeAge: !!config.filter?.relativeAgeRange,
-      yearsYounger: config.filter?.relativeAgeRange?.yearsYounger ?? 3,
-      yearsOlder: config.filter?.relativeAgeRange?.yearsOlder ?? 3,
       minScore: config.filter?.minScore ?? undefined,
       maxScore: config.filter?.maxScore ?? undefined,
       churchId: config.filter?.churchId ?? null,
@@ -297,15 +274,7 @@ function buildFilter(filter: Schema['filter']): LeaderboardFilter | null {
   if (filter.country) built.country = filter.country
   if (filter.churchCategory) built.churchCategory = filter.churchCategory
   if (filter.gender) built.gender = filter.gender
-  if (filter.relativeAge) {
-    built.relativeAgeRange = {
-      yearsYounger: filter.yearsYounger!,
-      yearsOlder: filter.yearsOlder!,
-    }
-  } else if (
-    typeof filter.ageMin === 'number' &&
-    typeof filter.ageMax === 'number'
-  ) {
+  if (typeof filter.ageMin === 'number' && typeof filter.ageMax === 'number') {
     built.ageRange = { min: filter.ageMin, max: filter.ageMax }
   }
   if (filter.myTeam) built.myTeam = true
@@ -332,6 +301,18 @@ function onSubmit(event: FormSubmitEvent<Schema>) {
 
 function clearFilter() {
   state.filter = emptyFilter()
+}
+
+const activeAgeGroup = computed(() =>
+  typeof state.filter.ageMin === 'number' &&
+  typeof state.filter.ageMax === 'number'
+    ? ageGroupLabel({ min: state.filter.ageMin, max: state.filter.ageMax })
+    : undefined,
+)
+
+function selectAgeGroup(group: (typeof ageGroups)[number]) {
+  state.filter.ageMin = group.min
+  state.filter.ageMax = group.max
 }
 </script>
 
@@ -406,39 +387,23 @@ function clearFilter() {
         <div class="flex flex-col gap-4">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <h3 class="text-sm font-medium">Alder</h3>
-            <UFormField name="filter.relativeAge">
-              <USwitch
-                v-model="state.filter.relativeAge"
-                label="Min aldersgruppe"
-              />
-            </UFormField>
+            <div class="flex gap-2" role="group" aria-label="Aldersgruppe">
+              <UButton
+                v-for="group in ageGroups"
+                :key="group.label"
+                size="sm"
+                :variant="activeAgeGroup === group.label ? 'solid' : 'outline'"
+                :aria-pressed="activeAgeGroup === group.label"
+                @click="selectAgeGroup(group)"
+              >
+                {{ group.label }}
+              </UButton>
+            </div>
           </div>
-          <div
-            v-if="state.filter.relativeAge"
-            class="grid grid-cols-1 gap-4 sm:grid-cols-2"
-          >
-            <UFormField name="filter.yearsYounger" label="År yngre">
-              <UInputNumber
-                v-model="state.filter.yearsYounger"
-                :min="0"
-                :max="150"
-                class="w-full"
-              />
-            </UFormField>
-            <UFormField name="filter.yearsOlder" label="År eldre">
-              <UInputNumber
-                v-model="state.filter.yearsOlder"
-                :min="0"
-                :max="150"
-                class="w-full"
-              />
-            </UFormField>
-          </div>
-          <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <UFormField
               name="filter.ageMin"
               label="Yngste alder"
-              help="Alder regnes etter fødselsår, ikke bursdag."
             >
               <UInputNumber
                 v-model="state.filter.ageMin"

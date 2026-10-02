@@ -2,9 +2,7 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"testing"
-	"time"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
@@ -27,9 +25,9 @@ func relativeTestLoader[T any](values map[string]T) *dataloader.Loader[string, T
 
 func TestRelativeLeaderboardFilters(t *testing.T) {
 	yes := true
-	filter := &model.LeaderboardFilter{MyChurch: &yes, MyTeam: &yes, MySuperTeam: &yes, RelativeAgeRange: &model.RelativeAgeRangeInput{YearsYounger: 3, YearsOlder: 2}}
+	filter := &model.LeaderboardFilter{MyChurch: &yes, MyTeam: &yes, MySuperTeam: &yes}
 	ldrs := &loaders.Loaders{
-		UserByIDLoader:         relativeTestLoader(map[string]*model.User{"u": {ChurchID: "church", Birthdate: fmt.Sprintf("%d-12-31", time.Now().Year()-20)}}),
+		UserByIDLoader:         relativeTestLoader(map[string]*model.User{"u": {ChurchID: "church"}}),
 		TeamsByUserLoader:      relativeTestLoader(map[string][]*model.Team{"u": {{ID: "wrong", ProjectID: "other"}, {ID: "team", ProjectID: "project"}}}),
 		SuperTeamsByUserLoader: relativeTestLoader(map[string][]*model.SuperTeam{"u": {{ID: "super", ProjectID: "project"}}}),
 		EventByIDLoader:        relativeTestLoader(map[string]*model.Event{"event": {ProjectID: "project"}}),
@@ -46,7 +44,7 @@ func TestRelativeLeaderboardFilters(t *testing.T) {
 		require.Equal(t, "church", *resolved.Filter.ChurchID)
 		require.Equal(t, "team", *resolved.Filter.TeamID)
 		require.Equal(t, "super", *resolved.Filter.SuperTeamID)
-		require.Equal(t, &model.AgeRangeInput{Min: 17, Max: 22}, resolved.Filter.AgeRange)
+		require.Nil(t, resolved.Filter.AgeRange)
 		require.Nil(t, resolved.Filter.MyChurch)
 	}
 	require.Nil(t, filter.ChurchID, "persisted filter must remain viewer-independent")
@@ -91,14 +89,11 @@ func TestValidateRelativeLeaderboardFilters(t *testing.T) {
 	id := "fixed"
 	for _, filter := range []*model.LeaderboardFilter{
 		{MyChurch: &yes, ChurchID: &id}, {MyTeam: &yes, TeamID: &id}, {MySuperTeam: &yes, SuperTeamID: &id},
-		{RelativeAgeRange: &model.RelativeAgeRangeInput{YearsYounger: -1}},
-		{RelativeAgeRange: &model.RelativeAgeRangeInput{YearsOlder: 151}},
-		{RelativeAgeRange: &model.RelativeAgeRangeInput{}, AgeRange: &model.AgeRangeInput{}},
 	} {
 		require.Error(t, ValidateLeaderboardRelativeFilter(filter, model.LeaderboardEntityTypePersons))
 	}
 	require.Error(t, ValidateLeaderboardRelativeFilter(&model.LeaderboardFilter{MyTeam: &yes}, model.LeaderboardEntityTypeTeams))
-	require.NoError(t, ValidateLeaderboardRelativeFilter(&model.LeaderboardFilter{RelativeAgeRange: &model.RelativeAgeRangeInput{}}, model.LeaderboardEntityTypePersons))
+	require.NoError(t, ValidateLeaderboardRelativeFilter(&model.LeaderboardFilter{MyChurch: &yes, AgeRange: &model.AgeRangeInput{Min: 12, Max: 17}}, model.LeaderboardEntityTypePersons))
 }
 
 func TestIDInProject(t *testing.T) {

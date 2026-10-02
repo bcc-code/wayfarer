@@ -138,6 +138,22 @@ describe('AdminLeaderboardConfigForm', () => {
     expect(text).toContain('Alder regnes etter fødselsår, ikke bursdag')
   })
 
+  it('fills the age bounds from a fixed age group', async () => {
+    const wrapper = await mount({ initialData, isEditMode: true })
+
+    const u36 = wrapper
+      .findAllComponents({ name: 'UButton' })
+      .find((button) => button.text() === 'U36')!
+    await u36.trigger('click')
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(u36.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({
+      filter: { ageRange: { min: 18, max: 35 } },
+    })
+  })
+
   // Hidden, not dropped: an existing board keeps the position it was given.
   it('saves the sort position it was given', async () => {
     const wrapper = await mount({ initialData, isEditMode: true })
@@ -299,19 +315,12 @@ it('round-trips relative filters and hides their fixed counterparts', async () =
     myChurch: true,
     myTeam: true,
     mySuperTeam: true,
-    relativeAgeRange: { yearsYounger: 0, yearsOlder: 3 },
   }
   const wrapper = await mount({
     initialData: { ...initialData, filter },
     isEditMode: true,
   })
-  for (const name of [
-    'filter.churchId',
-    'filter.teamId',
-    'filter.superTeamId',
-    'filter.ageMin',
-    'filter.ageMax',
-  ])
+  for (const name of ['filter.churchId', 'filter.teamId', 'filter.superTeamId'])
     expect(fieldNames(wrapper)).not.toContain(name)
   const form = wrapper.findComponent({ name: 'UForm' })
   const schema = form.props('schema') as ZodType

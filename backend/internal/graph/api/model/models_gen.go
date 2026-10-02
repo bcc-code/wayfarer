@@ -1126,38 +1126,36 @@ type LeaderboardEntry struct {
 }
 
 type LeaderboardFilter struct {
-	RelativeAgeRange *RelativeAgeRangeInput `json:"relativeAgeRange,omitempty"`
-	MyChurch         *bool                  `json:"myChurch,omitempty"`
-	MyTeam           *bool                  `json:"myTeam,omitempty"`
-	MySuperTeam      *bool                  `json:"mySuperTeam,omitempty"`
-	MinScore         *int                   `json:"minScore,omitempty"`
-	MaxScore         *int                   `json:"maxScore,omitempty"`
-	ChurchID         *string                `json:"churchId,omitempty"`
-	Country          *string                `json:"country,omitempty"`
-	ChurchCategory   *ChurchCategory        `json:"churchCategory,omitempty"`
-	Gender           *Gender                `json:"gender,omitempty"`
-	AgeRange         *AgeRangeInput         `json:"ageRange,omitempty"`
-	TeamID           *string                `json:"teamId,omitempty"`
-	SuperTeamID      *string                `json:"superTeamId,omitempty"`
+	MyChurch       *bool           `json:"myChurch,omitempty"`
+	MyTeam         *bool           `json:"myTeam,omitempty"`
+	MySuperTeam    *bool           `json:"mySuperTeam,omitempty"`
+	MinScore       *int            `json:"minScore,omitempty"`
+	MaxScore       *int            `json:"maxScore,omitempty"`
+	ChurchID       *string         `json:"churchId,omitempty"`
+	Country        *string         `json:"country,omitempty"`
+	ChurchCategory *ChurchCategory `json:"churchCategory,omitempty"`
+	Gender         *Gender         `json:"gender,omitempty"`
+	AgeRange       *AgeRangeInput  `json:"ageRange,omitempty"`
+	TeamID         *string         `json:"teamId,omitempty"`
+	SuperTeamID    *string         `json:"superTeamId,omitempty"`
 }
 
 // Read-only mirror of the `LeaderboardFilter` input, applied to this leaderboard.
 // Kept as a separate type because GraphQL doesn't allow an `input` type as an output field's
 // type — mirrors the AgeRange/AgeRangeInput pattern already used elsewhere in this schema.
 type LeaderboardFilterView struct {
-	RelativeAgeRange *RelativeAgeRange `json:"relativeAgeRange,omitempty"`
-	MyChurch         *bool             `json:"myChurch,omitempty"`
-	MyTeam           *bool             `json:"myTeam,omitempty"`
-	MySuperTeam      *bool             `json:"mySuperTeam,omitempty"`
-	MinScore         *int              `json:"minScore,omitempty"`
-	MaxScore         *int              `json:"maxScore,omitempty"`
-	ChurchID         *string           `json:"churchId,omitempty"`
-	Country          *string           `json:"country,omitempty"`
-	ChurchCategory   *ChurchCategory   `json:"churchCategory,omitempty"`
-	Gender           *Gender           `json:"gender,omitempty"`
-	AgeRange         *AgeRange         `json:"ageRange,omitempty"`
-	TeamID           *string           `json:"teamId,omitempty"`
-	SuperTeamID      *string           `json:"superTeamId,omitempty"`
+	MyChurch       *bool           `json:"myChurch,omitempty"`
+	MyTeam         *bool           `json:"myTeam,omitempty"`
+	MySuperTeam    *bool           `json:"mySuperTeam,omitempty"`
+	MinScore       *int            `json:"minScore,omitempty"`
+	MaxScore       *int            `json:"maxScore,omitempty"`
+	ChurchID       *string         `json:"churchId,omitempty"`
+	Country        *string         `json:"country,omitempty"`
+	ChurchCategory *ChurchCategory `json:"churchCategory,omitempty"`
+	Gender         *Gender         `json:"gender,omitempty"`
+	AgeRange       *AgeRange       `json:"ageRange,omitempty"`
+	TeamID         *string         `json:"teamId,omitempty"`
+	SuperTeamID    *string         `json:"superTeamId,omitempty"`
 }
 
 type MissingContentProgressPreview struct {
@@ -1880,17 +1878,6 @@ type RegisterPushSubscriptionInput struct {
 	Endpoint string `json:"endpoint"`
 	P256dh   string `json:"p256dh"`
 	Auth     string `json:"auth"`
-}
-
-type RelativeAgeRange struct {
-	YearsYounger int `json:"yearsYounger"`
-	YearsOlder   int `json:"yearsOlder"`
-}
-
-// Age offsets around the viewer’s age, using the leaderboard’s calendar-year age calculation.
-type RelativeAgeRangeInput struct {
-	YearsYounger int `json:"yearsYounger"`
-	YearsOlder   int `json:"yearsOlder"`
 }
 
 type RevokeRoleInput struct {

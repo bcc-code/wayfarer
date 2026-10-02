@@ -176,9 +176,6 @@ func filterViewToFilter(view *model.LeaderboardFilterView) *model.LeaderboardFil
 		TeamID:         view.TeamID,
 		SuperTeamID:    view.SuperTeamID,
 	}
-	if view.RelativeAgeRange != nil {
-		filter.RelativeAgeRange = &model.RelativeAgeRangeInput{YearsYounger: view.RelativeAgeRange.YearsYounger, YearsOlder: view.RelativeAgeRange.YearsOlder}
-	}
 	if view.AgeRange != nil {
 		filter.AgeRange = &model.AgeRangeInput{Min: view.AgeRange.Min, Max: view.AgeRange.Max}
 	}

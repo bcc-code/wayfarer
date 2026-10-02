@@ -10,10 +10,6 @@ fragment LeaderboardConfigFields on LeaderboardConfig {
     name
   }
   filter {
-    relativeAgeRange {
-      yearsYounger
-      yearsOlder
-    }
     myChurch
     myTeam
     mySuperTeam
