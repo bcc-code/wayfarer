@@ -35,6 +35,23 @@ export const GENDER_ITEMS = Object.values(Gender).map((value) => ({
 }))
 
 /**
+ * Fixed age groups an admin can pick for a board. Bounds are inclusive and,
+ * like every leaderboard age, counted by birth year. `O36` has no real upper
+ * bound, but `AgeRangeInput.max` is required.
+ */
+export const LEADERBOARD_AGE_GROUPS = [
+  { label: 'U18', min: 12, max: 17 },
+  { label: 'U36', min: 18, max: 35 },
+  { label: 'O36', min: 36, max: 150 },
+] as const
+
+export function ageGroupLabel(range: { min: number; max: number }) {
+  return LEADERBOARD_AGE_GROUPS.find(
+    (group) => group.min === range.min && group.max === range.max,
+  )?.label
+}
+
+/**
  * `LeaderboardConfig.filter` is a `LeaderboardFilterView` (output type); the
  * create/update mutations take a `LeaderboardFilter` (input type). The fields
  * are identical except `ageRange`, which is `AgeRange` out and `AgeRangeInput`
@@ -51,6 +68,9 @@ export function leaderboardFilterViewToInput(
   if (!view) return null
 
   const filter: LeaderboardFilter = {}
+  if (view.myChurch) filter.myChurch = true
+  if (view.myTeam) filter.myTeam = true
+  if (view.mySuperTeam) filter.mySuperTeam = true
 
   if (view.minScore != null) filter.minScore = view.minScore
   if (view.maxScore != null) filter.maxScore = view.maxScore
@@ -78,8 +98,15 @@ export function summarizeLeaderboardFilter(view: FilterView): string[] {
   if (!view) return []
 
   const parts: string[] = []
+  if (view.myChurch) parts.push('Min menighet')
+  if (view.myTeam) parts.push('Mitt lag')
+  if (view.mySuperTeam) parts.push('Mitt superlag')
 
-  if (view.ageRange) parts.push(`${view.ageRange.min}–${view.ageRange.max} år`)
+  if (view.ageRange)
+    parts.push(
+      ageGroupLabel(view.ageRange) ??
+        `${view.ageRange.min}–${view.ageRange.max} år`,
+    )
   if (view.gender) parts.push(GENDER_LABELS[view.gender])
   if (view.churchCategory)
     parts.push(`Størrelse ${view.churchCategory.toUpperCase()}`)

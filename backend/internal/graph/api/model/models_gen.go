@@ -1126,6 +1126,9 @@ type LeaderboardEntry struct {
 }
 
 type LeaderboardFilter struct {
+	MyChurch       *bool           `json:"myChurch,omitempty"`
+	MyTeam         *bool           `json:"myTeam,omitempty"`
+	MySuperTeam    *bool           `json:"mySuperTeam,omitempty"`
 	MinScore       *int            `json:"minScore,omitempty"`
 	MaxScore       *int            `json:"maxScore,omitempty"`
 	ChurchID       *string         `json:"churchId,omitempty"`
@@ -1141,6 +1144,9 @@ type LeaderboardFilter struct {
 // Kept as a separate type because GraphQL doesn't allow an `input` type as an output field's
 // type — mirrors the AgeRange/AgeRangeInput pattern already used elsewhere in this schema.
 type LeaderboardFilterView struct {
+	MyChurch       *bool           `json:"myChurch,omitempty"`
+	MyTeam         *bool           `json:"myTeam,omitempty"`
+	MySuperTeam    *bool           `json:"mySuperTeam,omitempty"`
 	MinScore       *int            `json:"minScore,omitempty"`
 	MaxScore       *int            `json:"maxScore,omitempty"`
 	ChurchID       *string         `json:"churchId,omitempty"`

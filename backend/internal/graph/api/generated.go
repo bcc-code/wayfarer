@@ -553,6 +553,9 @@ type ComplexityRoot struct {
 		Gender         func(childComplexity int) int
 		MaxScore       func(childComplexity int) int
 		MinScore       func(childComplexity int) int
+		MyChurch       func(childComplexity int) int
+		MySuperTeam    func(childComplexity int) int
+		MyTeam         func(childComplexity int) int
 		SuperTeamID    func(childComplexity int) int
 		TeamID         func(childComplexity int) int
 	}
@@ -3963,6 +3966,24 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.LeaderboardFilterView.MinScore(childComplexity), true
+	case "LeaderboardFilterView.myChurch":
+		if e.complexity.LeaderboardFilterView.MyChurch == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardFilterView.MyChurch(childComplexity), true
+	case "LeaderboardFilterView.mySuperTeam":
+		if e.complexity.LeaderboardFilterView.MySuperTeam == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardFilterView.MySuperTeam(childComplexity), true
+	case "LeaderboardFilterView.myTeam":
+		if e.complexity.LeaderboardFilterView.MyTeam == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardFilterView.MyTeam(childComplexity), true
 	case "LeaderboardFilterView.superTeamId":
 		if e.complexity.LeaderboardFilterView.SuperTeamID == nil {
 			break
@@ -9628,6 +9649,9 @@ type LeaderboardConnection {
 }
 
 input LeaderboardFilter {
+    myChurch: Boolean
+    myTeam: Boolean
+    mySuperTeam: Boolean
     minScore: Int
     maxScore: Int
     churchId: ID
@@ -10743,6 +10767,9 @@ Kept as a separate type because GraphQL doesn't allow an ` + "`" + `input` + "`"
 type — mirrors the AgeRange/AgeRangeInput pattern already used elsewhere in this schema.
 """
 type LeaderboardFilterView {
+    myChurch: Boolean
+    myTeam: Boolean
+    mySuperTeam: Boolean
     minScore: Int
     maxScore: Int
     churchId: ID
@@ -24572,6 +24599,12 @@ func (ec *executionContext) fieldContext_LeaderboardConfig_filter(_ context.Cont
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "myChurch":
+				return ec.fieldContext_LeaderboardFilterView_myChurch(ctx, field)
+			case "myTeam":
+				return ec.fieldContext_LeaderboardFilterView_myTeam(ctx, field)
+			case "mySuperTeam":
+				return ec.fieldContext_LeaderboardFilterView_mySuperTeam(ctx, field)
 			case "minScore":
 				return ec.fieldContext_LeaderboardFilterView_minScore(ctx, field)
 			case "maxScore":
@@ -25539,6 +25572,93 @@ func (ec *executionContext) fieldContext_LeaderboardEntry_lastScoreAt(_ context.
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeaderboardFilterView_myChurch(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardFilterView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardFilterView_myChurch,
+		func(ctx context.Context) (any, error) {
+			return obj.MyChurch, nil
+		},
+		nil,
+		ec.marshalOBoolean2ᚖbool,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardFilterView_myChurch(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardFilterView",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeaderboardFilterView_myTeam(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardFilterView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardFilterView_myTeam,
+		func(ctx context.Context) (any, error) {
+			return obj.MyTeam, nil
+		},
+		nil,
+		ec.marshalOBoolean2ᚖbool,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardFilterView_myTeam(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardFilterView",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeaderboardFilterView_mySuperTeam(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardFilterView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardFilterView_mySuperTeam,
+		func(ctx context.Context) (any, error) {
+			return obj.MySuperTeam, nil
+		},
+		nil,
+		ec.marshalOBoolean2ᚖbool,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardFilterView_mySuperTeam(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardFilterView",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -62381,13 +62501,34 @@ func (ec *executionContext) unmarshalInputLeaderboardFilter(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"minScore", "maxScore", "churchId", "country", "churchCategory", "gender", "ageRange", "teamId", "superTeamId"}
+	fieldsInOrder := [...]string{"myChurch", "myTeam", "mySuperTeam", "minScore", "maxScore", "churchId", "country", "churchCategory", "gender", "ageRange", "teamId", "superTeamId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "myChurch":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("myChurch"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MyChurch = data
+		case "myTeam":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("myTeam"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MyTeam = data
+		case "mySuperTeam":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("mySuperTeam"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MySuperTeam = data
 		case "minScore":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("minScore"))
 			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
@@ -69280,6 +69421,12 @@ func (ec *executionContext) _LeaderboardFilterView(ctx context.Context, sel ast.
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("LeaderboardFilterView")
+		case "myChurch":
+			out.Values[i] = ec._LeaderboardFilterView_myChurch(ctx, field, obj)
+		case "myTeam":
+			out.Values[i] = ec._LeaderboardFilterView_myTeam(ctx, field, obj)
+		case "mySuperTeam":
+			out.Values[i] = ec._LeaderboardFilterView_mySuperTeam(ctx, field, obj)
 		case "minScore":
 			out.Values[i] = ec._LeaderboardFilterView_minScore(ctx, field, obj)
 		case "maxScore":

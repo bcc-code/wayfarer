@@ -265,6 +265,10 @@ func (s *LeaderboardService) eventProjectID(ctx context.Context, eventID string)
 
 // GetProjectLeaderboard retrieves leaderboard for a project
 func (s *LeaderboardService) GetProjectLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, error) {
+	params, empty, err := s.resolveRelativeFilter(ctx, params, false)
+	if err != nil || empty {
+		return nil, nil, 0, err
+	}
 	switch params.EntityType {
 	case model.LeaderboardEntityTypePersons:
 		return s.getProjectPersonLeaderboard(ctx, params)
@@ -281,6 +285,10 @@ func (s *LeaderboardService) GetProjectLeaderboard(ctx context.Context, params L
 
 // GetEventLeaderboard retrieves leaderboard for an event
 func (s *LeaderboardService) GetEventLeaderboard(ctx context.Context, params LeaderboardParams) ([]LeaderboardEntry, *LeaderboardEntry, int, error) {
+	params, empty, err := s.resolveRelativeFilter(ctx, params, true)
+	if err != nil || empty {
+		return nil, nil, 0, err
+	}
 	switch params.EntityType {
 	case model.LeaderboardEntityTypePersons:
 		return s.getEventPersonLeaderboard(ctx, params)
@@ -300,6 +308,11 @@ func (s *LeaderboardService) GetEventLeaderboard(ctx context.Context, params Lea
 // nearestChurchRivals resolver, and reuses the same cached board as the
 // parent query — a cache hit, not a new DB round trip, in the common case
 func (s *LeaderboardService) NearestChurchRivals(ctx context.Context, params LeaderboardParams, isEvent bool, first int) ([]LeaderboardEntry, error) {
+	params.EntityType = model.LeaderboardEntityTypePersons
+	params, empty, resolveErr := s.resolveRelativeFilter(ctx, params, isEvent)
+	if resolveErr != nil || empty {
+		return nil, resolveErr
+	}
 	if params.UserID == "" || first <= 0 {
 		return nil, nil
 	}
