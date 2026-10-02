@@ -100,3 +100,11 @@ func TestValidateRelativeLeaderboardFilters(t *testing.T) {
 	require.Error(t, ValidateLeaderboardRelativeFilter(&model.LeaderboardFilter{MyTeam: &yes}, model.LeaderboardEntityTypeTeams))
 	require.NoError(t, ValidateLeaderboardRelativeFilter(&model.LeaderboardFilter{RelativeAgeRange: &model.RelativeAgeRangeInput{}}, model.LeaderboardEntityTypePersons))
 }
+
+func TestIDInProject(t *testing.T) {
+	fields := func(t *model.Team) (string, string) { return t.ID, t.ProjectID }
+	teams := []*model.Team{{ID: "a", ProjectID: "other"}, {ID: "b", ProjectID: "p"}, {ID: "c", ProjectID: "p"}}
+	require.Equal(t, "b", *idInProject(teams, "p", fields))
+	require.Nil(t, idInProject(teams, "missing", fields))
+	require.Nil(t, idInProject(nil, "p", fields))
+}
