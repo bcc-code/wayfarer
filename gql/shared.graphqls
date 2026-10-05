@@ -170,6 +170,9 @@ type LeaderboardConnection {
 }
 
 input LeaderboardFilter {
+    myChurch: Boolean
+    myTeam: Boolean
+    mySuperTeam: Boolean
     minScore: Int
     maxScore: Int
     churchId: ID

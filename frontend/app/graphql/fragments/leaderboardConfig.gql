@@ -11,6 +11,9 @@ fragment LeaderboardConfigFields on LeaderboardConfig {
     name
   }
   filter {
+    myChurch
+    myTeam
+    mySuperTeam
     minScore
     maxScore
     churchId

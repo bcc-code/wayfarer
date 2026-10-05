@@ -184,6 +184,20 @@ export default defineAppConfig({
         },
       },
     },
+    inputNumber: {
+      // Stacked chevrons at the end of the field, never the horizontal −/+
+      // pair. The horizontal variant centres the value between two buttons
+      // that are each as wide as the number itself, so a row of them reads
+      // as a toolbar rather than as fields, and the value no longer lines up
+      // with the plain inputs above and below it in the same form.
+      //
+      // `defaultVariants` here is read by Nuxt UI's `useComponentProps`,
+      // which resolves every prop not written on the tag — so this is a real
+      // default for the `orientation` prop, not only for the theme's slots.
+      defaultVariants: {
+        orientation: 'vertical',
+      },
+    },
     kbd: {
       compoundVariants: [
         {
