@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  ageGroupLabel,
   LEADERBOARD_ENTITY_TYPE_LABELS,
   leaderboardFilterViewToInput,
   summarizeLeaderboardFilter,
@@ -124,5 +125,35 @@ describe('LEADERBOARD_ENTITY_TYPE_LABELS', () => {
     for (const type of Object.values(LeaderboardEntityType)) {
       expect(LEADERBOARD_ENTITY_TYPE_LABELS[type]).toBeTruthy()
     }
+  })
+})
+
+it('preserves relative filters and removes nested GraphQL metadata', () => {
+  const filter = {
+    myChurch: true,
+    myTeam: true,
+    mySuperTeam: true,
+    ageRange: { __typename: 'AgeRange' as const, min: 12, max: 17 },
+  }
+  expect(leaderboardFilterViewToInput(filter)).toEqual({
+    myChurch: true,
+    myTeam: true,
+    mySuperTeam: true,
+    ageRange: { min: 12, max: 17 },
+  })
+  expect(summarizeLeaderboardFilter(filter)).toEqual([
+    'Min menighet',
+    'Mitt lag',
+    'Mitt superlag',
+    'U18',
+  ])
+})
+
+describe('ageGroupLabel', () => {
+  it('names the fixed groups and nothing else', () => {
+    expect(ageGroupLabel({ min: 12, max: 17 })).toBe('U18')
+    expect(ageGroupLabel({ min: 18, max: 35 })).toBe('U36')
+    expect(ageGroupLabel({ min: 36, max: 150 })).toBe('O36')
+    expect(ageGroupLabel({ min: 13, max: 18 })).toBeUndefined()
   })
 })

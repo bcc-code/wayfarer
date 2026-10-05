@@ -164,6 +164,9 @@ func filterViewToFilter(view *model.LeaderboardFilterView) *model.LeaderboardFil
 		return nil
 	}
 	filter := &model.LeaderboardFilter{
+		MyChurch:       view.MyChurch,
+		MyTeam:         view.MyTeam,
+		MySuperTeam:    view.MySuperTeam,
 		MinScore:       view.MinScore,
 		MaxScore:       view.MaxScore,
 		ChurchID:       view.ChurchID,
