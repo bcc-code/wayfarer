@@ -24,6 +24,11 @@ gql(`
       project {
         id
         name
+        branding {
+          colors {
+            ...BrandingColorsFields
+          }
+        }
       }
       ... on QuizChallenge {
         quiz {
@@ -38,9 +43,6 @@ gql(`
           completionPoints
           questions {
             ...QuizQuestionFields
-          }
-          translationStatus {
-            ...TranslationStatus
           }
         }
       }
@@ -180,7 +182,7 @@ const quizData = computed<QuizFormData | undefined>(() => {
 const isNewQuiz = computed(() => !quizData.value?.id)
 
 const saving = ref(false)
-const formDirty = ref(false)
+const form = useTemplateRef('form')
 
 /** Shared by add and update; the two inputs take the same shape. */
 function questionInput(question: QuizQuestionFormData) {
@@ -340,7 +342,7 @@ async function saveQuiz(quizFormData: QuizFormData) {
       title: isNewQuiz.value ? 'Quiz opprettet' : 'Quiz oppdatert',
       color: 'success',
     })
-    formDirty.value = false
+    form.value?.markSaved()
 
     navigateTo({
       name: 'admin-projects-projectId-challenges-challengeId',
@@ -370,6 +372,7 @@ const isQuizChallenge = computed(() => {
               Denne utfordringen er ikke en quiz-utfordring.
             </p>
             <UButton
+              icon="lucide:arrow-left"
               class="mt-4"
               :to="{
                 name: 'admin-projects-projectId-challenges-challengeId',
@@ -387,14 +390,10 @@ const isQuizChallenge = computed(() => {
               {{ isNewQuiz ? 'Opprett quiz' : 'Rediger quiz' }}
             </h1>
             <AdminQuizForm
-              v-model:dirty="formDirty"
+              ref="form"
+              :colors="data.challenge.project.branding.colors"
               :saving
               :quiz-data="quizData"
-              :translation-status="
-                data?.challenge.__typename === 'QuizChallenge'
-                  ? (data.challenge.quiz?.translationStatus ?? [])
-                  : []
-              "
               :project-id="route.params.projectId"
               :challenge-id="route.params.challengeId"
               @save="saveQuiz"

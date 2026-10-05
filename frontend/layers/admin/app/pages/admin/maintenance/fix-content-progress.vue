@@ -356,7 +356,12 @@ watch(fixComplete, (complete) => {
               >
                 Avbryt
               </UButton>
-              <UButton color="primary" :loading="fixing" @click="handleFix">
+              <UButton
+                icon="lucide:wrench"
+                color="primary"
+                :loading="fixing"
+                @click="handleFix"
+              >
                 Kjør reparasjon
               </UButton>
             </div>

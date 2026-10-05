@@ -12,6 +12,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 )
 
@@ -46,6 +47,9 @@ func (r *mutationResolver) CreateLeaderboardConfig(ctx context.Context, input mo
 		return nil, err
 	}
 
+	if err := services.ValidateLeaderboardRelativeFilter(input.Filter, input.EntityType); err != nil {
+		return nil, err
+	}
 	filterBytes, err := marshalLeaderboardFilter(input.Filter)
 	if err != nil {
 		return nil, fmt.Errorf("invalid filter: %w", err)
@@ -100,6 +104,9 @@ func (r *mutationResolver) UpdateLeaderboardConfig(ctx context.Context, id strin
 		return nil, err
 	}
 
+	if err := services.ValidateLeaderboardRelativeFilter(input.Filter, input.EntityType); err != nil {
+		return nil, err
+	}
 	filterBytes, err := marshalLeaderboardFilter(input.Filter)
 	if err != nil {
 		return nil, fmt.Errorf("invalid filter: %w", err)

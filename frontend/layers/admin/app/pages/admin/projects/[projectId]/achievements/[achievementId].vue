@@ -342,7 +342,12 @@ async function handleDelete() {
           </p>
         </div>
 
-        <UButton variant="soft" color="error" @click="handleDelete">
+        <UButton
+          icon="lucide:trash-2"
+          variant="soft"
+          color="error"
+          @click="handleDelete"
+        >
           Slett
         </UButton>
       </div>

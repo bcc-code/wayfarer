@@ -2,10 +2,13 @@
  * Nuxt UI component theming.
  *
  * The surface treatment is adapted from the Nuxt UI calendar template
- * (github.com/nuxt-ui-templates/calendar), rebuilt on stock Tailwind: the glass
- * colours are theme tokens (`bg-glass`, `bg-control`, `bg-well`) declared in
- * `assets/styles/main.css`, and the material is plain `backdrop-*` utilities
- * rather than the bespoke one the reference defines.
+ * (github.com/nuxt-ui-templates/calendar), rebuilt on stock Tailwind: the
+ * colours are theme tokens (`bg-control`, `bg-well`) declared in
+ * `assets/styles/main.css`.
+ *
+ * Anything that floats over the page — a dialog, a menu, the sidebar — is
+ * opaque. The reference frosts them, and this panel did too until reading a
+ * dialog meant reading it against whatever happened to be behind it.
  *
  * This config is global, but in practice it only dresses the admin panel: the
  * user-facing app runs on the Design* system and uses barely any U* components.
@@ -15,16 +18,16 @@
  * token, including the user-facing Design* components.
  */
 
-// The hairline that frames a piece of glass. On its own it goes on a control,
-// which sits on the chrome it belongs to rather than lifting off it.
+// The hairline that frames a piece of glass. Surfaces only — a form control
+// draws the theme's `ring-accented` instead, which you can actually see.
 const ring = 'ring ring-black/8 dark:ring-white/10'
-// Turns the material solid for anyone who asks for less transparency. The
-// variant is declared in main.css; applying it here means every surface built
-// from `content` opts out in one place.
+// Drops the blur behind the overlay for anyone who asks for less
+// transparency. The variant is declared in main.css.
 const solid =
   'reduceTransparency:bg-default reduceTransparency:backdrop-blur-none'
-// A surface that floats over the body.
-const content = `bg-glass backdrop-blur-xl backdrop-saturate-150 backdrop-brightness-105 ${solid} ${ring} shadow-2xl`
+// A surface that floats over the body. Opaque: text on it has to be readable
+// whatever it is covering.
+const content = `bg-default ${ring} shadow-2xl`
 // The same hairline in border form, for a section ruled off inside a surface.
 const border = 'border-black/8 dark:border-white/10'
 // Rules inside glass. `divide-default` is an opaque border colour, which reads
@@ -78,6 +81,16 @@ export default defineAppConfig({
       slots: {
         base: 'cursor-pointer',
       },
+      variants: {
+        // The theme's `xs` is 24px tall — the smallest target WCAG 2.2 allows,
+        // with nothing to spare, and an icon-only one is the easiest thing in
+        // the panel to miss. A floor per size leaves the padding and the text
+        // alone and only grows the ones that come out too small.
+        size: {
+          xs: { base: 'min-h-7 min-w-7' },
+          sm: { base: 'min-h-8 min-w-8' },
+        },
+      },
       compoundVariants: [
         // The reference's secondary action: a white chip with a hairline and a
         // shadow under it, standing beside the one solid button on the page.
@@ -116,9 +129,12 @@ export default defineAppConfig({
     },
     checkbox: {
       slots: {
-        // `size-5!` and the larger label are Wayfarer's own; the rounding and
-        // ring come from the reference.
-        base: ['size-5!', 'rounded-xs', ring],
+        // `size-5!` and the larger label are Wayfarer's own; the rounding
+        // comes from the reference. The hairline does not: a control you are
+        // meant to find and click needs an edge you can see, so the box keeps
+        // the theme's `ring-accented` rather than the glass hairline. Testers
+        // could not make out an unchecked box against the panel behind it.
+        base: ['size-5!', 'rounded-xs'],
         label: 'text-base leading-tight font-normal',
       },
     },
@@ -160,9 +176,26 @@ export default defineAppConfig({
     input: {
       variants: {
         variant: {
-          outline: `${ring} shadow-xs dark:shadow-none`,
-          subtle: ring,
+          // Only the lift. The edge stays the theme's `ring-accented`, for the
+          // same reason as the checkbox above — and it is what the untouched
+          // textarea and select already draw, so every field in a form now
+          // has the same edge.
+          outline: 'shadow-xs dark:shadow-none',
         },
+      },
+    },
+    inputNumber: {
+      // Stacked chevrons at the end of the field, never the horizontal −/+
+      // pair. The horizontal variant centres the value between two buttons
+      // that are each as wide as the number itself, so a row of them reads
+      // as a toolbar rather than as fields, and the value no longer lines up
+      // with the plain inputs above and below it in the same form.
+      //
+      // `defaultVariants` here is read by Nuxt UI's `useComponentProps`,
+      // which resolves every prop not written on the tag — so this is a real
+      // default for the `orientation` prop, not only for the theme's slots.
+      defaultVariants: {
+        orientation: 'vertical',
       },
     },
     kbd: {

@@ -303,10 +303,20 @@ async function handleToggleLeaderboardExclusion(excluded: boolean) {
             </p>
           </div>
           <div v-if="canEdit" class="flex shrink-0 gap-2">
-            <UButton v-if="!isEditing" variant="soft" @click="startEditing">
+            <UButton
+              v-if="!isEditing"
+              icon="lucide:pencil"
+              variant="soft"
+              @click="startEditing"
+            >
               Rediger
             </UButton>
-            <UButton variant="soft" color="error" @click="handleDeleteTeam">
+            <UButton
+              icon="lucide:trash-2"
+              variant="soft"
+              color="error"
+              @click="handleDeleteTeam"
+            >
               Slett
             </UButton>
           </div>
@@ -329,7 +339,9 @@ async function handleToggleLeaderboardExclusion(excluded: boolean) {
                of the section instead. -->
           <div class="flex justify-end gap-3 pt-4">
             <UButton variant="ghost" @click="cancelEditing">Avbryt</UButton>
-            <UButton @click="saveChanges">Lagre endringer</UButton>
+            <UButton icon="lucide:check" @click="saveChanges"
+              >Lagre endringer</UButton
+            >
           </div>
         </AdminSection>
 

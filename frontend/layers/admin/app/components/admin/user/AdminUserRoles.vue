@@ -360,7 +360,11 @@ async function handleRevoke(role: UserRole) {
             Avbryt
           </UButton>
           <!-- Without its scope, a scoped role would be assigned globally. -->
-          <UButton :disabled="!canSubmit" @click="handleAssign">
+          <UButton
+            icon="lucide:user-plus"
+            :disabled="!canSubmit"
+            @click="handleAssign"
+          >
             Tildel rolle
           </UButton>
         </div>

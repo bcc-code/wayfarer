@@ -29,6 +29,9 @@ Kept as a separate type because GraphQL doesn't allow an `input` type as an outp
 type — mirrors the AgeRange/AgeRangeInput pattern already used elsewhere in this schema.
 """
 type LeaderboardFilterView {
+    myChurch: Boolean
+    myTeam: Boolean
+    mySuperTeam: Boolean
     minScore: Int
     maxScore: Int
     churchId: ID

@@ -54,6 +54,8 @@ const state = reactive<Schema>({
 // above it is derived from the route.
 useAdminPage(() => state.name)
 
+const { markSaved } = useUnsavedChanges(() => ({ ...state }))
+
 watch(
   () => data.value,
   (d) => {
@@ -62,6 +64,8 @@ watch(
       state.description = d.event.description
       state.startDate = d.event.startDate
       state.endDate = d.event.endDate
+      // What the server holds, not an edit.
+      nextTick(markSaved)
     }
   },
   { once: true },
@@ -76,6 +80,8 @@ async function updateEvent(event: FormSubmitEvent<Schema>) {
   if (!event.data) {
     return
   }
+
+  markSaved()
 
   executeMutation({ id: route.params.eventId, input: event.data }).then(
     (response) => {
@@ -170,7 +176,9 @@ async function deleteEvent() {
               v-model:start="state.startDate"
               v-model:end="state.endDate"
             />
-            <UButton type="submit" size="lg" block>Lagre endringer</UButton>
+            <UButton icon="lucide:check" type="submit" size="lg" block
+              >Lagre endringer</UButton
+            >
             <UButton
               color="error"
               variant="ghost"

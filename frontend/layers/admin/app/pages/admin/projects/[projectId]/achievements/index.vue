@@ -161,6 +161,7 @@ async function handleReorder() {
               Skjult
             </UBadge>
             <UButton
+              icon="lucide:pencil"
               variant="ghost"
               size="sm"
               :to="{

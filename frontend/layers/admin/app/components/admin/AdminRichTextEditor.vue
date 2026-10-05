@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import type { EditorToolbarItem } from '@nuxt/ui'
 
+withDefaults(
+  defineProps<{
+    /** What the field stores: a challenge description is HTML, a project's
+     *  rules and info message are markdown. */
+    contentType?: 'markdown' | 'html'
+  }>(),
+  { contentType: 'markdown' },
+)
+
 const modelValue = defineModel<string>({ default: '' })
 
 const toolbarItems: EditorToolbarItem[][] = [
@@ -56,7 +65,7 @@ const toolbarItems: EditorToolbarItem[][] = [
 <template>
   <UEditor
     v-model="modelValue"
-    content-type="markdown"
+    :content-type="contentType"
     :image="false"
     :mention="false"
     class="border-accented overflow-hidden rounded-md border"

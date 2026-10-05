@@ -21,6 +21,12 @@ const state = reactive({
 const hasColor = ref(false)
 const colorValue = ref('#000000')
 
+const { markSaved } = useUnsavedChanges(() => ({
+  ...state,
+  hasColor: hasColor.value,
+  colorValue: colorValue.value,
+}))
+
 async function handleSubmit() {
   const response = await executeMutation({
     projectId: route.params.projectId,
@@ -41,6 +47,7 @@ async function handleSubmit() {
     return
   }
 
+  markSaved()
   toast.add({
     title: 'Suksess',
     description: 'Superteam opprettet',
@@ -64,21 +71,18 @@ async function handleSubmit() {
           <UInput v-model="state.name" class="w-full" />
         </UFormField>
 
-        <UFormField name="description" label="Beskrivelse" required>
-          <UTextarea v-model="state.description" class="w-full" />
-        </UFormField>
-
         <UFormField name="imageUrl" label="Bilde">
           <AdminFileUpload v-model="state.imageUrl" />
         </UFormField>
 
         <UFormField name="color" label="Farge">
-          <div class="flex items-center gap-3">
-            <UCheckbox v-model="hasColor" />
-            <template v-if="hasColor">
-              <ColorPickerInput v-model="colorValue" />
-            </template>
-            <span v-else class="text-muted text-sm">Ingen farge valgt</span>
+          <div class="space-y-3">
+            <UCheckbox
+              v-model="hasColor"
+              label="Gi superteamet sin egen farge"
+              description="Uten dette bruker superteamet fargene til prosjektet."
+            />
+            <ColorPickerInput v-if="hasColor" v-model="colorValue" />
           </div>
         </UFormField>
 
