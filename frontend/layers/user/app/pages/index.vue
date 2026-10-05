@@ -225,10 +225,6 @@ useFirestoreRefresh(['ProfilePageDocument'], () => {
       <div key="user-feedback" class="pt-small">
         <UserFeedback :project-id="data.myCurrentProject?.id" />
       </div>
-      <ProfileProjectArchive
-        key="project-archive"
-        :current-project-id="data.myCurrentProject?.id"
-      />
     </TransitionGroup>
 
     <!-- Notification prompt for PWA users -->

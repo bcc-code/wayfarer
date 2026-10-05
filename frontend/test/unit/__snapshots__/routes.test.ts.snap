@@ -65,6 +65,7 @@ exports[`route manifest > matches the committed snapshot 1`] = `
   "plugins-ladder-to-heaven-excalibur  /plugins/ladder-to-heaven/excalibur  layers/user/app/pages/plugins/ladder-to-heaven/excalibur.vue",
   "settings  /settings  layers/user/app/pages/settings/index.vue",
   "settings-add-to-home  /settings/add-to-home  layers/user/app/pages/settings/add-to-home.vue",
+  "settings-archive  /settings/archive  layers/user/app/pages/settings/archive.vue",
   "settings-consent  /settings/consent  layers/user/app/pages/settings/consent.vue",
   "standings  /standings  layers/user/app/pages/standings.vue",
 ]

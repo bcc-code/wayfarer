@@ -109,6 +109,14 @@ async function toggleNotifications(enabled: boolean) {
           <p class="text-label">{{ $t('settings.consents') }}</p>
           <IconChevronRight class="size-6" />
         </NuxtLink>
+        <hr class="border-border-default mx-3" />
+        <NuxtLink
+          :to="{ name: 'settings-archive' }"
+          class="flex items-center justify-between gap-2.5 px-3 py-2 h-12"
+        >
+          <p class="text-label">{{ $t('archive.earlierProjects') }}</p>
+          <IconChevronRight class="size-6" />
+        </NuxtLink>
       </DesignPanel>
       <UserFeedback />
       <div class="flex items-center justify-center p-default">
