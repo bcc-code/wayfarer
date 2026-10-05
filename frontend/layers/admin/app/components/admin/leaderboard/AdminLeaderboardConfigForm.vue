@@ -455,7 +455,11 @@ function selectAgeGroup(group: (typeof ageGroups)[number]) {
             </div>
           </div>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <UFormField name="filter.ageMin" label="Yngste alder">
+            <UFormField
+              name="filter.ageMin"
+              label="Yngste alder"
+              help="Alder regnes etter fødselsår, ikke bursdag."
+            >
               <UInputNumber
                 v-model="state.filter.ageMin"
                 placeholder="Ingen grense"
