@@ -17,7 +17,7 @@ const { isAuthReady } = useAuthReady()
 
 const expanded = ref(false)
 
-const { data, error, fetching } = useProjectArchiveQuery({
+const { data, error } = useProjectArchiveQuery({
   pause: computed(() => !isAuthReady.value || !expanded.value),
 })
 
@@ -31,10 +31,22 @@ const projects = computed(() => {
     )
 })
 
-const isInitialLoading = computed(() => fetching.value && !data.value)
-const isEmpty = computed(
-  () => !fetching.value && !error.value && !projects.value.length,
-)
+// The query only runs once expanded, so "nothing yet and no error" is the
+// loading state — more reliable than `fetching`, which is briefly false
+// between unpausing and the request going out.
+const isInitialLoading = computed(() => !data.value && !error.value)
+const isEmpty = computed(() => !!data.value && !projects.value.length)
+
+const listRef = ref<HTMLElement | null>(null)
+const { animate } = useStaggeredEntrance({ totalDuration: 0.6 })
+
+watch(projects, (list) => {
+  if (!list.length) return
+  nextTick(() => {
+    const items = listRef.value?.querySelectorAll('.archive-project')
+    if (items?.length) animate(items)
+  })
+})
 </script>
 
 <template>
@@ -48,43 +60,65 @@ const isEmpty = computed(
         {{ $t('archive.earlierProjects') }}
       </span>
       <IconChevronRight
-        class="text-text-hint size-5 transition-transform duration-200"
+        class="text-text-hint size-5 transition-transform duration-300"
         :class="expanded && 'rotate-90'"
       />
     </button>
 
-    <div v-if="expanded" class="space-y-list-section-gap">
-      <div v-if="isInitialLoading" class="p-medium gap-medium grid grid-cols-4">
-        <DesignSkeleton
-          v-for="i in 8"
-          :key="i"
-          class="aspect-square w-full rounded-full"
-        />
-      </div>
-      <ErrorState v-else-if="error" :error />
-      <p
-        v-else-if="isEmpty"
-        class="text-caption text-text-hint p-medium text-center"
-      >
-        {{ $t('archive.empty') }}
-      </p>
-      <template v-else>
-        <div v-for="project in projects" :key="project.id">
-          <p class="text-label text-text-hint p-medium text-center">
-            {{ project.name }}
-          </p>
-          <div
-            v-if="project.achievements.length"
-            class="p-medium gap-medium grid grid-cols-4 pt-0"
+    <Transition
+      enter-active-class="grid transition-all duration-300 ease-out"
+      enter-from-class="grid-rows-[0fr] opacity-0"
+      enter-to-class="grid-rows-[1fr] opacity-100"
+      leave-active-class="grid transition-all duration-200 ease-in"
+      leave-from-class="grid-rows-[1fr] opacity-100"
+      leave-to-class="grid-rows-[0fr] opacity-0"
+    >
+      <div v-if="expanded" class="grid grid-rows-[1fr]">
+        <div class="min-h-0 overflow-hidden">
+          <div v-if="isInitialLoading" class="space-y-list-section-gap">
+            <div v-for="i in 2" :key="i">
+              <div class="p-medium flex justify-center">
+                <DesignSkeleton class="h-4 w-40 rounded" />
+              </div>
+              <div class="p-medium gap-medium grid grid-cols-4 pt-0">
+                <DesignSkeleton
+                  v-for="j in 8"
+                  :key="j"
+                  class="aspect-square w-full rounded-full"
+                />
+              </div>
+            </div>
+          </div>
+          <ErrorState v-else-if="error" :error />
+          <p
+            v-else-if="isEmpty"
+            class="text-caption text-text-hint p-medium text-center"
           >
-            <AchievementBadge
-              v-for="achievement in project.achievements"
-              :key="achievement.id"
-              :achievement
-            />
+            {{ $t('archive.empty') }}
+          </p>
+          <div v-else ref="listRef" class="space-y-list-section-gap">
+            <div
+              v-for="project in projects"
+              :key="project.id"
+              class="archive-project"
+            >
+              <p class="text-label text-text-hint p-medium text-center">
+                {{ project.name }}
+              </p>
+              <div
+                v-if="project.achievements.length"
+                class="p-medium gap-medium grid grid-cols-4 pt-0"
+              >
+                <AchievementBadge
+                  v-for="achievement in project.achievements"
+                  :key="achievement.id"
+                  :achievement
+                />
+              </div>
+            </div>
           </div>
         </div>
-      </template>
-    </div>
+      </div>
+    </Transition>
   </section>
 </template>

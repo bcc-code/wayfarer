@@ -1,6 +1,6 @@
 // @vitest-environment nuxt
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import ProfileProjectArchive from '../../layers/user/app/components/profile/ProfileProjectArchive.vue'
 import DesignSkeleton from '../../layers/user/app/components/design/DesignSkeleton.vue'
@@ -37,13 +37,18 @@ const project = (id: string, name: string, startDate: string, count = 1) => ({
   ),
 })
 
+// Kept around so a test can push data in after mount, the way the real query
+// does once the section is expanded and the request resolves.
+let dataRef = ref<unknown>(null)
+
 function mountWith(
   state: { data?: unknown; error?: unknown; fetching?: boolean } = {},
   props: { currentProjectId?: string } = {},
 ) {
   authReadyMock.mockReturnValue({ isAuthReady: ref(true) })
+  dataRef = ref(state.data ?? null)
   queryMock.mockReturnValue({
-    data: ref(state.data ?? null),
+    data: dataRef,
     error: ref(state.error ?? null),
     fetching: ref(state.fetching ?? false),
   })
@@ -174,6 +179,32 @@ describe('profile project archive', () => {
 
     expect(wrapper.text()).not.toContain('Ladder to Heaven')
     expect(wrapper.text()).toContain('Sermon on the Mount')
+  })
+
+  // The real sequence: expand with nothing cached, see skeletons, then the
+  // response lands. This is also what triggers the entrance animation.
+  it('swaps skeletons for projects when the response arrives', async () => {
+    const wrapper = await mountWith({ data: null, fetching: true })
+
+    await wrapper.find('button').trigger('click')
+    expect(wrapper.findComponent(DesignSkeleton).exists()).toBe(true)
+
+    dataRef.value = {
+      me: {
+        id: 'US1',
+        projects: [project('PR1', 'Sommercamp 2026', '2024-01-01', 2)],
+      },
+    }
+    await nextTick()
+    await nextTick()
+
+    expect(wrapper.findComponent(DesignSkeleton).exists()).toBe(false)
+    expect(wrapper.text()).toContain('Sommercamp 2026')
+    expect(
+      wrapper.findAllComponents({ name: 'AchievementBadge' }),
+    ).toHaveLength(2)
+    // The stagger animation targets these.
+    expect(wrapper.findAll('.archive-project')).toHaveLength(1)
   })
 
   it('orders projects newest first regardless of server order', async () => {

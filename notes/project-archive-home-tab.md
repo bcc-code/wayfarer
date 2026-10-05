@@ -6,7 +6,7 @@
 
 ## Goal
 
-Show the user's *earlier* projects below the current project card on the home
+Show the user's _earlier_ projects below the current project card on the home
 tab — project name as a section heading, with that project's achievement
 badges underneath (earned ones lit, unearned ones dimmed, exactly like the
 current project card). An "archive" of what the user has done in past bible
@@ -22,16 +22,16 @@ heading and the badge grid.
 The backend already has everything needed. **No schema or resolver changes are
 required for the first version.**
 
-| Piece | Where | Note |
-| --- | --- | --- |
-| `User.projects: [Project!]!` | `gql/users.graphqls:19` | All projects the user has joined |
-| Resolver | `backend/internal/graph/api/users.resolvers.go:367` | Dataloader-backed, translation-aware |
-| Loader | `backend/internal/loaders/projects_by_user.go` | Batched over user IDs |
-| Query | `GetProjectsByUserIDs` in `backend/internal/database/queries/projects.sql:42` | `JOIN user_projects`, `ORDER BY up.user_id, p.start_date DESC` — **no archived filter**, returns every joined project |
-| `Project.achievements` | `backend/internal/graph/api/projects.resolvers.go:596` | Dataloader + cache, per project |
-| Achievement SQL | `GetAchievementsByProjectIDs` (`achievements.sql`) | Filters `a.hidden = false` — hidden achievements never reach the user layer |
-| `achievedAt` / `celebratedAt` | `helpers.go:104` / `:126` | Per *current user*, via `UserAchievementTimestampLoader` |
-| `Project.archivedAt: Boolean` | `gql/projects.graphqls` | Note: typed `Boolean`, not a timestamp, despite the name. Maps to `projects.archived` |
+| Piece                         | Where                                                                         | Note                                                                                                                  |
+| ----------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `User.projects: [Project!]!`  | `gql/users.graphqls:19`                                                       | All projects the user has joined                                                                                      |
+| Resolver                      | `backend/internal/graph/api/users.resolvers.go:367`                           | Dataloader-backed, translation-aware                                                                                  |
+| Loader                        | `backend/internal/loaders/projects_by_user.go`                                | Batched over user IDs                                                                                                 |
+| Query                         | `GetProjectsByUserIDs` in `backend/internal/database/queries/projects.sql:42` | `JOIN user_projects`, `ORDER BY up.user_id, p.start_date DESC` — **no archived filter**, returns every joined project |
+| `Project.achievements`        | `backend/internal/graph/api/projects.resolvers.go:596`                        | Dataloader + cache, per project                                                                                       |
+| Achievement SQL               | `GetAchievementsByProjectIDs` (`achievements.sql`)                            | Filters `a.hidden = false` — hidden achievements never reach the user layer                                           |
+| `achievedAt` / `celebratedAt` | `helpers.go:104` / `:126`                                                     | Per _current user_, via `UserAchievementTimestampLoader`                                                              |
+| `Project.archivedAt: Boolean` | `gql/projects.graphqls`                                                       | Note: typed `Boolean`, not a timestamp, despite the name. Maps to `projects.archived`                                 |
 
 So `me { projects { id name archivedAt achievements { ... } } }` already returns
 exactly the archive data, with per-user award state resolved correctly.
@@ -40,7 +40,7 @@ exactly the archive data, with per-user award state resolved correctly.
 
 `Query.myProjects` (`projects.resolvers.go:831`) does **not** return the user's
 projects. It returns a single-element slice containing the globally configured
-*current* project (`Settings.GetCurrentProjectID`). Do not use it for the
+_current_ project (`Settings.GetCurrentProjectID`). Do not use it for the
 archive — use `me { projects }`.
 
 ## Plan
@@ -62,10 +62,10 @@ is. Keeping the archive in its own operation means:
 Pause it the same way pages pause on auth, by `&&`-ing in the expanded state:
 
 ```ts
-const expanded = ref(false)
+const expanded = ref(false);
 const { data, fetching, error } = useProjectArchiveQuery({
   pause: computed(() => !isAuthReady.value || !expanded.value),
-})
+});
 ```
 
 urql keeps the result cached once fetched, so collapsing and re-expanding does
@@ -91,7 +91,7 @@ query ProjectArchive {
 Then filter out the current project client-side (compare against
 `myCurrentProject.id` from `ProfilePage`).
 
-**Decided:** the archive shows *all* projects that are not the current one. It
+**Decided:** the archive shows _all_ projects that are not the current one. It
 does **not** filter on `archivedAt` — that flag is admin-controlled and is not
 reliably set on old projects, so keying off it would silently drop history.
 
@@ -133,10 +133,38 @@ Switch, Tabs, Textarea — no accordion/disclosure. Built inline: a `<button>`
 with `aria-expanded` plus `IconChevronRight` rotated 90° when open. Promote it
 to a `DesignCollapsible` if a second screen wants one.
 
+### Motion
+
+Two separate animations, neither of which needs a measured height:
+
+1. **Expand / collapse** — a Vue `<Transition>` animating
+   `grid-template-rows` from `0fr` to `1fr` (plus opacity) on a grid wrapper
+   whose child is `overflow-hidden min-h-0`. This is the CSS-only way to
+   transition to _auto_ height; no `scrollHeight` reads, no layout thrash.
+2. **Project entrance** — `useStaggeredEntrance` (the existing gsap composable,
+   also used by `LeaderboardList`) over `.archive-project` elements, driven by
+   a `watch` on `projects`. It fires when the response lands, which is the only
+   moment the list goes from nothing to something. Re-expanding a cached
+   archive does not re-stagger — the expand transition carries it.
+
+`useStaggeredEntrance` already honours `prefers-reduced-motion` and simply
+does not run under it, leaving elements at their natural opacity.
+
+### Loading state
+
+The skeleton mirrors the real layout rather than being a generic block: two
+placeholder project groups, each a centered name bar over an 8-badge round
+grid. Expanding the section therefore does not reflow when the data lands.
+
+Loading is derived as `!data && !error`, **not** from `fetching`. Because the
+query is paused until expanded, `fetching` is briefly `false` between
+unpausing and the request going out — keying off it flashes the empty state
+for a frame.
+
 States to handle inside the expanded section: fetching (skeleton), error
 (`<ErrorState>`), and empty (no past projects). When the archive is empty the
 whole section should hide itself rather than expand onto nothing — but that is
-only knowable *after* the query runs, which only happens after expanding. Two
+only knowable _after_ the query runs, which only happens after expanding. Two
 options, pick one at implementation time:
 
 1. Accept it: show an empty-state line inside the expanded section.
@@ -206,22 +234,28 @@ in `*.resolvers.go`.
 
 ## What was built
 
-| File | Change |
-| --- | --- |
-| `frontend/app/graphql/fragments/achievement.gql` | **New.** `AchievementBadgeFields` — everything `AchievementBadge` + `AchievementDetails` render |
-| `frontend/app/graphql/queries/pages/project-archive.gql` | **New.** `ProjectArchive` query over `me { projects { ... } }` |
-| `frontend/app/graphql/queries/pages/profile.gql` | Inlined achievement selection replaced by the fragment |
-| `frontend/layers/user/app/components/profile/ProfileProjectArchive.vue` | **New.** The collapsible section; owns the paused query |
-| `frontend/layers/user/app/components/achievements/AchievementBadge.vue` | Prop retyped `ProfilePageQuery[...]` → `AchievementBadgeFieldsFragment` |
-| `frontend/layers/user/app/components/profile/ProfileProjectCard.vue` | Same retype for its `achievements` prop |
-| `frontend/layers/user/app/pages/index.vue` | Mounts `ProfileProjectArchive` after `UserFeedback` |
-| `frontend/i18n/locales/{nb,en_us}.json` | `archive.earlierProjects`, `archive.empty` |
-| `frontend/test/component/ProfileProjectArchive.test.ts` | **New.** 9 tests |
+| File                                                                    | Change                                                                                          |
+| ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `frontend/app/graphql/fragments/achievement.gql`                        | **New.** `AchievementBadgeFields` — everything `AchievementBadge` + `AchievementDetails` render |
+| `frontend/app/graphql/queries/pages/project-archive.gql`                | **New.** `ProjectArchive` query over `me { projects { ... } }`                                  |
+| `frontend/app/graphql/queries/pages/profile.gql`                        | Inlined achievement selection replaced by the fragment                                          |
+| `frontend/layers/user/app/components/profile/ProfileProjectArchive.vue` | **New.** The collapsible section; owns the paused query                                         |
+| `frontend/layers/user/app/components/achievements/AchievementBadge.vue` | Prop retyped `ProfilePageQuery[...]` → `AchievementBadgeFieldsFragment`                         |
+| `frontend/layers/user/app/components/profile/ProfileProjectCard.vue`    | Same retype for its `achievements` prop                                                         |
+| `frontend/layers/user/app/pages/index.vue`                              | Mounts `ProfileProjectArchive` after `UserFeedback`                                             |
+| `frontend/i18n/locales/{nb,en_us}.json`                                 | `archive.earlierProjects`, `archive.empty`                                                      |
+| `frontend/test/component/ProfileProjectArchive.test.ts`                 | **New.** 10 tests                                                                               |
 
 No backend files touched.
 
 ### Notes for review
 
+- **No card per project.** Each project is a centered name over its badge grid
+  directly on the page background, matching the design. An earlier version
+  wrapped each in a `DesignCard`, which made achievement-less projects render
+  as empty bars.
+- **Projects with no achievements are kept**, deliberately — participation is
+  worth showing even with nothing earned.
 - **Sorting is client-side.** The backend already orders `start_date DESC`, but
   the component re-sorts rather than trusting it silently; the order is asserted
   in a test. Uses `[...].sort()`, not `toSorted` — the latter is missing on iOS
@@ -259,8 +293,10 @@ No backend files touched.
 - [x] Build `ProfileProjectArchive.vue` (collapsible, owns its own query)
 - [x] Mount in `layers/user/app/pages/index.vue`
 - [x] i18n strings (`nb`, `en_us`)
-- [x] Component tests — 9, all passing
-- [x] `pnpm lint` (0 errors), `pnpm typecheck` (clean), `pnpm test` (415
+- [x] Component tests — 10, all passing
+- [x] Loading skeleton mirroring the real layout
+- [x] Expand/collapse + staggered entrance animations
+- [x] `pnpm lint` (0 errors), `pnpm typecheck` (clean), `pnpm test` (416
       component + 738 unit, all passing)
 - [ ] Confirm celebration behaviour for archived achievements
 - [ ] Translate `archive.*` into the remaining locales
