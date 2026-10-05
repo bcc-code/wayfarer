@@ -144,8 +144,8 @@
     "progress": "{completed} of {total} completed"
   },
   "archive": {
-    "earlierProjects": "Earlier projects",
-    "empty": "You have no earlier projects yet."
+    "myAchievements": "My achievements",
+    "empty": "You have no achievements yet."
   },
   "feedback": {
     "title": "Give us your feedback",

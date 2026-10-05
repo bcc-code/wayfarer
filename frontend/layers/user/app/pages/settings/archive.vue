@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
- * The archive: every project the user has taken part in except the current
- * one, each with the achievements they earned in it.
- *
- * Reached from a row in settings: looking back at old camps is a rare,
- * deliberate visit, not something to carry weight on the home tab.
+ * The current project is merged in explicitly rather than taken from
+ * `me.projects`, which only lists projects with a `user_projects` row — a row
+ * written as a side effect of joining a team, enrolling in a challenge or
+ * earning a content achievement, so a user can have achievements in a project
+ * and still be missing from it.
  */
 const { isAuthReady } = useAuthReady()
 
@@ -12,18 +12,16 @@ const { data, error, fetching } = useProjectArchiveQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
-const { data: currentData } = useCurrentProjectQuery({
-  pause: computed(() => !isAuthReady.value),
-})
-
 const projects = computed(() => {
-  const currentProjectId = currentData.value?.myCurrentProject.id
-  return (data.value?.me.projects ?? [])
-    .filter((project) => project.id !== currentProjectId)
-    .sort(
-      (a, b) =>
-        new Date(b.startDate).getTime() - new Date(a.startDate).getTime(),
-    )
+  const current = data.value?.myCurrentProject
+  const byId = new Map(
+    [...(current ? [current] : []), ...(data.value?.me.projects ?? [])].map(
+      (project) => [project.id, project],
+    ),
+  )
+  return [...byId.values()].sort(
+    (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime(),
+  )
 })
 
 const isInitialLoading = computed(() => fetching.value && !data.value)
@@ -31,7 +29,7 @@ const isEmpty = computed(() => !!data.value && !projects.value.length)
 </script>
 
 <template>
-  <PageLayout :title="$t('archive.earlierProjects')">
+  <PageLayout :title="$t('archive.myAchievements')">
     <template #action>
       <NuxtLink :to="{ name: 'settings' }">
         <DesignIconButton icon="IconClose" />

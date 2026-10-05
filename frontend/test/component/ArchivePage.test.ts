@@ -7,13 +7,11 @@ import DesignSkeleton from '../../layers/user/app/components/design/DesignSkelet
 import ErrorState from '../../layers/user/app/components/ErrorState.vue'
 import EmptyState from '../../layers/user/app/components/EmptyState.vue'
 
-const { queryMock, currentProjectMock, authReadyMock } = vi.hoisted(() => ({
+const { queryMock, authReadyMock } = vi.hoisted(() => ({
   queryMock: vi.fn(),
-  currentProjectMock: vi.fn(),
   authReadyMock: vi.fn(),
 }))
 mockNuxtImport('useProjectArchiveQuery', () => queryMock)
-mockNuxtImport('useCurrentProjectQuery', () => currentProjectMock)
 mockNuxtImport('useAuthReady', () => authReadyMock)
 
 const achievement = (id: string) => ({
@@ -42,7 +40,6 @@ const project = (id: string, name: string, startDate: string, count = 1) => ({
 
 function mountWith(
   state: { data?: unknown; error?: unknown; fetching?: boolean } = {},
-  currentProjectId?: string,
 ) {
   authReadyMock.mockReturnValue({ isAuthReady: ref(true) })
   queryMock.mockReturnValue({
@@ -50,16 +47,7 @@ function mountWith(
     error: ref(state.error ?? null),
     fetching: ref(state.fetching ?? false),
   })
-  currentProjectMock.mockReturnValue({
-    data: ref(
-      currentProjectId ? { myCurrentProject: { id: currentProjectId } } : null,
-    ),
-    error: ref(null),
-    fetching: ref(false),
-  })
   return mountSuspended(ArchivePage, {
-    // The badge owns a teleporting drawer and its own mutation; the page's job
-    // is only to hand it the right achievements, so assert on its props.
     global: { stubs: { AchievementBadge: true } },
   })
 }
@@ -69,14 +57,9 @@ describe('archive page', () => {
     vi.clearAllMocks()
   })
 
-  it('pauses both queries until auth is ready', async () => {
+  it('pauses the query until auth is ready', async () => {
     authReadyMock.mockReturnValue({ isAuthReady: ref(false) })
     queryMock.mockReturnValue({
-      data: ref(null),
-      error: ref(null),
-      fetching: ref(false),
-    })
-    currentProjectMock.mockReturnValue({
       data: ref(null),
       error: ref(null),
       fetching: ref(false),
@@ -100,7 +83,7 @@ describe('archive page', () => {
     expect(wrapper.findComponent(ErrorState).exists()).toBe(true)
   })
 
-  it('shows an empty state when there is no history', async () => {
+  it('shows an empty state when there are no projects at all', async () => {
     const wrapper = await mountWith({
       data: { me: { id: 'US1', projects: [] } },
     })
@@ -115,6 +98,7 @@ describe('archive page', () => {
           id: 'US1',
           projects: [project('PR1', 'Sommercamp 2026', '2024-01-01', 3)],
         },
+        myCurrentProject: null,
       },
     })
 
@@ -142,24 +126,62 @@ describe('archive page', () => {
     )
   })
 
-  it('excludes the current project', async () => {
-    const wrapper = await mountWith(
-      {
-        data: {
-          me: {
-            id: 'US1',
-            projects: [
-              project('PR_CURRENT', 'Ladder to Heaven', '2025-01-01'),
-              project('PR_OLD', 'Sommercamp 2026', '2024-01-01'),
-            ],
-          },
+  it('includes the current project alongside the earlier ones', async () => {
+    const wrapper = await mountWith({
+      data: {
+        me: {
+          id: 'US1',
+          projects: [project('PR_OLD', 'Sommercamp 2026', '2024-01-01')],
         },
+        myCurrentProject: project(
+          'PR_CURRENT',
+          'Ladder to Heaven',
+          '2025-01-01',
+        ),
       },
-      'PR_CURRENT',
-    )
+    })
 
-    expect(wrapper.text()).not.toContain('Ladder to Heaven')
-    expect(wrapper.text()).toContain('Sommercamp 2026')
+    const text = wrapper.text()
+    expect(text).toContain('Ladder to Heaven')
+    expect(text).toContain('Sommercamp 2026')
+    expect(text.indexOf('Ladder to Heaven')).toBeLessThan(
+      text.indexOf('Sommercamp 2026'),
+    )
+  })
+
+  it('shows the current project even when it is missing from me.projects', async () => {
+    const wrapper = await mountWith({
+      data: {
+        me: { id: 'US1', projects: [] },
+        myCurrentProject: project(
+          'PR_CURRENT',
+          'Ladder to Heaven',
+          '2025-01-01',
+          3,
+        ),
+      },
+    })
+
+    expect(wrapper.findComponent(EmptyState).exists()).toBe(false)
+    expect(wrapper.text()).toContain('Ladder to Heaven')
+    expect(
+      wrapper.findAllComponents({ name: 'AchievementBadge' }),
+    ).toHaveLength(3)
+  })
+
+  it('does not list the current project twice when it is also in me.projects', async () => {
+    const current = project('PR_CURRENT', 'Ladder to Heaven', '2025-01-01', 2)
+    const wrapper = await mountWith({
+      data: {
+        me: { id: 'US1', projects: [current] },
+        myCurrentProject: current,
+      },
+    })
+
+    expect(wrapper.text().split('Ladder to Heaven')).toHaveLength(2)
+    expect(
+      wrapper.findAllComponents({ name: 'AchievementBadge' }),
+    ).toHaveLength(2)
   })
 
   it('orders projects newest first regardless of server order', async () => {
@@ -173,6 +195,7 @@ describe('archive page', () => {
             project('PR_B', 'Middle', '2023-06-15T12:00:00Z'),
           ],
         },
+        myCurrentProject: null,
       },
     })
 

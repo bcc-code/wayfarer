@@ -4475,6 +4475,13 @@ export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User'
       | { __typename: 'StreakAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
     >, leaderboard: { __typename?: 'LeaderboardConnection', me?: { __typename?: 'LeaderboardEntry', rank?: number | null } | null }, myTeam?: { __typename?: 'Team', superTeam?: { __typename?: 'SuperTeam', id: string, name: string, color?: string | null, imageObject?: { __typename?: 'Image', url: string, blurhash?: string | null } | null } | null } | null } };
 
+export type ArchiveProjectFieldsFragment = { __typename?: 'Project', id: string, name: string, startDate: any, archivedAt?: boolean | null, achievements: Array<
+    | { __typename: 'ContentAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+    | { __typename: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+    | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+    | { __typename: 'StreakAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+  > };
+
 export type ProjectArchiveQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -4483,7 +4490,12 @@ export type ProjectArchiveQuery = { __typename?: 'Query', me: { __typename?: 'Us
         | { __typename: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
         | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
         | { __typename: 'StreakAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
-      > }> } };
+      > }> }, myCurrentProject: { __typename?: 'Project', id: string, name: string, startDate: any, archivedAt?: boolean | null, achievements: Array<
+      | { __typename: 'ContentAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+      | { __typename: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+      | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+      | { __typename: 'StreakAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+    > } };
 
 export type ConsentsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -5208,33 +5220,6 @@ export const ImageFieldsFragmentDoc = gql`
   blurhash
 }
     `;
-export const AchievementBadgeFieldsFragmentDoc = gql`
-    fragment AchievementBadgeFields on Achievement {
-  __typename
-  id
-  name
-  descriptionPending
-  descriptionCompleted
-  imagePendingObject {
-    ...ImageFields
-  }
-  imageCompletedObject {
-    ...ImageFields
-  }
-  hidden
-  achievedAt
-  celebratedAt
-  points
-  ... on ContentAchievement {
-    totalItems
-    completedItemCount
-  }
-  ... on StreakAchievement {
-    totalItems
-    completedItemCount
-  }
-}
-    ${ImageFieldsFragmentDoc}`;
 export const ColorSetFieldsFragmentDoc = gql`
     fragment ColorSetFields on ColorSet {
   accent
@@ -5492,6 +5477,44 @@ export const QuizSubmissionResultFieldsFragmentDoc = gql`
   pointsAwarded
 }
     `;
+export const AchievementBadgeFieldsFragmentDoc = gql`
+    fragment AchievementBadgeFields on Achievement {
+  __typename
+  id
+  name
+  descriptionPending
+  descriptionCompleted
+  imagePendingObject {
+    ...ImageFields
+  }
+  imageCompletedObject {
+    ...ImageFields
+  }
+  hidden
+  achievedAt
+  celebratedAt
+  points
+  ... on ContentAchievement {
+    totalItems
+    completedItemCount
+  }
+  ... on StreakAchievement {
+    totalItems
+    completedItemCount
+  }
+}
+    ${ImageFieldsFragmentDoc}`;
+export const ArchiveProjectFieldsFragmentDoc = gql`
+    fragment ArchiveProjectFields on Project {
+  id
+  name
+  startDate
+  archivedAt
+  achievements {
+    ...AchievementBadgeFields
+  }
+}
+    ${AchievementBadgeFieldsFragmentDoc}`;
 export const GetMeDocument = gql`
     query GetMe {
   me {
@@ -6662,17 +6685,14 @@ export const ProjectArchiveDocument = gql`
   me {
     id
     projects {
-      id
-      name
-      startDate
-      archivedAt
-      achievements {
-        ...AchievementBadgeFields
-      }
+      ...ArchiveProjectFields
     }
   }
+  myCurrentProject {
+    ...ArchiveProjectFields
+  }
 }
-    ${AchievementBadgeFieldsFragmentDoc}`;
+    ${ArchiveProjectFieldsFragmentDoc}`;
 
 export function useProjectArchiveQuery(options?: Omit<Urql.UseQueryArgs<never, ProjectArchiveQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<ProjectArchiveQuery, ProjectArchiveQueryVariables | undefined>({ query: ProjectArchiveDocument, variables: undefined, ...options });

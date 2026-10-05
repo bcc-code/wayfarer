@@ -1,20 +1,24 @@
-# Past projects and the current user's achievements in them, for the "earlier
-# projects" archive on the home tab. Deliberately lean: no points, leaderboard
-# or team, which are the expensive per-project fields.
-#
-# The current project is not excluded here — `me.projects` has no such filter —
-# so the caller drops it against myCurrentProject.id.
+# `me.projects` joins `user_projects`, which a user can be missing from while
+# still holding achievements — so the current project is fetched separately and
+# merged by the page. No points/leaderboard/team: expensive per-project fields.
+fragment ArchiveProjectFields on Project {
+  id
+  name
+  startDate
+  archivedAt
+  achievements {
+    ...AchievementBadgeFields
+  }
+}
+
 query ProjectArchive {
   me {
     id
     projects {
-      id
-      name
-      startDate
-      archivedAt
-      achievements {
-        ...AchievementBadgeFields
-      }
+      ...ArchiveProjectFields
     }
+  }
+  myCurrentProject {
+    ...ArchiveProjectFields
   }
 }

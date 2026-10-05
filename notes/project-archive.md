@@ -1,4 +1,4 @@
-# Project Archive
+# Mine utmerkelser (achievements archive)
 
 **Status:** Implemented (frontend only, no backend change)
 **Started:** 2026-10-05
@@ -6,15 +6,13 @@
 
 ## Goal
 
-Let a user look back at the projects they have taken part in before — each
-project's name over its achievement badges, earned ones lit and unearned ones
-dimmed, exactly as the current project card shows them. An "archive" of what
-they have done across past bible studies and camps.
+Let a user see every achievement they have, grouped by the project it belongs
+to — earned ones lit, unearned ones dimmed, exactly as the current project card
+shows them. A record of what they have done across bible studies and camps.
 
-The original design put this inline under the current project card on the home
-tab. It ships instead as a page at `/settings/archive`, reached from a row in
-settings — see [Why a page in settings](#why-a-page-in-settings). No points/rank
-row and no action buttons per project: just the name and the badge grid.
+Ships as a page at `/settings/archive`, titled **"Mine utmerkelser"** / "My
+achievements", reached from a row in settings. No points/rank row and no action
+buttons per project: just the project name and the badge grid.
 
 ## What already exists (findings)
 
@@ -78,20 +76,70 @@ in `*.resolvers.go`.
 A page at **`/settings/archive`**, reached from a row in settings. The home tab
 is untouched.
 
-| File | Change |
-| --- | --- |
-| `frontend/app/graphql/fragments/achievement.gql` | **New.** `AchievementBadgeFields` — everything `AchievementBadge` + `AchievementDetails` render |
-| `frontend/app/graphql/queries/pages/project-archive.gql` | **New.** `ProjectArchive` query over `me { projects { ... } }` |
-| `frontend/app/graphql/queries/pages/profile.gql` | Achievement selection → the fragment |
-| `frontend/layers/user/app/pages/settings/archive.vue` | **New.** The archive page |
-| `frontend/layers/user/app/pages/settings/index.vue` | New row in the existing link panel, below "Consents" |
-| `frontend/layers/user/app/components/achievements/AchievementBadge.vue` | Prop retyped `ProfilePageQuery[...]` → `AchievementBadgeFieldsFragment` |
-| `frontend/layers/user/app/components/profile/ProfileProjectCard.vue` | Same retype for its `achievements` prop |
-| `frontend/i18n/locales/{nb,en_us}.json` | `archive.earlierProjects`, `archive.empty` |
-| `frontend/test/component/ArchivePage.test.ts` | **New.** 7 tests |
-| `frontend/test/unit/__snapshots__/routes.test.ts.snap` | `settings-archive` added to the committed route manifest |
+| File                                                                    | Change                                                                                          |
+| ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `frontend/app/graphql/fragments/achievement.gql`                        | **New.** `AchievementBadgeFields` — everything `AchievementBadge` + `AchievementDetails` render |
+| `frontend/app/graphql/queries/pages/project-archive.gql`                | **New.** `ProjectArchive` query over `me { projects { ... } }`                                  |
+| `frontend/app/graphql/queries/pages/profile.gql`                        | Achievement selection → the fragment                                                            |
+| `frontend/layers/user/app/pages/settings/archive.vue`                   | **New.** The "Mine utmerkelser" page                                                            |
+| `frontend/layers/user/app/pages/settings/index.vue`                     | New row in the existing link panel, below "Mine samtykke"                                       |
+| `frontend/layers/user/app/components/achievements/AchievementBadge.vue` | Prop retyped `ProfilePageQuery[...]` → `AchievementBadgeFieldsFragment`                         |
+| `frontend/layers/user/app/components/profile/ProfileProjectCard.vue`    | Same retype for its `achievements` prop                                                         |
+| `frontend/i18n/locales/{nb,en_us}.json`                                 | `archive.myAchievements`, `archive.empty`                                                       |
+| `frontend/test/component/ArchivePage.test.ts`                           | **New.** 9 tests                                                                                |
+| `frontend/test/unit/__snapshots__/routes.test.ts.snap`                  | `settings-archive` added to the committed route manifest                                        |
 
 No backend files touched, and nothing was added to the home tab's query.
+
+### Naming and scope
+
+Called **"Mine utmerkelser"**, not "Tidligere prosjekter" or "Dine
+utmerkelser":
+
+- **"Mine", not "Dine"** — the app is consistently first-person about the
+  user's own things: `pages.consents` is "Mine samtykke" / "My consents",
+  `navigation.profile` is "Min side" / "My page". Nothing in the app says
+  "Dine".
+- **Named after the achievements, not the projects.** The projects are only the
+  grouping; the content is the badges. "Tidligere prosjekter" was honest but
+  read like an account concept rather than something a user would open out of
+  curiosity.
+- **So the current project is included.** This is the part the name forces: an
+  earlier revision filtered it out because its badges are already on the home
+  tab, but then "Mine utmerkelser" would promise everything and quietly omit
+  the camp the user is in right now. Overlapping with the home tab is the
+  harmless kind — that grid is "right now", this page is the whole record.
+
+The one thing the name does not capture is that the grid also shows
+achievements the user has _not_ earned, dimmed. That is the same thing the home
+card does, so it does not read as a false promise.
+
+### `me.projects` is not "projects you have achievements in"
+
+The first build of this assumed the current project would turn up in
+`me { projects }`. It does not, reliably — and this was caught in testing, with
+a user whose current-project achievements were missing from the page.
+
+The two fields answer different questions:
+
+- `myCurrentProject` resolves from `Settings.GetCurrentProjectID()`
+  (`projects.resolvers.go:847`) — a **global** setting, no membership check.
+  Everyone sees it on the home tab.
+- `me { projects }` goes through `ProjectsByUserLoader` →
+  `GetProjectsByUserIDs`, which **joins `user_projects`**.
+
+A `user_projects` row is only written as a side effect of _doing_ something:
+the explicit `joinProject` mutation, joining a team
+(`teams.resolvers.go:55,403`), enrolling in a challenge
+(`challenges.resolvers.go:558`), earning a content achievement
+(`content_achievements.go:653`), or the ladder-to-heaven plugin. Awarding a
+simple achievement does not. So holding achievements in a project is **not**
+evidence of membership in it.
+
+The page therefore selects `myCurrentProject` as well and merges the two lists
+by id. `me.projects` was left alone — "projects you joined" is a correct
+meaning for it, and bending it to mean something else would affect every other
+caller.
 
 ### Why a page in settings
 
@@ -124,12 +172,9 @@ back to settings exactly like `add-to-home.vue` and `consent.vue` do.
 
 - **The settings row is unconditional.** An earlier version hid a home-tab row
   when the user had no history, which cost `me { projects { id } }` on the home
-  tab's critical path. In settings a static row is the norm — "Consents" shows
-  whether or not you have any — so the row is always there and the page carries
-  an empty state instead. The home tab pays nothing.
-- **The page reuses `useCurrentProjectQuery`** (declared inline in
-  `layouts/default.vue`) to know which project to exclude. The layout has
-  already run it, so urql serves it from cache — no extra request.
+  tab's critical path. In settings a static row is the norm — "Mine samtykke"
+  shows whether or not you have any — so the row is always there and the page
+  carries an empty state instead. The home tab pays nothing.
 - **Projects with no achievements are kept**, deliberately — participation is
   worth showing even with nothing earned. Covered by a test.
 - **No card per project.** Each is a centered name over its badge grid directly
@@ -141,7 +186,7 @@ back to settings exactly like `add-to-home.vue` and `consent.vue` do.
   Safari < 16.4.
 - **No entrance animation.** A staggered reveal was built while the archive was
   an inline collapsible, where the sections appeared in place and the motion
-  explained the expansion. On a page the list *is* the content, so it was
+  explained the expansion. On a page the list _is_ the content, so it was
   removed rather than carried over.
 - **Loading skeleton mirrors the real layout** — two placeholder project groups,
   each a centered name bar over an 8-badge round grid — so the page does not
@@ -174,8 +219,8 @@ back to settings exactly like `add-to-home.vue` and `consent.vue` do.
 
 ## Checklist
 
-- [x] Decide: all non-current projects, or `archivedAt == true` only
-      → **all non-current projects**
+- [x] Decide: which projects → **all of them, current one included**
+- [x] Decide: the name → **"Mine utmerkelser" / "My achievements"**
 - [x] Decide: inline section vs. page → **page at `/settings/archive`**
 - [x] Extract shared achievement fragment; retype `AchievementBadge`
 - [x] Add `ProjectArchive` query + `pnpm codegen`
@@ -183,9 +228,9 @@ back to settings exactly like `add-to-home.vue` and `consent.vue` do.
 - [x] Link it from the settings link panel
 - [x] Loading skeleton mirroring the real layout
 - [x] i18n strings (`nb`, `en_us`)
-- [x] Component tests — 7, all passing
+- [x] Component tests — 9, all passing
 - [x] Route manifest snapshot updated
-- [x] `pnpm lint` (0 errors), `pnpm typecheck` (clean), `pnpm test` (414
+- [x] `pnpm lint` (0 errors), `pnpm typecheck` (clean), `pnpm test` (416
       component + 738 unit, all passing)
 - [ ] Confirm celebration behaviour for archived achievements
 - [ ] Translate `archive.*` into the remaining locales
