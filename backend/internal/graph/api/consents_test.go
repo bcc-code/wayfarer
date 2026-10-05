@@ -52,26 +52,3 @@ func TestConsentProjectForNewVersion(t *testing.T) {
 		assert.Contains(t, err.Error(), "all projects")
 	})
 }
-
-func TestValidateConsentScope(t *testing.T) {
-	projectA := "PR01ARZ3NDEKTSV4RRFFQ69G5FA"
-
-	t.Run("rejects a remote consent scoped to a project", func(t *testing.T) {
-		err := validateConsentScope(true, &projectA)
-
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "external system")
-	})
-
-	t.Run("allows a remote consent with no project", func(t *testing.T) {
-		assert.NoError(t, validateConsentScope(true, nil))
-	})
-
-	t.Run("allows a local consent scoped to a project", func(t *testing.T) {
-		assert.NoError(t, validateConsentScope(false, &projectA))
-	})
-
-	t.Run("allows a local consent with no project", func(t *testing.T) {
-		assert.NoError(t, validateConsentScope(false, nil))
-	})
-}

@@ -529,9 +529,6 @@ CREATE TABLE consents (
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     UNIQUE (key, version),
-    -- Remote consents are managed by an external system with no notion of
-    -- projects, so they are always global.
-    CHECK (is_remote = false OR project_id IS NULL),
     INDEX idx_consents_key (key),
     INDEX idx_consents_published (published_at) WHERE published_at IS NOT NULL,
     INDEX idx_consents_is_remote (is_remote) WHERE is_remote = true,

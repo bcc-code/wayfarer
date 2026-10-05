@@ -14,13 +14,6 @@ ALTER TABLE consents
 
 CREATE INDEX idx_consents_project ON consents(project_id) WHERE project_id IS NOT NULL;
 
--- Remote consents are owned by an external system that has no notion of
--- Wayfarer projects: one person accepting produces one external event with no
--- project dimension. They are therefore always global.
-ALTER TABLE consents
-    ADD CONSTRAINT consents_remote_is_global
-    CHECK (is_remote = false OR project_id IS NULL);
-
 COMMENT ON COLUMN consents.project_id IS 'Project this consent applies to; NULL means it applies to every project';
 
 -- +goose StatementEnd
@@ -28,7 +21,6 @@ COMMENT ON COLUMN consents.project_id IS 'Project this consent applies to; NULL 
 -- +goose Down
 -- +goose StatementBegin
 
-ALTER TABLE consents DROP CONSTRAINT IF EXISTS consents_remote_is_global;
 DROP INDEX IF EXISTS idx_consents_project;
 ALTER TABLE consents DROP COLUMN project_id;
 

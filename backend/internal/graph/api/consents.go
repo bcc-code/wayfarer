@@ -35,19 +35,6 @@ func describeConsentProject(projectID *string) string {
 	return "project " + *projectID
 }
 
-// validateConsentScope rejects a scope the CHECK constraint would reject at
-// insert time anyway, so an admin sees why instead of a raw Postgres
-// constraint-violation string
-func validateConsentScope(isRemote bool, projectID *string) error {
-	if isRemote && projectID != nil {
-		return fmt.Errorf(
-			"a remote consent cannot be scoped to a project: it is managed by an external system that has no notion of projects",
-		)
-	}
-
-	return nil
-}
-
 // resolveConsentProject returns the project to store on a newly created
 // consent: whatever the caller asked for when the key is new, and the existing
 // key's project otherwise

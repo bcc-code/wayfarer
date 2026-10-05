@@ -248,10 +248,6 @@ func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title 
 		isRemoteBool = *isRemote
 	}
 
-	if err := validateConsentScope(isRemoteBool, consentProjectID); err != nil {
-		return nil, err
-	}
-
 	// Default short text to empty string if not provided
 	var shortTextStr string
 	if shortText != nil {
