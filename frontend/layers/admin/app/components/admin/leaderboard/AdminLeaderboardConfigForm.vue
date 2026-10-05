@@ -404,6 +404,7 @@ function selectAgeGroup(group: (typeof ageGroups)[number]) {
             <UFormField
               name="filter.ageMin"
               label="Yngste alder"
+              help="Alder regnes etter fødselsår, ikke bursdag."
             >
               <UInputNumber
                 v-model="state.filter.ageMin"
