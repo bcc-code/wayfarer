@@ -318,10 +318,7 @@ function onSubmit(event: FormSubmitEvent<Schema>) {
     eventId: event.data.eventId || null,
     limitMode: event.data.limitMode,
     maxEntries:
-      event.data.limitMode === LeaderboardLimitMode.Manual &&
-      typeof event.data.maxEntries === 'number'
-        ? event.data.maxEntries
-        : null,
+      typeof event.data.maxEntries === 'number' ? event.data.maxEntries : null,
     sortOrder: event.data.sortOrder,
     isActive: event.data.isActive,
     filter: buildFilter(event.data.filter),
@@ -397,10 +394,13 @@ function selectAgeGroup(group: (typeof ageGroups)[number]) {
         </p>
 
         <UFormField
-          v-if="state.limitMode === LeaderboardLimitMode.Manual"
           name="maxEntries"
           label="Hvor mange vises på tavlen"
-          help="Skriv 10 for en topp 10-liste. La stå tom for å vise alle. Deltakeren ser sin egen plassering og de nærmeste rivalene uansett."
+          :help="
+            state.limitMode === LeaderboardLimitMode.ChurchSize
+              ? 'Valgfri øvre grense. Den laveste av denne og menighetsgrensen brukes.'
+              : 'Skriv 10 for en topp 10-liste. La stå tom for å vise alle. Deltakeren ser sin egen plassering og de nærmeste rivalene uansett.'
+          "
         >
           <UInputNumber
             v-model="state.maxEntries"
@@ -455,10 +455,7 @@ function selectAgeGroup(group: (typeof ageGroups)[number]) {
             </div>
           </div>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <UFormField
-              name="filter.ageMin"
-              label="Yngste alder"
-            >
+            <UFormField name="filter.ageMin" label="Yngste alder">
               <UInputNumber
                 v-model="state.filter.ageMin"
                 placeholder="Ingen grense"

@@ -24,7 +24,7 @@ func churchLeaderboardLimit(participants int) int {
 	return 3
 }
 
-func leaderboardLimitModeToDB(mode *model.LeaderboardLimitMode, entity model.LeaderboardEntityType, filter *model.LeaderboardFilter, maxEntries *int) (*string, error) {
+func leaderboardLimitModeToDB(mode *model.LeaderboardLimitMode, entity model.LeaderboardEntityType, filter *model.LeaderboardFilter) (*string, error) {
 	value := model.LeaderboardLimitModeManual
 	if mode != nil {
 		value = *mode
@@ -38,9 +38,6 @@ func leaderboardLimitModeToDB(mode *model.LeaderboardLimitMode, entity model.Lea
 		}
 		if filter == nil || filter.ChurchID == nil || *filter.ChurchID == "" {
 			return nil, fmt.Errorf("automatic church-size limits require a church filter")
-		}
-		if maxEntries != nil {
-			return nil, fmt.Errorf("maxEntries must be empty for automatic church-size limits")
 		}
 	}
 	result := string(value)

@@ -221,6 +221,9 @@ func (r *Resolver) getLeaderboardForConfig(ctx context.Context, obj *model.Leade
 
 	if obj.LimitMode == model.LeaderboardLimitModeChurchSize {
 		limit := churchLeaderboardLimit(totalCount)
+		if obj.MaxEntries != nil {
+			limit = min(limit, *obj.MaxEntries)
+		}
 		if len(entries) > limit {
 			entries = entries[:limit]
 		}

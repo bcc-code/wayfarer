@@ -324,7 +324,7 @@ describe('automatic leaderboard limits', () => {
         ?.findComponent({ name: 'USelect' })
         .props('modelValue'),
     ).toBe(LeaderboardLimitMode.ChurchSize)
-    expect(fieldNames(creating)).not.toContain('maxEntries')
+    expect(fieldNames(creating)).toContain('maxEntries')
 
     const editing = await mount({ initialData, isEditMode: true })
     expect(
@@ -334,7 +334,7 @@ describe('automatic leaderboard limits', () => {
     ).toBe(LeaderboardLimitMode.Manual)
   })
 
-  it('loads automatic mode, hides manual input, and clears a previous manual limit on submit', async () => {
+  it('loads automatic mode and preserves the optional cap on submit', async () => {
     const wrapper = await mount({
       initialData: {
         ...initialData,
@@ -342,14 +342,14 @@ describe('automatic leaderboard limits', () => {
         filter: { churchId: 'CH1' },
       },
     })
-    expect(fieldNames(wrapper)).not.toContain('maxEntries')
+    expect(fieldNames(wrapper)).toContain('maxEntries')
     expect(wrapper.text()).toContain('100–199: topp 50')
     expect(wrapper.text()).toContain('200 eller flere: topp 100')
     const form = wrapper.findComponent({ name: 'UForm' })
     await submit(wrapper, { ...form.props('state') })
     expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({
       limitMode: LeaderboardLimitMode.ChurchSize,
-      maxEntries: null,
+      maxEntries: 20,
       filter: { churchId: 'CH1' },
     })
   })

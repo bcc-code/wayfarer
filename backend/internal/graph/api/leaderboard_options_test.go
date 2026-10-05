@@ -31,19 +31,17 @@ func TestLeaderboardLimitModeToDB(t *testing.T) {
 		mode   *model.LeaderboardLimitMode
 		entity model.LeaderboardEntityType
 		filter *model.LeaderboardFilter
-		max    *int
 		want   string
 	}{
-		{name: "legacy default", entity: model.LeaderboardEntityTypePersons, max: intPtr(100), want: "MANUAL"},
+		{name: "legacy default", entity: model.LeaderboardEntityTypePersons, want: "MANUAL"},
 		{name: "automatic", mode: &automatic, entity: model.LeaderboardEntityTypePersons, filter: church, want: "CHURCH_SIZE"},
 		{name: "missing church", mode: &automatic, entity: model.LeaderboardEntityTypePersons},
 		{name: "empty church", mode: &automatic, entity: model.LeaderboardEntityTypePersons, filter: &model.LeaderboardFilter{ChurchID: stringPtr("")}},
 		{name: "wrong entity", mode: &automatic, entity: model.LeaderboardEntityTypeTeams, filter: church},
-		{name: "conflicting manual limit", mode: &automatic, entity: model.LeaderboardEntityTypePersons, filter: church, max: intPtr(10)},
 		{name: "invalid mode", mode: &invalid},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := leaderboardLimitModeToDB(tt.mode, tt.entity, tt.filter, tt.max)
+			got, err := leaderboardLimitModeToDB(tt.mode, tt.entity, tt.filter)
 			if tt.want == "" {
 				require.Error(t, err)
 				return
@@ -81,33 +79,39 @@ func TestConfiguredLeaderboardAutomaticLimits(t *testing.T) {
 				userID := fmt.Sprintf("US%026d", size)
 				ctx := context.WithValue(context.Background(), middleware.UserIDKey, userID)
 				r := &Resolver{LeaderboardService: services.NewLeaderboardService(queries, c, nil)}
-				count := min(size, churchLeaderboardLimit(size))
-				for _, page := range []struct {
-					name           string
-					first, last    *int
-					after, before  *string
-					want           int
-					previous, next bool
-				}{
-					{name: "default", want: count},
-					{name: "oversized", first: intPtr(1000), want: count},
-					{name: "past cap", first: intPtr(1000), after: stringPtr(fmt.Sprint(max(1, count))), previous: count > 0},
-					{name: "backward", last: intPtr(1000), want: count},
-					{name: "before past cap", last: intPtr(1000), before: stringPtr("9999"), want: count},
-					{name: "first page", first: intPtr(2), want: min(count, 2), next: count > 2},
-				} {
-					t.Run(page.name, func(t *testing.T) {
-						board, err := r.getLeaderboardForConfig(ctx, config, page.first, page.after, page.last, page.before)
-						require.NoError(t, err)
-						require.Len(t, board.Edges, page.want)
-						assert.Equal(t, size, board.TotalCount)
-						assert.Equal(t, page.previous, board.PageInfo.HasPreviousPage)
-						assert.Equal(t, page.next, board.PageInfo.HasNextPage)
-						if size > 0 {
-							require.NotNil(t, board.Me)
-							assert.Equal(t, userID, board.Me.ID)
-						}
-					})
+				for _, cap := range []*int{nil, intPtr(2), intPtr(15), intPtr(1000)} {
+					config.MaxEntries = cap
+					count := min(size, churchLeaderboardLimit(size))
+					if cap != nil {
+						count = min(count, *cap)
+					}
+					for _, page := range []struct {
+						name           string
+						first, last    *int
+						after, before  *string
+						want           int
+						previous, next bool
+					}{
+						{name: "default", want: count},
+						{name: "oversized", first: intPtr(1000), want: count},
+						{name: "past cap", first: intPtr(1000), after: stringPtr(fmt.Sprint(max(1, count))), previous: count > 0},
+						{name: "backward", last: intPtr(1000), want: count},
+						{name: "before past cap", last: intPtr(1000), before: stringPtr("9999"), want: count},
+						{name: "first page", first: intPtr(2), want: min(count, 2), next: count > 2},
+					} {
+						t.Run(page.name, func(t *testing.T) {
+							board, err := r.getLeaderboardForConfig(ctx, config, page.first, page.after, page.last, page.before)
+							require.NoError(t, err)
+							require.Len(t, board.Edges, page.want)
+							assert.Equal(t, size, board.TotalCount)
+							assert.Equal(t, page.previous, board.PageInfo.HasPreviousPage)
+							assert.Equal(t, page.next, board.PageInfo.HasNextPage)
+							if size > 0 {
+								require.NotNil(t, board.Me)
+								assert.Equal(t, userID, board.Me.ID)
+							}
+						})
+					}
 				}
 				if size > 0 {
 					board, err := r.getLeaderboardForConfig(ctx, config, nil, nil, nil, nil)

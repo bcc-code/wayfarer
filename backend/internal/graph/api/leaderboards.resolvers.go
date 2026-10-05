@@ -42,7 +42,7 @@ func (r *mutationResolver) CreateLeaderboardConfig(ctx context.Context, input mo
 		return nil, fmt.Errorf("unauthorized to create leaderboard configs in this project")
 	}
 
-	limitMode, err := leaderboardLimitModeToDB(input.LimitMode, input.EntityType, input.Filter, input.MaxEntries)
+	limitMode, err := leaderboardLimitModeToDB(input.LimitMode, input.EntityType, input.Filter)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (r *mutationResolver) UpdateLeaderboardConfig(ctx context.Context, id strin
 		return nil, fmt.Errorf("unauthorized to update leaderboard configs in this project")
 	}
 
-	limitMode, err := leaderboardLimitModeToDB(input.LimitMode, input.EntityType, input.Filter, input.MaxEntries)
+	limitMode, err := leaderboardLimitModeToDB(input.LimitMode, input.EntityType, input.Filter)
 	if err != nil {
 		return nil, err
 	}
