@@ -1,9 +1,6 @@
 <script setup lang="ts">
-type ProjectCardAchievement =
-  ProfilePageQuery['myCurrentProject']['achievements'][number]
-
 const props = defineProps<{
-  achievement: ProjectCardAchievement
+  achievement: AchievementBadgeFieldsFragment
 }>()
 
 const { track } = useAnalytics()

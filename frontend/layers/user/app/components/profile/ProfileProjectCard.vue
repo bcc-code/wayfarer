@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import { gsap } from 'gsap'
 
-type ProjectCardAchievement =
-  ProfilePageQuery['myCurrentProject']['achievements'][number]
-
 interface BannerImage {
   url: string
   width?: number | null
@@ -16,7 +13,7 @@ const props = defineProps<{
   banner?: BannerImage | null
   score?: number
   rank?: number | null
-  achievements?: ProjectCardAchievement[]
+  achievements?: AchievementBadgeFieldsFragment[]
 }>()
 
 // Animated values for counting effect

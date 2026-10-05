@@ -1,0 +1,20 @@
+# Past projects and the current user's achievements in them, for the "earlier
+# projects" archive on the home tab. Deliberately lean: no points, leaderboard
+# or team, which are the expensive per-project fields.
+#
+# The current project is not excluded here — `me.projects` has no such filter —
+# so the caller drops it against myCurrentProject.id.
+query ProjectArchive {
+  me {
+    id
+    projects {
+      id
+      name
+      startDate
+      archivedAt
+      achievements {
+        ...AchievementBadgeFields
+      }
+    }
+  }
+}
