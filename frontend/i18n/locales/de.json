@@ -143,6 +143,10 @@
     "unlocked": "Erreicht!",
     "progress": "{completed} von {total} abgeschlossen"
   },
+  "archive": {
+    "myAchievements": "Meine Abzeichen",
+    "empty": "Du hast noch keine Abzeichen."
+  },
   "feedback": {
     "title": "Gib uns Feedback",
     "cta": "Gib uns Feedback",
