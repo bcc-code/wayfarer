@@ -143,6 +143,10 @@
     "unlocked": "Oppnådd!",
     "progress": "{completed} av {total} fullført"
   },
+  "archive": {
+    "myAchievements": "Mine utmerkelser",
+    "empty": "Du har ingen utmerkelser ennå."
+  },
   "feedback": {
     "title": "Gi oss tilbakemelding",
     "cta": "Gi oss tilbakemelding",

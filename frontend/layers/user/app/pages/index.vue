@@ -122,6 +122,11 @@ watch(
 watch(
   pendingRemote,
   (pending) => {
+    // Prevent the SSF banner from clogging up the home screen in dev
+    if (import.meta.dev) {
+      showBanner.value = false
+      return
+    }
     if (pending?.length) {
       if (!showBanner.value) {
         showBanner.value = true
@@ -225,6 +230,13 @@ useFirestoreRefresh(['ProfilePageDocument'], () => {
       <div key="user-feedback" class="pt-small">
         <UserFeedback :project-id="data.myCurrentProject?.id" />
       </div>
+      <NuxtLink
+        :to="{ name: 'settings-archive' }"
+        class="flex items-center justify-between gap-2.5 px-4 py-2"
+      >
+        <p class="text-label">{{ $t('archive.myAchievements') }}</p>
+        <IconChevronRight class="size-6" />
+      </NuxtLink>
     </TransitionGroup>
 
     <!-- Notification prompt for PWA users -->

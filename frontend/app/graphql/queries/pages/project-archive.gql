@@ -1,0 +1,24 @@
+# `me.projects` joins `user_projects`, which a user can be missing from while
+# still holding achievements — so the current project is fetched separately and
+# merged by the page. No points/leaderboard/team: expensive per-project fields.
+fragment ArchiveProjectFields on Project {
+  id
+  name
+  startDate
+  archivedAt
+  achievements {
+    ...AchievementBadgeFields
+  }
+}
+
+query ProjectArchive {
+  me {
+    id
+    projects {
+      ...ArchiveProjectFields
+    }
+  }
+  myCurrentProject {
+    ...ArchiveProjectFields
+  }
+}
