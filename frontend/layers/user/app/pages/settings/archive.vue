@@ -12,9 +12,12 @@ const projects = computed(() => {
       (project) => [project.id, project],
     ),
   )
-  return [...byId.values()].sort(
-    (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime(),
-  )
+  return [...byId.values()]
+    .filter((project) => project.achievements.length)
+    .sort(
+      (a, b) =>
+        new Date(b.startDate).getTime() - new Date(a.startDate).getTime(),
+    )
 })
 
 const isInitialLoading = computed(() => fetching.value && !data.value)
@@ -49,20 +52,18 @@ const isEmpty = computed(() => !!data.value && !projects.value.length)
     <ErrorState v-else-if="error" :error />
     <EmptyState v-else-if="isEmpty" :title="$t('archive.empty')" />
     <div v-else class="space-y-list-section-gap p-list-outside">
-      <template v-for="project in projects" :key="project.id">
-        <div v-if="project.achievements.length">
-          <p class="text-label text-text-hint p-medium">
-            {{ project.name }}
-          </p>
-          <div class="p-medium gap-medium grid grid-cols-4 pt-0">
-            <AchievementBadge
-              v-for="achievement in project.achievements"
-              :key="achievement.id"
-              :achievement
-            />
-          </div>
+      <div v-for="project in projects" :key="project.id">
+        <p class="text-label text-text-hint p-medium">
+          {{ project.name }}
+        </p>
+        <div class="p-medium gap-medium grid grid-cols-4 pt-0">
+          <AchievementBadge
+            v-for="achievement in project.achievements"
+            :key="achievement.id"
+            :achievement
+          />
         </div>
-      </template>
+      </div>
     </div>
   </PageLayout>
 </template>

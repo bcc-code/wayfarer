@@ -175,8 +175,12 @@ back to settings exactly like `add-to-home.vue` and `consent.vue` do.
   tab's critical path. In settings a static row is the norm — "Mine samtykke"
   shows whether or not you have any — so the row is always there and the page
   carries an empty state instead. The home tab pays nothing.
-- **Projects with no achievements are kept**, deliberately — participation is
-  worth showing even with nothing earned. Covered by a test.
+- **Projects with no achievements are hidden.** The page is a list of
+  achievements, so a project contributing none is noise. The filter lives in
+  the `projects` computed, not the template: with it in the template, a user
+  whose projects all lack achievements rendered an empty `<div>` and no empty
+  state — a blank page. Filtering in the computed makes `isEmpty` correct for
+  free.
 - **No card per project.** Each is a centered name over its badge grid directly
   on the page background. An earlier version wrapped each in a `DesignCard`,
   which made achievement-less projects render as empty bars.
@@ -194,6 +198,10 @@ back to settings exactly like `add-to-home.vue` and `consent.vue` do.
 - **`AchievementBadge` is stubbed in the page test.** It owns a teleporting
   `DesignDrawer` and a celebration mutation; the page's job is only to hand it
   the right achievements, so the test asserts on the props it receives.
+- **The tests assert structurally, never on rendered copy.** Badge ids are
+  `<projectId>-AC<n>`, so a `renderedProjectIds()` helper reads which projects
+  made the page and in what order straight from the badge props. Nothing
+  depends on translated strings or on the page title.
 - **Celebration is unchanged.** `index.vue` still passes only
   `myCurrentProject.achievements` to `useAchievementCelebration`, so no confetti
   fires for old projects.
@@ -228,9 +236,9 @@ back to settings exactly like `add-to-home.vue` and `consent.vue` do.
 - [x] Link it from the settings link panel
 - [x] Loading skeleton mirroring the real layout
 - [x] i18n strings (`nb`, `en_us`)
-- [x] Component tests — 9, all passing
+- [x] Component tests — 11, all passing
 - [x] Route manifest snapshot updated
-- [x] `pnpm lint` (0 errors), `pnpm typecheck` (clean), `pnpm test` (416
+- [x] `pnpm lint` (0 errors), `pnpm typecheck` (clean), `pnpm test` (417
       component + 738 unit, all passing)
 - [ ] Confirm celebration behaviour for archived achievements
 - [ ] Translate `archive.*` into the remaining locales
