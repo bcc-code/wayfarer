@@ -1,11 +1,4 @@
 <script setup lang="ts">
-/**
- * The current project is merged in explicitly rather than taken from
- * `me.projects`, which only lists projects with a `user_projects` row — a row
- * written as a side effect of joining a team, enrolling in a challenge or
- * earning a content achievement, so a user can have achievements in a project
- * and still be missing from it.
- */
 const { isAuthReady } = useAuthReady()
 
 const { data, error, fetching } = useProjectArchiveQuery({
