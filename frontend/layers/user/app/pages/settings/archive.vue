@@ -56,21 +56,20 @@ const isEmpty = computed(() => !!data.value && !projects.value.length)
     <ErrorState v-else-if="error" :error />
     <EmptyState v-else-if="isEmpty" :title="$t('archive.empty')" />
     <div v-else class="space-y-list-section-gap p-list-outside">
-      <div v-for="project in projects" :key="project.id">
-        <p class="text-label text-text-hint p-medium text-center">
-          {{ project.name }}
-        </p>
-        <div
-          v-if="project.achievements.length"
-          class="p-medium gap-medium grid grid-cols-4 pt-0"
-        >
-          <AchievementBadge
-            v-for="achievement in project.achievements"
-            :key="achievement.id"
-            :achievement
-          />
+      <template v-for="project in projects" :key="project.id">
+        <div v-if="project.achievements.length">
+          <p class="text-label text-text-hint p-medium">
+            {{ project.name }}
+          </p>
+          <div class="p-medium gap-medium grid grid-cols-4 pt-0">
+            <AchievementBadge
+              v-for="achievement in project.achievements"
+              :key="achievement.id"
+              :achievement
+            />
+          </div>
         </div>
-      </div>
+      </template>
     </div>
   </PageLayout>
 </template>
