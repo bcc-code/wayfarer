@@ -20,6 +20,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/otel"
 	"github.com/bcc-media/wayfarer/internal/services/push"
+	"github.com/bcc-media/wayfarer/internal/services/quizgrading"
 	"github.com/bcc-media/wayfarer/internal/services/webhooks"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	pgx "github.com/jackc/pgx/v5"
@@ -870,36 +871,12 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 		Questionid:   input.QuestionID,
 	}
 
-	// Set type-specific response and calculate correctness
+	// Set type-specific response
 	switch questionType {
 	case "PREDEFINED":
 		if input.SelectedAnswerIds != nil {
 			selectedJSON, _ := json.Marshal(input.SelectedAnswerIds)
 			params.Selectedanswerids = selectedJSON
-
-			// Calculate correctness (answers are Ristretto-cached static data)
-			correctAnswers, _ := r.Loaders.QuizAnswersByQuestionLoader.Load(ctx, input.QuestionID)()
-			correctIDs := make(map[string]bool)
-			for _, ans := range correctAnswers {
-				if ans.IsCorrectValue {
-					correctIDs[ans.ID] = true
-				}
-			}
-
-			// Check if selected answers match correct answers exactly
-			if len(input.SelectedAnswerIds) == len(correctIDs) {
-				allCorrect := true
-				for _, selectedID := range input.SelectedAnswerIds {
-					if !correctIDs[selectedID] {
-						allCorrect = false
-						break
-					}
-				}
-				params.Iscorrect = &allCorrect
-			} else {
-				falseVal := false
-				params.Iscorrect = &falseVal
-			}
 		}
 	case "FREE_TEXT":
 		if input.TextResponse != nil {
@@ -921,23 +898,17 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 			// Store submitted order as JSON in json_response
 			orderJSON, _ := json.Marshal(input.SubmittedOrder)
 			params.Jsonresponse = orderJSON
-
-			// Calculate correctness by comparing against correct order
-			// (answers are Ristretto-cached static data)
-			correctAnswers, _ := r.Loaders.QuizAnswersByQuestionLoader.Load(ctx, input.QuestionID)()
-
-			// correctAnswers are returned sorted by answer_order (correct position)
-			isCorrect := len(input.SubmittedOrder) == len(correctAnswers)
-			if isCorrect {
-				for i, ans := range correctAnswers {
-					if input.SubmittedOrder[i] != ans.ID {
-						isCorrect = false
-						break
-					}
-				}
-			}
-			params.Iscorrect = &isCorrect
 		}
+	}
+
+	// Calculate correctness (all or nothing; nil for ungraded types)
+	params.Iscorrect, err = gradeQuizResponse(ctx, r.Loaders, questionType, input.QuestionID, quizgrading.Response{
+		SelectedAnswerIDs: input.SelectedAnswerIds,
+		SubmittedOrder:    input.SubmittedOrder,
+	})
+	if err != nil {
+		otel.RecordError(span, err)
+		return nil, fmt.Errorf("failed to grade answer: %w", err)
 	}
 
 	// Calculate points_earned for correct answers
@@ -1104,22 +1075,17 @@ func (r *mutationResolver) UpdateQuizAnswer(ctx context.Context, responseID stri
 		orderJSON, _ := json.Marshal(input.SubmittedOrder)
 		params.Jsonresponse = orderJSON
 
-		// Calculate correctness by comparing against correct order
-		correctAnswers, _ := r.DB.Queries.GetPredefinedAnswersByQuestionID(ctx, existingResponse.QuestionID)
-
-		isCorrect := len(input.SubmittedOrder) == len(correctAnswers)
-		if isCorrect {
-			for i, ans := range correctAnswers {
-				if input.SubmittedOrder[i] != ans.ID {
-					isCorrect = false
-					break
-				}
-			}
+		// Calculate correctness (all or nothing)
+		params.Iscorrect, err = gradeQuizResponse(ctx, r.Loaders, question.QuestionType, existingResponse.QuestionID, quizgrading.Response{
+			SubmittedOrder: input.SubmittedOrder,
+		})
+		if err != nil {
+			otel.RecordError(span, err)
+			return nil, fmt.Errorf("failed to grade answer: %w", err)
 		}
-		params.Iscorrect = &isCorrect
 
 		// Calculate points_earned for correct answers
-		if isCorrect && question.Points != nil {
+		if *params.Iscorrect && question.Points != nil {
 			params.Pointsearned = question.Points
 		} else {
 			zero := int32(0)
@@ -1563,8 +1529,6 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 			Questionid:   questionID,
 		}
 
-		var isCorrect *bool
-
 		switch foundQuestion.(type) {
 		case *model.PredefinedQuestion:
 			if responseInput.SelectedAnswerIds == nil {
@@ -1576,44 +1540,6 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 				return nil, fmt.Errorf("failed to marshal selected answer IDs: %w", err)
 			}
 			responseParams.Selectedanswerids = selectedJSON
-
-			// Calculate correctness
-			answersThunk := r.Loaders.QuizAnswersByQuestionLoader.Load(ctx, questionID)
-			answers, err := answersThunk()
-			if err != nil {
-				return nil, fmt.Errorf("failed to load answers: %w", err)
-			}
-
-			correctAnswerIDs := make(map[string]bool)
-			for _, ans := range answers {
-				if ans.IsCorrectValue {
-					correctAnswerIDs[ans.ID] = true
-				}
-			}
-
-			selectedMap := make(map[string]bool)
-			for _, id := range responseInput.SelectedAnswerIds {
-				selectedMap[id] = true
-			}
-
-			correct := len(correctAnswerIDs) == len(selectedMap)
-			if correct {
-				for id := range correctAnswerIDs {
-					if !selectedMap[id] {
-						correct = false
-						break
-					}
-				}
-				for id := range selectedMap {
-					if !correctAnswerIDs[id] {
-						correct = false
-						break
-					}
-				}
-			}
-
-			isCorrect = &correct
-			responseParams.Iscorrect = &correct
 
 		case *model.FreeTextQuestion:
 			if responseInput.TextResponse == nil {
@@ -1644,28 +1570,17 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 				return nil, fmt.Errorf("failed to marshal submitted order: %w", err)
 			}
 			responseParams.Jsonresponse = orderJSON
-
-			// Calculate correctness
-			answersThunk := r.Loaders.QuizAnswersByQuestionLoader.Load(ctx, questionID)
-			answers, err := answersThunk()
-			if err != nil {
-				return nil, fmt.Errorf("failed to load ordering items: %w", err)
-			}
-
-			// answers are sorted by answer_order (correct position)
-			correct := len(responseInput.SubmittedOrder) == len(answers)
-			if correct {
-				for i, ans := range answers {
-					if responseInput.SubmittedOrder[i] != ans.ID {
-						correct = false
-						break
-					}
-				}
-			}
-
-			isCorrect = &correct
-			responseParams.Iscorrect = &correct
 		}
+
+		// Calculate correctness (all or nothing; nil for ungraded types)
+		isCorrect, err := gradeQuizResponse(ctx, r.Loaders, quizQuestionTypeString(foundQuestion), questionID, quizgrading.Response{
+			SelectedAnswerIDs: responseInput.SelectedAnswerIds,
+			SubmittedOrder:    responseInput.SubmittedOrder,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to grade answer: %w", err)
+		}
+		responseParams.Iscorrect = isCorrect
 
 		// Calculate points_earned for correct answers
 		if isCorrect != nil && *isCorrect && foundQuestion.GetPoints() != nil {
