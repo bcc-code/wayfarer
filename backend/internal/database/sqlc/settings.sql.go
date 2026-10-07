@@ -253,3 +253,114 @@ func (q *Queries) SetSettingText(ctx context.Context, arg SetSettingTextParams) 
 	_, err := q.db.Exec(ctx, SetSettingText, arg.Key, arg.ValueText, arg.Description)
 	return err
 }
+
+const UpdateSettingBool = `-- name: UpdateSettingBool :execrows
+UPDATE settings
+SET value_bool = $1::boolean,
+    updated_at = NOW()
+WHERE key = $2::text
+  AND value_type = 'bool'
+`
+
+type UpdateSettingBoolParams struct {
+	ValueBool bool   `json:"value_bool"`
+	Key       string `json:"key"`
+}
+
+func (q *Queries) UpdateSettingBool(ctx context.Context, arg UpdateSettingBoolParams) (int64, error) {
+	result, err := q.db.Exec(ctx, UpdateSettingBool, arg.ValueBool, arg.Key)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const UpdateSettingFloat = `-- name: UpdateSettingFloat :execrows
+UPDATE settings
+SET value_float = $1::double precision,
+    updated_at = NOW()
+WHERE key = $2::text
+  AND value_type = 'float'
+`
+
+type UpdateSettingFloatParams struct {
+	ValueFloat float64 `json:"value_float"`
+	Key        string  `json:"key"`
+}
+
+func (q *Queries) UpdateSettingFloat(ctx context.Context, arg UpdateSettingFloatParams) (int64, error) {
+	result, err := q.db.Exec(ctx, UpdateSettingFloat, arg.ValueFloat, arg.Key)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const UpdateSettingInt = `-- name: UpdateSettingInt :execrows
+UPDATE settings
+SET value_int = $1::bigint,
+    updated_at = NOW()
+WHERE key = $2::text
+  AND value_type = 'int'
+`
+
+type UpdateSettingIntParams struct {
+	ValueInt int64  `json:"value_int"`
+	Key      string `json:"key"`
+}
+
+func (q *Queries) UpdateSettingInt(ctx context.Context, arg UpdateSettingIntParams) (int64, error) {
+	result, err := q.db.Exec(ctx, UpdateSettingInt, arg.ValueInt, arg.Key)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const UpdateSettingJSON = `-- name: UpdateSettingJSON :execrows
+UPDATE settings
+SET value_json = $1::jsonb,
+    updated_at = NOW()
+WHERE key = $2::text
+  AND value_type = 'json'
+`
+
+type UpdateSettingJSONParams struct {
+	ValueJson []byte `json:"value_json"`
+	Key       string `json:"key"`
+}
+
+func (q *Queries) UpdateSettingJSON(ctx context.Context, arg UpdateSettingJSONParams) (int64, error) {
+	result, err := q.db.Exec(ctx, UpdateSettingJSON, arg.ValueJson, arg.Key)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const UpdateSettingText = `-- name: UpdateSettingText :execrows
+
+UPDATE settings
+SET value_text = $1::text,
+    updated_at = NOW()
+WHERE key = $2::text
+  AND value_type = 'text'
+`
+
+type UpdateSettingTextParams struct {
+	ValueText string `json:"value_text"`
+	Key       string `json:"key"`
+}
+
+// Update-only variants for the admin write path. The SetSetting* upserts above
+// cannot be reused there: @description::text is non-null, so
+// COALESCE(EXCLUDED.description, settings.description) never sees NULL and an
+// edit would wipe the row's description. :execrows returning 0 means the key is
+// unknown or has a different value_type.
+func (q *Queries) UpdateSettingText(ctx context.Context, arg UpdateSettingTextParams) (int64, error) {
+	result, err := q.db.Exec(ctx, UpdateSettingText, arg.ValueText, arg.Key)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}

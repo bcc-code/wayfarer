@@ -224,6 +224,11 @@ type CacheWithRegistry struct {
 	sync     *CacheSync
 	pool     *pgxpool.Pool
 
+	// settingsRefresher reloads the settings service's in-memory map. It is a
+	// callback rather than a direct call because internal/services already
+	// depends on this package, so the dependency cannot run the other way.
+	settingsRefresher atomic.Pointer[func()]
+
 	// evictedKeys feeds the pruneEvictedKeys worker; needsSweep is set when
 	// the queue overflows and a notification is dropped, requesting a full
 	// registry sweep. closeOnce guards the stop channel against double Close,
@@ -357,6 +362,27 @@ func (c *CacheWithRegistry) Close() {
 func (c *CacheWithRegistry) SetSync(sync *CacheSync, pool *pgxpool.Pool) {
 	c.sync = sync
 	c.pool = pool
+}
+
+// SetSettingsRefresher registers the callback run when a settings change
+// arrives, either locally or from another instance.
+func (c *CacheWithRegistry) SetSettingsRefresher(fn func()) {
+	c.settingsRefresher.Store(&fn)
+}
+
+// refreshSettings runs the registered refresher, if any.
+func (c *CacheWithRegistry) refreshSettings() {
+	if fn := c.settingsRefresher.Load(); fn != nil {
+		(*fn)()
+	}
+}
+
+// InvalidateSettings reloads settings on this instance and tells the others to
+// do the same, so a change takes effect now rather than on their next
+// five-minute refresh.
+func (c *CacheWithRegistry) InvalidateSettings() {
+	c.refreshSettings()
+	c.broadcast(InvalidationMessage{Type: InvalidationTypeSettings})
 }
 
 // broadcast sends an invalidation message to other instances if sync is configured

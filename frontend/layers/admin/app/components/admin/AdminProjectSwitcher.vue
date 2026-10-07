@@ -26,6 +26,9 @@ gql(`
         }
       }
     }
+    currentProject {
+      id
+    }
   }
 `)
 
@@ -60,6 +63,9 @@ const projectId = computed(() =>
 const activeProject = computed(() =>
   projects.value.find((project) => project.id === projectId.value),
 )
+
+// The project end users see, as opposed to the one this route is browsing.
+const currentProjectId = computed(() => data.value?.currentProject.id)
 
 type SwitcherProject = (typeof projects.value)[number]
 
@@ -133,11 +139,21 @@ const items = computed<ProjectMenuItem[][]>(() => {
     }"
   >
     <template #item-trailing="{ item }">
-      <UIcon
-        v-if="item.projectId && item.projectId === projectId"
-        name="lucide:check"
-        class="text-dimmed size-5 shrink-0"
-      />
+      <div class="flex shrink-0 items-center gap-1.5">
+        <UBadge
+          v-if="item.projectId && item.projectId === currentProjectId"
+          color="primary"
+          variant="subtle"
+          size="sm"
+        >
+          Live
+        </UBadge>
+        <UIcon
+          v-if="item.projectId && item.projectId === projectId"
+          name="lucide:check"
+          class="text-dimmed size-5"
+        />
+      </div>
     </template>
 
     <UButton

@@ -79,6 +79,16 @@ export const GLOBAL_NAV: AdminNavItem[] = [
     match: 'admin-maintenance',
     can: (p) => !!p.canAccessMaintenance.value,
   },
+  {
+    // "Systeminnstillinger", not "Innstillinger": PROJECT_NAV already has an
+    // "Innstillinger" entry for a project's own settings, and two entries
+    // under the same label read as the same destination.
+    label: 'Systeminnstillinger',
+    icon: 'lucide:sliders-horizontal',
+    to: 'admin-settings',
+    match: 'admin-settings',
+    can: (p) => !!p.canManageSettings.value,
+  },
 ]
 
 /**

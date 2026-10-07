@@ -293,6 +293,17 @@ func main() {
 		os.Exit(1)
 	}
 	defer settingsService.Stop()
+
+	// A settings change broadcast by another instance arrives on the cache
+	// sync channel; without this hook that instance would keep serving the old
+	// value until its next five-minute refresh.
+	cacheInstance.SetSettingsRefresher(func() {
+		refreshCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		if err := settingsService.RefreshSettings(refreshCtx); err != nil {
+			slog.Error("Failed to refresh settings after invalidation", "error", err)
+		}
+	})
 	slog.Info("SettingsService initialized with background refresh")
 
 	// Initialize S3 upload service
@@ -447,7 +458,7 @@ func main() {
 		Cache:              cacheInstance,
 		RoleService:        roleService,
 		LeaderboardService: leaderboardService,
-		Settings:           settingsService,
+		SettingsService:    settingsService,
 		PushService:        pushService,
 		WebhookService:     webhookService,
 		FirebaseService:    firebaseService,

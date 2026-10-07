@@ -6,7 +6,19 @@ package api
 
 import (
 	"context"
+
+	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 )
+
+// SetCurrentProject is the resolver for the setCurrentProject field.
+func (r *mutationResolver) SetCurrentProject(ctx context.Context, projectID string) (*model.Project, error) {
+	return r.Resolver.setCurrentProject(ctx, projectID)
+}
+
+// SetSetting is the resolver for the setSetting field.
+func (r *mutationResolver) SetSetting(ctx context.Context, key string, value string) (*model.Setting, error) {
+	return r.Resolver.setSetting(ctx, key, value)
+}
 
 // FrontendConfig is the resolver for the frontendConfig field.
 func (r *queryResolver) FrontendConfig(ctx context.Context) (string, error) {
@@ -15,4 +27,9 @@ func (r *queryResolver) FrontendConfig(ctx context.Context) (string, error) {
 		return "{}", nil
 	}
 	return string(configJSON), nil
+}
+
+// Settings is the resolver for the settings field.
+func (r *queryResolver) Settings(ctx context.Context) ([]model.Setting, error) {
+	return r.Resolver.listSettings(ctx)
 }

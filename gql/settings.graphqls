@@ -1,3 +1,32 @@
+enum SettingValueType {
+  TEXT
+  INT
+  BOOL
+  FLOAT
+  JSON
+}
+
+type Setting {
+  key: String!
+  "Canonical string form of whichever value column valueType names."
+  value: String!
+  valueType: SettingValueType!
+  description: String
+  "False for rows nothing in the backend reads yet — those duplicate env vars."
+  editable: Boolean!
+  updatedAt: DateTime!
+}
+
 extend type Query {
-    frontendConfig: JSON!
+  frontendConfig: JSON!
+  "Superadmin only — enforced in the resolver, not by @requireRole."
+  settings: [Setting!]!
+}
+
+extend type Mutation {
+  "Changes the project every end user sees. Validates that the project exists."
+  setCurrentProject(projectId: ID!): Project!
+    @requireRole(roles: ["superadmin"])
+  setSetting(key: String!, value: String!): Setting!
+    @requireRole(roles: ["superadmin"])
 }

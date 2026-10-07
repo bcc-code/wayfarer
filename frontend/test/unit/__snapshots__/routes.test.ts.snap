@@ -50,6 +50,7 @@ exports[`route manifest > matches the committed snapshot 1`] = `
   "admin-projects-projectId-teams-teamId  /admin/projects/:projectId()/teams/:teamId()  layers/admin/app/pages/admin/projects/[projectId]/teams/[teamId].vue",
   "admin-scores  /admin/scores  layers/admin/app/pages/admin/scores/index.vue",
   "admin-scores-new  /admin/scores/new  layers/admin/app/pages/admin/scores/new.vue",
+  "admin-settings  /admin/settings  layers/admin/app/pages/admin/settings/index.vue",
   "admin-teams  /admin/teams  layers/admin/app/pages/admin/teams/index.vue",
   "admin-teams-teamId  /admin/teams/:teamId()  layers/admin/app/pages/admin/teams/[teamId].vue",
   "admin-users  /admin/users  layers/admin/app/pages/admin/users/index.vue",

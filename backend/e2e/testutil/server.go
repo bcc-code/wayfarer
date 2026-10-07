@@ -68,7 +68,7 @@ func NewTestRouter(cfg TestServerConfig) *gin.Engine {
 		Cache:              cfg.Cache,
 		RoleService:        cfg.RoleService,
 		LeaderboardService: cfg.LeaderboardService,
-		Settings:           cfg.SettingsService,
+		SettingsService:    cfg.SettingsService,
 		BulkService:        cfg.BulkService,
 		InstanceID:         "test-instance",
 	}

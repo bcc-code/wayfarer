@@ -22,6 +22,9 @@ gql(`
         }
       }
     }
+    currentProject {
+      id
+    }
   }
 `)
 
@@ -35,6 +38,10 @@ const { currentProjects, futureProjects, pastProjects } = useGroupedProjects(
 )
 
 const { canCreateProject } = usePermissions()
+
+// The project end users see. Shown here so the one that is live is findable
+// without opening each project in turn.
+const currentProjectId = computed(() => data.value?.currentProject.id)
 
 // `auto-fill`, not `auto-fit`: the latter stretches a lone card across the row.
 // `min()` stops the track overflowing a narrower container.
@@ -67,7 +74,10 @@ const PROJECT_GRID =
                   params: { projectId: project.id },
                 }"
               >
-                <AdminProjectCard :project />
+                <AdminProjectCard
+                  :project
+                  :is-current="project.id === currentProjectId"
+                />
               </NuxtLink>
             </li>
           </ul>
@@ -83,7 +93,10 @@ const PROJECT_GRID =
                   params: { projectId: project.id },
                 }"
               >
-                <AdminProjectCard :project />
+                <AdminProjectCard
+                  :project
+                  :is-current="project.id === currentProjectId"
+                />
               </NuxtLink>
             </li>
           </ul>
@@ -103,7 +116,10 @@ const PROJECT_GRID =
                   params: { projectId: project.id },
                 }"
               >
-                <AdminProjectCard :project />
+                <AdminProjectCard
+                  :project
+                  :is-current="project.id === currentProjectId"
+                />
               </NuxtLink>
             </li>
           </ul>

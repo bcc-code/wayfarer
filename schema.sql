@@ -827,3 +827,23 @@ CREATE TABLE webhook_logs (
     INDEX idx_webhook_logs_webhook (webhook_id),
     INDEX idx_webhook_logs_created (created_at DESC)
 );
+
+-- ==================== Runtime Settings ====================
+
+-- Key-value store for runtime configuration. Only `current_project_id` is
+-- actually read by the application (services.SettingsService, which caches the
+-- whole table in memory and refreshes it every five minutes); the remaining
+-- rows mirror environment variables that internal/config reads instead.
+CREATE TABLE settings (
+    key TEXT PRIMARY KEY,
+    value_text TEXT,
+    value_int BIGINT,
+    value_bool BOOLEAN,
+    value_float DOUBLE PRECISION,
+    value_json JSONB,
+    value_type TEXT NOT NULL CHECK (value_type IN ('text', 'int', 'bool', 'float', 'json')),
+    description TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    INDEX idx_settings_value_type (value_type)
+);

@@ -96,6 +96,61 @@ Config package includes full test coverage:
 
 Tests use environment variable isolation to avoid interference.
 
+## Runtime settings (the `settings` table)
+
+Separate from the env-based config above, a `settings` key-value table holds
+configuration that can change without a redeploy. It is owned by
+`backend/internal/services/settings.go`.
+
+**Only `current_project_id` is live.** It names the project every end user
+sees, and is read by `Query.currentProject` / `myCurrentProject` /
+`myProjects`, the church-admin statistics resolver, the Firebase token warmer,
+and the two ladder-to-heaven URL handlers.
+
+**Every other row is inert.** `log_level`, `db_log_queries`, `otel_enabled`,
+`otel_sampling_ratio` and `ssf_debug_mode` duplicate environment variables that
+`internal/config/config.go` reads instead, and nothing calls
+`GetBoolSetting` / `GetIntSetting` / `GetFloatSetting`. `services.editableSettings`
+is the allowlist that encodes this: the GraphQL `Setting.editable` field is
+false for them, the admin UI renders them read-only, and `SetSetting` refuses
+to write them. Wiring one up means reading it through the service *and* adding
+it to that allowlist.
+
+### How a value is read
+
+The whole table is loaded into a process-local `atomic.Value` map at boot and
+refreshed every five minutes. Reads are in-memory map lookups, never a query.
+
+The initial load is fail-fast: an invalid `current_project_id` aborts startup.
+A later refresh is not — it logs and keeps the previous map. That asymmetry is
+deliberate: this used to `panic()` on every path, so a bad value written
+straight to the database took the process down from the background ticker,
+arbitrarily far from whatever caused it.
+
+### How a value is changed
+
+`setCurrentProject(projectId:)` and `setSetting(key:value:)`, both
+`@requireRole(roles: ["superadmin"])`. The `settings` query authorises
+in-resolver instead, per the project convention.
+
+`SetCurrentProjectID` checks `ProjectExists` **before** writing, which is what
+keeps the validation failure above unreachable through the API. `SetSetting`
+routes that key through the same function so the check cannot be bypassed.
+
+Afterwards the resolver (`internal/graph/api/settings.go`) invalidates:
+
+- `InvalidateProject(old)` and `InvalidateProject(new)` — each drops the entire
+  `gqlresponse:` prefix, which is what evicts the cached `currentProject` /
+  `myCurrentProject` responses. Without it the old project is served until the
+  30-second response-cache TTL expires.
+- `InvalidateSettings()` — reloads the settings map here and broadcasts
+  `InvalidationTypeSettings` so other instances reload now rather than on their
+  own five-minute tick. See `notes/12-cache-invalidation.md`.
+
+Admin UI: `/admin/settings` (the project picker plus a read-only view of the
+inert rows) and a "Sett som gjeldende prosjekt" action on the project overview
+page. Both are gated on `settings:manage`, superadmin only.
+
 ## Next Steps
 
 This configuration will be used by:

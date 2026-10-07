@@ -1960,6 +1960,17 @@ type SetNotificationPreferenceInput struct {
 	Enabled          bool             `json:"enabled"`
 }
 
+type Setting struct {
+	Key string `json:"key"`
+	// Canonical string form of whichever value column valueType names.
+	Value       string           `json:"value"`
+	ValueType   SettingValueType `json:"valueType"`
+	Description *string          `json:"description,omitempty"`
+	// False for rows nothing in the backend reads yet — those duplicate env vars.
+	Editable  bool             `json:"editable"`
+	UpdatedAt scalars.DateTime `json:"updatedAt"`
+}
+
 type SimpleAchievement struct {
 	ID                   string                   `json:"id"`
 	Name                 string                   `json:"name"`
@@ -3678,6 +3689,67 @@ func (e *ScoreSourceType) UnmarshalJSON(b []byte) error {
 }
 
 func (e ScoreSourceType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SettingValueType string
+
+const (
+	SettingValueTypeText  SettingValueType = "TEXT"
+	SettingValueTypeInt   SettingValueType = "INT"
+	SettingValueTypeBool  SettingValueType = "BOOL"
+	SettingValueTypeFloat SettingValueType = "FLOAT"
+	SettingValueTypeJSON  SettingValueType = "JSON"
+)
+
+var AllSettingValueType = []SettingValueType{
+	SettingValueTypeText,
+	SettingValueTypeInt,
+	SettingValueTypeBool,
+	SettingValueTypeFloat,
+	SettingValueTypeJSON,
+}
+
+func (e SettingValueType) IsValid() bool {
+	switch e {
+	case SettingValueTypeText, SettingValueTypeInt, SettingValueTypeBool, SettingValueTypeFloat, SettingValueTypeJSON:
+		return true
+	}
+	return false
+}
+
+func (e SettingValueType) String() string {
+	return string(e)
+}
+
+func (e *SettingValueType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SettingValueType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SettingValueType", str)
+	}
+	return nil
+}
+
+func (e SettingValueType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SettingValueType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SettingValueType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

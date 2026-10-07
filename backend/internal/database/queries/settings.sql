@@ -85,3 +85,44 @@ ON CONFLICT (key) DO UPDATE
 
 -- name: DeleteSetting :exec
 DELETE FROM settings WHERE key = @key::text;
+
+-- Update-only variants for the admin write path. The SetSetting* upserts above
+-- cannot be reused there: @description::text is non-null, so
+-- COALESCE(EXCLUDED.description, settings.description) never sees NULL and an
+-- edit would wipe the row's description. :execrows returning 0 means the key is
+-- unknown or has a different value_type.
+
+-- name: UpdateSettingText :execrows
+UPDATE settings
+SET value_text = @value_text::text,
+    updated_at = NOW()
+WHERE key = @key::text
+  AND value_type = 'text';
+
+-- name: UpdateSettingInt :execrows
+UPDATE settings
+SET value_int = @value_int::bigint,
+    updated_at = NOW()
+WHERE key = @key::text
+  AND value_type = 'int';
+
+-- name: UpdateSettingBool :execrows
+UPDATE settings
+SET value_bool = @value_bool::boolean,
+    updated_at = NOW()
+WHERE key = @key::text
+  AND value_type = 'bool';
+
+-- name: UpdateSettingFloat :execrows
+UPDATE settings
+SET value_float = @value_float::double precision,
+    updated_at = NOW()
+WHERE key = @key::text
+  AND value_type = 'float';
+
+-- name: UpdateSettingJSON :execrows
+UPDATE settings
+SET value_json = @value_json::jsonb,
+    updated_at = NOW()
+WHERE key = @key::text
+  AND value_type = 'json';

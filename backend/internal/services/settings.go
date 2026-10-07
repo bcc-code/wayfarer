@@ -2,9 +2,12 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
+	"sort"
+	"strconv"
 	"sync/atomic"
 	"time"
 
@@ -14,18 +17,45 @@ import (
 var (
 	ErrSettingNotFound    = errors.New("setting not found")
 	ErrInvalidSettingType = errors.New("invalid setting type")
+	ErrInvalidSettingVal  = errors.New("invalid setting value")
+	ErrProjectNotFound    = errors.New("project not found")
 )
+
+// SettingCurrentProjectID is the key holding the project every end user sees.
+const SettingCurrentProjectID = "current_project_id"
+
+// editableSettings are the keys an admin may change at runtime.
+//
+// Everything else in the table is inert: log_level, db_log_queries,
+// otel_enabled, otel_sampling_ratio and ssf_debug_mode are all read from
+// environment variables in internal/config, and no caller outside this file
+// reads them through GetBoolSetting and friends. Offering them in the admin UI
+// would be offering a knob that does nothing, so the API reports them as
+// non-editable and refuses to write them.
+var editableSettings = map[string]bool{
+	SettingCurrentProjectID: true,
+}
+
+// IsEditableSetting reports whether a key may be changed at runtime.
+func IsEditableSetting(key string) bool {
+	return editableSettings[key]
+}
 
 // SettingsQuerier defines database operations for settings
 type SettingsQuerier interface {
 	GetAllSettings(ctx context.Context) ([]*sqlc.Setting, error)
 	ProjectExists(ctx context.Context, projectID string) (bool, error)
+	UpdateSettingText(ctx context.Context, arg sqlc.UpdateSettingTextParams) (int64, error)
+	UpdateSettingInt(ctx context.Context, arg sqlc.UpdateSettingIntParams) (int64, error)
+	UpdateSettingBool(ctx context.Context, arg sqlc.UpdateSettingBoolParams) (int64, error)
+	UpdateSettingFloat(ctx context.Context, arg sqlc.UpdateSettingFloatParams) (int64, error)
+	UpdateSettingJSON(ctx context.Context, arg sqlc.UpdateSettingJSONParams) (int64, error)
 }
 
 // SettingsService manages runtime configuration with in-memory caching
 type SettingsService struct {
 	queries     SettingsQuerier
-	settingsMap atomic.Value // stores map[string]sqlc.Setting
+	settingsMap atomic.Value // stores map[string]*sqlc.Setting
 	logger      *slog.Logger
 	stopRefresh chan struct{}
 	refreshDone chan struct{}
@@ -40,8 +70,9 @@ func NewSettingsService(ctx context.Context, queries SettingsQuerier, logger *sl
 		refreshDone: make(chan struct{}),
 	}
 
-	// Initial load of settings
-	if err := service.RefreshSettings(ctx); err != nil {
+	// Initial load is fail-fast: a misconfigured database must stop the server
+	// at boot, where the cause is obvious, rather than later.
+	if err := service.load(ctx); err != nil {
 		return nil, fmt.Errorf("failed to load initial settings: %w", err)
 	}
 
@@ -72,27 +103,33 @@ func (s *SettingsService) backgroundRefresh() {
 	}
 }
 
-// RefreshSettings reloads all settings from database and validates critical settings
+// RefreshSettings reloads all settings from the database.
+//
+// Unlike the initial load this never aborts the process. A bad value written
+// directly to the database used to panic here — on the five-minute ticker, so
+// the crash landed arbitrarily far from its cause. The previous map is kept
+// instead, which is both valid and the value the server has been serving.
 func (s *SettingsService) RefreshSettings(ctx context.Context) error {
-	// Load all settings from database
+	return s.load(ctx)
+}
+
+// load reads every setting, validates the result, and atomically swaps it in.
+// The map is left untouched when the new one does not validate.
+func (s *SettingsService) load(ctx context.Context) error {
 	settings, err := s.queries.GetAllSettings(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to query settings: %w", err)
 	}
 
-	// Build new settings map
 	newMap := make(map[string]*sqlc.Setting, len(settings))
 	for _, setting := range settings {
 		newMap[setting.Key] = setting
 	}
 
-	// Validate critical settings
 	if err := s.validateSettings(ctx, newMap); err != nil {
-		s.logger.Error("Invalid setting in database - crashing application", "error", err)
-		panic(fmt.Sprintf("invalid setting in database: %v", err))
+		return fmt.Errorf("invalid setting in database: %w", err)
 	}
 
-	// Atomically swap the settings map
 	s.settingsMap.Store(newMap)
 
 	s.logger.Debug("Settings refreshed", "count", len(settings))
@@ -102,13 +139,13 @@ func (s *SettingsService) RefreshSettings(ctx context.Context) error {
 // validateSettings checks that critical settings are valid
 func (s *SettingsService) validateSettings(ctx context.Context, settingsMap map[string]*sqlc.Setting) error {
 	// Validate current_project_id exists in projects table
-	setting, exists := settingsMap["current_project_id"]
+	setting, exists := settingsMap[SettingCurrentProjectID]
 	if !exists {
-		return fmt.Errorf("required setting 'current_project_id' not found in database")
+		return fmt.Errorf("required setting '%s' not found in database", SettingCurrentProjectID)
 	}
 
 	if setting.ValueType != "text" || setting.ValueText == nil {
-		return fmt.Errorf("setting 'current_project_id' must be of type 'text'")
+		return fmt.Errorf("setting '%s' must be of type 'text'", SettingCurrentProjectID)
 	}
 
 	projectID := *setting.ValueText
@@ -118,7 +155,7 @@ func (s *SettingsService) validateSettings(ctx context.Context, settingsMap map[
 	}
 
 	if !projectExists {
-		return fmt.Errorf("current_project_id '%s' does not exist in projects table", projectID)
+		return fmt.Errorf("%s '%s' does not exist in projects table", SettingCurrentProjectID, projectID)
 	}
 
 	return nil
@@ -133,9 +170,170 @@ func (s *SettingsService) getSettingsMap() map[string]*sqlc.Setting {
 	return value.(map[string]*sqlc.Setting)
 }
 
+// AllSettings returns every setting from the in-memory map, ordered by key.
+func (s *SettingsService) AllSettings() []*sqlc.Setting {
+	settingsMap := s.getSettingsMap()
+
+	settings := make([]*sqlc.Setting, 0, len(settingsMap))
+	for _, setting := range settingsMap {
+		settings = append(settings, setting)
+	}
+	sort.Slice(settings, func(i, j int) bool { return settings[i].Key < settings[j].Key })
+
+	return settings
+}
+
+// GetSetting returns a single setting from the in-memory map.
+func (s *SettingsService) GetSetting(key string) (*sqlc.Setting, error) {
+	setting, exists := s.getSettingsMap()[key]
+	if !exists {
+		return nil, fmt.Errorf("%w: %s", ErrSettingNotFound, key)
+	}
+	return setting, nil
+}
+
 // GetCurrentProjectID returns the default project ID for unauthenticated queries
 func (s *SettingsService) GetCurrentProjectID(ctx context.Context) (string, error) {
-	return s.GetTextSetting(ctx, "current_project_id")
+	return s.GetTextSetting(ctx, SettingCurrentProjectID)
+}
+
+// SetCurrentProjectID points the whole system at a different project.
+//
+// The project is checked first and the write is skipped when it does not
+// exist: an unknown ID would fail validation on the next load and leave the
+// service serving a value the database no longer agrees with.
+func (s *SettingsService) SetCurrentProjectID(ctx context.Context, projectID string) error {
+	exists, err := s.queries.ProjectExists(ctx, projectID)
+	if err != nil {
+		return fmt.Errorf("failed to validate project existence: %w", err)
+	}
+	if !exists {
+		return fmt.Errorf("%w: %s", ErrProjectNotFound, projectID)
+	}
+
+	rows, err := s.queries.UpdateSettingText(ctx, sqlc.UpdateSettingTextParams{
+		Key:       SettingCurrentProjectID,
+		ValueText: projectID,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to update %s: %w", SettingCurrentProjectID, err)
+	}
+	if rows == 0 {
+		return fmt.Errorf("%w: %s", ErrSettingNotFound, SettingCurrentProjectID)
+	}
+
+	return s.RefreshSettings(ctx)
+}
+
+// SetSetting writes the canonical string form of a value to an existing key.
+//
+// Only keys already in the table may be written — this is an editor, not a way
+// to invent configuration — and only those on the editable allowlist, since
+// every other row is read from the environment rather than from here.
+func (s *SettingsService) SetSetting(ctx context.Context, key, value string) (*sqlc.Setting, error) {
+	setting, err := s.GetSetting(key)
+	if err != nil {
+		return nil, err
+	}
+
+	if !IsEditableSetting(key) {
+		return nil, fmt.Errorf("setting %s is not editable at runtime", key)
+	}
+
+	// Routed through SetCurrentProjectID so the existence check cannot be
+	// bypassed by writing the same key through the generic path.
+	if key == SettingCurrentProjectID {
+		if err := s.SetCurrentProjectID(ctx, value); err != nil {
+			return nil, err
+		}
+		return s.GetSetting(key)
+	}
+
+	if err := s.writeTyped(ctx, key, setting.ValueType, value); err != nil {
+		return nil, err
+	}
+
+	if err := s.RefreshSettings(ctx); err != nil {
+		return nil, err
+	}
+
+	return s.GetSetting(key)
+}
+
+// writeTyped parses value according to valueType and writes it to the matching
+// column. A parse failure is reported before anything touches the database.
+func (s *SettingsService) writeTyped(ctx context.Context, key, valueType, value string) error {
+	var (
+		rows int64
+		err  error
+	)
+
+	switch valueType {
+	case "text":
+		rows, err = s.queries.UpdateSettingText(ctx, sqlc.UpdateSettingTextParams{Key: key, ValueText: value})
+	case "int":
+		parsed, parseErr := strconv.ParseInt(value, 10, 64)
+		if parseErr != nil {
+			return fmt.Errorf("%w: %q is not an integer", ErrInvalidSettingVal, value)
+		}
+		rows, err = s.queries.UpdateSettingInt(ctx, sqlc.UpdateSettingIntParams{Key: key, ValueInt: parsed})
+	case "bool":
+		parsed, parseErr := strconv.ParseBool(value)
+		if parseErr != nil {
+			return fmt.Errorf("%w: %q is not a boolean", ErrInvalidSettingVal, value)
+		}
+		rows, err = s.queries.UpdateSettingBool(ctx, sqlc.UpdateSettingBoolParams{Key: key, ValueBool: parsed})
+	case "float":
+		parsed, parseErr := strconv.ParseFloat(value, 64)
+		if parseErr != nil {
+			return fmt.Errorf("%w: %q is not a number", ErrInvalidSettingVal, value)
+		}
+		rows, err = s.queries.UpdateSettingFloat(ctx, sqlc.UpdateSettingFloatParams{Key: key, ValueFloat: parsed})
+	case "json":
+		if !json.Valid([]byte(value)) {
+			return fmt.Errorf("%w: not valid JSON", ErrInvalidSettingVal)
+		}
+		rows, err = s.queries.UpdateSettingJSON(ctx, sqlc.UpdateSettingJSONParams{Key: key, ValueJson: []byte(value)})
+	default:
+		return fmt.Errorf("%w: %s", ErrInvalidSettingType, valueType)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to update setting %s: %w", key, err)
+	}
+	if rows == 0 {
+		return fmt.Errorf("%w: %s", ErrSettingNotFound, key)
+	}
+
+	return nil
+}
+
+// SettingStringValue renders a setting's value in its canonical string form,
+// which is what the GraphQL API exposes regardless of the column it lives in.
+func SettingStringValue(setting *sqlc.Setting) string {
+	switch setting.ValueType {
+	case "text":
+		if setting.ValueText != nil {
+			return *setting.ValueText
+		}
+	case "int":
+		if setting.ValueInt != nil {
+			return strconv.FormatInt(*setting.ValueInt, 10)
+		}
+	case "bool":
+		if setting.ValueBool != nil {
+			return strconv.FormatBool(*setting.ValueBool)
+		}
+	case "float":
+		if setting.ValueFloat != nil {
+			return strconv.FormatFloat(*setting.ValueFloat, 'f', -1, 64)
+		}
+	case "json":
+		if len(setting.ValueJson) > 0 {
+			return string(setting.ValueJson)
+		}
+	}
+	return ""
 }
 
 // GetTextSetting retrieves a text-typed setting from in-memory cache
