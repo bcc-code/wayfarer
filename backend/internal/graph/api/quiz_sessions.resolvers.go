@@ -390,6 +390,16 @@ func (r *mutationResolver) FinishQuizSession(ctx context.Context, id string) (*m
 		)
 	}
 
+	// Pay out bets before notifying clients; not cancelled with the request
+	if _, err := r.settleSessionBets(context.WithoutCancel(ctx), id, quiz); err != nil {
+		otel.RecordError(span, err)
+		// Log but don't fail - state is already FINISHED
+		slog.Error("failed to settle session bets",
+			"session_id", id,
+			"error", err,
+		)
+	}
+
 	// Invalidate cache for affected users
 	submissions, subErr := r.DB.Queries.GetSessionSubmissionsWithUserData(ctx, id)
 	if subErr != nil {
