@@ -143,6 +143,10 @@
     "unlocked": "Unlocked!",
     "progress": "{completed} of {total} completed"
   },
+  "archive": {
+    "title": "Previous projects",
+    "empty": "You have no previous projects yet."
+  },
   "feedback": {
     "title": "Give us your feedback",
     "cta": "Give us your feedback",

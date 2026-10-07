@@ -32,29 +32,7 @@ query ProfilePage($ageFilter: LeaderboardFilter) {
       ...BrandingFields
     }
     achievements {
-      __typename
-      id
-      name
-      descriptionPending
-      descriptionCompleted
-      imagePendingObject {
-        ...ImageFields
-      }
-      imageCompletedObject {
-        ...ImageFields
-      }
-      hidden
-      achievedAt
-      celebratedAt
-      points
-      ... on ContentAchievement {
-        totalItems
-        completedItemCount
-      }
-      ... on StreakAchievement {
-        totalItems
-        completedItemCount
-      }
+      ...AchievementBadgeFields
     }
     myPoints
     leaderboard(entityType: PERSONS, filter: $ageFilter) {

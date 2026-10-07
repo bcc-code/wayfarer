@@ -122,6 +122,11 @@ watch(
 watch(
   pendingRemote,
   (pending) => {
+    // Prevent the SSF banner from clogging up the home screen in dev
+    if (import.meta.dev) {
+      showBanner.value = false
+      return
+    }
     if (pending?.length) {
       if (!showBanner.value) {
         showBanner.value = true

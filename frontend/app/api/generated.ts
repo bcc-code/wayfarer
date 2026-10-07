@@ -364,6 +364,7 @@ export type Consent = {
   key: Scalars['String']['output'];
   managedBy?: Maybe<Scalars['String']['output']>;
   managementType: ConsentManagementType;
+  project?: Maybe<Project>;
   publishedAt?: Maybe<Scalars['DateTime']['output']>;
   shortText: Scalars['String']['output'];
   title: Scalars['String']['output'];
@@ -496,6 +497,7 @@ export type CreateLeaderboardConfigInput = {
   eventId?: InputMaybe<Scalars['ID']['input']>;
   filter?: InputMaybe<LeaderboardFilter>;
   isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  limitMode?: InputMaybe<LeaderboardLimitMode>;
   maxEntries?: InputMaybe<Scalars['Int']['input']>;
   name: Scalars['String']['input'];
   projectId: Scalars['ID']['input'];
@@ -1005,9 +1007,11 @@ export type LeaderboardConfig = {
   isActive: Scalars['Boolean']['output'];
   /**
    * The finished leaderboard, capped before pagination. With no page size, returns
-   * the configured limit, or 100 entries when maxEntries is null.
+   * the automatic church-size limit, the manual maxEntries limit, or 100 entries
+   * when the manual limit is null.
    */
   leaderboard: LeaderboardConnection;
+  limitMode: LeaderboardLimitMode;
   maxEntries?: Maybe<Scalars['Int']['output']>;
   name: Scalars['String']['output'];
   project: Project;
@@ -1129,6 +1133,12 @@ export type LeaderboardFilterView = {
   superTeamId?: Maybe<Scalars['ID']['output']>;
   teamId?: Maybe<Scalars['ID']['output']>;
 };
+
+export enum LeaderboardLimitMode {
+  /** Top N filtered church participants. Requires PERSONS and churchId. */
+  ChurchSize = 'CHURCH_SIZE',
+  Manual = 'MANUAL'
+}
 
 export type MarkdownText = {
   __typename?: 'MarkdownText';
@@ -1490,6 +1500,7 @@ export type MutationCreateConsentArgs = {
   isRemote?: InputMaybe<Scalars['Boolean']['input']>;
   key: Scalars['String']['input'];
   managedBy?: InputMaybe<Scalars['String']['input']>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
   publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
   shortText?: InputMaybe<Scalars['String']['input']>;
   title: Scalars['String']['input'];
@@ -2403,6 +2414,7 @@ export type Query = {
   consents: Array<Consent>;
   currentEvent: Event;
   currentProject: Project;
+  currentTime: Scalars['DateTime']['output'];
   event: Event;
   events: EventConnection;
   externalContent: ExternalContent;
@@ -3395,6 +3407,7 @@ export type UpdateLeaderboardConfigInput = {
   entityType: LeaderboardEntityType;
   filter?: InputMaybe<LeaderboardFilter>;
   isActive: Scalars['Boolean']['input'];
+  limitMode?: InputMaybe<LeaderboardLimitMode>;
   maxEntries?: InputMaybe<Scalars['Int']['input']>;
   name: Scalars['String']['input'];
   sortOrder: Scalars['Int']['input'];
@@ -3680,6 +3693,21 @@ export type GetMeQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type GetMeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, membersId: string, language: string, gender: Gender, birthdate: string, age?: number | null, createdAt: any, church: { __typename?: 'Church', id: string, name: string, country: string, category: ChurchCategory }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType, scope?: { __typename?: 'RoleScope', id: string, type: ScopeType, church?: { __typename?: 'Church', id: string } | null, team?: { __typename?: 'Team', id: string } | null, project?: { __typename?: 'Project', id: string } | null } | null }> } };
 
+type AchievementBadgeFields_ContentAchievement_Fragment = { __typename: 'ContentAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } };
+
+type AchievementBadgeFields_QuizAchievement_Fragment = { __typename: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } };
+
+type AchievementBadgeFields_SimpleAchievement_Fragment = { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } };
+
+type AchievementBadgeFields_StreakAchievement_Fragment = { __typename: 'StreakAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } };
+
+export type AchievementBadgeFieldsFragment =
+  | AchievementBadgeFields_ContentAchievement_Fragment
+  | AchievementBadgeFields_QuizAchievement_Fragment
+  | AchievementBadgeFields_SimpleAchievement_Fragment
+  | AchievementBadgeFields_StreakAchievement_Fragment
+;
+
 export type ColorSetFieldsFragment = { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string };
 
 export type BrandingColorsFieldsFragment = { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } };
@@ -3707,7 +3735,7 @@ export type LeaderboardEntryFieldsFragment = { __typename?: 'LeaderboardEntry', 
 
 export type LeaderboardEntryWithDescriptionFieldsFragment = { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> };
 
-export type LeaderboardConfigFieldsFragment = { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', myChurch?: boolean | null, myTeam?: boolean | null, mySuperTeam?: boolean | null, minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null };
+export type LeaderboardConfigFieldsFragment = { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, limitMode: LeaderboardLimitMode, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', myChurch?: boolean | null, myTeam?: boolean | null, mySuperTeam?: boolean | null, minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null };
 
 export type PredefinedAnswerFieldsFragment = { __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> };
 
@@ -4015,7 +4043,7 @@ export type UpdateLeaderboardConfigMutationVariables = Exact<{
 }>;
 
 
-export type UpdateLeaderboardConfigMutation = { __typename?: 'Mutation', updateLeaderboardConfig: { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', myChurch?: boolean | null, myTeam?: boolean | null, mySuperTeam?: boolean | null, minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null } };
+export type UpdateLeaderboardConfigMutation = { __typename?: 'Mutation', updateLeaderboardConfig: { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, limitMode: LeaderboardLimitMode, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', myChurch?: boolean | null, myTeam?: boolean | null, mySuperTeam?: boolean | null, minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null } };
 
 export type DeleteLeaderboardConfigMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -4459,6 +4487,28 @@ export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User'
       | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
       | { __typename: 'StreakAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
     >, leaderboard: { __typename?: 'LeaderboardConnection', me?: { __typename?: 'LeaderboardEntry', rank?: number | null } | null }, myTeam?: { __typename?: 'Team', superTeam?: { __typename?: 'SuperTeam', id: string, name: string, color?: string | null, imageObject?: { __typename?: 'Image', url: string, blurhash?: string | null } | null } | null } | null } };
+
+export type ArchiveProjectFieldsFragment = { __typename?: 'Project', id: string, name: string, startDate: any, archivedAt?: boolean | null, achievements: Array<
+    | { __typename: 'ContentAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+    | { __typename: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+    | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+    | { __typename: 'StreakAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+  > };
+
+export type ProjectArchiveQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ProjectArchiveQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, projects: Array<{ __typename?: 'Project', id: string, name: string, startDate: any, archivedAt?: boolean | null, achievements: Array<
+        | { __typename: 'ContentAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+        | { __typename: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+        | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+        | { __typename: 'StreakAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+      > }> }, myCurrentProject: { __typename?: 'Project', id: string, name: string, startDate: any, archivedAt?: boolean | null, achievements: Array<
+      | { __typename: 'ContentAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+      | { __typename: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+      | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+      | { __typename: 'StreakAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+    > } };
 
 export type ConsentsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4988,14 +5038,14 @@ export type AdminProjectLeaderboardPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminProjectLeaderboardPageQuery = { __typename?: 'Query', leaderboardConfig: { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, maxEntries?: number | null, sortOrder: number, isActive: boolean, project: { __typename?: 'Project', id: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } }, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', myChurch?: boolean | null, myTeam?: boolean | null, mySuperTeam?: boolean | null, minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null } };
+export type AdminProjectLeaderboardPageQuery = { __typename?: 'Query', leaderboardConfig: { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, limitMode: LeaderboardLimitMode, maxEntries?: number | null, sortOrder: number, isActive: boolean, project: { __typename?: 'Project', id: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } }, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', myChurch?: boolean | null, myTeam?: boolean | null, mySuperTeam?: boolean | null, minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null } };
 
 export type AdminProjectLeaderboardsQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
 }>;
 
 
-export type AdminProjectLeaderboardsQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, leaderboards: Array<{ __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', myChurch?: boolean | null, myTeam?: boolean | null, mySuperTeam?: boolean | null, minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null }> } };
+export type AdminProjectLeaderboardsQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, leaderboards: Array<{ __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, limitMode: LeaderboardLimitMode, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', myChurch?: boolean | null, myTeam?: boolean | null, mySuperTeam?: boolean | null, minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null }> } };
 
 export type AdminScoresPageQueryVariables = Exact<{
   filter?: InputMaybe<ScoreJournalFilter>;
@@ -5318,6 +5368,7 @@ export const LeaderboardConfigFieldsFragmentDoc = gql`
   id
   name
   entityType
+  limitMode
   maxEntries
   sortOrder
   isActive
@@ -5440,6 +5491,44 @@ export const QuizSubmissionResultFieldsFragmentDoc = gql`
   pointsAwarded
 }
     `;
+export const AchievementBadgeFieldsFragmentDoc = gql`
+    fragment AchievementBadgeFields on Achievement {
+  __typename
+  id
+  name
+  descriptionPending
+  descriptionCompleted
+  imagePendingObject {
+    ...ImageFields
+  }
+  imageCompletedObject {
+    ...ImageFields
+  }
+  hidden
+  achievedAt
+  celebratedAt
+  points
+  ... on ContentAchievement {
+    totalItems
+    completedItemCount
+  }
+  ... on StreakAchievement {
+    totalItems
+    completedItemCount
+  }
+}
+    ${ImageFieldsFragmentDoc}`;
+export const ArchiveProjectFieldsFragmentDoc = gql`
+    fragment ArchiveProjectFields on Project {
+  id
+  name
+  startDate
+  archivedAt
+  achievements {
+    ...AchievementBadgeFields
+  }
+}
+    ${AchievementBadgeFieldsFragmentDoc}`;
 export const GetMeDocument = gql`
     query GetMe {
   me {
@@ -6578,29 +6667,7 @@ export const ProfilePageDocument = gql`
       ...BrandingFields
     }
     achievements {
-      __typename
-      id
-      name
-      descriptionPending
-      descriptionCompleted
-      imagePendingObject {
-        ...ImageFields
-      }
-      imageCompletedObject {
-        ...ImageFields
-      }
-      hidden
-      achievedAt
-      celebratedAt
-      points
-      ... on ContentAchievement {
-        totalItems
-        completedItemCount
-      }
-      ... on StreakAchievement {
-        totalItems
-        completedItemCount
-      }
+      ...AchievementBadgeFields
     }
     myPoints
     leaderboard(entityType: PERSONS, filter: $ageFilter) {
@@ -6622,10 +6689,27 @@ export const ProfilePageDocument = gql`
   }
 }
     ${BrandingFieldsFragmentDoc}
-${ImageFieldsFragmentDoc}`;
+${AchievementBadgeFieldsFragmentDoc}`;
 
 export function useProfilePageQuery(options?: Omit<Urql.UseQueryArgs<never, ProfilePageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<ProfilePageQuery, ProfilePageQueryVariables | undefined>({ query: ProfilePageDocument, variables: undefined, ...options });
+};
+export const ProjectArchiveDocument = gql`
+    query ProjectArchive {
+  me {
+    id
+    projects {
+      ...ArchiveProjectFields
+    }
+  }
+  myCurrentProject {
+    ...ArchiveProjectFields
+  }
+}
+    ${ArchiveProjectFieldsFragmentDoc}`;
+
+export function useProjectArchiveQuery(options?: Omit<Urql.UseQueryArgs<never, ProjectArchiveQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<ProjectArchiveQuery, ProjectArchiveQueryVariables | undefined>({ query: ProjectArchiveDocument, variables: undefined, ...options });
 };
 export const ConsentsPageDocument = gql`
     query ConsentsPage {

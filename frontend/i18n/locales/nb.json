@@ -143,6 +143,10 @@
     "unlocked": "Oppnådd!",
     "progress": "{completed} av {total} fullført"
   },
+  "archive": {
+    "title": "Tidligere prosjekter",
+    "empty": "Du har ingen tidligere prosjekter ennå."
+  },
   "feedback": {
     "title": "Gi oss tilbakemelding",
     "cta": "Gi oss tilbakemelding",

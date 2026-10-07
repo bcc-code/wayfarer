@@ -589,6 +589,21 @@ func (m *TestDBManager) CreateTestConsent(ctx context.Context, key string, isRem
 	return consentID, nil
 }
 
+// CreateTestProjectConsent creates a published, local consent scoped to one project
+func (m *TestDBManager) CreateTestProjectConsent(ctx context.Context, key string, projectID *string) (string, error) {
+	consentID := ulid.NewConsentID()
+	query := `
+		INSERT INTO consents (id, key, version, title, short_text, body, published_at, is_remote, project_id)
+		VALUES ($1, $2, 1, $3, 'Short text for consent', 'Body of the consent document', now(), false, $4)
+	`
+	title := "Test Consent: " + key
+	_, err := m.DB.Pool.Exec(ctx, query, consentID, key, title, projectID)
+	if err != nil {
+		return "", fmt.Errorf("failed to create test consent %s for project: %w", key, err)
+	}
+	return consentID, nil
+}
+
 // GetUserConsentHistoryCount returns the count of consent history entries for a user and consent key
 func (m *TestDBManager) GetUserConsentHistoryCount(ctx context.Context, userID, consentKey string) (int, error) {
 	var count int

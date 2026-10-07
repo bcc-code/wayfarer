@@ -150,4 +150,42 @@ func TestLeaderboardConfigEntryLimits(t *testing.T) {
 		assert.Contains(t, resp.ErrorMessage(), "maxEntries must be")
 		input["projectId"] = testProjectID
 	}
+
+	// Switch the warmed config between automatic and manual modes. The database,
+	// loader cache, and GraphQL response must preserve the selected mode.
+	for _, mode := range []string{"CHURCH_SIZE", "MANUAL"} {
+		input := map[string]any{"name": "Local", "entityType": "PERSONS", "limitMode": mode, "filter": map[string]any{"churchId": testChurchID}, "sortOrder": 0, "isActive": true}
+		resp := client.WithAuth(token).MustExecute(t, update, map[string]any{"id": id, "input": input})
+		require.False(t, resp.HasErrors(), resp.ErrorMessage())
+		resp = client.WithAuth(token).MustExecute(t, `query($projectId: ID!) {
+   project(id: $projectId) { leaderboards { limitMode maxEntries leaderboard(first: 1000) { totalCount edges { node { id } } pageInfo { hasNextPage } } } }
+  }`, map[string]any{"projectId": testProjectID})
+		require.False(t, resp.HasErrors(), resp.ErrorMessage())
+		var result struct {
+			Project struct {
+				Leaderboards []struct {
+					LimitMode   string
+					MaxEntries  *int
+					Leaderboard struct {
+						TotalCount int
+						Edges      []struct{ Node struct{ ID string } }
+						PageInfo   struct{ HasNextPage bool }
+					}
+				}
+			}
+		}
+		require.NoError(t, resp.UnmarshalData(&result))
+		require.Len(t, result.Project.Leaderboards, 1)
+		board := result.Project.Leaderboards[0]
+		assert.Equal(t, mode, board.LimitMode)
+		assert.Nil(t, board.MaxEntries)
+		assert.Equal(t, 8, board.Leaderboard.TotalCount)
+		if mode == "CHURCH_SIZE" {
+			assert.Len(t, board.Leaderboard.Edges, 3)
+		} else {
+			assert.Len(t, board.Leaderboard.Edges, 8)
+		}
+		assert.False(t, board.Leaderboard.PageInfo.HasNextPage)
+	}
+
 }
