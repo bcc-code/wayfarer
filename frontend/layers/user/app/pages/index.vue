@@ -231,6 +231,7 @@ useFirestoreRefresh(['ProfilePageDocument'], () => {
         <UserFeedback :project-id="data.myCurrentProject?.id" />
       </div>
       <NuxtLink
+        key="archive-link"
         :to="{ name: 'settings-archive' }"
         class="flex items-center justify-between gap-2.5 px-4 py-2"
       >

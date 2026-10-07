@@ -150,4 +150,24 @@ func (r *Resolver) invalidateCurrentProject(previousProjectID, projectID string)
 	}
 	r.Cache.InvalidateProject(projectID)
 	r.Cache.InvalidateSettings()
+
+	// Server caches alone only make the next request correct. Clients hold the
+	// project in a layout query that never remounts, so without a nudge the
+	// branding stays on the old project until a reload.
+	//
+	// Both channels are fired, and both against the outgoing project as well as
+	// the incoming one, because a connected client is subscribed to the project
+	// it currently believes in. `challenges` is the one clients already
+	// subscribe to and already map to CurrentProjectDocument, so it reaches
+	// bundles deployed before `current_project` existed — and it is true on its
+	// own terms, since a different current project means different active
+	// challenges.
+	notify := []string{projectID}
+	if previousProjectID != "" && previousProjectID != projectID {
+		notify = append(notify, previousProjectID)
+	}
+	for _, id := range notify {
+		go r.FirebaseService.NotifyProjectCurrentProject(context.Background(), id)
+		go r.FirebaseService.NotifyProjectChallenges(context.Background(), id)
+	}
 }

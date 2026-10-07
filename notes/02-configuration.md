@@ -20,6 +20,7 @@ type Config struct {
 ```
 
 ### Server Configuration
+
 - `SERVER_HOST` - Bind address (default: 0.0.0.0)
 - `SERVER_PORT` - HTTP port (default: 8080)
 - `SERVER_READ_TIMEOUT` - Request read timeout (default: 10s)
@@ -27,6 +28,7 @@ type Config struct {
 - `SERVER_IDLE_TIMEOUT` - Keep-alive timeout (default: 120s)
 
 ### Database Configuration
+
 - `DATABASE_URL` - PostgreSQL connection string (required)
 - `DB_MAX_OPEN_CONNS` - Max open connections (default: 25)
 - `DB_MAX_IDLE_CONNS` - Max idle connections (default: 5)
@@ -34,6 +36,7 @@ type Config struct {
 - `DB_CONN_MAX_IDLE_TIME` - Connection max idle time (default: 5m)
 
 ### JWT Configuration
+
 - `JWT_SECRET` - HMAC secret for signing and verifying Wayfarer access tokens
 - `JWT_SECRET_PREVIOUS` - Previous secret, still accepted during rotation (selected by the token's `kid`)
 - `JWT_ISSUER` - JWT issuer claim (default: "wayfarer")
@@ -43,6 +46,7 @@ type Config struct {
 - `AUTH_REVOKED_USERS` - Emergency revocation list, normally empty. See `notes/14-auth-sessions.md`
 
 ### Log Configuration
+
 - `LOG_LEVEL` - Log level: debug, info, warn, error (default: info)
 - `LOG_FORMAT` - Log format: json, text (default: json)
 
@@ -68,12 +72,14 @@ func main() {
 ## Configuration Distribution
 
 Components receive ONLY the configuration they need:
+
 - Database package receives `DatabaseConfig`
 - Server receives `ServerConfig`
 - Auth middleware receives `JWTConfig`
 - Logger middleware receives `LogConfig`
 
 This ensures:
+
 1. Clear dependencies
 2. Easy testing (pass custom config structs)
 3. No hidden environment variable access
@@ -82,12 +88,14 @@ This ensures:
 ## Validation
 
 The `Load()` function validates required fields:
+
 - `DATABASE_URL` must be set (returns error otherwise)
 - Other fields use sensible defaults
 
 ## Testing
 
 Config package includes full test coverage:
+
 - Default value loading
 - Environment variable parsing
 - Integer parsing
@@ -117,13 +125,13 @@ other query runs on.
 row; it carries the environment variable the key overrides and whether a change
 needs a restart.
 
-| Key | Overrides | Takes effect |
-| --- | --- | --- |
-| `log_level` | `LOG_LEVEL` | immediately |
-| `db_log_queries` | `DB_LOG_QUERIES` | on restart |
-| `otel_enabled` | `OTEL_ENABLED` | on restart |
-| `otel_sampling_ratio` | `OTEL_SAMPLING_RATIO` | on restart |
-| `ssf_debug_mode` | `SSF_DEBUG_MODE` | on restart |
+| Key                   | Overrides             | Takes effect |
+| --------------------- | --------------------- | ------------ |
+| `log_level`           | `LOG_LEVEL`           | immediately  |
+| `db_log_queries`      | `DB_LOG_QUERIES`      | on restart   |
+| `otel_enabled`        | `OTEL_ENABLED`        | on restart   |
+| `otel_sampling_ratio` | `OTEL_SAMPLING_RATIO` | on restart   |
+| `ssf_debug_mode`      | `SSF_DEBUG_MODE`      | on restart   |
 
 `log_level` is the exception because `internal/logger` resolves its threshold
 through a shared `slog.LevelVar`, which the handler clones in
@@ -167,7 +175,7 @@ Three gates, because this is remote control over server configuration:
 1. **superadmin only** — both mutations carry the directive.
 2. **No key can be created.** `SetSettings` requires each key to already be a row,
    and the only queries it runs are `UpdateSetting*`, which are plain `UPDATE
-   ... WHERE key = @key`. The `SetSetting*` upserts in `settings.sql` would
+... WHERE key = @key`. The `SetSetting*` upserts in `settings.sql` would
    insert, and are deliberately left uncalled. There is no delete path either.
 3. **Only known keys are writable.** `services.IsEditableSetting` admits
    `config.SettingSpecs` plus `appDataSettings` — membership in the table is
@@ -197,6 +205,43 @@ Afterwards the resolver (`internal/graph/api/settings.go`) invalidates:
 - `InvalidateSettings()` — reloads the settings map here and broadcasts
   `InvalidationTypeSettings` so other instances reload now rather than on their
   own five-minute tick. See `notes/12-cache-invalidation.md`.
+- `NotifyProjectCurrentProject` on **both** the outgoing and incoming project —
+  the Firestore nudge that makes connected clients refetch.
+
+That last one is not optional, and the reason is easy to miss. Server caches
+only make the _next_ request correct. The user app holds the project in a query
+owned by `layouts/default.vue`, which never remounts, so nothing refetches it:
+pages pick up new content because they remount on navigation under urql's
+`cache-and-network`, but the layout does not, and the layout is the only thing
+that calls `applyTheme`. The symptom is content that updates while the branding
+stays on the old project until a reload.
+
+**The client also caches the theme**, and that cache had two holes worth
+knowing about. `layouts/default.vue` paints branding from `projectTheme` in
+localStorage on mount, before the query resolves. That entry used to be the
+bare colour sets, keyed to nothing — so after a switch every mount applied the
+previous project's theme with no way to tell it was stale. It now carries the
+`projectId` it belongs to, and the old shape fails validation rather than being
+applied.
+
+The second hole was the watcher that re-themes on new data. urql seeds `data`
+**synchronously during setup** when its document cache already holds a result —
+`callUseQuery` subscribes inside a `flush: 'sync'` watchEffect — so a plain
+`watch(data)` never fires for that first value and the cached theme is the only
+one applied. It is `{ immediate: true }` now.
+
+Both are fired against the outgoing project id as well as the incoming one,
+because a connected client is subscribed to the project it currently believes
+in. There is no top-level Firestore collection for this because the security
+rules live in the Firebase console, not in this repo —
+`projects/{id}/notifications/*` is a prefix clients can already read.
+
+`challenges` is fired alongside `current_project` on purpose. It is the channel
+clients already subscribe to and already map to `CurrentProjectDocument`, so it
+reaches bundles deployed before `current_project` existed — a new subscription
+is client-side code, and a client running the old bundle has no listener for a
+new category. It is also true on its own terms: a different current project
+means different active challenges.
 
 Admin UI: `/admin/settings`. The configuration section is a staged form: every
 field edits a local draft, changed rows are badged, and one button commits them
@@ -209,6 +254,7 @@ gjeldende prosjekt" action on the project overview page. Both are gated on
 ## Next Steps
 
 This configuration will be used by:
+
 1. Database connection layer
 2. HTTP server setup
 3. Middleware configuration
