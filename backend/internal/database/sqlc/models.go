@@ -137,6 +137,8 @@ type Consent struct {
 	ManagedBy   *string            `json:"managed_by"`
 	IsRemote    bool               `json:"is_remote"`
 	ShortText   string             `json:"short_text"`
+	// Project this consent applies to; NULL means it applies to every project
+	ProjectID *string `json:"project_id"`
 }
 
 type ConsentTranslation struct {

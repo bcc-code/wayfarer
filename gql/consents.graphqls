@@ -11,6 +11,7 @@ type Consent {
     publishedAt: DateTime
     managementType: ConsentManagementType!
     managedBy: String
+    project: Project @goField(forceResolver: true)
     userHistory: [UserConsentHistoryEntry!]! @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
@@ -70,6 +71,7 @@ extend type Mutation {
         publishedAt: DateTime
         isRemote: Boolean
         managedBy: String
+        projectId: ID
     ): Consent! @requireRole(roles: ["admin", "superadmin"])
 
     # Update an existing consent (admin action)

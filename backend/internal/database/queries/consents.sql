@@ -1,36 +1,46 @@
 -- Consent queries
 
 -- name: GetConsentByID :one
-SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, created_at, updated_at
+SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, created_at, updated_at
 FROM consents WHERE id = @id::char(28);
 
 -- name: GetConsentsByIDs :many
-SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, created_at, updated_at
+SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, created_at, updated_at
 FROM consents WHERE id = ANY(@ids::char(28)[]);
 
 -- name: GetLatestPublishedConsentByKey :one
-SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, created_at, updated_at
+SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, created_at, updated_at
 FROM consents
 WHERE key = @key::text AND published_at IS NOT NULL AND published_at <= now()
 ORDER BY version DESC LIMIT 1;
 
 -- name: GetAllLatestPublishedConsents :many
-SELECT DISTINCT ON (key) id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, created_at, updated_at
+SELECT DISTINCT ON (key) id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, created_at, updated_at
 FROM consents
 WHERE published_at IS NOT NULL AND published_at <= now()
 ORDER BY key, version DESC;
 
+-- name: GetLatestPublishedConsentsForProject :many
+-- Latest published consents that apply to the given project: the project's own
+-- consents plus global ones (project_id IS NULL). Consent keys are globally
+-- unique, so DISTINCT ON (key) cannot hide another project's consent here.
+SELECT DISTINCT ON (key) id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, created_at, updated_at
+FROM consents
+WHERE published_at IS NOT NULL AND published_at <= now()
+  AND (project_id IS NULL OR project_id = @project_id::char(28))
+ORDER BY key, version DESC;
+
 -- name: GetLatestConsentByKey :one
-SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, created_at, updated_at
+SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, created_at, updated_at
 FROM consents
 WHERE key = @key::text
 ORDER BY version DESC
 LIMIT 1;
 
 -- name: CreateConsent :one
-INSERT INTO consents (id, key, version, title, short_text, body, url, published_at, is_remote, managed_by)
-VALUES (@id::text, @key::text, @version::int, @title::text, @short_text::text, @body::text, @url, @published_at, @is_remote::bool, @managed_by)
-RETURNING id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, created_at, updated_at;
+INSERT INTO consents (id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id)
+VALUES (@id::text, @key::text, @version::int, @title::text, @short_text::text, @body::text, @url, @published_at, @is_remote::bool, @managed_by, @project_id)
+RETURNING id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, created_at, updated_at;
 
 -- name: UpdateConsent :one
 UPDATE consents SET
@@ -42,7 +52,7 @@ UPDATE consents SET
     published_at = @published_at,
     updated_at = now()
 WHERE id = @id::char(28)
-RETURNING id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, created_at, updated_at;
+RETURNING id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, created_at, updated_at;
 
 -- name: GetNextVersionForConsentKey :one
 SELECT COALESCE(MAX(version), 0) + 1 as next_version FROM consents WHERE key = @key::text;
@@ -110,12 +120,13 @@ ORDER BY user_id, occurred_at DESC;
 -- name: GetMissingConsentsForUserWithRejections :many
 -- Gets consents that user has never acted upon (no history)
 SELECT c.id, c.key, c.version, c.title, c.short_text, c.body, c.url, c.published_at,
-       c.is_remote, c.managed_by, c.created_at, c.updated_at
+       c.is_remote, c.managed_by, c.project_id, c.created_at, c.updated_at
 FROM (
     SELECT DISTINCT ON (key) id, key, version, title, short_text, body, url, published_at,
-           is_remote, managed_by, created_at, updated_at
+           is_remote, managed_by, project_id, created_at, updated_at
     FROM consents
     WHERE published_at IS NOT NULL AND published_at <= now()
+      AND (project_id IS NULL OR project_id = @project_id::char(28))
     ORDER BY key, version DESC
 ) c
 WHERE NOT EXISTS (
