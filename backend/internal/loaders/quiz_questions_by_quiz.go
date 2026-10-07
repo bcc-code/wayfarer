@@ -2,12 +2,14 @@ package loaders
 
 import (
 	"context"
+	"math"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/otel"
 	"github.com/graph-gophers/dataloader/v7"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 // quizQuestionsByQuizBatchFunc batches loading quiz questions by quiz IDs
@@ -65,15 +67,8 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 				}
 
 				// Convert betting fields
-				var bettingMinPercentage, bettingMaxPercentage *float64
-				if row.BettingMinPercentage.Valid {
-					val, _ := row.BettingMinPercentage.Float64Value()
-					bettingMinPercentage = &val.Float64
-				}
-				if row.BettingMaxPercentage.Valid {
-					val, _ := row.BettingMaxPercentage.Float64Value()
-					bettingMaxPercentage = &val.Float64
-				}
+				bettingMinPercentage := numericToFloat(row.BettingMinPercentage)
+				bettingMaxPercentage := numericToFloat(row.BettingMaxPercentage)
 				var bettingMinAbsolute, bettingMaxAbsolute *int
 				if row.BettingMinAbsolute != nil {
 					v := int(*row.BettingMinAbsolute)
@@ -83,15 +78,8 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 					v := int(*row.BettingMaxAbsolute)
 					bettingMaxAbsolute = &v
 				}
-				var bettingMultiplierCorrect, bettingMultiplierWrong *float64
-				if row.BettingMultiplierCorrect.Valid {
-					val, _ := row.BettingMultiplierCorrect.Float64Value()
-					bettingMultiplierCorrect = &val.Float64
-				}
-				if row.BettingMultiplierWrong.Valid {
-					val, _ := row.BettingMultiplierWrong.Float64Value()
-					bettingMultiplierWrong = &val.Float64
-				}
+				bettingMultiplierCorrect := numericToFloat(row.BettingMultiplierCorrect)
+				bettingMultiplierWrong := numericToFloat(row.BettingMultiplierWrong)
 
 				switch row.QuestionType {
 				case "PREDEFINED":
@@ -132,22 +120,9 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 						BettingMultiplierWrong:   bettingMultiplierWrong,
 					}
 				case "NUMBER":
-					var minValue, maxValue, stepValue *float64
-					if row.MinValue.Valid {
-						val, _ := row.MinValue.Float64Value()
-						fv := val.Float64
-						minValue = &fv
-					}
-					if row.MaxValue.Valid {
-						val, _ := row.MaxValue.Float64Value()
-						fv := val.Float64
-						maxValue = &fv
-					}
-					if row.StepValue.Valid {
-						val, _ := row.StepValue.Float64Value()
-						fv := val.Float64
-						stepValue = &fv
-					}
+					minValue := numericToFloat(row.MinValue)
+					maxValue := numericToFloat(row.MaxValue)
+					stepValue := numericToFloat(row.StepValue)
 					question = &model.NumberQuestion{
 						ID:                       row.ID,
 						QuestionText:             row.QuestionText,
@@ -237,4 +212,17 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 		}
 		return results
 	}
+}
+
+// numericToFloat converts a nullable NUMERIC to *float64, returning nil when it
+// is not set or is not a finite float64.
+func numericToFloat(n pgtype.Numeric) *float64 {
+	if !n.Valid {
+		return nil
+	}
+	val, err := n.Float64Value()
+	if err != nil || !val.Valid || math.IsNaN(val.Float64) || math.IsInf(val.Float64, 0) {
+		return nil
+	}
+	return &val.Float64
 }
