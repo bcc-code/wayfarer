@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { SettingValueType } from '~/api/generated'
-
 definePageMeta({
   permission: 'settings:manage',
   layout: 'admin',
@@ -13,8 +11,9 @@ gql(`
       value
       valueType
       description
+      requiresRestart
+      envVar
       editable
-      updatedAt
     }
     currentProject {
       id
@@ -42,6 +41,15 @@ gql(`
   }
 `)
 
+gql(`
+  mutation SetSetting($key: String!, $value: String!) {
+    setSetting(key: $key, value: $value) {
+      key
+      value
+    }
+  }
+`)
+
 const { isAuthReady } = useAuthReady()
 const { data, error, fetching, executeQuery } = useAdminSettingsPageQuery({
   pause: computed(() => !isAuthReady.value),
@@ -51,14 +59,13 @@ const toast = useToast()
 const { confirm } = useConfirm()
 const { executeMutation: setCurrentProject, fetching: saving } =
   useSetCurrentProjectMutation()
+const { executeMutation: setSetting } = useSetSettingMutation()
 
 const projects = computed(
   () => data.value?.projects.edges.map((edge) => edge.node) ?? [],
 )
 const currentProjectId = computed(() => data.value?.currentProject.id)
 
-// Grouped the same way the project switcher groups them, so "which one is
-// running right now" is as obvious here as it is in the sidebar.
 const { currentProjects, futureProjects, pastProjects } = useGroupedProjects(
   () => projects.value,
 )
@@ -77,11 +84,32 @@ const projectItems = computed(() =>
     .map(groupToItems),
 )
 
-// Mirrors the backend's selection: everything else in the table duplicates an
-// environment variable the server reads instead, and `editable` says so.
-const otherSettings = computed(
-  () => data.value?.settings.filter((setting) => !setting.editable) ?? [],
+const configSettings = computed(
+  () =>
+    data.value?.settings.filter(
+      (setting) => setting.key !== CURRENT_PROJECT_KEY,
+    ) ?? [],
 )
+
+const savingKey = ref<string | undefined>()
+
+async function saveSetting(key: string, value: string) {
+  savingKey.value = key
+  const response = await setSetting({ key, value })
+  savingKey.value = undefined
+
+  if (response.error) {
+    toast.add({
+      title: response.error.name,
+      description: response.error.message,
+      color: 'error',
+    })
+    return
+  }
+
+  toast.add({ title: 'Lagret', description: key, color: 'success' })
+  executeQuery({ requestPolicy: 'network-only' })
+}
 
 const selectedProjectId = ref<string | undefined>()
 watch(currentProjectId, (id) => (selectedProjectId.value = id), {
@@ -121,8 +149,7 @@ async function save() {
       description: response.error.message,
       color: 'error',
     })
-    // Back to what the server actually holds, so the control never shows a
-    // value that was refused.
+    // Never leave the control showing a value the server refused.
     selectedProjectId.value = currentProjectId.value
     return
   }
@@ -136,13 +163,7 @@ async function save() {
   executeQuery({ requestPolicy: 'network-only' })
 }
 
-const VALUE_TYPE_LABELS: Record<SettingValueType, string> = {
-  [SettingValueType.Text]: 'tekst',
-  [SettingValueType.Int]: 'heltall',
-  [SettingValueType.Bool]: 'av/på',
-  [SettingValueType.Float]: 'desimaltall',
-  [SettingValueType.Json]: 'JSON',
-}
+const CURRENT_PROJECT_KEY = 'current_project_id'
 </script>
 
 <template>
@@ -193,37 +214,21 @@ const VALUE_TYPE_LABELS: Record<SettingValueType, string> = {
           </div>
         </AdminSection>
 
-        <AdminSection
-          v-if="otherSettings.length > 0"
-          title="Øvrige innstillinger"
-        >
-          <div class="space-y-3 py-1">
+        <AdminSection v-if="configSettings.length > 0" title="Konfigurasjon">
+          <div class="space-y-1 py-1">
             <p class="text-muted text-sm">
-              Disse leses fra miljøvariabler på serveren, ikke herfra. Verdiene
-              under er radene i databasen og har ingen effekt — de vises bare
-              for innsyn.
+              Verdiene her overstyrer miljøvariablene på serveren. En rad som er
+              satt vinner; er den tom, gjelder miljøvariabelen.
             </p>
-            <dl class="divide-default divide-y">
-              <div
-                v-for="setting in otherSettings"
+            <div class="divide-default divide-y">
+              <AdminSettingField
+                v-for="setting in configSettings"
                 :key="setting.key"
-                class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2"
-              >
-                <div>
-                  <dt class="font-medium">{{ setting.key }}</dt>
-                  <dd v-if="setting.description" class="text-muted text-sm">
-                    {{ setting.description }}
-                  </dd>
-                </div>
-                <div class="text-right">
-                  <code class="text-dimmed text-sm">{{ setting.value }}</code>
-                  <p class="text-dimmed text-xs">
-                    {{ VALUE_TYPE_LABELS[setting.valueType] }} · endret
-                    {{ formatDateTime(setting.updatedAt) }}
-                  </p>
-                </div>
-              </div>
-            </dl>
+                :setting
+                :saving="savingKey === setting.key"
+                @save="(value) => saveSetting(setting.key, value)"
+              />
+            </div>
           </div>
         </AdminSection>
       </div>

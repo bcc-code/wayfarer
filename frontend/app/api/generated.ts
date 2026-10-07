@@ -1285,6 +1285,7 @@ export type Mutation = {
   /** Changes the project every end user sees. Validates that the project exists. */
   setCurrentProject: Project;
   setNotificationPreference: PushNotificationPreference;
+  /** Writes an existing settings key. New keys cannot be invented here. */
   setSetting: Setting;
   startQuizSession: QuizSubmission;
   submitFeedback: UserFeedback;
@@ -3141,9 +3142,23 @@ export type SetNotificationPreferenceInput = {
 export type Setting = {
   __typename?: 'Setting';
   description?: Maybe<Scalars['String']['output']>;
-  /** False for rows nothing in the backend reads yet — those duplicate env vars. */
+  /**
+   * False for a row the application does not know about. Writing is restricted
+   * to known keys, so a row added to the database is not writable through the
+   * API by virtue of existing.
+   */
   editable: Scalars['Boolean']['output'];
+  /**
+   * The environment variable this setting overrides, when it backs one. Null
+   * for application data such as current_project_id.
+   */
+  envVar?: Maybe<Scalars['String']['output']>;
   key: Scalars['String']['output'];
+  /**
+   * True when the value is only read while the process starts up, so a change
+   * takes effect on the next restart rather than immediately.
+   */
+  requiresRestart: Scalars['Boolean']['output'];
   updatedAt: Scalars['DateTime']['output'];
   /** Canonical string form of whichever value column valueType names. */
   value: Scalars['String']['output'];
@@ -5157,7 +5172,7 @@ export type AdminProjectsPageQuery = { __typename?: 'Query', projects: { __typen
 export type AdminSettingsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminSettingsPageQuery = { __typename?: 'Query', settings: Array<{ __typename?: 'Setting', key: string, value: string, valueType: SettingValueType, description?: string | null, editable: boolean, updatedAt: any }>, currentProject: { __typename?: 'Project', id: string, name: string }, projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, startDate: any, endDate: any } }> } };
+export type AdminSettingsPageQuery = { __typename?: 'Query', settings: Array<{ __typename?: 'Setting', key: string, value: string, valueType: SettingValueType, description?: string | null, requiresRestart: boolean, envVar?: string | null, editable: boolean }>, currentProject: { __typename?: 'Project', id: string, name: string }, projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, startDate: any, endDate: any } }> } };
 
 export type SetCurrentProjectMutationVariables = Exact<{
   projectId: Scalars['ID']['input'];
@@ -5165,6 +5180,14 @@ export type SetCurrentProjectMutationVariables = Exact<{
 
 
 export type SetCurrentProjectMutation = { __typename?: 'Mutation', setCurrentProject: { __typename?: 'Project', id: string, name: string } };
+
+export type SetSettingMutationVariables = Exact<{
+  key: Scalars['String']['input'];
+  value: Scalars['String']['input'];
+}>;
+
+
+export type SetSettingMutation = { __typename?: 'Mutation', setSetting: { __typename?: 'Setting', key: string, value: string } };
 
 export type LegacyTeamRedirectQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -8626,8 +8649,9 @@ export const AdminSettingsPageDocument = gql`
     value
     valueType
     description
+    requiresRestart
+    envVar
     editable
-    updatedAt
   }
   currentProject {
     id
@@ -8660,6 +8684,18 @@ export const SetCurrentProjectDocument = gql`
 
 export function useSetCurrentProjectMutation() {
   return Urql.useMutation<SetCurrentProjectMutation, SetCurrentProjectMutationVariables>(SetCurrentProjectDocument);
+};
+export const SetSettingDocument = gql`
+    mutation SetSetting($key: String!, $value: String!) {
+  setSetting(key: $key, value: $value) {
+    key
+    value
+  }
+}
+    `;
+
+export function useSetSettingMutation() {
+  return Urql.useMutation<SetSettingMutation, SetSettingMutationVariables>(SetSettingDocument);
 };
 export const LegacyTeamRedirectDocument = gql`
     query LegacyTeamRedirect($id: ID!) {

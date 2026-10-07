@@ -102,19 +102,39 @@ Separate from the env-based config above, a `settings` key-value table holds
 configuration that can change without a redeploy. It is owned by
 `backend/internal/services/settings.go`.
 
-**Only `current_project_id` is live.** It names the project every end user
-sees, and is read by `Query.currentProject` / `myCurrentProject` /
-`myProjects`, the church-admin statistics resolver, the Firebase token warmer,
-and the two ladder-to-heaven URL handlers.
+**The table wins over the environment.** `config.LoadSettings` reads it over a
+connection of its own right after `config.Load()`, and `config.ApplySettings`
+overlays the rows that are set onto the loaded config. A row that is absent,
+NULL or empty leaves the environment's value in force. The read is best-effort:
+an unreachable or not-yet-migrated database is not an error.
 
-**Every other row is inert.** `log_level`, `db_log_queries`, `otel_enabled`,
-`otel_sampling_ratio` and `ssf_debug_mode` duplicate environment variables that
-`internal/config/config.go` reads instead, and nothing calls
-`GetBoolSetting` / `GetIntSetting` / `GetFloatSetting`. `services.editableSettings`
-is the allowlist that encodes this: the GraphQL `Setting.editable` field is
-false for them, the admin UI renders them read-only, and `SetSetting` refuses
-to write them. Wiring one up means reading it through the service *and* adding
-it to that allowlist.
+That read has to happen that early, and over its own connection, because the
+logger, the tracer and the connection pool are all configured from values it
+can override — `db_log_queries` is an input to building the very pool every
+other query runs on.
+
+`config.SettingSpecs` is the registry. Adding a key is one entry there plus the
+row; it carries the environment variable the key overrides and whether a change
+needs a restart.
+
+| Key | Overrides | Takes effect |
+| --- | --- | --- |
+| `log_level` | `LOG_LEVEL` | immediately |
+| `db_log_queries` | `DB_LOG_QUERIES` | on restart |
+| `otel_enabled` | `OTEL_ENABLED` | on restart |
+| `otel_sampling_ratio` | `OTEL_SAMPLING_RATIO` | on restart |
+| `ssf_debug_mode` | `SSF_DEBUG_MODE` | on restart |
+
+`log_level` is the exception because `internal/logger` resolves its threshold
+through a shared `slog.LevelVar`, which the handler clones in
+`WithAttrs`/`WithGroup` read too — so `SetLevel` reaches loggers that already
+exist, and `SettingsService.applyLiveSettings` calls it on every refresh.
+
+`current_project_id` is not configuration at all: it is application data naming
+the project every end user sees, read by `Query.currentProject` /
+`myCurrentProject` / `myProjects`, the church-admin statistics resolver, the
+Firebase token warmer and the two ladder-to-heaven URL handlers. It is
+deliberately absent from `SettingSpecs`.
 
 ### How a value is read
 
@@ -133,9 +153,27 @@ arbitrarily far from whatever caused it.
 `@requireRole(roles: ["superadmin"])`. The `settings` query authorises
 in-resolver instead, per the project convention.
 
+### What the API can and cannot write
+
+Three gates, because this is remote control over server configuration:
+
+1. **superadmin only** — both mutations carry the directive.
+2. **No key can be created.** `SetSetting` requires the key to already be a row,
+   and the only queries it runs are `UpdateSetting*`, which are plain `UPDATE
+   ... WHERE key = @key`. The `SetSetting*` upserts in `settings.sql` would
+   insert, and are deliberately left uncalled. There is no delete path either.
+3. **Only known keys are writable.** `services.IsEditableSetting` admits
+   `config.SettingSpecs` plus `current_project_id` — membership in the table is
+   not enough. So a row added to the database does not become remotely writable
+   by virtue of existing, and making a future sensitive key writable takes a
+   deliberate `SettingSpecs` entry. The `settings` query still lists unknown
+   rows, marked `editable: false` and rendered read-only.
+
+`SetSetting` parses the string against the row's `value_type`, so a value that
+does not parse is rejected before anything reaches the database.
 `SetCurrentProjectID` checks `ProjectExists` **before** writing, which is what
-keeps the validation failure above unreachable through the API. `SetSetting`
-routes that key through the same function so the check cannot be bypassed.
+keeps the validation failure above unreachable through the API, and `SetSetting`
+routes that key through it so the check cannot be bypassed.
 
 Afterwards the resolver (`internal/graph/api/settings.go`) invalidates:
 
@@ -147,9 +185,10 @@ Afterwards the resolver (`internal/graph/api/settings.go`) invalidates:
   `InvalidationTypeSettings` so other instances reload now rather than on their
   own five-minute tick. See `notes/12-cache-invalidation.md`.
 
-Admin UI: `/admin/settings` (the project picker plus a read-only view of the
-inert rows) and a "Sett som gjeldende prosjekt" action on the project overview
-page. Both are gated on `settings:manage`, superadmin only.
+Admin UI: `/admin/settings` (the project picker plus an editor per row, typed
+by `value_type` and marked "Krever omstart" where applicable) and a "Sett som
+gjeldende prosjekt" action on the project overview page. Both are gated on
+`settings:manage`, superadmin only.
 
 ## Next Steps
 

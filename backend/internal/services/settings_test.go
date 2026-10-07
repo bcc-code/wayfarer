@@ -7,7 +7,9 @@ import (
 	"log/slog"
 	"testing"
 
+	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
+	"github.com/bcc-media/wayfarer/internal/logger"
 	"github.com/bcc-media/wayfarer/internal/services/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -196,20 +198,72 @@ func TestSetSetting_RejectsUnknownKey(t *testing.T) {
 	assert.Nil(t, setting)
 }
 
-// Every key other than current_project_id duplicates an environment variable
-// that internal/config reads instead, so writing one would be a no-op dressed
-// up as a working control.
-func TestSetSetting_RejectsNonEditableKey(t *testing.T) {
+// Being a row is not enough to be writable. Without this, adding a settings
+// row later would silently make it remotely writable.
+func TestSetSetting_RejectsAKeyTheApplicationDoesNotKnow(t *testing.T) {
+	ctx := context.Background()
+	queries := mocks.NewMockSettingsQuerier(t)
+	service := newServiceWithProject(t, queries, testProjectA,
+		stringSetting("some_future_api_key", "s3cret"))
+
+	setting, err := service.SetSetting(ctx, "some_future_api_key", "attacker-controlled")
+
+	require.ErrorIs(t, err, ErrSettingNotEditable)
+	assert.Nil(t, setting)
+	queries.AssertNotCalled(t, "UpdateSettingText", mock.Anything, mock.Anything)
+}
+
+func TestIsEditableSetting(t *testing.T) {
+	assert.True(t, IsEditableSetting(SettingCurrentProjectID))
+	for _, spec := range config.SettingSpecs {
+		assert.True(t, IsEditableSetting(spec.Key), spec.Key)
+	}
+	assert.False(t, IsEditableSetting("frontend_config"))
+	assert.False(t, IsEditableSetting("anything_else"))
+}
+
+func TestSetSetting_WritesANonProjectKey(t *testing.T) {
 	ctx := context.Background()
 	queries := mocks.NewMockSettingsQuerier(t)
 	service := newServiceWithProject(t, queries, testProjectA, boolSetting("otel_enabled", true))
 
+	queries.On("UpdateSettingBool", mock.Anything, sqlc.UpdateSettingBoolParams{
+		Key:       "otel_enabled",
+		ValueBool: false,
+	}).Return(int64(1), nil).Once()
+
+	// The refresh that follows the write.
+	queries.On("GetAllSettings", mock.Anything).Return([]*sqlc.Setting{
+		stringSetting(SettingCurrentProjectID, testProjectA),
+		boolSetting("otel_enabled", false),
+	}, nil).Once()
+	queries.On("ProjectExists", mock.Anything, testProjectA).Return(true, nil).Once()
+
 	setting, err := service.SetSetting(ctx, "otel_enabled", "false")
 
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "not editable")
-	assert.Nil(t, setting)
-	queries.AssertNotCalled(t, "UpdateSettingBool", mock.Anything, mock.Anything)
+	require.NoError(t, err)
+	assert.Equal(t, "false", SettingStringValue(setting))
+}
+
+// log_level is read through a slog.LevelVar, so a refresh changes verbosity
+// without a restart. Everything else is only read at startup.
+func TestRefreshSettings_AppliesLogLevelLive(t *testing.T) {
+	ctx := context.Background()
+	queries := mocks.NewMockSettingsQuerier(t)
+	service := newServiceWithProject(t, queries, testProjectA, stringSetting("log_level", "info"))
+	t.Cleanup(func() { logger.SetLevel(slog.LevelInfo) })
+
+	require.Equal(t, slog.LevelInfo, logger.Level())
+
+	queries.On("GetAllSettings", mock.Anything).Return([]*sqlc.Setting{
+		stringSetting(SettingCurrentProjectID, testProjectA),
+		stringSetting("log_level", "debug"),
+	}, nil).Once()
+	queries.On("ProjectExists", mock.Anything, testProjectA).Return(true, nil).Once()
+
+	require.NoError(t, service.RefreshSettings(ctx))
+
+	assert.Equal(t, slog.LevelDebug, logger.Level())
 }
 
 func TestWriteTyped_ParsesEachValueType(t *testing.T) {
@@ -314,8 +368,22 @@ func TestSettingStringValue(t *testing.T) {
 	}
 }
 
-func TestIsEditableSetting(t *testing.T) {
-	assert.True(t, IsEditableSetting(SettingCurrentProjectID))
-	assert.False(t, IsEditableSetting("log_level"))
-	assert.False(t, IsEditableSetting("otel_sampling_ratio"))
+// Which keys need a restart is what the admin UI shows next to each field, so
+// a key moving between the two groups should be a deliberate edit.
+func TestSettingRequiresRestart(t *testing.T) {
+	// Read through a LevelVar, so it applies on the next refresh.
+	assert.False(t, SettingRequiresRestart("log_level"))
+	// Read once, while the process starts up.
+	assert.True(t, SettingRequiresRestart("otel_enabled"))
+	assert.True(t, SettingRequiresRestart("otel_sampling_ratio"))
+	assert.True(t, SettingRequiresRestart("db_log_queries"))
+	assert.True(t, SettingRequiresRestart("ssf_debug_mode"))
+	// Application data, not configuration.
+	assert.False(t, SettingRequiresRestart(SettingCurrentProjectID))
+}
+
+func TestSettingEnvVar(t *testing.T) {
+	assert.Equal(t, "LOG_LEVEL", SettingEnvVar("log_level"))
+	assert.Equal(t, "OTEL_SAMPLING_RATIO", SettingEnvVar("otel_sampling_ratio"))
+	assert.Empty(t, SettingEnvVar(SettingCurrentProjectID))
 }

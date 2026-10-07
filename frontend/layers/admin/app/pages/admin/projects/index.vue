@@ -39,8 +39,6 @@ const { currentProjects, futureProjects, pastProjects } = useGroupedProjects(
 
 const { canCreateProject } = usePermissions()
 
-// The project end users see. Shown here so the one that is live is findable
-// without opening each project in turn.
 const currentProjectId = computed(() => data.value?.currentProject.id)
 
 // `auto-fill`, not `auto-fit`: the latter stretches a lone card across the row.

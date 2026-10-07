@@ -1966,8 +1966,16 @@ type Setting struct {
 	Value       string           `json:"value"`
 	ValueType   SettingValueType `json:"valueType"`
 	Description *string          `json:"description,omitempty"`
-	// False for rows nothing in the backend reads yet — those duplicate env vars.
-	Editable  bool             `json:"editable"`
+	// True when the value is only read while the process starts up, so a change
+	// takes effect on the next restart rather than immediately.
+	RequiresRestart bool `json:"requiresRestart"`
+	// False for a row the application does not know about. Writing is restricted
+	// to known keys, so a row added to the database is not writable through the
+	// API by virtue of existing.
+	Editable bool `json:"editable"`
+	// The environment variable this setting overrides, when it backs one. Null
+	// for application data such as current_project_id.
+	EnvVar    *string          `json:"envVar,omitempty"`
 	UpdatedAt scalars.DateTime `json:"updatedAt"`
 }
 

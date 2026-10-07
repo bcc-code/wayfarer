@@ -52,17 +52,9 @@ defineProps<{
         class="h-8 w-auto max-w-24 rounded object-contain"
         alt=""
       />
-      <div class="flex flex-col items-end gap-1">
-        <UBadge v-if="isCurrent" color="primary" variant="subtle">
-          Gjeldende
-        </UBadge>
-        <UBadge
-          v-if="isWithinRange(new Date(), project.startDate, project.endDate)"
-          variant="outline"
-        >
-          Active
-        </UBadge>
-      </div>
+      <UBadge v-if="isCurrent" color="primary" variant="subtle">
+        Gjeldende
+      </UBadge>
     </div>
   </UCard>
 </template>

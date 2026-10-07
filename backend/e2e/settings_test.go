@@ -119,6 +119,91 @@ func TestSetCurrentProject(t *testing.T) {
 	})
 }
 
+func TestSetSetting(t *testing.T) {
+	ctx := context.Background()
+	dbMgr, _ := GetTestEnv()
+
+	require.NoError(t, dbMgr.Clean(ctx))
+	data, err := dbMgr.Seed(ctx, 42, testutil.DefaultSeedConfig())
+	require.NoError(t, err)
+	require.NoError(t, dbMgr.SetCurrentProject(ctx, data.ProjectIDs[0]))
+
+	adminUserID := data.UserIDs[1]
+	superadminUserID := data.UserIDs[2]
+	require.NoError(t, dbMgr.AssignRole(ctx, adminUserID, testutil.RoleAdmin))
+	require.NoError(t, dbMgr.AssignRole(ctx, superadminUserID, testutil.RoleSuperAdmin))
+
+	router, cleanup, err := testutil.SetupTestServer(ctx, dbMgr)
+	require.NoError(t, err)
+	defer cleanup()
+
+	client := testutil.NewGraphQLClient(router)
+	defer client.Close()
+
+	adminToken, err := testutil.GenerateAdminToken(adminUserID)
+	require.NoError(t, err)
+	superadminToken, err := testutil.GenerateSuperAdminToken(superadminUserID)
+	require.NoError(t, err)
+
+	const mutation = `
+		mutation SetSetting($key: String!, $value: String!) {
+			setSetting(key: $key, value: $value) { key value valueType }
+		}
+	`
+
+	setSetting := func(t *testing.T, token, key, value string) *testutil.GraphQLResponse {
+		t.Helper()
+		return client.WithAuth(token).MustExecute(t, mutation, map[string]any{
+			"key": key, "value": value,
+		})
+	}
+
+	t.Run("an admin is refused", func(t *testing.T) {
+		resp := setSetting(t, adminToken, "log_level", "debug")
+		require.NotEmpty(t, resp.Errors)
+		assert.Contains(t, resp.Errors[0].Message, "unauthorized")
+	})
+
+	t.Run("a superadmin writes each value type", func(t *testing.T) {
+		for _, tc := range []struct{ key, value, valueType string }{
+			{"log_level", "debug", "TEXT"},
+			{"otel_enabled", "false", "BOOL"},
+			{"otel_sampling_ratio", "0.25", "FLOAT"},
+		} {
+			resp := setSetting(t, superadminToken, tc.key, tc.value)
+			require.Empty(t, resp.Errors, tc.key)
+
+			var result struct {
+				SetSetting struct {
+					Key       string
+					Value     string
+					ValueType string
+				} `json:"setSetting"`
+			}
+			require.NoError(t, json.Unmarshal(resp.Data, &result))
+			assert.Equal(t, tc.value, result.SetSetting.Value, tc.key)
+			assert.Equal(t, tc.valueType, result.SetSetting.ValueType, tc.key)
+		}
+	})
+
+	t.Run("a value that does not parse is refused", func(t *testing.T) {
+		resp := setSetting(t, superadminToken, "otel_sampling_ratio", "quite a lot")
+		require.NotEmpty(t, resp.Errors)
+	})
+
+	t.Run("an unknown key cannot be invented", func(t *testing.T) {
+		resp := setSetting(t, superadminToken, "brand_new_key", "1")
+		require.NotEmpty(t, resp.Errors)
+
+		// And it was not inserted: the API has no path that creates a row.
+		listed := client.WithAuth(superadminToken).MustExecute(t, `
+			query Settings { settings { key } }
+		`, nil)
+		require.Empty(t, listed.Errors)
+		assert.NotContains(t, string(listed.Data), "brand_new_key")
+	})
+}
+
 func TestSettingsQuery(t *testing.T) {
 	ctx := context.Background()
 	dbMgr, _ := GetTestEnv()
@@ -147,7 +232,7 @@ func TestSettingsQuery(t *testing.T) {
 
 	const settingsQuery = `
 		query Settings {
-			settings { key value valueType description editable }
+			settings { key value valueType description requiresRestart envVar editable }
 		}
 	`
 
@@ -157,34 +242,45 @@ func TestSettingsQuery(t *testing.T) {
 		assert.Contains(t, resp.Errors[0].Message, "superadmin")
 	})
 
-	t.Run("a superadmin sees the settings, with only current_project_id editable", func(t *testing.T) {
+	t.Run("a superadmin sees the settings and what each one overrides", func(t *testing.T) {
 		resp := client.WithAuth(superadminToken).MustExecute(t, settingsQuery, nil)
 		require.Empty(t, resp.Errors)
 
 		var result struct {
 			Settings []struct {
-				Key       string
-				Value     string
-				ValueType string
-				Editable  bool
+				Key             string
+				Value           string
+				ValueType       string
+				RequiresRestart bool
+				EnvVar          *string
 			} `json:"settings"`
 		}
 		require.NoError(t, json.Unmarshal(resp.Data, &result))
 		require.NotEmpty(t, result.Settings)
 
-		byKey := map[string]bool{}
+		byKey := map[string]struct {
+			restart bool
+			envVar  *string
+		}{}
 		for _, setting := range result.Settings {
-			byKey[setting.Key] = setting.Editable
+			byKey[setting.Key] = struct {
+				restart bool
+				envVar  *string
+			}{setting.RequiresRestart, setting.EnvVar}
 			if setting.Key == "current_project_id" {
 				assert.Equal(t, data.ProjectIDs[0], setting.Value)
 				assert.Equal(t, "TEXT", setting.ValueType)
 			}
 		}
 
-		assert.True(t, byKey["current_project_id"])
-		// These duplicate environment variables that internal/config reads
-		// instead, so the API must not advertise them as changeable.
-		assert.False(t, byKey["log_level"])
-		assert.False(t, byKey["otel_enabled"])
+		assert.False(t, byKey["log_level"].restart)
+		require.NotNil(t, byKey["log_level"].envVar)
+		assert.Equal(t, "LOG_LEVEL", *byKey["log_level"].envVar)
+
+		assert.True(t, byKey["otel_enabled"].restart)
+
+		// Application data, not configuration — it overrides no variable.
+		assert.False(t, byKey["current_project_id"].restart)
+		assert.Nil(t, byKey["current_project_id"].envVar)
 	})
 }

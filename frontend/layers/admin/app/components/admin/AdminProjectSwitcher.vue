@@ -64,7 +64,7 @@ const activeProject = computed(() =>
   projects.value.find((project) => project.id === projectId.value),
 )
 
-// The project end users see, as opposed to the one this route is browsing.
+// The project end users see, not the one this route is browsing.
 const currentProjectId = computed(() => data.value?.currentProject.id)
 
 type SwitcherProject = (typeof projects.value)[number]
@@ -146,7 +146,7 @@ const items = computed<ProjectMenuItem[][]>(() => {
           variant="subtle"
           size="sm"
         >
-          Live
+          Gjeldende
         </UBadge>
         <UIcon
           v-if="item.projectId && item.projectId === projectId"

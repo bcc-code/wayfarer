@@ -31,11 +31,15 @@ func sqlcSettingToModel(setting *sqlc.Setting) model.Setting {
 	}
 
 	converted := model.Setting{
-		Key:         setting.Key,
-		Value:       services.SettingStringValue(setting),
-		ValueType:   valueType,
-		Description: setting.Description,
-		Editable:    services.IsEditableSetting(setting.Key),
+		Key:             setting.Key,
+		Value:           services.SettingStringValue(setting),
+		ValueType:       valueType,
+		Description:     setting.Description,
+		RequiresRestart: services.SettingRequiresRestart(setting.Key),
+		Editable:        services.IsEditableSetting(setting.Key),
+	}
+	if envVar := services.SettingEnvVar(setting.Key); envVar != "" {
+		converted.EnvVar = &envVar
 	}
 	if updatedAt := scalars.ToDateTimePointer(setting.UpdatedAt); updatedAt != nil {
 		converted.UpdatedAt = *updatedAt

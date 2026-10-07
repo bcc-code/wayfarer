@@ -1232,12 +1232,14 @@ type ComplexityRoot struct {
 	}
 
 	Setting struct {
-		Description func(childComplexity int) int
-		Editable    func(childComplexity int) int
-		Key         func(childComplexity int) int
-		UpdatedAt   func(childComplexity int) int
-		Value       func(childComplexity int) int
-		ValueType   func(childComplexity int) int
+		Description     func(childComplexity int) int
+		Editable        func(childComplexity int) int
+		EnvVar          func(childComplexity int) int
+		Key             func(childComplexity int) int
+		RequiresRestart func(childComplexity int) int
+		UpdatedAt       func(childComplexity int) int
+		Value           func(childComplexity int) int
+		ValueType       func(childComplexity int) int
 	}
 
 	SimpleAchievement struct {
@@ -8171,12 +8173,24 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Setting.Editable(childComplexity), true
+	case "Setting.envVar":
+		if e.complexity.Setting.EnvVar == nil {
+			break
+		}
+
+		return e.complexity.Setting.EnvVar(childComplexity), true
 	case "Setting.key":
 		if e.complexity.Setting.Key == nil {
 			break
 		}
 
 		return e.complexity.Setting.Key(childComplexity), true
+	case "Setting.requiresRestart":
+		if e.complexity.Setting.RequiresRestart == nil {
+			break
+		}
+
+		return e.complexity.Setting.RequiresRestart(childComplexity), true
 	case "Setting.updatedAt":
 		if e.complexity.Setting.UpdatedAt == nil {
 			break
@@ -12538,8 +12552,22 @@ type Setting {
     value: String!
     valueType: SettingValueType!
     description: String
-    "False for rows nothing in the backend reads yet — those duplicate env vars."
+    """
+    True when the value is only read while the process starts up, so a change
+    takes effect on the next restart rather than immediately.
+    """
+    requiresRestart: Boolean!
+    """
+    False for a row the application does not know about. Writing is restricted
+    to known keys, so a row added to the database is not writable through the
+    API by virtue of existing.
+    """
     editable: Boolean!
+    """
+    The environment variable this setting overrides, when it backs one. Null
+    for application data such as current_project_id.
+    """
+    envVar: String
     updatedAt: DateTime!
 }
 
@@ -12552,6 +12580,7 @@ extend type Query {
 extend type Mutation {
     "Changes the project every end user sees. Validates that the project exists."
     setCurrentProject(projectId: ID!): Project! @requireRole(roles: ["superadmin"])
+    "Writes an existing settings key. New keys cannot be invented here."
     setSetting(key: String!, value: String!): Setting! @requireRole(roles: ["superadmin"])
 }
 `, BuiltIn: false},
@@ -36868,8 +36897,12 @@ func (ec *executionContext) fieldContext_Mutation_setSetting(ctx context.Context
 				return ec.fieldContext_Setting_valueType(ctx, field)
 			case "description":
 				return ec.fieldContext_Setting_description(ctx, field)
+			case "requiresRestart":
+				return ec.fieldContext_Setting_requiresRestart(ctx, field)
 			case "editable":
 				return ec.fieldContext_Setting_editable(ctx, field)
+			case "envVar":
+				return ec.fieldContext_Setting_envVar(ctx, field)
 			case "updatedAt":
 				return ec.fieldContext_Setting_updatedAt(ctx, field)
 			}
@@ -46180,8 +46213,12 @@ func (ec *executionContext) fieldContext_Query_settings(_ context.Context, field
 				return ec.fieldContext_Setting_valueType(ctx, field)
 			case "description":
 				return ec.fieldContext_Setting_description(ctx, field)
+			case "requiresRestart":
+				return ec.fieldContext_Setting_requiresRestart(ctx, field)
 			case "editable":
 				return ec.fieldContext_Setting_editable(ctx, field)
+			case "envVar":
+				return ec.fieldContext_Setting_envVar(ctx, field)
 			case "updatedAt":
 				return ec.fieldContext_Setting_updatedAt(ctx, field)
 			}
@@ -52095,6 +52132,35 @@ func (ec *executionContext) fieldContext_Setting_description(_ context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _Setting_requiresRestart(ctx context.Context, field graphql.CollectedField, obj *model.Setting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Setting_requiresRestart,
+		func(ctx context.Context) (any, error) {
+			return obj.RequiresRestart, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Setting_requiresRestart(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Setting",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Setting_editable(ctx context.Context, field graphql.CollectedField, obj *model.Setting) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -52119,6 +52185,35 @@ func (ec *executionContext) fieldContext_Setting_editable(_ context.Context, fie
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Setting_envVar(ctx context.Context, field graphql.CollectedField, obj *model.Setting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Setting_envVar,
+		func(ctx context.Context) (any, error) {
+			return obj.EnvVar, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Setting_envVar(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Setting",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -78480,11 +78575,18 @@ func (ec *executionContext) _Setting(ctx context.Context, sel ast.SelectionSet, 
 			}
 		case "description":
 			out.Values[i] = ec._Setting_description(ctx, field, obj)
+		case "requiresRestart":
+			out.Values[i] = ec._Setting_requiresRestart(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "editable":
 			out.Values[i] = ec._Setting_editable(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "envVar":
+			out.Values[i] = ec._Setting_envVar(ctx, field, obj)
 		case "updatedAt":
 			out.Values[i] = ec._Setting_updatedAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

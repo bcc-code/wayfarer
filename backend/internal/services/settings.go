@@ -11,7 +11,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
+	"github.com/bcc-media/wayfarer/internal/logger"
 )
 
 var (
@@ -19,26 +21,42 @@ var (
 	ErrInvalidSettingType = errors.New("invalid setting type")
 	ErrInvalidSettingVal  = errors.New("invalid setting value")
 	ErrProjectNotFound    = errors.New("project not found")
+	ErrSettingNotEditable = errors.New("setting is not editable")
 )
 
 // SettingCurrentProjectID is the key holding the project every end user sees.
 const SettingCurrentProjectID = "current_project_id"
 
-// editableSettings are the keys an admin may change at runtime.
+// IsEditableSetting reports whether the API may write a key.
 //
-// Everything else in the table is inert: log_level, db_log_queries,
-// otel_enabled, otel_sampling_ratio and ssf_debug_mode are all read from
-// environment variables in internal/config, and no caller outside this file
-// reads them through GetBoolSetting and friends. Offering them in the admin UI
-// would be offering a knob that does nothing, so the API reports them as
-// non-editable and refuses to write them.
-var editableSettings = map[string]bool{
-	SettingCurrentProjectID: true,
+// Membership in the table is not enough. A key is writable only if the
+// application knows about it — config.SettingSpecs, plus the current project —
+// so a row added to the database later does not become remotely writable by
+// existing, and adding a sensitive one is a deliberate act rather than an
+// oversight.
+func IsEditableSetting(key string) bool {
+	if key == SettingCurrentProjectID {
+		return true
+	}
+	_, known := config.SettingSpecFor(key)
+	return known
 }
 
-// IsEditableSetting reports whether a key may be changed at runtime.
-func IsEditableSetting(key string) bool {
-	return editableSettings[key]
+// SettingRequiresRestart reports whether a key is only read during startup, so
+// the admin UI can say so instead of implying a change that has not happened.
+func SettingRequiresRestart(key string) bool {
+	spec, ok := config.SettingSpecFor(key)
+	return ok && spec.RequiresRestart
+}
+
+// SettingEnvVar returns the environment variable a key overrides, or "" when
+// the key is not configuration.
+func SettingEnvVar(key string) string {
+	spec, ok := config.SettingSpecFor(key)
+	if !ok {
+		return ""
+	}
+	return spec.EnvVar
 }
 
 // SettingsQuerier defines database operations for settings
@@ -131,9 +149,24 @@ func (s *SettingsService) load(ctx context.Context) error {
 	}
 
 	s.settingsMap.Store(newMap)
+	s.applyLiveSettings(newMap)
 
 	s.logger.Debug("Settings refreshed", "count", len(settings))
 	return nil
+}
+
+// applyLiveSettings pushes the settings that can change without a restart into
+// the subsystems that read them.
+func (s *SettingsService) applyLiveSettings(settingsMap map[string]*sqlc.Setting) {
+	setting, ok := settingsMap["log_level"]
+	if !ok || setting.ValueType != "text" || setting.ValueText == nil || *setting.ValueText == "" {
+		return
+	}
+
+	if level := logger.ParseLevel(*setting.ValueText); level != logger.Level() {
+		logger.SetLevel(level)
+		s.logger.Info("Log level changed from settings", "level", *setting.ValueText)
+	}
 }
 
 // validateSettings checks that critical settings are valid
@@ -227,9 +260,9 @@ func (s *SettingsService) SetCurrentProjectID(ctx context.Context, projectID str
 
 // SetSetting writes the canonical string form of a value to an existing key.
 //
-// Only keys already in the table may be written — this is an editor, not a way
-// to invent configuration — and only those on the editable allowlist, since
-// every other row is read from the environment rather than from here.
+// This is an editor for the configuration the application knows about: the key
+// must already be a row and must be one IsEditableSetting admits. There is no
+// path here that inserts a row or invents a key.
 func (s *SettingsService) SetSetting(ctx context.Context, key, value string) (*sqlc.Setting, error) {
 	setting, err := s.GetSetting(key)
 	if err != nil {
@@ -237,7 +270,7 @@ func (s *SettingsService) SetSetting(ctx context.Context, key, value string) (*s
 	}
 
 	if !IsEditableSetting(key) {
-		return nil, fmt.Errorf("setting %s is not editable at runtime", key)
+		return nil, fmt.Errorf("%w: %s", ErrSettingNotEditable, key)
 	}
 
 	// Routed through SetCurrentProjectID so the existence check cannot be
