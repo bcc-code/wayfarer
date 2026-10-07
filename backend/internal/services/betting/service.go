@@ -41,13 +41,11 @@ type Result struct {
 	Settled    bool
 	SkipReason SkipReason
 	Correct    bool
-	Multiplier float64
+	Multiplier int64
 	Stake      int
 	Winnings   int
 	NetPoints  int
-	// JournalID is the journal entry stored on the response:
-	// the winnings entry when anything was won, the stake entry otherwise.
-	JournalID string
+	JournalID  string
 }
 
 // Settle pays out a bet and records the result.
@@ -70,9 +68,13 @@ func Settle(ctx context.Context, q Querier, in SettleInput) (Result, error) {
 	}
 
 	correct := *bet.IsCorrect
-	stake := int(bet.Amount)
+	stake := bet.Amount
 	multiplier := Multiplier(correct, bet.MultiplierCorrect, bet.MultiplierWrong)
-	winnings := int(float64(stake) * multiplier)
+	winnings, err := Winnings(stake, multiplier)
+	if err != nil {
+		return Result{}, fmt.Errorf("stake %d, multiplier %d: %w", stake, multiplier, err)
+	}
+	// Both are within 0..MaxInt32, so the difference fits in int32
 	netPoints := winnings - stake
 
 	stakeJournalID := ulid.NewScoreJournalID()
@@ -83,12 +85,12 @@ func Settle(ctx context.Context, q Querier, in SettleInput) (Result, error) {
 	}
 
 	stakeReason := i18n.FormatBetStakeReason(in.Language, in.ChallengeName)
-	_, err := q.CreateScoreJournalEntry(ctx, sqlc.CreateScoreJournalEntryParams{
+	_, err = q.CreateScoreJournalEntry(ctx, sqlc.CreateScoreJournalEntryParams{
 		ID:         stakeJournalID,
 		ProjectID:  in.ProjectID,
 		UserID:     bet.UserID,
 		EventID:    in.EventID,
-		Points:     int32(-stake),
+		Points:     -stake,
 		SourceType: SourceTypeBet,
 		SourceID:   &bet.ResponseID,
 		Reason:     &stakeReason,
@@ -104,7 +106,7 @@ func Settle(ctx context.Context, q Querier, in SettleInput) (Result, error) {
 		ProjectID:  in.ProjectID,
 		UserID:     bet.UserID,
 		EventID:    in.EventID,
-		Points:     int32(winnings),
+		Points:     winnings,
 		SourceType: SourceTypeBet,
 		SourceID:   &bet.ResponseID,
 		Reason:     &winningsReason,
@@ -116,7 +118,7 @@ func Settle(ctx context.Context, q Querier, in SettleInput) (Result, error) {
 	// Stored last: score_journal_id references the entries written above
 	claimed, err := q.SettleBetResult(ctx, sqlc.SettleBetResultParams{
 		ID:             bet.ResponseID,
-		Pointsearned:   int32(netPoints),
+		Pointsearned:   netPoints,
 		Scorejournalid: journalID,
 	})
 	if err != nil {
@@ -130,9 +132,9 @@ func Settle(ctx context.Context, q Querier, in SettleInput) (Result, error) {
 		Settled:    true,
 		Correct:    correct,
 		Multiplier: multiplier,
-		Stake:      stake,
-		Winnings:   winnings,
-		NetPoints:  netPoints,
+		Stake:      int(stake),
+		Winnings:   int(winnings),
+		NetPoints:  int(netPoints),
 		JournalID:  journalID,
 	}, nil
 }

@@ -189,6 +189,11 @@ func TestQuizSessionBetSettlement(t *testing.T) {
 		assert.False(t, updateMultipliers(t, defaultQ.ID, map[string]any{"bettingMultiplierWrong": 3.0}))
 	})
 
+	t.Run("multiplier above 100 or with 3 decimals is rejected", func(t *testing.T) {
+		assert.False(t, updateMultipliers(t, defaultQ.ID, map[string]any{"bettingMultiplierCorrect": 100.01}))
+		assert.False(t, updateMultipliers(t, defaultQ.ID, map[string]any{"bettingMultiplierCorrect": 1.234}))
+	})
+
 	t.Run("only wrong is checked against the stored correct", func(t *testing.T) {
 		// customQ stores correct 3.0, so 2.5 is fine even though it exceeds the default
 		assert.True(t, updateMultipliers(t, customQ.ID, map[string]any{"bettingMultiplierWrong": 2.5}))

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math/big"
 	"sync"
 
 	"github.com/bcc-media/wayfarer/i18n"
@@ -57,6 +58,15 @@ func (r *Resolver) settleSessionBets(ctx context.Context, sessionID string, quiz
 
 	submissions := make(map[string]bool)
 	for _, row := range bets {
+		multiplierCorrect, errCorrect := numericToMultiplier(row.BettingMultiplierCorrect)
+		multiplierWrong, errWrong := numericToMultiplier(row.BettingMultiplierWrong)
+		if err := errors.Join(errCorrect, errWrong); err != nil {
+			result.Failed++
+			slog.Error("invalid bet multiplier, bet left unsettled",
+				"error", err, "session_id", sessionID, "response_id", row.ID, "question_id", row.QuestionID)
+			continue
+		}
+
 		lang := r.userLanguage(ctx, row.UserID)
 		in := betting.SettleInput{
 			Bet: betting.Bet{
@@ -64,8 +74,8 @@ func (r *Resolver) settleSessionBets(ctx context.Context, sessionID string, quiz
 				UserID:            row.UserID,
 				Amount:            derefInt32(row.BetAmount),
 				IsCorrect:         row.IsCorrect,
-				MultiplierCorrect: numericToFloat(row.BettingMultiplierCorrect),
-				MultiplierWrong:   numericToFloat(row.BettingMultiplierWrong),
+				MultiplierCorrect: multiplierCorrect,
+				MultiplierWrong:   multiplierWrong,
 			},
 			ProjectID:     quiz.ProjectID,
 			EventID:       eventID,
@@ -222,15 +232,35 @@ func (r *Resolver) translatedChallengeName(ctx context.Context, challengeID, lan
 	return fallback
 }
 
-func numericToFloat(n pgtype.Numeric) *float64 {
+// numericToMultiplier converts a NUMERIC multiplier to hundredths without
+// going through float. Nil when not set; an error if it is not a whole number
+// of hundredths or out of range.
+func numericToMultiplier(n pgtype.Numeric) (*int64, error) {
 	if !n.Valid {
-		return nil
+		return nil, nil
 	}
-	val, err := n.Float64Value()
-	if err != nil || !val.Valid {
-		return nil
+	if n.NaN || n.InfinityModifier != pgtype.Finite || n.Int == nil {
+		return nil, betting.ErrMultiplierOutOfRange
 	}
-	return &val.Float64
+
+	// value = Int * 10^Exp, so hundredths = Int * 10^(Exp+2)
+	shift := int64(n.Exp) + 2
+	hundredths := new(big.Int).Set(n.Int)
+	if shift >= 0 {
+		hundredths.Mul(hundredths, new(big.Int).Exp(big.NewInt(10), big.NewInt(shift), nil))
+	} else {
+		var rem big.Int
+		hundredths.QuoRem(hundredths, new(big.Int).Exp(big.NewInt(10), big.NewInt(-shift), nil), &rem)
+		if rem.Sign() != 0 {
+			return nil, betting.ErrMultiplierPrecision
+		}
+	}
+
+	if !hundredths.IsInt64() || hundredths.Int64() < 0 || hundredths.Int64() > betting.MaxMultiplier {
+		return nil, betting.ErrMultiplierOutOfRange
+	}
+	v := hundredths.Int64()
+	return &v, nil
 }
 
 func derefInt32(v *int32) int32 {
