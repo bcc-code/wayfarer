@@ -978,6 +978,7 @@ type ComplexityRoot struct {
 		Consents                      func(childComplexity int) int
 		CurrentEvent                  func(childComplexity int) int
 		CurrentProject                func(childComplexity int) int
+		CurrentTime                   func(childComplexity int) int
 		Event                         func(childComplexity int, id string) int
 		Events                        func(childComplexity int, filter *model.EventFilter, first *int, after *string, last *int, before *string) int
 		ExternalContent               func(childComplexity int, id string) int
@@ -1794,6 +1795,7 @@ type ProjectResolver interface {
 type QueryResolver interface {
 	Me(ctx context.Context) (*model.User, error)
 	InstanceID(ctx context.Context) (string, error)
+	CurrentTime(ctx context.Context) (*scalars.DateTime, error)
 	FirebaseToken(ctx context.Context) (*model.FirebaseTokenResponse, error)
 	Project(ctx context.Context, id string) (*model.Project, error)
 	Projects(ctx context.Context, filter *model.ProjectFilter, first *int, after *string, last *int, before *string) (*model.ProjectConnection, error)
@@ -6763,6 +6765,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.CurrentProject(childComplexity), true
+	case "Query.currentTime":
+		if e.complexity.Query.CurrentTime == nil {
+			break
+		}
+
+		return e.complexity.Query.CurrentTime(childComplexity), true
 	case "Query.event":
 		if e.complexity.Query.Event == nil {
 			break
@@ -9733,6 +9741,7 @@ schema {
 type Query {
     me: User!
     instanceID: String!
+    currentTime: DateTime!
     firebaseToken: FirebaseTokenResponse!
 }
 
@@ -42245,6 +42254,35 @@ func (ec *executionContext) fieldContext_Query_instanceID(_ context.Context, fie
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_currentTime(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_currentTime,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().CurrentTime(ctx)
+		},
+		nil,
+		ec.marshalNDateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_currentTime(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_firebaseToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -73526,6 +73564,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "currentTime":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_currentTime(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "firebaseToken":
 			field := field
 
@@ -82692,6 +82752,22 @@ func (ec *executionContext) unmarshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayf
 }
 
 func (ec *executionContext) marshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx context.Context, sel ast.SelectionSet, v scalars.DateTime) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNDateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx context.Context, v any) (*scalars.DateTime, error) {
+	var res = new(scalars.DateTime)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx context.Context, sel ast.SelectionSet, v *scalars.DateTime) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
 	return v
 }
 

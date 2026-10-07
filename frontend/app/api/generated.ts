@@ -2403,6 +2403,7 @@ export type Query = {
   consents: Array<Consent>;
   currentEvent: Event;
   currentProject: Project;
+  currentTime: Scalars['DateTime']['output'];
   event: Event;
   events: EventConnection;
   externalContent: ExternalContent;
