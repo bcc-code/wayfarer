@@ -42,8 +42,8 @@ gql(`
 `)
 
 gql(`
-  mutation SetSetting($key: String!, $value: String!) {
-    setSetting(key: $key, value: $value) {
+  mutation SetSettings($input: [SettingInput!]!) {
+    setSettings(input: $input) {
       key
       value
     }
@@ -59,7 +59,8 @@ const toast = useToast()
 const { confirm } = useConfirm()
 const { executeMutation: setCurrentProject, fetching: saving } =
   useSetCurrentProjectMutation()
-const { executeMutation: setSetting } = useSetSettingMutation()
+const { executeMutation: setSettings, fetching: savingSettings } =
+  useSetSettingsMutation()
 
 const projects = computed(
   () => data.value?.projects.edges.map((edge) => edge.node) ?? [],
@@ -84,33 +85,6 @@ const projectItems = computed(() =>
     .map(groupToItems),
 )
 
-const configSettings = computed(
-  () =>
-    data.value?.settings.filter(
-      (setting) => setting.key !== CURRENT_PROJECT_KEY,
-    ) ?? [],
-)
-
-const savingKey = ref<string | undefined>()
-
-async function saveSetting(key: string, value: string) {
-  savingKey.value = key
-  const response = await setSetting({ key, value })
-  savingKey.value = undefined
-
-  if (response.error) {
-    toast.add({
-      title: response.error.name,
-      description: response.error.message,
-      color: 'error',
-    })
-    return
-  }
-
-  toast.add({ title: 'Lagret', description: key, color: 'success' })
-  executeQuery({ requestPolicy: 'network-only' })
-}
-
 const selectedProjectId = ref<string | undefined>()
 watch(currentProjectId, (id) => (selectedProjectId.value = id), {
   immediate: true,
@@ -126,6 +100,8 @@ const selectedProjectName = computed(
   () => projects.value.find((p) => p.id === selectedProjectId.value)?.name,
 )
 
+// The current project keeps its own confirm-and-save: it changes what every
+// end user sees, which does not belong in a batch with log verbosity.
 async function save() {
   if (!selectedProjectId.value || !hasChanged.value) return
 
@@ -160,6 +136,87 @@ async function save() {
     color: 'success',
   })
 
+  executeQuery({ requestPolicy: 'network-only' })
+}
+
+const configSettings = computed(
+  () =>
+    data.value?.settings.filter(
+      (setting) => setting.key !== CURRENT_PROJECT_KEY,
+    ) ?? [],
+)
+
+// Drafts are staged locally so several fields can be changed and committed
+// together; the mutation applies them in one transaction.
+const drafts = ref<Record<string, string>>({})
+
+watch(
+  configSettings,
+  (settings) => {
+    drafts.value = Object.fromEntries(
+      settings.map((setting) => [
+        setting.key,
+        formatSetting(setting.valueType, setting.value),
+      ]),
+    )
+  },
+  { immediate: true },
+)
+
+const changed = computed(() =>
+  configSettings.value.filter(
+    (setting) =>
+      setting.editable &&
+      drafts.value[setting.key] !== undefined &&
+      normalizeSetting(setting.valueType, drafts.value[setting.key]!) !==
+        normalizeSetting(setting.valueType, setting.value),
+  ),
+)
+
+const hasInvalid = computed(() =>
+  changed.value.some(
+    (setting) =>
+      !isSettingValueValid(setting.valueType, drafts.value[setting.key]!),
+  ),
+)
+
+const { markSaved } = useUnsavedChanges(() => drafts.value)
+
+function discard() {
+  drafts.value = Object.fromEntries(
+    configSettings.value.map((setting) => [
+      setting.key,
+      formatSetting(setting.valueType, setting.value),
+    ]),
+  )
+}
+
+async function saveSettings() {
+  if (!changed.value.length || hasInvalid.value) return
+
+  const response = await setSettings({
+    input: changed.value.map((setting) => ({
+      key: setting.key,
+      value: drafts.value[setting.key]!,
+    })),
+  })
+
+  if (response.error) {
+    toast.add({
+      title: response.error.name,
+      description: response.error.message,
+      color: 'error',
+    })
+    return
+  }
+
+  toast.add({
+    title: 'Lagret',
+    description: `${response.data?.setSettings.length} innstillinger oppdatert.`,
+    color: 'success',
+  })
+
+  markSaved()
   executeQuery({ requestPolicy: 'network-only' })
 }
 
@@ -224,10 +281,36 @@ const CURRENT_PROJECT_KEY = 'current_project_id'
               <AdminSettingField
                 v-for="setting in configSettings"
                 :key="setting.key"
+                v-model="drafts[setting.key]!"
                 :setting
-                :saving="savingKey === setting.key"
-                @save="(value) => saveSetting(setting.key, value)"
+                :disabled="savingSettings"
               />
+            </div>
+
+            <div
+              v-if="changed.length > 0"
+              class="flex flex-wrap items-center gap-3 pt-2"
+            >
+              <UButton
+                icon="lucide:check"
+                :loading="savingSettings"
+                :disabled="hasInvalid"
+                @click="saveSettings"
+              >
+                Lagre {{ changed.length }}
+                {{ changed.length === 1 ? 'endring' : 'endringer' }}
+              </UButton>
+              <UButton
+                variant="ghost"
+                color="neutral"
+                :disabled="savingSettings"
+                @click="discard"
+              >
+                Forkast
+              </UButton>
+              <span v-if="hasInvalid" class="text-error text-sm">
+                Rett opp de ugyldige feltene før du lagrer.
+              </span>
             </div>
           </div>
         </AdminSection>

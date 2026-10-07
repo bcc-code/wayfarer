@@ -94,28 +94,45 @@ func (r *Resolver) setCurrentProject(ctx context.Context, projectID string) (*mo
 	return r.LoadProjectWithTranslation(ctx, projectID)
 }
 
-// setSetting writes one setting and returns the stored result.
-func (r *Resolver) setSetting(ctx context.Context, key, value string) (*model.Setting, error) {
+// setSettings writes a batch and invalidates what the change makes stale.
+func (r *Resolver) setSettings(ctx context.Context, input []model.SettingInput) ([]model.Setting, error) {
+	updates := make([]services.SettingUpdate, 0, len(input))
+	changesProject := false
+	for _, item := range input {
+		updates = append(updates, services.SettingUpdate{Key: item.Key, Value: item.Value})
+		if item.Key == services.SettingCurrentProjectID {
+			changesProject = true
+		}
+	}
+
 	previousProjectID := ""
-	if key == services.SettingCurrentProjectID {
+	if changesProject {
 		if current, err := r.SettingsService.GetCurrentProjectID(ctx); err == nil {
 			previousProjectID = current
 		}
 	}
 
-	setting, err := r.SettingsService.SetSetting(ctx, key, value)
+	written, err := r.SettingsService.SetSettings(ctx, updates)
 	if err != nil {
-		return nil, fmt.Errorf("failed to set setting %s: %w", key, err)
+		return nil, fmt.Errorf("failed to set settings: %w", err)
 	}
 
-	if key == services.SettingCurrentProjectID {
-		r.invalidateCurrentProject(previousProjectID, value)
+	if changesProject {
+		current, err := r.SettingsService.GetCurrentProjectID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		r.invalidateCurrentProject(previousProjectID, current)
 	} else {
 		r.Cache.InvalidateSettings()
 	}
 
-	converted := sqlcSettingToModel(setting)
-	return &converted, nil
+	settings := make([]model.Setting, 0, len(written))
+	for _, setting := range written {
+		settings = append(settings, sqlcSettingToModel(setting))
+	}
+
+	return settings, nil
 }
 
 // invalidateCurrentProject clears what a change of current project makes stale,

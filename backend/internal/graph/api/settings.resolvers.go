@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/services"
 )
 
 // SetCurrentProject is the resolver for the setCurrentProject field.
@@ -15,14 +16,14 @@ func (r *mutationResolver) SetCurrentProject(ctx context.Context, projectID stri
 	return r.Resolver.setCurrentProject(ctx, projectID)
 }
 
-// SetSetting is the resolver for the setSetting field.
-func (r *mutationResolver) SetSetting(ctx context.Context, key string, value string) (*model.Setting, error) {
-	return r.Resolver.setSetting(ctx, key, value)
+// SetSettings is the resolver for the setSettings field.
+func (r *mutationResolver) SetSettings(ctx context.Context, input []model.SettingInput) ([]model.Setting, error) {
+	return r.Resolver.setSettings(ctx, input)
 }
 
 // FrontendConfig is the resolver for the frontendConfig field.
 func (r *queryResolver) FrontendConfig(ctx context.Context) (string, error) {
-	configJSON, err := r.DB.Queries.GetSettingJSON(ctx, "frontend_config")
+	configJSON, err := r.DB.Queries.GetSettingJSON(ctx, services.SettingFrontendConfig)
 	if err != nil {
 		return "{}", nil
 	}
@@ -33,3 +34,15 @@ func (r *queryResolver) FrontendConfig(ctx context.Context) (string, error) {
 func (r *queryResolver) Settings(ctx context.Context) ([]model.Setting, error) {
 	return r.Resolver.listSettings(ctx)
 }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *mutationResolver) SetSetting(ctx context.Context, key string, value string) (*model.Setting, error) {
+	return r.Resolver.setSetting(ctx, key, value)
+}
+*/

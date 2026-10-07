@@ -130,6 +130,13 @@ through a shared `slog.LevelVar`, which the handler clones in
 `WithAttrs`/`WithGroup` read too — so `SetLevel` reaches loggers that already
 exist, and `SettingsService.applyLiveSettings` calls it on every refresh.
 
+`frontend_config` is a free-form JSON blob served by `Query.frontendConfig`,
+which reads it from the database per request — so edits are live. Its keys are
+ad hoc and project-specific (`team_name_changed_challenge_id`,
+`gamenight_1_betting_quiz_id`), consumed by the my-church kickoff and gamenight
+pages as entity ids. **No migration creates this row**; where it exists it was
+inserted by hand, and `SetSetting` cannot create it.
+
 `current_project_id` is not configuration at all: it is application data naming
 the project every end user sees, read by `Query.currentProject` /
 `myCurrentProject` / `myProjects`, the church-admin statistics resolver, the
@@ -158,19 +165,25 @@ in-resolver instead, per the project convention.
 Three gates, because this is remote control over server configuration:
 
 1. **superadmin only** — both mutations carry the directive.
-2. **No key can be created.** `SetSetting` requires the key to already be a row,
+2. **No key can be created.** `SetSettings` requires each key to already be a row,
    and the only queries it runs are `UpdateSetting*`, which are plain `UPDATE
    ... WHERE key = @key`. The `SetSetting*` upserts in `settings.sql` would
    insert, and are deliberately left uncalled. There is no delete path either.
 3. **Only known keys are writable.** `services.IsEditableSetting` admits
-   `config.SettingSpecs` plus `current_project_id` — membership in the table is
+   `config.SettingSpecs` plus `appDataSettings` — membership in the table is
    not enough. So a row added to the database does not become remotely writable
    by virtue of existing, and making a future sensitive key writable takes a
-   deliberate `SettingSpecs` entry. The `settings` query still lists unknown
-   rows, marked `editable: false` and rendered read-only.
+   deliberate registry entry. The `settings` query still lists unknown rows,
+   marked `editable: false` and rendered read-only.
 
-`SetSetting` parses the string against the row's `value_type`, so a value that
-does not parse is rejected before anything reaches the database.
+`appDataSettings` is the second group: keys the application reads directly
+rather than through config, so they override no environment variable and need
+no restart. Today that is `current_project_id` and `frontend_config`.
+
+`SetSettings` takes a batch and validates every entry — known key, editable,
+value parses — **before** writing any of them, then writes them in one
+transaction. A form with one bad field therefore changes nothing rather than
+landing half-applied, which is why the mutation is plural.
 `SetCurrentProjectID` checks `ProjectExists` **before** writing, which is what
 keeps the validation failure above unreachable through the API, and `SetSetting`
 routes that key through it so the check cannot be bypassed.
@@ -185,8 +198,11 @@ Afterwards the resolver (`internal/graph/api/settings.go`) invalidates:
   `InvalidationTypeSettings` so other instances reload now rather than on their
   own five-minute tick. See `notes/12-cache-invalidation.md`.
 
-Admin UI: `/admin/settings` (the project picker plus an editor per row, typed
-by `value_type` and marked "Krever omstart" where applicable) and a "Sett som
+Admin UI: `/admin/settings`. The configuration section is a staged form: every
+field edits a local draft, changed rows are badged, and one button commits them
+all through `setSettings`. `useUnsavedChanges` guards navigating away. The
+current project is deliberately **not** in that batch — it changes what every
+end user sees, so it keeps its own confirm dialog and its own mutation. and a "Sett som
 gjeldende prosjekt" action on the project overview page. Both are gated on
 `settings:manage`, superadmin only.
 

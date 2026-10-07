@@ -1979,6 +1979,11 @@ type Setting struct {
 	UpdatedAt scalars.DateTime `json:"updatedAt"`
 }
 
+type SettingInput struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
 type SimpleAchievement struct {
 	ID                   string                   `json:"id"`
 	Name                 string                   `json:"name"`

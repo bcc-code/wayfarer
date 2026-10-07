@@ -298,7 +298,7 @@ func main() {
 	slog.Info("LeaderboardService initialized with caching and loaders")
 
 	// Initialize SettingsService
-	settingsService, err := services.NewSettingsService(ctx, db.Queries, lgr)
+	settingsService, err := services.NewSettingsService(ctx, db.Queries, services.NewSettingsTxRunner(db.Pool, db.Queries), lgr)
 	if err != nil {
 		slog.Error("Failed to initialize SettingsService", "error", err)
 		os.Exit(1)

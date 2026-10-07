@@ -33,9 +33,28 @@ func boolSetting(key string, value bool) *sqlc.Setting {
 	return &sqlc.Setting{Key: key, ValueBool: &value, ValueType: "bool"}
 }
 
+func floatSetting(key string, value float64) *sqlc.Setting {
+	return &sqlc.Setting{Key: key, ValueFloat: &value, ValueType: "float"}
+}
+
 // newServiceWithProject builds a service whose current_project_id is projectID.
 // The background refresh goroutine is stopped by the test's cleanup, so the
 // five-minute ticker never fires during a test.
+// directTx runs the batch against the mock querier without a real
+// transaction; the mock already records what was written and in what order.
+type directTx struct{ q SettingsQuerier }
+
+func (d directTx) InTx(_ context.Context, fn func(q SettingsQuerier) error) error {
+	return fn(d.q)
+}
+
+// failingTx stands in for a transaction that rolls back.
+type failingTx struct{ err error }
+
+func (f failingTx) InTx(_ context.Context, _ func(q SettingsQuerier) error) error {
+	return f.err
+}
+
 func newServiceWithProject(t *testing.T, queries *mocks.MockSettingsQuerier, projectID string, extra ...*sqlc.Setting) *SettingsService {
 	t.Helper()
 
@@ -43,7 +62,7 @@ func newServiceWithProject(t *testing.T, queries *mocks.MockSettingsQuerier, pro
 	queries.On("GetAllSettings", mock.Anything).Return(settings, nil).Once()
 	queries.On("ProjectExists", mock.Anything, projectID).Return(true, nil).Once()
 
-	service, err := NewSettingsService(context.Background(), queries, testLogger())
+	service, err := NewSettingsService(context.Background(), queries, directTx{queries}, testLogger())
 	require.NoError(t, err)
 	t.Cleanup(service.Stop)
 
@@ -63,7 +82,7 @@ func TestNewSettingsService_FailsFastOnMissingCurrentProject(t *testing.T) {
 	queries := mocks.NewMockSettingsQuerier(t)
 	queries.On("GetAllSettings", mock.Anything).Return([]*sqlc.Setting{}, nil).Once()
 
-	service, err := NewSettingsService(context.Background(), queries, testLogger())
+	service, err := NewSettingsService(context.Background(), queries, directTx{queries}, testLogger())
 
 	require.Error(t, err)
 	assert.Nil(t, service)
@@ -76,7 +95,7 @@ func TestNewSettingsService_FailsFastWhenProjectDoesNotExist(t *testing.T) {
 		Return([]*sqlc.Setting{stringSetting(SettingCurrentProjectID, testProjectA)}, nil).Once()
 	queries.On("ProjectExists", mock.Anything, testProjectA).Return(false, nil).Once()
 
-	service, err := NewSettingsService(context.Background(), queries, testLogger())
+	service, err := NewSettingsService(context.Background(), queries, directTx{queries}, testLogger())
 
 	require.Error(t, err)
 	assert.Nil(t, service)
@@ -173,43 +192,101 @@ func TestSetCurrentProjectID_ErrorsWhenRowIsMissing(t *testing.T) {
 	require.ErrorIs(t, err, ErrSettingNotFound)
 }
 
-func TestSetSetting_RoutesCurrentProjectThroughTheExistenceCheck(t *testing.T) {
+func TestSetSettings_RoutesCurrentProjectThroughTheExistenceCheck(t *testing.T) {
 	ctx := context.Background()
 	queries := mocks.NewMockSettingsQuerier(t)
 	service := newServiceWithProject(t, queries, testProjectA)
 
 	queries.On("ProjectExists", mock.Anything, testProjectB).Return(false, nil).Once()
 
-	setting, err := service.SetSetting(ctx, SettingCurrentProjectID, testProjectB)
+	written, err := service.SetSettings(ctx, []SettingUpdate{
+		{Key: SettingCurrentProjectID, Value: testProjectB},
+	})
 
 	require.ErrorIs(t, err, ErrProjectNotFound)
-	assert.Nil(t, setting)
+	assert.Nil(t, written)
 	queries.AssertNotCalled(t, "UpdateSettingText", mock.Anything, mock.Anything)
 }
 
-func TestSetSetting_RejectsUnknownKey(t *testing.T) {
+func TestSetSettings_RejectsUnknownKey(t *testing.T) {
 	ctx := context.Background()
 	queries := mocks.NewMockSettingsQuerier(t)
 	service := newServiceWithProject(t, queries, testProjectA)
 
-	setting, err := service.SetSetting(ctx, "not_a_real_key", "whatever")
+	written, err := service.SetSettings(ctx, []SettingUpdate{
+		{Key: "not_a_real_key", Value: "whatever"},
+	})
 
 	require.ErrorIs(t, err, ErrSettingNotFound)
-	assert.Nil(t, setting)
+	assert.Nil(t, written)
+}
+
+// The whole point of the batch: one bad value must leave the good ones alone.
+func TestSetSettings_ValidatesEverythingBeforeWritingAnything(t *testing.T) {
+	ctx := context.Background()
+	queries := mocks.NewMockSettingsQuerier(t)
+	service := newServiceWithProject(t, queries, testProjectA,
+		stringSetting("log_level", "info"),
+		boolSetting("otel_enabled", true),
+		floatSetting("otel_sampling_ratio", 0.1))
+
+	written, err := service.SetSettings(ctx, []SettingUpdate{
+		{Key: "log_level", Value: "debug"},
+		{Key: "otel_enabled", Value: "false"},
+		{Key: "otel_sampling_ratio", Value: "quite a lot"},
+	})
+
+	require.ErrorIs(t, err, ErrInvalidSettingVal)
+	assert.Nil(t, written)
+	queries.AssertNotCalled(t, "UpdateSettingText", mock.Anything, mock.Anything)
+	queries.AssertNotCalled(t, "UpdateSettingBool", mock.Anything, mock.Anything)
+	queries.AssertNotCalled(t, "UpdateSettingFloat", mock.Anything, mock.Anything)
+}
+
+func TestSetSettings_RejectsADuplicateKey(t *testing.T) {
+	ctx := context.Background()
+	queries := mocks.NewMockSettingsQuerier(t)
+	service := newServiceWithProject(t, queries, testProjectA, stringSetting("log_level", "info"))
+
+	_, err := service.SetSettings(ctx, []SettingUpdate{
+		{Key: "log_level", Value: "debug"},
+		{Key: "log_level", Value: "warn"},
+	})
+
+	require.ErrorIs(t, err, ErrInvalidSettingVal)
+	queries.AssertNotCalled(t, "UpdateSettingText", mock.Anything, mock.Anything)
+}
+
+// A rolled-back transaction must not leave the in-memory map claiming the
+// write landed.
+func TestSetSettings_DoesNotRefreshWhenTheTransactionFails(t *testing.T) {
+	ctx := context.Background()
+	queries := mocks.NewMockSettingsQuerier(t)
+	service := newServiceWithProject(t, queries, testProjectA, stringSetting("log_level", "info"))
+	service.tx = failingTx{err: errors.New("deadlock detected")}
+
+	_, err := service.SetSettings(ctx, []SettingUpdate{{Key: "log_level", Value: "debug"}})
+
+	require.Error(t, err)
+	setting, getErr := service.GetSetting("log_level")
+	require.NoError(t, getErr)
+	assert.Equal(t, "info", SettingStringValue(setting))
 }
 
 // Being a row is not enough to be writable. Without this, adding a settings
 // row later would silently make it remotely writable.
-func TestSetSetting_RejectsAKeyTheApplicationDoesNotKnow(t *testing.T) {
+func TestSetSettings_RejectsAKeyTheApplicationDoesNotKnow(t *testing.T) {
 	ctx := context.Background()
 	queries := mocks.NewMockSettingsQuerier(t)
 	service := newServiceWithProject(t, queries, testProjectA,
 		stringSetting("some_future_api_key", "s3cret"))
 
-	setting, err := service.SetSetting(ctx, "some_future_api_key", "attacker-controlled")
+	written, err := service.SetSettings(ctx, []SettingUpdate{
+		{Key: "some_future_api_key", Value: "attacker-controlled"},
+	})
 
 	require.ErrorIs(t, err, ErrSettingNotEditable)
-	assert.Nil(t, setting)
+	assert.Nil(t, written)
 	queries.AssertNotCalled(t, "UpdateSettingText", mock.Anything, mock.Anything)
 }
 
@@ -218,31 +295,42 @@ func TestIsEditableSetting(t *testing.T) {
 	for _, spec := range config.SettingSpecs {
 		assert.True(t, IsEditableSetting(spec.Key), spec.Key)
 	}
-	assert.False(t, IsEditableSetting("frontend_config"))
+	assert.True(t, IsEditableSetting(SettingFrontendConfig))
 	assert.False(t, IsEditableSetting("anything_else"))
 }
 
-func TestSetSetting_WritesANonProjectKey(t *testing.T) {
+func TestSetSettings_WritesSeveralKeysAtOnce(t *testing.T) {
 	ctx := context.Background()
 	queries := mocks.NewMockSettingsQuerier(t)
-	service := newServiceWithProject(t, queries, testProjectA, boolSetting("otel_enabled", true))
+	service := newServiceWithProject(t, queries, testProjectA,
+		stringSetting("log_level", "info"),
+		boolSetting("otel_enabled", true))
 
+	queries.On("UpdateSettingText", mock.Anything, sqlc.UpdateSettingTextParams{
+		Key: "log_level", ValueText: "debug",
+	}).Return(int64(1), nil).Once()
 	queries.On("UpdateSettingBool", mock.Anything, sqlc.UpdateSettingBoolParams{
-		Key:       "otel_enabled",
-		ValueBool: false,
+		Key: "otel_enabled", ValueBool: false,
 	}).Return(int64(1), nil).Once()
 
-	// The refresh that follows the write.
+	// The single refresh that follows the batch.
 	queries.On("GetAllSettings", mock.Anything).Return([]*sqlc.Setting{
 		stringSetting(SettingCurrentProjectID, testProjectA),
+		stringSetting("log_level", "debug"),
 		boolSetting("otel_enabled", false),
 	}, nil).Once()
 	queries.On("ProjectExists", mock.Anything, testProjectA).Return(true, nil).Once()
+	t.Cleanup(func() { logger.SetLevel(slog.LevelInfo) })
 
-	setting, err := service.SetSetting(ctx, "otel_enabled", "false")
+	written, err := service.SetSettings(ctx, []SettingUpdate{
+		{Key: "log_level", Value: "debug"},
+		{Key: "otel_enabled", Value: "false"},
+	})
 
 	require.NoError(t, err)
-	assert.Equal(t, "false", SettingStringValue(setting))
+	require.Len(t, written, 2)
+	assert.Equal(t, "debug", SettingStringValue(written[0]))
+	assert.Equal(t, "false", SettingStringValue(written[1]))
 }
 
 // log_level is read through a slog.LevelVar, so a refresh changes verbosity
@@ -289,8 +377,9 @@ func TestWriteTyped_ParsesEachValueType(t *testing.T) {
 			service := newServiceWithProject(t, queries, testProjectA)
 
 			queries.On(tt.method, mock.Anything, tt.expectArg).Return(int64(1), nil).Once()
+			_ = service
 
-			require.NoError(t, service.writeTyped(ctx, "k", tt.valueType, tt.value))
+			require.NoError(t, writeTyped(ctx, queries, "k", tt.valueType, tt.value))
 		})
 	}
 }
@@ -315,7 +404,8 @@ func TestWriteTyped_RejectsMalformedValues(t *testing.T) {
 			queries := mocks.NewMockSettingsQuerier(t)
 			service := newServiceWithProject(t, queries, testProjectA)
 
-			err := service.writeTyped(ctx, "k", tt.valueType, tt.value)
+			_ = service
+			err := writeTyped(ctx, queries, "k", tt.valueType, tt.value)
 
 			require.Error(t, err)
 			// Nothing may reach the database when the value does not parse.

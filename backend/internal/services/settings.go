@@ -14,6 +14,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/logger"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var (
@@ -24,18 +25,30 @@ var (
 	ErrSettingNotEditable = errors.New("setting is not editable")
 )
 
-// SettingCurrentProjectID is the key holding the project every end user sees.
-const SettingCurrentProjectID = "current_project_id"
+const (
+	// SettingCurrentProjectID holds the project every end user sees.
+	SettingCurrentProjectID = "current_project_id"
+	// SettingFrontendConfig holds the JSON blob Query.frontendConfig serves.
+	SettingFrontendConfig = "frontend_config"
+)
+
+// appDataSettings are keys the application reads directly rather than through
+// config. They override no environment variable and need no restart, but they
+// are owned by the app and editable.
+var appDataSettings = map[string]bool{
+	SettingCurrentProjectID: true,
+	SettingFrontendConfig:   true,
+}
 
 // IsEditableSetting reports whether the API may write a key.
 //
 // Membership in the table is not enough. A key is writable only if the
-// application knows about it — config.SettingSpecs, plus the current project —
-// so a row added to the database later does not become remotely writable by
+// application knows about it — config.SettingSpecs plus appDataSettings — so a
+// row added to the database later does not become remotely writable by
 // existing, and adding a sensitive one is a deliberate act rather than an
 // oversight.
 func IsEditableSetting(key string) bool {
-	if key == SettingCurrentProjectID {
+	if appDataSettings[key] {
 		return true
 	}
 	_, known := config.SettingSpecFor(key)
@@ -70,9 +83,16 @@ type SettingsQuerier interface {
 	UpdateSettingJSON(ctx context.Context, arg sqlc.UpdateSettingJSONParams) (int64, error)
 }
 
+// SettingsTxRunner runs a function against a transactional querier, so a batch
+// of settings either all land or none do.
+type SettingsTxRunner interface {
+	InTx(ctx context.Context, fn func(q SettingsQuerier) error) error
+}
+
 // SettingsService manages runtime configuration with in-memory caching
 type SettingsService struct {
 	queries     SettingsQuerier
+	tx          SettingsTxRunner
 	settingsMap atomic.Value // stores map[string]*sqlc.Setting
 	logger      *slog.Logger
 	stopRefresh chan struct{}
@@ -80,9 +100,10 @@ type SettingsService struct {
 }
 
 // NewSettingsService creates a new settings service and starts background refresh
-func NewSettingsService(ctx context.Context, queries SettingsQuerier, logger *slog.Logger) (*SettingsService, error) {
+func NewSettingsService(ctx context.Context, queries SettingsQuerier, tx SettingsTxRunner, logger *slog.Logger) (*SettingsService, error) {
 	service := &SettingsService{
 		queries:     queries,
+		tx:          tx,
 		logger:      logger,
 		stopRefresh: make(chan struct{}),
 		refreshDone: make(chan struct{}),
@@ -236,12 +257,8 @@ func (s *SettingsService) GetCurrentProjectID(ctx context.Context) (string, erro
 // exist: an unknown ID would fail validation on the next load and leave the
 // service serving a value the database no longer agrees with.
 func (s *SettingsService) SetCurrentProjectID(ctx context.Context, projectID string) error {
-	exists, err := s.queries.ProjectExists(ctx, projectID)
-	if err != nil {
-		return fmt.Errorf("failed to validate project existence: %w", err)
-	}
-	if !exists {
-		return fmt.Errorf("%w: %s", ErrProjectNotFound, projectID)
+	if err := s.validateProjectExists(ctx, projectID); err != nil {
+		return err
 	}
 
 	rows, err := s.queries.UpdateSettingText(ctx, sqlc.UpdateSettingTextParams{
@@ -258,31 +275,74 @@ func (s *SettingsService) SetCurrentProjectID(ctx context.Context, projectID str
 	return s.RefreshSettings(ctx)
 }
 
-// SetSetting writes the canonical string form of a value to an existing key.
-//
-// This is an editor for the configuration the application knows about: the key
-// must already be a row and must be one IsEditableSetting admits. There is no
-// path here that inserts a row or invents a key.
-func (s *SettingsService) SetSetting(ctx context.Context, key, value string) (*sqlc.Setting, error) {
-	setting, err := s.GetSetting(key)
+// SettingUpdate is one key/value pair in a batch.
+type SettingUpdate struct {
+	Key   string
+	Value string
+}
+
+// validateProjectExists guards the current-project write, which must never
+// store an id that fails validation on the next load.
+func (s *SettingsService) validateProjectExists(ctx context.Context, projectID string) error {
+	exists, err := s.queries.ProjectExists(ctx, projectID)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("failed to validate project existence: %w", err)
+	}
+	if !exists {
+		return fmt.Errorf("%w: %s", ErrProjectNotFound, projectID)
+	}
+	return nil
+}
+
+// SetSettings writes a batch of existing keys.
+//
+// Every update is checked — known key, editable, value parses — before any of
+// them is written, and the writes run in one transaction. A typo in the third
+// field therefore leaves the first two untouched rather than half-applying the
+// form.
+func (s *SettingsService) SetSettings(ctx context.Context, updates []SettingUpdate) ([]*sqlc.Setting, error) {
+	if len(updates) == 0 {
+		return nil, nil
 	}
 
-	if !IsEditableSetting(key) {
-		return nil, fmt.Errorf("%w: %s", ErrSettingNotEditable, key)
-	}
+	seen := make(map[string]bool, len(updates))
+	for _, update := range updates {
+		if seen[update.Key] {
+			return nil, fmt.Errorf("%w: %s given twice", ErrInvalidSettingVal, update.Key)
+		}
+		seen[update.Key] = true
 
-	// Routed through SetCurrentProjectID so the existence check cannot be
-	// bypassed by writing the same key through the generic path.
-	if key == SettingCurrentProjectID {
-		if err := s.SetCurrentProjectID(ctx, value); err != nil {
+		setting, err := s.GetSetting(update.Key)
+		if err != nil {
 			return nil, err
 		}
-		return s.GetSetting(key)
+		if !IsEditableSetting(update.Key) {
+			return nil, fmt.Errorf("%w: %s", ErrSettingNotEditable, update.Key)
+		}
+		if update.Key == SettingCurrentProjectID {
+			if err := s.validateProjectExists(ctx, update.Value); err != nil {
+				return nil, err
+			}
+			continue
+		}
+		if err := parseTyped(setting.ValueType, update.Value); err != nil {
+			return nil, err
+		}
 	}
 
-	if err := s.writeTyped(ctx, key, setting.ValueType, value); err != nil {
+	err := s.tx.InTx(ctx, func(q SettingsQuerier) error {
+		for _, update := range updates {
+			setting, err := s.GetSetting(update.Key)
+			if err != nil {
+				return err
+			}
+			if err := writeTyped(ctx, q, update.Key, setting.ValueType, update.Value); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
 		return nil, err
 	}
 
@@ -290,12 +350,52 @@ func (s *SettingsService) SetSetting(ctx context.Context, key, value string) (*s
 		return nil, err
 	}
 
-	return s.GetSetting(key)
+	written := make([]*sqlc.Setting, 0, len(updates))
+	for _, update := range updates {
+		setting, err := s.GetSetting(update.Key)
+		if err != nil {
+			return nil, err
+		}
+		written = append(written, setting)
+	}
+
+	return written, nil
 }
 
-// writeTyped parses value according to valueType and writes it to the matching
-// column. A parse failure is reported before anything touches the database.
-func (s *SettingsService) writeTyped(ctx context.Context, key, valueType, value string) error {
+// parseTyped reports whether value is acceptable for valueType, without
+// touching the database.
+func parseTyped(valueType, value string) error {
+	switch valueType {
+	case "text":
+		return nil
+	case "int":
+		if _, err := strconv.ParseInt(value, 10, 64); err != nil {
+			return fmt.Errorf("%w: %q is not an integer", ErrInvalidSettingVal, value)
+		}
+	case "bool":
+		if _, err := strconv.ParseBool(value); err != nil {
+			return fmt.Errorf("%w: %q is not a boolean", ErrInvalidSettingVal, value)
+		}
+	case "float":
+		if _, err := strconv.ParseFloat(value, 64); err != nil {
+			return fmt.Errorf("%w: %q is not a number", ErrInvalidSettingVal, value)
+		}
+	case "json":
+		if !json.Valid([]byte(value)) {
+			return fmt.Errorf("%w: not valid JSON", ErrInvalidSettingVal)
+		}
+	default:
+		return fmt.Errorf("%w: %s", ErrInvalidSettingType, valueType)
+	}
+	return nil
+}
+
+// writeTyped writes value to the column valueType names.
+func writeTyped(ctx context.Context, q SettingsQuerier, key, valueType, value string) error {
+	if err := parseTyped(valueType, value); err != nil {
+		return err
+	}
+
 	var (
 		rows int64
 		err  error
@@ -303,32 +403,18 @@ func (s *SettingsService) writeTyped(ctx context.Context, key, valueType, value 
 
 	switch valueType {
 	case "text":
-		rows, err = s.queries.UpdateSettingText(ctx, sqlc.UpdateSettingTextParams{Key: key, ValueText: value})
+		rows, err = q.UpdateSettingText(ctx, sqlc.UpdateSettingTextParams{Key: key, ValueText: value})
 	case "int":
-		parsed, parseErr := strconv.ParseInt(value, 10, 64)
-		if parseErr != nil {
-			return fmt.Errorf("%w: %q is not an integer", ErrInvalidSettingVal, value)
-		}
-		rows, err = s.queries.UpdateSettingInt(ctx, sqlc.UpdateSettingIntParams{Key: key, ValueInt: parsed})
+		parsed, _ := strconv.ParseInt(value, 10, 64)
+		rows, err = q.UpdateSettingInt(ctx, sqlc.UpdateSettingIntParams{Key: key, ValueInt: parsed})
 	case "bool":
-		parsed, parseErr := strconv.ParseBool(value)
-		if parseErr != nil {
-			return fmt.Errorf("%w: %q is not a boolean", ErrInvalidSettingVal, value)
-		}
-		rows, err = s.queries.UpdateSettingBool(ctx, sqlc.UpdateSettingBoolParams{Key: key, ValueBool: parsed})
+		parsed, _ := strconv.ParseBool(value)
+		rows, err = q.UpdateSettingBool(ctx, sqlc.UpdateSettingBoolParams{Key: key, ValueBool: parsed})
 	case "float":
-		parsed, parseErr := strconv.ParseFloat(value, 64)
-		if parseErr != nil {
-			return fmt.Errorf("%w: %q is not a number", ErrInvalidSettingVal, value)
-		}
-		rows, err = s.queries.UpdateSettingFloat(ctx, sqlc.UpdateSettingFloatParams{Key: key, ValueFloat: parsed})
+		parsed, _ := strconv.ParseFloat(value, 64)
+		rows, err = q.UpdateSettingFloat(ctx, sqlc.UpdateSettingFloatParams{Key: key, ValueFloat: parsed})
 	case "json":
-		if !json.Valid([]byte(value)) {
-			return fmt.Errorf("%w: not valid JSON", ErrInvalidSettingVal)
-		}
-		rows, err = s.queries.UpdateSettingJSON(ctx, sqlc.UpdateSettingJSONParams{Key: key, ValueJson: []byte(value)})
-	default:
-		return fmt.Errorf("%w: %s", ErrInvalidSettingType, valueType)
+		rows, err = q.UpdateSettingJSON(ctx, sqlc.UpdateSettingJSONParams{Key: key, ValueJson: []byte(value)})
 	}
 
 	if err != nil {
@@ -453,4 +539,29 @@ func (s *SettingsService) GetFloatSetting(ctx context.Context, key string) (floa
 func (s *SettingsService) Stop() {
 	close(s.stopRefresh)
 	<-s.refreshDone
+}
+
+// pgxSettingsTx is the production SettingsTxRunner.
+type pgxSettingsTx struct {
+	pool    *pgxpool.Pool
+	queries *sqlc.Queries
+}
+
+// NewSettingsTxRunner adapts a pool to SettingsTxRunner.
+func NewSettingsTxRunner(pool *pgxpool.Pool, queries *sqlc.Queries) SettingsTxRunner {
+	return &pgxSettingsTx{pool: pool, queries: queries}
+}
+
+func (s *pgxSettingsTx) InTx(ctx context.Context, fn func(q SettingsQuerier) error) error {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	if err := fn(s.queries.WithTx(tx)); err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
 }

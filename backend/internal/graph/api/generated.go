@@ -706,7 +706,7 @@ type ComplexityRoot struct {
 		SetChallengeVisibility                      func(childComplexity int, id string, visibleAt scalars.DateTime, startedAt *scalars.DateTime) int
 		SetCurrentProject                           func(childComplexity int, projectID string) int
 		SetNotificationPreference                   func(childComplexity int, input model.SetNotificationPreferenceInput) int
-		SetSetting                                  func(childComplexity int, key string, value string) int
+		SetSettings                                 func(childComplexity int, input []model.SettingInput) int
 		StartQuizSession                            func(childComplexity int, sessionID string) int
 		SubmitFeedback                              func(childComplexity int, input model.SubmitFeedbackInput) int
 		SubmitQuizAnswer                            func(childComplexity int, submissionID string, input model.SubmitQuizAnswerInput) int
@@ -1732,7 +1732,7 @@ type MutationResolver interface {
 	DeleteWebhook(ctx context.Context, id string) (bool, error)
 	TestWebhook(ctx context.Context, id string) (*model.WebhookLog, error)
 	SetCurrentProject(ctx context.Context, projectID string) (*model.Project, error)
-	SetSetting(ctx context.Context, key string, value string) (*model.Setting, error)
+	SetSettings(ctx context.Context, input []model.SettingInput) ([]model.Setting, error)
 	RetryBulkJob(ctx context.Context, id string) (*model.BulkJob, error)
 }
 type NumberQuestionResolver interface {
@@ -5280,17 +5280,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.SetNotificationPreference(childComplexity, args["input"].(model.SetNotificationPreferenceInput)), true
-	case "Mutation.setSetting":
-		if e.complexity.Mutation.SetSetting == nil {
+	case "Mutation.setSettings":
+		if e.complexity.Mutation.SetSettings == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_setSetting_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_setSettings_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.SetSetting(childComplexity, args["key"].(string), args["value"].(string)), true
+		return e.complexity.Mutation.SetSettings(childComplexity, args["input"].([]model.SettingInput)), true
 	case "Mutation.startQuizSession":
 		if e.complexity.Mutation.StartQuizSession == nil {
 			break
@@ -9453,6 +9453,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputScoreJournalFilter,
 		ec.unmarshalInputSendPushNotificationInput,
 		ec.unmarshalInputSetNotificationPreferenceInput,
+		ec.unmarshalInputSettingInput,
 		ec.unmarshalInputSubmitFeedbackInput,
 		ec.unmarshalInputSubmitQuizAnswerInput,
 		ec.unmarshalInputSuperTeamFilter,
@@ -12571,6 +12572,11 @@ type Setting {
     updatedAt: DateTime!
 }
 
+input SettingInput {
+    key: String!
+    value: String!
+}
+
 extend type Query {
     frontendConfig: JSON!
     "Superadmin only — enforced in the resolver, not by @requireRole."
@@ -12580,8 +12586,12 @@ extend type Query {
 extend type Mutation {
     "Changes the project every end user sees. Validates that the project exists."
     setCurrentProject(projectId: ID!): Project! @requireRole(roles: ["superadmin"])
-    "Writes an existing settings key. New keys cannot be invented here."
-    setSetting(key: String!, value: String!): Setting! @requireRole(roles: ["superadmin"])
+    """
+    Writes existing settings keys in one transaction. Every value is validated
+    before any of them is written, so a bad value leaves nothing changed. New
+    keys cannot be invented here.
+    """
+    setSettings(input: [SettingInput!]!): [Setting!]! @requireRole(roles: ["superadmin"])
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/bulk_jobs.graphqls", Input: `# Bulk Jobs - Async job tracking for long-running bulk operations
@@ -14220,19 +14230,14 @@ func (ec *executionContext) field_Mutation_setNotificationPreference_args(ctx co
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_setSetting_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Mutation_setSettings_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "key", ec.unmarshalNString2string)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNSettingInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSettingInputᚄ)
 	if err != nil {
 		return nil, err
 	}
-	args["key"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "value", ec.unmarshalNString2string)
-	if err != nil {
-		return nil, err
-	}
-	args["value"] = arg1
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -36846,15 +36851,15 @@ func (ec *executionContext) fieldContext_Mutation_setCurrentProject(ctx context.
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_setSetting(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_setSettings(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Mutation_setSetting,
+		ec.fieldContext_Mutation_setSettings,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().SetSetting(ctx, fc.Args["key"].(string), fc.Args["value"].(string))
+			return ec.resolvers.Mutation().SetSettings(ctx, fc.Args["input"].([]model.SettingInput))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -36862,11 +36867,11 @@ func (ec *executionContext) _Mutation_setSetting(ctx context.Context, field grap
 			directive1 := func(ctx context.Context) (any, error) {
 				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"superadmin"})
 				if err != nil {
-					var zeroVal *model.Setting
+					var zeroVal []model.Setting
 					return zeroVal, err
 				}
 				if ec.directives.RequireRole == nil {
-					var zeroVal *model.Setting
+					var zeroVal []model.Setting
 					return zeroVal, errors.New("directive requireRole is not implemented")
 				}
 				return ec.directives.RequireRole(ctx, nil, directive0, roles)
@@ -36875,13 +36880,13 @@ func (ec *executionContext) _Mutation_setSetting(ctx context.Context, field grap
 			next = directive1
 			return next
 		},
-		ec.marshalNSetting2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSetting,
+		ec.marshalNSetting2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSettingᚄ,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_Mutation_setSetting(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_setSettings(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -36916,7 +36921,7 @@ func (ec *executionContext) fieldContext_Mutation_setSetting(ctx context.Context
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_setSetting_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_setSettings_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -63649,6 +63654,40 @@ func (ec *executionContext) unmarshalInputSetNotificationPreferenceInput(ctx con
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputSettingInput(ctx context.Context, obj any) (model.SettingInput, error) {
+	var it model.SettingInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"key", "value"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "key":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("key"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Key = data
+		case "value":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("value"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Value = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputSubmitFeedbackInput(ctx context.Context, obj any) (model.SubmitFeedbackInput, error) {
 	var it model.SubmitFeedbackInput
 	asMap := map[string]any{}
@@ -71429,9 +71468,9 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "setSetting":
+		case "setSettings":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_setSetting(ctx, field)
+				return ec._Mutation_setSettings(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -85741,14 +85780,24 @@ func (ec *executionContext) marshalNSetting2ᚕgithubᚗcomᚋbccᚑmediaᚋwayf
 	return ret
 }
 
-func (ec *executionContext) marshalNSetting2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSetting(ctx context.Context, sel ast.SelectionSet, v *model.Setting) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+func (ec *executionContext) unmarshalNSettingInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSettingInput(ctx context.Context, v any) (model.SettingInput, error) {
+	res, err := ec.unmarshalInputSettingInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNSettingInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSettingInputᚄ(ctx context.Context, v any) ([]model.SettingInput, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]model.SettingInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNSettingInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSettingInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
 		}
-		return graphql.Null
 	}
-	return ec._Setting(ctx, sel, v)
+	return res, nil
 }
 
 func (ec *executionContext) unmarshalNSettingValueType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSettingValueType(ctx context.Context, v any) (model.SettingValueType, error) {

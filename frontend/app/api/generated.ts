@@ -1285,8 +1285,12 @@ export type Mutation = {
   /** Changes the project every end user sees. Validates that the project exists. */
   setCurrentProject: Project;
   setNotificationPreference: PushNotificationPreference;
-  /** Writes an existing settings key. New keys cannot be invented here. */
-  setSetting: Setting;
+  /**
+   * Writes existing settings keys in one transaction. Every value is validated
+   * before any of them is written, so a bad value leaves nothing changed. New
+   * keys cannot be invented here.
+   */
+  setSettings: Array<Setting>;
   startQuizSession: QuizSubmission;
   submitFeedback: UserFeedback;
   submitQuizAnswer: QuizResponse;
@@ -1906,9 +1910,8 @@ export type MutationSetNotificationPreferenceArgs = {
 };
 
 
-export type MutationSetSettingArgs = {
-  key: Scalars['String']['input'];
-  value: Scalars['String']['input'];
+export type MutationSetSettingsArgs = {
+  input: Array<SettingInput>;
 };
 
 
@@ -3163,6 +3166,11 @@ export type Setting = {
   /** Canonical string form of whichever value column valueType names. */
   value: Scalars['String']['output'];
   valueType: SettingValueType;
+};
+
+export type SettingInput = {
+  key: Scalars['String']['input'];
+  value: Scalars['String']['input'];
 };
 
 export enum SettingValueType {
@@ -5181,13 +5189,12 @@ export type SetCurrentProjectMutationVariables = Exact<{
 
 export type SetCurrentProjectMutation = { __typename?: 'Mutation', setCurrentProject: { __typename?: 'Project', id: string, name: string } };
 
-export type SetSettingMutationVariables = Exact<{
-  key: Scalars['String']['input'];
-  value: Scalars['String']['input'];
+export type SetSettingsMutationVariables = Exact<{
+  input: Array<SettingInput> | SettingInput;
 }>;
 
 
-export type SetSettingMutation = { __typename?: 'Mutation', setSetting: { __typename?: 'Setting', key: string, value: string } };
+export type SetSettingsMutation = { __typename?: 'Mutation', setSettings: Array<{ __typename?: 'Setting', key: string, value: string }> };
 
 export type LegacyTeamRedirectQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -8685,17 +8692,17 @@ export const SetCurrentProjectDocument = gql`
 export function useSetCurrentProjectMutation() {
   return Urql.useMutation<SetCurrentProjectMutation, SetCurrentProjectMutationVariables>(SetCurrentProjectDocument);
 };
-export const SetSettingDocument = gql`
-    mutation SetSetting($key: String!, $value: String!) {
-  setSetting(key: $key, value: $value) {
+export const SetSettingsDocument = gql`
+    mutation SetSettings($input: [SettingInput!]!) {
+  setSettings(input: $input) {
     key
     value
   }
 }
     `;
 
-export function useSetSettingMutation() {
-  return Urql.useMutation<SetSettingMutation, SetSettingMutationVariables>(SetSettingDocument);
+export function useSetSettingsMutation() {
+  return Urql.useMutation<SetSettingsMutation, SetSettingsMutationVariables>(SetSettingsDocument);
 };
 export const LegacyTeamRedirectDocument = gql`
     query LegacyTeamRedirect($id: ID!) {

@@ -146,53 +146,86 @@ func TestSetSetting(t *testing.T) {
 	require.NoError(t, err)
 
 	const mutation = `
-		mutation SetSetting($key: String!, $value: String!) {
-			setSetting(key: $key, value: $value) { key value valueType }
+		mutation SetSettings($input: [SettingInput!]!) {
+			setSettings(input: $input) { key value valueType }
 		}
 	`
 
-	setSetting := func(t *testing.T, token, key, value string) *testutil.GraphQLResponse {
+	setSettings := func(t *testing.T, token string, pairs ...[2]string) *testutil.GraphQLResponse {
 		t.Helper()
-		return client.WithAuth(token).MustExecute(t, mutation, map[string]any{
-			"key": key, "value": value,
-		})
+		input := make([]map[string]string, 0, len(pairs))
+		for _, pair := range pairs {
+			input = append(input, map[string]string{"key": pair[0], "value": pair[1]})
+		}
+		return client.WithAuth(token).MustExecute(t, mutation, map[string]any{"input": input})
+	}
+
+	readSetting := func(t *testing.T, key string) string {
+		t.Helper()
+		resp := client.WithAuth(superadminToken).MustExecute(t, `
+			query Settings { settings { key value } }
+		`, nil)
+		require.Empty(t, resp.Errors)
+
+		var result struct {
+			Settings []struct{ Key, Value string } `json:"settings"`
+		}
+		require.NoError(t, json.Unmarshal(resp.Data, &result))
+		for _, setting := range result.Settings {
+			if setting.Key == key {
+				return setting.Value
+			}
+		}
+		return ""
 	}
 
 	t.Run("an admin is refused", func(t *testing.T) {
-		resp := setSetting(t, adminToken, "log_level", "debug")
+		resp := setSettings(t, adminToken, [2]string{"log_level", "debug"})
 		require.NotEmpty(t, resp.Errors)
 		assert.Contains(t, resp.Errors[0].Message, "unauthorized")
 	})
 
-	t.Run("a superadmin writes each value type", func(t *testing.T) {
-		for _, tc := range []struct{ key, value, valueType string }{
-			{"log_level", "debug", "TEXT"},
-			{"otel_enabled", "false", "BOOL"},
-			{"otel_sampling_ratio", "0.25", "FLOAT"},
-		} {
-			resp := setSetting(t, superadminToken, tc.key, tc.value)
-			require.Empty(t, resp.Errors, tc.key)
+	t.Run("a superadmin writes every value type in one call", func(t *testing.T) {
+		resp := setSettings(t, superadminToken,
+			[2]string{"log_level", "debug"},
+			[2]string{"otel_enabled", "false"},
+			[2]string{"otel_sampling_ratio", "0.25"},
+		)
+		require.Empty(t, resp.Errors)
 
-			var result struct {
-				SetSetting struct {
-					Key       string
-					Value     string
-					ValueType string
-				} `json:"setSetting"`
-			}
-			require.NoError(t, json.Unmarshal(resp.Data, &result))
-			assert.Equal(t, tc.value, result.SetSetting.Value, tc.key)
-			assert.Equal(t, tc.valueType, result.SetSetting.ValueType, tc.key)
+		var result struct {
+			SetSettings []struct {
+				Key       string
+				Value     string
+				ValueType string
+			} `json:"setSettings"`
 		}
+		require.NoError(t, json.Unmarshal(resp.Data, &result))
+		require.Len(t, result.SetSettings, 3)
+		assert.Equal(t, "TEXT", result.SetSettings[0].ValueType)
+		assert.Equal(t, "BOOL", result.SetSettings[1].ValueType)
+		assert.Equal(t, "FLOAT", result.SetSettings[2].ValueType)
+
+		assert.Equal(t, "debug", readSetting(t, "log_level"))
+		assert.Equal(t, "0.25", readSetting(t, "otel_sampling_ratio"))
 	})
 
-	t.Run("a value that does not parse is refused", func(t *testing.T) {
-		resp := setSetting(t, superadminToken, "otel_sampling_ratio", "quite a lot")
+	// The reason the batch exists: a form with one bad field must not land
+	// half-applied.
+	t.Run("one bad value leaves the whole batch unwritten", func(t *testing.T) {
+		before := readSetting(t, "log_level")
+
+		resp := setSettings(t, superadminToken,
+			[2]string{"log_level", "warn"},
+			[2]string{"otel_sampling_ratio", "quite a lot"},
+		)
 		require.NotEmpty(t, resp.Errors)
+
+		assert.Equal(t, before, readSetting(t, "log_level"))
 	})
 
 	t.Run("an unknown key cannot be invented", func(t *testing.T) {
-		resp := setSetting(t, superadminToken, "brand_new_key", "1")
+		resp := setSettings(t, superadminToken, [2]string{"brand_new_key", "1"})
 		require.NotEmpty(t, resp.Errors)
 
 		// And it was not inserted: the API has no path that creates a row.

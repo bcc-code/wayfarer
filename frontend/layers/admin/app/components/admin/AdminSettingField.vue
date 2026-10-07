@@ -13,10 +13,12 @@ export interface SettingFieldValue {
 
 const props = defineProps<{
   setting: SettingFieldValue
-  saving?: boolean
+  /** The staged value, which differs from `setting.value` once edited. */
+  modelValue: string
+  disabled?: boolean
 }>()
 
-const emit = defineEmits<{ save: [value: string] }>()
+const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
 // Free text that is really an enum: `warning` typed into log_level parses as
 // `info` server-side rather than erroring.
@@ -26,13 +28,22 @@ const ENUM_OPTIONS: Record<string, string[]> = {
 
 const enumOptions = computed(() => ENUM_OPTIONS[props.setting.key])
 
-const draft = ref(props.setting.value)
-watch(
-  () => props.setting.value,
-  (value) => (draft.value = value),
+const isJson = computed(() => props.setting.valueType === SettingValueType.Json)
+
+const draft = computed({
+  get: () => props.modelValue,
+  set: (value) => emit('update:modelValue', value),
+})
+
+const isDirty = computed(
+  () =>
+    normalizeSetting(props.setting.valueType, props.modelValue) !==
+    normalizeSetting(props.setting.valueType, props.setting.value),
 )
 
-const isDirty = computed(() => draft.value !== props.setting.value)
+const isValid = computed(() =>
+  isSettingValueValid(props.setting.valueType, props.modelValue),
+)
 
 // The API takes the canonical string form; type=number is for the input only.
 const numberDraft = computed({
@@ -42,35 +53,8 @@ const numberDraft = computed({
 
 const booleanDraft = computed({
   get: () => draft.value === 'true',
-  set: (value) => {
-    draft.value = String(value)
-    // A switch has no separate save step.
-    emit('save', draft.value)
-  },
+  set: (value) => (draft.value = String(value)),
 })
-
-const isValid = computed(() => {
-  if (props.setting.valueType === SettingValueType.Json) {
-    try {
-      JSON.parse(draft.value)
-      return true
-    } catch {
-      return false
-    }
-  }
-  if (
-    props.setting.valueType === SettingValueType.Int ||
-    props.setting.valueType === SettingValueType.Float
-  ) {
-    return draft.value !== '' && Number.isFinite(Number(draft.value))
-  }
-  return draft.value !== ''
-})
-
-function save() {
-  if (!isDirty.value || !isValid.value) return
-  emit('save', draft.value)
-}
 </script>
 
 <template>
@@ -78,6 +62,7 @@ function save() {
     <div class="min-w-48 flex-1">
       <div class="flex flex-wrap items-center gap-2">
         <p class="font-medium">{{ setting.key }}</p>
+        <UBadge v-if="isDirty" color="primary" variant="subtle">Endret</UBadge>
         <UBadge v-if="setting.requiresRestart" color="warning" variant="subtle">
           Krever omstart
         </UBadge>
@@ -95,11 +80,23 @@ function save() {
       <p class="text-dimmed text-xs">Ikke redigerbar</p>
     </div>
 
+    <div v-else-if="isJson" class="w-full space-y-2">
+      <UTextarea
+        v-model="draft"
+        :rows="8"
+        :disabled="disabled"
+        :color="isValid ? undefined : 'error'"
+        class="w-full"
+        :ui="{ base: 'font-mono text-xs' }"
+      />
+      <p v-if="!isValid" class="text-error text-sm">Ugyldig JSON</p>
+    </div>
+
     <div v-else class="flex w-full max-w-xs shrink-0 items-start gap-2">
       <USwitch
         v-if="setting.valueType === SettingValueType.Bool"
         v-model="booleanDraft"
-        :disabled="saving"
+        :disabled="disabled"
         class="py-1.5"
       />
 
@@ -108,16 +105,8 @@ function save() {
           v-if="enumOptions"
           v-model="draft"
           :items="enumOptions"
-          :disabled="saving"
+          :disabled="disabled"
           class="w-full"
-        />
-        <UTextarea
-          v-else-if="setting.valueType === SettingValueType.Json"
-          v-model="draft"
-          :rows="3"
-          :disabled="saving"
-          :color="isValid ? undefined : 'error'"
-          class="w-full font-mono"
         />
         <UInput
           v-else-if="
@@ -127,27 +116,10 @@ function save() {
           v-model="numberDraft"
           type="number"
           :step="setting.valueType === SettingValueType.Float ? 0.05 : 1"
-          :disabled="saving"
+          :disabled="disabled"
           class="w-full"
-          @keyup.enter="save"
         />
-        <UInput
-          v-else
-          v-model="draft"
-          :disabled="saving"
-          class="w-full"
-          @keyup.enter="save"
-        />
-
-        <UButton
-          v-if="isDirty"
-          icon="lucide:check"
-          :loading="saving"
-          :disabled="!isValid"
-          @click="save"
-        >
-          Lagre
-        </UButton>
+        <UInput v-else v-model="draft" :disabled="disabled" class="w-full" />
       </template>
     </div>
   </div>

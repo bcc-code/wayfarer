@@ -31,6 +31,11 @@ type Setting {
     updatedAt: DateTime!
 }
 
+input SettingInput {
+    key: String!
+    value: String!
+}
+
 extend type Query {
     frontendConfig: JSON!
     "Superadmin only — enforced in the resolver, not by @requireRole."
@@ -40,6 +45,10 @@ extend type Query {
 extend type Mutation {
     "Changes the project every end user sees. Validates that the project exists."
     setCurrentProject(projectId: ID!): Project! @requireRole(roles: ["superadmin"])
-    "Writes an existing settings key. New keys cannot be invented here."
-    setSetting(key: String!, value: String!): Setting! @requireRole(roles: ["superadmin"])
+    """
+    Writes existing settings keys in one transaction. Every value is validated
+    before any of them is written, so a bad value leaves nothing changed. New
+    keys cannot be invented here.
+    """
+    setSettings(input: [SettingInput!]!): [Setting!]! @requireRole(roles: ["superadmin"])
 }
