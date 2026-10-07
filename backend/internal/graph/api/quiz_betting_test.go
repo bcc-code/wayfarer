@@ -405,3 +405,40 @@ func validateBetWithMockQueries(
 
 	return nil
 }
+
+func TestValidateBettingMultipliers(t *testing.T) {
+	f := func(v float64) *float64 { return &v }
+
+	tests := []struct {
+		name      string
+		correct   *float64
+		wrong     *float64
+		wantField string // empty = valid
+	}{
+		{name: "both unset", correct: nil, wrong: nil},
+		{name: "only correct", correct: f(2.0)},
+		{name: "only wrong, below default correct", wrong: f(0.5)},
+		{name: "only wrong, equals default correct", wrong: f(2.0)},
+		{name: "only wrong, above default correct", wrong: f(3.0), wantField: "bettingMultiplierWrong"},
+		{name: "only correct, zero (default wrong is 0)", correct: f(0)},
+		{name: "wrong below correct", correct: f(2.0), wrong: f(0.5)},
+		{name: "wrong equals correct", correct: f(1.0), wrong: f(1.0)},
+		{name: "zeros", correct: f(0), wrong: f(0)},
+		{name: "negative correct", correct: f(-1), wantField: "bettingMultiplierCorrect"},
+		{name: "negative wrong", wrong: f(-0.5), wantField: "bettingMultiplierWrong"},
+		{name: "wrong above correct", correct: f(1.5), wrong: f(2.0), wantField: "bettingMultiplierWrong"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateBettingMultipliers(tt.correct, tt.wrong)
+			if tt.wantField == "" {
+				assert.NoError(t, err)
+				return
+			}
+			var betErr *BetValidationError
+			require.ErrorAs(t, err, &betErr)
+			assert.Equal(t, tt.wantField, betErr.Field)
+		})
+	}
+}
