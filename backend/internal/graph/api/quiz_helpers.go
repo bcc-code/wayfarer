@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"math"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
@@ -278,12 +279,21 @@ func convertQuestionPoints(pts *int32) *int {
 	return &v
 }
 
-func convertBettingPercentage(n pgtype.Numeric) *float64 {
+// numericToFloat converts a nullable NUMERIC to *float64, returning nil when it
+// is not set or is not a finite float64.
+func numericToFloat(n pgtype.Numeric) *float64 {
 	if !n.Valid {
 		return nil
 	}
-	val, _ := n.Float64Value()
+	val, err := n.Float64Value()
+	if err != nil || !val.Valid || math.IsNaN(val.Float64) || math.IsInf(val.Float64, 0) {
+		return nil
+	}
 	return &val.Float64
+}
+
+func convertBettingPercentage(n pgtype.Numeric) *float64 {
+	return numericToFloat(n)
 }
 
 func convertBettingAbsolute(v *int32) *int {
@@ -336,22 +346,9 @@ func convertToFreeTextQuestion(row quizQuestionRow) *model.FreeTextQuestion {
 }
 
 func convertToNumberQuestion(row quizQuestionRow) *model.NumberQuestion {
-	var minValue, maxValue, stepValue *float64
-	if row.GetMinValue().Valid {
-		val, _ := row.GetMinValue().Float64Value()
-		fv := val.Float64
-		minValue = &fv
-	}
-	if row.GetMaxValue().Valid {
-		val, _ := row.GetMaxValue().Float64Value()
-		fv := val.Float64
-		maxValue = &fv
-	}
-	if row.GetStepValue().Valid {
-		val, _ := row.GetStepValue().Float64Value()
-		fv := val.Float64
-		stepValue = &fv
-	}
+	minValue := numericToFloat(row.GetMinValue())
+	maxValue := numericToFloat(row.GetMaxValue())
+	stepValue := numericToFloat(row.GetStepValue())
 	return &model.NumberQuestion{
 		ID:                       row.GetID(),
 		QuizID:                   row.GetQuizID(),
