@@ -427,6 +427,11 @@ func TestValidateBettingMultipliers(t *testing.T) {
 		{name: "negative correct", correct: f(-1), wantField: "bettingMultiplierCorrect"},
 		{name: "negative wrong", wrong: f(-0.5), wantField: "bettingMultiplierWrong"},
 		{name: "wrong above correct", correct: f(1.5), wrong: f(2.0), wantField: "bettingMultiplierWrong"},
+		{name: "max correct", correct: f(100)},
+		{name: "correct above max", correct: f(100.01), wantField: "bettingMultiplierCorrect"},
+		{name: "wrong above max", correct: f(100), wrong: f(150), wantField: "bettingMultiplierWrong"},
+		{name: "correct with 3 decimals", correct: f(1.234), wantField: "bettingMultiplierCorrect"},
+		{name: "wrong with 3 decimals", wrong: f(0.125), wantField: "bettingMultiplierWrong"},
 	}
 
 	for _, tt := range tests {
@@ -441,4 +446,56 @@ func TestValidateBettingMultipliers(t *testing.T) {
 			assert.Equal(t, tt.wantField, betErr.Field)
 		})
 	}
+}
+
+func TestNumericToMultiplier(t *testing.T) {
+	num := func(s string) pgtype.Numeric {
+		var n pgtype.Numeric
+		require.NoError(t, n.Scan(s))
+		return n
+	}
+
+	tests := []struct {
+		name    string
+		in      pgtype.Numeric
+		want    *int64
+		wantErr bool
+	}{
+		{name: "not set", in: pgtype.Numeric{}, want: nil},
+		{name: "integer", in: num("2"), want: int64Ptr(200)},
+		{name: "two decimals", in: num("2.50"), want: int64Ptr(250)},
+		{name: "trailing zeros", in: num("1.500000"), want: int64Ptr(150)},
+		{name: "zero", in: num("0"), want: int64Ptr(0)},
+		{name: "max", in: num("100.00"), want: int64Ptr(10000)},
+		{name: "above max", in: num("100.01"), wantErr: true},
+		{name: "negative", in: num("-1"), wantErr: true},
+		{name: "three decimals", in: num("1.234"), wantErr: true},
+		{name: "NaN", in: pgtype.Numeric{Valid: true, NaN: true}, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := numericToMultiplier(tt.in)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func int64Ptr(v int64) *int64 { return &v }
+
+func TestNumericToFloat(t *testing.T) {
+	var n pgtype.Numeric
+	require.NoError(t, n.Scan("2.50"))
+	got := numericToFloat(n)
+	require.NotNil(t, got)
+	assert.Equal(t, 2.5, *got)
+
+	assert.Nil(t, numericToFloat(pgtype.Numeric{}))
+	assert.Nil(t, numericToFloat(pgtype.Numeric{Valid: true, NaN: true}))
+	assert.Nil(t, numericToFloat(pgtype.Numeric{Valid: true, InfinityModifier: pgtype.Infinity}))
 }

@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
@@ -166,17 +167,36 @@ func ExtractBetConfigFromQuestion(row quizQuestionRow) BetValidationConfig {
 
 // ValidateBettingMultipliers checks the payout multipliers a question will have
 // after a create or update: pass the new value if one is given, otherwise the
-// stored one (nil = not set, the default applies). The wrong multiplier must not
-// exceed the correct one, including when either falls back to its default.
+// stored one (nil = not set, the default applies). Each must be 0..100 with at
+// most 2 decimals, and wrong must not exceed correct, defaults included.
 func ValidateBettingMultipliers(correct, wrong *float64) error {
-	if correct != nil && *correct < 0 {
-		return &BetValidationError{Field: "bettingMultiplierCorrect", Message: "must be 0 or greater"}
+	correctFixed, err := multiplierToFixed("bettingMultiplierCorrect", correct)
+	if err != nil {
+		return err
 	}
-	if wrong != nil && *wrong < 0 {
-		return &BetValidationError{Field: "bettingMultiplierWrong", Message: "must be 0 or greater"}
+	wrongFixed, err := multiplierToFixed("bettingMultiplierWrong", wrong)
+	if err != nil {
+		return err
 	}
-	if betting.Multiplier(false, correct, wrong) > betting.Multiplier(true, correct, wrong) {
+	if betting.Multiplier(false, correctFixed, wrongFixed) > betting.Multiplier(true, correctFixed, wrongFixed) {
 		return &BetValidationError{Field: "bettingMultiplierWrong", Message: "must not be greater than bettingMultiplierCorrect"}
 	}
 	return nil
+}
+
+// multiplierToFixed converts an optional API multiplier to hundredths.
+func multiplierToFixed(field string, v *float64) (*int64, error) {
+	if v == nil {
+		return nil, nil
+	}
+	fixed, err := betting.MultiplierFromFloat(*v)
+	switch {
+	case errors.Is(err, betting.ErrMultiplierOutOfRange):
+		return nil, &BetValidationError{Field: field, Message: fmt.Sprintf("must be between 0 and %d", betting.MaxMultiplier/betting.MultiplierScale)}
+	case errors.Is(err, betting.ErrMultiplierPrecision):
+		return nil, &BetValidationError{Field: field, Message: "must have at most 2 decimals"}
+	case err != nil:
+		return nil, &BetValidationError{Field: field, Message: err.Error()}
+	}
+	return &fixed, nil
 }
