@@ -114,7 +114,7 @@ async function toggleNotifications(enabled: boolean) {
           :to="{ name: 'settings-archive' }"
           class="flex items-center justify-between gap-2.5 px-3 py-2 h-12"
         >
-          <p class="text-label">{{ $t('archive.myAchievements') }}</p>
+          <p class="text-label">{{ $t('archive.title') }}</p>
           <IconChevronRight class="size-6" />
         </NuxtLink>
       </DesignPanel>

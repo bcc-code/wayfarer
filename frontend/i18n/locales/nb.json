@@ -144,8 +144,8 @@
     "progress": "{completed} av {total} fullført"
   },
   "archive": {
-    "myAchievements": "Mine utmerkelser",
-    "empty": "Du har ingen utmerkelser ennå."
+    "title": "Tidligere prosjekter",
+    "empty": "Du har ingen tidligere prosjekter ennå."
   },
   "feedback": {
     "title": "Gi oss tilbakemelding",

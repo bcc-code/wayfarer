@@ -25,7 +25,7 @@ const isEmpty = computed(() => !!data.value && !projects.value.length)
 </script>
 
 <template>
-  <PageLayout :title="$t('archive.myAchievements')">
+  <PageLayout :title="$t('archive.title')">
     <template #action>
       <NuxtLink :to="{ name: 'settings' }">
         <DesignIconButton icon="IconClose" />
