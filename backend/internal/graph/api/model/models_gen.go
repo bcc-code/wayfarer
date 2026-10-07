@@ -504,6 +504,7 @@ type CreateLeaderboardConfigInput struct {
 	Name       string                `json:"name"`
 	EntityType LeaderboardEntityType `json:"entityType"`
 	Filter     *LeaderboardFilter    `json:"filter,omitempty"`
+	LimitMode  *LeaderboardLimitMode `json:"limitMode,omitempty"`
 	MaxEntries *int                  `json:"maxEntries,omitempty"`
 	SortOrder  *int                  `json:"sortOrder,omitempty"`
 	IsActive   *bool                 `json:"isActive,omitempty"`
@@ -1064,13 +1065,15 @@ type LeaderboardConfig struct {
 	Name       string                 `json:"name"`
 	EntityType LeaderboardEntityType  `json:"entityType"`
 	Filter     *LeaderboardFilterView `json:"filter,omitempty"`
+	LimitMode  LeaderboardLimitMode   `json:"limitMode"`
 	MaxEntries *int                   `json:"maxEntries,omitempty"`
 	SortOrder  int                    `json:"sortOrder"`
 	IsActive   bool                   `json:"isActive"`
 	CreatedAt  scalars.DateTime       `json:"createdAt"`
 	UpdatedAt  scalars.DateTime       `json:"updatedAt"`
 	// The finished leaderboard, capped before pagination. With no page size, returns
-	// the configured limit, or 100 entries when maxEntries is null.
+	// the automatic church-size limit, the manual maxEntries limit, or 100 entries
+	// when the manual limit is null.
 	Leaderboard *LeaderboardConnection `json:"leaderboard"`
 	EventID     *string                `json:"-"`
 	ProjectID   string                 `json:"-"`
@@ -2316,6 +2319,7 @@ type UpdateLeaderboardConfigInput struct {
 	Name       string                `json:"name"`
 	EntityType LeaderboardEntityType `json:"entityType"`
 	Filter     *LeaderboardFilter    `json:"filter,omitempty"`
+	LimitMode  *LeaderboardLimitMode `json:"limitMode,omitempty"`
 	MaxEntries *int                  `json:"maxEntries,omitempty"`
 	SortOrder  int                   `json:"sortOrder"`
 	IsActive   bool                  `json:"isActive"`
@@ -3257,6 +3261,62 @@ func (e *LeaderboardEntryTag) UnmarshalJSON(b []byte) error {
 }
 
 func (e LeaderboardEntryTag) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type LeaderboardLimitMode string
+
+const (
+	LeaderboardLimitModeManual LeaderboardLimitMode = "MANUAL"
+	// Top N filtered church participants. Requires PERSONS and churchId.
+	LeaderboardLimitModeChurchSize LeaderboardLimitMode = "CHURCH_SIZE"
+)
+
+var AllLeaderboardLimitMode = []LeaderboardLimitMode{
+	LeaderboardLimitModeManual,
+	LeaderboardLimitModeChurchSize,
+}
+
+func (e LeaderboardLimitMode) IsValid() bool {
+	switch e {
+	case LeaderboardLimitModeManual, LeaderboardLimitModeChurchSize:
+		return true
+	}
+	return false
+}
+
+func (e LeaderboardLimitMode) String() string {
+	return string(e)
+}
+
+func (e *LeaderboardLimitMode) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = LeaderboardLimitMode(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid LeaderboardLimitMode", str)
+	}
+	return nil
+}
+
+func (e LeaderboardLimitMode) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *LeaderboardLimitMode) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e LeaderboardLimitMode) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

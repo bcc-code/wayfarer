@@ -9,6 +9,7 @@ import {
   ChurchCategory,
   Gender,
   LeaderboardEntityType,
+  LeaderboardLimitMode,
 } from '../../app/api/generated'
 
 const options = ref({
@@ -33,6 +34,7 @@ const initialData = {
   id: 'LC1',
   name: 'Topp 20',
   entityType: LeaderboardEntityType.Persons,
+  limitMode: LeaderboardLimitMode.Manual,
   maxEntries: 20,
   sortOrder: 2,
   isActive: false,
@@ -215,6 +217,7 @@ describe('AdminLeaderboardConfigForm', () => {
     await submit(wrapper, {
       name: 'Alle',
       entityType: LeaderboardEntityType.Persons,
+      limitMode: LeaderboardLimitMode.Manual,
       eventId: null,
       sortOrder: 0,
       isActive: true,
@@ -269,6 +272,7 @@ describe('AdminLeaderboardConfigForm', () => {
     await submit(wrapper, {
       name: 'Ungdom',
       entityType: LeaderboardEntityType.Teams,
+      limitMode: LeaderboardLimitMode.Manual,
       eventId: 'EV1',
       sortOrder: 1,
       isActive: true,
@@ -283,6 +287,7 @@ describe('AdminLeaderboardConfigForm', () => {
     expect(wrapper.emitted('submit')?.[0]?.[0]).toEqual({
       name: 'Ungdom',
       entityType: LeaderboardEntityType.Teams,
+      limitMode: LeaderboardLimitMode.Manual,
       eventId: 'EV1',
       sortOrder: 1,
       isActive: true,
@@ -298,6 +303,7 @@ describe('AdminLeaderboardConfigForm', () => {
     await submit(wrapper, {
       name: 'Fra null',
       entityType: LeaderboardEntityType.Persons,
+      limitMode: LeaderboardLimitMode.Manual,
       eventId: null,
       sortOrder: 0,
       isActive: true,
@@ -307,6 +313,63 @@ describe('AdminLeaderboardConfigForm', () => {
     expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({
       filter: { minScore: 0 },
     })
+  })
+})
+
+describe('automatic leaderboard limits', () => {
+  it('starts a new config on automatic mode, but keeps a saved manual one', async () => {
+    const creating = await mount()
+    expect(
+      field(creating, 'limitMode')
+        ?.findComponent({ name: 'USelect' })
+        .props('modelValue'),
+    ).toBe(LeaderboardLimitMode.ChurchSize)
+    expect(fieldNames(creating)).toContain('maxEntries')
+
+    const editing = await mount({ initialData, isEditMode: true })
+    expect(
+      field(editing, 'limitMode')
+        ?.findComponent({ name: 'USelect' })
+        .props('modelValue'),
+    ).toBe(LeaderboardLimitMode.Manual)
+  })
+
+  it('loads automatic mode and preserves the optional cap on submit', async () => {
+    const wrapper = await mount({
+      initialData: {
+        ...initialData,
+        limitMode: LeaderboardLimitMode.ChurchSize,
+        filter: { churchId: 'CH1' },
+      },
+    })
+    expect(fieldNames(wrapper)).toContain('maxEntries')
+    expect(wrapper.text()).toContain('100–199: topp 50')
+    expect(wrapper.text()).toContain('200 eller flere: topp 100')
+    const form = wrapper.findComponent({ name: 'UForm' })
+    await submit(wrapper, { ...form.props('state') })
+    expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({
+      limitMode: LeaderboardLimitMode.ChurchSize,
+      maxEntries: 20,
+      filter: { churchId: 'CH1' },
+    })
+  })
+
+  it('requires a church and persons entity for automatic limits', async () => {
+    const wrapper = await mount()
+    const form = wrapper.findComponent({ name: 'UForm' })
+    const schema = form.props('schema') as ZodType
+    const state = {
+      ...form.props('state'),
+      name: 'Local',
+      limitMode: LeaderboardLimitMode.ChurchSize,
+    }
+    expect(schema.safeParse(state).success).toBe(false)
+    const valid = { ...state, filter: { ...emptyFilterState, churchId: 'CH1' } }
+    expect(schema.safeParse(valid).success).toBe(true)
+    expect(
+      schema.safeParse({ ...valid, entityType: LeaderboardEntityType.Teams })
+        .success,
+    ).toBe(false)
   })
 })
 
