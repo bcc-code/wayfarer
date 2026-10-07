@@ -616,6 +616,16 @@ CREATE TABLE quiz_questions (
     -- Points for this question (null = use quiz default)
     points INT,
 
+    -- Betting (bet limits; payout multipliers: NULL = app default, correct 2.0 / wrong 0)
+    betting_enabled BOOLEAN DEFAULT false NOT NULL,
+    betting_min_percentage DECIMAL,
+    betting_max_percentage DECIMAL,
+    betting_min_absolute INT,
+    betting_max_absolute INT,
+    betting_multiplier_correct DECIMAL CHECK (betting_multiplier_correct IS NULL OR betting_multiplier_correct >= 0),
+    betting_multiplier_wrong DECIMAL CHECK (betting_multiplier_wrong IS NULL OR betting_multiplier_wrong >= 0),
+    CHECK (betting_multiplier_correct IS NULL OR betting_multiplier_wrong IS NULL OR betting_multiplier_wrong <= betting_multiplier_correct),
+
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
 

@@ -55,6 +55,8 @@ interface QuizQuestion {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    bettingMultiplierCorrect: Float
+    bettingMultiplierWrong: Float
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
@@ -70,6 +72,8 @@ type PredefinedQuestion implements QuizQuestion {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    bettingMultiplierCorrect: Float
+    bettingMultiplierWrong: Float
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     allowMultipleSelection: Boolean!
     predefinedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
@@ -87,6 +91,8 @@ type FreeTextQuestion implements QuizQuestion {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    bettingMultiplierCorrect: Float
+    bettingMultiplierWrong: Float
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
@@ -102,6 +108,8 @@ type NumberQuestion implements QuizQuestion {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    bettingMultiplierCorrect: Float
+    bettingMultiplierWrong: Float
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     minValue: Float
     maxValue: Float
@@ -120,6 +128,8 @@ type JsonQuestion implements QuizQuestion {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    bettingMultiplierCorrect: Float
+    bettingMultiplierWrong: Float
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
@@ -135,6 +145,8 @@ type OrderingQuestion implements QuizQuestion {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    bettingMultiplierCorrect: Float
+    bettingMultiplierWrong: Float
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     orderingItems: [QuizOrderingItem!]! @goField(forceResolver: true)
 }
@@ -301,6 +313,8 @@ input CreateQuizQuestionInput {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    bettingMultiplierCorrect: Float
+    bettingMultiplierWrong: Float
 
     allowMultipleSelection: Boolean
     predefinedAnswers: [CreatePredefinedAnswerInput!]
@@ -334,6 +348,8 @@ input UpdateQuizQuestionInput {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    bettingMultiplierCorrect: Float
+    bettingMultiplierWrong: Float
     # Set to true to clear betting absolute values (set them to null)
     clearBettingMinAbsolute: Boolean
     clearBettingMaxAbsolute: Boolean

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
+	"github.com/bcc-media/wayfarer/internal/services/betting"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -161,4 +162,21 @@ func ExtractBetConfigFromQuestion(row quizQuestionRow) BetValidationConfig {
 		BettingMinAbsolute:   row.GetBettingMinAbsolute(),
 		BettingMaxAbsolute:   row.GetBettingMaxAbsolute(),
 	}
+}
+
+// ValidateBettingMultipliers checks the payout multipliers a question will have
+// after a create or update: pass the new value if one is given, otherwise the
+// stored one (nil = not set, the default applies). The wrong multiplier must not
+// exceed the correct one, including when either falls back to its default.
+func ValidateBettingMultipliers(correct, wrong *float64) error {
+	if correct != nil && *correct < 0 {
+		return &BetValidationError{Field: "bettingMultiplierCorrect", Message: "must be 0 or greater"}
+	}
+	if wrong != nil && *wrong < 0 {
+		return &BetValidationError{Field: "bettingMultiplierWrong", Message: "must be 0 or greater"}
+	}
+	if betting.Multiplier(false, correct, wrong) > betting.Multiplier(true, correct, wrong) {
+		return &BetValidationError{Field: "bettingMultiplierWrong", Message: "must not be greater than bettingMultiplierCorrect"}
+	}
+	return nil
 }

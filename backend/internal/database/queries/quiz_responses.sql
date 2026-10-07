@@ -138,3 +138,31 @@ RETURNING quiz_responses.id, quiz_responses.submission_id, quiz_responses.questi
 
 -- name: GetQuizResponseScoreJournalID :one
 SELECT score_journal_id FROM quiz_responses WHERE id = @id::char(28);
+
+-- name: GetUnsettledSessionBets :many
+-- Responses in a session with a bet that has not been paid out yet,
+-- limited to the given question types. Ungraded responses (is_correct NULL,
+-- e.g. a bet sent without an answer) are not bets that can be paid out.
+SELECT
+    r.id, r.submission_id, r.question_id, r.is_correct, r.bet_amount,
+    s.user_id,
+    q.question_type, q.betting_multiplier_correct, q.betting_multiplier_wrong
+FROM quiz_responses r
+JOIN quiz_submissions s ON s.id = r.submission_id
+JOIN quiz_questions q ON q.id = r.question_id
+WHERE s.session_id = @sessionid::char(28)
+  AND q.question_type = ANY(@questiontypes::text[])
+  AND q.betting_enabled
+  AND r.bet_amount > 0
+  AND r.is_correct IS NOT NULL
+  AND r.score_journal_id IS NULL
+ORDER BY s.user_id, r.id;
+
+-- name: SettleBetResult :execrows
+-- Stores a bet result only if the response is not settled yet.
+-- 0 rows means another settlement got there first.
+UPDATE quiz_responses
+SET points_earned = @pointsearned::int,
+    score_journal_id = @scorejournalid::char(28)
+WHERE id = @id::char(28)
+  AND score_journal_id IS NULL;

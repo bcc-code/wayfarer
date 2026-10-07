@@ -500,24 +500,26 @@ type QuizPredefinedAnswer struct {
 }
 
 type QuizQuestion struct {
-	ID                     string             `json:"id"`
-	QuizID                 string             `json:"quiz_id"`
-	QuestionType           string             `json:"question_type"`
-	QuestionText           string             `json:"question_text"`
-	QuestionOrder          int32              `json:"question_order"`
-	AllowMultipleSelection *bool              `json:"allow_multiple_selection"`
-	MinValue               pgtype.Numeric     `json:"min_value"`
-	MaxValue               pgtype.Numeric     `json:"max_value"`
-	StepValue              pgtype.Numeric     `json:"step_value"`
-	CreatedAt              pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
-	TimeoutSeconds         *int32             `json:"timeout_seconds"`
-	Points                 *int32             `json:"points"`
-	BettingEnabled         bool               `json:"betting_enabled"`
-	BettingMinPercentage   pgtype.Numeric     `json:"betting_min_percentage"`
-	BettingMaxPercentage   pgtype.Numeric     `json:"betting_max_percentage"`
-	BettingMinAbsolute     *int32             `json:"betting_min_absolute"`
-	BettingMaxAbsolute     *int32             `json:"betting_max_absolute"`
+	ID                       string             `json:"id"`
+	QuizID                   string             `json:"quiz_id"`
+	QuestionType             string             `json:"question_type"`
+	QuestionText             string             `json:"question_text"`
+	QuestionOrder            int32              `json:"question_order"`
+	AllowMultipleSelection   *bool              `json:"allow_multiple_selection"`
+	MinValue                 pgtype.Numeric     `json:"min_value"`
+	MaxValue                 pgtype.Numeric     `json:"max_value"`
+	StepValue                pgtype.Numeric     `json:"step_value"`
+	CreatedAt                pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                pgtype.Timestamptz `json:"updated_at"`
+	TimeoutSeconds           *int32             `json:"timeout_seconds"`
+	Points                   *int32             `json:"points"`
+	BettingEnabled           bool               `json:"betting_enabled"`
+	BettingMinPercentage     pgtype.Numeric     `json:"betting_min_percentage"`
+	BettingMaxPercentage     pgtype.Numeric     `json:"betting_max_percentage"`
+	BettingMinAbsolute       *int32             `json:"betting_min_absolute"`
+	BettingMaxAbsolute       *int32             `json:"betting_max_absolute"`
+	BettingMultiplierCorrect pgtype.Numeric     `json:"betting_multiplier_correct"`
+	BettingMultiplierWrong   pgtype.Numeric     `json:"betting_multiplier_wrong"`
 }
 
 type QuizQuestionTranslation struct {

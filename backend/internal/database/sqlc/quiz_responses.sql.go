@@ -442,6 +442,97 @@ func (q *Queries) GetQuizResponsesWithContext(ctx context.Context, ids []string)
 	return items, nil
 }
 
+const GetUnsettledSessionBets = `-- name: GetUnsettledSessionBets :many
+SELECT
+    r.id, r.submission_id, r.question_id, r.is_correct, r.bet_amount,
+    s.user_id,
+    q.question_type, q.betting_multiplier_correct, q.betting_multiplier_wrong
+FROM quiz_responses r
+JOIN quiz_submissions s ON s.id = r.submission_id
+JOIN quiz_questions q ON q.id = r.question_id
+WHERE s.session_id = $1::char(28)
+  AND q.question_type = ANY($2::text[])
+  AND q.betting_enabled
+  AND r.bet_amount > 0
+  AND r.is_correct IS NOT NULL
+  AND r.score_journal_id IS NULL
+ORDER BY s.user_id, r.id
+`
+
+type GetUnsettledSessionBetsParams struct {
+	Sessionid     string   `json:"sessionid"`
+	Questiontypes []string `json:"questiontypes"`
+}
+
+type GetUnsettledSessionBetsRow struct {
+	ID                       string         `json:"id"`
+	SubmissionID             string         `json:"submission_id"`
+	QuestionID               string         `json:"question_id"`
+	IsCorrect                *bool          `json:"is_correct"`
+	BetAmount                *int32         `json:"bet_amount"`
+	UserID                   string         `json:"user_id"`
+	QuestionType             string         `json:"question_type"`
+	BettingMultiplierCorrect pgtype.Numeric `json:"betting_multiplier_correct"`
+	BettingMultiplierWrong   pgtype.Numeric `json:"betting_multiplier_wrong"`
+}
+
+// Responses in a session with a bet that has not been paid out yet,
+// limited to the given question types. Ungraded responses (is_correct NULL,
+// e.g. a bet sent without an answer) are not bets that can be paid out.
+func (q *Queries) GetUnsettledSessionBets(ctx context.Context, arg GetUnsettledSessionBetsParams) ([]*GetUnsettledSessionBetsRow, error) {
+	rows, err := q.db.Query(ctx, GetUnsettledSessionBets, arg.Sessionid, arg.Questiontypes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUnsettledSessionBetsRow{}
+	for rows.Next() {
+		var i GetUnsettledSessionBetsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.SubmissionID,
+			&i.QuestionID,
+			&i.IsCorrect,
+			&i.BetAmount,
+			&i.UserID,
+			&i.QuestionType,
+			&i.BettingMultiplierCorrect,
+			&i.BettingMultiplierWrong,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const SettleBetResult = `-- name: SettleBetResult :execrows
+UPDATE quiz_responses
+SET points_earned = $1::int,
+    score_journal_id = $2::char(28)
+WHERE id = $3::char(28)
+  AND score_journal_id IS NULL
+`
+
+type SettleBetResultParams struct {
+	Pointsearned   int32  `json:"pointsearned"`
+	Scorejournalid string `json:"scorejournalid"`
+	ID             string `json:"id"`
+}
+
+// Stores a bet result only if the response is not settled yet.
+// 0 rows means another settlement got there first.
+func (q *Queries) SettleBetResult(ctx context.Context, arg SettleBetResultParams) (int64, error) {
+	result, err := q.db.Exec(ctx, SettleBetResult, arg.Pointsearned, arg.Scorejournalid, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const UpdateBetResult = `-- name: UpdateBetResult :one
 UPDATE quiz_responses
 SET points_earned = $1::int

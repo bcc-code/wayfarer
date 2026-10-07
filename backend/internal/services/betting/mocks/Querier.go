@@ -115,27 +115,25 @@ func (_c *MockQuerier_CreateScoreJournalEntry_Call) RunAndReturn(run func(ctx co
 	return _c
 }
 
-// UpdateBetResultWithJournal provides a mock function for the type MockQuerier
-func (_mock *MockQuerier) UpdateBetResultWithJournal(ctx context.Context, arg sqlc.UpdateBetResultWithJournalParams) (*sqlc.UpdateBetResultWithJournalRow, error) {
+// SettleBetResult provides a mock function for the type MockQuerier
+func (_mock *MockQuerier) SettleBetResult(ctx context.Context, arg sqlc.SettleBetResultParams) (int64, error) {
 	ret := _mock.Called(ctx, arg)
 
 	if len(ret) == 0 {
-		panic("no return value specified for UpdateBetResultWithJournal")
+		panic("no return value specified for SettleBetResult")
 	}
 
-	var r0 *sqlc.UpdateBetResultWithJournalRow
+	var r0 int64
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, sqlc.UpdateBetResultWithJournalParams) (*sqlc.UpdateBetResultWithJournalRow, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, sqlc.SettleBetResultParams) (int64, error)); ok {
 		return returnFunc(ctx, arg)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, sqlc.UpdateBetResultWithJournalParams) *sqlc.UpdateBetResultWithJournalRow); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, sqlc.SettleBetResultParams) int64); ok {
 		r0 = returnFunc(ctx, arg)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*sqlc.UpdateBetResultWithJournalRow)
-		}
+		r0 = ret.Get(0).(int64)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, sqlc.UpdateBetResultWithJournalParams) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, sqlc.SettleBetResultParams) error); ok {
 		r1 = returnFunc(ctx, arg)
 	} else {
 		r1 = ret.Error(1)
@@ -143,27 +141,27 @@ func (_mock *MockQuerier) UpdateBetResultWithJournal(ctx context.Context, arg sq
 	return r0, r1
 }
 
-// MockQuerier_UpdateBetResultWithJournal_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateBetResultWithJournal'
-type MockQuerier_UpdateBetResultWithJournal_Call struct {
+// MockQuerier_SettleBetResult_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SettleBetResult'
+type MockQuerier_SettleBetResult_Call struct {
 	*mock.Call
 }
 
-// UpdateBetResultWithJournal is a helper method to define mock.On call
+// SettleBetResult is a helper method to define mock.On call
 //   - ctx context.Context
-//   - arg sqlc.UpdateBetResultWithJournalParams
-func (_e *MockQuerier_Expecter) UpdateBetResultWithJournal(ctx any, arg any) *MockQuerier_UpdateBetResultWithJournal_Call {
-	return &MockQuerier_UpdateBetResultWithJournal_Call{Call: _e.mock.On("UpdateBetResultWithJournal", ctx, arg)}
+//   - arg sqlc.SettleBetResultParams
+func (_e *MockQuerier_Expecter) SettleBetResult(ctx any, arg any) *MockQuerier_SettleBetResult_Call {
+	return &MockQuerier_SettleBetResult_Call{Call: _e.mock.On("SettleBetResult", ctx, arg)}
 }
 
-func (_c *MockQuerier_UpdateBetResultWithJournal_Call) Run(run func(ctx context.Context, arg sqlc.UpdateBetResultWithJournalParams)) *MockQuerier_UpdateBetResultWithJournal_Call {
+func (_c *MockQuerier_SettleBetResult_Call) Run(run func(ctx context.Context, arg sqlc.SettleBetResultParams)) *MockQuerier_SettleBetResult_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 sqlc.UpdateBetResultWithJournalParams
+		var arg1 sqlc.SettleBetResultParams
 		if args[1] != nil {
-			arg1 = args[1].(sqlc.UpdateBetResultWithJournalParams)
+			arg1 = args[1].(sqlc.SettleBetResultParams)
 		}
 		run(
 			arg0,
@@ -173,12 +171,12 @@ func (_c *MockQuerier_UpdateBetResultWithJournal_Call) Run(run func(ctx context.
 	return _c
 }
 
-func (_c *MockQuerier_UpdateBetResultWithJournal_Call) Return(updateBetResultWithJournalRow *sqlc.UpdateBetResultWithJournalRow, err error) *MockQuerier_UpdateBetResultWithJournal_Call {
-	_c.Call.Return(updateBetResultWithJournalRow, err)
+func (_c *MockQuerier_SettleBetResult_Call) Return(n int64, err error) *MockQuerier_SettleBetResult_Call {
+	_c.Call.Return(n, err)
 	return _c
 }
 
-func (_c *MockQuerier_UpdateBetResultWithJournal_Call) RunAndReturn(run func(ctx context.Context, arg sqlc.UpdateBetResultWithJournalParams) (*sqlc.UpdateBetResultWithJournalRow, error)) *MockQuerier_UpdateBetResultWithJournal_Call {
+func (_c *MockQuerier_SettleBetResult_Call) RunAndReturn(run func(ctx context.Context, arg sqlc.SettleBetResultParams) (int64, error)) *MockQuerier_SettleBetResult_Call {
 	_c.Call.Return(run)
 	return _c
 }

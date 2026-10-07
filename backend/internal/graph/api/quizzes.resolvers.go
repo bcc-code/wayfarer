@@ -354,6 +354,15 @@ func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, i
 		maxAbs := int32(*input.BettingMaxAbsolute)
 		params.Bettingmaxabsolute = &maxAbs
 	}
+	if err := ValidateBettingMultipliers(input.BettingMultiplierCorrect, input.BettingMultiplierWrong); err != nil {
+		return nil, err
+	}
+	if input.BettingMultiplierCorrect != nil {
+		_ = params.Bettingmultipliercorrect.Scan(fmt.Sprintf("%f", *input.BettingMultiplierCorrect))
+	}
+	if input.BettingMultiplierWrong != nil {
+		_ = params.Bettingmultiplierwrong.Scan(fmt.Sprintf("%f", *input.BettingMultiplierWrong))
+	}
 
 	// Create question
 	questionRow, err := qtx.CreateQuizQuestion(ctx, params)
@@ -489,6 +498,24 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 	if input.BettingMaxAbsolute != nil {
 		maxAbs := int32(*input.BettingMaxAbsolute)
 		params.Bettingmaxabsolute = &maxAbs
+	}
+	// Validate the multipliers the question will have after this update
+	multiplierCorrect := input.BettingMultiplierCorrect
+	if multiplierCorrect == nil {
+		multiplierCorrect = numericToFloat(question.BettingMultiplierCorrect)
+	}
+	multiplierWrong := input.BettingMultiplierWrong
+	if multiplierWrong == nil {
+		multiplierWrong = numericToFloat(question.BettingMultiplierWrong)
+	}
+	if err := ValidateBettingMultipliers(multiplierCorrect, multiplierWrong); err != nil {
+		return nil, err
+	}
+	if input.BettingMultiplierCorrect != nil {
+		_ = params.Bettingmultipliercorrect.Scan(fmt.Sprintf("%f", *input.BettingMultiplierCorrect))
+	}
+	if input.BettingMultiplierWrong != nil {
+		_ = params.Bettingmultiplierwrong.Scan(fmt.Sprintf("%f", *input.BettingMultiplierWrong))
 	}
 
 	// Update question
