@@ -190,6 +190,25 @@ onUnmounted(() => {
   }
 })
 
+// The browser UI colour follows the project's branding and the active colour
+// mode. Until branding resolves the manifest's own theme_color stands in.
+const colorMode = useColorMode()
+const activeColors = computed<BrandingColorsFieldsFragment | null>(() => {
+  const live = data.value?.myCurrentProject.branding.colors
+  if (live) return live
+  return isValidTheme(cachedTheme.value) ? cachedTheme.value : null
+})
+
+useSeoMeta({
+  themeColor: () => {
+    const colors = activeColors.value
+    if (!colors) return null
+    return colorMode.value === 'dark'
+      ? colors.dark.backgroundDefault
+      : colors.light.backgroundDefault
+  },
+})
+
 const route = useRoute()
 const navRef = ref<HTMLElement | null>(null)
 const indicatorRef = ref<HTMLElement | null>(null)
