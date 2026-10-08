@@ -14,6 +14,27 @@ describe('PageLayout', () => {
     scrollY.value = 0
   })
 
+  it('keeps the bar in flow, so content scrolls past it rather than under it', async () => {
+    const wrapper = await mountSuspended(PageLayout, {
+      props: { title: 'Innstillinger' },
+    })
+
+    expect(
+      wrapper.findComponent(TitleBar).element.parentElement?.className,
+    ).not.toContain('sticky')
+  })
+
+  it('does not collapse the title on scroll while the bar is not sticky', async () => {
+    const wrapper = await mountSuspended(PageLayout, {
+      props: { title: 'Innstillinger' },
+    })
+    const bar = wrapper.findComponent(TitleBar)
+
+    scrollY.value = 5000
+    await nextTick()
+    expect(bar.props('titleOpacity')).toBe(0)
+  })
+
   it('renders the title', async () => {
     const wrapper = await mountSuspended(PageLayout, {
       props: { title: 'Innstillinger' },
@@ -22,37 +43,12 @@ describe('PageLayout', () => {
     expect(wrapper.find('h1').text()).toBe('Innstillinger')
   })
 
-  it('shows only the large title at the top of the page', async () => {
+  it('shows only the large title', async () => {
     const wrapper = await mountSuspended(PageLayout, {
       props: { title: 'Innstillinger' },
     })
 
     expect(wrapper.findComponent(TitleBar).props('titleOpacity')).toBe(0)
-  })
-
-  it('hands over to the compact title continuously, not at a threshold', async () => {
-    const wrapper = await mountSuspended(PageLayout, {
-      props: { title: 'Innstillinger' },
-    })
-    const bar = wrapper.findComponent(TitleBar)
-
-    scrollY.value = 24
-    await nextTick()
-    expect(bar.props('titleOpacity')).toBe(0.5)
-
-    scrollY.value = 48
-    await nextTick()
-    expect(bar.props('titleOpacity')).toBe(1)
-  })
-
-  it('clamps the opacity once the hand-over is complete', async () => {
-    const wrapper = await mountSuspended(PageLayout, {
-      props: { title: 'Innstillinger' },
-    })
-
-    scrollY.value = 5000
-    await nextTick()
-    expect(wrapper.findComponent(TitleBar).props('titleOpacity')).toBe(1)
   })
 
   it('keeps the bar title visible when there is no large title to hand over from', async () => {

@@ -35,14 +35,19 @@ user layout only.
       anywhere, so every navigation was an instant swap. Now direction-aware:
       moving deeper pushes, moving back pops, switching tabs cross-fades.
       See "Page transitions" below.
-- [x] **Sticky title bar.** `PageLayout.vue` carried a literal
-      `<!-- TODO: position sticky -->`. `TitleBar.vue` already implemented the
-      iOS large-title → small-title collapse driven by `useWindowScroll`, but
-      because the wrapper was not sticky the collapsed bar scrolled out of
-      view — the effect was 90% built and never paid off.
-- [x] **Large-title collapse**, rebuilt on the iOS structure after the original
-      was turned off for stuttering. See "Why the title bar collapse stuttered"
-      below.
+- [ ] **Sticky title bar — tried and reverted (2026-10-08).** `PageLayout.vue`
+      carried a literal `<!-- TODO: position sticky -->`, and `TitleBar.vue`
+      already implemented the iOS large-title → small-title collapse driven by
+      `useWindowScroll`, so making the wrapper sticky looked like finishing an
+      effect that was 90% built. It was reverted the same day: it cost frames
+      and did not look right. See "What making the bar sticky cost" below
+      before trying again.
+- [ ] **Large-title collapse** — rebuilt on the iOS structure after the
+      original was turned off for stuttering, then switched off again with the
+      sticky bar: the two only work together, because a bar that scrolls away
+      has nothing to hand the title over to. The rebuilt structure is still in
+      `TitleBar` behind the `titleOpacity` prop, which `PageLayout` now pins to
+      0. See "Why the title bar collapse stuttered" below.
 - [x] **Navigation indicator no longer flashes open from nothing** on mount.
       See "The navigation indicator" below.
 - [x] **The bottom navigation fades, scales and slides in and out** rather than
@@ -341,6 +346,108 @@ It did that in two different situations:
 
 The indicator also stays `opacity-0` until it has been positioned once, so there
 is nothing to see before it is correct.
+
+## What making the bar sticky cost, and why it was reverted
+
+Reported from an installed PWA on iPhone 17 / iOS 26 after the work above
+shipped: the whole app felt sluggish, and the title bar's gradient flashed
+black on every navigation. Both trace to `ProgressiveBlur`.
+
+### The frame cost
+
+`ProgressiveBlur` renders **one absolutely-positioned element carrying both a
+`backdrop-filter: blur()` and a `mask-image` per layer**, and `layers` defaulted
+to 4. It is mounted twice — `TitleBar` and the fixed bottom navigation — so
+eight masked backdrop filters were live at once.
+
+Masked `backdrop-filter` is near the top of what WebKit will charge you for,
+and the charge is per frame *only when the backdrop changes*. That is exactly
+what making the bar sticky changed: before, the bar sat over static content and
+the blur resolved once; after, the content scrolls under it and all four layers
+re-blur on every scroll frame. The same was already true of the bottom
+navigation, which is why the app was not perfectly smooth before either —
+making the bar sticky doubled an existing cost rather than inventing a new one.
+
+`layers` now defaults to **1**. A single layer with a `transparent → black`
+mask still gives a gradient falloff, which is most of the look; the remaining
+three layers only refined the falloff curve. `TitleBar.test.ts` pins the count,
+because this is a default that is easy to raise back without noticing where it
+is paid.
+
+A thing that was *not* the problem, though it looks like it: `PageLayout`'s
+`useWindowScroll` → `titleOpacity` → inline `:style` chain does not re-render
+per scroll event. `titleOpacity` clamps to `1` past `TITLE_HANDOVER_DISTANCE`,
+and a `computed` returning an unchanged value does not trigger its dependents,
+so the renders are bounded to the first 48px of scroll.
+
+### The black flash
+
+`TitleBar` had **no background of its own**. Its entire appearance was the
+`backdrop-filter` sampling the page behind it, plus the
+`from-shadow-blank/0 to-shadow-default` scroll shadow — and
+`--color-shadow-default` is `rgb(0 0 0 / 0.3)` in the dark theme.
+
+Under `mode: 'out-in'` there is a moment in every navigation when the outgoing
+page has reached `opacity: 0` and the incoming one has not mounted. There is
+then nothing behind the bar to blur. Worse, `opacity < 1` makes an element a
+*backdrop root*, so for the whole transition the blur layers stop sampling the
+document behind them regardless. All that painted was 30% black over bare body
+— a black bar, flashing once per navigation.
+
+The bar now carries `bg-background-default/70` whenever `blurred` is true, so
+there is always something to paint and the blur is an enhancement rather than
+the only source of pixels. Gated on `blurred` deliberately: `DesignDrawer`
+passes `blurred="false"` and needs the corner region outside `rounded-t-modal`
+left unpainted, which is the same trap the section below describes.
+
+The tint ratio is the knob if the bar reads as too opaque or too transparent.
+
+### Why sticky was reverted rather than retuned
+
+With the tint in place the bar stopped flashing black, but over real page
+content it read as a dark band with the page bleeding through it — visible on
+the profile page, where the `poeng` / `plassering` stats sit directly under the
+bar and showed through at reduced contrast.
+
+That is inherent to the arrangement, not a bad tint value. A translucent bar
+with content sliding under it only reads as "frosted glass" when the blur is
+strong enough to destroy the detail behind it; at one layer it is not, and at
+four layers it is the frame cost described above. The in-between is a bar that
+looks like a mistake. Picking a point on that trade is a design decision, so the
+code is back to a bar in normal flow and the decision is left open.
+
+`PageLayout` therefore pins `titleOpacity` to 0 when the page has a large title.
+Everything the collapse needs is still in `TitleBar` — the constant height, the
+two overlaid titles, the alignment fixes — so re-enabling it is restoring
+`sticky top-0` and the `useWindowScroll` mapping, not rebuilding it.
+
+What stays from the investigation: `ProgressiveBlur`'s one-layer default, which
+the bottom navigation benefits from regardless, and the `TitleBar` tint, which
+still covers the transition flash.
+
+A loose end: with the bar in flow there is never content behind it to blur, so
+its `ProgressiveBlur` is now pure cost for no visual effect. Left in place
+because `blurred` is a call-site prop and the cost at one layer is small, but it
+is the obvious next thing to cut if the bar stays non-sticky.
+
+### Still open
+
+- The bottom navigation can flash the same way for the same reason during a
+  transition, and was left visually untouched — only its layer count dropped.
+  Its `<ul>` has `bg-background-raised`, so only the padding ring around the
+  pill is affected, which is much less visible than a full-width bar. It is
+  `fixed`, so unlike the title bar it does still have content moving under it
+  and its blur is doing real work.
+- Worth ruling out before chasing anything further on a specific device:
+  **Settings → Accessibility → Motion → Reduce Motion**. The whole `.page-*`
+  block in `user.css`, the GSAP press feedback and the navigation indicator are
+  all gated on `prefers-reduced-motion: no-preference`, so with it on the app
+  correctly has no transitions at all.
+- Tab ↔ tab navigation resolves to direction `0`, which is a cross-fade with
+  **zero travel** — by design (see "Page transitions"), but it is the
+  navigation users perform most, so "the page transitions don't work" is a
+  reasonable reading of it. Reviewed and deliberately left alone for now;
+  revisit together with per-tab scroll restoration.
 
 ## The drawer's rounded top
 

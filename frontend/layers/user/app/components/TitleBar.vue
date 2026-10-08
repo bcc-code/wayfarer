@@ -2,6 +2,16 @@
 /**
  * A constant height whatever the scroll: the two titles are overlaid on one row
  * and cross-faded, so only opacity moves and nothing reflows.
+ *
+ * The bar carries its own translucent background rather than relying on the
+ * blur alone. `backdrop-filter` has nothing to sample whenever the page behind
+ * it is not painting — during a page transition the outgoing page drops to
+ * `opacity: 0`, which also makes it a backdrop root — and without a background
+ * all that was left was the `to-shadow-default` scrim over bare body, which
+ * read as a black bar flashing on every navigation.
+ *
+ * Not applied when `blurred` is false: `DesignDrawer` needs the corner region
+ * outside `rounded-t-modal` left unpainted.
  */
 withDefaults(
   defineProps<{
@@ -25,7 +35,10 @@ withDefaults(
 <template>
   <ProgressiveBlur
     direction="up"
-    :class="[shadow && 'from-shadow-blank/0 to-shadow-default bg-linear-to-t']"
+    :class="[
+      shadow && 'from-shadow-blank/0 to-shadow-default bg-linear-to-t',
+      blurred && 'bg-background-default/70',
+    ]"
     :enabled="blurred"
   >
     <!-- The padding sits here so the <header> is the content box, which is what

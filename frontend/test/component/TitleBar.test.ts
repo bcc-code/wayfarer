@@ -5,6 +5,7 @@ import TitleBar from '../../layers/user/app/components/TitleBar.vue'
 import DesignDrawer from '../../layers/user/app/components/design/DesignDrawer.vue'
 
 const SHADOW_CLASS = 'to-shadow-default'
+const TINT_CLASS = 'bg-background-default/70'
 
 describe('TitleBar', () => {
   it('paints the scroll shadow when asked', async () => {
@@ -31,6 +32,30 @@ describe('TitleBar', () => {
     expect(wrapper.find('h1').text()).toBe('Innstillinger')
     expect(wrapper.find('p').text()).toBe('Innstillinger')
     expect(wrapper.find('p').attributes('style')).toContain('opacity: 0.25')
+  })
+
+  it('paints its own background so a transition has nothing black to flash', async () => {
+    const wrapper = await mountSuspended(TitleBar, {
+      props: { title: 'Innstillinger' },
+    })
+
+    expect(wrapper.html()).toContain(TINT_CLASS)
+  })
+
+  it('leaves the corner region unpainted when the blur is off', async () => {
+    const wrapper = await mountSuspended(TitleBar, {
+      props: { title: 'Rediger lag', blurred: false },
+    })
+
+    expect(wrapper.html()).not.toContain(TINT_CLASS)
+  })
+
+  it('composites one backdrop filter, not a stack of them', async () => {
+    const wrapper = await mountSuspended(TitleBar, {
+      props: { title: 'Innstillinger' },
+    })
+
+    expect(wrapper.findAll('.blur-layer')).toHaveLength(1)
   })
 
   it('shows a sheet heading only once, with no compact title to fade in', async () => {
