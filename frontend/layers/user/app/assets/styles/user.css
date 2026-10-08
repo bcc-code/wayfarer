@@ -19,3 +19,80 @@
 body {
   background-color: var(--color-background-default);
 }
+
+/**
+ * App-like touch behaviour.
+ *
+ * These are deliberately scoped to the user layer rather than the shared
+ * `app/assets/styles/main.css`: the admin panel is a desktop-shaped app where
+ * text selection and ordinary overscroll are wanted. This file is imported by
+ * the user layout only.
+ */
+
+html,
+body {
+  /* Without this, Chrome fires its own pull-to-refresh on a downward drag at
+     the top of the page and iOS rubber-bands the whole document. It also stops
+     a scroll inside DesignDrawer from chaining into the page behind it. */
+  overscroll-behavior: none;
+}
+
+body {
+  /* The grey box that flashes over a tap target on Android and iOS Safari. */
+  -webkit-tap-highlight-color: transparent;
+  /* Long-press opens the iOS share/save callout over images and links. */
+  -webkit-touch-callout: none;
+  /* Long-press otherwise starts a text selection and raises the iOS magnifier
+     loupe. Re-enabled below for the things a user may genuinely want to
+     select. */
+  user-select: none;
+}
+
+input,
+textarea,
+[contenteditable='true'],
+.prose,
+.select-text,
+.select-text * {
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+/**
+ * Page transitions.
+ *
+ * One transition name for every route; only `--page-direction` changes, set by
+ * the router hook in the user layout. That indirection is load-bearing rather
+ * than stylistic — see `utils/pageTransition.ts`: under `mode: 'out-in'`
+ * NuxtPage resolves the transition from the route it is currently rendering,
+ * so the leaving page reads the route being *left*. Naming the direction per
+ * route therefore slides the outgoing and incoming halves of one navigation in
+ * opposite directions. A single variable cannot disagree with itself.
+ *
+ * `1` pushes deeper, `-1` pops back out, `0` cross-fades in place. The slide is
+ * deliberately short rather than a full-width push: pages scroll the window
+ * rather than an internal container and differ in height, so overlapping a
+ * full-width push would jump the scroll position.
+ *
+ * Everything sits inside a `no-preference` query, so under
+ * `prefers-reduced-motion: reduce` no transition is declared at all and Vue
+ * resolves the swap instantly.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .page-enter-active,
+  .page-leave-active {
+    transition:
+      opacity 160ms ease,
+      transform 160ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .page-enter-from {
+    opacity: 0;
+    transform: translateX(calc(var(--page-direction, 0) * 16px));
+  }
+
+  .page-leave-to {
+    opacity: 0;
+    transform: translateX(calc(var(--page-direction, 0) * -16px));
+  }
+}

@@ -1,0 +1,101 @@
+import { describe, it, expect } from 'vitest'
+import {
+  routeDepth,
+  pageTransitionDirection,
+} from '../../layers/user/app/utils/pageTransition'
+
+/**
+ * Direction is derived from path depth, so the same rules govern a tap, the
+ * iOS edge-swipe gesture and the Android back button — all three only ever
+ * produce a pair of paths.
+ */
+describe('pageTransition', () => {
+  describe('routeDepth', () => {
+    it('puts every tab route at the root', () => {
+      expect(routeDepth('/')).toBe(0)
+      expect(routeDepth('/standings')).toBe(0)
+      expect(routeDepth('/challenges')).toBe(0)
+    })
+
+    it('counts segments for non-tab routes', () => {
+      expect(routeDepth('/settings')).toBe(1)
+      expect(routeDepth('/settings/archive')).toBe(2)
+      expect(routeDepth('/challenges/CL01ARZ3NDEKTSV4RRFFQ69G5FAV')).toBe(2)
+    })
+
+    it('ignores a trailing slash, query string and hash', () => {
+      expect(routeDepth('/standings/')).toBe(0)
+      expect(routeDepth('/settings/archive/')).toBe(2)
+      expect(routeDepth('/standings?tab=unit')).toBe(0)
+      expect(routeDepth('/settings#top')).toBe(1)
+    })
+  })
+
+  describe('pageTransitionDirection', () => {
+    it('does not travel between tabs', () => {
+      expect(pageTransitionDirection('/', '/standings')).toBe(0)
+      expect(pageTransitionDirection('/challenges', '/')).toBe(0)
+      expect(pageTransitionDirection('/standings', '/challenges')).toBe(0)
+    })
+
+    it('pushes when moving deeper', () => {
+      expect(pageTransitionDirection('/', '/settings')).toBe(1)
+      expect(pageTransitionDirection('/settings', '/settings/archive')).toBe(1)
+      expect(
+        pageTransitionDirection(
+          '/challenges',
+          '/challenges/CL01ARZ3NDEKTSV4RRFF',
+        ),
+      ).toBe(1)
+    })
+
+    it('pops when moving back out', () => {
+      expect(pageTransitionDirection('/settings', '/')).toBe(-1)
+      expect(pageTransitionDirection('/settings/archive', '/settings')).toBe(-1)
+      expect(
+        pageTransitionDirection(
+          '/challenges/CL01ARZ3NDEKTSV4RRFF',
+          '/challenges',
+        ),
+      ).toBe(-1)
+    })
+
+    /**
+     * The regression this shape exists to prevent: a push out and the matching
+     * pop back must be exact opposites, or the two halves of one navigation
+     * slide against each other.
+     */
+    it.each([
+      ['/', '/settings'],
+      ['/settings', '/settings/archive'],
+      ['/challenges', '/challenges/CL01ARZ3NDEKTSV4RRFF'],
+    ])('is symmetric between %s and %s', (shallow, deep) => {
+      const out = pageTransitionDirection(shallow, deep)
+      const back = pageTransitionDirection(deep, shallow)
+      expect(out).toBe(1)
+      expect(back).toBe(-1)
+      expect(out).toBe(-(back as number))
+    })
+
+    it('treats a sibling at the same depth as a cross-fade', () => {
+      expect(
+        pageTransitionDirection('/settings/archive', '/settings/consent'),
+      ).toBe(0)
+    })
+
+    it('leaves the admin panel alone in both directions', () => {
+      expect(pageTransitionDirection('/', '/admin/projects')).toBeNull()
+      expect(pageTransitionDirection('/admin/projects', '/')).toBeNull()
+      expect(
+        pageTransitionDirection('/admin/projects', '/admin/projects/PR01'),
+      ).toBeNull()
+    })
+
+    it('does not travel when only the query changes', () => {
+      expect(pageTransitionDirection('/standings', '/standings')).toBe(0)
+      expect(pageTransitionDirection('/standings', '/standings?tab=unit')).toBe(
+        0,
+      )
+    })
+  })
+})

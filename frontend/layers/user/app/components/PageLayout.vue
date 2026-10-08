@@ -16,8 +16,7 @@ withDefaults(
 
 <template>
   <div class="flex min-h-full flex-col">
-    <!-- TODO: position sticky -->
-    <div class="top-0 z-10">
+    <div class="sticky top-0 z-10">
       <TitleBar :title="title" :blurred :shadow :animate="false">
         <template #title>
           <slot name="title" />

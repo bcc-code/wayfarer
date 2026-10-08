@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
 import { gsap } from 'gsap'
+import { pageTransitionDirection } from '../utils/pageTransition'
 import '~/assets/styles/user.css'
 
 const { t } = useI18n()
@@ -243,6 +244,28 @@ const showNavigation = computed(() => {
   if (path.startsWith('/challenges/')) return false
   return true
 })
+
+// Direction-aware page transitions. This is a router hook rather than a global
+// middleware file because Nuxt gathers middleware per layer with extended
+// layers first, so a `*.global.ts` here would run ahead of the root
+// `01.auth.global.ts`.
+//
+// The transition name is the same for every route and only the direction
+// variable changes. Under `mode: 'out-in'` NuxtPage reads the transition from
+// the route it is currently rendering, so the leaving page is governed by the
+// route being left — a per-route name sends the two halves of one navigation
+// opposite ways.
+const router = useRouter()
+const stopPageTransitionHook = router.beforeEach((to, from) => {
+  const direction = pageTransitionDirection(from.path, to.path)
+  if (direction === null) return
+  document.documentElement.style.setProperty(
+    '--page-direction',
+    String(direction),
+  )
+  to.meta.pageTransition = { name: 'page', mode: 'out-in' }
+})
+onUnmounted(stopPageTransitionHook)
 
 const { $pwa } = useNuxtApp()
 </script>

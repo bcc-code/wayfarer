@@ -49,8 +49,11 @@ export default defineNuxtConfig({
     },
     head: {
       title: 'Interact',
+      // `interactive-widget=resizes-content` makes the virtual keyboard shrink
+      // the layout viewport instead of panning it, so the fixed bottom
+      // navigation lifts above the keyboard rather than hiding behind it.
       viewport:
-        'width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no',
+        'width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, interactive-widget=resizes-content',
       charset: 'utf-8',
       meta: [
         {
