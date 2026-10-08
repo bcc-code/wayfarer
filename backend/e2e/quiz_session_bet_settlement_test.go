@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/bcc-media/wayfarer/e2e/testutil"
+	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -24,6 +25,9 @@ func TestQuizSessionBetSettlement(t *testing.T) {
 	winnerID := data.UserIDs[0]
 	loserID := data.UserIDs[1]
 	adminUserID := data.UserIDs[2]
+	retryID := data.UserIDs[3]
+	raceOpenID := data.UserIDs[4]
+	raceCompletedID := data.UserIDs[5]
 	require.NoError(t, dbMgr.AssignRole(ctx, adminUserID, testutil.RoleAdmin))
 
 	router, cleanup, err := testutil.SetupTestServer(ctx, dbMgr)
@@ -38,6 +42,12 @@ func TestQuizSessionBetSettlement(t *testing.T) {
 	winnerToken, err := testutil.GenerateUserToken(winnerID)
 	require.NoError(t, err)
 	loserToken, err := testutil.GenerateUserToken(loserID)
+	require.NoError(t, err)
+	retryToken, err := testutil.GenerateUserToken(retryID)
+	require.NoError(t, err)
+	raceOpenToken, err := testutil.GenerateUserToken(raceOpenID)
+	require.NoError(t, err)
+	raceCompletedToken, err := testutil.GenerateUserToken(raceCompletedID)
 	require.NoError(t, err)
 
 	projectID := data.ProjectIDs[0]
@@ -202,21 +212,26 @@ func TestQuizSessionBetSettlement(t *testing.T) {
 	})
 
 	// --- give users points to bet with ---
-	for _, uid := range []string{winnerID, loserID} {
+	for _, uid := range []string{winnerID, loserID, retryID, raceOpenID, raceCompletedID} {
 		admin(t, `mutation($input: CreateScoreAdjustmentInput!) { createScoreAdjustment(input: $input) { id } }`,
 			map[string]any{"input": map[string]any{"projectId": projectID, "userId": uid, "points": 1000, "reason": "bets"}}, nil)
 	}
 
 	// --- session ---
-	var session struct {
-		CreateQuizSession struct{ ID string } `json:"createQuizSession"`
+	createOpenSession := func(t *testing.T, userIDs []string) string {
+		t.Helper()
+		var session struct {
+			CreateQuizSession struct{ ID string } `json:"createQuizSession"`
+		}
+		admin(t, `mutation($input: CreateQuizSessionInput!) { createQuizSession(input: $input) { id } }`,
+			map[string]any{"input": map[string]any{"quizId": quizID}}, &session)
+		id := session.CreateQuizSession.ID
+		admin(t, `mutation($input: GrantQuizSessionAccessInput!) { grantQuizSessionAccess(input: $input) }`,
+			map[string]any{"input": map[string]any{"sessionId": id, "userIds": userIDs}}, nil)
+		admin(t, `mutation($id: ID!) { openQuizSession(id: $id) { id } }`, map[string]any{"id": id}, nil)
+		return id
 	}
-	admin(t, `mutation($input: CreateQuizSessionInput!) { createQuizSession(input: $input) { id } }`,
-		map[string]any{"input": map[string]any{"quizId": quizID}}, &session)
-	sessionID := session.CreateQuizSession.ID
-	admin(t, `mutation($input: GrantQuizSessionAccessInput!) { grantQuizSessionAccess(input: $input) }`,
-		map[string]any{"input": map[string]any{"sessionId": sessionID, "userIds": []string{winnerID, loserID}}}, nil)
-	admin(t, `mutation($id: ID!) { openQuizSession(id: $id) { id } }`, map[string]any{"id": sessionID}, nil)
+	sessionID := createOpenSession(t, []string{winnerID, loserID, retryID})
 
 	answer := func(t *testing.T, token, submissionID string, input map[string]any) string {
 		t.Helper()
@@ -230,7 +245,7 @@ func TestQuizSessionBetSettlement(t *testing.T) {
 		require.NoError(t, resp.UnmarshalData(&res))
 		return res.SubmitQuizAnswer.ID
 	}
-	start := func(t *testing.T, token string) string {
+	start := func(t *testing.T, token, sessionID string) string {
 		t.Helper()
 		resp := client.WithAuth(token).MustExecute(t, `mutation($sessionId: ID!) { startQuizSession(sessionId: $sessionId) { id } }`,
 			map[string]any{"sessionId": sessionID})
@@ -242,8 +257,9 @@ func TestQuizSessionBetSettlement(t *testing.T) {
 		return res.StartQuizSession.ID
 	}
 
-	winnerSub := start(t, winnerToken)
-	loserSub := start(t, loserToken)
+	winnerSub := start(t, winnerToken, sessionID)
+	loserSub := start(t, loserToken, sessionID)
+	retrySub := start(t, retryToken, sessionID)
 
 	winnerCustom := answer(t, winnerToken, winnerSub, map[string]any{"questionId": customQ.ID, "selectedAnswerIds": []string{customRight}, "betAmount": 100})
 	winnerDefault := answer(t, winnerToken, winnerSub, map[string]any{"questionId": defaultQ.ID, "selectedAnswerIds": []string{defaultRight}, "betAmount": 40})
@@ -251,6 +267,7 @@ func TestQuizSessionBetSettlement(t *testing.T) {
 	loserCustom := answer(t, loserToken, loserSub, map[string]any{"questionId": customQ.ID, "selectedAnswerIds": []string{customWrong}, "betAmount": 100})
 	loserDefault := answer(t, loserToken, loserSub, map[string]any{"questionId": defaultQ.ID, "selectedAnswerIds": []string{defaultWrong}, "betAmount": 40})
 	winnerUngraded := answer(t, winnerToken, winnerSub, map[string]any{"questionId": ungradedQ.ID, "betAmount": 20})
+	retryBet := answer(t, retryToken, retrySub, map[string]any{"questionId": customQ.ID, "selectedAnswerIds": []string{customRight}, "betAmount": 100})
 
 	admin(t, `mutation($id: ID!) { lockQuizSession(id: $id) { id } }`, map[string]any{"id": sessionID}, nil)
 
@@ -337,4 +354,103 @@ func TestQuizSessionBetSettlement(t *testing.T) {
 			assert.Equal(t, tt.wantNet, sum)
 		}
 	})
+
+	t.Run("finishing again retries a failed auto-submission and settlement", func(t *testing.T) {
+		// Undo the first finish for one user, as if auto-submission had failed
+		// (settlement is then skipped): submission open, bet unpaid
+		_, err := dbMgr.DB.Pool.Exec(ctx,
+			`UPDATE quiz_responses SET score_journal_id = NULL, points_earned = NULL WHERE id = $1`, retryBet)
+		require.NoError(t, err)
+		_, err = dbMgr.DB.Pool.Exec(ctx, `DELETE FROM score_journal WHERE source_type = 'BET' AND source_id = $1`, retryBet)
+		require.NoError(t, err)
+		_, err = dbMgr.DB.Pool.Exec(ctx,
+			`UPDATE quiz_submissions SET completed_at = NULL, auto_submitted = false WHERE id = $1`, retrySub)
+		require.NoError(t, err)
+
+		admin(t, `mutation($id: ID!) { finishQuizSession(id: $id) { id } }`, map[string]any{"id": sessionID}, nil)
+
+		var completed bool
+		require.NoError(t, dbMgr.DB.Pool.QueryRow(ctx,
+			`SELECT completed_at IS NOT NULL FROM quiz_submissions WHERE id = $1`, retrySub,
+		).Scan(&completed))
+		assert.True(t, completed, "submission auto-submitted on retry")
+
+		resp := getResponse(t, retryBet)
+		require.NotNil(t, resp.PointsEarned)
+		assert.Equal(t, int32(200), *resp.PointsEarned)
+		count, sum := betJournal(t, retryBet)
+		assert.Equal(t, 2, count)
+		assert.Equal(t, 200, sum)
+	})
+
+	// An answer write that holds its submission lock while the session is
+	// finished must be committed before settlement, also for a submission the
+	// user already completed (auto-submit skips those)
+	raceCases := []struct {
+		name      string
+		userID    string
+		token     string
+		completed bool
+	}{
+		{name: "open submission", userID: raceOpenID, token: raceOpenToken},
+		{name: "completed submission", userID: raceCompletedID, token: raceCompletedToken, completed: true},
+	}
+	for _, tc := range raceCases {
+		t.Run("an answer in flight while finishing is settled: "+tc.name, func(t *testing.T) {
+			raceSessionID := createOpenSession(t, []string{tc.userID})
+			raceSub := start(t, tc.token, raceSessionID)
+			if tc.completed {
+				_, err := dbMgr.DB.Pool.Exec(ctx, `UPDATE quiz_submissions SET completed_at = now() WHERE id = $1`, raceSub)
+				require.NoError(t, err)
+			}
+			admin(t, `mutation($id: ID!) { lockQuizSession(id: $id) { id } }`, map[string]any{"id": raceSessionID}, nil)
+
+			// Hold the submission lock and store a bet, as an in-flight answer write does
+			tx, err := dbMgr.DB.Pool.Begin(ctx)
+			require.NoError(t, err)
+			defer func() { _ = tx.Rollback(ctx) }()
+			_, err = tx.Exec(ctx, `SELECT id FROM quiz_submissions WHERE id = $1 FOR UPDATE`, raceSub)
+			require.NoError(t, err)
+			raceBet := ulid.NewQuizResponseID()
+			_, err = tx.Exec(ctx, `INSERT INTO quiz_responses (id, submission_id, question_id, selected_answer_ids, is_correct, bet_amount)
+				VALUES ($1, $2, $3, $4, true, 50)`, raceBet, raceSub, defaultQ.ID, `["`+defaultRight+`"]`)
+			require.NoError(t, err)
+
+			type finishResult struct {
+				resp *testutil.GraphQLResponse
+				err  error
+			}
+			finished := make(chan finishResult, 1)
+			go func() {
+				resp, err := client.WithAuth(adminToken).Execute(ctx, `mutation($id: ID!) { finishQuizSession(id: $id) { id } }`,
+					map[string]any{"id": raceSessionID})
+				finished <- finishResult{resp: resp, err: err}
+			}()
+
+			// Finishing must wait for the answer's transaction
+			require.Eventually(t, func() bool {
+				var waiting int
+				_ = dbMgr.DB.Pool.QueryRow(ctx,
+					`SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND query LIKE '%WaitForSessionSubmissionLocks%'`,
+				).Scan(&waiting)
+				return waiting > 0
+			}, 10*time.Second, 10*time.Millisecond)
+			require.NoError(t, tx.Commit(ctx))
+
+			select {
+			case res := <-finished:
+				require.NoError(t, res.err)
+				require.False(t, res.resp.HasErrors(), res.resp.ErrorMessage())
+			case <-time.After(10 * time.Second):
+				t.Fatal("finishQuizSession did not return")
+			}
+
+			resp := getResponse(t, raceBet)
+			require.NotNil(t, resp.PointsEarned)
+			assert.Equal(t, int32(50), *resp.PointsEarned, "default 2x on a correct answer")
+			count, sum := betJournal(t, raceBet)
+			assert.Equal(t, 2, count)
+			assert.Equal(t, 50, sum)
+		})
+	}
 }

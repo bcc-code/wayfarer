@@ -12,15 +12,90 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/loaders"
+	"github.com/bcc-media/wayfarer/internal/otel"
 	"github.com/bcc-media/wayfarer/internal/services/betting"
 	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/jackc/pgx/v5/pgtype"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // sessionBetQuestionTypes are the question types whose bets are settled by the
 // core when a session finishes. ORDERING bets are settled by the
 // ladder_to_heaven plugin via the quiz_session_finished webhook.
 var sessionBetQuestionTypes = []string{"PREDEFINED"}
+
+// closeSessionAndSettleBets auto-submits a finished session's open submissions,
+// then pays out its bets. Settlement only runs once auto-submission succeeded,
+// so no answer can be added after the bets are loaded. Failures are logged and
+// traced, not returned: the session is FINISHED either way, and calling
+// finishQuizSession again retries both steps (each is a no-op once done).
+func (r *Resolver) closeSessionAndSettleBets(ctx context.Context, span trace.Span, sessionID string, quiz *model.Quiz) {
+	// Not cancelled with the request: a payout must not stop halfway
+	ctx = context.WithoutCancel(ctx)
+
+	// Let answer writes that started while the session was OPEN commit first.
+	// Auto-submit alone skips completed submissions, whose answers can still be
+	// updated; answer writes starting after this see the session FINISHED.
+	if err := r.DB.Queries.WaitForSessionSubmissionLocks(ctx, sessionID); err != nil {
+		otel.RecordError(span, err)
+		slog.Error("failed to wait for in-flight answers, bets left unsettled",
+			"session_id", sessionID,
+			"error", err,
+		)
+		return
+	}
+
+	if err := r.DB.Queries.AutoSubmitSessionSubmissions(ctx, sessionID); err != nil {
+		otel.RecordError(span, err)
+		slog.Error("failed to auto-submit submissions, bets left unsettled",
+			"session_id", sessionID,
+			"error", err,
+		)
+		return
+	}
+
+	result, err := r.settleSessionBets(ctx, sessionID, quiz)
+	if err != nil {
+		otel.RecordError(span, err)
+		slog.Error("failed to settle session bets",
+			"session_id", sessionID,
+			"error", err,
+		)
+		return
+	}
+	span.SetAttributes(
+		attribute.Int("bets.settled", result.Settled),
+		attribute.Int("bets.failed", result.Failed),
+	)
+	if result.Failed > 0 {
+		otel.RecordError(span, fmt.Errorf("%d session bets failed to settle", result.Failed))
+		slog.Error("some session bets failed to settle, finish the session again to retry",
+			"session_id", sessionID,
+			"failed", result.Failed,
+		)
+	}
+}
+
+// invalidateSessionSubmissionCaches invalidates the caches of every user and
+// submission in a session, e.g. after its submissions were auto-submitted.
+func (r *Resolver) invalidateSessionSubmissionCaches(ctx context.Context, sessionID, projectID string) {
+	submissions, err := r.DB.Queries.GetSessionSubmissionsWithUserData(ctx, sessionID)
+	if err != nil {
+		slog.Warn("failed to get session submissions for cache invalidation",
+			"session_id", sessionID,
+			"error", err,
+		)
+	} else {
+		for _, sub := range submissions {
+			r.Cache.InvalidateUser(sub.UserID)
+			r.Cache.InvalidateUserQuizSubmissions(sub.UserID)
+			r.Cache.InvalidateQuizSubmission(sub.SubmissionID)
+		}
+	}
+	r.Cache.InvalidateProject(projectID)
+	r.Cache.InvalidateQuizSession(sessionID)
+}
 
 // settleSessionBetsResult summarizes a settlement run.
 type settleSessionBetsResult struct {
