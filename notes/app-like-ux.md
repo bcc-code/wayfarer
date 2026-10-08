@@ -45,6 +45,11 @@ user layout only.
       below.
 - [x] **Navigation indicator no longer flashes open from nothing** on mount.
       See "The navigation indicator" below.
+- [x] **The bottom navigation fades, scales and slides in and out** rather than
+      popping, so routes that hide it (`/settings/**`, `/challenges/:id`) hand
+      over as smoothly as the page transition itself. `origin-bottom` keeps the
+      bar anchored to the bottom edge while it scales, so it drops away rather
+      than shrinking toward its own middle.
 - [ ] **Per-tab scroll restoration**, plus tap-the-active-tab-to-scroll-to-top.
       No `scrollBehavior` is configured, so switching tabs loses position.
 - [x] **Edge-swipe back** needs nothing built. Verified on iPhone 17 / iOS 26:

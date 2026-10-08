@@ -283,55 +283,65 @@ const { $pwa } = useNuxtApp()
     <div class="h-full">
       <slot />
     </div>
-    <div v-if="showNavigation" class="fixed inset-x-0 bottom-0 flex flex-col">
-      <Transition
-        enter-active-class="transition duration-300 ease-out"
-        enter-from-class="opacity-0 translate-y-4"
+    <Transition
+      enter-active-class="transition duration-200 ease-out motion-reduce:transition-none"
+      enter-from-class="opacity-0 scale-95 translate-y-4"
+      leave-active-class="transition duration-150 ease-in motion-reduce:transition-none"
+      leave-to-class="opacity-0 scale-95 translate-y-4"
+    >
+      <div
+        v-if="showNavigation"
+        class="origin-bottom fixed inset-x-0 bottom-0 flex flex-col"
       >
-        <PwaUpdateBanner v-if="$pwa?.needRefresh" />
-      </Transition>
-      <ProgressiveBlur
-        class="p-navigation-outside pb-[max(var(--spacing-navigation-outside),env(safe-area-inset-bottom))] from-shadow-blank/0 to-shadow-default bg-linear-to-b"
-      >
-        <ul
-          ref="navRef"
-          class="bg-background-raised shadow-large rounded-navigation p-navigation-inset relative mx-auto grid w-full max-w-xl gradient-border"
-          :style="{
-            gridTemplateColumns: `repeat(${links.length}, minmax(0, 1fr))`,
-          }"
+        <Transition
+          enter-active-class="transition duration-300 ease-out"
+          enter-from-class="opacity-0 translate-y-4"
         >
-          <li v-for="link in links" :key="link.label" class="grow z-10">
-            <NuxtLink
-              :to="link.to"
-              class="px-default text-center rounded-navigation-inset text-tiny flex h-14 flex-col items-center justify-center gap-0.5"
-              active-class="text-accent-contrast"
-            >
-              <span class="relative">
-                <UIcon
-                  v-if="link.icon"
-                  :name="link.icon"
-                  class="size-7 shrink-0"
-                />
+          <PwaUpdateBanner v-if="$pwa?.needRefresh" />
+        </Transition>
+        <ProgressiveBlur
+          class="p-navigation-outside pb-[max(var(--spacing-navigation-outside),env(safe-area-inset-bottom))] from-shadow-blank/0 to-shadow-default bg-linear-to-b"
+        >
+          <ul
+            ref="navRef"
+            class="bg-background-raised shadow-large rounded-navigation p-navigation-inset relative mx-auto grid w-full max-w-xl gradient-border"
+            :style="{
+              gridTemplateColumns: `repeat(${links.length}, minmax(0, 1fr))`,
+            }"
+          >
+            <li v-for="link in links" :key="link.label" class="grow z-10">
+              <NuxtLink
+                :to="link.to"
+                class="px-default text-center rounded-navigation-inset text-tiny flex h-14 flex-col items-center justify-center gap-0.5"
+                active-class="text-accent-contrast"
+              >
+                <span class="relative">
+                  <UIcon
+                    v-if="link.icon"
+                    :name="link.icon"
+                    class="size-7 shrink-0"
+                  />
 
-                <span
-                  v-if="link.badge"
-                  class="rounded-full h-4.5 min-w-4.5 px-1.25 bg-accent-negative flex items-center justify-center absolute -top-0.5 left-5 text-caption text-text-default text-start"
-                >
-                  {{ link.badge }}
+                  <span
+                    v-if="link.badge"
+                    class="rounded-full h-4.5 min-w-4.5 px-1.25 bg-accent-negative flex items-center justify-center absolute -top-0.5 left-5 text-caption text-text-default text-start"
+                  >
+                    {{ link.badge }}
+                  </span>
                 </span>
-              </span>
-              <span class="text-xs">{{ link.label }}</span>
-            </NuxtLink>
-          </li>
-          <div
-            ref="indicatorRef"
-            :class="[
-              'rounded-navigation-inset bg-background-indent absolute top-0 left-0',
-              isIndicatorPositioned ? 'opacity-100' : 'opacity-0',
-            ]"
-          />
-        </ul>
-      </ProgressiveBlur>
-    </div>
+                <span class="text-xs">{{ link.label }}</span>
+              </NuxtLink>
+            </li>
+            <div
+              ref="indicatorRef"
+              :class="[
+                'rounded-navigation-inset bg-background-indent absolute top-0 left-0',
+                isIndicatorPositioned ? 'opacity-100' : 'opacity-0',
+              ]"
+            />
+          </ul>
+        </ProgressiveBlur>
+      </div>
+    </Transition>
   </div>
 </template>
