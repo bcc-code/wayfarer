@@ -62,23 +62,48 @@ user layout only.
 
 ## Tier 3 — platform integration
 
-- [ ] **Dynamic `theme-color`.** The manifest pins `#E8DFA7` while projects are
-      individually branded and `colorMode` defaults to dark, so the Android
-      toolbar and iOS status bar do not match the project. `applyTheme()` in
-      `layers/user/app/layouts/default.vue` already runs on every branding
-      change and is the natural place to update the meta tag.
-- [ ] **App icon badge** — `navigator.setAppBadge(activeChallengesCount)`. The
-      count is already queried in the layout for the nav badge.
+- [x] **Dynamic `theme-color`.** The manifest used to pin `#E8DFA7` while
+      projects are individually branded and `colorMode` defaults to dark, so
+      the Android toolbar and iOS status bar matched neither. The user layout
+      now publishes the active project's `backgroundDefault` for the resolved
+      colour mode, falling back to the cached theme so it survives a cold start.
+      Written with `useSeoMeta({ themeColor })` rather than `useHead` — see
+      "Route-name scan" below.
+- [x] **App icon badge** — `utils/appBadge.ts`, mirroring
+      `activeChallengesCount` onto the home-screen icon. The platform rejects
+      while the app is only open in a browser tab, so rejections are swallowed
+      rather than surfaced.
+- [x] **Manifest gaps** — `id`, `start_url`, `scope`, `description`,
+      `categories`, `orientation`, `background_color` and `launch_handler`
+      (`focus-existing`) added, and `theme_color` changed from `#E8DFA7` to
+      `#222222`. **This is a visible change**: `#222222` is
+      `--color-background-default` in the dark theme, which is the default
+      colour mode, so the install splash and the pre-branding toolbar no longer
+      flash a colour the app never shows. Revert if the cream was deliberate.
+- [x] **`apple-mobile-web-app-title`** so the home-screen label is not derived
+      from the page title.
+- [ ] **Manifest `screenshots`** — still missing, and the one item here that
+      actually moves the needle: together with `description` it upgrades Chrome
+      from the dismissible mini-infobar to the rich install dialog, which is
+      upstream of everything else, since an uninstalled app cannot feel
+      app-like. Needs real captures of the running app.
 - [ ] **iOS launch screens.** No `apple-touch-startup-image`; the
       `minimal-2023` generator preset does not emit them, so iOS shows a blank
       flash on every cold launch.
-- [ ] **Manifest gaps**: no `id`, `start_url`, `background_color`,
-      `orientation`, `description`, `screenshots`, `categories`,
-      `launch_handler`. `screenshots` + `description` are what upgrade Chrome
-      from the dismissible mini-infobar to the rich install dialog — upstream of
-      everything else here, since an uninstalled app cannot feel app-like.
-- [ ] **`apple-mobile-web-app-title`** so the home-screen label is not derived
-      from the page title.
+- [ ] **Manifest `description` is English** while the default locale is `nb`,
+      which is why vite-pwa stamps `lang: "en"`. Consistent as it stands, but
+      worth a decision on which language the install dialog should speak.
+
+### Route-name scan
+
+`test/unit/routes.test.ts` greps every `.vue`/`.ts` file for
+`name: '<kebab-case>'` and asserts each one resolves to a real route. A head
+meta written as `useHead({ meta: [{ name: 'theme-color', ... }] })` trips it —
+a false positive, but tightening the regex to tell head metas from route
+references is not worth it. `useSeoMeta({ themeColor })` is the idiomatic Nuxt
+API here anyway and has no bare `name:` literal, so it sidesteps the scan
+without weakening it. Worth knowing before adding another meta tag in a
+component.
 
 ## Tier 4 — resilience
 
