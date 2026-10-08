@@ -40,13 +40,11 @@ user layout only.
       iOS large-title → small-title collapse driven by `useWindowScroll`, but
       because the wrapper was not sticky the collapsed bar scrolled out of
       view — the effect was 90% built and never paid off.
-- [ ] **The large-title collapse is currently switched off.** `PageLayout.vue`
-      passes `:animate="false"` to `TitleBar`, which disables the
-      title-repositioning half of the effect — only the header height change
-      (`min-h-24` → `min-h-20`) survives. Now that the bar is sticky the full
-      animation would actually be visible, so flipping this on is a cheap win,
-      but it changes the look of every page and is a design call rather than a
-      mechanical fix.
+- [x] **Large-title collapse**, rebuilt on the iOS structure after the original
+      was turned off for stuttering. See "Why the title bar collapse stuttered"
+      below.
+- [x] **Navigation indicator no longer flashes open from nothing** on mount.
+      See "The navigation indicator" below.
 - [ ] **Per-tab scroll restoration**, plus tap-the-active-tab-to-scroll-to-top.
       No `scrollBehavior` is configured, so switching tabs loses position.
 - [x] **Edge-swipe back** needs nothing built. Verified on iPhone 17 / iOS 26:
@@ -148,38 +146,121 @@ full-width push — worth revisiting together with per-tab scroll restoration.
 All transitions collapse to a plain instant swap under
 `prefers-reduced-motion: reduce`.
 
-## Why the title bar collapse stutters
+## Why the title bar collapse stuttered, and what replaced it
 
-`TitleBar` takes an `animate` prop, but both call sites (`PageLayout.vue` and
-`DesignDrawer.vue`) pass `:animate="false"`, so the animated path is currently
-dead code. It was turned off because the collapse snapped rather than glided.
-Reading the component, that is exactly what it had to do:
+`TitleBar` took an `animate` prop, and both call sites passed
+`:animate="false"` — the animated path was dead code, turned off because the
+collapse snapped instead of gliding. Reading the component, that is all it
+could ever have done:
 
-1. **The heading has no transition at all.** `headingClasses` has a base of
-   just `'text-text-default'`, so every property it changes jumps in one frame.
-2. **Its properties are not animatable anyway.** The two states differ by
-   `position: static` → `absolute` (a discrete property — it can only snap),
-   by `font-size` 30px → 16px via the `text-heading`/`text-label` utilities,
-   and by swapping the anchor from `bottom-3 left-6` to `top-1/2 left-1/2`.
-   All of those are layout properties.
-3. **Only the actions animate.** `actionsClasses` carries
-   `transition-all duration-300 ease-out`, so the action button glides for
-   300ms while the title teleports — two halves of one bar on different clocks,
-   which reads as a stutter by itself.
-4. **It is a threshold, not a scroll link.** `hasScrolled` is `y > 25`, so the
-   change fires at a single point instead of tracking the scroll, and jitters
-   if you linger around 25px.
-5. **The header height change cannot be transitioned either.** `min-h-24` →
-   `min-h-20` is layout on an element that is in flow, so animating it would
-   reflow everything below it on every frame.
+1. **The heading had no transition at all.** `headingClasses` had a base of
+   just `'text-text-default'`, so every property it changed jumped in one frame.
+2. **Its properties were not animatable anyway.** The two states differed by
+   `position: static` → `absolute` (a discrete property — it can only snap), by
+   `font-size` 30px → 16px via the `text-heading`/`text-label` utilities, and by
+   swapping the anchor from `bottom-3 left-6` to `top-1/2 left-1/2`. All layout
+   properties.
+3. **Only the actions animated.** `actionsClasses` carried
+   `transition-all duration-300 ease-out`, so the action button glided for 300ms
+   while the title teleported — two halves of one bar on different clocks, which
+   reads as a stutter by itself.
+4. **It was a threshold, not a scroll link.** `hasScrolled` was `y > 25`, so the
+   change fired at a single point rather than tracking the scroll, and jittered
+   if you lingered around 25px.
+5. **The header height could not be transitioned either.** `min-h-24` →
+   `min-h-20` is layout on an in-flow element, so animating it would reflow
+   everything below on every frame.
 
-A smooth version has to animate only compositor properties (transform and
-opacity) and be driven continuously by scroll offset. Point 5 is the real
-constraint: a header whose height changes per frame cannot be smooth while it
-occupies space in flow. That rules out a continuous version of the current
-structure and points at the way iOS actually does it — a constant-height bar
-plus a large title that is ordinary scrolling content.
+Point 5 is the real constraint and is why the fix is structural rather than a
+matter of adding a transition. The bar is now a **constant height**, and the two
+titles are overlaid on one row and cross-faded: the large left-aligned one fades
+out as the compact centred one fades in, driven continuously from scroll offset
+over `TITLE_HANDOVER_DISTANCE`. Opacity is the only thing that moves, and
+opacity does not reflow.
 
-Options are recorded in the open item under Tier 2; the choice between them is
-a design decision about how tall the bar is once scrolled, so it is not taken
-here.
+The first attempt put the large title into page content instead, iOS-style, so
+that it scrolled away under the bar on its own. That is smoother still in
+principle — the large title needs no JS at all — but it puts the large title on
+a different row from the action button, which does not match this app's design.
+Keeping them on one row means the large title has to live inside the bar, and a
+bar containing the large title cannot also shrink. That is the trade accepted
+here: one constant bar height, no shrink, titles aligned with the action.
+
+`PageLayout` owns the scroll-to-opacity mapping; `TitleBar` just renders what it
+is given. `size="small"` keeps the plain always-visible heading for
+`DesignDrawer`, whose title is the only one a sheet has.
+
+Two slots, because they are genuinely different things:
+
+- `#title` — a custom large title. `pages/index.vue` uses it for the superteam
+  badge beside the name.
+- `#bar` — content that replaces both titles. `QuizChallenge` uses it for
+  `QuizProgress`, which was previously passed through `#title` but is a progress
+  indicator that must stay visible while scrolling, not a title.
+
+### Two alignment traps, both from the same cause
+
+The padding lives on a wrapper so that the `<header>` itself is the content box.
+Both traps come from forgetting that distinction:
+
+- **Vertical.** Centring the compact title with `absolute top-1/2` resolves
+  against the containing block, which is the **padding box** — and the top
+  padding carries the safe-area inset
+  (`max(env(safe-area-inset-top) + 0.75rem, 3rem)`). The action button, a flex
+  item under `items-center`, centres in the **content box**. On a notched phone
+  that left the title roughly 18px above the gear it was meant to line up with.
+  With the padding moved out to the wrapper the two boxes coincide and `top-1/2`
+  is correct.
+- **Horizontal.** The compact title is centred on the whole row
+  (`absolute inset-x-12`), not on the space left beside the action — centring it
+  within a flex sibling would shift it left by half the action's width plus the
+  gap.
+
+## The navigation indicator
+
+The sliding highlight behind the active tab is an empty absolutely-positioned
+div that `gsap` sizes from the active link's `offsetWidth`/`offsetHeight`. Until
+that first measurement it is zero-sized in the nav's top-left corner, so
+animating _to_ its first position looks like it grows out of nothing.
+
+It did that in two different situations:
+
+- **On first mount**, because `onMounted` ran the positioning behind a
+  `setTimeout(…, 50)` — a guess. Landing before layout meant the link measured
+  zero, the indicator was `gsap.set` to zero size, and the "already positioned"
+  flag flipped, so the _next_ call animated it open from a point. A zero
+  measurement is now rejected outright, and the timer is replaced by a
+  `useResizeObserver` on the nav, which fires when the element genuinely has
+  size — and again on rotation, or when the tab count changes as the project
+  query resolves.
+- **On returning from a route that hides the nav** (`/settings/**` sets
+  `showNavigation` false), because the nav block unmounts while the layout
+  holding the flag does not. Coming back mounted a brand-new zero-size indicator
+  while the flag still claimed it had been positioned. Fixed by asking the
+  element — `indicatorRef.offsetWidth > 0` — rather than trusting a flag that
+  can outlive the DOM it describes.
+
+The indicator also stays `opacity-0` until it has been positioned once, so there
+is nothing to see before it is correct.
+
+## The drawer's rounded top
+
+`DesignDrawer` lost the rounded corners and top border of `rounded-t-modal`.
+
+Two separate causes, both the same shape of mistake — an effect painting to the
+bar's **rectangular** box, filling the corner region that lies outside the
+radius and where the sheet's own background is therefore not painted:
+
+- The **scroll shadow**, a regression introduced while rebuilding `TitleBar`.
+  `shadow` originally had no default, so it was `undefined` — falsy — for
+  `DesignDrawer`, which never passes it. Giving it a `true` default switched on
+  a gradient the drawer had never had.
+- The **progressive blur**, which predates that change. Its layers are
+  `absolute inset-0` with `backdrop-filter` and no radius, masked _strongest at
+  the top_ for `direction="up"`, so they blur the overlay behind the corner and
+  fill it in.
+
+Both are switched off for the sheet, which is also what the structure calls for:
+`DesignDrawer` renders the bar above its own `overflow-auto` container, so sheet
+content scrolls _beside_ the bar, never under it. Neither a scroll shadow nor a
+progressive blur has anything to act on. `TitleBar.test.ts` pins both props.

@@ -1,121 +1,23 @@
 <script setup lang="ts">
-import { cva } from 'cva'
-
+/**
+ * A constant height whatever the scroll: the two titles are overlaid on one row
+ * and cross-faded, so only opacity moves and nothing reflows.
+ */
 withDefaults(
   defineProps<{
     title?: string
     shadow?: boolean
     blurred?: boolean
+    /** `small` is a sheet bar: one always-visible title, nothing to fade. */
     size?: 'large' | 'small'
-    animate?: boolean
+    /** How far the compact title has faded in, 0–1. */
+    titleOpacity?: number
   }>(),
   {
     size: 'large',
-    animate: true,
-  },
-)
-
-const { y } = useWindowScroll()
-const hasScrolled = computed(() => y.value > 25)
-
-const headerClasses = cva(
-  'relative flex items-start justify-between gap-4 px-6 pb-3',
-  {
-    variants: {
-      size: {
-        large: '',
-        small: '',
-      },
-      hasScrolled: {
-        true: '',
-        false: '',
-      },
-      animate: {
-        true: '',
-        false: '',
-      },
-    },
-    compoundVariants: [
-      {
-        size: 'small',
-        hasScrolled: true,
-        class: 'pt-6 min-h-20',
-      },
-      {
-        size: 'large',
-        hasScrolled: true,
-        class: 'pt-[max(calc(env(safe-area-inset-top)+0.75rem),3rem)] min-h-20',
-      },
-      {
-        size: 'small',
-        hasScrolled: false,
-        class: 'pt-6 min-h-20',
-      },
-      {
-        size: 'large',
-        hasScrolled: false,
-        class: 'pt-[max(calc(env(safe-area-inset-top)+0.75rem),3rem)] min-h-24',
-      },
-    ],
-    defaultVariants: {
-      size: 'large',
-      hasScrolled: false,
-    },
-  },
-)
-
-const headingClasses = cva('text-text-default', {
-  variants: {
-    hasScrolled: {
-      false: '',
-      true: '',
-    },
-    animate: {
-      true: '',
-      false: 'text-heading',
-    },
-  },
-  compoundVariants: [
-    {
-      hasScrolled: true,
-      animate: true,
-      class:
-        'text-label top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 absolute text-center',
-    },
-    {
-      hasScrolled: false,
-      animate: true,
-      class:
-        'text-heading bottom-3 left-6 translate-x-0 translate-y-0 max-w-[calc(100%-6rem)]',
-    },
-  ],
-})
-
-const actionsClasses = cva(
-  'right-6 bottom-3 size-11 transition-all duration-300 ease-out',
-  {
-    variants: {
-      hasScrolled: {
-        true: '',
-        false: '',
-      },
-      animate: {
-        true: 'absolute',
-        false: '',
-      },
-    },
-    compoundVariants: [
-      {
-        hasScrolled: false,
-        animate: true,
-        class: 'bottom-3',
-      },
-      {
-        hasScrolled: true,
-        animate: true,
-        class: 'top-1/2 -translate-y-1/2',
-      },
-    ],
+    shadow: true,
+    blurred: true,
+    titleOpacity: 1,
   },
 )
 </script>
@@ -126,15 +28,53 @@ const actionsClasses = cva(
     :class="[shadow && 'from-shadow-blank/0 to-shadow-default bg-linear-to-t']"
     :enabled="blurred"
   >
-    <header :class="headerClasses({ hasScrolled, size, animate })">
-      <slot name="title">
-        <h1 :class="headingClasses({ hasScrolled, animate })">
+    <!-- The padding sits here so the <header> is the content box, which is what
+         lets the compact title centre on `top-1/2` and still line up with the
+         action: against the padding box the safe-area inset would lift it. -->
+    <div
+      :class="[
+        'px-6 pb-3',
+        size === 'large'
+          ? 'pt-[max(calc(env(safe-area-inset-top)+0.75rem),3rem)]'
+          : 'pt-6',
+      ]"
+    >
+      <header
+        v-if="size === 'large'"
+        class="relative flex min-h-11 items-center gap-4"
+      >
+        <div v-if="$slots.bar" class="min-w-0 grow">
+          <slot name="bar" />
+        </div>
+        <template v-else>
+          <div class="min-w-0 grow" :style="{ opacity: 1 - titleOpacity }">
+            <slot name="title">
+              <h1 v-if="title" class="text-text-default text-heading truncate">
+                {{ title }}
+              </h1>
+            </slot>
+          </div>
+          <p
+            v-if="title"
+            class="text-label text-text-default pointer-events-none absolute inset-x-12 top-1/2 -translate-y-1/2 truncate text-center"
+            :style="{ opacity: titleOpacity }"
+          >
+            {{ title }}
+          </p>
+        </template>
+        <div class="size-11 shrink-0">
+          <slot name="action" />
+        </div>
+      </header>
+
+      <header v-else class="relative flex min-h-11 items-start gap-4">
+        <h1 class="text-text-default text-heading min-w-0 grow truncate">
           {{ title }}
         </h1>
-      </slot>
-      <div :class="actionsClasses({ hasScrolled, animate })">
-        <slot name="action" />
-      </div>
-    </header>
+        <div class="size-11 shrink-0">
+          <slot name="action" />
+        </div>
+      </header>
+    </div>
   </ProgressiveBlur>
 </template>

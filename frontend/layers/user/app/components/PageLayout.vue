@@ -1,5 +1,5 @@
 <script setup lang="ts">
-withDefaults(
+const props = withDefaults(
   defineProps<{
     title?: string
     bottomPadding?: boolean
@@ -12,14 +12,31 @@ withDefaults(
     blurred: true,
   },
 )
+
+const slots = useSlots()
+
+/** Pixels of scroll over which the bar hands the large title to the compact. */
+const TITLE_HANDOVER_DISTANCE = 48
+
+const { y } = useWindowScroll()
+
+const hasLargeTitle = computed(() => Boolean(props.title || slots.title))
+
+const titleOpacity = computed(() => {
+  if (!hasLargeTitle.value) return 1
+  return Math.min(Math.max(y.value / TITLE_HANDOVER_DISTANCE, 0), 1)
+})
 </script>
 
 <template>
   <div class="flex min-h-full flex-col">
     <div class="sticky top-0 z-10">
-      <TitleBar :title="title" :blurred :shadow :animate="false">
-        <template #title>
+      <TitleBar :title="title" :blurred :shadow :title-opacity="titleOpacity">
+        <template v-if="$slots.title" #title>
           <slot name="title" />
+        </template>
+        <template v-if="$slots.bar" #bar>
+          <slot name="bar" />
         </template>
         <template #action>
           <slot name="action" />

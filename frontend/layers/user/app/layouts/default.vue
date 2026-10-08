@@ -187,7 +187,15 @@ onUnmounted(() => {
 const route = useRoute()
 const navRef = ref<HTMLElement | null>(null)
 const indicatorRef = ref<HTMLElement | null>(null)
-const isFirstRender = ref(true)
+
+/** Until measured, the indicator is zero-sized — keep it hidden rather than
+ * letting it animate open out of nothing. */
+const isIndicatorPositioned = ref(false)
+
+// A nav that unmounted on a route that hides it comes back unmeasured.
+watch(navRef, () => {
+  isIndicatorPositioned.value = false
+})
 
 function updateIndicator() {
   if (!navRef.value || !indicatorRef.value) return
@@ -202,18 +210,25 @@ function updateIndicator() {
   const targetWidth = activeLink.offsetWidth
   const targetHeight = activeLink.offsetHeight
 
+  // The link measures zero before the nav is laid out.
+  if (!targetWidth || !targetHeight) return
+
   const prefersReducedMotion = window.matchMedia(
     '(prefers-reduced-motion: reduce)',
   ).matches
 
-  if (isFirstRender.value || prefersReducedMotion) {
+  // Asked of the element, not a flag: a flag outlives the DOM it describes, and
+  // a remounted nav would then animate open from zero.
+  const isPlaced = indicatorRef.value.offsetWidth > 0
+
+  if (!isPlaced || prefersReducedMotion) {
     gsap.set(indicatorRef.value, {
       left: targetLeft,
       top: targetTop,
       width: targetWidth,
       height: targetHeight,
     })
-    isFirstRender.value = false
+    isIndicatorPositioned.value = true
   } else {
     gsap.to(indicatorRef.value, {
       left: targetLeft,
@@ -233,9 +248,8 @@ watch([() => route.path, () => links.value.length], () => {
   })
 })
 
-onMounted(() => {
-  setTimeout(updateIndicator, 50)
-})
+// Measured when the nav is actually laid out, rather than on a guessed delay.
+useResizeObserver(navRef, updateIndicator)
 
 const showNavigation = computed(() => {
   const path = route.path
@@ -245,16 +259,10 @@ const showNavigation = computed(() => {
   return true
 })
 
-// Direction-aware page transitions. This is a router hook rather than a global
-// middleware file because Nuxt gathers middleware per layer with extended
-// layers first, so a `*.global.ts` here would run ahead of the root
-// `01.auth.global.ts`.
-//
-// The transition name is the same for every route and only the direction
-// variable changes. Under `mode: 'out-in'` NuxtPage reads the transition from
-// the route it is currently rendering, so the leaving page is governed by the
-// route being left — a per-route name sends the two halves of one navigation
-// opposite ways.
+// A router hook rather than a global middleware file: a layer's `*.global.ts`
+// would run ahead of the root `01.auth.global.ts`. The name is constant and
+// only the direction variable changes, because under `mode: 'out-in'` the
+// leaving page reads the route being left.
 const router = useRouter()
 const stopPageTransitionHook = router.beforeEach((to, from) => {
   const direction = pageTransitionDirection(from.path, to.path)
@@ -317,7 +325,10 @@ const { $pwa } = useNuxtApp()
           </li>
           <div
             ref="indicatorRef"
-            class="rounded-navigation-inset bg-background-indent absolute top-0 left-0"
+            :class="[
+              'rounded-navigation-inset bg-background-indent absolute top-0 left-0',
+              isIndicatorPositioned ? 'opacity-100' : 'opacity-0',
+            ]"
           />
         </ul>
       </ProgressiveBlur>

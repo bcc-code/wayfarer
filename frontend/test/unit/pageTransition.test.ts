@@ -4,11 +4,6 @@ import {
   pageTransitionDirection,
 } from '../../layers/user/app/utils/pageTransition'
 
-/**
- * Direction is derived from path depth, so the same rules govern a tap, the
- * iOS edge-swipe gesture and the Android back button — all three only ever
- * produce a pair of paths.
- */
 describe('pageTransition', () => {
   describe('routeDepth', () => {
     it('puts every tab route at the root', () => {
@@ -60,11 +55,8 @@ describe('pageTransition', () => {
       ).toBe(-1)
     })
 
-    /**
-     * The regression this shape exists to prevent: a push out and the matching
-     * pop back must be exact opposites, or the two halves of one navigation
-     * slide against each other.
-     */
+    // A push and its matching pop must be exact opposites, or the two halves
+    // of one navigation slide against each other.
     it.each([
       ['/', '/settings'],
       ['/settings', '/settings/archive'],
