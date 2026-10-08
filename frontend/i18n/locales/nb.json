@@ -372,5 +372,8 @@
       "peopleInAUnit": "Personer i en unit",
       "lastUpdated": "Sist oppdatert"
     }
+  },
+  "offline": {
+    "notice": "Du er frakoblet. Informasjonen kan være utdatert."
   }
 }

@@ -19,3 +19,59 @@
 body {
   background-color: var(--color-background-default);
 }
+
+/**
+ * App-like touch behaviour. Scoped to the user layer rather than the shared
+ * `main.css`: the admin panel is desktop-shaped and wants ordinary selection
+ * and overscroll.
+ */
+
+html,
+body {
+  /* Suppresses Chrome's own pull-to-refresh and iOS rubber-banding. */
+  overscroll-behavior: none;
+}
+
+body {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  /* Re-enabled below for anything worth selecting. */
+  user-select: none;
+}
+
+input,
+textarea,
+[contenteditable='true'],
+.prose,
+.select-text,
+.select-text * {
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+/**
+ * Page transitions. `--page-direction` is 1 deeper, -1 back out, 0 cross-fade.
+ *
+ * One name for every route, with direction in a shared variable: under
+ * `mode: 'out-in'` the leaving page reads the route being *left*, so a
+ * per-route name slides the two halves of one navigation opposite ways.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .page-enter-active,
+  .page-leave-active {
+    transition-property: opacity, transform;
+    transition-duration: 160ms;
+    /* easeOutExpo */
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .page-enter-from {
+    opacity: 0;
+    transform: translateX(calc(var(--page-direction, 0) * 16px));
+  }
+
+  .page-leave-to {
+    opacity: 0;
+    transform: translateX(calc(var(--page-direction, 0) * -16px));
+  }
+}

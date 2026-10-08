@@ -9,6 +9,8 @@ const { openAchievementId, clearOpenAchievementId, celebrating } =
 const { executeMutation: markCelebrated } =
   useMarkAchievementCelebratedMutation()
 
+const { pressListeners } = useButtonPress()
+
 const open = ref(false)
 const showConfetti = ref(false)
 
@@ -72,6 +74,7 @@ watch(
     >
       <button
         class="grid aspect-square size-full place-items-center overflow-hidden rounded-full outline-none"
+        v-on="pressListeners"
       >
         <DesignImage
           :image="currentImage"
