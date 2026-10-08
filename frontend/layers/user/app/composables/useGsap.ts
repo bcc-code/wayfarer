@@ -158,5 +158,19 @@ export function useButtonPress() {
     })
   }
 
-  return { onPressStart, onPressEnd }
+  /**
+   * Spreadable with `v-on` for elements reached without a template ref — a
+   * `v-for`'d link, or a `NuxtLink` whose ref would be the component rather
+   * than its `<a>`. The pressed element is the listener's own `currentTarget`.
+   */
+  const pressListeners = {
+    pointerdown: (event: PointerEvent) =>
+      onPressStart(event.currentTarget as HTMLElement | null),
+    pointerup: (event: PointerEvent) =>
+      onPressEnd(event.currentTarget as HTMLElement | null),
+    pointerleave: (event: PointerEvent) =>
+      onPressEnd(event.currentTarget as HTMLElement | null),
+  }
+
+  return { onPressStart, onPressEnd, pressListeners }
 }

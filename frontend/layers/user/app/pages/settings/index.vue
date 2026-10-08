@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { me, logout } = useAuth()
 const { track } = useAnalytics()
+const { pressListeners } = useButtonPress()
 
 const {
   subscribe,
@@ -89,6 +90,7 @@ async function toggleNotifications(enabled: boolean) {
         <NuxtLink
           :to="{ name: 'settings-add-to-home' }"
           class="flex items-center justify-between gap-2.5 px-3 py-2 h-12 disabled:opacity-25 disabled:cursor-not-allowed"
+          v-on="pressListeners"
         >
           <p class="text-label">{{ $t('settings.addToHomeScreen') }}</p>
           <IconChevronRight class="size-6" />
@@ -97,6 +99,7 @@ async function toggleNotifications(enabled: boolean) {
         <NuxtLink
           to="https://bcc.media/personvern"
           class="flex items-center justify-between gap-2.5 px-3 py-2 h-12"
+          v-on="pressListeners"
         >
           <p class="text-label">{{ $t('settings.privacyPolicy') }}</p>
           <IconChevronRight class="size-6" />
@@ -105,6 +108,7 @@ async function toggleNotifications(enabled: boolean) {
         <NuxtLink
           :to="{ name: 'settings-consent' }"
           class="flex items-center justify-between gap-2.5 px-3 py-2 h-12"
+          v-on="pressListeners"
         >
           <p class="text-label">{{ $t('settings.consents') }}</p>
           <IconChevronRight class="size-6" />
@@ -113,6 +117,7 @@ async function toggleNotifications(enabled: boolean) {
         <NuxtLink
           :to="{ name: 'settings-archive' }"
           class="flex items-center justify-between gap-2.5 px-3 py-2 h-12"
+          v-on="pressListeners"
         >
           <p class="text-label">{{ $t('archive.title') }}</p>
           <IconChevronRight class="size-6" />

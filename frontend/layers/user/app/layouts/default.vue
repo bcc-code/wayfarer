@@ -209,6 +209,8 @@ useSeoMeta({
   },
 })
 
+const { pressListeners } = useButtonPress()
+
 const route = useRoute()
 const navRef = ref<HTMLElement | null>(null)
 const indicatorRef = ref<HTMLElement | null>(null)
@@ -339,6 +341,7 @@ const { $pwa } = useNuxtApp()
                 :to="link.to"
                 class="px-default text-center rounded-navigation-inset text-tiny flex h-14 flex-col items-center justify-center gap-0.5"
                 active-class="text-accent-contrast"
+                v-on="pressListeners"
               >
                 <span class="relative">
                   <UIcon

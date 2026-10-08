@@ -111,10 +111,32 @@ component.
       service worker precaches the shell so the app _launches_ offline, then
       every GraphQL query fails into `<ErrorState>`. Minimum: an offline banner.
       Better: persist the urql cache so last-seen profile/standings render.
-- [ ] **Press feedback beyond buttons.** `useButtonPress`
-      (`composables/useGsap.ts:140`) is used only by `DesignButton` and
-      `DesignIconButton`. `ChallengeCard`, `LeaderboardItem`,
-      `ProfileProjectCard` and the nav tabs have no press state.
+- [x] **Press feedback on tappable surfaces.** `useButtonPress`
+      (`composables/useGsap.ts`) was used only by `DesignButton` and
+      `DesignIconButton`. It now also exposes `pressListeners`, a spreadable
+      `v-on` object that reads the pressed element off the listener's own
+      `currentTarget` — needed because a `v-for`'d link has no single template
+      ref and a `NuxtLink` ref is the component, not its `<a>`. Applied to the
+      bottom nav tabs, the four settings rows and the `AchievementBadge`
+      button.
+
+      **Three surfaces this item originally named are not tappable at all**, so
+      giving them press feedback would advertise an action that does not exist:
+
+      - `ChallengeCard` — the root is a plain `div`; the only tap target is a
+        `NuxtLink` → `DesignButton` inside, which already presses.
+      - `ProfileProjectCard` — a `DesignCard` whose only tap targets are two
+        `DesignButton`s.
+      - `LeaderboardItem` — see below.
+
+- [ ] **`LeaderboardItem` styles itself as interactive but is not.** The row
+      carries `hover:bg-background-indent active:bg-background-indent`, yet
+      neither it nor `LeaderboardList` has a click handler, link or emit. Either
+      the rows should do something (open a profile?) or the states should go.
+- [ ] **Press feedback on the two surfaces with competing animations.** Left
+      alone deliberately, because both already animate the element a press
+      would scale: - `QuizAlternative` drives `shake`/`pulse` on the same `buttonRef`. - `DesignTabs` runs its own sliding indicator.
+      Both are worth doing, but need a decision on how the animations compose.
 - [ ] **Haptics** on challenge completion / achievement unlock via
       `navigator.vibrate`. Android only — iOS Safari does not expose it.
 
