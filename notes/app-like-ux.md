@@ -94,6 +94,16 @@ user layout only.
       which is why vite-pwa stamps `lang: "en"`. Consistent as it stands, but
       worth a decision on which language the install dialog should speak.
 
+### The banner shell
+
+`ProjectInfoBanner` is coupled to the project info-message feature —
+`projectId`, markdown/html, visibility windows, per-content-hash dismissal in
+localStorage — so the offline notice could not reuse it directly without faking
+a message and inheriting a "dismiss forever" button that makes no sense for
+connectivity. The presentation was extracted to `InfoBanner` instead (border,
+icon slot, content slot, optional dismiss) and both now use it, so the two read
+as the same object.
+
 ### Route-name scan
 
 `test/unit/routes.test.ts` greps every `.vue`/`.ts` file for
@@ -107,27 +117,40 @@ component.
 
 ## Tier 4 — resilience
 
-- [ ] **Offline handling.** `navigator.onLine` / `useOnline` appear nowhere. The
-      service worker precaches the shell so the app _launches_ offline, then
-      every GraphQL query fails into `<ErrorState>`. Minimum: an offline banner.
-      Better: persist the urql cache so last-seen profile/standings render.
-- [x] **Press feedback on tappable surfaces.** `useButtonPress`
-      (`composables/useGsap.ts`) was used only by `DesignButton` and
-      `DesignIconButton`. It now also exposes `pressListeners`, a spreadable
-      `v-on` object that reads the pressed element off the listener's own
-      `currentTarget` — needed because a `v-for`'d link has no single template
-      ref and a `NuxtLink` ref is the component, not its `<a>`. Applied to the
-      bottom nav tabs, the four settings rows and the `AchievementBadge`
-      button.
+- [x] **Offline handling — in-session (2026-10-08).** Scoped deliberately to
+      "works while the app is open"; surviving a relaunch was considered and
+      declined for now, see below.
 
-      **Three surfaces this item originally named are not tappable at all**, so
-      giving them press feedback would advertise an action that does not exist:
+      The real find was a bug that existed independently of any offline work.
+      All nine query-driven views ordered their branches
+      `loading → error → data`, and under urql's `cache-and-network` a failed
+      *background refresh* sets `error` while the cached `data` is still
+      perfectly good. Going offline on a page you had already visited therefore
+      replaced a usable page with a full-screen `ErrorState`. The error branch
+      now yields to data (`error && !data`) everywhere, so the error only wins
+      when there is genuinely nothing to show.
 
-      - `ChallengeCard` — the root is a plain `div`; the only tap target is a
-        `NuxtLink` → `DesignButton` inside, which already presses.
-      - `ProfileProjectCard` — a `DesignCard` whose only tap targets are two
-        `DesignButton`s.
-      - `LeaderboardItem` — see below.
+      `OfflineNotice` (in `PageLayout`, so every page gets it) reports the
+      state via `useOnline`.
+
+- [ ] **Offline across a relaunch** — not done, and a different problem.
+      urql runs the default *document* `cacheExchange`, which is memory-only,
+      and a cold PWA launch is a reload, so nothing survives it. The two routes
+      are hand-rolled per-query snapshots to localStorage (precedent:
+      `cachedTheme` in the user layout) or migrating to
+      `@urql/exchange-graphcache` with IndexedDB. The latter is the general
+      answer but is a data-layer migration across one client shared with the
+      admin layer, and normalized-cache mistakes surface as subtly wrong data
+      rather than errors.
+
+- [ ] **Offline mutations.** Completing a challenge offline still fails. Needs
+      a queue plus replay, and backend idempotency — out of scope of the above.
+
+- **A refresh that fails while online is now silent** — the page shows stale
+      data and `OfflineNotice` says nothing, because it tracks connectivity
+      rather than query state. Accepted: urql retries on the next navigation,
+      and the alternative was per-page staleness plumbing. Revisit if stale
+      data turns out to mislead anyone.
 
 - [ ] **`LeaderboardItem` styles itself as interactive but is not.** The row
       carries `hover:bg-background-indent active:bg-background-indent`, yet
@@ -137,8 +160,32 @@ component.
       alone deliberately, because both already animate the element a press
       would scale: - `QuizAlternative` drives `shake`/`pulse` on the same `buttonRef`. - `DesignTabs` runs its own sliding indicator.
       Both are worth doing, but need a decision on how the animations compose.
-- [ ] **Haptics** on challenge completion / achievement unlock via
-      `navigator.vibrate`. Android only — iOS Safari does not expose it.
+- **Haptics — decided against (2026-10-08).** Not a todo; do not re-propose
+  without new information.
+
+      `navigator.vibrate` is Android-only. WebKit has never implemented the
+      Vibration API, and every iOS browser is WebKit, so Chrome and Firefox on
+      iOS lack it too. (An MDN compat issue claims otherwise, but it is a
+      one-off report from ~2023 against an unstated version and contradicts
+      WebKit's position.)
+
+      iOS haptics are reachable only through a hack: Safari 17.4 added
+      `<input type="checkbox" switch>`, and toggling one fires the Taptic
+      Engine as a side effect. Apple has since narrowed it twice — 18.4 began
+      requiring a user gesture within roughly a one-second grant, and 26.5
+      reportedly killed purely programmatic toggling. The only variant said to
+      survive renders an invisible switch overlay *under* every haptic element
+      so the tap reads as direct switch interaction.
+
+      That overlay is the reason to decline rather than the version support:
+      invisible interactive elements beneath every tappable surface sit exactly
+      where the press listeners and `NuxtLink` navigation now live, and are a
+      good way to reintroduce subtle tap bugs for a nicety. Twice-patched
+      behaviour is a maintenance liability.
+
+      If it is ever revisited, Android-only through a single
+      `utils/haptics.ts` (shaped like `appBadge.ts` — feature-detect, no-op
+      silently) keeps call sites free of the decision.
 
 ## Page transitions
 

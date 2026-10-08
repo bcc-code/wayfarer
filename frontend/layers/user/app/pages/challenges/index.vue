@@ -74,7 +74,10 @@ const joinCode = computed(() =>
       />
     </div>
     <LoadingState v-if="isInitialLoading" />
-    <ErrorState v-else-if="activeError" :error="activeError" />
+    <ErrorState
+      v-else-if="activeError && !tabChallenges"
+      :error="activeError"
+    />
     <div v-else class="space-y-list-section-gap p-list-outside mt-3 grow">
       <template v-for="challenge in tabChallenges" :key="challenge.id">
         <!-- This is very specific for the Ladder to Heaven project, and should be more generic later on -->

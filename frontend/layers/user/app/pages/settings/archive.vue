@@ -49,7 +49,7 @@ const isEmpty = computed(() => !!data.value && !projects.value.length)
         </div>
       </div>
     </div>
-    <ErrorState v-else-if="error" :error />
+    <ErrorState v-else-if="error && !data" :error />
     <EmptyState v-else-if="isEmpty" :title="$t('archive.empty')" />
     <div v-else class="space-y-list-section-gap p-list-outside">
       <div v-for="project in projects" :key="project.id">

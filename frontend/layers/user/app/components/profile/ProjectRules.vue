@@ -33,7 +33,7 @@ const isInitialLoading = computed(() => fetching.value && !data.value)
     <slot />
     <template #content>
       <LoadingState v-if="isInitialLoading" />
-      <ErrorState v-else-if="error" :error />
+      <ErrorState v-else-if="error && !data" :error />
       <div
         v-else-if="data?.myCurrentProject.rules"
         id="project-rules"

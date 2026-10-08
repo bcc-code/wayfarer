@@ -49,6 +49,7 @@ const titleOpacity = computed(() => {
         { 'pb-[calc(7rem+env(safe-area-inset-bottom,0px))]': bottomPadding },
       ]"
     >
+      <OfflineNotice />
       <slot />
     </div>
     <div v-if="$slots.footer" class="z-10">
