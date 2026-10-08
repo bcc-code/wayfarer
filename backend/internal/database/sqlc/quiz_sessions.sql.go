@@ -1232,3 +1232,17 @@ func (q *Queries) UserHasAccessToVisibleSession(ctx context.Context, arg UserHas
 	err := row.Scan(&has_access)
 	return has_access, err
 }
+
+const WaitForSessionSubmissionLocks = `-- name: WaitForSessionSubmissionLocks :exec
+SELECT id FROM quiz_submissions
+WHERE session_id = $1::char(28)
+FOR SHARE
+`
+
+// Barrier: waits until no transaction holds a lock on any of the session's
+// submissions, completed ones included (answer writes lock their submission).
+// Run outside a transaction, the locks are released right away.
+func (q *Queries) WaitForSessionSubmissionLocks(ctx context.Context, sessionid string) error {
+	_, err := q.db.Exec(ctx, WaitForSessionSubmissionLocks, sessionid)
+	return err
+}

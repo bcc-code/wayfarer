@@ -202,6 +202,14 @@ FROM quiz_submissions
 WHERE session_id = @sessionid::char(28)
 ORDER BY started_at DESC;
 
+-- name: WaitForSessionSubmissionLocks :exec
+-- Barrier: waits until no transaction holds a lock on any of the session's
+-- submissions, completed ones included (answer writes lock their submission).
+-- Run outside a transaction, the locks are released right away.
+SELECT id FROM quiz_submissions
+WHERE session_id = @sessionid::char(28)
+FOR SHARE;
+
 -- name: AutoSubmitSessionSubmissions :exec
 UPDATE quiz_submissions
 SET

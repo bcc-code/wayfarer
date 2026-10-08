@@ -24,7 +24,6 @@ import (
 	"github.com/bcc-media/wayfarer/internal/services/webhooks"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	pgx "github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -955,62 +954,18 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 		params.Betamount = &ba
 	}
 
-	// Try to create new response
-	response, err := r.DB.Queries.CreateQuizResponse(ctx, params)
+	// Create the response under the submission lock (returns the existing
+	// response if the question was already answered)
+	response, err := r.createQuizResponseLocked(ctx, userID, params)
 	if err != nil {
-		// Check for duplicate key error (unique violation on submission_id + question_id)
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-			// Race condition: another request created the response first
-			// Fetch the existing response and return it
-			existing, fetchErr := r.DB.Queries.GetQuizResponseBySubmissionAndQuestion(ctx, sqlc.GetQuizResponseBySubmissionAndQuestionParams{
-				Submissionid: submissionID,
-				Questionid:   input.QuestionID,
-			})
-			if fetchErr != nil {
-				return nil, fmt.Errorf("failed to fetch existing response: %w", fetchErr)
-			}
-			r.Cache.InvalidateQuizSubmission(submissionID)
-			r.Cache.InvalidateUserQuizSubmissions(userID)
-			// Convert existing response to QuizResponse model
-			existingAsModel := &sqlc.QuizResponse{
-				ID:                existing.ID,
-				SubmissionID:      existing.SubmissionID,
-				QuestionID:        existing.QuestionID,
-				SelectedAnswerIds: existing.SelectedAnswerIds,
-				TextResponse:      existing.TextResponse,
-				NumberResponse:    existing.NumberResponse,
-				JsonResponse:      existing.JsonResponse,
-				IsCorrect:         existing.IsCorrect,
-				PointsEarned:      existing.PointsEarned,
-				AnsweredAt:        existing.AnsweredAt,
-				TimeSpentSeconds:  existing.TimeSpentSeconds,
-				BetAmount:         existing.BetAmount,
-			}
-			return convertResponseRowToInterface(existingAsModel, questionType), nil
-		}
-		return nil, fmt.Errorf("failed to save response: %w", err)
+		otel.RecordError(span, err)
+		return nil, err
 	}
 
 	r.Cache.InvalidateQuizSubmission(submissionID)
 	r.Cache.InvalidateUserQuizSubmissions(userID)
 
-	// Convert response to QuizResponse model
-	responseAsModel := &sqlc.QuizResponse{
-		ID:                response.ID,
-		SubmissionID:      response.SubmissionID,
-		QuestionID:        response.QuestionID,
-		SelectedAnswerIds: response.SelectedAnswerIds,
-		TextResponse:      response.TextResponse,
-		NumberResponse:    response.NumberResponse,
-		JsonResponse:      response.JsonResponse,
-		IsCorrect:         response.IsCorrect,
-		PointsEarned:      response.PointsEarned,
-		AnsweredAt:        response.AnsweredAt,
-		TimeSpentSeconds:  response.TimeSpentSeconds,
-		BetAmount:         response.BetAmount,
-	}
-	return convertResponseRowToInterface(responseAsModel, questionType), nil
+	return convertResponseRowToInterface(response, questionType), nil
 }
 
 // UpdateQuizAnswer is the resolver for the updateQuizAnswer field.
@@ -1122,11 +1077,11 @@ func (r *mutationResolver) UpdateQuizAnswer(ctx context.Context, responseID stri
 		return nil, fmt.Errorf("update not supported for this question type")
 	}
 
-	// Update the response
-	updatedResponse, err := r.DB.Queries.UpdateQuizResponse(ctx, params)
+	// Update the response under the submission lock
+	updatedResponse, err := r.updateQuizResponseLocked(ctx, submission.ID, params)
 	if err != nil {
 		otel.RecordError(span, err)
-		return nil, fmt.Errorf("failed to update response: %w", err)
+		return nil, err
 	}
 
 	r.Cache.InvalidateQuizSubmission(submission.ID)
