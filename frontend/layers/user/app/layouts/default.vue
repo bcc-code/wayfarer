@@ -2,6 +2,7 @@
 import type { NavigationMenuItem } from '@nuxt/ui'
 import { gsap } from 'gsap'
 import { pageTransitionDirection } from '../utils/pageTransition'
+import { syncAppBadge } from '../utils/appBadge'
 import '~/assets/styles/user.css'
 
 const { t } = useI18n()
@@ -140,6 +141,11 @@ gql(`
 const { isAuthReady } = useAuthReady()
 const { data, executeQuery: refresh } = useCurrentProjectQuery({
   pause: computed(() => !isAuthReady.value),
+})
+
+// Mirrors the nav badge onto the home-screen icon.
+watch(availableChallengesBadge, (count) => syncAppBadge(navigator, count), {
+  immediate: true,
 })
 
 // Listen for Firestore realtime updates
