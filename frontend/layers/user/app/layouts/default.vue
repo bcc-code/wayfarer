@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
 import { gsap } from 'gsap'
-import { pageTransitionDirection } from '../utils/pageTransition'
+import {
+  pageTransitionDirection,
+  pageTransitionMeta,
+} from '../utils/pageTransition'
 import { syncAppBadge } from '../utils/appBadge'
 import '~/assets/styles/user.css'
 
@@ -294,11 +297,15 @@ const router = useRouter()
 const stopPageTransitionHook = router.beforeEach((to, from) => {
   const direction = pageTransitionDirection(from.path, to.path)
   if (direction === null) return
+
+  const meta = pageTransitionMeta(direction)
+  to.meta.pageTransition = meta
+  if (!meta) return
+
   document.documentElement.style.setProperty(
     '--page-direction',
     String(direction),
   )
-  to.meta.pageTransition = { name: 'page', mode: 'out-in' }
 })
 onUnmounted(stopPageTransitionHook)
 

@@ -32,9 +32,9 @@ user layout only.
 ## Tier 2 — navigation feel
 
 - [x] **Page transitions.** No `pageTransition` or `layoutTransition` was set
-      anywhere, so every navigation was an instant swap. Now direction-aware:
-      moving deeper pushes, moving back pops, switching tabs cross-fades.
-      See "Page transitions" below.
+      anywhere, so every navigation was an instant swap. Now depth-aware:
+      moving deeper pushes, moving back pops, and **switching tabs stays an
+      instant swap** — see "Page transitions" below.
 - [ ] **Sticky title bar — tried and reverted (2026-10-08).** `PageLayout.vue`
       carried a literal `<!-- TODO: position sticky -->`, and `TitleBar.vue`
       already implemented the iOS large-title → small-title collapse driven by
@@ -46,8 +46,7 @@ user layout only.
       original was turned off for stuttering, then switched off again with the
       sticky bar: the two only work together, because a bar that scrolls away
       has nothing to hand the title over to. The rebuilt structure is still in
-      `TitleBar` behind the `titleOpacity` prop, which `PageLayout` now pins to
-      0. See "Why the title bar collapse stuttered" below.
+      `TitleBar` behind the `titleOpacity` prop, which `PageLayout` now pins to 0. See "Why the title bar collapse stuttered" below.
 - [x] **Navigation indicator no longer flashes open from nothing** on mount.
       See "The navigation indicator" below.
 - [x] **The bottom navigation fades, scales and slides in and out** rather than
@@ -139,7 +138,7 @@ component.
       state via `useOnline`.
 
 - [ ] **Offline across a relaunch** — not done, and a different problem.
-      urql runs the default *document* `cacheExchange`, which is memory-only,
+      urql runs the default _document_ `cacheExchange`, which is memory-only,
       and a cold PWA launch is a reload, so nothing survives it. The two routes
       are hand-rolled per-query snapshots to localStorage (precedent:
       `cachedTheme` in the user layout) or migrating to
@@ -152,10 +151,10 @@ component.
       a queue plus replay, and backend idempotency — out of scope of the above.
 
 - **A refresh that fails while online is now silent** — the page shows stale
-      data and `OfflineNotice` says nothing, because it tracks connectivity
-      rather than query state. Accepted: urql retries on the next navigation,
-      and the alternative was per-page staleness plumbing. Revisit if stale
-      data turns out to mislead anyone.
+  data and `OfflineNotice` says nothing, because it tracks connectivity
+  rather than query state. Accepted: urql retries on the next navigation,
+  and the alternative was per-page staleness plumbing. Revisit if stale
+  data turns out to mislead anyone.
 
 - [ ] **`LeaderboardItem` styles itself as interactive but is not.** The row
       carries `hover:bg-background-indent active:bg-background-indent`, yet
@@ -199,10 +198,14 @@ pure function of the two paths and can be unit tested:
 `layers/user/app/utils/pageTransition.ts`.
 
 The three tab routes (`/`, `/standings`, `/challenges`) are all treated as
-depth 0 so that moving between them cross-fades rather than pushing — they are
-siblings even though their segment counts differ. Everything else is its
-segment count, so `/challenges/:id` and `/settings/archive` are depth 2 and
-push in from the right, and going back pops out to the right.
+depth 0 — they are siblings even though their segment counts differ. Everything
+else is its segment count, so `/challenges/:id` and `/settings/archive` are
+depth 2 and push in from the right, and going back pops out to the right.
+
+`pageTransitionDirection` says _where_ a navigation goes; `pageTransitionMeta`
+says whether that is worth animating. They are separate because the first is
+geometry and the second is taste, and only the second changed when the feel was
+retuned.
 
 The transition is applied by a `router.beforeEach` registered in the user
 layout's setup rather than by a global middleware file: Nuxt gathers middleware
@@ -241,14 +244,42 @@ so both halves read one value that cannot disagree with itself.
 `pageTransition.test.ts` pins the symmetry: every push/pop pair must be exact
 opposites.
 
-The slide is deliberately short (16px, not a full-width push) and uses
-`mode: 'out-in'`. Pages scroll the window rather than an internal container and
-differ in height, so overlapping a full-width push would jump the scroll
-position. Moving pages to an internal scroll container would unlock a true
-full-width push — worth revisiting together with per-tab scroll restoration.
+The slide is short (32px, not a full-width push) and uses `mode: 'out-in'`.
+Pages scroll the window rather than an internal container and differ in height,
+so overlapping a full-width push would jump the scroll position. Moving pages to
+an internal scroll container would unlock a true full-width push — worth
+revisiting together with per-tab scroll restoration.
 
 All transitions collapse to a plain instant swap under
 `prefers-reduced-motion: reduce`.
+
+### Why tabs animate nothing, and why the push is asymmetric (2026-10-08)
+
+Reported after shipping: the transitions were not noticeable on a phone. The
+first instinct is to lengthen them, which would have been wrong on both counts.
+
+**Tabs.** Sibling navigation resolved to direction `0`, which meant
+`translateX(0)` — a 160ms opacity cross-fade with no travel at all, on the
+navigation users perform most. Lengthening a fade with no travel does not make
+it more visible, it makes it feel slow. It is now no transition at all, which is
+also what the platform does: `UITabBarController` animates nothing between tabs.
+The cross-fade was not a weak version of native behaviour, it was behaviour
+native does not have.
+
+`pageTransitionMeta` returns `false` (Nuxt's "no transition") rather than
+leaving `to.meta.pageTransition` unset, because **route meta lives on the record
+and persists**. A route reached once by a push keeps that transition object
+forever, so a tab route that had also been reached from deeper would animate on
+a later sibling swap. `pageTransition.test.ts` walks every ordered pair of tabs
+to pin that.
+
+**Push/pop.** 16px over 160ms against iOS's full screen width over ~350ms is why
+it read as nothing. Travel is now 32px, and the duration is split **asymmetric**:
+120ms accelerating out, 260ms decelerating in. `out-in` cannot overlap the two
+halves, so a symmetric split spends half the budget animating a page the user
+has already stopped looking at — which is what produced the "gap in the middle"
+feel. Putting the time on the entering page gets most of the perceived motion of
+a native push without the scroll-position risk of a real overlap.
 
 ## Why the title bar collapse stuttered, and what replaced it
 
@@ -361,7 +392,7 @@ to 4. It is mounted twice — `TitleBar` and the fixed bottom navigation — so
 eight masked backdrop filters were live at once.
 
 Masked `backdrop-filter` is near the top of what WebKit will charge you for,
-and the charge is per frame *only when the backdrop changes*. That is exactly
+and the charge is per frame _only when the backdrop changes_. That is exactly
 what making the bar sticky changed: before, the bar sat over static content and
 the blur resolved once; after, the content scrolls under it and all four layers
 re-blur on every scroll frame. The same was already true of the bottom
@@ -374,7 +405,7 @@ three layers only refined the falloff curve. `TitleBar.test.ts` pins the count,
 because this is a default that is easy to raise back without noticing where it
 is paid.
 
-A thing that was *not* the problem, though it looks like it: `PageLayout`'s
+A thing that was _not_ the problem, though it looks like it: `PageLayout`'s
 `useWindowScroll` → `titleOpacity` → inline `:style` chain does not re-render
 per scroll event. `titleOpacity` clamps to `1` past `TITLE_HANDOVER_DISTANCE`,
 and a `computed` returning an unchanged value does not trigger its dependents,
@@ -390,7 +421,7 @@ so the renders are bounded to the first 48px of scroll.
 Under `mode: 'out-in'` there is a moment in every navigation when the outgoing
 page has reached `opacity: 0` and the incoming one has not mounted. There is
 then nothing behind the bar to blur. Worse, `opacity < 1` makes an element a
-*backdrop root*, so for the whole transition the blur layers stop sampling the
+_backdrop root_, so for the whole transition the blur layers stop sampling the
 document behind them regardless. All that painted was 30% black over bare body
 — a black bar, flashing once per navigation.
 
@@ -443,11 +474,8 @@ is the obvious next thing to cut if the bar stays non-sticky.
   block in `user.css`, the GSAP press feedback and the navigation indicator are
   all gated on `prefers-reduced-motion: no-preference`, so with it on the app
   correctly has no transitions at all.
-- Tab ↔ tab navigation resolves to direction `0`, which is a cross-fade with
-  **zero travel** — by design (see "Page transitions"), but it is the
-  navigation users perform most, so "the page transitions don't work" is a
-  reasonable reading of it. Reviewed and deliberately left alone for now;
-  revisit together with per-tab scroll restoration.
+- Tab ↔ tab navigation is now an instant swap, matching iOS. Resolved — see
+  "Why tabs animate nothing" under "Page transitions".
 
 ## The drawer's rounded top
 

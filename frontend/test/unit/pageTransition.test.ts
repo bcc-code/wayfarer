@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   routeDepth,
   pageTransitionDirection,
+  pageTransitionMeta,
 } from '../../layers/user/app/utils/pageTransition'
 
 describe('pageTransition', () => {
@@ -89,5 +90,34 @@ describe('pageTransition', () => {
         0,
       )
     })
+  })
+})
+
+describe('pageTransitionMeta', () => {
+  it('gives siblings no transition, the way a native tab bar swaps', () => {
+    expect(pageTransitionMeta(0)).toBe(false)
+  })
+
+  it('animates a change of depth in both directions', () => {
+    expect(pageTransitionMeta(1)).toEqual({ name: 'page', mode: 'out-in' })
+    expect(pageTransitionMeta(-1)).toEqual({ name: 'page', mode: 'out-in' })
+  })
+
+  it('names one transition for both directions, so the halves cannot disagree', () => {
+    expect(pageTransitionMeta(1)).toEqual(pageTransitionMeta(-1))
+  })
+
+  it('returns a value for every sibling pair rather than leaving meta unset', () => {
+    // Route meta lives on the record and persists, so a route reached once by
+    // a push must be actively reset when it is later reached from a sibling.
+    const tabs = ['/', '/standings', '/challenges']
+
+    for (const from of tabs) {
+      for (const to of tabs) {
+        const direction = pageTransitionDirection(from, to)
+        expect(direction).not.toBeNull()
+        expect(pageTransitionMeta(direction!)).toBe(false)
+      }
+    }
   })
 })

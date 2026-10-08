@@ -50,28 +50,45 @@ textarea,
 }
 
 /**
- * Page transitions. `--page-direction` is 1 deeper, -1 back out, 0 cross-fade.
+ * Page transitions. `--page-direction` is 1 deeper and -1 back out. Siblings
+ * never get here — they are given no transition at all, so there is no 0 case.
  *
  * One name for every route, with direction in a shared variable: under
  * `mode: 'out-in'` the leaving page reads the route being *left*, so a
  * per-route name slides the two halves of one navigation opposite ways.
+ *
+ * The two halves are deliberately asymmetric. `out-in` cannot overlap them, so
+ * a symmetric split spends half the budget on a page the user has already
+ * stopped looking at and reads as a gap. The exit is quick and accelerating,
+ * the entrance long and decelerating, which puts the perceived motion on the
+ * page being arrived at. Together they land near the ~350ms iOS spends on a
+ * `UINavigationController` push.
  */
 @media (prefers-reduced-motion: no-preference) {
   .page-enter-active,
   .page-leave-active {
     transition-property: opacity, transform;
-    transition-duration: 160ms;
+  }
+
+  .page-leave-active {
+    transition-duration: 120ms;
+    /* easeInQuad — gets out of the way */
+    transition-timing-function: cubic-bezier(0.55, 0.085, 0.68, 0.53);
+  }
+
+  .page-enter-active {
+    transition-duration: 260ms;
     /* easeOutExpo */
     transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .page-enter-from {
     opacity: 0;
-    transform: translateX(calc(var(--page-direction, 0) * 16px));
+    transform: translateX(calc(var(--page-direction, 0) * 32px));
   }
 
   .page-leave-to {
     opacity: 0;
-    transform: translateX(calc(var(--page-direction, 0) * -16px));
+    transform: translateX(calc(var(--page-direction, 0) * -32px));
   }
 }
