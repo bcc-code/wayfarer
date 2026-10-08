@@ -372,5 +372,8 @@
       "peopleInAUnit": "Personen in einer Unit",
       "lastUpdated": "Zuletzt aktualisiert"
     }
+  },
+  "offline": {
+    "notice": "Du bist offline. Die Informationen sind möglicherweise veraltet."
   }
 }
