@@ -143,6 +143,10 @@
     "unlocked": "Débloqué !",
     "progress": "{completed} sur {total} achevés"
   },
+  "archive": {
+    "myAchievements": "Mes badges",
+    "empty": "Tu n’as encore aucun badge."
+  },
   "feedback": {
     "title": "Donne-nous ton avis",
     "cta": "Donne-nous ton avis",

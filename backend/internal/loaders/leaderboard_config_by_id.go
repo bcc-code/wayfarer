@@ -84,6 +84,7 @@ func ConvertRowToLeaderboardConfig(row *sqlc.LeaderboardConfig) *model.Leaderboa
 		EntityType: model.LeaderboardEntityType(row.EntityType),
 		Filter:     filter,
 		MaxEntries: utils.Int32PtrToIntPtr(row.MaxEntries),
+		LimitMode:  model.LeaderboardLimitMode(row.LimitMode),
 		SortOrder:  int(row.SortOrder),
 		IsActive:   row.IsActive,
 		CreatedAt:  scalars.DateTime{Time: row.CreatedAt.Time},

@@ -188,7 +188,7 @@ useFirestoreRefresh(['ProfilePageDocument'], () => {
     <div v-if="isInitialLoading" class="space-y-default p-list-outside">
       <ProfileProjectCardSkeleton />
     </div>
-    <ErrorState v-else-if="error" :error />
+    <ErrorState v-else-if="error && !data" :error />
     <TransitionGroup
       v-else-if="data"
       tag="div"
@@ -230,14 +230,6 @@ useFirestoreRefresh(['ProfilePageDocument'], () => {
       <div key="user-feedback" class="pt-small">
         <UserFeedback :project-id="data.myCurrentProject?.id" />
       </div>
-      <NuxtLink
-        key="archive-link"
-        :to="{ name: 'settings-archive' }"
-        class="flex items-center justify-between gap-2.5 px-4 py-2"
-      >
-        <p class="text-label">{{ $t('archive.myAchievements') }}</p>
-        <IconChevronRight class="size-6" />
-      </NuxtLink>
     </TransitionGroup>
 
     <!-- Notification prompt for PWA users -->

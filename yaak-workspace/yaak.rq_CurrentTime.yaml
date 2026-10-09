@@ -1,0 +1,45 @@
+type: http_request
+model: http_request
+id: rq_CurrentTime
+createdAt: 2026-10-05T12:00:00
+updatedAt: 2026-10-05T12:20:48.610858
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_qhH6J7tuNv
+authentication: {}
+authenticationType: null
+body:
+  operationName: CurrentTime
+  query: |
+    query CurrentTime {
+      currentTime
+    }
+bodyType: graphql
+description: Get the current server time (UTC, RFC3339)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_CurrentTime
+method: POST
+name: Current Time
+sortPriority: 1001.0
+url: ${[ HOST ]}/graphql
+urlParameters: []
+settingSendCookies:
+  enabled: false
+  value: true
+settingStoreCookies:
+  enabled: false
+  value: true
+settingValidateCertificates:
+  enabled: false
+  value: true
+settingFollowRedirects:
+  enabled: false
+  value: true
+settingRequestTimeout:
+  enabled: false
+  value: 0
+settingHttpVersion:
+  enabled: false
+  value: auto

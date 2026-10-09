@@ -3,6 +3,7 @@ package loaders
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
@@ -110,19 +111,37 @@ func userByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context
 	}
 }
 
+// currentProjectID reads the setting directly — internal/services imports this
+// package, so SettingsService can't be used here. Empty on failure (global only).
+func currentProjectID(ctx context.Context, db *database.DB) string {
+	value, err := db.Queries.GetSettingText(ctx, "current_project_id")
+	if err != nil {
+		slog.Error("loaders: failed to read current project for consent scoping", "error", err)
+		return ""
+	}
+	if value == nil {
+		return ""
+	}
+
+	return *value
+}
+
 // fetchConsentDataForUsers fetches all consent data needed to build ConsentStatus for users
 // Returns: latestConsents (map of consent ID -> Consent), userConsentsMap (map of userID -> map of consentID -> UserConsent)
 func fetchConsentDataForUsers(ctx context.Context, db *database.DB, c *cache.CacheWithRegistry, userIDs []string) (map[string]*model.Consent, map[string]map[string]*model.UserConsent) {
-	// 1. Get all latest published consents (cached globally)
+	// 1. Get the latest published consents that apply to the current project
+	// (the project's own plus global ones), cached per project
+	projectID := currentProjectID(ctx, db)
+
 	latestConsents := make(map[string]*model.Consent)
-	cacheKey := cache.LatestConsentsKey()
+	cacheKey := cache.LatestConsentsKey(projectID)
 	if cached, ok := c.Get(cacheKey); ok {
 		if consents, ok := cached.(map[string]*model.Consent); ok {
 			latestConsents = consents
 		}
 	} else {
 		// Query latest consents from DB
-		rows, err := db.Queries.GetAllLatestPublishedConsents(ctx)
+		rows, err := db.Queries.GetLatestPublishedConsentsForProject(ctx, projectID)
 		if err == nil {
 			for _, row := range rows {
 				var publishedAt *scalars.DateTime
@@ -147,6 +166,7 @@ func fetchConsentDataForUsers(ctx context.Context, db *database.DB, c *cache.Cac
 					PublishedAt:    publishedAt,
 					ManagementType: managementType,
 					ManagedBy:      row.ManagedBy,
+					ProjectID:      row.ProjectID,
 				}
 				latestConsents[row.ID] = consent
 			}

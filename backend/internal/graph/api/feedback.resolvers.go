@@ -64,10 +64,7 @@ func (r *mutationResolver) SubmitFeedback(ctx context.Context, input model.Submi
 	if input.Device.ContextURL != nil {
 		contextUrl = *input.Device.ContextURL
 	}
-	projectID := ""
-	if input.ProjectID != nil {
-		projectID = *input.ProjectID
-	}
+	projectID := resolveFeedbackProjectID(ctx, r.Settings, input.ProjectID)
 	tags := []string{}
 	if input.Tags != nil {
 		tags = input.Tags

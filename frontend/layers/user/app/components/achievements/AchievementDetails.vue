@@ -73,7 +73,10 @@ const progressLabel = computed(() => {
     <div class="flex flex-col items-center gap-1 text-center text-balance">
       <h3 class="text-heading" v-html="achievement.name" />
       <p class="text-label" v-html="description" />
-      <p v-if="progressLabel" class="text-label tabular-nums text-text-muted">
+      <p
+        v-if="progressLabel"
+        class="text-label tabular-nums text-text-muted mt-medium"
+      >
         {{ progressLabel }}
       </p>
     </div>

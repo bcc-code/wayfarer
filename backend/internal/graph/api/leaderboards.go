@@ -201,7 +201,7 @@ func (r *Resolver) getLeaderboardForConfig(ctx context.Context, obj *model.Leade
 	// configured cap. The service already caches the full board; this only slices
 	// that shared data, leaving the cache, totalCount, me and rivals unchanged.
 	fetchLimit := math.MaxInt32
-	if obj.MaxEntries != nil {
+	if obj.MaxEntries != nil && obj.LimitMode != model.LeaderboardLimitModeChurchSize {
 		fetchLimit = *obj.MaxEntries
 	}
 	params, isEvent := buildLeaderboardParamsFromConfig(obj, &fetchLimit, nil, nil, nil, currentUserID)
@@ -217,6 +217,16 @@ func (r *Resolver) getLeaderboardForConfig(ctx context.Context, obj *model.Leade
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leaderboard: %w", err)
+	}
+
+	if obj.LimitMode == model.LeaderboardLimitModeChurchSize {
+		limit := churchLeaderboardLimit(totalCount)
+		if obj.MaxEntries != nil {
+			limit = min(limit, *obj.MaxEntries)
+		}
+		if len(entries) > limit {
+			entries = entries[:limit]
+		}
 	}
 
 	entries, hasPreviousPage, hasNextPage, err := paginateConfiguredLeaderboard(entries, first, after, last, before)

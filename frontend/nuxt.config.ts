@@ -49,8 +49,10 @@ export default defineNuxtConfig({
     },
     head: {
       title: 'Interact',
+      // `interactive-widget=resizes-content` lifts the fixed bottom navigation
+      // above the virtual keyboard instead of leaving it hidden behind.
       viewport:
-        'width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no',
+        'width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, interactive-widget=resizes-content',
       charset: 'utf-8',
       meta: [
         {
@@ -60,6 +62,10 @@ export default defineNuxtConfig({
         {
           name: 'apple-mobile-web-app-status-bar-style',
           content: 'black-translucent',
+        },
+        {
+          name: 'apple-mobile-web-app-title',
+          content: 'Interact',
         },
       ],
       link: [
@@ -299,10 +305,25 @@ export default defineNuxtConfig({
       type: 'module',
     },
     manifest: {
-      theme_color: '#E8DFA7',
+      id: '/',
+      start_url: '/',
+      scope: '/',
       name: 'Interact',
       short_name: 'Interact',
+      description:
+        'Take part in challenges, earn achievements and follow the standings.',
+      categories: ['education', 'lifestyle'],
       display: 'standalone',
+      orientation: 'portrait',
+      // Matches `--color-background-default` in the dark theme, which is the
+      // default colour mode — so the splash and toolbar do not flash a colour
+      // the app never shows. Per-project branding overrides the toolbar at
+      // runtime via the `theme-color` meta in the user layout.
+      theme_color: '#222222',
+      background_color: '#222222',
+      launch_handler: {
+        client_mode: 'focus-existing',
+      },
       icons: [
         {
           src: 'pwa-64x64.png',
