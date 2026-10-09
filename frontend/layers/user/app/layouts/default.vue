@@ -170,7 +170,7 @@ const colorMode = useColorMode()
 const activeColors = computed<BrandingColorsFieldsFragment | null>(() => {
   const live = data.value?.myCurrentProject.branding.colors
   if (live) return live
-  return isValidTheme(cachedTheme.value) ? cachedTheme.value : null
+  return isValidTheme(cachedTheme.value) ? cachedTheme.value.colors : null
 })
 
 useSeoMeta({
