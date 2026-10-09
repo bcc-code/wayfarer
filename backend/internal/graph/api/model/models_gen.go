@@ -1965,6 +1965,30 @@ type SetNotificationPreferenceInput struct {
 	Enabled          bool             `json:"enabled"`
 }
 
+type Setting struct {
+	Key string `json:"key"`
+	// Canonical string form of whichever value column valueType names.
+	Value       string           `json:"value"`
+	ValueType   SettingValueType `json:"valueType"`
+	Description *string          `json:"description,omitempty"`
+	// True when the value is only read while the process starts up, so a change
+	// takes effect on the next restart rather than immediately.
+	RequiresRestart bool `json:"requiresRestart"`
+	// False for a row the application does not know about. Writing is restricted
+	// to known keys, so a row added to the database is not writable through the
+	// API by virtue of existing.
+	Editable bool `json:"editable"`
+	// The environment variable this setting overrides, when it backs one. Null
+	// for application data such as current_project_id.
+	EnvVar    *string          `json:"envVar,omitempty"`
+	UpdatedAt scalars.DateTime `json:"updatedAt"`
+}
+
+type SettingInput struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
 type SimpleAchievement struct {
 	ID                   string                   `json:"id"`
 	Name                 string                   `json:"name"`
@@ -3740,6 +3764,67 @@ func (e *ScoreSourceType) UnmarshalJSON(b []byte) error {
 }
 
 func (e ScoreSourceType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SettingValueType string
+
+const (
+	SettingValueTypeText  SettingValueType = "TEXT"
+	SettingValueTypeInt   SettingValueType = "INT"
+	SettingValueTypeBool  SettingValueType = "BOOL"
+	SettingValueTypeFloat SettingValueType = "FLOAT"
+	SettingValueTypeJSON  SettingValueType = "JSON"
+)
+
+var AllSettingValueType = []SettingValueType{
+	SettingValueTypeText,
+	SettingValueTypeInt,
+	SettingValueTypeBool,
+	SettingValueTypeFloat,
+	SettingValueTypeJSON,
+}
+
+func (e SettingValueType) IsValid() bool {
+	switch e {
+	case SettingValueTypeText, SettingValueTypeInt, SettingValueTypeBool, SettingValueTypeFloat, SettingValueTypeJSON:
+		return true
+	}
+	return false
+}
+
+func (e SettingValueType) String() string {
+	return string(e)
+}
+
+func (e *SettingValueType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SettingValueType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SettingValueType", str)
+	}
+	return nil
+}
+
+func (e SettingValueType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SettingValueType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SettingValueType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

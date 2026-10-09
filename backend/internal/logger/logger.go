@@ -9,16 +9,32 @@ import (
 
 // New creates a new slog.Logger based on the environment and log level
 // In production, uses JSON format. In development, uses colored human-readable format.
+// currentLevel is shared by every handler, including the clones WithAttrs and
+// WithGroup return, so SetLevel reaches loggers that already exist.
+var currentLevel = new(slog.LevelVar)
+
 func New(environment string, level slog.Level) *slog.Logger {
+	currentLevel.Set(level)
+
 	var handler slog.Handler
 
 	if environment == "production" {
-		handler = newGCPHandler(level)
+		handler = newGCPHandler(currentLevel)
 	} else {
-		handler = newDevHandler(level)
+		handler = newDevHandler(currentLevel)
 	}
 
 	return slog.New(handler)
+}
+
+// SetLevel changes the verbosity of every logger New has returned.
+func SetLevel(level slog.Level) {
+	currentLevel.Set(level)
+}
+
+// Level reports the verbosity currently in force.
+func Level() slog.Level {
+	return currentLevel.Level()
 }
 
 // ParseLevel converts a string log level to slog.Level
@@ -40,15 +56,15 @@ func ParseLevel(level string) slog.Level {
 // devHandler is a custom slog handler for development with format: [Time] SEVERITY Msg (key=value)
 // Levels are colored: DEBUG (no color), INFO (blue), WARN (yellow), ERROR (red)
 type devHandler struct {
-	level slog.Level
+	level *slog.LevelVar
 }
 
-func newDevHandler(level slog.Level) *devHandler {
+func newDevHandler(level *slog.LevelVar) *devHandler {
 	return &devHandler{level: level}
 }
 
 func (h *devHandler) Enabled(_ context.Context, level slog.Level) bool {
-	return level >= h.level
+	return level >= h.level.Level()
 }
 
 func (h *devHandler) Handle(_ context.Context, r slog.Record) error {

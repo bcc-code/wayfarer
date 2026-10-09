@@ -1,3 +1,54 @@
+enum SettingValueType {
+    TEXT
+    INT
+    BOOL
+    FLOAT
+    JSON
+}
+
+type Setting {
+    key: String!
+    "Canonical string form of whichever value column valueType names."
+    value: String!
+    valueType: SettingValueType!
+    description: String
+    """
+    True when the value is only read while the process starts up, so a change
+    takes effect on the next restart rather than immediately.
+    """
+    requiresRestart: Boolean!
+    """
+    False for a row the application does not know about. Writing is restricted
+    to known keys, so a row added to the database is not writable through the
+    API by virtue of existing.
+    """
+    editable: Boolean!
+    """
+    The environment variable this setting overrides, when it backs one. Null
+    for application data such as current_project_id.
+    """
+    envVar: String
+    updatedAt: DateTime!
+}
+
+input SettingInput {
+    key: String!
+    value: String!
+}
+
 extend type Query {
     frontendConfig: JSON!
+    "Superadmin only — enforced in the resolver, not by @requireRole."
+    settings: [Setting!]!
+}
+
+extend type Mutation {
+    "Changes the project every end user sees. Validates that the project exists."
+    setCurrentProject(projectId: ID!): Project! @requireRole(roles: ["superadmin"])
+    """
+    Writes existing settings keys in one transaction. Every value is validated
+    before any of them is written, so a bad value leaves nothing changed. New
+    keys cannot be invented here.
+    """
+    setSettings(input: [SettingInput!]!): [Setting!]! @requireRole(roles: ["superadmin"])
 }

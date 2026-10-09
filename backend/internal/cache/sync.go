@@ -45,6 +45,10 @@ const (
 
 	// Progress updates must also invalidate other instances before the next read.
 	InvalidationTypeUserAchievementProgress InvalidationType = "userachievementprogress"
+
+	// Settings live in a per-process map refreshed on a five-minute ticker.
+	// This message tells the other instances to reload now instead.
+	InvalidationTypeSettings InvalidationType = "settings"
 )
 
 // InvalidationMessage is the payload sent via NOTIFY
@@ -241,6 +245,8 @@ func (s *CacheSync) applyInvalidation(msg InvalidationMessage) {
 		s.cache.invalidateQuizSessionAccessLocal()
 	case InvalidationTypeQuizSession:
 		s.cache.invalidateQuizSessionLocal(msg.ID)
+	case InvalidationTypeSettings:
+		s.cache.refreshSettings()
 	case InvalidationTypeClear:
 		s.cache.Clear()
 	default:

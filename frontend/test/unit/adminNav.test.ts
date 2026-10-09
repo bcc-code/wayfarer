@@ -27,6 +27,7 @@ function permissions(granted: Partial<Record<string, boolean>> = {}): Perms {
     canAccessConsents: flag('canAccessConsents'),
     canAccessFeedback: flag('canAccessFeedback'),
     canAccessMaintenance: flag('canAccessMaintenance'),
+    canManageSettings: flag('canManageSettings'),
     canEditProject: (projectId: string) =>
       !!granted.canEditProject && !!projectId,
   } as unknown as Perms
@@ -59,6 +60,7 @@ describe('admin nav model', () => {
           canAccessConsents: true,
           canAccessFeedback: true,
           canAccessMaintenance: true,
+          canManageSettings: true,
         }),
       )
       // Teams and scores are not here: they are project-scoped now and live in
@@ -70,6 +72,7 @@ describe('admin nav model', () => {
         'Samtykker',
         'Tilbakemeldinger',
         'Vedlikehold',
+        'Systeminnstillinger',
       ])
     })
 

@@ -1292,7 +1292,15 @@ export type Mutation = {
   sendPushNotification: SendPushNotificationResult;
   setChallengeRequirements: Challenge;
   setChallengeVisibility: Challenge;
+  /** Changes the project every end user sees. Validates that the project exists. */
+  setCurrentProject: Project;
   setNotificationPreference: PushNotificationPreference;
+  /**
+   * Writes existing settings keys in one transaction. Every value is validated
+   * before any of them is written, so a bad value leaves nothing changed. New
+   * keys cannot be invented here.
+   */
+  setSettings: Array<Setting>;
   startQuizSession: QuizSubmission;
   submitFeedback: UserFeedback;
   submitQuizAnswer: QuizResponse;
@@ -1903,8 +1911,18 @@ export type MutationSetChallengeVisibilityArgs = {
 };
 
 
+export type MutationSetCurrentProjectArgs = {
+  projectId: Scalars['ID']['input'];
+};
+
+
 export type MutationSetNotificationPreferenceArgs = {
   input: SetNotificationPreferenceInput;
+};
+
+
+export type MutationSetSettingsArgs = {
+  input: Array<SettingInput>;
 };
 
 
@@ -2450,6 +2468,8 @@ export type Query = {
   quizSubmissions: QuizSubmissionConnection;
   quizzes: QuizConnection;
   scoreJournal: ScoreJournalConnection;
+  /** Superadmin only — enforced in the resolver, not by @requireRole. */
+  settings: Array<Setting>;
   superteam: SuperTeam;
   superteams: SuperTeamConnection;
   team: Team;
@@ -3133,6 +3153,45 @@ export type SetNotificationPreferenceInput = {
   enabled: Scalars['Boolean']['input'];
   notificationType: NotificationType;
 };
+
+export type Setting = {
+  __typename?: 'Setting';
+  description?: Maybe<Scalars['String']['output']>;
+  /**
+   * False for a row the application does not know about. Writing is restricted
+   * to known keys, so a row added to the database is not writable through the
+   * API by virtue of existing.
+   */
+  editable: Scalars['Boolean']['output'];
+  /**
+   * The environment variable this setting overrides, when it backs one. Null
+   * for application data such as current_project_id.
+   */
+  envVar?: Maybe<Scalars['String']['output']>;
+  key: Scalars['String']['output'];
+  /**
+   * True when the value is only read while the process starts up, so a change
+   * takes effect on the next restart rather than immediately.
+   */
+  requiresRestart: Scalars['Boolean']['output'];
+  updatedAt: Scalars['DateTime']['output'];
+  /** Canonical string form of whichever value column valueType names. */
+  value: Scalars['String']['output'];
+  valueType: SettingValueType;
+};
+
+export type SettingInput = {
+  key: Scalars['String']['input'];
+  value: Scalars['String']['input'];
+};
+
+export enum SettingValueType {
+  Bool = 'BOOL',
+  Float = 'FLOAT',
+  Int = 'INT',
+  Json = 'JSON',
+  Text = 'TEXT'
+}
 
 export type SimpleAchievement = Achievement & {
   __typename?: 'SimpleAchievement';
@@ -4561,7 +4620,7 @@ export type AdminExternalContentEventsQuery = { __typename?: 'Query', adminExter
 export type AdminProjectSwitcherQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminProjectSwitcherQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', logoImage?: { __typename?: 'Image', url: string } | null } } }> } };
+export type AdminProjectSwitcherQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', logoImage?: { __typename?: 'Image', url: string } | null } } }> }, currentProject: { __typename?: 'Project', id: string } };
 
 export type AdminUserPickerSearchQueryVariables = Exact<{
   query?: InputMaybe<Scalars['String']['input']>;
@@ -5031,7 +5090,14 @@ export type AdminProjectOverviewQueryVariables = Exact<{
 }>;
 
 
-export type AdminProjectOverviewQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, activityTrend?: Array<{ __typename?: 'ProjectActivityPoint', date: any, points: number, activeUsers: number }> }, users: { __typename?: 'UserConnection', totalCount: number }, teams: { __typename?: 'TeamConnection', totalCount: number }, challenges: { __typename?: 'ChallengeConnection', totalCount: number }, achievements: { __typename?: 'AchievementConnection', totalCount: number }, events: { __typename?: 'EventConnection', totalCount: number }, superteams: { __typename?: 'SuperTeamConnection', totalCount: number } };
+export type AdminProjectOverviewQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, activityTrend?: Array<{ __typename?: 'ProjectActivityPoint', date: any, points: number, activeUsers: number }> }, users: { __typename?: 'UserConnection', totalCount: number }, teams: { __typename?: 'TeamConnection', totalCount: number }, challenges: { __typename?: 'ChallengeConnection', totalCount: number }, achievements: { __typename?: 'AchievementConnection', totalCount: number }, events: { __typename?: 'EventConnection', totalCount: number }, superteams: { __typename?: 'SuperTeamConnection', totalCount: number }, currentProject: { __typename?: 'Project', id: string } };
+
+export type AdminSetCurrentProjectMutationVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminSetCurrentProjectMutation = { __typename?: 'Mutation', setCurrentProject: { __typename?: 'Project', id: string, name: string } };
 
 export type AdminProjectLeaderboardPageQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -5122,7 +5188,26 @@ export type AdminTeamsPageSuperTeamsQuery = { __typename?: 'Query', superteams: 
 export type AdminProjectsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminProjectsPageQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logoImage?: { __typename?: 'Image', url: string } | null } } }> } };
+export type AdminProjectsPageQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logoImage?: { __typename?: 'Image', url: string } | null } } }> }, currentProject: { __typename?: 'Project', id: string } };
+
+export type AdminSettingsPageQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminSettingsPageQuery = { __typename?: 'Query', settings: Array<{ __typename?: 'Setting', key: string, value: string, valueType: SettingValueType, description?: string | null, requiresRestart: boolean, envVar?: string | null, editable: boolean }>, currentProject: { __typename?: 'Project', id: string, name: string }, projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, startDate: any, endDate: any } }> } };
+
+export type SetCurrentProjectMutationVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type SetCurrentProjectMutation = { __typename?: 'Mutation', setCurrentProject: { __typename?: 'Project', id: string, name: string } };
+
+export type SetSettingsMutationVariables = Exact<{
+  input: Array<SettingInput> | SettingInput;
+}>;
+
+
+export type SetSettingsMutation = { __typename?: 'Mutation', setSettings: Array<{ __typename?: 'Setting', key: string, value: string }> };
 
 export type LegacyTeamRedirectQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -6918,6 +7003,9 @@ export const AdminProjectSwitcherDocument = gql`
       }
     }
   }
+  currentProject {
+    id
+  }
 }
     `;
 
@@ -8256,11 +8344,26 @@ export const AdminProjectOverviewDocument = gql`
   superteams(first: 0, filter: {projectId: $projectId}) {
     totalCount
   }
+  currentProject {
+    id
+  }
 }
     `;
 
 export function useAdminProjectOverviewQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectOverviewQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectOverviewQuery, AdminProjectOverviewQueryVariables | undefined>({ query: AdminProjectOverviewDocument, variables: undefined, ...options });
+};
+export const AdminSetCurrentProjectDocument = gql`
+    mutation AdminSetCurrentProject($projectId: ID!) {
+  setCurrentProject(projectId: $projectId) {
+    id
+    name
+  }
+}
+    `;
+
+export function useAdminSetCurrentProjectMutation() {
+  return Urql.useMutation<AdminSetCurrentProjectMutation, AdminSetCurrentProjectMutationVariables>(AdminSetCurrentProjectDocument);
 };
 export const AdminProjectLeaderboardPageDocument = gql`
     query AdminProjectLeaderboardPage($id: ID!) {
@@ -8551,11 +8654,69 @@ export const AdminProjectsPageDocument = gql`
       }
     }
   }
+  currentProject {
+    id
+  }
 }
     `;
 
 export function useAdminProjectsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectsPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectsPageQuery, AdminProjectsPageQueryVariables | undefined>({ query: AdminProjectsPageDocument, variables: undefined, ...options });
+};
+export const AdminSettingsPageDocument = gql`
+    query AdminSettingsPage {
+  settings {
+    key
+    value
+    valueType
+    description
+    requiresRestart
+    envVar
+    editable
+  }
+  currentProject {
+    id
+    name
+  }
+  projects(first: 100, filter: {archived: false}) {
+    edges {
+      node {
+        id
+        name
+        startDate
+        endDate
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminSettingsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminSettingsPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminSettingsPageQuery, AdminSettingsPageQueryVariables | undefined>({ query: AdminSettingsPageDocument, variables: undefined, ...options });
+};
+export const SetCurrentProjectDocument = gql`
+    mutation SetCurrentProject($projectId: ID!) {
+  setCurrentProject(projectId: $projectId) {
+    id
+    name
+  }
+}
+    `;
+
+export function useSetCurrentProjectMutation() {
+  return Urql.useMutation<SetCurrentProjectMutation, SetCurrentProjectMutationVariables>(SetCurrentProjectDocument);
+};
+export const SetSettingsDocument = gql`
+    mutation SetSettings($input: [SettingInput!]!) {
+  setSettings(input: $input) {
+    key
+    value
+  }
+}
+    `;
+
+export function useSetSettingsMutation() {
+  return Urql.useMutation<SetSettingsMutation, SetSettingsMutationVariables>(SetSettingsDocument);
 };
 export const LegacyTeamRedirectDocument = gql`
     query LegacyTeamRedirect($id: ID!) {

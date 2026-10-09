@@ -9,7 +9,6 @@ wayfarer/
 ├── backend/          # Go API server (Gin + gqlgen + sqlc)
 ├── frontend/         # Nuxt 4 SPA (Vue 3 + TypeScript + urql)
 ├── gql/              # Shared GraphQL schema definitions (*.graphqls)
-├── schema.sql        # Reference database schema (PostgreSQL)
 ├── notes/            # Implementation documentation
 ├── docker/           # Docker and observability configs
 └── docs/             # General documentation
@@ -46,7 +45,9 @@ These files are overwritten by codegen. Make changes in their source files inste
 
 ## Database
 
-The database schema is defined in `schema.sql` and uses PostgreSQL.
+The database is PostgreSQL. The schema is defined by the migrations in
+`backend/internal/database/migrations/` — there is no separate reference file,
+and sqlc reads those migrations directly.
 
 ### ID Format
 
@@ -150,4 +151,4 @@ Each project can contain multiple events, usually an in-person event. Events hav
 4. Run `make generate` in `backend/`
 5. Add a ULID prefix and generator in `backend/internal/ulid/`
 6. Implement resolvers, add dataloader if needed
-7. Update `schema.sql` reference and `notes/` if applicable
+7. Update `notes/` if applicable

@@ -10,66 +10,19 @@ import '~/assets/styles/user.css'
 
 const { t } = useI18n()
 
-// Theme caching to prevent flash of default theme
-const cachedTheme = useLocalStorage<BrandingColorsFieldsFragment | null>(
-  'projectTheme',
-  null,
-  {
-    serializer: {
-      read: (v) => (v ? JSON.parse(v) : null),
-      write: (v) => JSON.stringify(v),
-    },
+const cachedTheme = useLocalStorage<CachedTheme | null>('projectTheme', null, {
+  serializer: {
+    read: (v) => (v ? JSON.parse(v) : null),
+    write: (v) => JSON.stringify(v),
   },
-)
-
-function isValidTheme(colors: unknown): colors is BrandingColorsFieldsFragment {
-  return (
-    typeof colors === 'object' &&
-    colors !== null &&
-    'light' in colors &&
-    'dark' in colors &&
-    typeof (colors as BrandingColorsFieldsFragment).light?.accent === 'string'
-  )
-}
+})
 
 function applyTheme(colors: BrandingColorsFieldsFragment) {
   document.getElementById('theme')?.remove()
-
-  const style = `
-  <style id="theme">
-  :root {
-    --color-accent: ${colors.light.accent};
-    --color-accent-contrast: ${colors.light.accentContrast};
-    --color-on-accent: ${colors.light.onAccent};
-    --color-background-default: ${colors.light.backgroundDefault};
-    --color-background-raised: ${colors.light.backgroundRaised};
-    --color-background-indent: ${colors.light.backgroundIndent};
-    --color-text-default: ${colors.light.textDefault};
-    --color-text-muted: ${colors.light.textMuted};
-    --color-text-hint: ${colors.light.textHint};
-    --color-shadow-default: ${colors.light.shadowDefault};
-    --color-shadow-blank: ${colors.light.shadowBlank};
-    --color-border-default: ${colors.light.borderDefault};
-  }
-
-  .dark {
-    --color-accent: ${colors.dark.accent};
-    --color-accent-contrast: ${colors.dark.accentContrast};
-    --color-on-accent: ${colors.dark.onAccent};
-    --color-background-default: ${colors.dark.backgroundDefault};
-    --color-background-raised: ${colors.dark.backgroundRaised};
-    --color-background-indent: ${colors.dark.backgroundIndent};
-    --color-text-default: ${colors.dark.textDefault};
-    --color-text-muted: ${colors.dark.textMuted};
-    --color-text-hint: ${colors.dark.textHint};
-    --color-shadow-default: ${colors.dark.shadowDefault};
-    --color-shadow-blank: ${colors.dark.shadowBlank};
-    --color-border-default: ${colors.dark.borderDefault};
-  }
-  </style>
-  `
-
-  document.head.insertAdjacentHTML('beforeend', style)
+  document.head.insertAdjacentHTML(
+    'beforeend',
+    `<style id="theme">${buildThemeCss(colors)}</style>`,
+  )
 }
 
 // Initialize Firestore sync for realtime updates
@@ -81,9 +34,11 @@ const {
 onMounted(() => {
   initFirestoreSync()
 
-  // Apply cached theme immediately to prevent flash
+  // Paint the last known branding before the query resolves. It may belong to
+  // a project that is no longer current; the watcher below corrects that as
+  // soon as data arrives.
   if (isValidTheme(cachedTheme.value)) {
-    applyTheme(cachedTheme.value)
+    applyTheme(cachedTheme.value.colors)
   }
 })
 
@@ -156,13 +111,24 @@ useFirestoreRefresh(['CurrentProjectDocument'], () => {
   refresh({ requestPolicy: 'network-only' })
 })
 
-watch(data, (newData) => {
-  if (!newData) return
+// `immediate`, because urql seeds `data` synchronously during setup when the
+// document cache already holds a result (callUseQuery subscribes in a
+// `flush: 'sync'` watchEffect). A plain watcher misses that first value, and
+// the only theme ever applied is the cached one.
+watch(
+  data,
+  (newData) => {
+    if (!newData) return
 
-  const colors = newData.myCurrentProject.branding.colors
-  applyTheme(colors)
-  cachedTheme.value = JSON.parse(JSON.stringify(colors))
-})
+    const { id, branding } = newData.myCurrentProject
+    applyTheme(branding.colors)
+    cachedTheme.value = {
+      projectId: id,
+      colors: JSON.parse(JSON.stringify(branding.colors)),
+    }
+  },
+  { immediate: true },
+)
 
 // Subscribe to project-level quiz session notifications
 const projectSubscriptionCleanup = ref<(() => void) | null>(null)
@@ -178,9 +144,14 @@ watch(
     if (projectId && isAuth) {
       const quizCleanup = subscribeProject(projectId, 'quiz_sessions')
       const challengesCleanup = subscribeProject(projectId, 'challenges')
+      const currentProjectCleanup = subscribeProject(
+        projectId,
+        'current_project',
+      )
       projectSubscriptionCleanup.value = () => {
         quizCleanup()
         challengesCleanup()
+        currentProjectCleanup()
       }
     }
   },
