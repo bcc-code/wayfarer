@@ -142,9 +142,9 @@ it('preserves relative filters and removes nested GraphQL metadata', () => {
     ageRange: { min: 12, max: 17 },
   })
   expect(summarizeLeaderboardFilter(filter)).toEqual([
-    'Min menighet',
-    'Mitt lag',
-    'Mitt superlag',
+    'Deltakerens menighet',
+    'Deltakerens lag',
+    'Deltakerens superlag',
     'U18',
   ])
 })

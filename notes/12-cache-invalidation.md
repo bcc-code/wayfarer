@@ -94,6 +94,28 @@ Invalidates all cache entries related to a user:
 
 Called automatically by `UserSyncService.SyncUser()` and `MaintenanceHandler` sync endpoints after updating user data.
 
+### InvalidateSettings
+
+Not a cache invalidation at all, despite living here. Settings are kept in a
+process-local map in `SettingsService`, refreshed on a five-minute ticker, so a
+change made on one instance is invisible to the others until their next tick.
+`InvalidateSettings()` reuses the NOTIFY bus to close that window:
+
+```go
+func (c *CacheWithRegistry) InvalidateSettings() {
+    c.refreshSettings()
+    c.broadcast(InvalidationMessage{Type: InvalidationTypeSettings})
+}
+```
+
+The reload itself runs through a callback registered by `cmd/server/main.go`
+(`SetSettingsRefresher`), because `internal/services` already imports
+`internal/cache` and the dependency cannot run both ways.
+
+Changing the current project also calls `InvalidateProject` for the outgoing
+and incoming project — that is what drops the `gqlresponse:` entries holding
+the old `currentProject` / `myCurrentProject` payloads.
+
 ### Other Helpers
 
 - `InvalidateTeam(teamID)` - Invalidates team and members

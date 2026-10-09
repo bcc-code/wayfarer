@@ -64,6 +64,7 @@ describe('useAdminNav', () => {
       { name: 'admin-consents' },
       { name: 'admin-feedback' },
       { name: 'admin-maintenance' },
+      { name: 'admin-settings' },
     ])
     expect(projectNav.value).toEqual([])
   })

@@ -98,9 +98,14 @@ const churchItems = computed(() =>
 
 // Shared with the list page, so a label cannot drift between the two.
 const entityTypeItems = LEADERBOARD_ENTITY_TYPE_ITEMS
-const churchCategoryItems = CHURCH_CATEGORY_ITEMS
-const genderItems = GENDER_ITEMS
 const ageGroups = LEADERBOARD_AGE_GROUPS
+
+/**
+ * What the three `my*` switches have in common, and the thing their labels do
+ * not say: the board is resolved per viewer rather than once. Same sentence on
+ * all three — the dimension is already in the label above it.
+ */
+const RELATIVE_FILTER_HELP = 'Tavlen blir forskjellig for hver deltaker.'
 
 /**
  * An optional field is unset when it is falsy. Which falsy value depends on the
@@ -120,10 +125,10 @@ const optionalId = z.string().nullish()
  * `ageRange` is flattened to `ageMin`/`ageMax` because a form control cannot
  * bind to a nested object that is itself optional.
  *
- * Every `LeaderboardFilter` field is represented, including
- * ones an admin rarely sets. The update mutation is full-replace: a field this
- * form does not carry would be silently dropped from an existing config the
- * first time someone opened it and saved.
+ * Every `LeaderboardFilter` field is represented, including `gender`, `country`
+ * and `churchCategory`, which have no control (see the Filter section). The
+ * update mutation is full-replace: a field this form does not carry would be
+ * silently dropped from a config the first time someone opened it and saved.
  */
 const schema = z
   .object({
@@ -151,44 +156,24 @@ const schema = z
     }),
   })
   .superRefine((value, ctx) => {
-    if (value.limitMode === LeaderboardLimitMode.ChurchSize) {
-      if (value.entityType !== LeaderboardEntityType.Persons) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['entityType'],
-          message: 'Automatisk grense krever en persontavle',
-        })
-      }
-      if (!value.filter.churchId) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['filter', 'churchId'],
-          message: 'Velg en menighet for automatisk grense',
-        })
-      }
-    }
-    const { minScore, maxScore, ageMin, ageMax } = value.filter
-    const persons = value.entityType === LeaderboardEntityType.Persons
-    for (const key of ['myTeam', 'mySuperTeam'] as const) {
-      if (value.filter[key] && !persons) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['filter', key],
-          message: 'Krever en persontavle',
-        })
-      }
-    }
+    /*
+     * Only the conditions an admin can still see and fix are checked here.
+     * A control the entity type hides cannot carry an error message, so the
+     * entity-type rules live in `buildFilter` (which drops what the backend
+     * would reject) and in the `limitMode` watcher instead.
+     */
     if (
-      value.filter.myChurch &&
-      !persons &&
-      value.entityType !== LeaderboardEntityType.Teams
+      value.limitMode === LeaderboardLimitMode.ChurchSize &&
+      !value.filter.myChurch &&
+      !value.filter.churchId
     ) {
       ctx.addIssue({
         code: 'custom',
-        path: ['filter', 'myChurch'],
-        message: 'Krever en person- eller lagtavle',
+        path: ['filter', 'churchId'],
+        message: 'Velg en menighet for automatisk grense',
       })
     }
+    const { minScore, maxScore, ageMin, ageMax } = value.filter
     const hasMin = typeof ageMin === 'number'
     const hasMax = typeof ageMax === 'number'
 
@@ -245,11 +230,66 @@ const state = reactive<Schema>({
   name: '',
   entityType: LeaderboardEntityType.Persons,
   eventId: null,
-  limitMode: LeaderboardLimitMode.ChurchSize,
+  limitMode: LeaderboardLimitMode.Manual,
   maxEntries: undefined,
   sortOrder: 0,
   isActive: true,
   filter: emptyFilter(),
+})
+
+/*
+ * Which filters the chosen entity type can actually apply. The live board
+ * queries are the `GetFull*` ones in `backend/.../queries/leaderboards.sql`,
+ * and their parameter builders pass only these through — a control for
+ * anything else would promise a narrowing that never happens.
+ */
+const isPersons = computed(
+  () => state.entityType === LeaderboardEntityType.Persons,
+)
+const supportsAge = isPersons
+const supportsTeam = isPersons
+const supportsChurch = computed(
+  () => isPersons.value || state.entityType === LeaderboardEntityType.Teams,
+)
+
+/**
+ * `leaderboardLimitModeToDB` rejects CHURCH_SIZE unless the config carries a
+ * persons entity type and a concrete `churchId`. `myChurch` resolves per
+ * viewer at request time, so it does not satisfy that — offering the mode in
+ * either case would only produce a server error on save.
+ */
+const supportsChurchSize = computed(
+  () => isPersons.value && !state.filter.myChurch,
+)
+
+const limitModeItems = computed(() => [
+  ...(supportsChurchSize.value
+    ? [
+        {
+          label: 'Automatisk etter menighetsstørrelse',
+          value: LeaderboardLimitMode.ChurchSize,
+        },
+      ]
+    : []),
+  { label: 'Manuell grense', value: LeaderboardLimitMode.Manual },
+])
+
+/*
+ * The tiers are the whole substance of the automatic mode, so they belong on
+ * the picker rather than in a paragraph under it. "Applies to persons boards
+ * with a church" is left unsaid — the picker only offers the mode when that
+ * already holds.
+ */
+const limitModeHelp = computed(() =>
+  state.limitMode === LeaderboardLimitMode.ChurchSize
+    ? 'Antall deltakere i den filtrerte tavlen bestemmer grensen: under 20: topp 3; 20–49: topp 10; 50–99: topp 20; 100–199: topp 50; 200 eller flere: topp 100. Egen plassering og nærmeste rivaler vises i tillegg.'
+    : undefined,
+)
+
+// Also fires while hydrating an existing config, which is wanted: a board the
+// backend would no longer accept on CHURCH_SIZE falls back to the manual cap.
+watch(supportsChurchSize, (supported) => {
+  if (!supported) state.limitMode = LeaderboardLimitMode.Manual
 })
 
 const { markSaved } = useUnsavedChanges(() => ({ ...state }))
@@ -288,13 +328,27 @@ watch(
   { immediate: true },
 )
 
-/** `null` rather than an all-empty object, so "no filter" round-trips as null. */
-function buildFilter(filter: Schema['filter']): LeaderboardFilter | null {
+/**
+ * `null` rather than an all-empty object, so "no filter" round-trips as null.
+ *
+ * Fields the chosen entity type cannot apply are kept rather than dropped —
+ * the board ignores them, and keeping them means switching a board's type back
+ * and forth does not quietly destroy what was configured. The exception is the
+ * three viewer-relative flags: `ValidateLeaderboardRelativeFilter` *rejects*
+ * those outside their entity types, so sending one the admin can no longer see
+ * would fail the save with an error pointing at a hidden control.
+ */
+function buildFilter(
+  filter: Schema['filter'],
+  entityType: LeaderboardEntityType,
+): LeaderboardFilter | null {
   const built: LeaderboardFilter = {}
+  const persons = entityType === LeaderboardEntityType.Persons
+  const teams = entityType === LeaderboardEntityType.Teams
 
   if (typeof filter.minScore === 'number') built.minScore = filter.minScore
   if (typeof filter.maxScore === 'number') built.maxScore = filter.maxScore
-  if (filter.myChurch) built.myChurch = true
+  if (filter.myChurch && (persons || teams)) built.myChurch = true
   else if (filter.churchId) built.churchId = filter.churchId
   if (filter.country) built.country = filter.country
   if (filter.churchCategory) built.churchCategory = filter.churchCategory
@@ -302,9 +356,9 @@ function buildFilter(filter: Schema['filter']): LeaderboardFilter | null {
   if (typeof filter.ageMin === 'number' && typeof filter.ageMax === 'number') {
     built.ageRange = { min: filter.ageMin, max: filter.ageMax }
   }
-  if (filter.myTeam) built.myTeam = true
+  if (filter.myTeam && persons) built.myTeam = true
   else if (filter.teamId) built.teamId = filter.teamId
-  if (filter.mySuperTeam) built.mySuperTeam = true
+  if (filter.mySuperTeam && persons) built.mySuperTeam = true
   else if (filter.superTeamId) built.superTeamId = filter.superTeamId
 
   return Object.keys(built).length ? built : null
@@ -321,7 +375,7 @@ function onSubmit(event: FormSubmitEvent<Schema>) {
       typeof event.data.maxEntries === 'number' ? event.data.maxEntries : null,
     sortOrder: event.data.sortOrder,
     isActive: event.data.isActive,
-    filter: buildFilter(event.data.filter),
+    filter: buildFilter(event.data.filter, event.data.entityType),
   })
 }
 
@@ -329,17 +383,48 @@ function clearFilter() {
   state.filter = emptyFilter()
 }
 
-const activeAgeGroup = computed(() =>
-  typeof state.filter.ageMin === 'number' &&
-  typeof state.filter.ageMax === 'number'
-    ? ageGroupLabel({ min: state.filter.ageMin, max: state.filter.ageMax })
-    : undefined,
-)
+/** No age bounds. A preset rather than an empty state, so the control always
+ * reads as a choice and "no age limit" is one click rather than two cleared
+ * fields. */
+const AGE_GROUP_ALL = 'Alle'
 
-function selectAgeGroup(group: (typeof ageGroups)[number]) {
-  state.filter.ageMin = group.min
-  state.filter.ageMax = group.max
+const ageGroupItems = [
+  { label: AGE_GROUP_ALL, value: AGE_GROUP_ALL },
+  ...ageGroups.map((group) => ({ label: group.label, value: group.label })),
+]
+
+/**
+ * `''` — no segment at all — for a custom range typed into the two fields
+ * below, which matches no preset. Not `undefined`: that leaves `UTabs`
+ * uncontrolled, and it would fall back to its first item and read as "Alle".
+ */
+const activeAgeGroup = computed(() => {
+  const { ageMin, ageMax } = state.filter
+  if (typeof ageMin !== 'number' && typeof ageMax !== 'number')
+    return AGE_GROUP_ALL
+  if (typeof ageMin !== 'number' || typeof ageMax !== 'number') return ''
+  return ageGroupLabel({ min: ageMin, max: ageMax }) ?? ''
+})
+
+function selectAgeGroup(label: string | number) {
+  const group = ageGroups.find((candidate) => candidate.label === label)
+  state.filter.ageMin = group?.min
+  state.filter.ageMax = group?.max
 }
+
+/**
+ * `trigger` undoes the theme's `w-full`, which is right where the bar spans a
+ * column and truncates these labels to "U…" in a heading row.
+ *
+ * `indicator` covers reka-ui's `updateIndicatorStyle`, which returns early when
+ * no tab is active and so leaves the pill parked on the last selection instead
+ * of clearing it. A custom range typed into the fields below is the only way to
+ * reach that state now that "Alle" covers the empty one.
+ */
+const ageGroupUi = computed(() => ({
+  trigger: 'w-auto',
+  indicator: activeAgeGroup.value ? undefined : 'hidden',
+}))
 </script>
 
 <template>
@@ -369,29 +454,19 @@ function selectAgeGroup(group: (typeof ageGroups)[number]) {
           />
         </UFormField>
 
-        <UFormField name="limitMode" label="Antall plasseringer">
+        <UFormField
+          v-if="limitModeItems.length > 1"
+          name="limitMode"
+          label="Antall plasseringer"
+          :help="limitModeHelp"
+        >
           <USelect
             v-model="state.limitMode"
-            :items="[
-              {
-                label: 'Automatisk etter menighetsstørrelse',
-                value: LeaderboardLimitMode.ChurchSize,
-              },
-              { label: 'Manuell grense', value: LeaderboardLimitMode.Manual },
-            ]"
+            :items="limitModeItems"
             value-key="value"
             class="w-full"
           />
         </UFormField>
-        <p
-          v-if="state.limitMode === LeaderboardLimitMode.ChurchSize"
-          class="text-sm text-muted"
-        >
-          Gjelder persontavler med valgt menighet. Antall deltakere i den
-          filtrerte tavlen bestemmer grensen: under 20: topp 3; 20–49: topp 10;
-          50–99: topp 20; 100–199: topp 50; 200 eller flere: topp 100. Egen
-          plassering og nærmeste rivaler vises i tillegg.
-        </p>
 
         <UFormField
           name="maxEntries"
@@ -436,23 +511,24 @@ function selectAgeGroup(group: (typeof ageGroups)[number]) {
 
       <div class="flex flex-col gap-6">
         <p class="text-sm text-muted">
-          Filtrene kombineres. «Min» og «mitt» følger personen som ser tavlen.
+          Filtrene kombineres. Hvilke filtre som vises avhenger av hva tavlen
+          rangerer.
         </p>
-        <div class="flex flex-col gap-4">
+        <div v-if="supportsAge" class="flex flex-col gap-4">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <h3 class="text-sm font-medium">Alder</h3>
-            <div class="flex gap-2" role="group" aria-label="Aldersgruppe">
-              <UButton
-                v-for="group in ageGroups"
-                :key="group.label"
-                size="sm"
-                :variant="activeAgeGroup === group.label ? 'solid' : 'outline'"
-                :aria-pressed="activeAgeGroup === group.label"
-                @click="selectAgeGroup(group)"
-              >
-                {{ group.label }}
-              </UButton>
-            </div>
+            <UTabs
+              :model-value="activeAgeGroup"
+              :items="ageGroupItems"
+              :content="false"
+              variant="pill"
+              color="neutral"
+              size="sm"
+              aria-label="Aldersgruppe"
+              class="shrink-0"
+              :ui="ageGroupUi"
+              @update:model-value="selectAgeGroup"
+            />
           </div>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <UFormField
@@ -480,84 +556,75 @@ function selectAgeGroup(group: (typeof ageGroups)[number]) {
           </div>
         </div>
         <div
-          class="grid grid-cols-1 gap-5 border-t border-default pt-6 sm:grid-cols-2"
+          v-if="supportsChurch"
+          class="grid grid-cols-1 gap-5 sm:grid-cols-2"
+          :class="supportsAge && 'border-t border-default pt-6'"
         >
           <div class="flex min-w-0 flex-col gap-3">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <h3 class="text-sm font-medium">Menighet</h3>
-              <UFormField name="filter.myChurch"
-                ><USwitch v-model="state.filter.myChurch" label="Min menighet"
-              /></UFormField>
-            </div>
-            <UFormField v-if="!state.filter.myChurch" name="filter.churchId">
+            <h3 class="text-sm font-medium">Menighet</h3>
+            <UFormField name="filter.myChurch">
+              <USwitch
+                v-model="state.filter.myChurch"
+                label="Deltakerens menighet"
+                :description="RELATIVE_FILTER_HELP"
+              />
+            </UFormField>
+            <UFormField
+              v-if="!state.filter.myChurch"
+              name="filter.churchId"
+              label="Bestemt menighet"
+            >
               <USelectMenu
                 v-model="state.filter.churchId"
                 :items="churchItems"
-                aria-label="Menighet"
                 value-key="value"
                 placeholder="Alle"
                 clear
                 class="w-full"
               />
             </UFormField>
-            <p v-else class="flex min-h-8 items-center text-sm text-muted">
-              Følger personens menighet.
-            </p>
           </div>
-          <div class="flex min-w-0 flex-col gap-3">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <h3 class="text-sm font-medium">Lag</h3>
-              <UFormField name="filter.myTeam"
-                ><USwitch v-model="state.filter.myTeam" label="Mitt lag"
-              /></UFormField>
-            </div>
-            <UFormField v-if="!state.filter.myTeam" name="filter.teamId">
+          <div v-if="supportsTeam" class="flex min-w-0 flex-col gap-3">
+            <h3 class="text-sm font-medium">Lag</h3>
+            <UFormField name="filter.myTeam">
+              <USwitch
+                v-model="state.filter.myTeam"
+                label="Deltakerens lag"
+                :description="RELATIVE_FILTER_HELP"
+              />
+            </UFormField>
+            <UFormField
+              v-if="!state.filter.myTeam"
+              name="filter.teamId"
+              label="Bestemt lag"
+            >
               <USelectMenu
                 v-model="state.filter.teamId"
                 :items="teamItems"
-                aria-label="Lag"
                 value-key="value"
                 placeholder="Alle"
                 clear
                 class="w-full"
               />
             </UFormField>
-            <p v-else class="flex min-h-8 items-center text-sm text-muted">
-              Følger personens lag.
-            </p>
           </div>
-          <div class="flex min-w-0 flex-col gap-3">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <h3 class="text-sm font-medium">Superlag</h3>
-              <UFormField name="filter.mySuperTeam"
-                ><USwitch
-                  v-model="state.filter.mySuperTeam"
-                  label="Mitt superlag"
-              /></UFormField>
-            </div>
+          <div v-if="supportsTeam" class="flex min-w-0 flex-col gap-3">
+            <h3 class="text-sm font-medium">Superlag</h3>
+            <UFormField name="filter.mySuperTeam">
+              <USwitch
+                v-model="state.filter.mySuperTeam"
+                label="Deltakerens superlag"
+                :description="RELATIVE_FILTER_HELP"
+              />
+            </UFormField>
             <UFormField
               v-if="!state.filter.mySuperTeam"
               name="filter.superTeamId"
+              label="Bestemt superlag"
             >
               <USelectMenu
                 v-model="state.filter.superTeamId"
                 :items="superTeamItems"
-                aria-label="Superlag"
-                value-key="value"
-                placeholder="Alle"
-                clear
-                class="w-full"
-              />
-            </UFormField>
-            <p v-else class="flex min-h-8 items-center text-sm text-muted">
-              Følger personens superlag.
-            </p>
-          </div>
-          <div class="flex min-w-0 flex-col justify-end">
-            <UFormField name="filter.gender" label="Kjønn">
-              <USelectMenu
-                v-model="state.filter.gender"
-                :items="genderItems"
                 value-key="value"
                 placeholder="Alle"
                 clear
@@ -567,25 +634,11 @@ function selectAgeGroup(group: (typeof ageGroups)[number]) {
           </div>
         </div>
         <div
-          class="grid grid-cols-1 gap-4 border-t border-default pt-6 sm:grid-cols-2"
+          class="grid grid-cols-1 gap-4 sm:grid-cols-2"
+          :class="
+            (supportsAge || supportsChurch) && 'border-t border-default pt-6'
+          "
         >
-          <UFormField name="filter.churchCategory" label="Menighetsstørrelse">
-            <USelectMenu
-              v-model="state.filter.churchCategory"
-              :items="churchCategoryItems"
-              value-key="value"
-              placeholder="Alle"
-              clear
-              class="w-full"
-            />
-          </UFormField>
-          <UFormField name="filter.country" label="Land">
-            <UInput
-              v-model="state.filter.country"
-              placeholder="Alle"
-              class="w-full"
-            />
-          </UFormField>
           <UFormField name="filter.minScore" label="Min. poeng">
             <UInputNumber
               v-model="state.filter.minScore"

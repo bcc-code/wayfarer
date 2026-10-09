@@ -64,12 +64,23 @@ func main() {
 		os.Exit(1)
 	}
 
+	ctx := context.Background()
+
+	// Before the logger, tracer and pool: each is configured from a value the
+	// settings table can override, and db_log_queries is an input to building
+	// the pool itself.
+	settingOverrides := config.LoadSettings(ctx, cfg.Database.URL)
+	appliedOverrides := config.ApplySettings(cfg, settingOverrides)
+
 	// Initialize structured logger
 	lgr := logger.New(cfg.Server.Environment, logger.ParseLevel(cfg.Log.Level))
 	slog.SetDefault(lgr)
 
+	if len(appliedOverrides) > 0 {
+		slog.Info("Configuration overridden from settings table", "keys", appliedOverrides)
+	}
+
 	// Initialize OpenTelemetry tracer
-	ctx := context.Background()
 	tracerProvider, err := otel.InitTracer(ctx, otel.Config{
 		Enabled:          cfg.OTEL.Enabled,
 		ServiceName:      cfg.OTEL.ServiceName,
@@ -287,12 +298,23 @@ func main() {
 	slog.Info("LeaderboardService initialized with caching and loaders")
 
 	// Initialize SettingsService
-	settingsService, err := services.NewSettingsService(ctx, db.Queries, lgr)
+	settingsService, err := services.NewSettingsService(ctx, db.Queries, services.NewSettingsTxRunner(db.Pool, db.Queries), lgr)
 	if err != nil {
 		slog.Error("Failed to initialize SettingsService", "error", err)
 		os.Exit(1)
 	}
 	defer settingsService.Stop()
+
+	// A settings change broadcast by another instance arrives on the cache
+	// sync channel; without this hook that instance would keep serving the old
+	// value until its next five-minute refresh.
+	cacheInstance.SetSettingsRefresher(func() {
+		refreshCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		if err := settingsService.RefreshSettings(refreshCtx); err != nil {
+			slog.Error("Failed to refresh settings after invalidation", "error", err)
+		}
+	})
 	slog.Info("SettingsService initialized with background refresh")
 
 	// Initialize S3 upload service
@@ -447,7 +469,7 @@ func main() {
 		Cache:              cacheInstance,
 		RoleService:        roleService,
 		LeaderboardService: leaderboardService,
-		Settings:           settingsService,
+		SettingsService:    settingsService,
 		PushService:        pushService,
 		WebhookService:     webhookService,
 		FirebaseService:    firebaseService,

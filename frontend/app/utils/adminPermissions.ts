@@ -31,6 +31,7 @@ export type AdminPermission =
   | 'feedback:view'
   | 'maintenance:view'
   | 'church:manage'
+  | 'settings:manage'
 
 export interface AdminPermissionContext {
   /** Present while the route is inside a project. */
@@ -75,6 +76,8 @@ export function checkAdminPermission(
       return !!permissions.canAccessMaintenance.value
     case 'church:manage':
       return !!permissions.canManageChurchAdmins.value
+    case 'settings:manage':
+      return !!permissions.canManageSettings.value
   }
 }
 

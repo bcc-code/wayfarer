@@ -41,22 +41,27 @@ describe('AdminProjectCard', () => {
     expect(wrapper.text()).toContain('En uke med lovsang.')
   })
 
-  it('badges a project that is currently running', async () => {
+  it('badges the project end users currently see', async () => {
+    const wrapper = await mountSuspended(AdminProjectCard, {
+      props: { project: project(), isCurrent: true },
+    })
+
+    expect(wrapper.text()).toContain('Gjeldende')
+  })
+
+  it('leaves every other project unbadged', async () => {
     const wrapper = await mountSuspended(AdminProjectCard, {
       props: { project: project() },
     })
 
-    expect(wrapper.text()).toContain('Active')
+    expect(wrapper.text()).not.toContain('Gjeldende')
   })
 
-  it('leaves a project outside its date range unbadged', async () => {
+  // A project running right now is not the same thing as the current project,
+  // and badging both taught the opposite.
+  it('does not badge a project merely because its dates are running', async () => {
     const wrapper = await mountSuspended(AdminProjectCard, {
-      props: {
-        project: project({
-          startDate: '2025-01-01T10:00:00.000Z',
-          endDate: '2025-02-01T10:00:00.000Z',
-        }),
-      },
+      props: { project: project() },
     })
 
     expect(wrapper.text()).not.toContain('Active')

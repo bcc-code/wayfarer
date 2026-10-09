@@ -204,7 +204,7 @@ func (r *queryResolver) ChurchAdminStatistics(ctx context.Context) (*model.Churc
 	}
 
 	// Get current project ID
-	projectID, err := r.Settings.GetCurrentProjectID(ctx)
+	projectID, err := r.SettingsService.GetCurrentProjectID(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current project: %w", err)
 	}

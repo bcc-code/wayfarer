@@ -38,6 +38,16 @@ gql(`
     achievements(first: 0, filter: { projectId: $projectId }) { totalCount }
     events(first: 0, filter: { projectId: $projectId }) { totalCount }
     superteams(first: 0, filter: { projectId: $projectId }) { totalCount }
+    currentProject { id }
+  }
+`)
+
+gql(`
+  mutation AdminSetCurrentProject($projectId: ID!) {
+    setCurrentProject(projectId: $projectId) {
+      id
+      name
+    }
   }
 `)
 
@@ -55,6 +65,49 @@ const { data, error, fetching } = useAdminProjectOverviewQuery({
   })),
   pause: computed(() => !isAuthReady.value),
 })
+
+const { canManageSettings } = usePermissions()
+const toast = useToast()
+const { confirm } = useConfirm()
+const { executeMutation: setCurrentProject, fetching: switching } =
+  useAdminSetCurrentProjectMutation()
+
+// The project every end user sees, which is a different thing from the project
+// this admin route is scoped to.
+const isCurrentProject = computed(
+  () => data.value?.currentProject.id === route.params.projectId,
+)
+
+async function makeCurrent() {
+  const confirmed = await confirm({
+    title: `Gjøre "${project.value?.name}" til gjeldende prosjekt?`,
+    description:
+      'Dette endrer prosjektet alle brukere ser i appen, med en gang. Poeng, utfordringer, ledertavler og profilsiden byttes samtidig.',
+    confirmLabel: 'Bytt prosjekt',
+    color: 'primary',
+    icon: 'lucide:triangle-alert',
+  })
+  if (!confirmed) return
+
+  const response = await setCurrentProject({
+    projectId: route.params.projectId,
+  })
+
+  if (response.error) {
+    toast.add({
+      title: response.error.name,
+      description: response.error.message,
+      color: 'error',
+    })
+    return
+  }
+
+  toast.add({
+    title: 'Lagret',
+    description: `${response.data?.setCurrentProject.name} er nå gjeldende prosjekt.`,
+    color: 'success',
+  })
+}
 
 const trend = computed(() => data.value?.project?.activityTrend ?? [])
 const participants = computed(() => data.value?.users.totalCount)
@@ -137,6 +190,9 @@ onMounted(() => {
             >
               {{ formatProjectCountdown(timing) }}
             </UBadge>
+            <UBadge v-if="isCurrentProject" color="primary" variant="subtle">
+              Gjeldende
+            </UBadge>
           </div>
           <p v-if="project.description" class="text-muted max-w-2xl">
             {{ project.description }}
@@ -144,8 +200,12 @@ onMounted(() => {
           <p class="text-dimmed text-sm">
             {{ formatDateRange(project.startDate, project.endDate) }}
           </p>
-          <div v-if="canEdit" class="pt-2">
+          <div
+            v-if="canEdit || canManageSettings"
+            class="flex flex-wrap gap-2 pt-2"
+          >
             <UButton
+              v-if="canEdit"
               variant="soft"
               icon="lucide:pencil"
               :to="{
@@ -154,6 +214,16 @@ onMounted(() => {
               }"
             >
               Rediger prosjekt
+            </UButton>
+            <UButton
+              v-if="canManageSettings && !isCurrentProject"
+              variant="soft"
+              color="neutral"
+              icon="lucide:radio-tower"
+              :loading="switching"
+              @click="makeCurrent"
+            >
+              Sett som gjeldende prosjekt
             </UButton>
           </div>
         </header>

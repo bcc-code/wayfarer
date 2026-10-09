@@ -22,6 +22,7 @@ packages:
       TokenWarmerQuerier:
       ProjectIDProvider:
       AuthSessionQuerier:
+      SettingsQuerier:
   github.com/bcc-media/wayfarer/internal/services/push:
     interfaces:
       Querier:

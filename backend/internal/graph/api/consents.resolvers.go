@@ -490,7 +490,7 @@ func (r *queryResolver) PendingConsents(ctx context.Context) ([]model.Consent, e
 	}
 
 	// Pending is relative to the current project, plus consents that apply everywhere
-	projectID, err := r.Settings.GetCurrentProjectID(ctx)
+	projectID, err := r.SettingsService.GetCurrentProjectID(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current project ID: %w", err)
 	}

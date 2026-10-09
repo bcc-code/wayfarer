@@ -28,7 +28,6 @@ wayfarer/
 ├── frontend/             # Nuxt.js frontend
 ├── gql/                  # Shared GraphQL schemas
 ├── notes/                # Implementation notes
-├── schema.sql            # Reference database schema
 └── docker-compose.yml    # Local development environment
 ```
 

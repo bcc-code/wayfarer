@@ -12,6 +12,9 @@ interface ProjectCardProps {
 
 defineProps<{
   project: ProjectCardProps
+  /** The project end users currently see — distinct from "Active", which is
+      merely about dates. */
+  isCurrent?: boolean
 }>()
 </script>
 
@@ -49,11 +52,8 @@ defineProps<{
         class="h-8 w-auto max-w-24 rounded object-contain"
         alt=""
       />
-      <UBadge
-        v-if="isWithinRange(new Date(), project.startDate, project.endDate)"
-        variant="outline"
-      >
-        Active
+      <UBadge v-if="isCurrent" color="primary" variant="subtle">
+        Gjeldende
       </UBadge>
     </div>
   </UCard>

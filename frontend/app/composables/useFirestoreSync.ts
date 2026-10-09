@@ -31,6 +31,9 @@ const PROJECT_NOTIFICATION_QUERY_MAP = {
     'ChallengePageDocument',
     'CurrentProjectDocument',
   ],
+  // Fired on the outgoing project when an admin switches which project is
+  // current, so clients still subscribed to it refetch and re-theme.
+  current_project: ['CurrentProjectDocument'],
 } as const
 
 type NotificationCategory = keyof typeof NOTIFICATION_QUERY_MAP

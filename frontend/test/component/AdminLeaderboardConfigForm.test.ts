@@ -84,6 +84,12 @@ const field = (wrapper: Wrapper, name: string) =>
     .findAllComponents({ name: 'UFormField' })
     .find((f) => f.props('name') === name)
 
+const activeSegments = (wrapper: Wrapper) =>
+  wrapper
+    .findAll('[role="tab"]')
+    .filter((tab) => tab.attributes('data-state') === 'active')
+    .map((tab) => tab.text())
+
 /**
  * The template binds `@submit.prevent`, so the handler is handed a real submit
  * event in the app. `$emit` alone gives it a bare object and the `.prevent`
@@ -95,9 +101,8 @@ const submit = (wrapper: Wrapper, data: Record<string, unknown>) =>
     .vm.$emit('submit', { data, preventDefault: () => {} })
 
 describe('AdminLeaderboardConfigForm', () => {
-  // `UpdateLeaderboardConfigInput` is full-replace, so a filter field with no
-  // control would be wiped the first time an existing config is saved.
-  it('has a control for every LeaderboardFilter field', async () => {
+  // A persons board is the one entity type every filter below applies to.
+  it('has a control for every filter a persons board applies', async () => {
     const wrapper = await mount()
 
     expect(fieldNames(wrapper)).toEqual(
@@ -105,15 +110,58 @@ describe('AdminLeaderboardConfigForm', () => {
         'filter.minScore',
         'filter.maxScore',
         'filter.churchId',
-        'filter.country',
-        'filter.churchCategory',
-        'filter.gender',
         'filter.ageMin',
         'filter.ageMax',
         'filter.teamId',
         'filter.superTeamId',
       ]),
     )
+  })
+
+  // These three reach `buildFilterParamsMap` (the cache key) and no `GetFull*`
+  // parameter builder, so setting one narrows nothing. No control until the
+  // backend applies them.
+  it('offers no control for the filters the backend ignores', async () => {
+    const wrapper = await mount()
+
+    for (const name of [
+      'filter.gender',
+      'filter.country',
+      'filter.churchCategory',
+    ])
+      expect(fieldNames(wrapper)).not.toContain(name)
+  })
+
+  /*
+   * The labels name their subject ("Deltakerens menighet"), but not the
+   * consequence: the board is resolved per viewer rather than once. That is
+   * the one thing an admin cannot infer from the control.
+   */
+  it('says on every relative switch that the board differs per viewer', async () => {
+    const wrapper = await mount()
+    const switches = wrapper
+      .findAllComponents({ name: 'USwitch' })
+      .filter((control) =>
+        String(control.props('label')).startsWith('Deltakerens'),
+      )
+
+    expect(switches.map((control) => control.props('label'))).toEqual([
+      'Deltakerens menighet',
+      'Deltakerens lag',
+      'Deltakerens superlag',
+    ])
+    for (const control of switches)
+      expect(control.props('description')).toBe(
+        'Tavlen blir forskjellig for hver deltaker.',
+      )
+
+    // The two modes are alternatives, so they read as a matched pair rather
+    // than a named switch above an unlabelled picker.
+    expect(
+      ['filter.churchId', 'filter.teamId', 'filter.superTeamId'].map((name) =>
+        field(wrapper, name)?.props('label'),
+      ),
+    ).toEqual(['Bestemt menighet', 'Bestemt lag', 'Bestemt superlag'])
   })
 
   // Events are not in use yet, and the scope could only ever be set at
@@ -140,17 +188,65 @@ describe('AdminLeaderboardConfigForm', () => {
     expect(text).toContain('Alder regnes etter fødselsår, ikke bursdag')
   })
 
+  /*
+   * "Alle" is a preset rather than an empty state, so the control always shows
+   * a selection. It also keeps reka-ui's indicator honest: `updateIndicatorStyle`
+   * returns early when no tab is active, leaving the pill parked on the last
+   * selection, which is what "Nullstill filter" used to look like.
+   */
+  it('selects "Alle" when no age bounds are set, and clears through it', async () => {
+    const wrapper = await mount()
+    expect(activeSegments(wrapper)).toEqual(['Alle'])
+
+    const tabs = wrapper.findComponent({ name: 'UTabs' })
+    const state = wrapper.findComponent({ name: 'UForm' }).props('state')
+
+    tabs.vm.$emit('update:modelValue', 'U36')
+    await flushPromises()
+    expect(activeSegments(wrapper)).toEqual(['U36'])
+
+    tabs.vm.$emit('update:modelValue', 'Alle')
+    await flushPromises()
+    expect([state.filter.ageMin, state.filter.ageMax]).toEqual([
+      undefined,
+      undefined,
+    ])
+    expect(activeSegments(wrapper)).toEqual(['Alle'])
+  })
+
+  it('returns to "Alle" when the filter is reset', async () => {
+    const wrapper = await mount({
+      initialData: {
+        ...initialData,
+        filter: { ageRange: { min: 18, max: 35 } },
+      },
+      isEditMode: true,
+    })
+    expect(activeSegments(wrapper)).toEqual(['U36'])
+
+    await wrapper
+      .findAllComponents({ name: 'UButton' })
+      .find((button) => button.text().includes('Nullstill filter'))!
+      .trigger('click')
+    await flushPromises()
+
+    expect(activeSegments(wrapper)).toEqual(['Alle'])
+  })
+
   it('fills the age bounds from a fixed age group', async () => {
     const wrapper = await mount({ initialData, isEditMode: true })
+    const tabs = wrapper.findComponent({ name: 'UTabs' })
 
-    const u36 = wrapper
-      .findAllComponents({ name: 'UButton' })
-      .find((button) => button.text() === 'U36')!
-    await u36.trigger('click')
+    // 13–18 is `initialData`'s range and matches no preset, so no segment is
+    // lit — left uncontrolled, `UTabs` would fall back to its first item and
+    // claim "Alle" on a board that has an age filter.
+    expect(activeSegments(wrapper)).toEqual([])
+
+    tabs.vm.$emit('update:modelValue', 'U36')
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
-    expect(u36.attributes('aria-pressed')).toBe('true')
+    expect(activeSegments(wrapper)).toEqual(['U36'])
     expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({
       filter: { ageRange: { min: 18, max: 35 } },
     })
@@ -179,12 +275,19 @@ describe('AdminLeaderboardConfigForm', () => {
     expect(valueOf('isActive', 'USwitch')).toBe(false)
     expect(valueOf('filter.ageMin', 'UInputNumber')).toBe(13)
     expect(valueOf('filter.ageMax', 'UInputNumber')).toBe(18)
-    expect(valueOf('filter.gender', 'USelectMenu')).toBe(Gender.Female)
-    expect(valueOf('filter.churchCategory', 'USelectMenu')).toBe(
-      ChurchCategory.Xl,
-    )
-    // Unset on the server, so unset in the form — not the string "null".
-    expect(valueOf('filter.country', 'UInput')).toBe('')
+  })
+
+  // The update input is full-replace, so a stored value with no control has to
+  // survive an edit rather than be dropped by the first save.
+  it('resends the uncontrolled filters it loaded', async () => {
+    const wrapper = await mount({ initialData, isEditMode: true })
+
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({
+      filter: { gender: Gender.Female, churchCategory: ChurchCategory.Xl },
+    })
   })
 
   // reka-ui rejects a SelectItem whose value is '', reserving that value for
@@ -194,8 +297,6 @@ describe('AdminLeaderboardConfigForm', () => {
     const wrapper = await mount()
 
     for (const name of [
-      'filter.gender',
-      'filter.churchCategory',
       'filter.churchId',
       'filter.teamId',
       'filter.superTeamId',
@@ -317,21 +418,15 @@ describe('AdminLeaderboardConfigForm', () => {
 })
 
 describe('automatic leaderboard limits', () => {
-  it('starts a new config on automatic mode, but keeps a saved manual one', async () => {
+  it('starts a new config on the manual limit', async () => {
     const creating = await mount()
+
     expect(
       field(creating, 'limitMode')
         ?.findComponent({ name: 'USelect' })
         .props('modelValue'),
-    ).toBe(LeaderboardLimitMode.ChurchSize)
-    expect(fieldNames(creating)).toContain('maxEntries')
-
-    const editing = await mount({ initialData, isEditMode: true })
-    expect(
-      field(editing, 'limitMode')
-        ?.findComponent({ name: 'USelect' })
-        .props('modelValue'),
     ).toBe(LeaderboardLimitMode.Manual)
+    expect(fieldNames(creating)).toContain('maxEntries')
   })
 
   it('loads automatic mode and preserves the optional cap on submit', async () => {
@@ -354,7 +449,7 @@ describe('automatic leaderboard limits', () => {
     })
   })
 
-  it('requires a church and persons entity for automatic limits', async () => {
+  it('requires a church for automatic limits', async () => {
     const wrapper = await mount()
     const form = wrapper.findComponent({ name: 'UForm' })
     const schema = form.props('schema') as ZodType
@@ -366,10 +461,116 @@ describe('automatic leaderboard limits', () => {
     expect(schema.safeParse(state).success).toBe(false)
     const valid = { ...state, filter: { ...emptyFilterState, churchId: 'CH1' } }
     expect(schema.safeParse(valid).success).toBe(true)
-    expect(
-      schema.safeParse({ ...valid, entityType: LeaderboardEntityType.Teams })
-        .success,
-    ).toBe(false)
+  })
+
+  /*
+   * `leaderboardLimitModeToDB` rejects CHURCH_SIZE without a persons entity
+   * type and a concrete churchId, and `myChurch` only resolves per viewer.
+   * Offering the mode in either case would just fail the save, so the whole
+   * picker goes once MANUAL is the only choice left.
+   */
+  it('withdraws automatic mode when the config can no longer use it', async () => {
+    const wrapper = await mount({
+      initialData: {
+        ...initialData,
+        limitMode: LeaderboardLimitMode.ChurchSize,
+        filter: { churchId: 'CH1' },
+      },
+    })
+    const state = wrapper.findComponent({ name: 'UForm' }).props('state')
+    expect(fieldNames(wrapper)).toContain('limitMode')
+
+    state.entityType = LeaderboardEntityType.Teams
+    await flushPromises()
+    expect(fieldNames(wrapper)).not.toContain('limitMode')
+    expect(state.limitMode).toBe(LeaderboardLimitMode.Manual)
+
+    state.entityType = LeaderboardEntityType.Persons
+    state.limitMode = LeaderboardLimitMode.ChurchSize
+    await flushPromises()
+    state.filter.myChurch = true
+    await flushPromises()
+    expect(fieldNames(wrapper)).not.toContain('limitMode')
+    expect(state.limitMode).toBe(LeaderboardLimitMode.Manual)
+  })
+})
+
+describe('filters the entity type cannot apply', () => {
+  const sectionsFor = async (entityType: LeaderboardEntityType) => {
+    const wrapper = await mount()
+    wrapper.findComponent({ name: 'UForm' }).props('state').entityType =
+      entityType
+    await flushPromises()
+    return fieldNames(wrapper)
+  }
+
+  // The live `GetFull*` queries take churchId on persons and teams boards,
+  // and age/team/superteam on persons boards only.
+  it('shows only the filters the chosen entity type reaches', async () => {
+    expect(await sectionsFor(LeaderboardEntityType.Persons)).toEqual(
+      expect.arrayContaining([
+        'filter.churchId',
+        'filter.ageMin',
+        'filter.teamId',
+        'filter.superTeamId',
+      ]),
+    )
+
+    const teams = await sectionsFor(LeaderboardEntityType.Teams)
+    expect(teams).toContain('filter.churchId')
+    for (const name of ['filter.ageMin', 'filter.teamId', 'filter.superTeamId'])
+      expect(teams).not.toContain(name)
+
+    for (const entityType of [
+      LeaderboardEntityType.Superteams,
+      LeaderboardEntityType.Churches,
+    ]) {
+      const names = await sectionsFor(entityType)
+      expect(names).toEqual(
+        expect.arrayContaining(['filter.minScore', 'filter.maxScore']),
+      )
+      expect(names).not.toContain('filter.churchId')
+    }
+  })
+
+  /*
+   * A board ignores a fixed filter it cannot apply, so keeping one costs
+   * nothing and survives a type change made by mistake. The relative flags are
+   * different: `ValidateLeaderboardRelativeFilter` rejects them outright, and
+   * the error would point at a control the admin can no longer see.
+   */
+  it('drops relative flags the backend would reject, keeps ignored filters', async () => {
+    const wrapper = await mount()
+    await submit(wrapper, {
+      name: 'Lagtavle',
+      entityType: LeaderboardEntityType.Teams,
+      limitMode: LeaderboardLimitMode.Manual,
+      eventId: null,
+      sortOrder: 0,
+      isActive: true,
+      filter: {
+        ...emptyFilterState,
+        myChurch: true,
+        myTeam: true,
+        mySuperTeam: true,
+        ageMin: 13,
+        ageMax: 18,
+        gender: Gender.Female,
+      },
+    })
+
+    expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({
+      filter: {
+        myChurch: true,
+        ageRange: { min: 13, max: 18 },
+        gender: Gender.Female,
+      },
+    })
+    const sent = (
+      wrapper.emitted('submit')?.[0]?.[0] as { filter: Record<string, unknown> }
+    ).filter
+    expect(sent).not.toHaveProperty('myTeam')
+    expect(sent).not.toHaveProperty('mySuperTeam')
   })
 })
 
@@ -390,10 +591,4 @@ it('round-trips relative filters and hides their fixed counterparts', async () =
   expect(schema.safeParse(form.props('state')).success).toBe(true)
   await submit(wrapper, form.props('state'))
   expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({ filter })
-  expect(
-    schema.safeParse({
-      ...form.props('state'),
-      entityType: LeaderboardEntityType.Churches,
-    }).success,
-  ).toBe(false)
 })
