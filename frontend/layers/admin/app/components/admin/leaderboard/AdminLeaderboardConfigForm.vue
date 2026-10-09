@@ -267,6 +267,18 @@ const limitModeItems = computed(() => [
   { label: 'Manuell grense', value: LeaderboardLimitMode.Manual },
 ])
 
+/*
+ * The tiers are the whole substance of the automatic mode, so they belong on
+ * the picker rather than in a paragraph under it. "Applies to persons boards
+ * with a church" is left unsaid — the picker only offers the mode when that
+ * already holds.
+ */
+const limitModeHelp = computed(() =>
+  state.limitMode === LeaderboardLimitMode.ChurchSize
+    ? 'Antall deltakere i den filtrerte tavlen bestemmer grensen: under 20: topp 3; 20–49: topp 10; 50–99: topp 20; 100–199: topp 50; 200 eller flere: topp 100. Egen plassering og nærmeste rivaler vises i tillegg.'
+    : undefined,
+)
+
 // Also fires while hydrating an existing config, which is wanted: a board the
 // backend would no longer accept on CHURCH_SIZE falls back to the manual cap.
 watch(supportsChurchSize, (supported) => {
@@ -408,6 +420,7 @@ function selectAgeGroup(group: (typeof ageGroups)[number]) {
           v-if="limitModeItems.length > 1"
           name="limitMode"
           label="Antall plasseringer"
+          :help="limitModeHelp"
         >
           <USelect
             v-model="state.limitMode"
@@ -416,15 +429,6 @@ function selectAgeGroup(group: (typeof ageGroups)[number]) {
             class="w-full"
           />
         </UFormField>
-        <p
-          v-if="state.limitMode === LeaderboardLimitMode.ChurchSize"
-          class="text-sm text-muted"
-        >
-          Gjelder persontavler med valgt menighet. Antall deltakere i den
-          filtrerte tavlen bestemmer grensen: under 20: topp 3; 20–49: topp 10;
-          50–99: topp 20; 100–199: topp 50; 200 eller flere: topp 100. Egen
-          plassering og nærmeste rivaler vises i tillegg.
-        </p>
 
         <UFormField
           name="maxEntries"
