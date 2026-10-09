@@ -207,7 +207,7 @@ source, not by a failing test, and a test would not catch a regression in it.
 
 The three switches read **"Deltakerens menighet" / "lag" / "superlag"**, not
 "Min menighet" / "Mitt lag". The `my*` naming comes from the GraphQL field, and
-it is written from the *viewer's* perspective — but the person reading the form
+it is written from the _viewer's_ perspective — but the person reading the form
 is the admin, who is not the viewer. The old labels needed a sentence under the
 section heading ("«Min» og «mitt» følger personen som ser tavlen") to be
 decodable at all; naming the subject outright removed the need for it, and that
@@ -217,6 +217,16 @@ sentence is gone.
 challenge forms already use, and what this form's own `maxEntries` help says.
 The same strings appear as chips in `summarizeLeaderboardFilter`, so the list
 and the form stay in step.
+
+Each switch also carries a `description` — "Tavlen blir forskjellig for hver
+deltaker." — which is the one thing the label cannot say: the board is resolved
+per viewer rather than once. `USwitch`'s `description` prop is how every other
+switch in this panel is explained (`AdminQuizQuestionEditor`,
+`AdminAchievementForm`); `UTooltip` is reserved for icon-only buttons, so it
+was the wrong tool here even though it would have been more compact. The
+switches moved onto their own row under the group heading to make space, and
+the "Følger menigheten til den som ser tavlen" line that used to replace the
+picker is gone — the description says the same thing, permanently.
 
 ### The limit mode picker
 

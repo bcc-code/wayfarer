@@ -101,6 +101,13 @@ const entityTypeItems = LEADERBOARD_ENTITY_TYPE_ITEMS
 const ageGroups = LEADERBOARD_AGE_GROUPS
 
 /**
+ * What the three `my*` switches have in common, and the thing their labels do
+ * not say: the board is resolved per viewer rather than once. Same sentence on
+ * all three — the dimension is already in the label above it.
+ */
+const RELATIVE_FILTER_HELP = 'Tavlen blir forskjellig for hver deltaker.'
+
+/**
  * An optional field is unset when it is falsy. Which falsy value depends on the
  * control: an empty `UInputNumber` gives `undefined`, an emptied `UInput` `''`,
  * and a cleared `USelectMenu` `null`. `buildFilter` tests truthiness rather
@@ -554,77 +561,76 @@ const ageGroupUi = computed(() => ({
           :class="supportsAge && 'border-t border-default pt-6'"
         >
           <div class="flex min-w-0 flex-col gap-3">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <h3 class="text-sm font-medium">Menighet</h3>
-              <UFormField name="filter.myChurch"
-                ><USwitch
-                  v-model="state.filter.myChurch"
-                  label="Deltakerens menighet"
-              /></UFormField>
-            </div>
-            <UFormField v-if="!state.filter.myChurch" name="filter.churchId">
+            <h3 class="text-sm font-medium">Menighet</h3>
+            <UFormField name="filter.myChurch">
+              <USwitch
+                v-model="state.filter.myChurch"
+                label="Deltakerens menighet"
+                :description="RELATIVE_FILTER_HELP"
+              />
+            </UFormField>
+            <UFormField
+              v-if="!state.filter.myChurch"
+              name="filter.churchId"
+              label="Bestemt menighet"
+            >
               <USelectMenu
                 v-model="state.filter.churchId"
                 :items="churchItems"
-                aria-label="Menighet"
                 value-key="value"
                 placeholder="Alle"
                 clear
                 class="w-full"
               />
             </UFormField>
-            <p v-else class="flex min-h-8 items-center text-sm text-muted">
-              Følger menigheten til den som ser tavlen.
-            </p>
           </div>
           <div v-if="supportsTeam" class="flex min-w-0 flex-col gap-3">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <h3 class="text-sm font-medium">Lag</h3>
-              <UFormField name="filter.myTeam"
-                ><USwitch v-model="state.filter.myTeam" label="Deltakerens lag"
-              /></UFormField>
-            </div>
-            <UFormField v-if="!state.filter.myTeam" name="filter.teamId">
+            <h3 class="text-sm font-medium">Lag</h3>
+            <UFormField name="filter.myTeam">
+              <USwitch
+                v-model="state.filter.myTeam"
+                label="Deltakerens lag"
+                :description="RELATIVE_FILTER_HELP"
+              />
+            </UFormField>
+            <UFormField
+              v-if="!state.filter.myTeam"
+              name="filter.teamId"
+              label="Bestemt lag"
+            >
               <USelectMenu
                 v-model="state.filter.teamId"
                 :items="teamItems"
-                aria-label="Lag"
                 value-key="value"
                 placeholder="Alle"
                 clear
                 class="w-full"
               />
             </UFormField>
-            <p v-else class="flex min-h-8 items-center text-sm text-muted">
-              Følger laget til den som ser tavlen.
-            </p>
           </div>
           <div v-if="supportsTeam" class="flex min-w-0 flex-col gap-3">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <h3 class="text-sm font-medium">Superlag</h3>
-              <UFormField name="filter.mySuperTeam"
-                ><USwitch
-                  v-model="state.filter.mySuperTeam"
-                  label="Deltakerens superlag"
-              /></UFormField>
-            </div>
+            <h3 class="text-sm font-medium">Superlag</h3>
+            <UFormField name="filter.mySuperTeam">
+              <USwitch
+                v-model="state.filter.mySuperTeam"
+                label="Deltakerens superlag"
+                :description="RELATIVE_FILTER_HELP"
+              />
+            </UFormField>
             <UFormField
               v-if="!state.filter.mySuperTeam"
               name="filter.superTeamId"
+              label="Bestemt superlag"
             >
               <USelectMenu
                 v-model="state.filter.superTeamId"
                 :items="superTeamItems"
-                aria-label="Superlag"
                 value-key="value"
                 placeholder="Alle"
                 clear
                 class="w-full"
               />
             </UFormField>
-            <p v-else class="flex min-h-8 items-center text-sm text-muted">
-              Følger superlaget til den som ser tavlen.
-            </p>
           </div>
         </div>
         <div

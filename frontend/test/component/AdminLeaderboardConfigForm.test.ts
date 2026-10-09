@@ -132,6 +132,38 @@ describe('AdminLeaderboardConfigForm', () => {
       expect(fieldNames(wrapper)).not.toContain(name)
   })
 
+  /*
+   * The labels name their subject ("Deltakerens menighet"), but not the
+   * consequence: the board is resolved per viewer rather than once. That is
+   * the one thing an admin cannot infer from the control.
+   */
+  it('says on every relative switch that the board differs per viewer', async () => {
+    const wrapper = await mount()
+    const switches = wrapper
+      .findAllComponents({ name: 'USwitch' })
+      .filter((control) =>
+        String(control.props('label')).startsWith('Deltakerens'),
+      )
+
+    expect(switches.map((control) => control.props('label'))).toEqual([
+      'Deltakerens menighet',
+      'Deltakerens lag',
+      'Deltakerens superlag',
+    ])
+    for (const control of switches)
+      expect(control.props('description')).toBe(
+        'Tavlen blir forskjellig for hver deltaker.',
+      )
+
+    // The two modes are alternatives, so they read as a matched pair rather
+    // than a named switch above an unlabelled picker.
+    expect(
+      ['filter.churchId', 'filter.teamId', 'filter.superTeamId'].map((name) =>
+        field(wrapper, name)?.props('label'),
+      ),
+    ).toEqual(['Bestemt menighet', 'Bestemt lag', 'Bestemt superlag'])
+  })
+
   // Events are not in use yet, and the scope could only ever be set at
   // creation — `UpdateLeaderboardConfigInput` has no `eventId`. The manual sort
   // position went the same way.
