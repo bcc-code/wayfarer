@@ -505,9 +505,7 @@ const ageGroupUi = computed(() => ({
       <div class="flex flex-col gap-6">
         <p class="text-sm text-muted">
           Filtrene kombineres. Hvilke filtre som vises avhenger av hva tavlen
-          rangerer.<template v-if="supportsChurch">
-            «Min» og «mitt» følger personen som ser tavlen.</template
-          >
+          rangerer.
         </p>
         <div v-if="supportsAge" class="flex flex-col gap-4">
           <div class="flex flex-wrap items-center justify-between gap-3">
@@ -559,7 +557,9 @@ const ageGroupUi = computed(() => ({
             <div class="flex flex-wrap items-center justify-between gap-2">
               <h3 class="text-sm font-medium">Menighet</h3>
               <UFormField name="filter.myChurch"
-                ><USwitch v-model="state.filter.myChurch" label="Min menighet"
+                ><USwitch
+                  v-model="state.filter.myChurch"
+                  label="Deltakerens menighet"
               /></UFormField>
             </div>
             <UFormField v-if="!state.filter.myChurch" name="filter.churchId">
@@ -574,14 +574,14 @@ const ageGroupUi = computed(() => ({
               />
             </UFormField>
             <p v-else class="flex min-h-8 items-center text-sm text-muted">
-              Følger personens menighet.
+              Følger menigheten til den som ser tavlen.
             </p>
           </div>
           <div v-if="supportsTeam" class="flex min-w-0 flex-col gap-3">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <h3 class="text-sm font-medium">Lag</h3>
               <UFormField name="filter.myTeam"
-                ><USwitch v-model="state.filter.myTeam" label="Mitt lag"
+                ><USwitch v-model="state.filter.myTeam" label="Deltakerens lag"
               /></UFormField>
             </div>
             <UFormField v-if="!state.filter.myTeam" name="filter.teamId">
@@ -596,7 +596,7 @@ const ageGroupUi = computed(() => ({
               />
             </UFormField>
             <p v-else class="flex min-h-8 items-center text-sm text-muted">
-              Følger personens lag.
+              Følger laget til den som ser tavlen.
             </p>
           </div>
           <div v-if="supportsTeam" class="flex min-w-0 flex-col gap-3">
@@ -605,7 +605,7 @@ const ageGroupUi = computed(() => ({
               <UFormField name="filter.mySuperTeam"
                 ><USwitch
                   v-model="state.filter.mySuperTeam"
-                  label="Mitt superlag"
+                  label="Deltakerens superlag"
               /></UFormField>
             </div>
             <UFormField
@@ -623,7 +623,7 @@ const ageGroupUi = computed(() => ({
               />
             </UFormField>
             <p v-else class="flex min-h-8 items-center text-sm text-muted">
-              Følger personens superlag.
+              Følger superlaget til den som ser tavlen.
             </p>
           </div>
         </div>

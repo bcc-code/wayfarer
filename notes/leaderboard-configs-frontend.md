@@ -203,6 +203,21 @@ component tests assert on `[role="tab"][data-state="active"]`, which is the part
 jsdom does model correctly. The indicator bug was found by reading reka-ui's
 source, not by a failing test, and a test would not catch a regression in it.
 
+### Viewer-relative filters are labelled from the admin's seat
+
+The three switches read **"Deltakerens menighet" / "lag" / "superlag"**, not
+"Min menighet" / "Mitt lag". The `my*` naming comes from the GraphQL field, and
+it is written from the *viewer's* perspective — but the person reading the form
+is the admin, who is not the viewer. The old labels needed a sentence under the
+section heading ("«Min» og «mitt» følger personen som ser tavlen") to be
+decodable at all; naming the subject outright removed the need for it, and that
+sentence is gone.
+
+"Deltakeren" rather than "Brukeren": it is what the achievement, quiz and
+challenge forms already use, and what this form's own `maxEntries` help says.
+The same strings appear as chips in `summarizeLeaderboardFilter`, so the list
+and the form stay in step.
+
 ### The limit mode picker
 
 A new config starts on **MANUAL**. It used to start on CHURCH_SIZE, which fails
