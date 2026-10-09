@@ -555,7 +555,7 @@ const progressResults = computed(() => {
         <DesignIconButton icon="IconClose" />
       </NuxtLink>
     </template>
-    <template #title>
+    <template #bar>
       <QuizProgress
         v-if="showQuizProgress"
         :current-index="progressCurrentIndex"

@@ -144,8 +144,8 @@
     "progress": "{completed} von {total} abgeschlossen"
   },
   "archive": {
-    "myAchievements": "Meine Abzeichen",
-    "empty": "Du hast noch keine Abzeichen."
+    "title": "Frühere Projekte",
+    "empty": "Du hast noch keine früheren Projekte."
   },
   "feedback": {
     "title": "Gib uns Feedback",

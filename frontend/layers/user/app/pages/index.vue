@@ -188,7 +188,7 @@ useFirestoreRefresh(['ProfilePageDocument'], () => {
     <div v-if="isInitialLoading" class="space-y-default p-list-outside">
       <ProfileProjectCardSkeleton />
     </div>
-    <ErrorState v-else-if="error" :error />
+    <ErrorState v-else-if="error && !data" :error />
     <TransitionGroup
       v-else-if="data"
       tag="div"

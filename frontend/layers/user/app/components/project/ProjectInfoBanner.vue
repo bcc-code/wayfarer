@@ -75,17 +75,7 @@ function dismiss() {
 </script>
 
 <template>
-  <div
-    v-if="shouldShow"
-    class="border border-border-default bg-background-default shadow-small rounded-modal"
-  >
-    <div class="p-default flex gap-medium">
-      <IconInfo class="size-6 shrink-0 my-1.5" />
-      <div
-        class="my-2 text-label text-text-default grow"
-        v-html="infoMessage?.html"
-      />
-      <DesignIconButton size="small" icon="IconClose" @click="dismiss" />
-    </div>
-  </div>
+  <InfoBanner v-if="shouldShow" dismissible @dismiss="dismiss">
+    <div v-html="infoMessage?.html" />
+  </InfoBanner>
 </template>

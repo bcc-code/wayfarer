@@ -66,7 +66,7 @@ const isInitialLoading = computed(
 <template>
   <div class="h-full">
     <LoadingState v-if="isInitialLoading" />
-    <ErrorState v-else-if="error" :error />
+    <ErrorState v-else-if="error && !data" :error />
     <template v-else-if="data">
       <SimpleChallenge
         v-if="data.challenge.__typename === 'SimpleChallenge'"

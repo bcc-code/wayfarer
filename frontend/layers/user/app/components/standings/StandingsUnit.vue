@@ -107,7 +107,7 @@ const showEditButton = computed(
 <template>
   <div>
     <StandingsListSkeleton v-if="isInitialLoading" />
-    <ErrorState v-else-if="error" :error />
+    <ErrorState v-else-if="error && !data" :error />
     <template v-else-if="data">
       <div
         v-if="data.myCurrentProject.myTeam"

@@ -83,7 +83,7 @@ const sortedConsents = computed(() => {
       </DesignPanel>
     </LocaleSelector>
 
-    <ErrorState v-if="error" :error />
+    <ErrorState v-if="error && !data" :error />
     <div
       v-else-if="data"
       :class="[
