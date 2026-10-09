@@ -50,10 +50,10 @@ func (r availableRow) Scan(dest ...any) error {
 }
 
 // TestValidateBet_Real runs the real ValidateBet (the older tests above use a
-// copy of its logic) and asserts the intended rules, so failures point at
-// bugs. Rule R2 (see e2e/quiz_betting_edge_cases_test.go): a bet is required
-// and must be at least 1, unless no positive bet is allowed, then 0 is
-// accepted so the question can still be answered. See notes/betting-edge-cases.md.
+// copy of its logic) and asserts the intended rules. Rule R2 (see
+// e2e/quiz_betting_edge_cases_test.go): a bet must be sent when betting is
+// enabled, and a bet of 0 is always valid and means no bet, so the question
+// can always be answered. See notes/betting-edge-cases.md.
 func TestValidateBet_Real(t *testing.T) {
 	pct := func(s string) pgtype.Numeric {
 		var n pgtype.Numeric
@@ -79,14 +79,16 @@ func TestValidateBet_Real(t *testing.T) {
 		{name: "negative bet", config: BetValidationConfig{BettingEnabled: true}, bet: bet(-1), wantErr: "cannot be negative"},
 
 		// --- zero bet
-		{name: "R2: zero bet is rejected when a positive bet is possible", available: 100,
-			config: BetValidationConfig{BettingEnabled: true}, bet: bet(0), wantAnyErr: true},
+		{name: "R2: zero bet is no bet, even when a bet is possible", available: 100,
+			config: BetValidationConfig{BettingEnabled: true}, bet: bet(0)},
 		{name: "R2: zero bet is accepted with zero score", available: 0,
 			config: BetValidationConfig{BettingEnabled: true}, bet: bet(0)},
-		{name: "zero bet below absolute minimum", available: 100,
-			config: BetValidationConfig{BettingEnabled: true, BettingMinAbsolute: abs(1)}, bet: bet(0), wantErr: "below minimum (1)"},
-		{name: "zero bet below percentage minimum", available: 100,
-			config: BetValidationConfig{BettingEnabled: true, BettingMinPercentage: pct("10")}, bet: bet(0), wantErr: "below minimum percentage"},
+		{name: "R2: minimum only applies to real bets", available: 100,
+			config: BetValidationConfig{BettingEnabled: true, BettingMinAbsolute: abs(1)}, bet: bet(0)},
+		{name: "R2: percentage minimum only applies to real bets", available: 100,
+			config: BetValidationConfig{BettingEnabled: true, BettingMinPercentage: pct("10")}, bet: bet(0)},
+		{name: "below absolute minimum", available: 100,
+			config: BetValidationConfig{BettingEnabled: true, BettingMinAbsolute: abs(20)}, bet: bet(1), wantErr: "below minimum (20)"},
 
 		// --- available points
 		{name: "bet equals score", available: 100, config: BetValidationConfig{BettingEnabled: true}, bet: bet(100)},
@@ -200,6 +202,12 @@ func TestNewBetCheck(t *testing.T) {
 				assert.Zero(t, db.calls)
 			})
 		}
+	})
+
+	t.Run("a zero bet is no bet and needs no lookup", func(t *testing.T) {
+		db := &fakeAvailableDB{}
+		require.NoError(t, newBetCheck("user1", "project1", nil, enabled, bet(0)).validate(context.Background(), sqlc.New(db)))
+		assert.Zero(t, db.calls)
 	})
 
 	t.Run("a database error is not a validation error", func(t *testing.T) {

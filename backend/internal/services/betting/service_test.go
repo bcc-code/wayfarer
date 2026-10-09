@@ -82,7 +82,7 @@ func TestSettle_Skips(t *testing.T) {
 	}{
 		{name: "zero bet", input: testInput(0, boolPtr(true)), want: SkipNoBet},
 		{name: "negative bet", input: testInput(-5, boolPtr(true)), want: SkipNoBet},
-		{name: "not graded", input: testInput(100, nil), want: SkipNotGraded},
+		{name: "zero bet, not graded", input: testInput(0, nil), want: SkipNoBet},
 	}
 
 	for _, tt := range tests {
@@ -159,6 +159,51 @@ func TestSettle_Payouts(t *testing.T) {
 			}, stored)
 		})
 	}
+}
+
+func TestSettle_VoidReturnsStake(t *testing.T) {
+	q := mocks.NewMockQuerier(t)
+	var ids []string
+	expectJournalEntries(q, &ids, 100, 100)
+
+	var stored sqlc.SettleBetResultParams
+	q.On("SettleBetResult", mock.Anything, mock.Anything).
+		Run(func(args mock.Arguments) {
+			stored = args.Get(1).(sqlc.SettleBetResultParams)
+		}).
+		Return(int64(1), nil).Once()
+
+	// Not graded (no answer given), even with a multiplier that would overflow
+	in := testInput(100, nil)
+	in.Bet.MultiplierCorrect = fixedPtr(MaxMultiplier + 1)
+	res, err := Settle(context.Background(), q, in)
+	require.NoError(t, err)
+	require.Len(t, ids, 2)
+
+	assert.True(t, res.Settled)
+	assert.True(t, res.Void)
+	assert.Equal(t, 100, res.Stake)
+	assert.Equal(t, 100, res.Winnings)
+	assert.Equal(t, 0, res.NetPoints)
+	assert.Equal(t, ids[1], res.JournalID, "the response stores the refund entry")
+	assert.Equal(t, sqlc.SettleBetResultParams{ID: testResponseID, Pointsearned: 0, Scorejournalid: ids[1]}, stored)
+}
+
+func TestSettle_VoidRefundReason(t *testing.T) {
+	q := mocks.NewMockQuerier(t)
+	var reasons []string
+	q.On("CreateScoreJournalEntry", mock.Anything, mock.Anything).
+		Run(func(args mock.Arguments) {
+			reasons = append(reasons, *args.Get(1).(sqlc.CreateScoreJournalEntryParams).Reason)
+		}).
+		Return(&sqlc.ScoreJournal{}, nil).Twice()
+	q.On("SettleBetResult", mock.Anything, mock.Anything).Return(int64(1), nil).Once()
+
+	in := testInput(100, nil)
+	in.Language = "en"
+	_, err := Settle(context.Background(), q, in)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"Bible quiz - stake", "Bible quiz - stake returned"}, reasons)
 }
 
 func TestSettle_PayoutOutOfRange(t *testing.T) {

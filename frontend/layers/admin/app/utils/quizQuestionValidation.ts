@@ -7,6 +7,8 @@ interface ValidatableQuestion {
   orderingItems?: { itemText: string }[]
   minValue?: number
   maxValue?: number
+  points?: number
+  bettingEnabled?: boolean
 }
 
 /**
@@ -47,6 +49,12 @@ export function validateQuizQuestion(
     question.minValue > question.maxValue
   ) {
     return 'Minimumsverdien kan ikke være større enn maksimumsverdien.'
+  }
+
+  // A settled bet would overwrite the question points on the answer, so the
+  // backend rejects the combination
+  if (question.bettingEnabled && (question.points ?? 0) > 0) {
+    return 'Et spørsmål med innsats kan ikke også gi poeng. Fjern poengene eller slå av innsats.'
   }
 
   return undefined

@@ -22,19 +22,21 @@ import (
 //	R1 Open stakes are reserved: a bet may not exceed the score minus the
 //	   user's other unsettled bets in the project, across questions and
 //	   sessions. Betting never makes a score negative.
-//	R2 A user can always answer a betting question. A bet is required and
-//	   must be at least 1, unless no positive bet is allowed (nothing
-//	   available, minimum above what the user has, maximum rounds to 0): then
-//	   a bet of 0 is accepted.
-//	R3 No free bets: a stored bet is settled at finish, or rejected when placed.
+//	R2 A user can always answer a betting question. betAmount must be sent;
+//	   a bet of 0 is always accepted and means no bet (the app's slider starts
+//	   at 0). Limits only apply to real bets.
+//	R3 Every stored bet is resolved at finish. A bet without an answer is void:
+//	   its stake is returned. Betting can't be turned off while a question has
+//	   open bets.
 //	R4 Answers and bets are only accepted while the session is OPEN.
-//	R5 A bet pays out at the odds shown when it was placed: a multiplier change
-//	   after bets are placed is rejected or does not apply to them.
-//	R6 Changing the answer key after bets are placed is rejected or re-grades them.
+//	R5 A bet pays out at the odds shown when it was placed: multipliers can't
+//	   change while a question has open bets.
+//	R6 A question's answers can't be changed once users have answered it
+//	   (resending them unchanged is fine and keeps them).
 //	R7 Bet limits must be consistent (percentages 0..100, min <= max) and are
 //	   rejected with a validation error, not a raw database error.
-//	R8 Betting does not cost question points: finalized or auto-submitted, the
-//	   user ends with question points + net bet.
+//	R8 A question can't award points and take bets at once. Question points
+//	   are only awarded to users who finish the quiz themselves.
 //
 // Voiding a bet (question deleted, submission reset while OPEN) is a refund
 // and is fine.
@@ -362,6 +364,13 @@ func TestQuizBettingEdgeCases(t *testing.T) {
 		assert.Zero(t, count, "no bet journal entries")
 	}
 
+	// tryUpdateQuestion returns the error message ("" on success)
+	tryUpdateQuestion := func(t *testing.T, questionID string, input map[string]any) string {
+		t.Helper()
+		return exec(t, adminToken, `mutation($id: ID!, $input: UpdateQuizQuestionInput!) { updateQuizQuestion(id: $id, input: $input) { id } }`,
+			map[string]any{"id": questionID, "input": input}, nil)
+	}
+
 	// ============================================================ several questions
 
 	t.Run("one session, several questions, mixed results are each settled", func(t *testing.T) {
@@ -427,7 +436,7 @@ func TestQuizBettingEdgeCases(t *testing.T) {
 		assert.Equal(t, 500, score(t, idle.id))
 	})
 
-	t.Run("R3: bet without a selected answer is rejected or lost, never free", func(t *testing.T) {
+	t.Run("R3: bet without a selected answer is void, the stake is returned", func(t *testing.T) {
 		p := newPlayer(t)
 		setScore(t, p.id, 500)
 		quizID := newQuiz(t, "No selection", nil)
@@ -435,15 +444,24 @@ func TestQuizBettingEdgeCases(t *testing.T) {
 
 		sessionID := openSession(t, quizID, p)
 		sub := start(t, p, sessionID)
-		r, msg := trySubmit(t, p, sub, map[string]any{"questionId": q.ID, "betAmount": 200})
+		r := submit(t, p, sub, map[string]any{"questionId": q.ID, "betAmount": 200})
+		assert.Nil(t, response(t, r).IsCorrect, "no selection is not graded")
 
 		lockAndFinish(t, sessionID)
-		if msg != "" {
-			assert.Equal(t, 500, score(t, p.id), "rejected bet costs nothing")
-			return
+		assertSettled(t, r, 0) // stake and refund entries, net 0
+		var reasons []string
+		rows, err := dbMgr.DB.Pool.Query(ctx,
+			`SELECT reason FROM score_journal WHERE source_type = 'BET' AND source_id = $1 ORDER BY points`, r)
+		require.NoError(t, err)
+		for rows.Next() {
+			var reason string
+			require.NoError(t, rows.Scan(&reason))
+			reasons = append(reasons, reason)
 		}
-		assertSettled(t, r, -200)
-		assert.Equal(t, 300, score(t, p.id), "no answer means the bet is lost")
+		require.NoError(t, rows.Err())
+		require.Len(t, reasons, 2)
+		assert.NotEqual(t, reasons[0], reasons[1], "the refund entry says the stake was returned")
+		assert.Equal(t, 500, score(t, p.id), "the stake is returned")
 	})
 
 	t.Run("bet with an empty selection is graded wrong and lost", func(t *testing.T) {
@@ -777,15 +795,22 @@ func TestQuizBettingEdgeCases(t *testing.T) {
 		assert.Contains(t, msg, "bet is required when betting is enabled")
 	})
 
-	t.Run("R2: zero bet is rejected when the user can bet", func(t *testing.T) {
+	t.Run("R2: a bet of 0 means no bet, also with a minimum", func(t *testing.T) {
 		p := newPlayer(t)
 		setScore(t, p.id, 100)
 		quizID := newQuiz(t, "Zero bet", nil)
 		q := addPredefined(t, quizID, 0, nil)
-		sub := start(t, p, openSession(t, quizID, p))
+		withMinimum := addPredefined(t, quizID, 1, map[string]any{"bettingMinAbsolute": 20})
+		sessionID := openSession(t, quizID, p)
+		sub := start(t, p, sessionID)
 
-		_, msg := trySubmit(t, p, sub, pick(q, true, 0))
-		assert.NotEmpty(t, msg, "a bet is required and 0 is not a bet")
+		r := submit(t, p, sub, pick(q, true, 0))
+		rMin := submit(t, p, sub, pick(withMinimum, false, 0))
+
+		lockAndFinish(t, sessionID)
+		assertUnsettled(t, r)
+		assertUnsettled(t, rMin)
+		assert.Equal(t, 100, score(t, p.id), "no bet, nothing won or lost")
 	})
 
 	t.Run("negative bet is rejected", func(t *testing.T) {
@@ -926,34 +951,62 @@ func TestQuizBettingEdgeCases(t *testing.T) {
 		assert.Equal(t, 200, score(t, p.id))
 	})
 
-	t.Run("R8: question points and a bet on the same question both count", func(t *testing.T) {
+	t.Run("R8: a question can't award points and take bets at once", func(t *testing.T) {
+		quizID := newQuiz(t, "Points or bet", nil)
+		addInput := func(extra map[string]any) map[string]any {
+			input := map[string]any{
+				"questionType": "PREDEFINED", "questionText": "Points?", "questionOrder": 0,
+				"predefinedAnswers": []map[string]any{
+					{"answerText": "right", "isCorrect": true, "answerOrder": 0},
+					{"answerText": "wrong", "isCorrect": false, "answerOrder": 1},
+				},
+			}
+			for k, v := range extra {
+				input[k] = v
+			}
+			return input
+		}
+		msg := exec(t, adminToken, `mutation($quizId: ID!, $input: CreateQuizQuestionInput!) {
+			addQuizQuestion(quizId: $quizId, input: $input) { id }
+		}`, map[string]any{"quizId": quizID, "input": addInput(map[string]any{"points": 10, "bettingEnabled": true})}, nil)
+		assert.Contains(t, msg, "a question with betting cannot also award points")
+
+		betting := addPredefined(t, quizID, 1, nil)
+		assert.Contains(t, tryUpdateQuestion(t, betting.ID, map[string]any{"points": 10}),
+			"a question with betting cannot also award points")
+		assert.Empty(t, tryUpdateQuestion(t, betting.ID, map[string]any{"points": 0}), "0 points is no points")
+
+		pointsOnly := addPredefined(t, quizID, 2, map[string]any{"points": 10, "bettingEnabled": false})
+		assert.Contains(t, tryUpdateQuestion(t, pointsOnly.ID, map[string]any{"bettingEnabled": true}),
+			"a question with betting cannot also award points")
+
+		// An older question with both stays editable as long as the edit doesn't touch them
+		legacy := addPredefined(t, quizID, 3, nil)
+		_, err := dbMgr.DB.Pool.Exec(ctx, `UPDATE quiz_questions SET points = 10 WHERE id = $1`, legacy.ID)
+		require.NoError(t, err)
+		assert.Empty(t, tryUpdateQuestion(t, legacy.ID, map[string]any{"questionText": "Fixed typo?"}))
+	})
+
+	t.Run("R8: question points only for users who finish the quiz themselves", func(t *testing.T) {
 		finalizer := newPlayer(t)
 		autoSubmitted := newPlayer(t)
 		setScore(t, finalizer.id, 1000)
 		setScore(t, autoSubmitted.id, 1000)
-		quizID := newQuiz(t, "Points and bet", nil)
-		q := addPredefined(t, quizID, 0, map[string]any{"points": 10})
+		quizID := newQuiz(t, "Points need finishing", nil)
+		q := addPredefined(t, quizID, 0, map[string]any{"points": 10, "bettingEnabled": false})
 		sessionID := openSession(t, quizID, finalizer, autoSubmitted)
 
+		correct := map[string]any{"questionId": q.ID, "selectedAnswerIds": []string{q.Right}}
 		subF := start(t, finalizer, sessionID)
-		rF := submit(t, finalizer, subF, pick(q, true, 100))
-		assert.Equal(t, int32(10), *response(t, rF).PointsEarned, "question points before settlement")
+		submit(t, finalizer, subF, correct)
 		msg := exec(t, finalizer.token, `mutation($id: ID!) { finalizeQuiz(submissionId: $id) { id } }`,
 			map[string]any{"id": subF}, nil)
 		require.Empty(t, msg)
-		assert.Equal(t, 1010, score(t, finalizer.id), "finalizeQuiz journals the question points")
-
-		subA := start(t, autoSubmitted, sessionID)
-		rA := submit(t, autoSubmitted, subA, pick(q, true, 100))
+		submit(t, autoSubmitted, start(t, autoSubmitted, sessionID), correct)
 
 		lockAndFinish(t, sessionID)
-		for _, r := range []string{rF, rA} {
-			count, sum := betJournal(t, r)
-			assert.Equal(t, 2, count)
-			assert.Equal(t, 100, sum)
-		}
-		assert.Equal(t, 1110, score(t, finalizer.id), "question points + bet")
-		assert.Equal(t, 1110, score(t, autoSubmitted.id), "auto-submitted: question points + bet, same as finalized")
+		assert.Equal(t, 1010, score(t, finalizer.id), "finished: question points")
+		assert.Equal(t, 1000, score(t, autoSubmitted.id), "auto-submitted at session finish: no question points")
 	})
 
 	t.Run("expired submission rejects bets, bets placed in time are settled", func(t *testing.T) {
@@ -1178,14 +1231,7 @@ func TestQuizBettingEdgeCases(t *testing.T) {
 
 	// ============================================================ admin edits after bets were placed
 
-	// tryUpdateQuestion returns the error message ("" on success)
-	tryUpdateQuestion := func(t *testing.T, questionID string, input map[string]any) string {
-		t.Helper()
-		return exec(t, adminToken, `mutation($id: ID!, $input: UpdateQuizQuestionInput!) { updateQuizQuestion(id: $id, input: $input) { id } }`,
-			map[string]any{"id": questionID, "input": input}, nil)
-	}
-
-	t.Run("R5: a multiplier change does not apply to bets already placed", func(t *testing.T) {
+	t.Run("R5: multipliers can't change while the question has open bets", func(t *testing.T) {
 		p := newPlayer(t)
 		setScore(t, p.id, 100)
 		quizID := newQuiz(t, "Multiplier changed", nil)
@@ -1193,13 +1239,18 @@ func TestQuizBettingEdgeCases(t *testing.T) {
 		sessionID := openSession(t, quizID, p)
 		r := submit(t, p, start(t, p, sessionID), pick(q, true, 100))
 
-		tryUpdateQuestion(t, q.ID, map[string]any{"bettingMultiplierCorrect": 5.0}) // rejecting it is fine too
+		assert.Contains(t, tryUpdateQuestion(t, q.ID, map[string]any{"bettingMultiplierCorrect": 5.0}), "open bets")
+		assert.Empty(t, tryUpdateQuestion(t, q.ID, map[string]any{"bettingMultiplierCorrect": 2.0}),
+			"setting the default explicitly doesn't change any payout")
 		lockAndFinish(t, sessionID)
 		assertSettled(t, r, 100) // the 2x the user bet on
 		assert.Equal(t, 200, score(t, p.id))
+
+		assert.Empty(t, tryUpdateQuestion(t, q.ID, map[string]any{"bettingMultiplierCorrect": 5.0}),
+			"allowed again once the bets are settled")
 	})
 
-	t.Run("R3: turning betting off does not make placed bets free", func(t *testing.T) {
+	t.Run("R3: betting can't be turned off while the question has open bets", func(t *testing.T) {
 		p := newPlayer(t)
 		setScore(t, p.id, 100)
 		quizID := newQuiz(t, "Betting disabled later", nil)
@@ -1207,13 +1258,17 @@ func TestQuizBettingEdgeCases(t *testing.T) {
 		sessionID := openSession(t, quizID, p)
 		r := submit(t, p, start(t, p, sessionID), pick(q, false, 100))
 
-		tryUpdateQuestion(t, q.ID, map[string]any{"bettingEnabled": false}) // rejecting it is fine too
+		assert.Contains(t, tryUpdateQuestion(t, q.ID, map[string]any{"bettingEnabled": false}), "open bets")
+		assert.Empty(t, tryUpdateQuestion(t, q.ID, map[string]any{"bettingEnabled": true}), "unchanged is fine")
 		lockAndFinish(t, sessionID)
 		assertSettled(t, r, -100)
 		assert.Equal(t, 0, score(t, p.id))
+
+		assert.Empty(t, tryUpdateQuestion(t, q.ID, map[string]any{"bettingEnabled": false}),
+			"allowed again once the bets are settled")
 	})
 
-	t.Run("R6: changing the answer key after bets is rejected or re-grades them", func(t *testing.T) {
+	t.Run("R6: answers can't be changed once users answered the question", func(t *testing.T) {
 		p := newPlayer(t)
 		setScore(t, p.id, 100)
 		quizID := newQuiz(t, "Answer key changed", nil)
@@ -1221,18 +1276,44 @@ func TestQuizBettingEdgeCases(t *testing.T) {
 		sessionID := openSession(t, quizID, p)
 		r := submit(t, p, start(t, p, sessionID), pick(q, true, 100))
 
-		// Admin fixes the answer key: the answer the user picked is now wrong
+		// Admin tries to fix the answer key: the answer the user picked would be wrong
 		msg := tryUpdateQuestion(t, q.ID, map[string]any{"predefinedAnswers": []map[string]any{
 			{"answerText": "right", "isCorrect": false, "answerOrder": 0},
 			{"answerText": "wrong", "isCorrect": true, "answerOrder": 1},
 		}})
+		assert.Contains(t, msg, "after users have answered")
 		lockAndFinish(t, sessionID)
-		if msg != "" {
-			assertSettled(t, r, 100) // rejected: the original key stands
-			return
+		assertSettled(t, r, 100) // the original key stands
+		assert.Equal(t, 200, score(t, p.id))
+	})
+
+	t.Run("R6: saving a question with its answers unchanged keeps the answers", func(t *testing.T) {
+		// The admin editor sends all answers on every save
+		p := newPlayer(t)
+		setScore(t, p.id, 100)
+		quizID := newQuiz(t, "Answers resent", nil)
+		q := addPredefined(t, quizID, 0, nil)
+		sessionID := openSession(t, quizID, p)
+		submit(t, p, start(t, p, sessionID), pick(q, true, 10))
+
+		msg := tryUpdateQuestion(t, q.ID, map[string]any{
+			"questionText": "Fixed typo?",
+			"predefinedAnswers": []map[string]any{
+				{"answerText": "wrong", "isCorrect": false, "answerOrder": 1},
+				{"answerText": "right", "isCorrect": true, "answerOrder": 0},
+			},
+		})
+		assert.Empty(t, msg)
+		var ids []string
+		rows, err := dbMgr.DB.Pool.Query(ctx, `SELECT id FROM quiz_predefined_answers WHERE question_id = $1 ORDER BY answer_order`, q.ID)
+		require.NoError(t, err)
+		for rows.Next() {
+			var id string
+			require.NoError(t, rows.Scan(&id))
+			ids = append(ids, id)
 		}
-		assertSettled(t, r, -100) // accepted: graded against the corrected key
-		assert.Equal(t, 0, score(t, p.id))
+		require.NoError(t, rows.Err())
+		assert.Equal(t, []string{q.Right, q.Wrong}, ids, "the answers keep their IDs, so stored selections stay valid")
 	})
 
 	t.Run("deleting a question voids its unsettled bets", func(t *testing.T) {
