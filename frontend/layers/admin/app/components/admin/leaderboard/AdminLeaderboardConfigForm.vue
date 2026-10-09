@@ -376,17 +376,48 @@ function clearFilter() {
   state.filter = emptyFilter()
 }
 
-const activeAgeGroup = computed(() =>
-  typeof state.filter.ageMin === 'number' &&
-  typeof state.filter.ageMax === 'number'
-    ? ageGroupLabel({ min: state.filter.ageMin, max: state.filter.ageMax })
-    : undefined,
-)
+/** No age bounds. A preset rather than an empty state, so the control always
+ * reads as a choice and "no age limit" is one click rather than two cleared
+ * fields. */
+const AGE_GROUP_ALL = 'Alle'
 
-function selectAgeGroup(group: (typeof ageGroups)[number]) {
-  state.filter.ageMin = group.min
-  state.filter.ageMax = group.max
+const ageGroupItems = [
+  { label: AGE_GROUP_ALL, value: AGE_GROUP_ALL },
+  ...ageGroups.map((group) => ({ label: group.label, value: group.label })),
+]
+
+/**
+ * `''` — no segment at all — for a custom range typed into the two fields
+ * below, which matches no preset. Not `undefined`: that leaves `UTabs`
+ * uncontrolled, and it would fall back to its first item and read as "Alle".
+ */
+const activeAgeGroup = computed(() => {
+  const { ageMin, ageMax } = state.filter
+  if (typeof ageMin !== 'number' && typeof ageMax !== 'number')
+    return AGE_GROUP_ALL
+  if (typeof ageMin !== 'number' || typeof ageMax !== 'number') return ''
+  return ageGroupLabel({ min: ageMin, max: ageMax }) ?? ''
+})
+
+function selectAgeGroup(label: string | number) {
+  const group = ageGroups.find((candidate) => candidate.label === label)
+  state.filter.ageMin = group?.min
+  state.filter.ageMax = group?.max
 }
+
+/**
+ * `trigger` undoes the theme's `w-full`, which is right where the bar spans a
+ * column and truncates these labels to "U…" in a heading row.
+ *
+ * `indicator` covers reka-ui's `updateIndicatorStyle`, which returns early when
+ * no tab is active and so leaves the pill parked on the last selection instead
+ * of clearing it. A custom range typed into the fields below is the only way to
+ * reach that state now that "Alle" covers the empty one.
+ */
+const ageGroupUi = computed(() => ({
+  trigger: 'w-auto',
+  indicator: activeAgeGroup.value ? undefined : 'hidden',
+}))
 </script>
 
 <template>
@@ -481,18 +512,18 @@ function selectAgeGroup(group: (typeof ageGroups)[number]) {
         <div v-if="supportsAge" class="flex flex-col gap-4">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <h3 class="text-sm font-medium">Alder</h3>
-            <div class="flex gap-2" role="group" aria-label="Aldersgruppe">
-              <UButton
-                v-for="group in ageGroups"
-                :key="group.label"
-                size="sm"
-                :variant="activeAgeGroup === group.label ? 'solid' : 'outline'"
-                :aria-pressed="activeAgeGroup === group.label"
-                @click="selectAgeGroup(group)"
-              >
-                {{ group.label }}
-              </UButton>
-            </div>
+            <UTabs
+              :model-value="activeAgeGroup"
+              :items="ageGroupItems"
+              :content="false"
+              variant="pill"
+              color="neutral"
+              size="sm"
+              aria-label="Aldersgruppe"
+              class="shrink-0"
+              :ui="ageGroupUi"
+              @update:model-value="selectAgeGroup"
+            />
           </div>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <UFormField

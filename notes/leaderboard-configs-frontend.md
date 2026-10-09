@@ -167,6 +167,42 @@ The same reasoning removed the matching zod rules: a validation error on a
 hidden control is unfixable from the form, so the entity-type rules moved into
 `buildFilter` and the `limitMode` watcher.
 
+### The age presets are a segmented control
+
+Alle / U18 / U36 / O36 are `UTabs` with `variant="pill"`, the segmented control
+`app.config.ts` themes (a well with a raised indicator) and the one
+`my-church/units.vue` already uses for its filters. They were three `UButton`s
+with `solid`/`outline`, which rendered the selected preset as a primary action
+rather than as a choice among several.
+
+**"Alle" is a preset, not an empty state.** It is what no age bounds looks like,
+so the control always shows a selection and "no age limit" is one click rather
+than two cleared fields. It also sidesteps the indicator bug below in the case
+that actually comes up.
+
+Three things to keep if this is touched:
+
+- **The model value is `''`, never `undefined`, for a range matching no preset.**
+  A custom range typed into the two fields below is the only way to reach that
+  state. Left uncontrolled, `UTabs` falls back to its first item, and the
+  control would claim "Alle" on a board that has an age filter.
+- **`indicator: 'hidden'` when nothing matches.** reka-ui's
+  `updateIndicatorStyle` (`Tabs/TabsIndicator.js`) returns early when no tab is
+  active — `if (!activeTab) return` — without resetting `indicatorStyle`, and
+  the render condition is `typeof indicatorStyle.size === 'number'`. So once a
+  preset has been picked, the pill stays mounted at its last position forever.
+  This is what "Nullstill filter" looked like before "Alle" existed: the ages
+  cleared, the pill stayed parked on U36.
+- **`trigger: 'w-auto'` and `shrink-0`.** The theme puts `w-full` on the
+  trigger, which is right when the bar spans a column (units.vue) and truncates
+  the labels to "U…" / "O…" when it sits in a heading row next to "Alder".
+
+Note that **jsdom cannot see the indicator at all** — it has no layout, so
+`offsetWidth` is 0 and the element either never mounts or mounts invisibly. The
+component tests assert on `[role="tab"][data-state="active"]`, which is the part
+jsdom does model correctly. The indicator bug was found by reading reka-ui's
+source, not by a failing test, and a test would not catch a regression in it.
+
 ### The limit mode picker
 
 A new config starts on **MANUAL**. It used to start on CHURCH_SIZE, which fails

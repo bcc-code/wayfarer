@@ -84,6 +84,12 @@ const field = (wrapper: Wrapper, name: string) =>
     .findAllComponents({ name: 'UFormField' })
     .find((f) => f.props('name') === name)
 
+const activeSegments = (wrapper: Wrapper) =>
+  wrapper
+    .findAll('[role="tab"]')
+    .filter((tab) => tab.attributes('data-state') === 'active')
+    .map((tab) => tab.text())
+
 /**
  * The template binds `@submit.prevent`, so the handler is handed a real submit
  * event in the app. `$emit` alone gives it a bare object and the `.prevent`
@@ -150,17 +156,65 @@ describe('AdminLeaderboardConfigForm', () => {
     expect(text).toContain('Alder regnes etter fødselsår, ikke bursdag')
   })
 
+  /*
+   * "Alle" is a preset rather than an empty state, so the control always shows
+   * a selection. It also keeps reka-ui's indicator honest: `updateIndicatorStyle`
+   * returns early when no tab is active, leaving the pill parked on the last
+   * selection, which is what "Nullstill filter" used to look like.
+   */
+  it('selects "Alle" when no age bounds are set, and clears through it', async () => {
+    const wrapper = await mount()
+    expect(activeSegments(wrapper)).toEqual(['Alle'])
+
+    const tabs = wrapper.findComponent({ name: 'UTabs' })
+    const state = wrapper.findComponent({ name: 'UForm' }).props('state')
+
+    tabs.vm.$emit('update:modelValue', 'U36')
+    await flushPromises()
+    expect(activeSegments(wrapper)).toEqual(['U36'])
+
+    tabs.vm.$emit('update:modelValue', 'Alle')
+    await flushPromises()
+    expect([state.filter.ageMin, state.filter.ageMax]).toEqual([
+      undefined,
+      undefined,
+    ])
+    expect(activeSegments(wrapper)).toEqual(['Alle'])
+  })
+
+  it('returns to "Alle" when the filter is reset', async () => {
+    const wrapper = await mount({
+      initialData: {
+        ...initialData,
+        filter: { ageRange: { min: 18, max: 35 } },
+      },
+      isEditMode: true,
+    })
+    expect(activeSegments(wrapper)).toEqual(['U36'])
+
+    await wrapper
+      .findAllComponents({ name: 'UButton' })
+      .find((button) => button.text().includes('Nullstill filter'))!
+      .trigger('click')
+    await flushPromises()
+
+    expect(activeSegments(wrapper)).toEqual(['Alle'])
+  })
+
   it('fills the age bounds from a fixed age group', async () => {
     const wrapper = await mount({ initialData, isEditMode: true })
+    const tabs = wrapper.findComponent({ name: 'UTabs' })
 
-    const u36 = wrapper
-      .findAllComponents({ name: 'UButton' })
-      .find((button) => button.text() === 'U36')!
-    await u36.trigger('click')
+    // 13–18 is `initialData`'s range and matches no preset, so no segment is
+    // lit — left uncontrolled, `UTabs` would fall back to its first item and
+    // claim "Alle" on a board that has an age filter.
+    expect(activeSegments(wrapper)).toEqual([])
+
+    tabs.vm.$emit('update:modelValue', 'U36')
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
-    expect(u36.attributes('aria-pressed')).toBe('true')
+    expect(activeSegments(wrapper)).toEqual(['U36'])
     expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({
       filter: { ageRange: { min: 18, max: 35 } },
     })
