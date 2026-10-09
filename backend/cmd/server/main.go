@@ -68,9 +68,13 @@ func main() {
 
 	// Before the logger, tracer and pool: each is configured from a value the
 	// settings table can override, and db_log_queries is an input to building
-	// the pool itself.
-	settingOverrides := config.LoadSettings(ctx, cfg.Database.URL)
-	appliedOverrides := config.ApplySettings(cfg, settingOverrides)
+	// the pool itself. Opt-in, because a row applies to an instance that is
+	// still rolling out as much as to the ones already serving.
+	var appliedOverrides []string
+	if cfg.Settings.OverrideEnv {
+		settingOverrides := config.LoadSettings(ctx, cfg.Database.URL)
+		appliedOverrides = config.ApplySettings(cfg, settingOverrides)
+	}
 
 	// Initialize structured logger
 	lgr := logger.New(cfg.Server.Environment, logger.ParseLevel(cfg.Log.Level))
@@ -298,7 +302,7 @@ func main() {
 	slog.Info("LeaderboardService initialized with caching and loaders")
 
 	// Initialize SettingsService
-	settingsService, err := services.NewSettingsService(ctx, db.Queries, services.NewSettingsTxRunner(db.Pool, db.Queries), lgr)
+	settingsService, err := services.NewSettingsService(ctx, db.Queries, services.NewSettingsTxRunner(db.Pool, db.Queries), lgr, cfg.Settings.OverrideEnv)
 	if err != nil {
 		slog.Error("Failed to initialize SettingsService", "error", err)
 		os.Exit(1)

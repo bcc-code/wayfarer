@@ -29,6 +29,7 @@ type Config struct {
 	Firebase FirebaseConfig
 	Resend   ResendConfig
 	PubSub   PubSubConfig
+	Settings SettingsConfig
 }
 
 // ServerConfig holds HTTP server configuration
@@ -223,6 +224,16 @@ type PubSubConfig struct {
 	TopicID   string // Pub/Sub topic ID for bulk operations
 }
 
+// SettingsConfig controls how much authority the `settings` table has over the
+// environment.
+type SettingsConfig struct {
+	// OverrideEnv lets rows in the settings table win over the environment
+	// variables they shadow. Off by default: a bad row reaches every instance
+	// at once, including one that is only being rolled out, so the override is
+	// opted into per deployment rather than assumed.
+	OverrideEnv bool
+}
+
 // Load reads all environment variables and returns a Config struct
 // This should be called once at application startup
 func Load() (*Config, error) {
@@ -249,6 +260,9 @@ func Load() (*Config, error) {
 
 			HTTPStatsFile:     getEnv("HTTP_STATS_FILE", ""),
 			HTTPStatsInterval: getEnvAsDuration("HTTP_STATS_INTERVAL", time.Minute),
+		},
+		Settings: SettingsConfig{
+			OverrideEnv: getEnvAsBool("SETTINGS_OVERRIDE_ENV", false),
 		},
 		Database: DatabaseConfig{
 			URL:             getEnv("DATABASE_URL", ""),

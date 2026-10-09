@@ -57,12 +57,17 @@ func (f failingTx) InTx(_ context.Context, _ func(q SettingsQuerier) error) erro
 
 func newServiceWithProject(t *testing.T, queries *mocks.MockSettingsQuerier, projectID string, extra ...*sqlc.Setting) *SettingsService {
 	t.Helper()
+	return newServiceWithOverride(t, queries, true, projectID, extra...)
+}
+
+func newServiceWithOverride(t *testing.T, queries *mocks.MockSettingsQuerier, overrideEnv bool, projectID string, extra ...*sqlc.Setting) *SettingsService {
+	t.Helper()
 
 	settings := append([]*sqlc.Setting{stringSetting(SettingCurrentProjectID, projectID)}, extra...)
 	queries.On("GetAllSettings", mock.Anything).Return(settings, nil).Once()
 	queries.On("ProjectExists", mock.Anything, projectID).Return(true, nil).Once()
 
-	service, err := NewSettingsService(context.Background(), queries, directTx{queries}, testLogger())
+	service, err := NewSettingsService(context.Background(), queries, directTx{queries}, testLogger(), overrideEnv)
 	require.NoError(t, err)
 	t.Cleanup(service.Stop)
 
@@ -82,7 +87,7 @@ func TestNewSettingsService_FailsFastOnMissingCurrentProject(t *testing.T) {
 	queries := mocks.NewMockSettingsQuerier(t)
 	queries.On("GetAllSettings", mock.Anything).Return([]*sqlc.Setting{}, nil).Once()
 
-	service, err := NewSettingsService(context.Background(), queries, directTx{queries}, testLogger())
+	service, err := NewSettingsService(context.Background(), queries, directTx{queries}, testLogger(), true)
 
 	require.Error(t, err)
 	assert.Nil(t, service)
@@ -95,7 +100,7 @@ func TestNewSettingsService_FailsFastWhenProjectDoesNotExist(t *testing.T) {
 		Return([]*sqlc.Setting{stringSetting(SettingCurrentProjectID, testProjectA)}, nil).Once()
 	queries.On("ProjectExists", mock.Anything, testProjectA).Return(false, nil).Once()
 
-	service, err := NewSettingsService(context.Background(), queries, directTx{queries}, testLogger())
+	service, err := NewSettingsService(context.Background(), queries, directTx{queries}, testLogger(), true)
 
 	require.Error(t, err)
 	assert.Nil(t, service)
@@ -352,6 +357,31 @@ func TestRefreshSettings_AppliesLogLevelLive(t *testing.T) {
 	require.NoError(t, service.RefreshSettings(ctx))
 
 	assert.Equal(t, slog.LevelDebug, logger.Level())
+}
+
+// With the override off the environment stays in force, so a log_level row is
+// stored and served but never pushed into the running logger.
+func TestRefreshSettings_SkipsLiveApplyWhenOverrideDisabled(t *testing.T) {
+	ctx := context.Background()
+	queries := mocks.NewMockSettingsQuerier(t)
+	service := newServiceWithOverride(t, queries, false, testProjectA, stringSetting("log_level", "info"))
+	t.Cleanup(func() { logger.SetLevel(slog.LevelInfo) })
+
+	require.Equal(t, slog.LevelInfo, logger.Level())
+
+	queries.On("GetAllSettings", mock.Anything).Return([]*sqlc.Setting{
+		stringSetting(SettingCurrentProjectID, testProjectA),
+		stringSetting("log_level", "debug"),
+	}, nil).Once()
+	queries.On("ProjectExists", mock.Anything, testProjectA).Return(true, nil).Once()
+
+	require.NoError(t, service.RefreshSettings(ctx))
+
+	assert.Equal(t, slog.LevelInfo, logger.Level())
+
+	setting, err := service.GetSetting("log_level")
+	require.NoError(t, err)
+	assert.Equal(t, "debug", SettingStringValue(setting))
 }
 
 func TestWriteTyped_ParsesEachValueType(t *testing.T) {

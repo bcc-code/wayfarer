@@ -95,16 +95,21 @@ type SettingsService struct {
 	tx          SettingsTxRunner
 	settingsMap atomic.Value // stores map[string]*sqlc.Setting
 	logger      *slog.Logger
+	overrideEnv bool
 	stopRefresh chan struct{}
 	refreshDone chan struct{}
 }
 
-// NewSettingsService creates a new settings service and starts background refresh
-func NewSettingsService(ctx context.Context, queries SettingsQuerier, tx SettingsTxRunner, logger *slog.Logger) (*SettingsService, error) {
+// NewSettingsService creates a new settings service and starts background
+// refresh. overrideEnv mirrors config.SettingsConfig.OverrideEnv: with it off,
+// rows that shadow an environment variable are stored and served but never
+// pushed into a running subsystem.
+func NewSettingsService(ctx context.Context, queries SettingsQuerier, tx SettingsTxRunner, logger *slog.Logger, overrideEnv bool) (*SettingsService, error) {
 	service := &SettingsService{
 		queries:     queries,
 		tx:          tx,
 		logger:      logger,
+		overrideEnv: overrideEnv,
 		stopRefresh: make(chan struct{}),
 		refreshDone: make(chan struct{}),
 	}
@@ -179,6 +184,10 @@ func (s *SettingsService) load(ctx context.Context) error {
 // applyLiveSettings pushes the settings that can change without a restart into
 // the subsystems that read them.
 func (s *SettingsService) applyLiveSettings(settingsMap map[string]*sqlc.Setting) {
+	if !s.overrideEnv {
+		return
+	}
+
 	setting, ok := settingsMap["log_level"]
 	if !ok || setting.ValueType != "text" || setting.ValueText == nil || *setting.ValueText == "" {
 		return

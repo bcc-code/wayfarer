@@ -110,11 +110,21 @@ Separate from the env-based config above, a `settings` key-value table holds
 configuration that can change without a redeploy. It is owned by
 `backend/internal/services/settings.go`.
 
-**The table wins over the environment.** `config.LoadSettings` reads it over a
-connection of its own right after `config.Load()`, and `config.ApplySettings`
-overlays the rows that are set onto the loaded config. A row that is absent,
-NULL or empty leaves the environment's value in force. The read is best-effort:
-an unreachable or not-yet-migrated database is not an error.
+**The table wins over the environment — but only when `SETTINGS_OVERRIDE_ENV`
+is true.** The flag (`config.SettingsConfig.OverrideEnv`) defaults to **false**,
+and with it off `main` skips `LoadSettings`/`ApplySettings` entirely and
+`SettingsService.applyLiveSettings` returns without touching the logger: the
+environment is the only source of configuration. Rows are still stored, served
+by the `settings` query and editable in the admin UI — they just do not take
+effect. It defaults off because a row applies to every instance at once,
+including one that is still rolling out, which is enough to fail a blue-green
+deployment from a value the new release never saw.
+
+With the flag on, `config.LoadSettings` reads the table over a connection of
+its own right after `config.Load()`, and `config.ApplySettings` overlays the
+rows that are set onto the loaded config. A row that is absent, NULL or empty
+leaves the environment's value in force. The read is best-effort: an
+unreachable or not-yet-migrated database is not an error.
 
 That read has to happen that early, and over its own connection, because the
 logger, the tracer and the connection pool are all configured from values it
@@ -136,7 +146,9 @@ needs a restart.
 `log_level` is the exception because `internal/logger` resolves its threshold
 through a shared `slog.LevelVar`, which the handler clones in
 `WithAttrs`/`WithGroup` read too — so `SetLevel` reaches loggers that already
-exist, and `SettingsService.applyLiveSettings` calls it on every refresh.
+exist, and `SettingsService.applyLiveSettings` calls it on every refresh. The
+"takes effect" column assumes `SETTINGS_OVERRIDE_ENV=true`; with the flag off
+no key in the table takes effect at all.
 
 `frontend_config` is a free-form JSON blob served by `Query.frontendConfig`,
 which reads it from the database per request — so edits are live. Its keys are

@@ -199,7 +199,7 @@ func SetupTestServer(ctx context.Context, dbMgr *TestDBManager) (*gin.Engine, fu
 	languageService := services.NewLanguageService(dbMgr.DB.Queries, testCache, dataLoaders.UserByIDLoader, logger)
 
 	// Create settings service
-	settingsService, err := services.NewSettingsService(ctx, dbMgr.DB.Queries, services.NewSettingsTxRunner(dbMgr.DB.Pool, dbMgr.DB.Queries), logger)
+	settingsService, err := services.NewSettingsService(ctx, dbMgr.DB.Queries, services.NewSettingsTxRunner(dbMgr.DB.Pool, dbMgr.DB.Queries), logger, true)
 	if err != nil {
 		testCache.Close()
 		return nil, nil, err
@@ -265,7 +265,7 @@ func SetupTestServerWithCache(ctx context.Context, dbMgr *TestDBManager) (*gin.E
 	languageService := services.NewLanguageService(dbMgr.DB.Queries, testCache, dataLoaders.UserByIDLoader, logger)
 
 	// Create settings service
-	settingsService, err := services.NewSettingsService(ctx, dbMgr.DB.Queries, services.NewSettingsTxRunner(dbMgr.DB.Pool, dbMgr.DB.Queries), logger)
+	settingsService, err := services.NewSettingsService(ctx, dbMgr.DB.Queries, services.NewSettingsTxRunner(dbMgr.DB.Pool, dbMgr.DB.Queries), logger, true)
 	if err != nil {
 		testCache.Close()
 		return nil, nil, nil, err
