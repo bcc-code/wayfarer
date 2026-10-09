@@ -35,15 +35,17 @@ type BetValidationConfig struct {
 // Returns nil if the bet is valid, or a BetValidationError if invalid.
 //
 // Validation rules:
-// - If betting is enabled, a bet must be provided (nil is rejected)
-// - If betting is disabled and bet is nil, it's valid (no bet placed)
-// - If betting is disabled on the question, any non-zero bet is rejected
-// - Bet must be >= 0
-// - Bet must not exceed the available points
-// - If bettingMinAbsolute is set, bet must be >= that value
-// - If bettingMaxAbsolute is set, bet must be <= that value
-// - If bettingMinPercentage is set and available > 0, bet must be >= (available * minPercentage / 100)
-// - If bettingMaxPercentage is set and available > 0, bet must be <= (available * maxPercentage / 100)
+//   - If betting is enabled, a bet must be provided (nil is rejected)
+//   - Bet must be >= 0
+//   - A bet of 0 is always valid and means no bet (the app's slider starts at
+//     0 and question types without a slider send 0); the limits below only
+//     apply to real bets, so a question can always be answered
+//   - If betting is disabled on the question, any non-zero bet is rejected
+//   - Bet must not exceed the available points
+//   - If bettingMinAbsolute is set, bet must be >= that value
+//   - If bettingMaxAbsolute is set, bet must be <= that value
+//   - If bettingMinPercentage is set and available > 0, bet must be >= (available * minPercentage / 100)
+//   - If bettingMaxPercentage is set and available > 0, bet must be <= (available * maxPercentage / 100)
 func ValidateBet(config BetValidationConfig, available int, betAmount *int) error {
 	// If betting is enabled, a bet is required
 	if config.BettingEnabled && betAmount == nil {
@@ -68,8 +70,11 @@ func ValidateBet(config BetValidationConfig, available int, betAmount *int) erro
 		}
 	}
 
-	// At this point betting must be enabled (we checked above for nil/zero bets)
-	// but we keep this check for safety in case the function is called directly
+	// 0 is no bet
+	if bet == 0 {
+		return nil
+	}
+
 	if !config.BettingEnabled {
 		return &BetValidationError{
 			Field:   "betAmount",
@@ -194,7 +199,7 @@ func (b *betCheck) lock(ctx context.Context, q *sqlc.Queries) error {
 func (b *betCheck) validate(ctx context.Context, q *sqlc.Queries) error {
 	// Only a bet that is validated against the points needs them
 	available := 0
-	if b.config.BettingEnabled && b.betAmount != nil && *b.betAmount >= 0 {
+	if b.config.BettingEnabled && b.betAmount != nil && *b.betAmount > 0 {
 		var err error
 		available, err = availableBetPoints(ctx, q, b.userID, b.projectID, b.excludeResponseID)
 		if err != nil {

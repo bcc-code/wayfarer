@@ -22,6 +22,9 @@ type BetResultMessages struct {
 type BetReasonMessages struct {
 	Stake    string `json:"stake"`
 	Winnings string `json:"winnings"`
+	// Refund is the reason for returning the stake of a void bet (no answer
+	// given). Languages without it fall back to the default language.
+	Refund string `json:"refund"`
 }
 
 // LanguageTranslations holds all translations for a single language
@@ -139,6 +142,15 @@ func FormatBetStakeReason(lang, challengeName string) string {
 func FormatBetWinningsReason(lang, challengeName string) string {
 	msgs := GetBetReasonMessages(lang)
 	return replacePlaceholder(msgs.Winnings, "{challenge}", challengeName)
+}
+
+// FormatBetRefundReason formats the reason for returning a void bet's stake
+func FormatBetRefundReason(lang, challengeName string) string {
+	refund := GetBetReasonMessages(lang).Refund
+	if refund == "" {
+		refund = translations[DefaultLanguage].BetReason.Refund
+	}
+	return replacePlaceholder(refund, "{challenge}", challengeName)
 }
 
 // normalizeLanguage converts language codes to the format used in translations

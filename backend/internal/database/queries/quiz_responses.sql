@@ -142,7 +142,8 @@ SELECT score_journal_id FROM quiz_responses WHERE id = @id::char(28);
 -- name: GetUnsettledSessionBets :many
 -- Responses in a session with a bet that has not been paid out yet,
 -- limited to the given question types. Ungraded responses (is_correct NULL,
--- e.g. a bet sent without an answer) are not bets that can be paid out.
+-- a bet sent without an answer) are included: they are settled as void and
+-- the stake is returned.
 SELECT
     r.id, r.submission_id, r.question_id, r.is_correct, r.bet_amount,
     s.user_id,
@@ -154,7 +155,6 @@ WHERE s.session_id = @sessionid::char(28)
   AND q.question_type = ANY(@questiontypes::text[])
   AND q.betting_enabled
   AND r.bet_amount > 0
-  AND r.is_correct IS NOT NULL
   AND r.score_journal_id IS NULL
 ORDER BY s.user_id, r.id;
 
@@ -195,8 +195,7 @@ SELECT (
           AND (
               qs.state <> 'FINISHED'
               OR (q.question_type = ANY(@coresettledtypes::text[])
-                  AND q.betting_enabled
-                  AND r.is_correct IS NOT NULL)
+                  AND q.betting_enabled)
           )
     ), 0)
 )::bigint AS available;
@@ -216,3 +215,28 @@ WHERE s.user_id = @userid::char(28)
   AND qs.state <> 'FINISHED'
 ORDER BY s.id
 FOR UPDATE OF s;
+
+-- name: CountOpenBetsForQuestion :one
+-- Bets on a question that are still open (same rules as the stakes in
+-- GetUserAvailableBetPoints). While there are any, changes that would alter
+-- their outcome (turning betting off, other multipliers) are rejected.
+SELECT count(*)
+FROM quiz_responses r
+JOIN quiz_submissions s ON s.id = r.submission_id
+JOIN quiz_sessions qs ON qs.id = s.session_id
+JOIN quiz_questions q ON q.id = r.question_id
+WHERE r.question_id = @questionid::char(28)
+  AND r.bet_amount > 0
+  AND r.score_journal_id IS NULL
+  AND (
+      qs.state <> 'FINISHED'
+      OR (q.question_type = ANY(@coresettledtypes::text[])
+          AND q.betting_enabled)
+  );
+
+-- name: QuestionHasResponses :one
+-- Whether anyone answered the question. Its answers can't be replaced then:
+-- stored selections would point to deleted answers.
+SELECT EXISTS(
+    SELECT 1 FROM quiz_responses WHERE question_id = @questionid::char(28)
+) AS has_responses;

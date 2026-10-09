@@ -50,7 +50,8 @@ type Bet struct {
 	ResponseID string
 	UserID     string
 	Amount     int32
-	// IsCorrect is the response's stored is_correct. Nil means not graded.
+	// IsCorrect is the response's stored is_correct. Nil means not graded (no
+	// answer given): the bet is void and the stake is returned.
 	IsCorrect *bool
 	// Question payout multipliers in hundredths. Nil means the default.
 	MultiplierCorrect *int64

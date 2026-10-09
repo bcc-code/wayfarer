@@ -353,7 +353,16 @@ func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, i
 		maxAbs := int32(*input.BettingMaxAbsolute)
 		params.Bettingmaxabsolute = &maxAbs
 	}
-	if err := ValidateBettingMultipliers(input.BettingMultiplierCorrect, input.BettingMultiplierWrong); err != nil {
+	if err := ValidateQuestionBetting(QuestionBettingSettings{
+		Points:            input.Points,
+		BettingEnabled:    input.BettingEnabled != nil && *input.BettingEnabled,
+		MinPercentage:     input.BettingMinPercentage,
+		MaxPercentage:     input.BettingMaxPercentage,
+		MinAbsolute:       input.BettingMinAbsolute,
+		MaxAbsolute:       input.BettingMaxAbsolute,
+		MultiplierCorrect: input.BettingMultiplierCorrect,
+		MultiplierWrong:   input.BettingMultiplierWrong,
+	}, true); err != nil {
 		return nil, err
 	}
 	if input.BettingMultiplierCorrect != nil {
@@ -498,17 +507,101 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 		maxAbs := int32(*input.BettingMaxAbsolute)
 		params.Bettingmaxabsolute = &maxAbs
 	}
-	// Validate the multipliers the question will have after this update
-	multiplierCorrect := input.BettingMultiplierCorrect
-	if multiplierCorrect == nil {
-		multiplierCorrect = numericToFloat(question.BettingMultiplierCorrect)
+	// Validate the settings the question will have after this update
+	next := storedBettingSettings(question)
+	if input.Points != nil {
+		next.Points = input.Points
 	}
-	multiplierWrong := input.BettingMultiplierWrong
-	if multiplierWrong == nil {
-		multiplierWrong = numericToFloat(question.BettingMultiplierWrong)
+	if input.BettingEnabled != nil {
+		next.BettingEnabled = *input.BettingEnabled
 	}
-	if err := ValidateBettingMultipliers(multiplierCorrect, multiplierWrong); err != nil {
+	if input.BettingMinPercentage != nil {
+		next.MinPercentage = input.BettingMinPercentage
+	}
+	if input.BettingMaxPercentage != nil {
+		next.MaxPercentage = input.BettingMaxPercentage
+	}
+	if input.BettingMinAbsolute != nil {
+		next.MinAbsolute = input.BettingMinAbsolute
+	}
+	if input.BettingMaxAbsolute != nil {
+		next.MaxAbsolute = input.BettingMaxAbsolute
+	}
+	if input.BettingMultiplierCorrect != nil {
+		next.MultiplierCorrect = input.BettingMultiplierCorrect
+	}
+	if input.BettingMultiplierWrong != nil {
+		next.MultiplierWrong = input.BettingMultiplierWrong
+	}
+	changesPointsOrBetting := input.Points != nil || input.BettingEnabled != nil
+	if err := ValidateQuestionBetting(next, changesPointsOrBetting); err != nil {
 		return nil, err
+	}
+
+	// Placed bets keep the terms they were placed under: no turning betting
+	// off and no other payout while the question has open bets
+	turnsBettingOff := question.BettingEnabled && input.BettingEnabled != nil && !*input.BettingEnabled
+	changesPayout, err := payoutChanged(question.BettingMultiplierCorrect, question.BettingMultiplierWrong,
+		input.BettingMultiplierCorrect, input.BettingMultiplierWrong)
+	if err != nil {
+		return nil, err
+	}
+	if turnsBettingOff || changesPayout {
+		openBets, err := qtx.CountOpenBetsForQuestion(ctx, sqlc.CountOpenBetsForQuestionParams{
+			Questionid:       id,
+			Coresettledtypes: sessionBetQuestionTypes,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to count open bets: %w", err)
+		}
+		if openBets > 0 {
+			field := "bettingMultiplierCorrect"
+			if turnsBettingOff {
+				field = "bettingEnabled"
+			}
+			return nil, openBetsError(field, openBets)
+		}
+	}
+
+	// Answers are only replaced when they change, and not once users answered:
+	// replacing gives them new IDs, so stored selections would point to
+	// deleted answers (and answer translations would be lost)
+	replaceAnswers := func(field string, next []answerSpec) (bool, error) {
+		stored, err := qtx.GetPredefinedAnswersByQuestionID(ctx, id)
+		if err != nil {
+			return false, fmt.Errorf("failed to load answers: %w", err)
+		}
+		if sameAnswers(storedAnswerSpecs(stored), next) {
+			return false, nil
+		}
+		answered, err := qtx.QuestionHasResponses(ctx, id)
+		if err != nil {
+			return false, fmt.Errorf("failed to check responses: %w", err)
+		}
+		if answered {
+			return false, answeredError(field)
+		}
+		return true, nil
+	}
+	replacePredefined := false
+	if input.PredefinedAnswers != nil {
+		next := make([]answerSpec, len(input.PredefinedAnswers))
+		for i, a := range input.PredefinedAnswers {
+			next[i] = answerSpec{Text: a.AnswerText, Correct: a.IsCorrect, Order: int32(a.AnswerOrder)}
+		}
+		if replacePredefined, err = replaceAnswers("predefinedAnswers", next); err != nil {
+			return nil, err
+		}
+	}
+	replaceOrdering := false
+	if input.OrderingItems != nil {
+		next := make([]answerSpec, len(input.OrderingItems))
+		for i, item := range input.OrderingItems {
+			next[i] = answerSpec{Text: item.ItemText, Order: int32(item.CorrectOrder)}
+		}
+		if replaceOrdering, err = replaceAnswers("orderingItems", next); err != nil {
+			return nil, err
+		}
 	}
 	if input.BettingMultiplierCorrect != nil {
 		_ = params.Bettingmultipliercorrect.Scan(fmt.Sprintf("%f", *input.BettingMultiplierCorrect))
@@ -523,8 +616,8 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 		return nil, fmt.Errorf("failed to update question: %w", err)
 	}
 
-	// If predefined answers provided, replace all answers
-	if input.PredefinedAnswers != nil {
+	// If predefined answers changed, replace all answers
+	if replacePredefined {
 		// Delete existing answers
 		err = qtx.DeletePredefinedAnswersByQuestion(ctx, id)
 		if err != nil {
@@ -547,8 +640,8 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 		}
 	}
 
-	// If ordering items provided, replace all items (stored in quiz_predefined_answers table)
-	if input.OrderingItems != nil {
+	// If ordering items changed, replace all items (stored in quiz_predefined_answers table)
+	if replaceOrdering {
 		// Delete existing items
 		err = qtx.DeletePredefinedAnswersByQuestion(ctx, id)
 		if err != nil {
@@ -576,8 +669,8 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 	}
 
 	r.Cache.InvalidateQuizWithChallenge(question.QuizID, quiz.ChallengeID)
-	// Also invalidate answers cache if answers or ordering items were updated
-	if len(input.PredefinedAnswers) > 0 || len(input.OrderingItems) > 0 {
+	// Also invalidate answers cache if answers or ordering items were replaced
+	if replacePredefined || replaceOrdering {
 		r.Cache.InvalidateQuizAnswers(id)
 	}
 

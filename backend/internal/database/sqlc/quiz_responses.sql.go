@@ -25,6 +25,37 @@ func (q *Queries) CalculateSubmissionScore(ctx context.Context, submissionid str
 	return score, err
 }
 
+const CountOpenBetsForQuestion = `-- name: CountOpenBetsForQuestion :one
+SELECT count(*)
+FROM quiz_responses r
+JOIN quiz_submissions s ON s.id = r.submission_id
+JOIN quiz_sessions qs ON qs.id = s.session_id
+JOIN quiz_questions q ON q.id = r.question_id
+WHERE r.question_id = $1::char(28)
+  AND r.bet_amount > 0
+  AND r.score_journal_id IS NULL
+  AND (
+      qs.state <> 'FINISHED'
+      OR (q.question_type = ANY($2::text[])
+          AND q.betting_enabled)
+  )
+`
+
+type CountOpenBetsForQuestionParams struct {
+	Questionid       string   `json:"questionid"`
+	Coresettledtypes []string `json:"coresettledtypes"`
+}
+
+// Bets on a question that are still open (same rules as the stakes in
+// GetUserAvailableBetPoints). While there are any, changes that would alter
+// their outcome (turning betting off, other multipliers) are rejected.
+func (q *Queries) CountOpenBetsForQuestion(ctx context.Context, arg CountOpenBetsForQuestionParams) (int64, error) {
+	row := q.db.QueryRow(ctx, CountOpenBetsForQuestion, arg.Questionid, arg.Coresettledtypes)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const CreateQuizResponse = `-- name: CreateQuizResponse :one
 INSERT INTO quiz_responses (
     id,
@@ -454,7 +485,6 @@ WHERE s.session_id = $1::char(28)
   AND q.question_type = ANY($2::text[])
   AND q.betting_enabled
   AND r.bet_amount > 0
-  AND r.is_correct IS NOT NULL
   AND r.score_journal_id IS NULL
 ORDER BY s.user_id, r.id
 `
@@ -478,7 +508,8 @@ type GetUnsettledSessionBetsRow struct {
 
 // Responses in a session with a bet that has not been paid out yet,
 // limited to the given question types. Ungraded responses (is_correct NULL,
-// e.g. a bet sent without an answer) are not bets that can be paid out.
+// a bet sent without an answer) are included: they are settled as void and
+// the stake is returned.
 func (q *Queries) GetUnsettledSessionBets(ctx context.Context, arg GetUnsettledSessionBetsParams) ([]*GetUnsettledSessionBetsRow, error) {
 	rows, err := q.db.Query(ctx, GetUnsettledSessionBets, arg.Sessionid, arg.Questiontypes)
 	if err != nil {
@@ -532,8 +563,7 @@ SELECT (
           AND (
               qs.state <> 'FINISHED'
               OR (q.question_type = ANY($4::text[])
-                  AND q.betting_enabled
-                  AND r.is_correct IS NOT NULL)
+                  AND q.betting_enabled)
           )
     ), 0)
 )::bigint AS available
@@ -603,6 +633,21 @@ func (q *Queries) LockUserBettableSubmissions(ctx context.Context, arg LockUserB
 		return nil, err
 	}
 	return items, nil
+}
+
+const QuestionHasResponses = `-- name: QuestionHasResponses :one
+SELECT EXISTS(
+    SELECT 1 FROM quiz_responses WHERE question_id = $1::char(28)
+) AS has_responses
+`
+
+// Whether anyone answered the question. Its answers can't be replaced then:
+// stored selections would point to deleted answers.
+func (q *Queries) QuestionHasResponses(ctx context.Context, questionid string) (bool, error) {
+	row := q.db.QueryRow(ctx, QuestionHasResponses, questionid)
+	var has_responses bool
+	err := row.Scan(&has_responses)
+	return has_responses, err
 }
 
 const SettleBetResult = `-- name: SettleBetResult :execrows

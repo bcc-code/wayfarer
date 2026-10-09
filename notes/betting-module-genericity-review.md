@@ -82,6 +82,9 @@ itself _is_ updated generically (line 1077), but the _answer_ is not, so the
 
 ### 5. This combination is an outright submission failure, not just a missing feature
 
+> **Resolved 2026-10-09:** a bet of 0 now always means "no bet" and limits only apply to real
+> bets, so these answers go through (see `betting-edge-cases.md`, R2).
+
 Free-text / number questions still receive `:bet-amount="isBettingEnabled ? currentBetAmount : undefined"`
 (`QuizChallenge.vue:680`, `:710`) and forward it, but `currentBetAmount` can only ever be `0`
 because no slider is rendered. If such a question has `bettingMinAbsolute` or
@@ -89,6 +92,8 @@ because no slider is rendered. If such a question has `bettingMinAbsolute` or
 An admin can configure this from the editor today with no warning.
 
 ### 6. `ValidateBet`'s doc comment contradicts its code
+
+> **Resolved 2026-10-09:** doc and code agree (0 = no bet, also on a question without betting).
 
 ```
 // - If betting is disabled and bet is nil or 0, it's valid (no bet placed)
@@ -284,8 +289,8 @@ Known gaps:
 1. Extract settlement out of `ladder_to_heaven` into a shared service; define a per-question-type
    `evaluate(response, question) → (correct, total)` and a question-configurable payout curve.
    Reconcile with `recordBetResult` so there is one journal shape.
-2. Fix `ValidateBet`'s zero-bet handling to match its documented contract; delete or wire up
-   `ExtractBetConfigFromQuestion`.
+2. ~~Fix `ValidateBet`'s zero-bet handling to match its documented contract~~ (done 2026-10-09);
+   delete or wire up `ExtractBetConfigFromQuestion`.
 3. Give every question component a real `session-betting` action mode (or hoist betting out of
    the per-type action state entirely — it is question-type-independent by nature).
 4. Generalize `updateQuizResponse` beyond ORDERING.

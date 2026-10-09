@@ -25,7 +25,8 @@ import (
 // together spend more than the user has; other users never wait for them.
 
 // createQuizResponseLocked stores a new answer under the submission lock,
-// re-checking that the submission is still open and validating the bet with
+// re-checking that the submission and its session (if any) are still open and
+// validating the bet with
 // checkBet (nil when there is nothing to check). If the question was already
 // answered (e.g. a retried request), the stored response is returned instead.
 func (r *Resolver) createQuizResponseLocked(ctx context.Context, userID string, params sqlc.CreateQuizResponseParams, checkBet *betCheck) (*sqlc.QuizResponse, error) {
@@ -57,6 +58,16 @@ func (r *Resolver) createQuizResponseLocked(ctx context.Context, userID string, 
 	}
 	if submission.ExpiresAt.Valid && time.Now().After(submission.ExpiresAt.Time) {
 		return nil, fmt.Errorf("submission expired")
+	}
+	// Answers only while the session is OPEN: once LOCKED, answers may be revealed
+	if submission.SessionID != nil && *submission.SessionID != "" {
+		session, err := qtx.GetQuizSession(ctx, *submission.SessionID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load session: %w", err)
+		}
+		if session.State != string(model.QuizSessionStateOpen) {
+			return nil, fmt.Errorf("quiz session is %s, answers cannot be submitted", session.State)
+		}
 	}
 
 	existing, err := qtx.GetQuizResponseBySubmissionAndQuestion(ctx, sqlc.GetQuizResponseBySubmissionAndQuestionParams{

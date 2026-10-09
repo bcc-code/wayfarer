@@ -145,7 +145,7 @@ func TestQuizSessionBetSettlement(t *testing.T) {
 	})
 	// Default payout: correct 2x, wrong 0
 	defaultQ, defaultRight, defaultWrong := addPredefined(t, 1, nil)
-	// Answered without a selection: never graded, so never settled
+	// Answered without a selection: never graded, so the bet is void and returned
 	ungradedQ, _, _ := addPredefined(t, 3, nil)
 
 	// ORDERING bets are left to the plugin and must not be settled by the core
@@ -334,10 +334,15 @@ func TestQuizSessionBetSettlement(t *testing.T) {
 		})
 	}
 
-	t.Run("bet without an answer is not settled", func(t *testing.T) {
-		count, _ := betJournal(t, winnerUngraded)
-		assert.Zero(t, count)
-		assert.Nil(t, getResponse(t, winnerUngraded).ScoreJournalID)
+	t.Run("bet without an answer is void, the stake is returned", func(t *testing.T) {
+		count, sum := betJournal(t, winnerUngraded)
+		assert.Equal(t, 2, count, "stake and refund entries")
+		assert.Zero(t, sum)
+		resp := getResponse(t, winnerUngraded)
+		assert.NotNil(t, resp.ScoreJournalID)
+		if assert.NotNil(t, resp.PointsEarned) {
+			assert.Zero(t, *resp.PointsEarned)
+		}
 	})
 
 	t.Run("ORDERING bet is not settled by the core", func(t *testing.T) {

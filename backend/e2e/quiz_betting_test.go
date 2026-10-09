@@ -138,7 +138,6 @@ func TestQuizBetting(t *testing.T) {
 			"questionType":  "PREDEFINED",
 			"questionText":  questionText,
 			"questionOrder": 0,
-			"points":        10,
 			"predefinedAnswers": []map[string]any{
 				{"answerText": "Correct Answer", "isCorrect": true, "answerOrder": 0},
 				{"answerText": "Wrong Answer", "isCorrect": false, "answerOrder": 1},
@@ -279,7 +278,6 @@ func TestQuizBetting(t *testing.T) {
 				"questionType":         "PREDEFINED",
 				"questionText":         "Question with betting?",
 				"questionOrder":        0,
-				"points":               10,
 				"bettingEnabled":       true,
 				"bettingMinPercentage": 10.0,
 				"bettingMaxPercentage": 50.0,
@@ -677,7 +675,7 @@ func TestQuizBetting(t *testing.T) {
 		assert.True(t, resp.HasErrors())
 	})
 
-	t.Run("zero bet rejected when betting enabled", func(t *testing.T) {
+	t.Run("zero bet means no bet when betting enabled", func(t *testing.T) {
 		challengeID := createChallenge(t, "Zero Bet Challenge")
 		publishChallenge(t, challengeID)
 		makeChallengeVisible(t, challengeID)
@@ -703,11 +701,10 @@ func TestQuizBetting(t *testing.T) {
 				"questionId":        questionID,
 				"selectedAnswerIds": []string{},
 				"timeSpentSeconds":  10,
-				"betAmount":         0, // Zero bet should be rejected when betting is enabled
+				"betAmount":         0, // 0 means no bet; the minimum only applies to real bets
 			},
 		})
-		require.True(t, resp.HasErrors(), "zero bet should be rejected when betting is enabled")
-		assert.Contains(t, resp.ErrorMessage(), "bet amount (0) is below minimum")
+		require.False(t, resp.HasErrors(), "zero bet is no bet: %s", resp.ErrorMessage())
 	})
 
 	// ==================== BETTING FIELDS ON ALL QUESTION TYPES ====================
@@ -735,7 +732,6 @@ func TestQuizBetting(t *testing.T) {
 				"questionType":         "FREE_TEXT",
 				"questionText":         "Free text with betting?",
 				"questionOrder":        0,
-				"points":               10,
 				"bettingEnabled":       true,
 				"bettingMaxPercentage": 30.0,
 			},
@@ -776,7 +772,6 @@ func TestQuizBetting(t *testing.T) {
 				"questionType":       "NUMBER",
 				"questionText":       "Number with betting?",
 				"questionOrder":      0,
-				"points":             10,
 				"minValue":           0,
 				"maxValue":           100,
 				"bettingEnabled":     true,
@@ -821,7 +816,6 @@ func TestQuizBetting(t *testing.T) {
 				"questionType":         "ORDERING",
 				"questionText":         "Order with betting?",
 				"questionOrder":        0,
-				"points":               10,
 				"bettingEnabled":       true,
 				"bettingMinPercentage": 15.0,
 				"orderingItems": []map[string]any{
@@ -958,7 +952,6 @@ func TestQuizBetting(t *testing.T) {
 				"questionType":   "PREDEFINED",
 				"questionText":   "Bulk bet test 2?",
 				"questionOrder":  1,
-				"points":         10,
 				"bettingEnabled": true,
 				"predefinedAnswers": []map[string]any{
 					{"answerText": "Yes", "isCorrect": true, "answerOrder": 0},
@@ -1338,7 +1331,6 @@ func TestQuizBetting(t *testing.T) {
 				"questionType":   "PREDEFINED",
 				"questionText":   "Bulk journal 2?",
 				"questionOrder":  1,
-				"points":         10,
 				"bettingEnabled": true,
 				"predefinedAnswers": []map[string]any{
 					{"answerText": "Yes", "isCorrect": true, "answerOrder": 0},

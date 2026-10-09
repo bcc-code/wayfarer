@@ -101,15 +101,19 @@ func (r *Resolver) invalidateSessionSubmissionCaches(ctx context.Context, sessio
 type settleSessionBetsResult struct {
 	Settled int
 	Failed  int
-	// UserNetPoints is the net bet result per user who had a bet settled.
+	// Voided counts settled bets without an answer, whose stake was returned
+	Voided int
+	// UserNetPoints is the net bet result per user who had a judged bet settled.
 	UserNetPoints map[string]int
+	// VoidedUsers are users who had a void bet settled (stake returned)
+	VoidedUsers map[string]bool
 }
 
 // settleSessionBets pays out all unsettled bets in a finished session.
 // Each bet is settled in its own transaction; a failing bet is logged and
 // skipped so the others are still paid out.
 func (r *Resolver) settleSessionBets(ctx context.Context, sessionID string, quiz *model.Quiz) (settleSessionBetsResult, error) {
-	result := settleSessionBetsResult{UserNetPoints: make(map[string]int)}
+	result := settleSessionBetsResult{UserNetPoints: make(map[string]int), VoidedUsers: make(map[string]bool)}
 
 	bets, err := r.DB.Queries.GetUnsettledSessionBets(ctx, sqlc.GetUnsettledSessionBetsParams{
 		Sessionid:     sessionID,
@@ -173,17 +177,24 @@ func (r *Resolver) settleSessionBets(ctx context.Context, sessionID string, quiz
 		}
 
 		result.Settled++
-		result.UserNetPoints[row.UserID] += res.NetPoints
 		submissions[row.SubmissionID] = true
+		if res.Void {
+			// No result to announce: the stake was simply returned
+			result.Voided++
+			result.VoidedUsers[row.UserID] = true
+			continue
+		}
+		result.UserNetPoints[row.UserID] += res.NetPoints
 	}
 
 	if result.Settled > 0 {
-		r.afterSessionBetsSettled(ctx, quiz, eventID, submissions, result.UserNetPoints)
+		r.afterSessionBetsSettled(ctx, quiz, eventID, submissions, result.UserNetPoints, result.VoidedUsers)
 	}
 
 	slog.Info("settled session bets",
 		"session_id", sessionID,
 		"settled", result.Settled,
+		"voided", result.Voided,
 		"failed", result.Failed,
 		"users", len(result.UserNetPoints))
 
@@ -216,9 +227,10 @@ func (r *Resolver) settleBetInTx(ctx context.Context, in betting.SettleInput) (b
 const betNotifyConcurrency = 16
 
 // afterSessionBetsSettled invalidates caches and notifies users about their
-// results. Notifications are sent in the background with bounded concurrency;
-// ctx should not be cancelled with the request (use context.WithoutCancel).
-func (r *Resolver) afterSessionBetsSettled(ctx context.Context, quiz *model.Quiz, eventID *string, submissions map[string]bool, userNetPoints map[string]int) {
+// results (users with only void bets are not notified). Notifications are sent
+// in the background with bounded concurrency; ctx should not be cancelled with
+// the request (use context.WithoutCancel).
+func (r *Resolver) afterSessionBetsSettled(ctx context.Context, quiz *model.Quiz, eventID *string, submissions map[string]bool, userNetPoints map[string]int, voidedUsers map[string]bool) {
 	r.Cache.InvalidateProject(quiz.ProjectID)
 	if eventID != nil {
 		r.Cache.InvalidateEvent(*eventID)
@@ -227,6 +239,10 @@ func (r *Resolver) afterSessionBetsSettled(ctx context.Context, quiz *model.Quiz
 		r.Cache.InvalidateQuizSubmission(submissionID)
 	}
 	for userID := range userNetPoints {
+		r.Cache.InvalidateUser(userID)
+		r.Cache.InvalidateUserQuizSubmissions(userID)
+	}
+	for userID := range voidedUsers {
 		r.Cache.InvalidateUser(userID)
 		r.Cache.InvalidateUserQuizSubmissions(userID)
 	}

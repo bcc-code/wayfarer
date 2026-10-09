@@ -102,4 +102,32 @@ describe('validateQuizQuestion', () => {
       }),
     ).toBeUndefined()
   })
+
+  it('rejects points on a question with betting', () => {
+    const answers = [
+      { answerText: 'Paulus', isCorrect: true },
+      { answerText: 'Peter', isCorrect: false },
+    ]
+    expect(
+      validateQuizQuestion({
+        ...predefined(answers),
+        bettingEnabled: true,
+        points: 10,
+      }),
+    ).toContain('innsats kan ikke også gi poeng')
+    expect(
+      validateQuizQuestion({
+        ...predefined(answers),
+        bettingEnabled: true,
+        points: 0,
+      }),
+    ).toBeUndefined()
+    expect(
+      validateQuizQuestion({
+        ...predefined(answers),
+        bettingEnabled: false,
+        points: 10,
+      }),
+    ).toBeUndefined()
+  })
 })
