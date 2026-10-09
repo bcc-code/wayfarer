@@ -17,11 +17,18 @@ import (
 // answer written under the lock is either committed in time to be settled or
 // sees the session closed and is rejected. Without the lock, an in-flight
 // answer could be stored after settlement and its bet would never be paid out.
+//
+// A write that carries a bet first locks all the user's submissions that can
+// still get a bet (betCheck.lock, in id order), then checks the bet against the
+// points the user has left after their open bets. One user's concurrent bets
+// (other questions, other sessions) therefore run one after another and cannot
+// together spend more than the user has; other users never wait for them.
 
 // createQuizResponseLocked stores a new answer under the submission lock,
-// re-checking that the submission is still open. If the question was already
+// re-checking that the submission is still open and validating the bet with
+// checkBet (nil when there is nothing to check). If the question was already
 // answered (e.g. a retried request), the stored response is returned instead.
-func (r *Resolver) createQuizResponseLocked(ctx context.Context, userID string, params sqlc.CreateQuizResponseParams) (*sqlc.QuizResponse, error) {
+func (r *Resolver) createQuizResponseLocked(ctx context.Context, userID string, params sqlc.CreateQuizResponseParams, checkBet *betCheck) (*sqlc.QuizResponse, error) {
 	tx, err := r.DB.Pool.Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
@@ -30,6 +37,13 @@ func (r *Resolver) createQuizResponseLocked(ctx context.Context, userID string, 
 		_ = tx.Rollback(ctx)
 	}()
 	qtx := r.DB.Queries.WithTx(tx)
+
+	// The user's bet locks come first so all bet writes lock in the same order
+	if checkBet != nil {
+		if err := checkBet.lock(ctx, qtx); err != nil {
+			return nil, err
+		}
+	}
 
 	submission, err := qtx.GetQuizSubmissionByIDForUpdate(ctx, params.Submissionid)
 	if err != nil {
@@ -69,6 +83,12 @@ func (r *Resolver) createQuizResponseLocked(ctx context.Context, userID string, 
 		return nil, fmt.Errorf("failed to check existing response: %w", err)
 	}
 
+	if checkBet != nil {
+		if err := checkBet.validate(ctx, qtx); err != nil {
+			return nil, fmt.Errorf("invalid bet: %w", err)
+		}
+	}
+
 	response, err := qtx.CreateQuizResponse(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to save response: %w", err)
@@ -94,8 +114,9 @@ func (r *Resolver) createQuizResponseLocked(ctx context.Context, userID string, 
 }
 
 // updateQuizResponseLocked updates an answer under the submission lock,
-// re-checking that the submission's session (if any) is still OPEN.
-func (r *Resolver) updateQuizResponseLocked(ctx context.Context, submissionID string, params sqlc.UpdateQuizResponseParams) (*sqlc.UpdateQuizResponseRow, error) {
+// re-checking that the submission's session (if any) is still OPEN and
+// validating the bet with checkBet (nil when there is nothing to check).
+func (r *Resolver) updateQuizResponseLocked(ctx context.Context, submissionID string, params sqlc.UpdateQuizResponseParams, checkBet *betCheck) (*sqlc.UpdateQuizResponseRow, error) {
 	tx, err := r.DB.Pool.Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
@@ -104,6 +125,13 @@ func (r *Resolver) updateQuizResponseLocked(ctx context.Context, submissionID st
 		_ = tx.Rollback(ctx)
 	}()
 	qtx := r.DB.Queries.WithTx(tx)
+
+	// The user's bet locks come first so all bet writes lock in the same order
+	if checkBet != nil {
+		if err := checkBet.lock(ctx, qtx); err != nil {
+			return nil, err
+		}
+	}
 
 	submission, err := qtx.GetQuizSubmissionByIDForUpdate(ctx, submissionID)
 	if err != nil {
@@ -116,6 +144,12 @@ func (r *Resolver) updateQuizResponseLocked(ctx context.Context, submissionID st
 		}
 		if session.State != string(model.QuizSessionStateOpen) {
 			return nil, fmt.Errorf("quiz session is %s, answers cannot be modified", session.State)
+		}
+	}
+
+	if checkBet != nil {
+		if err := checkBet.validate(ctx, qtx); err != nil {
+			return nil, err
 		}
 	}
 

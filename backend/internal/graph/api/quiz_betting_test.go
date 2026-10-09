@@ -1,28 +1,13 @@
 package api
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
-	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// mockQueries implements a minimal subset of sqlc.Queries for testing
-type mockQueriesForBetting struct {
-	score int64
-	err   error
-}
-
-func (m *mockQueriesForBetting) GetUserProjectScore(ctx context.Context, params sqlc.GetUserProjectScoreParams) (int64, error) {
-	if m.err != nil {
-		return 0, m.err
-	}
-	return m.score, nil
-}
 
 // Helper function to create a numeric from float64
 func numericFromFloat(val float64) pgtype.Numeric {
@@ -37,7 +22,7 @@ func TestValidateBet_NilBet_BettingEnabled(t *testing.T) {
 		BettingEnabled: true,
 	}
 
-	err := ValidateBet(context.Background(), nil, "user1", "project1", config, nil)
+	err := ValidateBet(config, 0, nil)
 	require.Error(t, err, "nil bet should be rejected when betting is enabled")
 	betErr, ok := err.(*BetValidationError)
 	require.True(t, ok)
@@ -50,7 +35,7 @@ func TestValidateBet_NilBet_BettingDisabled(t *testing.T) {
 		BettingEnabled: false,
 	}
 
-	err := ValidateBet(context.Background(), nil, "user1", "project1", config, nil)
+	err := ValidateBet(config, 0, nil)
 	assert.NoError(t, err, "nil bet should be valid when betting is disabled")
 }
 
@@ -60,7 +45,7 @@ func TestValidateBet_NegativeBet(t *testing.T) {
 	}
 
 	negativeBet := -10
-	err := ValidateBet(context.Background(), nil, "user1", "project1", config, &negativeBet)
+	err := ValidateBet(config, 0, &negativeBet)
 
 	require.Error(t, err)
 	betErr, ok := err.(*BetValidationError)
@@ -75,7 +60,7 @@ func TestValidateBet_BettingDisabled(t *testing.T) {
 	}
 
 	bet := 10
-	err := ValidateBet(context.Background(), nil, "user1", "project1", config, &bet)
+	err := ValidateBet(config, 0, &bet)
 
 	require.Error(t, err)
 	betErr, ok := err.(*BetValidationError)
@@ -86,37 +71,37 @@ func TestValidateBet_BettingDisabled(t *testing.T) {
 
 func TestValidateBet_ExceedsCurrentScore(t *testing.T) {
 	// Create a mock that returns a score
-	queries := &mockQueriesForBetting{score: 100}
+	available := 100
 
 	config := BetValidationConfig{
 		BettingEnabled: true,
 	}
 
 	bet := 150
-	err := validateBetWithMockQueries(context.Background(), queries, "user1", "project1", config, &bet)
+	err := ValidateBet(config, available, &bet)
 
 	require.Error(t, err)
 	betErr, ok := err.(*BetValidationError)
 	require.True(t, ok)
 	assert.Equal(t, "betAmount", betErr.Field)
-	assert.Contains(t, betErr.Message, "exceeds current score")
+	assert.Contains(t, betErr.Message, "exceeds available points")
 }
 
 func TestValidateBet_ValidWithinScore(t *testing.T) {
-	queries := &mockQueriesForBetting{score: 100}
+	available := 100
 
 	config := BetValidationConfig{
 		BettingEnabled: true,
 	}
 
 	bet := 50
-	err := validateBetWithMockQueries(context.Background(), queries, "user1", "project1", config, &bet)
+	err := ValidateBet(config, available, &bet)
 
 	assert.NoError(t, err)
 }
 
 func TestValidateBet_BelowMinAbsolute(t *testing.T) {
-	queries := &mockQueriesForBetting{score: 100}
+	available := 100
 	minAbs := int32(20)
 
 	config := BetValidationConfig{
@@ -125,7 +110,7 @@ func TestValidateBet_BelowMinAbsolute(t *testing.T) {
 	}
 
 	bet := 10
-	err := validateBetWithMockQueries(context.Background(), queries, "user1", "project1", config, &bet)
+	err := ValidateBet(config, available, &bet)
 
 	require.Error(t, err)
 	betErr, ok := err.(*BetValidationError)
@@ -134,7 +119,7 @@ func TestValidateBet_BelowMinAbsolute(t *testing.T) {
 }
 
 func TestValidateBet_AboveMaxAbsolute(t *testing.T) {
-	queries := &mockQueriesForBetting{score: 100}
+	available := 100
 	maxAbs := int32(30)
 
 	config := BetValidationConfig{
@@ -143,7 +128,7 @@ func TestValidateBet_AboveMaxAbsolute(t *testing.T) {
 	}
 
 	bet := 50
-	err := validateBetWithMockQueries(context.Background(), queries, "user1", "project1", config, &bet)
+	err := ValidateBet(config, available, &bet)
 
 	require.Error(t, err)
 	betErr, ok := err.(*BetValidationError)
@@ -152,7 +137,7 @@ func TestValidateBet_AboveMaxAbsolute(t *testing.T) {
 }
 
 func TestValidateBet_ValidWithinAbsoluteLimits(t *testing.T) {
-	queries := &mockQueriesForBetting{score: 100}
+	available := 100
 	minAbs := int32(10)
 	maxAbs := int32(50)
 
@@ -163,13 +148,13 @@ func TestValidateBet_ValidWithinAbsoluteLimits(t *testing.T) {
 	}
 
 	bet := 25
-	err := validateBetWithMockQueries(context.Background(), queries, "user1", "project1", config, &bet)
+	err := ValidateBet(config, available, &bet)
 
 	assert.NoError(t, err)
 }
 
 func TestValidateBet_BelowMinPercentage(t *testing.T) {
-	queries := &mockQueriesForBetting{score: 100}
+	available := 100
 
 	config := BetValidationConfig{
 		BettingEnabled:       true,
@@ -177,7 +162,7 @@ func TestValidateBet_BelowMinPercentage(t *testing.T) {
 	}
 
 	bet := 5 // 5% = below minimum
-	err := validateBetWithMockQueries(context.Background(), queries, "user1", "project1", config, &bet)
+	err := ValidateBet(config, available, &bet)
 
 	require.Error(t, err)
 	betErr, ok := err.(*BetValidationError)
@@ -186,7 +171,7 @@ func TestValidateBet_BelowMinPercentage(t *testing.T) {
 }
 
 func TestValidateBet_AboveMaxPercentage(t *testing.T) {
-	queries := &mockQueriesForBetting{score: 100}
+	available := 100
 
 	config := BetValidationConfig{
 		BettingEnabled:       true,
@@ -194,7 +179,7 @@ func TestValidateBet_AboveMaxPercentage(t *testing.T) {
 	}
 
 	bet := 60 // 60% = above maximum
-	err := validateBetWithMockQueries(context.Background(), queries, "user1", "project1", config, &bet)
+	err := ValidateBet(config, available, &bet)
 
 	require.Error(t, err)
 	betErr, ok := err.(*BetValidationError)
@@ -203,7 +188,7 @@ func TestValidateBet_AboveMaxPercentage(t *testing.T) {
 }
 
 func TestValidateBet_ValidWithinPercentageLimits(t *testing.T) {
-	queries := &mockQueriesForBetting{score: 100}
+	available := 100
 
 	config := BetValidationConfig{
 		BettingEnabled:       true,
@@ -212,13 +197,13 @@ func TestValidateBet_ValidWithinPercentageLimits(t *testing.T) {
 	}
 
 	bet := 30 // 30% = within limits
-	err := validateBetWithMockQueries(context.Background(), queries, "user1", "project1", config, &bet)
+	err := ValidateBet(config, available, &bet)
 
 	assert.NoError(t, err)
 }
 
 func TestValidateBet_CombinedLimits_MustSatisfyBoth(t *testing.T) {
-	queries := &mockQueriesForBetting{score: 100}
+	available := 100
 	minAbs := int32(15)
 	maxAbs := int32(40)
 
@@ -232,24 +217,24 @@ func TestValidateBet_CombinedLimits_MustSatisfyBoth(t *testing.T) {
 
 	// Test: bet=12 passes percentage (>=10%) but fails absolute (>=15)
 	bet := 12
-	err := validateBetWithMockQueries(context.Background(), queries, "user1", "project1", config, &bet)
+	err := ValidateBet(config, available, &bet)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "below minimum")
 
 	// Test: bet=45 passes percentage (<=50%) but fails absolute (<=40)
 	bet = 45
-	err = validateBetWithMockQueries(context.Background(), queries, "user1", "project1", config, &bet)
+	err = ValidateBet(config, available, &bet)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "exceeds maximum")
 
 	// Test: bet=25 passes both
 	bet = 25
-	err = validateBetWithMockQueries(context.Background(), queries, "user1", "project1", config, &bet)
+	err = ValidateBet(config, available, &bet)
 	assert.NoError(t, err)
 }
 
 func TestValidateBet_ZeroScore_PercentageLimitsIgnored(t *testing.T) {
-	queries := &mockQueriesForBetting{score: 0}
+	available := 0
 
 	config := BetValidationConfig{
 		BettingEnabled:       true,
@@ -259,14 +244,14 @@ func TestValidateBet_ZeroScore_PercentageLimitsIgnored(t *testing.T) {
 
 	// With score 0, any bet exceeds score
 	bet := 1
-	err := validateBetWithMockQueries(context.Background(), queries, "user1", "project1", config, &bet)
+	err := ValidateBet(config, available, &bet)
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "exceeds current score")
+	assert.Contains(t, err.Error(), "exceeds available points")
 }
 
 func TestValidateBet_ZeroScore_AbsoluteLimitsStillApply(t *testing.T) {
-	queries := &mockQueriesForBetting{score: 0}
+	available := 0
 	minAbs := int32(0)
 	maxAbs := int32(0)
 
@@ -276,15 +261,16 @@ func TestValidateBet_ZeroScore_AbsoluteLimitsStillApply(t *testing.T) {
 		BettingMaxAbsolute: &maxAbs,
 	}
 
-	// With betting enabled, zero bet is rejected (bet is required)
+	// Nothing to bet and limits of 0: a 0 bet is the only possible one (R2)
 	bet := 0
-	err := validateBetWithMockQueries(context.Background(), queries, "user1", "project1", config, &bet)
-	require.Error(t, err, "zero bet should be rejected when betting is enabled")
-	assert.Contains(t, err.Error(), "bet is required when betting is enabled")
+	assert.NoError(t, ValidateBet(config, available, &bet))
+
+	bet = 1
+	assert.Error(t, ValidateBet(config, available, &bet))
 }
 
 func TestValidateBet_NoLimitsSet_AnyBetUpToScoreValid(t *testing.T) {
-	queries := &mockQueriesForBetting{score: 100}
+	available := 100
 
 	config := BetValidationConfig{
 		BettingEnabled: true,
@@ -293,117 +279,12 @@ func TestValidateBet_NoLimitsSet_AnyBetUpToScoreValid(t *testing.T) {
 
 	// Any bet up to score should be valid
 	bet := 100
-	err := validateBetWithMockQueries(context.Background(), queries, "user1", "project1", config, &bet)
+	err := ValidateBet(config, available, &bet)
 	assert.NoError(t, err)
 
 	bet = 1
-	err = validateBetWithMockQueries(context.Background(), queries, "user1", "project1", config, &bet)
+	err = ValidateBet(config, available, &bet)
 	assert.NoError(t, err)
-}
-
-// validateBetWithMockQueries is a test helper that calls ValidateBet with mocked queries
-func validateBetWithMockQueries(
-	ctx context.Context,
-	mockQueries *mockQueriesForBetting,
-	userID string,
-	projectID string,
-	config BetValidationConfig,
-	betAmount *int,
-) error {
-	// If betting is enabled, a bet is required
-	if config.BettingEnabled && (betAmount == nil || *betAmount == 0) {
-		return &BetValidationError{
-			Field:   "betAmount",
-			Message: "bet is required when betting is enabled",
-		}
-	}
-
-	// No bet or zero bet is valid when betting is not enabled
-	if betAmount == nil || *betAmount == 0 {
-		return nil
-	}
-
-	bet := *betAmount
-
-	if bet < 0 {
-		return &BetValidationError{
-			Field:   "betAmount",
-			Message: "bet amount cannot be negative",
-		}
-	}
-
-	if !config.BettingEnabled {
-		return &BetValidationError{
-			Field:   "betAmount",
-			Message: "betting is not enabled for this question",
-		}
-	}
-
-	// Get user's current project score using mock
-	score, err := mockQueries.GetUserProjectScore(ctx, sqlc.GetUserProjectScoreParams{
-		UserID:    userID,
-		ProjectID: projectID,
-	})
-	if err != nil {
-		return err
-	}
-
-	currentScore := int(score)
-
-	if bet > currentScore {
-		return &BetValidationError{
-			Field:   "betAmount",
-			Message: "bet amount exceeds current score",
-		}
-	}
-
-	if config.BettingMinAbsolute != nil {
-		minAbs := int(*config.BettingMinAbsolute)
-		if bet < minAbs {
-			return &BetValidationError{
-				Field:   "betAmount",
-				Message: "bet amount is below minimum",
-			}
-		}
-	}
-
-	if config.BettingMaxAbsolute != nil {
-		maxAbs := int(*config.BettingMaxAbsolute)
-		if bet > maxAbs {
-			return &BetValidationError{
-				Field:   "betAmount",
-				Message: "bet amount exceeds maximum",
-			}
-		}
-	}
-
-	if currentScore > 0 {
-		if config.BettingMinPercentage.Valid {
-			val, _ := config.BettingMinPercentage.Float64Value()
-			minPct := val.Float64
-			minAmount := int(float64(currentScore) * minPct / 100)
-			if bet < minAmount {
-				return &BetValidationError{
-					Field:   "betAmount",
-					Message: "bet amount is below minimum percentage",
-				}
-			}
-		}
-
-		if config.BettingMaxPercentage.Valid {
-			val, _ := config.BettingMaxPercentage.Float64Value()
-			maxPct := val.Float64
-			maxAmount := int(float64(currentScore) * maxPct / 100)
-			if bet > maxAmount {
-				return &BetValidationError{
-					Field:   "betAmount",
-					Message: "bet amount exceeds maximum percentage",
-				}
-			}
-		}
-	}
-
-	return nil
 }
 
 func TestValidateBettingMultipliers(t *testing.T) {
