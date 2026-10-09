@@ -25,6 +25,37 @@ func (q *Queries) CalculateSubmissionScore(ctx context.Context, submissionid str
 	return score, err
 }
 
+const CountOpenBetsForQuestion = `-- name: CountOpenBetsForQuestion :one
+SELECT count(*)
+FROM quiz_responses r
+JOIN quiz_submissions s ON s.id = r.submission_id
+JOIN quiz_sessions qs ON qs.id = s.session_id
+JOIN quiz_questions q ON q.id = r.question_id
+WHERE r.question_id = $1::char(28)
+  AND r.bet_amount > 0
+  AND r.score_journal_id IS NULL
+  AND (
+      qs.state <> 'FINISHED'
+      OR (q.question_type = ANY($2::text[])
+          AND q.betting_enabled)
+  )
+`
+
+type CountOpenBetsForQuestionParams struct {
+	Questionid       string   `json:"questionid"`
+	Coresettledtypes []string `json:"coresettledtypes"`
+}
+
+// Bets on a question that are still open (same rules as the stakes in
+// GetUserAvailableBetPoints). While there are any, changes that would alter
+// their outcome (turning betting off, other multipliers) are rejected.
+func (q *Queries) CountOpenBetsForQuestion(ctx context.Context, arg CountOpenBetsForQuestionParams) (int64, error) {
+	row := q.db.QueryRow(ctx, CountOpenBetsForQuestion, arg.Questionid, arg.Coresettledtypes)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const CreateQuizResponse = `-- name: CreateQuizResponse :one
 INSERT INTO quiz_responses (
     id,
@@ -440,6 +471,207 @@ func (q *Queries) GetQuizResponsesWithContext(ctx context.Context, ids []string)
 		return nil, err
 	}
 	return items, nil
+}
+
+const GetUnsettledSessionBets = `-- name: GetUnsettledSessionBets :many
+SELECT
+    r.id, r.submission_id, r.question_id, r.is_correct, r.bet_amount,
+    s.user_id,
+    q.question_type, q.betting_multiplier_correct, q.betting_multiplier_wrong
+FROM quiz_responses r
+JOIN quiz_submissions s ON s.id = r.submission_id
+JOIN quiz_questions q ON q.id = r.question_id
+WHERE s.session_id = $1::char(28)
+  AND q.question_type = ANY($2::text[])
+  AND q.betting_enabled
+  AND r.bet_amount > 0
+  AND r.score_journal_id IS NULL
+ORDER BY s.user_id, r.id
+`
+
+type GetUnsettledSessionBetsParams struct {
+	Sessionid     string   `json:"sessionid"`
+	Questiontypes []string `json:"questiontypes"`
+}
+
+type GetUnsettledSessionBetsRow struct {
+	ID                       string         `json:"id"`
+	SubmissionID             string         `json:"submission_id"`
+	QuestionID               string         `json:"question_id"`
+	IsCorrect                *bool          `json:"is_correct"`
+	BetAmount                *int32         `json:"bet_amount"`
+	UserID                   string         `json:"user_id"`
+	QuestionType             string         `json:"question_type"`
+	BettingMultiplierCorrect pgtype.Numeric `json:"betting_multiplier_correct"`
+	BettingMultiplierWrong   pgtype.Numeric `json:"betting_multiplier_wrong"`
+}
+
+// Responses in a session with a bet that has not been paid out yet,
+// limited to the given question types. Ungraded responses (is_correct NULL,
+// a bet sent without an answer) are included: they are settled as void and
+// the stake is returned.
+func (q *Queries) GetUnsettledSessionBets(ctx context.Context, arg GetUnsettledSessionBetsParams) ([]*GetUnsettledSessionBetsRow, error) {
+	rows, err := q.db.Query(ctx, GetUnsettledSessionBets, arg.Sessionid, arg.Questiontypes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUnsettledSessionBetsRow{}
+	for rows.Next() {
+		var i GetUnsettledSessionBetsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.SubmissionID,
+			&i.QuestionID,
+			&i.IsCorrect,
+			&i.BetAmount,
+			&i.UserID,
+			&i.QuestionType,
+			&i.BettingMultiplierCorrect,
+			&i.BettingMultiplierWrong,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetUserAvailableBetPoints = `-- name: GetUserAvailableBetPoints :one
+SELECT (
+    COALESCE((
+        SELECT SUM(sj.points)
+        FROM score_journal sj
+        WHERE sj.user_id = $1::char(28)
+          AND sj.project_id = $2::char(28)
+    ), 0)
+    - COALESCE((
+        SELECT SUM(r.bet_amount)
+        FROM quiz_responses r
+        JOIN quiz_submissions s ON s.id = r.submission_id
+        JOIN quiz_sessions qs ON qs.id = s.session_id
+        JOIN quizzes z ON z.id = s.quiz_id
+        JOIN quiz_questions q ON q.id = r.question_id
+        WHERE s.user_id = $1::char(28)
+          AND z.project_id = $2::char(28)
+          AND r.bet_amount > 0
+          AND r.score_journal_id IS NULL
+          AND r.id IS DISTINCT FROM $3::char(28)
+          AND (
+              qs.state <> 'FINISHED'
+              OR (q.question_type = ANY($4::text[])
+                  AND q.betting_enabled)
+          )
+    ), 0)
+)::bigint AS available
+`
+
+type GetUserAvailableBetPointsParams struct {
+	Userid            string   `json:"userid"`
+	Projectid         string   `json:"projectid"`
+	Excluderesponseid *string  `json:"excluderesponseid"`
+	Coresettledtypes  []string `json:"coresettledtypes"`
+}
+
+// The points a user can still bet in a project: their score minus their open
+// stakes. A stake is open until it is paid out; once its session is finished
+// it stays open only if the core will still settle it (same rules as
+// GetUnsettledSessionBets), bets settled elsewhere are released then.
+// Run it after LockUserBettableSubmissions, in the transaction that stores the bet.
+func (q *Queries) GetUserAvailableBetPoints(ctx context.Context, arg GetUserAvailableBetPointsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, GetUserAvailableBetPoints,
+		arg.Userid,
+		arg.Projectid,
+		arg.Excluderesponseid,
+		arg.Coresettledtypes,
+	)
+	var available int64
+	err := row.Scan(&available)
+	return available, err
+}
+
+const LockUserBettableSubmissions = `-- name: LockUserBettableSubmissions :many
+SELECT s.id
+FROM quiz_submissions s
+JOIN quiz_sessions qs ON qs.id = s.session_id
+JOIN quizzes z ON z.id = s.quiz_id
+WHERE s.user_id = $1::char(28)
+  AND z.project_id = $2::char(28)
+  AND qs.state <> 'FINISHED'
+ORDER BY s.id
+FOR UPDATE OF s
+`
+
+type LockUserBettableSubmissionsParams struct {
+	Userid    string `json:"userid"`
+	Projectid string `json:"projectid"`
+}
+
+// Locks every submission of the user in the project that can still receive a
+// bet (session not FINISHED), in id order. Every bet write takes these locks
+// before checking GetUserAvailableBetPoints, so one user's concurrent bets
+// (other questions, other sessions) run one after another while different
+// users never wait for each other. The fixed order prevents deadlocks.
+func (q *Queries) LockUserBettableSubmissions(ctx context.Context, arg LockUserBettableSubmissionsParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, LockUserBettableSubmissions, arg.Userid, arg.Projectid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const QuestionHasResponses = `-- name: QuestionHasResponses :one
+SELECT EXISTS(
+    SELECT 1 FROM quiz_responses WHERE question_id = $1::char(28)
+) AS has_responses
+`
+
+// Whether anyone answered the question. Its answers can't be replaced then:
+// stored selections would point to deleted answers.
+func (q *Queries) QuestionHasResponses(ctx context.Context, questionid string) (bool, error) {
+	row := q.db.QueryRow(ctx, QuestionHasResponses, questionid)
+	var has_responses bool
+	err := row.Scan(&has_responses)
+	return has_responses, err
+}
+
+const SettleBetResult = `-- name: SettleBetResult :execrows
+UPDATE quiz_responses
+SET points_earned = $1::int,
+    score_journal_id = $2::char(28)
+WHERE id = $3::char(28)
+  AND score_journal_id IS NULL
+`
+
+type SettleBetResultParams struct {
+	Pointsearned   int32  `json:"pointsearned"`
+	Scorejournalid string `json:"scorejournalid"`
+	ID             string `json:"id"`
+}
+
+// Stores a bet result only if the response is not settled yet.
+// 0 rows means another settlement got there first.
+func (q *Queries) SettleBetResult(ctx context.Context, arg SettleBetResultParams) (int64, error) {
+	result, err := q.db.Exec(ctx, SettleBetResult, arg.Pointsearned, arg.Scorejournalid, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const UpdateBetResult = `-- name: UpdateBetResult :one

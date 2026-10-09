@@ -385,6 +385,27 @@ func TestConvertToPredefinedQuestionWithPoints(t *testing.T) {
 	}
 }
 
+// TestConvertToPredefinedQuestionWithBettingMultipliers tests that payout multipliers are passed through
+func TestConvertToPredefinedQuestionWithBettingMultipliers(t *testing.T) {
+	t.Run("unset multipliers stay nil", func(t *testing.T) {
+		result := convertToPredefinedQuestion(&mockQuestionRow{id: "QQ001", questionType: "PREDEFINED"})
+		assert.Nil(t, result.BettingMultiplierCorrect)
+		assert.Nil(t, result.BettingMultiplierWrong)
+	})
+
+	t.Run("set multipliers are converted", func(t *testing.T) {
+		row := &mockQuestionRow{id: "QQ001", questionType: "PREDEFINED"}
+		require.NoError(t, row.bettingMultCorrect.Scan("2.5"))
+		require.NoError(t, row.bettingMultWrong.Scan("0.5"))
+
+		result := convertToPredefinedQuestion(row)
+		require.NotNil(t, result.BettingMultiplierCorrect)
+		require.NotNil(t, result.BettingMultiplierWrong)
+		assert.Equal(t, 2.5, *result.BettingMultiplierCorrect)
+		assert.Equal(t, 0.5, *result.BettingMultiplierWrong)
+	})
+}
+
 // TestConvertResponseRowWithPointsEarned tests that pointsEarned is correctly included in response conversion
 func TestConvertResponseRowWithPointsEarned(t *testing.T) {
 	tests := []struct {
@@ -450,6 +471,8 @@ type mockQuestionRow struct {
 	bettingMaxPercentage   pgtype.Numeric
 	bettingMinAbsolute     *int32
 	bettingMaxAbsolute     *int32
+	bettingMultCorrect     pgtype.Numeric
+	bettingMultWrong       pgtype.Numeric
 }
 
 func (m *mockQuestionRow) GetID() string                           { return m.id }
@@ -468,6 +491,10 @@ func (m *mockQuestionRow) GetBettingMinPercentage() pgtype.Numeric { return m.be
 func (m *mockQuestionRow) GetBettingMaxPercentage() pgtype.Numeric { return m.bettingMaxPercentage }
 func (m *mockQuestionRow) GetBettingMinAbsolute() *int32           { return m.bettingMinAbsolute }
 func (m *mockQuestionRow) GetBettingMaxAbsolute() *int32           { return m.bettingMaxAbsolute }
+func (m *mockQuestionRow) GetBettingMultiplierCorrect() pgtype.Numeric {
+	return m.bettingMultCorrect
+}
+func (m *mockQuestionRow) GetBettingMultiplierWrong() pgtype.Numeric { return m.bettingMultWrong }
 
 // Helper functions for tests
 func int32Ptr(v int32) *int32 {

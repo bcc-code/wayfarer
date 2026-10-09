@@ -6,6 +6,7 @@
   },
   "bet_reason": {
     "stake": "{challenge} - stake",
-    "winnings": "{challenge} - winnings"
+    "winnings": "{challenge} - winnings",
+    "refund": "{challenge} - stake returned"
   }
 }

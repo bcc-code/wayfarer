@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"math/rand"
 	"time"
 
@@ -359,8 +358,11 @@ func (r *mutationResolver) FinishQuizSession(ctx context.Context, id string) (*m
 		return nil, fmt.Errorf("unauthorized to finish this session")
 	}
 
-	// Already finalized - return current state (no-op for idempotency)
+	// Already finalized - retry auto-submission and bet settlement in case they
+	// failed the first time (both are no-ops once done), then return current state
 	if session.State == "FINISHED" {
+		r.closeSessionAndSettleBets(ctx, span, id, quiz)
+		r.invalidateSessionSubmissionCaches(ctx, id, quiz.ProjectID)
 		return convertQuizSessionToModel(session), nil
 	}
 
@@ -379,33 +381,12 @@ func (r *mutationResolver) FinishQuizSession(ctx context.Context, id string) (*m
 		return nil, fmt.Errorf("failed to finish quiz session: %w", err)
 	}
 
-	// Auto-submit all active submissions
-	err = r.DB.Queries.AutoSubmitSessionSubmissions(ctx, id)
-	if err != nil {
-		otel.RecordError(span, err)
-		// Log but don't fail - state is already FINISHED
-		slog.Error("failed to auto-submit submissions",
-			"session_id", id,
-			"error", err,
-		)
-	}
+	// Auto-submit all active submissions, then pay out bets before notifying
+	// clients. Failures are logged, not returned - state is already FINISHED
+	r.closeSessionAndSettleBets(ctx, span, id, quiz)
 
 	// Invalidate cache for affected users
-	submissions, subErr := r.DB.Queries.GetSessionSubmissionsWithUserData(ctx, id)
-	if subErr != nil {
-		slog.Warn("failed to get session submissions for cache invalidation",
-			"session_id", id,
-			"error", subErr,
-		)
-	} else {
-		for _, sub := range submissions {
-			r.Cache.InvalidateUser(sub.UserID)
-			r.Cache.InvalidateUserQuizSubmissions(sub.UserID)
-			r.Cache.InvalidateQuizSubmission(sub.SubmissionID)
-		}
-	}
-	r.Cache.InvalidateProject(quiz.ProjectID)
-	r.Cache.InvalidateQuizSession(id)
+	r.invalidateSessionSubmissionCaches(ctx, id, quiz.ProjectID)
 	r.Cache.InvalidateQuizSessionAccess()
 
 	// Notify clients via Firestore

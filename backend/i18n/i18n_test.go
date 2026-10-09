@@ -142,3 +142,18 @@ func TestFormatBetWinningsReason(t *testing.T) {
 func containsPlaceholder(s, placeholder string) bool {
 	return len(s) > 0 && (s == placeholder || len(s) > len(placeholder))
 }
+
+func TestFormatBetRefundReason(t *testing.T) {
+	tests := []struct{ lang, want string }{
+		{lang: "en", want: "Quiz 1 - stake returned"},
+		{lang: "nb", want: "Quiz 1 - innsats tilbakebetalt"},
+		// Languages without a translation fall back to the default language
+		{lang: "de", want: FormatBetRefundReason(DefaultLanguage, "Quiz 1")},
+		{lang: "xx", want: FormatBetRefundReason(DefaultLanguage, "Quiz 1")},
+	}
+	for _, tt := range tests {
+		if got := FormatBetRefundReason(tt.lang, "Quiz 1"); got != tt.want || got == "" {
+			t.Errorf("FormatBetRefundReason(%q) = %q, want %q", tt.lang, got, tt.want)
+		}
+	}
+}

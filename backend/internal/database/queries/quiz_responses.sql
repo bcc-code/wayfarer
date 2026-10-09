@@ -138,3 +138,105 @@ RETURNING quiz_responses.id, quiz_responses.submission_id, quiz_responses.questi
 
 -- name: GetQuizResponseScoreJournalID :one
 SELECT score_journal_id FROM quiz_responses WHERE id = @id::char(28);
+
+-- name: GetUnsettledSessionBets :many
+-- Responses in a session with a bet that has not been paid out yet,
+-- limited to the given question types. Ungraded responses (is_correct NULL,
+-- a bet sent without an answer) are included: they are settled as void and
+-- the stake is returned.
+SELECT
+    r.id, r.submission_id, r.question_id, r.is_correct, r.bet_amount,
+    s.user_id,
+    q.question_type, q.betting_multiplier_correct, q.betting_multiplier_wrong
+FROM quiz_responses r
+JOIN quiz_submissions s ON s.id = r.submission_id
+JOIN quiz_questions q ON q.id = r.question_id
+WHERE s.session_id = @sessionid::char(28)
+  AND q.question_type = ANY(@questiontypes::text[])
+  AND q.betting_enabled
+  AND r.bet_amount > 0
+  AND r.score_journal_id IS NULL
+ORDER BY s.user_id, r.id;
+
+-- name: SettleBetResult :execrows
+-- Stores a bet result only if the response is not settled yet.
+-- 0 rows means another settlement got there first.
+UPDATE quiz_responses
+SET points_earned = @pointsearned::int,
+    score_journal_id = @scorejournalid::char(28)
+WHERE id = @id::char(28)
+  AND score_journal_id IS NULL;
+
+-- name: GetUserAvailableBetPoints :one
+-- The points a user can still bet in a project: their score minus their open
+-- stakes. A stake is open until it is paid out; once its session is finished
+-- it stays open only if the core will still settle it (same rules as
+-- GetUnsettledSessionBets), bets settled elsewhere are released then.
+-- Run it after LockUserBettableSubmissions, in the transaction that stores the bet.
+SELECT (
+    COALESCE((
+        SELECT SUM(sj.points)
+        FROM score_journal sj
+        WHERE sj.user_id = @userid::char(28)
+          AND sj.project_id = @projectid::char(28)
+    ), 0)
+    - COALESCE((
+        SELECT SUM(r.bet_amount)
+        FROM quiz_responses r
+        JOIN quiz_submissions s ON s.id = r.submission_id
+        JOIN quiz_sessions qs ON qs.id = s.session_id
+        JOIN quizzes z ON z.id = s.quiz_id
+        JOIN quiz_questions q ON q.id = r.question_id
+        WHERE s.user_id = @userid::char(28)
+          AND z.project_id = @projectid::char(28)
+          AND r.bet_amount > 0
+          AND r.score_journal_id IS NULL
+          AND r.id IS DISTINCT FROM sqlc.narg('excluderesponseid')::char(28)
+          AND (
+              qs.state <> 'FINISHED'
+              OR (q.question_type = ANY(@coresettledtypes::text[])
+                  AND q.betting_enabled)
+          )
+    ), 0)
+)::bigint AS available;
+
+-- name: LockUserBettableSubmissions :many
+-- Locks every submission of the user in the project that can still receive a
+-- bet (session not FINISHED), in id order. Every bet write takes these locks
+-- before checking GetUserAvailableBetPoints, so one user's concurrent bets
+-- (other questions, other sessions) run one after another while different
+-- users never wait for each other. The fixed order prevents deadlocks.
+SELECT s.id
+FROM quiz_submissions s
+JOIN quiz_sessions qs ON qs.id = s.session_id
+JOIN quizzes z ON z.id = s.quiz_id
+WHERE s.user_id = @userid::char(28)
+  AND z.project_id = @projectid::char(28)
+  AND qs.state <> 'FINISHED'
+ORDER BY s.id
+FOR UPDATE OF s;
+
+-- name: CountOpenBetsForQuestion :one
+-- Bets on a question that are still open (same rules as the stakes in
+-- GetUserAvailableBetPoints). While there are any, changes that would alter
+-- their outcome (turning betting off, other multipliers) are rejected.
+SELECT count(*)
+FROM quiz_responses r
+JOIN quiz_submissions s ON s.id = r.submission_id
+JOIN quiz_sessions qs ON qs.id = s.session_id
+JOIN quiz_questions q ON q.id = r.question_id
+WHERE r.question_id = @questionid::char(28)
+  AND r.bet_amount > 0
+  AND r.score_journal_id IS NULL
+  AND (
+      qs.state <> 'FINISHED'
+      OR (q.question_type = ANY(@coresettledtypes::text[])
+          AND q.betting_enabled)
+  );
+
+-- name: QuestionHasResponses :one
+-- Whether anyone answered the question. Its answers can't be replaced then:
+-- stored selections would point to deleted answers.
+SELECT EXISTS(
+    SELECT 1 FROM quiz_responses WHERE question_id = @questionid::char(28)
+) AS has_responses;

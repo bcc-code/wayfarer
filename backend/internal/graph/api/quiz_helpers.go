@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"math"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
@@ -137,6 +138,8 @@ type quizQuestionRow interface {
 	GetBettingMaxPercentage() pgtype.Numeric
 	GetBettingMinAbsolute() *int32
 	GetBettingMaxAbsolute() *int32
+	GetBettingMultiplierCorrect() pgtype.Numeric
+	GetBettingMultiplierWrong() pgtype.Numeric
 }
 
 // Adapter for sqlc.CreateQuizQuestionRow
@@ -166,6 +169,12 @@ func (r createQuizQuestionRowAdapter) GetBettingMaxPercentage() pgtype.Numeric {
 }
 func (r createQuizQuestionRowAdapter) GetBettingMinAbsolute() *int32 { return r.BettingMinAbsolute }
 func (r createQuizQuestionRowAdapter) GetBettingMaxAbsolute() *int32 { return r.BettingMaxAbsolute }
+func (r createQuizQuestionRowAdapter) GetBettingMultiplierCorrect() pgtype.Numeric {
+	return r.BettingMultiplierCorrect
+}
+func (r createQuizQuestionRowAdapter) GetBettingMultiplierWrong() pgtype.Numeric {
+	return r.BettingMultiplierWrong
+}
 
 // Adapter for sqlc.UpdateQuizQuestionRow
 type updateQuizQuestionRowAdapter struct {
@@ -194,6 +203,12 @@ func (r updateQuizQuestionRowAdapter) GetBettingMaxPercentage() pgtype.Numeric {
 }
 func (r updateQuizQuestionRowAdapter) GetBettingMinAbsolute() *int32 { return r.BettingMinAbsolute }
 func (r updateQuizQuestionRowAdapter) GetBettingMaxAbsolute() *int32 { return r.BettingMaxAbsolute }
+func (r updateQuizQuestionRowAdapter) GetBettingMultiplierCorrect() pgtype.Numeric {
+	return r.BettingMultiplierCorrect
+}
+func (r updateQuizQuestionRowAdapter) GetBettingMultiplierWrong() pgtype.Numeric {
+	return r.BettingMultiplierWrong
+}
 
 // Adapter for sqlc.GetQuizQuestionByIDRow
 type getQuizQuestionByIDRowAdapter struct {
@@ -222,6 +237,12 @@ func (r getQuizQuestionByIDRowAdapter) GetBettingMaxPercentage() pgtype.Numeric 
 }
 func (r getQuizQuestionByIDRowAdapter) GetBettingMinAbsolute() *int32 { return r.BettingMinAbsolute }
 func (r getQuizQuestionByIDRowAdapter) GetBettingMaxAbsolute() *int32 { return r.BettingMaxAbsolute }
+func (r getQuizQuestionByIDRowAdapter) GetBettingMultiplierCorrect() pgtype.Numeric {
+	return r.BettingMultiplierCorrect
+}
+func (r getQuizQuestionByIDRowAdapter) GetBettingMultiplierWrong() pgtype.Numeric {
+	return r.BettingMultiplierWrong
+}
 
 // convertQuizQuestionRowToInterface converts a database row to the appropriate QuizQuestion implementation
 func convertQuizQuestionRowToInterface(row quizQuestionRow) model.QuizQuestion {
@@ -258,12 +279,21 @@ func convertQuestionPoints(pts *int32) *int {
 	return &v
 }
 
-func convertBettingPercentage(n pgtype.Numeric) *float64 {
+// numericToFloat converts a nullable NUMERIC to *float64, returning nil when it
+// is not set or is not a finite float64.
+func numericToFloat(n pgtype.Numeric) *float64 {
 	if !n.Valid {
 		return nil
 	}
-	val, _ := n.Float64Value()
+	val, err := n.Float64Value()
+	if err != nil || !val.Valid || math.IsNaN(val.Float64) || math.IsInf(val.Float64, 0) {
+		return nil
+	}
 	return &val.Float64
+}
+
+func convertBettingPercentage(n pgtype.Numeric) *float64 {
+	return numericToFloat(n)
 }
 
 func convertBettingAbsolute(v *int32) *int {
@@ -280,101 +310,98 @@ func convertToPredefinedQuestion(row quizQuestionRow) *model.PredefinedQuestion 
 		allowMultiple = *row.GetAllowMultipleSelection()
 	}
 	return &model.PredefinedQuestion{
-		ID:                     row.GetID(),
-		QuizID:                 row.GetQuizID(),
-		QuestionText:           row.GetQuestionText(),
-		QuestionOrder:          int(row.GetQuestionOrder()),
-		TimeoutSeconds:         convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
-		Points:                 convertQuestionPoints(row.GetPoints()),
-		BettingEnabled:         row.GetBettingEnabled(),
-		BettingMinPercentage:   convertBettingPercentage(row.GetBettingMinPercentage()),
-		BettingMaxPercentage:   convertBettingPercentage(row.GetBettingMaxPercentage()),
-		BettingMinAbsolute:     convertBettingAbsolute(row.GetBettingMinAbsolute()),
-		BettingMaxAbsolute:     convertBettingAbsolute(row.GetBettingMaxAbsolute()),
-		AllowMultipleSelection: allowMultiple,
+		ID:                       row.GetID(),
+		QuizID:                   row.GetQuizID(),
+		QuestionText:             row.GetQuestionText(),
+		QuestionOrder:            int(row.GetQuestionOrder()),
+		TimeoutSeconds:           convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
+		Points:                   convertQuestionPoints(row.GetPoints()),
+		BettingEnabled:           row.GetBettingEnabled(),
+		BettingMinPercentage:     convertBettingPercentage(row.GetBettingMinPercentage()),
+		BettingMaxPercentage:     convertBettingPercentage(row.GetBettingMaxPercentage()),
+		BettingMinAbsolute:       convertBettingAbsolute(row.GetBettingMinAbsolute()),
+		BettingMaxAbsolute:       convertBettingAbsolute(row.GetBettingMaxAbsolute()),
+		BettingMultiplierCorrect: convertBettingPercentage(row.GetBettingMultiplierCorrect()),
+		BettingMultiplierWrong:   convertBettingPercentage(row.GetBettingMultiplierWrong()),
+		AllowMultipleSelection:   allowMultiple,
 	}
 }
 
 func convertToFreeTextQuestion(row quizQuestionRow) *model.FreeTextQuestion {
 	return &model.FreeTextQuestion{
-		ID:                   row.GetID(),
-		QuizID:               row.GetQuizID(),
-		QuestionText:         row.GetQuestionText(),
-		QuestionOrder:        int(row.GetQuestionOrder()),
-		TimeoutSeconds:       convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
-		Points:               convertQuestionPoints(row.GetPoints()),
-		BettingEnabled:       row.GetBettingEnabled(),
-		BettingMinPercentage: convertBettingPercentage(row.GetBettingMinPercentage()),
-		BettingMaxPercentage: convertBettingPercentage(row.GetBettingMaxPercentage()),
-		BettingMinAbsolute:   convertBettingAbsolute(row.GetBettingMinAbsolute()),
-		BettingMaxAbsolute:   convertBettingAbsolute(row.GetBettingMaxAbsolute()),
+		ID:                       row.GetID(),
+		QuizID:                   row.GetQuizID(),
+		QuestionText:             row.GetQuestionText(),
+		QuestionOrder:            int(row.GetQuestionOrder()),
+		TimeoutSeconds:           convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
+		Points:                   convertQuestionPoints(row.GetPoints()),
+		BettingEnabled:           row.GetBettingEnabled(),
+		BettingMinPercentage:     convertBettingPercentage(row.GetBettingMinPercentage()),
+		BettingMaxPercentage:     convertBettingPercentage(row.GetBettingMaxPercentage()),
+		BettingMinAbsolute:       convertBettingAbsolute(row.GetBettingMinAbsolute()),
+		BettingMaxAbsolute:       convertBettingAbsolute(row.GetBettingMaxAbsolute()),
+		BettingMultiplierCorrect: convertBettingPercentage(row.GetBettingMultiplierCorrect()),
+		BettingMultiplierWrong:   convertBettingPercentage(row.GetBettingMultiplierWrong()),
 	}
 }
 
 func convertToNumberQuestion(row quizQuestionRow) *model.NumberQuestion {
-	var minValue, maxValue, stepValue *float64
-	if row.GetMinValue().Valid {
-		val, _ := row.GetMinValue().Float64Value()
-		fv := val.Float64
-		minValue = &fv
-	}
-	if row.GetMaxValue().Valid {
-		val, _ := row.GetMaxValue().Float64Value()
-		fv := val.Float64
-		maxValue = &fv
-	}
-	if row.GetStepValue().Valid {
-		val, _ := row.GetStepValue().Float64Value()
-		fv := val.Float64
-		stepValue = &fv
-	}
+	minValue := numericToFloat(row.GetMinValue())
+	maxValue := numericToFloat(row.GetMaxValue())
+	stepValue := numericToFloat(row.GetStepValue())
 	return &model.NumberQuestion{
-		ID:                   row.GetID(),
-		QuizID:               row.GetQuizID(),
-		QuestionText:         row.GetQuestionText(),
-		QuestionOrder:        int(row.GetQuestionOrder()),
-		TimeoutSeconds:       convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
-		Points:               convertQuestionPoints(row.GetPoints()),
-		BettingEnabled:       row.GetBettingEnabled(),
-		BettingMinPercentage: convertBettingPercentage(row.GetBettingMinPercentage()),
-		BettingMaxPercentage: convertBettingPercentage(row.GetBettingMaxPercentage()),
-		BettingMinAbsolute:   convertBettingAbsolute(row.GetBettingMinAbsolute()),
-		BettingMaxAbsolute:   convertBettingAbsolute(row.GetBettingMaxAbsolute()),
-		MinValue:             minValue,
-		MaxValue:             maxValue,
-		StepValue:            stepValue,
+		ID:                       row.GetID(),
+		QuizID:                   row.GetQuizID(),
+		QuestionText:             row.GetQuestionText(),
+		QuestionOrder:            int(row.GetQuestionOrder()),
+		TimeoutSeconds:           convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
+		Points:                   convertQuestionPoints(row.GetPoints()),
+		BettingEnabled:           row.GetBettingEnabled(),
+		BettingMinPercentage:     convertBettingPercentage(row.GetBettingMinPercentage()),
+		BettingMaxPercentage:     convertBettingPercentage(row.GetBettingMaxPercentage()),
+		BettingMinAbsolute:       convertBettingAbsolute(row.GetBettingMinAbsolute()),
+		BettingMaxAbsolute:       convertBettingAbsolute(row.GetBettingMaxAbsolute()),
+		BettingMultiplierCorrect: convertBettingPercentage(row.GetBettingMultiplierCorrect()),
+		BettingMultiplierWrong:   convertBettingPercentage(row.GetBettingMultiplierWrong()),
+		MinValue:                 minValue,
+		MaxValue:                 maxValue,
+		StepValue:                stepValue,
 	}
 }
 
 func convertToJsonQuestion(row quizQuestionRow) *model.JSONQuestion {
 	return &model.JSONQuestion{
-		ID:                   row.GetID(),
-		QuizID:               row.GetQuizID(),
-		QuestionText:         row.GetQuestionText(),
-		QuestionOrder:        int(row.GetQuestionOrder()),
-		TimeoutSeconds:       convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
-		Points:               convertQuestionPoints(row.GetPoints()),
-		BettingEnabled:       row.GetBettingEnabled(),
-		BettingMinPercentage: convertBettingPercentage(row.GetBettingMinPercentage()),
-		BettingMaxPercentage: convertBettingPercentage(row.GetBettingMaxPercentage()),
-		BettingMinAbsolute:   convertBettingAbsolute(row.GetBettingMinAbsolute()),
-		BettingMaxAbsolute:   convertBettingAbsolute(row.GetBettingMaxAbsolute()),
+		ID:                       row.GetID(),
+		QuizID:                   row.GetQuizID(),
+		QuestionText:             row.GetQuestionText(),
+		QuestionOrder:            int(row.GetQuestionOrder()),
+		TimeoutSeconds:           convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
+		Points:                   convertQuestionPoints(row.GetPoints()),
+		BettingEnabled:           row.GetBettingEnabled(),
+		BettingMinPercentage:     convertBettingPercentage(row.GetBettingMinPercentage()),
+		BettingMaxPercentage:     convertBettingPercentage(row.GetBettingMaxPercentage()),
+		BettingMinAbsolute:       convertBettingAbsolute(row.GetBettingMinAbsolute()),
+		BettingMaxAbsolute:       convertBettingAbsolute(row.GetBettingMaxAbsolute()),
+		BettingMultiplierCorrect: convertBettingPercentage(row.GetBettingMultiplierCorrect()),
+		BettingMultiplierWrong:   convertBettingPercentage(row.GetBettingMultiplierWrong()),
 	}
 }
 
 func convertToOrderingQuestion(row quizQuestionRow) *model.OrderingQuestion {
 	return &model.OrderingQuestion{
-		ID:                   row.GetID(),
-		QuizID:               row.GetQuizID(),
-		QuestionText:         row.GetQuestionText(),
-		QuestionOrder:        int(row.GetQuestionOrder()),
-		TimeoutSeconds:       convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
-		Points:               convertQuestionPoints(row.GetPoints()),
-		BettingEnabled:       row.GetBettingEnabled(),
-		BettingMinPercentage: convertBettingPercentage(row.GetBettingMinPercentage()),
-		BettingMaxPercentage: convertBettingPercentage(row.GetBettingMaxPercentage()),
-		BettingMinAbsolute:   convertBettingAbsolute(row.GetBettingMinAbsolute()),
-		BettingMaxAbsolute:   convertBettingAbsolute(row.GetBettingMaxAbsolute()),
+		ID:                       row.GetID(),
+		QuizID:                   row.GetQuizID(),
+		QuestionText:             row.GetQuestionText(),
+		QuestionOrder:            int(row.GetQuestionOrder()),
+		TimeoutSeconds:           convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
+		Points:                   convertQuestionPoints(row.GetPoints()),
+		BettingEnabled:           row.GetBettingEnabled(),
+		BettingMinPercentage:     convertBettingPercentage(row.GetBettingMinPercentage()),
+		BettingMaxPercentage:     convertBettingPercentage(row.GetBettingMaxPercentage()),
+		BettingMinAbsolute:       convertBettingAbsolute(row.GetBettingMinAbsolute()),
+		BettingMaxAbsolute:       convertBettingAbsolute(row.GetBettingMaxAbsolute()),
+		BettingMultiplierCorrect: convertBettingPercentage(row.GetBettingMultiplierCorrect()),
+		BettingMultiplierWrong:   convertBettingPercentage(row.GetBettingMultiplierWrong()),
 	}
 }
 
