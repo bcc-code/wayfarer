@@ -541,7 +541,7 @@ func TestQuizBetting(t *testing.T) {
 		})
 
 		require.True(t, resp.HasErrors())
-		assert.Contains(t, resp.ErrorMessage(), "exceeds current score")
+		assert.Contains(t, resp.ErrorMessage(), "exceeds available points")
 	})
 
 	t.Run("bet rejected when below minimum absolute", func(t *testing.T) {

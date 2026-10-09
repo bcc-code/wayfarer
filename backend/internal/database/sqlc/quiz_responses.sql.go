@@ -509,6 +509,102 @@ func (q *Queries) GetUnsettledSessionBets(ctx context.Context, arg GetUnsettledS
 	return items, nil
 }
 
+const GetUserAvailableBetPoints = `-- name: GetUserAvailableBetPoints :one
+SELECT (
+    COALESCE((
+        SELECT SUM(sj.points)
+        FROM score_journal sj
+        WHERE sj.user_id = $1::char(28)
+          AND sj.project_id = $2::char(28)
+    ), 0)
+    - COALESCE((
+        SELECT SUM(r.bet_amount)
+        FROM quiz_responses r
+        JOIN quiz_submissions s ON s.id = r.submission_id
+        JOIN quiz_sessions qs ON qs.id = s.session_id
+        JOIN quizzes z ON z.id = s.quiz_id
+        JOIN quiz_questions q ON q.id = r.question_id
+        WHERE s.user_id = $1::char(28)
+          AND z.project_id = $2::char(28)
+          AND r.bet_amount > 0
+          AND r.score_journal_id IS NULL
+          AND r.id IS DISTINCT FROM $3::char(28)
+          AND (
+              qs.state <> 'FINISHED'
+              OR (q.question_type = ANY($4::text[])
+                  AND q.betting_enabled
+                  AND r.is_correct IS NOT NULL)
+          )
+    ), 0)
+)::bigint AS available
+`
+
+type GetUserAvailableBetPointsParams struct {
+	Userid            string   `json:"userid"`
+	Projectid         string   `json:"projectid"`
+	Excluderesponseid *string  `json:"excluderesponseid"`
+	Coresettledtypes  []string `json:"coresettledtypes"`
+}
+
+// The points a user can still bet in a project: their score minus their open
+// stakes. A stake is open until it is paid out; once its session is finished
+// it stays open only if the core will still settle it (same rules as
+// GetUnsettledSessionBets), bets settled elsewhere are released then.
+// Run it after LockUserBettableSubmissions, in the transaction that stores the bet.
+func (q *Queries) GetUserAvailableBetPoints(ctx context.Context, arg GetUserAvailableBetPointsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, GetUserAvailableBetPoints,
+		arg.Userid,
+		arg.Projectid,
+		arg.Excluderesponseid,
+		arg.Coresettledtypes,
+	)
+	var available int64
+	err := row.Scan(&available)
+	return available, err
+}
+
+const LockUserBettableSubmissions = `-- name: LockUserBettableSubmissions :many
+SELECT s.id
+FROM quiz_submissions s
+JOIN quiz_sessions qs ON qs.id = s.session_id
+JOIN quizzes z ON z.id = s.quiz_id
+WHERE s.user_id = $1::char(28)
+  AND z.project_id = $2::char(28)
+  AND qs.state <> 'FINISHED'
+ORDER BY s.id
+FOR UPDATE OF s
+`
+
+type LockUserBettableSubmissionsParams struct {
+	Userid    string `json:"userid"`
+	Projectid string `json:"projectid"`
+}
+
+// Locks every submission of the user in the project that can still receive a
+// bet (session not FINISHED), in id order. Every bet write takes these locks
+// before checking GetUserAvailableBetPoints, so one user's concurrent bets
+// (other questions, other sessions) run one after another while different
+// users never wait for each other. The fixed order prevents deadlocks.
+func (q *Queries) LockUserBettableSubmissions(ctx context.Context, arg LockUserBettableSubmissionsParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, LockUserBettableSubmissions, arg.Userid, arg.Projectid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const SettleBetResult = `-- name: SettleBetResult :execrows
 UPDATE quiz_responses
 SET points_earned = $1::int,

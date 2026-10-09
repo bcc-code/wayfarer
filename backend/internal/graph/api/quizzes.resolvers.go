@@ -857,7 +857,10 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 	questionType := quizQuestionTypeString(question)
 	span.SetAttributes(attribute.String("question.type", questionType))
 
-	// Validate bet - always validate when betting is enabled to enforce required bets
+	// Validate bet - always validate when betting is enabled to enforce required
+	// bets. The check runs in the transaction that stores the answer, against
+	// the points the user has left after their open bets.
+	var checkBet *betCheck
 	if question.GetBettingEnabled() || (input.BetAmount != nil && *input.BetAmount > 0) {
 		// Load quiz to get project ID for score lookup
 		quizThunk := r.Loaders.QuizByIDLoader.Load(ctx, submission.QuizID)
@@ -883,10 +886,7 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 			BettingMaxAbsolute:   questionRow.BettingMaxAbsolute,
 		}
 
-		if err := ValidateBet(ctx, r.DB.Queries, userID, quiz.ProjectID, betConfig, input.BetAmount); err != nil {
-			otel.RecordError(span, err)
-			return nil, fmt.Errorf("invalid bet: %w", err)
-		}
+		checkBet = newBetCheck(userID, quiz.ProjectID, nil, betConfig, input.BetAmount)
 	}
 
 	// Build response params
@@ -956,7 +956,7 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 
 	// Create the response under the submission lock (returns the existing
 	// response if the question was already answered)
-	response, err := r.createQuizResponseLocked(ctx, userID, params)
+	response, err := r.createQuizResponseLocked(ctx, userID, params, checkBet)
 	if err != nil {
 		otel.RecordError(span, err)
 		return nil, err
@@ -1026,7 +1026,9 @@ func (r *mutationResolver) UpdateQuizAnswer(ctx context.Context, responseID stri
 		ID: responseID,
 	}
 
-	// Handle betAmount update if provided
+	// Handle betAmount update if provided; validated in the transaction that
+	// stores it, against the points left after the user's other open bets
+	var checkBet *betCheck
 	if input.BetAmount != nil {
 		// Load quiz to get project ID for score lookup
 		quizThunk := r.Loaders.QuizByIDLoader.Load(ctx, submission.QuizID)
@@ -1044,9 +1046,7 @@ func (r *mutationResolver) UpdateQuizAnswer(ctx context.Context, responseID stri
 			BettingMaxAbsolute:   question.BettingMaxAbsolute,
 		}
 
-		if err := ValidateBet(ctx, r.DB.Queries, userID, quiz.ProjectID, betConfig, input.BetAmount); err != nil {
-			return nil, err
-		}
+		checkBet = newBetCheck(userID, quiz.ProjectID, &responseID, betConfig, input.BetAmount)
 		betAmount := int32(*input.BetAmount)
 		params.Betamount = &betAmount
 	}
@@ -1078,7 +1078,7 @@ func (r *mutationResolver) UpdateQuizAnswer(ctx context.Context, responseID stri
 	}
 
 	// Update the response under the submission lock
-	updatedResponse, err := r.updateQuizResponseLocked(ctx, submission.ID, params)
+	updatedResponse, err := r.updateQuizResponseLocked(ctx, submission.ID, params, checkBet)
 	if err != nil {
 		otel.RecordError(span, err)
 		return nil, err

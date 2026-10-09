@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"sync"
 	"testing"
 	"time"
 
@@ -514,6 +515,112 @@ func TestQuizBettingEdgeCases(t *testing.T) {
 		assert.GreaterOrEqual(t, score(t, p.id), 0, "betting never makes the score negative")
 	})
 
+	// submitConcurrently sends all answers at once and returns the error
+	// message per answer ("" when accepted)
+	submitConcurrently := func(t *testing.T, p player, answers []struct {
+		submissionID string
+		input        map[string]any
+	}) []string {
+		t.Helper()
+		msgs := make([]string, len(answers))
+		var wg sync.WaitGroup
+		startGate := make(chan struct{})
+		for i, a := range answers {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				<-startGate
+				resp, err := client.WithAuth(p.token).Execute(ctx, `mutation($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
+					submitQuizAnswer(submissionId: $submissionId, input: $input) { id }
+				}`, map[string]any{"submissionId": a.submissionID, "input": a.input})
+				switch {
+				case err != nil:
+					msgs[i] = err.Error()
+				case resp.HasErrors():
+					msgs[i] = resp.ErrorMessage()
+				}
+			}()
+		}
+		close(startGate)
+		wg.Wait()
+		return msgs
+	}
+	type answer = struct {
+		submissionID string
+		input        map[string]any
+	}
+	assertOnlyBetRejections := func(t *testing.T, msgs []string) (accepted int) {
+		t.Helper()
+		for _, msg := range msgs {
+			if msg == "" {
+				accepted++
+				continue
+			}
+			assert.Contains(t, msg, "exceeds available points", "rejected for the points, not a conflict or DB error")
+		}
+		return accepted
+	}
+
+	t.Run("R1: concurrent bets in two sessions cannot both spend the same points", func(t *testing.T) {
+		p := newPlayer(t)
+		setScore(t, p.id, 100)
+		quizA := newQuiz(t, "Concurrent sessions A", nil)
+		qa := addPredefined(t, quizA, 0, nil)
+		quizB := newQuiz(t, "Concurrent sessions B", nil)
+		qb := addPredefined(t, quizB, 0, nil)
+		sessionA := openSession(t, quizA, p)
+		sessionB := openSession(t, quizB, p)
+		subA := start(t, p, sessionA)
+		subB := start(t, p, sessionB)
+
+		msgs := submitConcurrently(t, p, []answer{
+			{subA, pick(qa, false, 100)},
+			{subB, pick(qb, false, 100)},
+		})
+		assert.Equal(t, 1, assertOnlyBetRejections(t, msgs), "exactly one 100 bet fits in 100 points")
+
+		lockAndFinish(t, sessionA)
+		lockAndFinish(t, sessionB)
+		assert.Equal(t, 0, score(t, p.id), "betting never makes the score negative")
+	})
+
+	t.Run("R1: concurrent bets on several questions stay within the score", func(t *testing.T) {
+		p := newPlayer(t)
+		setScore(t, p.id, 100)
+		quizID := newQuiz(t, "Concurrent questions", nil)
+		var answers []answer
+		sessionID := openSession(t, quizID, p)
+		questions := make([]predefined, 5)
+		for i := range questions {
+			questions[i] = addPredefined(t, quizID, i, nil)
+		}
+		sub := start(t, p, sessionID)
+		for _, q := range questions {
+			answers = append(answers, answer{sub, pick(q, false, 30)})
+		}
+
+		msgs := submitConcurrently(t, p, answers)
+		assert.Equal(t, 3, assertOnlyBetRejections(t, msgs), "three 30 bets fit in 100 points, a fourth does not")
+
+		lockAndFinish(t, sessionID)
+		assert.Equal(t, 10, score(t, p.id))
+	})
+
+	t.Run("R1: an open stake in an unfinished session limits bets elsewhere", func(t *testing.T) {
+		p := newPlayer(t)
+		setScore(t, p.id, 100)
+		quizID := newQuiz(t, "Open stake elsewhere", nil)
+		q := addPredefined(t, quizID, 0, nil)
+		sessionA := openSession(t, quizID, p)
+		submit(t, p, start(t, p, sessionA), pick(q, true, 70))
+		lock(t, sessionA) // locked is still open: not paid out yet
+
+		subB := start(t, p, openSession(t, quizID, p))
+		_, msg := trySubmit(t, p, subB, pick(q, true, 31))
+		assert.Contains(t, msg, "exceeds available points (30)")
+		submit(t, p, subB, pick(q, true, 30))
+	})
+
 	t.Run("R1: a stake is released when its session finishes", func(t *testing.T) {
 		p := newPlayer(t)
 		setScore(t, p.id, 100)
@@ -572,7 +679,7 @@ func TestQuizBettingEdgeCases(t *testing.T) {
 		sub := start(t, p, openSession(t, quizID, p))
 
 		_, msg := trySubmit(t, p, sub, pick(q, true, 51))
-		assert.Contains(t, msg, "exceeds current score (50)")
+		assert.Contains(t, msg, "exceeds available points (50)")
 		// The rejected attempt stores nothing, so the question can still be answered
 		r := submit(t, p, sub, pick(q, true, 50))
 		assert.Equal(t, int32(50), *response(t, r).BetAmount)
@@ -615,7 +722,7 @@ func TestQuizBettingEdgeCases(t *testing.T) {
 
 		sub2 := start(t, p, openSession(t, quizID, p))
 		_, msg := trySubmit(t, p, sub2, pick(q, true, 201))
-		assert.Contains(t, msg, "exceeds current score (200)")
+		assert.Contains(t, msg, "exceeds available points (200)")
 		submit(t, p, sub2, pick(q, true, 200))
 	})
 
@@ -632,7 +739,7 @@ func TestQuizBettingEdgeCases(t *testing.T) {
 
 		sub2 := start(t, p, openSession(t, quizID, p))
 		_, msg := trySubmit(t, p, sub2, pick(q, true, 31))
-		assert.Contains(t, msg, "exceeds current score (30)")
+		assert.Contains(t, msg, "exceeds available points (30)")
 	})
 
 	t.Run("reopened session: bets from before and after reopening are settled once", func(t *testing.T) {
@@ -960,7 +1067,7 @@ func TestQuizBettingEdgeCases(t *testing.T) {
 		assert.Empty(t, update(map[string]any{"submittedOrder": reversed, "betAmount": 100}))
 		assert.Equal(t, int32(100), *response(t, r).BetAmount)
 		assert.False(t, *response(t, r).IsCorrect)
-		assert.Contains(t, update(map[string]any{"submittedOrder": items, "betAmount": 101}), "exceeds current score (100)")
+		assert.Contains(t, update(map[string]any{"submittedOrder": items, "betAmount": 101}), "exceeds available points (100)")
 
 		lock(t, sessionID)
 		assert.Contains(t, update(map[string]any{"submittedOrder": items, "betAmount": 10}), "quiz session is LOCKED")
