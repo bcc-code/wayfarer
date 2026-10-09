@@ -98,9 +98,9 @@ export function summarizeLeaderboardFilter(view: FilterView): string[] {
   if (!view) return []
 
   const parts: string[] = []
-  if (view.myChurch) parts.push('Min menighet')
-  if (view.myTeam) parts.push('Mitt lag')
-  if (view.mySuperTeam) parts.push('Mitt superlag')
+  if (view.myChurch) parts.push('Deltakerens menighet')
+  if (view.myTeam) parts.push('Deltakerens lag')
+  if (view.mySuperTeam) parts.push('Deltakerens superlag')
 
   if (view.ageRange)
     parts.push(
