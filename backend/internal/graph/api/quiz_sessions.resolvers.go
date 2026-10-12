@@ -578,7 +578,7 @@ func (r *mutationResolver) GrantQuizSessionAccessAsync(ctx context.Context, inpu
 	// Build params
 	params := buildGrantQuizSessionAccessParams(input, grantCtx.ProjectID, grantCtx.UserID)
 
-	return r.BulkService.CreateBulkJobAndPublish(ctx, grantCtx.UserID, &grantCtx.ProjectID, totalCount, params)
+	return r.BulkService.CreateAndRunBulkJob(ctx, grantCtx.UserID, &grantCtx.ProjectID, totalCount, params)
 }
 
 // RevokeQuizSessionAccess is the resolver for the revokeQuizSessionAccess field.

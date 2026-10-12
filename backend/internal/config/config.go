@@ -28,7 +28,7 @@ type Config struct {
 	Plugin   PluginConfig
 	Firebase FirebaseConfig
 	Resend   ResendConfig
-	PubSub   PubSubConfig
+	Jobs     JobsConfig
 	Settings SettingsConfig
 }
 
@@ -217,11 +217,12 @@ type ResendConfig struct {
 	SSFTicketEmail string // Email address for SSF ticket forwarding
 }
 
-// PubSubConfig holds GCP Pub/Sub configuration for async bulk operations
-type PubSubConfig struct {
-	Enabled   bool   // Enable/disable Pub/Sub integration
-	ProjectID string // GCP project ID
-	TopicID   string // Pub/Sub topic ID for bulk operations
+// JobsConfig controls how bulk jobs are executed
+type JobsConfig struct {
+	// Sync runs bulk jobs inside the request that created them instead of in a
+	// background goroutine. Defaults to true on Cloud Run (K_SERVICE is set),
+	// which throttles CPU once a response has been sent.
+	Sync bool
 }
 
 // SettingsConfig controls how much authority the `settings` table has over the
@@ -357,10 +358,8 @@ func Load() (*Config, error) {
 			AdminBaseURL:   getEnv("ADMIN_BASE_URL", ""),
 			SSFTicketEmail: getEnv("SSF_TICKET_EMAIL", ""),
 		},
-		PubSub: PubSubConfig{
-			Enabled:   getEnvAsBool("PUBSUB_ENABLED", false),
-			ProjectID: getEnv("PUBSUB_PROJECT_ID", ""),
-			TopicID:   getEnv("PUBSUB_TOPIC_ID", "wayfarer-bulk-operations"),
+		Jobs: JobsConfig{
+			Sync: getEnvAsBool("BULK_JOBS_SYNC", os.Getenv("K_SERVICE") != ""),
 		},
 	}
 

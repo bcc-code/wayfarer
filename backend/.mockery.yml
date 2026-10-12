@@ -23,6 +23,10 @@ packages:
       ProjectIDProvider:
       AuthSessionQuerier:
       SettingsQuerier:
+  github.com/bcc-media/wayfarer/internal/services/bulk:
+    interfaces:
+      JobQuerier:
+      OperationHandler:
   github.com/bcc-media/wayfarer/internal/services/push:
     interfaces:
       Querier:

@@ -6,10 +6,9 @@ import (
 	"time"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
-	"github.com/bcc-media/wayfarer/internal/pubsub"
 )
 
-// Processor implements pubsub.BulkOperationProcessor
+// Processor implements OperationHandler
 type Processor struct {
 	service *Service
 }
@@ -20,7 +19,7 @@ func NewProcessor(service *Service) *Processor {
 }
 
 // ProcessBulkEnrollChallenge processes bulk challenge enrollment
-func (p *Processor) ProcessBulkEnrollChallenge(ctx context.Context, jobID string, params pubsub.BulkEnrollChallengeParams) error {
+func (p *Processor) ProcessBulkEnrollChallenge(ctx context.Context, jobID string, params BulkEnrollChallengeParams) error {
 	successCount, failureCount, err := p.service.EnrollUsersInChallenge(ctx, params.ChallengeID, params.UserIDs, true)
 	if err != nil {
 		return err
@@ -37,7 +36,7 @@ func (p *Processor) ProcessBulkEnrollChallenge(ctx context.Context, jobID string
 }
 
 // ProcessBulkUnenrollChallenge processes bulk challenge unenrollment
-func (p *Processor) ProcessBulkUnenrollChallenge(ctx context.Context, jobID string, params pubsub.BulkUnenrollChallengeParams) error {
+func (p *Processor) ProcessBulkUnenrollChallenge(ctx context.Context, jobID string, params BulkUnenrollChallengeParams) error {
 	successCount, failureCount, err := p.service.UnenrollUsersFromChallenge(ctx, params.ChallengeID, params.UserIDs)
 	if err != nil {
 		return err
@@ -54,7 +53,7 @@ func (p *Processor) ProcessBulkUnenrollChallenge(ctx context.Context, jobID stri
 }
 
 // ProcessBulkCompleteChallenge processes bulk challenge completion
-func (p *Processor) ProcessBulkCompleteChallenge(ctx context.Context, jobID string, params pubsub.BulkCompleteChallengeParams) error {
+func (p *Processor) ProcessBulkCompleteChallenge(ctx context.Context, jobID string, params BulkCompleteChallengeParams) error {
 	var completedAt *time.Time
 	if params.CompletedAt != "" {
 		t, err := time.Parse(time.RFC3339, params.CompletedAt)
@@ -80,7 +79,7 @@ func (p *Processor) ProcessBulkCompleteChallenge(ctx context.Context, jobID stri
 }
 
 // ProcessBulkPublishChallenge processes bulk challenge publishing
-func (p *Processor) ProcessBulkPublishChallenge(ctx context.Context, jobID string, params pubsub.BulkPublishChallengeParams) error {
+func (p *Processor) ProcessBulkPublishChallenge(ctx context.Context, jobID string, params BulkPublishChallengeParams) error {
 	publishedAt, err := time.Parse(time.RFC3339, params.PublishedAt)
 	if err != nil {
 		return fmt.Errorf("invalid published_at timestamp: %w", err)
@@ -102,7 +101,7 @@ func (p *Processor) ProcessBulkPublishChallenge(ctx context.Context, jobID strin
 }
 
 // ProcessBulkAwardAchievement processes bulk achievement awarding
-func (p *Processor) ProcessBulkAwardAchievement(ctx context.Context, jobID string, params pubsub.BulkAwardAchievementParams) error {
+func (p *Processor) ProcessBulkAwardAchievement(ctx context.Context, jobID string, params BulkAwardAchievementParams) error {
 	// If teamId is specified, resolve to user IDs
 	userIDs := params.UserIDs
 	if params.TeamID != "" {
@@ -129,7 +128,7 @@ func (p *Processor) ProcessBulkAwardAchievement(ctx context.Context, jobID strin
 }
 
 // ProcessBulkGrantQuizSessionAccess processes bulk quiz session access granting
-func (p *Processor) ProcessBulkGrantQuizSessionAccess(ctx context.Context, jobID string, params pubsub.BulkGrantQuizSessionAccessParams) error {
+func (p *Processor) ProcessBulkGrantQuizSessionAccess(ctx context.Context, jobID string, params BulkGrantQuizSessionAccessParams) error {
 	successCount, failureCount, err := p.service.GrantQuizSessionAccess(ctx, params)
 	if err != nil {
 		return err
@@ -146,7 +145,7 @@ func (p *Processor) ProcessBulkGrantQuizSessionAccess(ctx context.Context, jobID
 }
 
 // ProcessBulkScoreAdjustment processes bulk score adjustment
-func (p *Processor) ProcessBulkScoreAdjustment(ctx context.Context, jobID string, params pubsub.BulkScoreAdjustmentParams) error {
+func (p *Processor) ProcessBulkScoreAdjustment(ctx context.Context, jobID string, params BulkScoreAdjustmentParams) error {
 	successCount, failureCount, err := p.service.CreateBulkScoreAdjustments(ctx, params)
 	if err != nil {
 		return err
@@ -163,7 +162,7 @@ func (p *Processor) ProcessBulkScoreAdjustment(ctx context.Context, jobID string
 }
 
 // ProcessFixMissingContentProgress processes missing content progress events
-func (p *Processor) ProcessFixMissingContentProgress(ctx context.Context, jobID string, params pubsub.FixMissingContentProgressParams) error {
+func (p *Processor) ProcessFixMissingContentProgress(ctx context.Context, jobID string, params FixMissingContentProgressParams) error {
 	successCount, failureCount, err := p.service.FixMissingContentProgress(ctx, params)
 	if err != nil {
 		return err
@@ -180,7 +179,7 @@ func (p *Processor) ProcessFixMissingContentProgress(ctx context.Context, jobID 
 }
 
 // ProcessFixMissingStreakProgress processes missing streak progress events
-func (p *Processor) ProcessFixMissingStreakProgress(ctx context.Context, jobID string, params pubsub.FixMissingStreakProgressParams) error {
+func (p *Processor) ProcessFixMissingStreakProgress(ctx context.Context, jobID string, params FixMissingStreakProgressParams) error {
 	successCount, failureCount, err := p.service.FixMissingStreakProgress(ctx, params)
 	if err != nil {
 		return err

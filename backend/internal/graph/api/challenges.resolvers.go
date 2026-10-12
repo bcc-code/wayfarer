@@ -15,7 +15,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
-	"github.com/bcc-media/wayfarer/internal/pubsub"
+	"github.com/bcc-media/wayfarer/internal/services/bulk"
 	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -1046,13 +1046,13 @@ func (r *mutationResolver) BulkEnrollUsersInChallengeAsync(ctx context.Context, 
 	}
 	projectID := getChallengeProjectID(challenge)
 
-	// Create job and publish to Pub/Sub
-	return r.BulkService.CreateBulkJobAndPublish(
+	// Create and run the bulk job
+	return r.BulkService.CreateAndRunBulkJob(
 		ctx,
 		userID,
 		&projectID,
 		len(userIDs),
-		pubsub.BulkEnrollChallengeParams{
+		bulk.BulkEnrollChallengeParams{
 			ChallengeID: challengeID,
 			UserIDs:     userIDs,
 		},
@@ -1084,13 +1084,13 @@ func (r *mutationResolver) BulkUnenrollUsersFromChallengeAsync(ctx context.Conte
 	}
 	projectID := getChallengeProjectID(challenge)
 
-	// Create job and publish to Pub/Sub
-	return r.BulkService.CreateBulkJobAndPublish(
+	// Create and run the bulk job
+	return r.BulkService.CreateAndRunBulkJob(
 		ctx,
 		userID,
 		&projectID,
 		len(userIDs),
-		pubsub.BulkUnenrollChallengeParams{
+		bulk.BulkUnenrollChallengeParams{
 			ChallengeID: challengeID,
 			UserIDs:     userIDs,
 		},
@@ -1122,8 +1122,8 @@ func (r *mutationResolver) BulkCompleteChallengesAsync(ctx context.Context, targ
 	}
 	projectID := getChallengeProjectID(challenge)
 
-	// Create job and publish to Pub/Sub
-	params := pubsub.BulkCompleteChallengeParams{
+	// Create and run the bulk job
+	params := bulk.BulkCompleteChallengeParams{
 		ChallengeID: challengeID,
 		UserIDs:     userIDs,
 	}
@@ -1131,7 +1131,7 @@ func (r *mutationResolver) BulkCompleteChallengesAsync(ctx context.Context, targ
 		params.CompletedAt = completedAt.Time.Format(time.RFC3339)
 	}
 
-	return r.BulkService.CreateBulkJobAndPublish(
+	return r.BulkService.CreateAndRunBulkJob(
 		ctx,
 		userID,
 		&projectID,
@@ -1172,13 +1172,13 @@ func (r *mutationResolver) BulkPublishChallengesAsync(ctx context.Context, ids [
 		}
 	}
 
-	// Create job and publish to Pub/Sub
-	return r.BulkService.CreateBulkJobAndPublish(
+	// Create and run the bulk job
+	return r.BulkService.CreateAndRunBulkJob(
 		ctx,
 		userID,
 		&projectID,
 		len(ids),
-		pubsub.BulkPublishChallengeParams{
+		bulk.BulkPublishChallengeParams{
 			ChallengeIDs: ids,
 			PublishedAt:  publishedAt.Time.Format(time.RFC3339),
 		},

@@ -212,14 +212,14 @@ func SetupTestServer(ctx context.Context, dbMgr *TestDBManager) (*gin.Engine, fu
 		Loaders: dataLoaders,
 	}
 
-	// Create bulk service (without pub/sub for testing - sync processing only)
+	// Create bulk service (jobs run synchronously in tests)
 	bulkService := bulk.NewService(
 		dbMgr.DB,
 		testCache,
 		dataLoaders,
-		nil, // PushService
-		nil, // FirebaseService
-		nil, // Publisher
+		nil,  // PushService
+		nil,  // FirebaseService
+		true, // syncJobs
 		logger,
 		contentAchievementService,
 	)
@@ -278,14 +278,14 @@ func SetupTestServerWithCache(ctx context.Context, dbMgr *TestDBManager) (*gin.E
 		Loaders: dataLoaders,
 	}
 
-	// Create bulk service (without pub/sub for testing - sync processing only)
+	// Create bulk service (jobs run synchronously in tests)
 	bulkService := bulk.NewService(
 		dbMgr.DB,
 		testCache,
 		dataLoaders,
-		nil, // PushService
-		nil, // FirebaseService
-		nil, // Publisher
+		nil,  // PushService
+		nil,  // FirebaseService
+		true, // syncJobs
 		logger,
 		contentAchievementService,
 	)
