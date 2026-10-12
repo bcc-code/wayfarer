@@ -354,7 +354,8 @@
         "couldNotLockBetting": "Kunne ikke låse tipping",
         "couldNotReopenBetting": "Kunne ikke gjenåpne tipping",
         "couldNotFinishBetting": "Kunne ikke avslutte tipping",
-        "couldNotSendUnitLeaderAccess": "Kunne ikke sende kode til unitledere"
+        "couldNotSendUnitLeaderAccess": "Kunne ikke sende kode til unitledere",
+        "couldNotGrantBettingAccess": "Kunne ikke gi brukerne tilgang til betting"
       }
     },
     "statistics": {

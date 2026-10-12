@@ -350,7 +350,8 @@
         "couldNotLockBetting": "Nie można zablokować obstawiania",
         "couldNotReopenBetting": "Nie można ponownie otworzyć obstawiania",
         "couldNotFinishBetting": "Nie można zakończyć obstawiania",
-        "couldNotSendUnitLeaderAccess": "Nie można było wysłać kodu do liderów unitów"
+        "couldNotSendUnitLeaderAccess": "Nie można było wysłać kodu do liderów unitów",
+        "couldNotGrantBettingAccess": "Nie można było przyznać użytkownikom dostępu do obstawiania"
       }
     },
     "statistics": {
