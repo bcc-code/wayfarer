@@ -160,3 +160,27 @@ func TestJWTConfig_IsRevoked(t *testing.T) {
 
 	assert.False(t, JWTConfig{}.IsRevoked("USANY", time.Now()), "nil map")
 }
+
+func TestJobsSyncDefault(t *testing.T) {
+	tests := []struct {
+		name        string
+		kService    string
+		cloudRunJob string
+		override    string
+		want        bool
+	}{
+		{name: "not on cloud run", want: false},
+		{name: "cloud run service", kService: "wayfarer", want: true},
+		{name: "cloud run job", cloudRunJob: "wayfarer-jobs", want: true},
+		{name: "override off on cloud run", kService: "wayfarer", override: "false", want: false},
+		{name: "override on off cloud run", override: "true", want: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("K_SERVICE", tt.kService)
+			t.Setenv("CLOUD_RUN_JOB", tt.cloudRunJob)
+			t.Setenv("BULK_JOBS_SYNC", tt.override)
+			assert.Equal(t, tt.want, getEnvAsBool("BULK_JOBS_SYNC", isCloudRun()))
+		})
+	}
+}

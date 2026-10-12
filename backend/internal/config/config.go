@@ -220,8 +220,9 @@ type ResendConfig struct {
 // JobsConfig controls how bulk jobs are executed
 type JobsConfig struct {
 	// Sync runs bulk jobs inside the request that created them instead of in a
-	// background goroutine. Defaults to true on Cloud Run (K_SERVICE is set),
-	// which throttles CPU once a response has been sent.
+	// background goroutine. Defaults to true on Cloud Run: services (K_SERVICE)
+	// throttle CPU once a response has been sent, and jobs (CLOUD_RUN_JOB) kill
+	// leftover goroutines when the process exits.
 	Sync bool
 }
 
@@ -359,7 +360,7 @@ func Load() (*Config, error) {
 			SSFTicketEmail: getEnv("SSF_TICKET_EMAIL", ""),
 		},
 		Jobs: JobsConfig{
-			Sync: getEnvAsBool("BULK_JOBS_SYNC", os.Getenv("K_SERVICE") != ""),
+			Sync: getEnvAsBool("BULK_JOBS_SYNC", isCloudRun()),
 		},
 	}
 
@@ -413,6 +414,12 @@ func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration {
 		return defaultValue
 	}
 	return value
+}
+
+// isCloudRun reports whether we're running on Cloud Run, either as a service
+// (K_SERVICE) or as a job (CLOUD_RUN_JOB).
+func isCloudRun() bool {
+	return os.Getenv("K_SERVICE") != "" || os.Getenv("CLOUD_RUN_JOB") != ""
 }
 
 func getEnvAsBool(key string, defaultValue bool) bool {

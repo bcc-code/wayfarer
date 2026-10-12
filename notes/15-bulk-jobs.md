@@ -30,9 +30,10 @@ Controlled by `BULK_JOBS_SYNC` (config `Jobs.Sync`):
   detached from request cancellation (`context.WithoutCancel`); the mutation returns
   the PENDING job immediately. Poll `bulkJob(id)` for status. On shutdown the
   server waits up to 30s for in-flight jobs.
-- **Default on Cloud Run** (`K_SERVICE` is set) — sync. Cloud Run throttles CPU
-  once the response is sent, so the job runs inside the request and the mutation
-  returns the job with its final status.
+- **Default on Cloud Run** (`K_SERVICE` or `CLOUD_RUN_JOB` is set) — sync. Cloud
+  Run services throttle CPU once the response is sent, and Cloud Run jobs kill
+  leftover goroutines when the process exits, so the job runs inside the request
+  and the mutation returns the job with its final status.
 
 ## Caveats
 
