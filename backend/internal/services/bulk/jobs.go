@@ -1,6 +1,7 @@
-package pubsub
+package bulk
 
-import "encoding/json"
+// BatchSize is the number of users to process in a single batch
+const BatchSize = 100
 
 // OperationType represents the type of bulk operation
 type OperationType string
@@ -25,15 +26,6 @@ const (
 	OperationFixMissingContentProgress OperationType = "FIX_MISSING_CONTENT_PROGRESS"
 	OperationFixMissingStreakProgress  OperationType = "FIX_MISSING_STREAK_PROGRESS"
 )
-
-// BulkOperationMessage is the message published to Pub/Sub for async processing
-type BulkOperationMessage struct {
-	JobID         string          `json:"job_id"`
-	OperationType OperationType   `json:"operation_type"`
-	CreatedBy     string          `json:"created_by"`
-	ProjectID     string          `json:"project_id,omitempty"`
-	Params        json.RawMessage `json:"params"`
-}
 
 // BulkOperationParams is implemented by all typed bulk operation parameter structs.
 // Each implementation returns its corresponding operation type.
@@ -155,14 +147,3 @@ const (
 	JobStatusCompleted  JobStatus = "COMPLETED"
 	JobStatusFailed     JobStatus = "FAILED"
 )
-
-// PubSubPushMessage represents the structure of a GCP Pub/Sub push delivery message
-type PubSubPushMessage struct {
-	Message struct {
-		Attributes  map[string]string `json:"attributes"`
-		Data        string            `json:"data"` // Base64 encoded
-		MessageID   string            `json:"messageId"`
-		PublishTime string            `json:"publishTime"`
-	} `json:"message"`
-	Subscription string `json:"subscription"`
-}

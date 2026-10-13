@@ -17,8 +17,8 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/middleware"
-	"github.com/bcc-media/wayfarer/internal/pubsub"
 	"github.com/bcc-media/wayfarer/internal/services"
+	"github.com/bcc-media/wayfarer/internal/services/bulk"
 	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -1783,8 +1783,8 @@ func (r *mutationResolver) BulkAwardAchievementsAsync(ctx context.Context, userI
 		return nil, err
 	}
 
-	// Create job and publish to Pub/Sub
-	params := pubsub.BulkAwardAchievementParams{
+	// Create and run the bulk job
+	params := bulk.BulkAwardAchievementParams{
 		AchievementID: achievementID,
 		UserIDs:       target.UserIDs,
 	}
@@ -1792,7 +1792,7 @@ func (r *mutationResolver) BulkAwardAchievementsAsync(ctx context.Context, userI
 		params.TeamID = *teamID
 	}
 
-	return r.BulkService.CreateBulkJobAndPublish(
+	return r.BulkService.CreateAndRunBulkJob(
 		ctx,
 		currentUserID,
 		&target.ProjectID,

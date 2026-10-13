@@ -350,7 +350,8 @@
         "couldNotLockBetting": "Nem sikerült lezárni a fogadást",
         "couldNotReopenBetting": "Nem sikerült újra megnyitni a fogadást",
         "couldNotFinishBetting": "Nem sikerült a fogadást befejezni",
-        "couldNotSendUnitLeaderAccess": "Nem sikerült elküldeni a kódot a unitvezetőknek"
+        "couldNotSendUnitLeaderAccess": "Nem sikerült elküldeni a kódot a unitvezetőknek",
+        "couldNotGrantBettingAccess": "Nem sikerült hozzáférést adni a felhasználóknak a fogadáshoz"
       }
     },
     "statistics": {

@@ -38,7 +38,6 @@ import (
 	"github.com/bcc-media/wayfarer/internal/otel"
 	"github.com/bcc-media/wayfarer/internal/plugins"
 	"github.com/bcc-media/wayfarer/internal/plugins/ladder_to_heaven"
-	"github.com/bcc-media/wayfarer/internal/pubsub"
 	"github.com/bcc-media/wayfarer/internal/reuseport"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/services/bulk"
@@ -393,28 +392,6 @@ func main() {
 		slog.Warn("Email service not configured - RESEND_API_KEY not set")
 	}
 
-	// Initialize Pub/Sub publisher for async bulk operations
-	var pubsubPublisher *pubsub.Publisher
-	if cfg.PubSub.Enabled {
-		var err error
-		pubsubPublisher, err = pubsub.NewPublisher(ctx, pubsub.PublisherConfig{
-			Enabled:   cfg.PubSub.Enabled,
-			ProjectID: cfg.PubSub.ProjectID,
-			TopicID:   cfg.PubSub.TopicID,
-		}, lgr)
-		if err != nil {
-			slog.Error("Failed to initialize Pub/Sub publisher", "error", err)
-			os.Exit(1)
-		}
-		defer pubsubPublisher.Close()
-		slog.Info("Pub/Sub publisher initialized",
-			"project_id", cfg.PubSub.ProjectID,
-			"topic_id", cfg.PubSub.TopicID,
-		)
-	} else {
-		slog.Warn("Pub/Sub publisher not initialized - PUBSUB_ENABLED is false")
-	}
-
 	// Content achievement service (shared between auth and webhook handlers)
 	contentAchievementService := &services.ContentAchievementService{
 		DB:             db,
@@ -460,11 +437,11 @@ func main() {
 		dataLoaders,
 		pushService,
 		firebaseService,
-		pubsubPublisher,
+		cfg.Jobs.Sync,
 		lgr,
 		contentAchievementService,
 	)
-	slog.Info("Bulk operations service initialized")
+	slog.Info("Bulk operations service initialized", "sync_jobs", cfg.Jobs.Sync)
 
 	// Initialize GraphQL resolver
 	apiResolver := &api.Resolver{
@@ -720,16 +697,6 @@ func main() {
 		"endpoint", "POST /api/scheduler/quiz-session-transitions",
 	)
 
-	// Pub/Sub push handler for bulk operations (always registered - for receiving messages)
-	// This is separate from the publisher initialization which requires PUBSUB_ENABLED=true
-	bulkProcessor := bulk.NewProcessor(bulkService)
-	pubsubProcessor := pubsub.NewProcessor(db, bulkProcessor, lgr)
-	pubsubHandler := pubsub.NewHandler(pubsubProcessor, lgr)
-	router.POST("/pubsub/bulk-operations", pubsubHandler.HandlePush)
-	slog.Info("Pub/Sub bulk operations endpoint registered",
-		"endpoint", "POST /pubsub/bulk-operations",
-	)
-
 	// File upload handler
 	uploadHandler := &handlers.UploadHandler{
 		DB:        db,
@@ -942,6 +909,13 @@ func main() {
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		slog.Error("Server forced to shutdown", "error", err)
 		os.Exit(1)
+	}
+
+	// Let background bulk jobs finish
+	jobsCtx, jobsCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer jobsCancel()
+	if err := bulkService.Runner.Wait(jobsCtx); err != nil {
+		slog.Warn("Bulk jobs still running at shutdown", "error", err)
 	}
 
 	slog.Info("Server exited")

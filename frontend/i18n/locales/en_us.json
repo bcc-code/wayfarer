@@ -354,7 +354,8 @@
         "couldNotLockBetting": "Could not lock betting",
         "couldNotReopenBetting": "Could not reopen betting",
         "couldNotFinishBetting": "Could not complete betting",
-        "couldNotSendUnitLeaderAccess": "Could not send code to unit leaders"
+        "couldNotSendUnitLeaderAccess": "Could not send code to unit leaders",
+        "couldNotGrantBettingAccess": "Could not give users access to betting"
       }
     },
     "statistics": {

@@ -4238,7 +4238,7 @@ export type GrantQuizSessionAccessAsyncMutationVariables = Exact<{
 }>;
 
 
-export type GrantQuizSessionAccessAsyncMutation = { __typename?: 'Mutation', grantQuizSessionAccessAsync: { __typename?: 'BulkJob', id: string, operationType: string, status: BulkJobStatus, totalCount: number } };
+export type GrantQuizSessionAccessAsyncMutation = { __typename?: 'Mutation', grantQuizSessionAccessAsync: { __typename?: 'BulkJob', id: string, operationType: string, status: BulkJobStatus, totalCount: number, successCount: number, errorMessage?: string | null } };
 
 export type LockQuizSessionMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -6216,6 +6216,8 @@ export const GrantQuizSessionAccessAsyncDocument = gql`
     operationType
     status
     totalCount
+    successCount
+    errorMessage
   }
 }
     `;

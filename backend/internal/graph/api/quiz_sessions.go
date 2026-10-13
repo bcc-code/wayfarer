@@ -8,8 +8,8 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/middleware"
-	"github.com/bcc-media/wayfarer/internal/pubsub"
 	"github.com/bcc-media/wayfarer/internal/services"
+	"github.com/bcc-media/wayfarer/internal/services/bulk"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -74,8 +74,8 @@ func buildGrantQuizSessionAccessParams(
 	input model.GrantQuizSessionAccessInput,
 	projectID string,
 	grantedBy string,
-) pubsub.BulkGrantQuizSessionAccessParams {
-	return pubsub.BulkGrantQuizSessionAccessParams{
+) bulk.BulkGrantQuizSessionAccessParams {
+	return bulk.BulkGrantQuizSessionAccessParams{
 		SessionID:       input.SessionID,
 		UserIDs:         input.UserIds,
 		TeamIDs:         input.TeamIds,

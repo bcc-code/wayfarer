@@ -97,6 +97,8 @@ mutation GrantQuizSessionAccessAsync($input: GrantQuizSessionAccessInput!) {
     operationType
     status
     totalCount
+    successCount
+    errorMessage
   }
 }
 

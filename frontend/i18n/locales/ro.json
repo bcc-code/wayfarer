@@ -350,7 +350,8 @@
         "couldNotLockBetting": "Nu s-a putut bloca parierea",
         "couldNotReopenBetting": "Nu s-a putut redeschide parierea",
         "couldNotFinishBetting": "Nu s-a putut finaliza parierea",
-        "couldNotSendUnitLeaderAccess": "Nu s-a putut trimite codul către liderii de unități"
+        "couldNotSendUnitLeaderAccess": "Nu s-a putut trimite codul către liderii de unități",
+        "couldNotGrantBettingAccess": "Nu s-a putut acorda utilizatorilor acces la pariere"
       }
     },
     "statistics": {

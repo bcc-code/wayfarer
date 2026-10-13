@@ -349,7 +349,8 @@
         "couldNotLockBetting": "En voitu lukita vedonlyöntiä",
         "couldNotReopenBetting": "Vedonlyöntiä ei voitu avata uudelleen",
         "couldNotFinishBetting": "Ei voitu lopettaa vedonlyöntiä",
-        "couldNotSendUnitLeaderAccess": "Ei voitu lähettää koodia yksikönjohtajille"
+        "couldNotSendUnitLeaderAccess": "Ei voitu lähettää koodia yksikönjohtajille",
+        "couldNotGrantBettingAccess": "Käyttäjille ei voitu antaa pääsyä vedonlyöntiin"
       }
     },
     "statistics": {

@@ -350,7 +350,8 @@
         "couldNotLockBetting": "Impossibile bloccare le scommesse",
         "couldNotReopenBetting": "Impossibile riaprire le scommesse",
         "couldNotFinishBetting": "Impossibile terminare le scommesse",
-        "couldNotSendUnitLeaderAccess": "Impossibile inviare il codice ai responsabili dell’unità"
+        "couldNotSendUnitLeaderAccess": "Impossibile inviare il codice ai responsabili dell’unità",
+        "couldNotGrantBettingAccess": "Impossibile dare agli utenti l’accesso alle scommesse"
       }
     },
     "statistics": {

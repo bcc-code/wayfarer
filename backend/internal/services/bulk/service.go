@@ -14,7 +14,6 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/loaders"
-	"github.com/bcc-media/wayfarer/internal/pubsub"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/ulid"
@@ -28,7 +27,7 @@ type Service struct {
 	Loaders                   *loaders.Loaders
 	PushService               *push.Service
 	FirebaseService           *firebase.Service
-	Publisher                 *pubsub.Publisher
+	Runner                    *Runner
 	Logger                    *slog.Logger
 	ContentAchievementService *services.ContentAchievementService
 }
@@ -40,40 +39,66 @@ func NewService(
 	loaders *loaders.Loaders,
 	pushService *push.Service,
 	firebaseService *firebase.Service,
-	publisher *pubsub.Publisher,
+	syncJobs bool,
 	logger *slog.Logger,
 	contentAchievementService *services.ContentAchievementService,
 ) *Service {
-	return &Service{
+	s := &Service{
 		DB:                        db,
 		Cache:                     cache,
 		Loaders:                   loaders,
 		PushService:               pushService,
 		FirebaseService:           firebaseService,
-		Publisher:                 publisher,
 		Logger:                    logger,
 		ContentAchievementService: contentAchievementService,
 	}
+	s.Runner = NewRunner(db.Queries, NewProcessor(s), syncJobs, logger)
+	return s
 }
 
-// CreateBulkJobAndPublish creates a bulk job record and publishes to Pub/Sub.
+// CreateAndRunBulkJob creates a bulk job record and runs it on this instance.
 // The params type determines the operation type automatically.
-func (s *Service) CreateBulkJobAndPublish(
+func (s *Service) CreateAndRunBulkJob(
 	ctx context.Context,
 	createdBy string,
 	projectID *string,
 	totalCount int,
-	params pubsub.BulkOperationParams,
+	params BulkOperationParams,
 ) (*model.BulkJob, error) {
-	// Generate job ID
-	jobID := ulid.NewBulkJobID()
-	operationType := params.OperationType()
-
-	// Marshal params to JSON
 	paramsJSON, err := json.Marshal(params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal params: %w", err)
 	}
+	return s.createAndRun(ctx, createdBy, projectID, totalCount, params.OperationType(), paramsJSON)
+}
+
+// RetryBulkJob creates a new bulk job with the same parameters as an existing job and runs it.
+func (s *Service) RetryBulkJob(ctx context.Context, jobID string, createdBy string) (*model.BulkJob, error) {
+	originalJob, err := s.DB.Queries.GetBulkJobByID(ctx, jobID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get original bulk job: %w", err)
+	}
+	return s.createAndRun(
+		ctx,
+		createdBy,
+		originalJob.ProjectID,
+		int(originalJob.TotalCount),
+		OperationType(originalJob.OperationType),
+		originalJob.InputParams,
+	)
+}
+
+// createAndRun inserts a pending job row and hands it to the runner. In sync
+// mode the returned job reflects the final status.
+func (s *Service) createAndRun(
+	ctx context.Context,
+	createdBy string,
+	projectID *string,
+	totalCount int,
+	operationType OperationType,
+	paramsJSON []byte,
+) (*model.BulkJob, error) {
+	jobID := ulid.NewBulkJobID()
 
 	// Convert createdBy to pointer (nil for M2M users who pass empty string)
 	var createdByPtr *string
@@ -81,128 +106,27 @@ func (s *Service) CreateBulkJobAndPublish(
 		createdByPtr = &createdBy
 	}
 
-	// Create job record
-	createParams := sqlc.CreateBulkJobParams{
+	row, err := s.DB.Queries.CreateBulkJob(ctx, sqlc.CreateBulkJobParams{
 		ID:            jobID,
 		Operationtype: string(operationType),
-		Status:        string(pubsub.JobStatusPending),
+		Status:        string(JobStatusPending),
 		Createdby:     createdByPtr,
 		Projectid:     projectID,
 		Inputparams:   paramsJSON,
 		Totalcount:    int32(totalCount),
-	}
-
-	row, err := s.DB.Queries.CreateBulkJob(ctx, createParams)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create bulk job: %w", err)
 	}
 
-	// Publish to Pub/Sub if enabled
-	if s.Publisher != nil && s.Publisher.IsEnabled() {
-		msg := pubsub.BulkOperationMessage{
-			JobID:         jobID,
-			OperationType: operationType,
-			CreatedBy:     createdBy,
-			Params:        paramsJSON,
+	s.Runner.Start(ctx, jobID, operationType, paramsJSON)
+
+	if s.Runner.IsSync() {
+		if final, err := s.DB.Queries.GetBulkJobByID(ctx, jobID); err == nil {
+			row = final
+		} else {
+			s.Logger.Error("Failed to reload bulk job after run", "job_id", jobID, "error", err)
 		}
-		if projectID != nil {
-			msg.ProjectID = *projectID
-		}
-
-		messageID, err := s.Publisher.PublishBulkOperation(ctx, msg)
-		if err != nil {
-			// Mark job as failed if we can't publish
-			s.DB.Queries.MarkBulkJobFailed(ctx, sqlc.MarkBulkJobFailedParams{
-				ID:           jobID,
-				Errormessage: fmt.Sprintf("failed to publish to pub/sub: %v", err),
-			})
-			return nil, fmt.Errorf("failed to publish to pub/sub: %w", err)
-		}
-
-		// Update job with message ID
-		s.DB.Queries.UpdateBulkJobMessageID(ctx, sqlc.UpdateBulkJobMessageIDParams{
-			ID:        jobID,
-			Messageid: messageID,
-		})
-	} else {
-		// If Pub/Sub is disabled, process synchronously
-		s.Logger.Warn("Pub/Sub disabled, processing bulk operation synchronously",
-			"job_id", jobID,
-			"operation_type", operationType,
-		)
-		// Mark as failed since we can't process async
-		s.DB.Queries.MarkBulkJobFailed(ctx, sqlc.MarkBulkJobFailedParams{
-			ID:           jobID,
-			Errormessage: "pub/sub is disabled, async processing not available",
-		})
-		return nil, fmt.Errorf("pub/sub is disabled, use synchronous mutation instead")
-	}
-
-	return convertBulkJobRowToModel(row), nil
-}
-
-// RetryBulkJob creates a new bulk job with the same parameters as an existing job and publishes it.
-func (s *Service) RetryBulkJob(ctx context.Context, jobID string, createdBy string) (*model.BulkJob, error) {
-	// Fetch original job
-	originalJob, err := s.DB.Queries.GetBulkJobByID(ctx, jobID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get original bulk job: %w", err)
-	}
-
-	// Generate new job ID
-	newJobID := ulid.NewBulkJobID()
-
-	// Convert createdBy to pointer
-	var createdByPtr *string
-	if createdBy != "" {
-		createdByPtr = &createdBy
-	}
-
-	// Create new job with same params
-	row, err := s.DB.Queries.CreateBulkJob(ctx, sqlc.CreateBulkJobParams{
-		ID:            newJobID,
-		Operationtype: originalJob.OperationType,
-		Status:        string(pubsub.JobStatusPending),
-		Createdby:     createdByPtr,
-		Projectid:     originalJob.ProjectID,
-		Inputparams:   originalJob.InputParams,
-		Totalcount:    originalJob.TotalCount,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create retry bulk job: %w", err)
-	}
-
-	// Publish to Pub/Sub
-	if s.Publisher != nil && s.Publisher.IsEnabled() {
-		msg := pubsub.BulkOperationMessage{
-			JobID:         newJobID,
-			OperationType: pubsub.OperationType(originalJob.OperationType),
-			CreatedBy:     createdBy,
-			Params:        originalJob.InputParams,
-		}
-		if originalJob.ProjectID != nil {
-			msg.ProjectID = *originalJob.ProjectID
-		}
-
-		messageID, err := s.Publisher.PublishBulkOperation(ctx, msg)
-		if err != nil {
-			s.DB.Queries.MarkBulkJobFailed(ctx, sqlc.MarkBulkJobFailedParams{
-				ID:           newJobID,
-				Errormessage: fmt.Sprintf("failed to publish to pub/sub: %v", err),
-			})
-			return nil, fmt.Errorf("failed to publish to pub/sub: %w", err)
-		}
-
-		s.DB.Queries.UpdateBulkJobMessageID(ctx, sqlc.UpdateBulkJobMessageIDParams{
-			ID:        newJobID,
-			Messageid: messageID,
-		})
-	} else {
-		s.DB.Queries.MarkBulkJobFailed(ctx, sqlc.MarkBulkJobFailedParams{
-			ID:           newJobID,
-			Errormessage: "pub/sub is disabled, async processing not available",
-		})
-		return nil, fmt.Errorf("pub/sub is disabled, use synchronous mutation instead")
 	}
 
 	return convertBulkJobRowToModel(row), nil
@@ -457,8 +381,8 @@ func (s *Service) EnrollUsersInChallenge(ctx context.Context, challengeID string
 	failureCount := 0
 
 	// Process in batches
-	for i := 0; i < len(userIDs); i += pubsub.BatchSize {
-		end := i + pubsub.BatchSize
+	for i := 0; i < len(userIDs); i += BatchSize {
+		end := i + BatchSize
 		if end > len(userIDs) {
 			end = len(userIDs)
 		}
@@ -534,8 +458,8 @@ func (s *Service) UnenrollUsersFromChallenge(ctx context.Context, challengeID st
 	failureCount := 0
 
 	// Process in batches
-	for i := 0; i < len(userIDs); i += pubsub.BatchSize {
-		end := i + pubsub.BatchSize
+	for i := 0; i < len(userIDs); i += BatchSize {
+		end := i + BatchSize
 		if end > len(userIDs) {
 			end = len(userIDs)
 		}
@@ -604,8 +528,8 @@ func (s *Service) CompleteUsersChallenge(ctx context.Context, challengeID string
 	}
 
 	// Process in batches
-	for i := 0; i < len(userIDs); i += pubsub.BatchSize {
-		end := i + pubsub.BatchSize
+	for i := 0; i < len(userIDs); i += BatchSize {
+		end := i + BatchSize
 		if end > len(userIDs) {
 			end = len(userIDs)
 		}
@@ -722,8 +646,8 @@ func (s *Service) AwardAchievements(ctx context.Context, achievementID string, u
 	failureCount := 0
 
 	// Process in batches
-	for i := 0; i < len(userIDs); i += pubsub.BatchSize {
-		end := i + pubsub.BatchSize
+	for i := 0; i < len(userIDs); i += BatchSize {
+		end := i + BatchSize
 		if end > len(userIDs) {
 			end = len(userIDs)
 		}
@@ -824,7 +748,7 @@ func getChallengePushInfo(challenge model.Challenge) push.ChallengeInfo {
 
 // GrantQuizSessionAccess grants quiz session access to users.
 // This is the shared implementation used by both sync and async mutations.
-func (s *Service) GrantQuizSessionAccess(ctx context.Context, params pubsub.BulkGrantQuizSessionAccessParams) (int, int, error) {
+func (s *Service) GrantQuizSessionAccess(ctx context.Context, params BulkGrantQuizSessionAccessParams) (int, int, error) {
 	// 1. Collect user IDs from various sources with source type tracking
 	userIdsToGrant := make(map[string]string) // map[userID]sourceType
 
@@ -986,7 +910,7 @@ func (s *Service) GrantQuizSessionAccess(ctx context.Context, params pubsub.Bulk
 // CreateBulkScoreAdjustments creates score journal entries for multiple users in batches
 func (s *Service) CreateBulkScoreAdjustments(
 	ctx context.Context,
-	params pubsub.BulkScoreAdjustmentParams,
+	params BulkScoreAdjustmentParams,
 ) (int, int, error) {
 	if len(params.Adjustments) == 0 {
 		return 0, 0, nil
@@ -1015,8 +939,8 @@ func (s *Service) CreateBulkScoreAdjustments(
 	failureCount := 0
 
 	// Process in batches of 100
-	for i := 0; i < len(params.Adjustments); i += pubsub.BatchSize {
-		end := i + pubsub.BatchSize
+	for i := 0; i < len(params.Adjustments); i += BatchSize {
+		end := i + BatchSize
 		if end > len(params.Adjustments) {
 			end = len(params.Adjustments)
 		}
@@ -1093,7 +1017,7 @@ func (s *Service) CreateBulkScoreAdjustments(
 
 // FixMissingContentProgress processes missing content events using the ContentAchievementService.
 // This ensures all hooks (cache invalidation, webhooks, push notifications, Firebase, score journals) are triggered.
-func (s *Service) FixMissingContentProgress(ctx context.Context, params pubsub.FixMissingContentProgressParams) (int, int, error) {
+func (s *Service) FixMissingContentProgress(ctx context.Context, params FixMissingContentProgressParams) (int, int, error) {
 	if len(params.UserIDs) == 0 {
 		return 0, 0, nil
 	}
@@ -1145,7 +1069,7 @@ func (s *Service) FixMissingContentProgress(ctx context.Context, params pubsub.F
 
 // FixMissingStreakProgress processes missing streak events using the ContentAchievementService.
 // Uses the original consumed_at timestamp for correct deadline enforcement.
-func (s *Service) FixMissingStreakProgress(ctx context.Context, params pubsub.FixMissingStreakProgressParams) (int, int, error) {
+func (s *Service) FixMissingStreakProgress(ctx context.Context, params FixMissingStreakProgressParams) (int, int, error) {
 	if len(params.UserIDs) == 0 {
 		return 0, 0, nil
 	}

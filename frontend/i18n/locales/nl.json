@@ -350,7 +350,8 @@
         "couldNotLockBetting": "Kon voorspellen niet vergrendelen",
         "couldNotReopenBetting": "Kon het voorspellen niet heropenen",
         "couldNotFinishBetting": "Kon het voorspellen niet beëindigen",
-        "couldNotSendUnitLeaderAccess": "Kon geen code naar unitleiders sturen"
+        "couldNotSendUnitLeaderAccess": "Kon geen code naar unitleiders sturen",
+        "couldNotGrantBettingAccess": "Kon gebruikers geen toegang geven tot voorspellen"
       }
     },
     "statistics": {
