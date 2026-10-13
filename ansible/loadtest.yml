@@ -3,7 +3,8 @@
 # jobs (no tailnet, no off-box backups, no cron calls against a test box); the
 # k6 client gets the same kernel/limits tuning so it is not the bottleneck.
 #
-#   ansible-playbook -i inventory-loadtest.yml loadtest.yml -e interact_db_password=...
+# Run through backend/scripts/loadtest-lt.sh provision, which generates the
+# inventory for the current (throwaway) boxes from their IPs.
 - name: Provision Interact load-test server
   hosts: interact_lt
   become: true
