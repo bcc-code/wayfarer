@@ -143,6 +143,10 @@
     "unlocked": "Behaald!",
     "progress": "{completed} van {total} voltooid"
   },
+  "archive": {
+    "title": "Vorige projecten",
+    "empty": "Er zijn geen projecten gevonden"
+  },
   "feedback": {
     "title": "Geef ons feedback",
     "cta": "Geef ons feedback",
@@ -369,5 +373,8 @@
       "peopleInAUnit": "Personen in een unit",
       "lastUpdated": "Laatst bijgewerkt"
     }
+  },
+  "offline": {
+    "notice": "Je bent offline De informatie kan verouderd zijn"
   }
 }

@@ -144,8 +144,8 @@
     "progress": "{completed} sur {total} achevés"
   },
   "archive": {
-    "myAchievements": "Mes badges",
-    "empty": "Tu n’as encore aucun badge."
+    "title": "Projets précédents",
+    "empty": "Tu n’as encore aucun projet."
   },
   "feedback": {
     "title": "Donne-nous ton avis",
@@ -373,5 +373,8 @@
       "peopleInAUnit": "Personnes dans une unité",
       "lastUpdated": "Dernière mise à jour"
     }
+  },
+  "offline": {
+    "notice": "Tu es hors ligne. Les informations peuvent être obsolètes."
   }
 }
