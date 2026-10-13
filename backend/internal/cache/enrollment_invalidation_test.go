@@ -133,9 +133,9 @@ func TestInvalidateUserChallengeEnrollment_DropsUsersResponseEntries(t *testing.
 	assert.True(t, ok, "shared response entry must survive")
 }
 
-// invalidateUserLocal (and thus InvalidateUser broadcasts) must also clear the
-// user's response entries, and invalidateProjectLocal clears every response
-// entry so admin project edits surface immediately.
+// InvalidateUser must also clear the user's response entries, and
+// InvalidateProject clears every response entry so admin project edits
+// surface immediately.
 func TestResponseEntryInvalidation_UserAndProject(t *testing.T) {
 	c, err := NewCacheWithRegistry(DefaultConfig())
 	require.NoError(t, err)
@@ -148,7 +148,7 @@ func TestResponseEntryInvalidation_UserAndProject(t *testing.T) {
 	require.True(t, c.Set(sharedEntry, "cached"))
 	c.Wait()
 
-	c.invalidateUserLocal(me)
+	c.InvalidateUser(me)
 	c.Wait()
 	_, ok := c.Get(userEntry)
 	assert.False(t, ok, "user invalidation must drop the user's response entries")
@@ -157,7 +157,7 @@ func TestResponseEntryInvalidation_UserAndProject(t *testing.T) {
 
 	require.True(t, c.Set(userEntry, "cached"))
 	c.Wait()
-	c.invalidateProjectLocal("PR00000000000000000000000001")
+	c.InvalidateProject("PR00000000000000000000000001")
 	c.Wait()
 	_, ok = c.Get(userEntry)
 	assert.False(t, ok, "project invalidation must drop all response entries")
