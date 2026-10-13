@@ -123,8 +123,6 @@ func (r *Resolver) setSettings(ctx context.Context, input []model.SettingInput) 
 			return nil, err
 		}
 		r.invalidateCurrentProject(previousProjectID, current)
-	} else {
-		r.Cache.InvalidateSettings()
 	}
 
 	settings := make([]model.Setting, 0, len(written))
@@ -135,21 +133,18 @@ func (r *Resolver) setSettings(ctx context.Context, input []model.SettingInput) 
 	return settings, nil
 }
 
-// invalidateCurrentProject clears what a change of current project makes stale,
-// on this instance and on every other one.
+// invalidateCurrentProject clears what a change of current project makes stale.
 //
 // InvalidateProject drops the whole gqlresponse: prefix, which is what evicts
 // the cached currentProject / myCurrentProject responses — without it the old
 // project keeps being served until the response cache's TTL expires. Both the
 // outgoing and incoming projects are invalidated because entries exist for
-// each. InvalidateSettings is separate: it reloads the settings map itself,
-// which no cache invalidation would otherwise touch.
+// each. The settings map itself is reloaded by SetSettings.
 func (r *Resolver) invalidateCurrentProject(previousProjectID, projectID string) {
 	if previousProjectID != "" && previousProjectID != projectID {
 		r.Cache.InvalidateProject(previousProjectID)
 	}
 	r.Cache.InvalidateProject(projectID)
-	r.Cache.InvalidateSettings()
 
 	// Server caches alone only make the next request correct. Clients hold the
 	// project in a layout query that never remounts, so without a nudge the

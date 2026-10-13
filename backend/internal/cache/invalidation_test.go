@@ -306,7 +306,7 @@ func TestCacheWithRegistry_UserInvalidation(t *testing.T) {
 	assert.True(t, found, "achievement timestamp should exist before invalidation")
 
 	// Invalidate user
-	c.invalidateUserLocal(userID)
+	c.InvalidateUser(userID)
 	c.cache.Wait()
 
 	// Verify all user keys are deleted
@@ -351,7 +351,7 @@ func TestCacheWithRegistry_ChallengeInvalidationClearsActiveChallengeCounts(t *t
 	c.Set(ActiveChallengesCountKey("US999", "PR456"), 7)
 	c.cache.Wait()
 
-	c.invalidateChallengeLocal("CH123", "PR123", nil)
+	c.InvalidateChallenge("CH123", "PR123", nil)
 	c.cache.Wait()
 
 	_, found := c.Get(ActiveChallengesCountKey("US123", "PR123"))
@@ -386,7 +386,7 @@ func TestCacheWithRegistry_TeamMemberLeaderboardInvalidationViaProject(t *testin
 	_, found = c.Get(TeamMemberLeaderboardTeamLeadTagsKey(teamID1))
 	assert.True(t, found, "team1 lead tags should exist before invalidation")
 
-	// Simulate what invalidateProjectLocal does for team member leaderboards
+	// Simulate what InvalidateProject does for team member leaderboards
 	c.DeletePrefix(PrefixTeamMemberLeaderboard)
 	c.cache.Wait()
 

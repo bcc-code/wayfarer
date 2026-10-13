@@ -45,6 +45,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/services/webhooks"
 	"github.com/bcc-media/wayfarer/internal/ssf"
+	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/bcc-media/wayfarer/translations"
 	"github.com/bcc-media/wayfarer/translations/phrase"
 	"github.com/gin-contrib/cors"
@@ -274,15 +275,6 @@ func main() {
 	defer cacheInstance.Close()
 	slog.Info("Cache initialized", "default_ttl", "15m", "max_cost", "100MB")
 
-	// Initialize cache sync for cross-instance invalidation via PostgreSQL NOTIFY/LISTEN
-	cacheSync := cache.NewCacheSync(cacheInstance, cfg.Database.URL)
-	if err := cacheSync.Start(ctx); err != nil {
-		slog.Warn("Failed to start cache sync, continuing without cross-instance invalidation", "error", err)
-	} else {
-		cacheInstance.SetSync(cacheSync, db.Pool)
-		defer cacheSync.Stop()
-	}
-
 	// Initialize DataLoaders (shared globally across all requests)
 	// Dataloaders handle request batching while Ristretto cache handles data caching
 	dataLoaders := loaders.NewLoaders(db, cacheInstance)
@@ -308,16 +300,6 @@ func main() {
 	}
 	defer settingsService.Stop()
 
-	// A settings change broadcast by another instance arrives on the cache
-	// sync channel; without this hook that instance would keep serving the old
-	// value until its next five-minute refresh.
-	cacheInstance.SetSettingsRefresher(func() {
-		refreshCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-		if err := settingsService.RefreshSettings(refreshCtx); err != nil {
-			slog.Error("Failed to refresh settings after invalidation", "error", err)
-		}
-	})
 	slog.Info("SettingsService initialized with background refresh")
 
 	// Initialize S3 upload service
@@ -459,7 +441,7 @@ func main() {
 		EmailService:       emailService,
 		UserSyncService:    userSyncService,
 		BulkService:        bulkService,
-		InstanceID:         cacheSync.InstanceID(),
+		InstanceID:         ulid.NewInstanceID(),
 	}
 
 	apiHandler := handler.New(api.NewExecutableSchema(api.Config{
