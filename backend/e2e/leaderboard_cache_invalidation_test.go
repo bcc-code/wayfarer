@@ -2,10 +2,12 @@ package e2e
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/bcc-media/wayfarer/e2e/testutil"
+	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/stretchr/testify/assert"
@@ -45,8 +47,7 @@ func TestLeaderboardCacheInvalidationAfterScoreChange(t *testing.T) {
 	require.NoError(t, dbMgr.CreateTestProject(ctx, cacheTestProjectID, "Cache Test Project"))
 
 	// Update settings to point to our test project
-	_, err := dbMgr.DB.Pool.Exec(ctx, `UPDATE settings SET value_text = $1 WHERE key = 'current_project_id'`, cacheTestProjectID)
-	require.NoError(t, err)
+	require.NoError(t, setCurrentProject(ctx, dbMgr, cacheTestProjectID))
 
 	// Create test team and user
 	require.NoError(t, dbMgr.CreateTestTeam(ctx, cacheTestTeamID, "Cache Test Team", cacheTestProjectID))
@@ -134,8 +135,7 @@ func TestLeaderboardCacheRefreshedAfterAsyncApply(t *testing.T) {
 
 	require.NoError(t, dbMgr.CreateTestChurch(ctx, churchID, "Async Church", "NO", "S"))
 	require.NoError(t, dbMgr.CreateTestProject(ctx, projectID, "Async Project"))
-	_, err := dbMgr.DB.Pool.Exec(ctx, `UPDATE settings SET value_text = $1 WHERE key = 'current_project_id'`, projectID)
-	require.NoError(t, err)
+	require.NoError(t, setCurrentProject(ctx, dbMgr, projectID))
 	require.NoError(t, dbMgr.CreateTestUser(ctx, userID, "AsyncUser", "MALE", time.Now().AddDate(-25, 0, 0), churchID))
 	require.NoError(t, dbMgr.EnrollUserInProject(ctx, userID, projectID))
 	require.NoError(t, dbMgr.AddLeaderboardConsent(ctx, userID))
@@ -166,8 +166,11 @@ func TestLeaderboardCacheRefreshedAfterAsyncApply(t *testing.T) {
 
 	// A score write: the journal row commits (its delta is queued, not yet
 	// applied) and the write invalidates the project, as every score write does
-	_, err = dbMgr.DB.Pool.Exec(ctx, `INSERT INTO score_journal (id, project_id, user_id, points, source_type, reason)
-		VALUES ($1, $2, $3, 50, 'MANUAL', 'async')`, ulid.NewScoreJournalID(), projectID, userID)
+	reason := "async"
+	_, err = dbMgr.DB.Queries.CreateScoreJournalEntry(ctx, sqlc.CreateScoreJournalEntryParams{
+		ID: ulid.NewScoreJournalID(), ProjectID: projectID, UserID: userID,
+		Points: 50, SourceType: "MANUAL", Reason: &reason,
+	})
 	require.NoError(t, err)
 	testCache.InvalidateProject(projectID)
 
@@ -176,10 +179,9 @@ func TestLeaderboardCacheRefreshedAfterAsyncApply(t *testing.T) {
 	// it (SKIP LOCKED), exactly like a read that beats the production worker.
 	lock, err := dbMgr.DB.Pool.Begin(ctx)
 	require.NoError(t, err)
-	var queued int
-	require.NoError(t, lock.QueryRow(ctx,
-		`SELECT count(*) FROM (SELECT id FROM leaderboard_apply_queue FOR UPDATE) q`).Scan(&queued))
-	require.Equal(t, 1, queued, "the delta is waiting for the apply worker")
+	queued, err := dbMgr.DB.Queries.WithTx(lock).LockLeaderboardApplyQueue(ctx)
+	require.NoError(t, err)
+	require.EqualValues(t, 1, queued, "the delta is waiting for the apply worker")
 	require.Equal(t, 100, score(t), "read before the apply: the old score, now cached")
 	require.NoError(t, lock.Rollback(ctx))
 
@@ -188,10 +190,22 @@ func TestLeaderboardCacheRefreshedAfterAsyncApply(t *testing.T) {
 	worker.Start(ctx)
 	defer worker.Stop()
 	require.Eventually(t, func() bool {
-		var n int
-		return dbMgr.DB.Pool.QueryRow(ctx, `SELECT count(*) FROM leaderboard_apply_queue`).Scan(&n) == nil && n == 0
+		n, err := dbMgr.DB.Queries.CountLeaderboardApplyQueue(ctx)
+		return err == nil && n == 0
 	}, 5*time.Second, 20*time.Millisecond)
 
 	assert.Eventually(t, func() bool { return score(t) == 150 }, 3*time.Second, 50*time.Millisecond,
 		"the ranking must show the applied score, not the one cached before the apply")
+}
+
+// setCurrentProject points the current_project_id setting at projectID
+func setCurrentProject(ctx context.Context, dbMgr *testutil.TestDBManager, projectID string) error {
+	n, err := dbMgr.DB.Queries.UpdateSettingText(ctx, sqlc.UpdateSettingTextParams{Key: "current_project_id", ValueText: projectID})
+	if err != nil {
+		return err
+	}
+	if n != 1 {
+		return fmt.Errorf("current_project_id setting not found")
+	}
+	return nil
 }
