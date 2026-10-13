@@ -73,13 +73,22 @@ cmd_reset() {
     while [ "$($PSQL -Atc 'SELECT drain_leaderboard_apply_queue(5000)')" != 0 ]; do :; done
     # Points from the previous run first (DELETE keeps the leaderboards in
     # sync through the score_journal trigger), then the quiz cascade
+    # A full run leaves ~90k BET journal rows. The per-row leaderboard
+    # trigger made deleting them take minutes on one core, so it is off for
+    # the delete and the leaderboards are rebuilt once instead (as
+    # gendata2.sql does for its bulk load). The server is stopped meanwhile.
     psql_q -v quiz_id="'$QUIZ_ID'" <<'SQL'
+BEGIN;
+ALTER TABLE score_journal DISABLE TRIGGER trigger_score_journal_leaderboard;
 DELETE FROM score_journal
 WHERE (source_type = 'BET' AND source_id IN (
         SELECT r.id FROM quiz_responses r
         JOIN quiz_submissions s ON s.id = r.submission_id
         WHERE s.quiz_id = :quiz_id))
    OR (source_type = 'QUIZ' AND source_id = :quiz_id);
+ALTER TABLE score_journal ENABLE TRIGGER trigger_score_journal_leaderboard;
+SELECT regenerate_leaderboards();
+COMMIT;
 DELETE FROM quiz_responses WHERE submission_id IN (
     SELECT id FROM quiz_submissions WHERE quiz_id = :quiz_id);
 DELETE FROM quiz_submissions WHERE quiz_id = :quiz_id;
