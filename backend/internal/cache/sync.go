@@ -32,6 +32,8 @@ const (
 	InvalidationTypeChallenge         InvalidationType = "challenge"
 	InvalidationTypeAchievement       InvalidationType = "achievement"
 	InvalidationTypeLeaderboardConfig InvalidationType = "leaderboardconfig"
+	// Score-derived leaderboard data, after queued score deltas were applied
+	InvalidationTypeLeaderboardScores InvalidationType = "leaderboardscores"
 	InvalidationTypeQuiz              InvalidationType = "quiz"
 	InvalidationTypeClear             InvalidationType = "clear"
 
@@ -237,6 +239,8 @@ func (s *CacheSync) applyInvalidation(msg InvalidationMessage) {
 			eventID = &msg.EventID
 		}
 		s.cache.invalidateLeaderboardConfigLocal(msg.ID, msg.ProjectID, eventID)
+	case InvalidationTypeLeaderboardScores:
+		s.cache.invalidateLeaderboardScoresLocal()
 	case InvalidationTypeQuiz:
 		s.cache.invalidateQuizLocal(msg.ID, msg.ChallengeID)
 	case InvalidationTypeUserEnrollment:

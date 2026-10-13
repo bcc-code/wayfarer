@@ -152,6 +152,8 @@ func extractPrefixes(key string) []string {
 	// - leaderboard:position:project:{projectID}:{entityType}:{paramsHash}:{userID}
 	// - leaderboard:count:project:{projectID}:{entityType}:{paramsHash}
 	if strings.HasPrefix(key, PrefixLeaderboard) {
+		// Umbrella prefix: every ranking, for InvalidateLeaderboardScores
+		prefixes = append(prefixes, PrefixLeaderboard)
 		parts := strings.Split(key, ":")
 		if len(parts) >= 4 {
 			// Register under the base prefix for invalidation
@@ -780,6 +782,25 @@ func (c *CacheWithRegistry) InvalidateQuizSubmission(submissionID string) {
 // InvalidateUserQuizSubmissions invalidates cached quiz submissions for a user
 func (c *CacheWithRegistry) InvalidateUserQuizSubmissions(userID string) {
 	c.Delete(QuizSubmissionsByUserKey(userID))
+}
+
+// InvalidateLeaderboardScores drops every cached leaderboard ranking (all
+// projects and events) and every cached GraphQL response, which can embed
+// standings. Score writes invalidate their project when they commit, but the
+// leaderboard tables are only updated afterwards by the apply worker
+// (services.LeaderboardApplyWorker); a ranking read in between would be
+// cached stale for the full TTL. The worker calls this after applying deltas.
+func (c *CacheWithRegistry) InvalidateLeaderboardScores() {
+	c.invalidateLeaderboardScoresLocal()
+	c.broadcast(InvalidationMessage{Type: InvalidationTypeLeaderboardScores})
+}
+
+// invalidateLeaderboardScoresLocal drops score-derived leaderboard caches on
+// this instance only. Leaderboard configs ("leaderboardconfig:") are kept.
+func (c *CacheWithRegistry) invalidateLeaderboardScoresLocal() {
+	c.DeletePrefix(PrefixLeaderboard) // rankings, positions and counts
+	c.DeletePrefix(PrefixTeamMemberLeaderboard)
+	c.DeletePrefix(PrefixGQLResponse)
 }
 
 // InvalidateTeamMemberLeaderboardTags invalidates all tag caches for team member leaderboards.
