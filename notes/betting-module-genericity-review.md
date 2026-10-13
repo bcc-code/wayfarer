@@ -246,11 +246,20 @@ stays with the `ladder_to_heaven` plugin unchanged. Backend only; no frontend ch
   auto-submit and before the Firestore notification. Query `GetUnsettledSessionBets` selects
   responses with `bet_amount > 0`, `betting_enabled`, `is_correct IS NOT NULL` (a bet sent
   without an answer is ignored, not lost), `score_journal_id IS NULL` and
-  `question_type = ANY(['PREDEFINED'])`. Each bet is settled in its own transaction (no partial
-  payouts); a failing bet is logged and skipped. The result is stored with `SettleBetResult`
-  (`WHERE score_journal_id IS NULL`, after the journal entries because of the FK); 0 rows returns
-  `betting.ErrAlreadySettled` and the transaction is rolled back, so two concurrent
-  `finishQuizSession` calls (`UpdateQuizSessionState` is unconditional) still pay out once. Afterwards: cache invalidation, Firestore
+  `question_type = ANY(['PREDEFINED'])`. Bets are settled in batches of 500 per transaction
+  (`betting.SettleBatch`, `betSettleBatchSize`). Each batch runs three statements:
+  - `ClaimUnsettledBets`: `FOR UPDATE` on the still-unsettled responses.
+  - `CreateScoreJournalEntries`: one `unnest` insert of all stake and winnings entries.
+  - `SettleBetResults`: one `unnest` update, after the journal entries because of the FK.
+
+  A concurrent settlement blocks on the claim's row locks and then only gets what is still
+  unsettled, so two concurrent `finishQuizSession` calls (`UpdateQuizSessionState` is
+  unconditional) still pay out once. Payouts come from the same `planBet` as the single-bet
+  `betting.Settle`. If a batch fails, its bets are retried one per transaction with `Settle`
+  (whose `SettleBetResult` returns `ErrAlreadySettled` on 0 rows), so a failing bet is logged and
+  skipped. User languages are loaded once per batch, and translated challenge names once per
+  language. Before batching, one transaction per bet ran at ~140 bets/s, and 45k bets outlived the
+  5-minute write timeout (notes/loadtest-offbox.md). Afterwards: cache invalidation, Firestore
   `NotifyUserContent`, push `SendTranslatedBetResultNotificationCtx` (only when the quiz has a
   challenge), sent from one background goroutine with at most 16 users at a time
   (`betNotifyConcurrency`) and the request context via `context.WithoutCancel`. Settlement itself runs synchronously, so the admin's finish call
