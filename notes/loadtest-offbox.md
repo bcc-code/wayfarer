@@ -300,6 +300,16 @@ Gotchas, all found while bringing the pair up:
 - **Auth0 dances 401 for ~30s after a restart:** the server fetches its own
   `/jwks.json`, which fails at boot and is retried every 30s. LT runs wait
   40s (`LOADTEST_WARMUP`). Prod is not affected.
+- **Deleting journal rows was slow (one core pegged for minutes):** two
+  causes stacked up.
+  - The per-row leaderboard trigger: the reset now disables it and runs one
+    `regenerate_leaderboards()` (~2s).
+  - The `quiz_responses.score_journal_id` foreign key (`ON DELETE SET NULL`)
+    had no index, so every deleted journal row scanned `quiz_responses`.
+    Migration 00109 adds a partial index; 20k bets' journal rows now delete
+    in 1.1s instead of 34.3s. The same path in prod: achievement revokes
+    and manual score deletes. The reset also deletes the run's responses
+    first.
 - **Reset deadlocked with the server:** the leaderboard drain worker raced
   the reset's synchronous delete trigger. The runner now stops the server
   around `betting_box.sh reset`, and reset drains the leaderboard queue first.
