@@ -256,7 +256,10 @@ remote() {
 check_settlement() {
     echo ""
     echo "=== settlement check ==="
-    rssh "sudo -u postgres psql -d interact -Atc \"
+    # ANALYZE first: right after settlement bulk-inserted ~100k journal rows
+    # the statistics are stale, and the planner picked a plan that ran for
+    # minutes on one core instead of ~0.3s
+    rssh "sudo -u postgres psql -d interact -qAt -c 'ANALYZE quiz_responses' -c 'ANALYZE score_journal' -c \"
         WITH bets AS (
             SELECT r.id, r.bet_amount, r.points_earned, r.score_journal_id
             FROM quiz_responses r JOIN quiz_submissions s ON s.id = r.submission_id
