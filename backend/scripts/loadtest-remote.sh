@@ -47,7 +47,7 @@
 #
 # Every run writes cmd/loadtest/results/<label>-<UTC timestamp>/: manifest,
 # per-shard k6 CSV + summary JSON + log + CPU, server/box CPU, SQL samples,
-# exports and pg_stat_statements. See analyze_run.py for the derived files.
+# exports and pg_stat_statements. See cmd/loadtest/analyzerun for the derived files.
 set -euo pipefail
 
 LOADTEST_SSH=${LOADTEST_SSH:-root@49.12.121.62}
@@ -110,7 +110,7 @@ cmd_config() {
         ./tokengen -limit $LOADTEST_TOKENS -base-url $LOADTEST_BASE_URL -output ./config.json $LOADTEST_TOKENGEN_ARGS"
     rscp "$LOADTEST_SSH:$LOADTEST_REMOTE_DIR/loadtest/config.json" "$LOADTEST_DIR/config.json"
     echo "Fetched $LOADTEST_DIR/config.json:"
-    python3 -c "import json;c=json.load(open('$LOADTEST_DIR/config.json'));print(' baseUrl:',c['baseUrl']);print(' tokens: ',len(c['tokens']))"
+    jq -r '" baseUrl: \(.baseUrl)\n tokens:  \(.tokens | length)"' "$LOADTEST_DIR/config.json"
 }
 
 cmd_prep() {
@@ -204,26 +204,28 @@ write_manifest() {
     hosts=$(for h in "$LOADTEST_SSH" "${GENERATORS[@]}"; do
         ssh "${SSH_OPTS[@]}" "$h" 'echo "$(hostname) nproc=$(nproc) mem=$(free -g | awk "/Mem:/{print \$2}")G kernel=$(uname -r)"' 2>/dev/null | sed "s|^|$h |"
     done)
-    MANIFEST_LABEL=$LABEL MANIFEST_RUN=$RUN_ID MANIFEST_STARTED=$started MANIFEST_FINISHED=$finished \
-    MANIFEST_K6_EXIT=$k6_exit MANIFEST_SCRIPT=$LOADTEST_K6_SCRIPT MANIFEST_BASE_URL=$LOADTEST_BASE_URL \
-    MANIFEST_GENERATORS="${GENERATORS[*]}" MANIFEST_SERVER=$LOADTEST_SSH MANIFEST_K6_ARGS="$*" \
-    MANIFEST_COMMIT="$(git -C "$BACKEND_DIR" rev-parse HEAD)" \
-    MANIFEST_DIRTY="$(git -C "$BACKEND_DIR" status --porcelain | wc -l | tr -d ' ')" \
-    MANIFEST_SERVER_ENV=$server_env MANIFEST_PG=$pg_settings MANIFEST_HOSTS=$hosts \
-        python3 -I -c '
-import json, os
-e = os.environ
-lines = lambda k: [l for l in e.get(k, "").splitlines() if l.strip()]
-print(json.dumps({
-    "label": e["MANIFEST_LABEL"], "run_id": e["MANIFEST_RUN"],
-    "started_utc": e["MANIFEST_STARTED"], "finished_utc": e["MANIFEST_FINISHED"],
-    "k6_exit": int(e["MANIFEST_K6_EXIT"]), "k6_script": e["MANIFEST_SCRIPT"],
-    "k6_args": e["MANIFEST_K6_ARGS"], "base_url": e["MANIFEST_BASE_URL"],
-    "server": e["MANIFEST_SERVER"], "generators": e["MANIFEST_GENERATORS"].split(),
-    "git_commit": e["MANIFEST_COMMIT"], "git_uncommitted_files": int(e["MANIFEST_DIRTY"]),
-    "server_env": lines("MANIFEST_SERVER_ENV"), "postgres": lines("MANIFEST_PG"),
-    "hosts": lines("MANIFEST_HOSTS"),
-}, indent=2))' > "$RUN_DIR/manifest.json"
+    local commit dirty
+    commit=$(git -C "$BACKEND_DIR" rev-parse HEAD)
+    dirty=$(git -C "$BACKEND_DIR" status --porcelain | wc -l | tr -d ' ')
+    jq -n \
+        --arg label "$LABEL" --arg run_id "$RUN_ID" \
+        --arg started "$started" --arg finished "$finished" \
+        --argjson k6_exit "$k6_exit" --arg k6_script "$LOADTEST_K6_SCRIPT" \
+        --arg k6_args "$*" --arg base_url "$LOADTEST_BASE_URL" \
+        --arg server "$LOADTEST_SSH" --arg generators "${GENERATORS[*]}" \
+        --arg commit "$commit" --argjson dirty "$dirty" \
+        --arg server_env "$server_env" --arg pg "$pg_settings" --arg hosts "$hosts" \
+        'def lines: split("\n") | map(select(test("\\S")));
+        {
+            label: $label, run_id: $run_id,
+            started_utc: $started, finished_utc: $finished,
+            k6_exit: $k6_exit, k6_script: $k6_script,
+            k6_args: $k6_args, base_url: $base_url,
+            server: $server, generators: ($generators | split(" ") | map(select(. != ""))),
+            git_commit: $commit, git_uncommitted_files: $dirty,
+            server_env: ($server_env | lines), postgres: ($pg | lines),
+            hosts: ($hosts | lines)
+        }' > "$RUN_DIR/manifest.json"
 }
 
 # run_generator <host> <shard> <shards> [k6 args...]: one k6 shard on a
@@ -325,7 +327,7 @@ cmd_run() {
     echo ""
     echo "=== $RUN_ID summary ==="
     echo "k6 exit=$k6_exit"
-    python3 -I "$LOADTEST_DIR/analyze_run.py" "$RUN_DIR" || true
+    (cd "$BACKEND_DIR" && go run ./cmd/loadtest/analyzerun "$RUN_DIR") || true
     echo "Data: $RUN_DIR"
     exit "$k6_exit"
 }
