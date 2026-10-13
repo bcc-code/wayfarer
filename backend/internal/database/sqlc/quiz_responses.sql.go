@@ -25,6 +25,38 @@ func (q *Queries) CalculateSubmissionScore(ctx context.Context, submissionid str
 	return score, err
 }
 
+const ClaimUnsettledBets = `-- name: ClaimUnsettledBets :many
+SELECT id FROM quiz_responses
+WHERE id = ANY($1::char(28)[])
+  AND score_journal_id IS NULL
+ORDER BY id
+FOR UPDATE
+`
+
+// Locks the responses of a settlement batch that are not settled yet and
+// returns their IDs. A concurrent settlement waits for the lock, re-checks
+// score_journal_id and gets only what is still unsettled, so a bet is never
+// paid twice. Run it in the transaction that settles the batch.
+func (q *Queries) ClaimUnsettledBets(ctx context.Context, ids []string) ([]string, error) {
+	rows, err := q.db.Query(ctx, ClaimUnsettledBets, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const CountOpenBetsForQuestion = `-- name: CountOpenBetsForQuestion :one
 SELECT count(*)
 FROM quiz_responses r
@@ -672,6 +704,30 @@ func (q *Queries) SettleBetResult(ctx context.Context, arg SettleBetResultParams
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const SettleBetResults = `-- name: SettleBetResults :exec
+UPDATE quiz_responses r
+SET points_earned = v.points_earned,
+    score_journal_id = v.score_journal_id
+FROM (
+    SELECT unnest($1::char(28)[]) AS id,
+           unnest($2::int[]) AS points_earned,
+           unnest($3::char(28)[]) AS score_journal_id
+) v
+WHERE r.id = v.id
+`
+
+type SettleBetResultsParams struct {
+	Ids             []string `json:"ids"`
+	PointsEarned    []int32  `json:"points_earned"`
+	ScoreJournalIds []string `json:"score_journal_ids"`
+}
+
+// Stores the results of a claimed settlement batch (see ClaimUnsettledBets).
+func (q *Queries) SettleBetResults(ctx context.Context, arg SettleBetResultsParams) error {
+	_, err := q.db.Exec(ctx, SettleBetResults, arg.Ids, arg.PointsEarned, arg.ScoreJournalIds)
+	return err
 }
 
 const UpdateBetResult = `-- name: UpdateBetResult :one

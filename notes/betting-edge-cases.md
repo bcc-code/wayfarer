@@ -32,7 +32,8 @@ go test -v -count=1 -run 'TestValidateBet|TestNewBetCheck|TestPositiveBetAllowed
    before it (READ COMMITTED); different users never wait for each other.
 2. The bet is stored on `quiz_responses.bet_amount`. Nothing is journaled yet.
 3. `finishQuizSession` → auto-submits open submissions → `settleSessionBets` writes a stake (−bet)
-   and a payout journal entry per bet and stores the net on `points_earned` + `score_journal_id`.
+   and a payout journal entry per bet and stores the net on `points_earned` + `score_journal_id`,
+   500 bets per transaction (claimed with `FOR UPDATE`, so concurrent finishes pay out once).
    Payout = bet × multiplier (floored). A bet without an answer (`is_correct` NULL) is **void**: the
    payout entry returns the stake ("… - stake returned"), net 0, no push notification.
    Only PREDEFINED questions with `betting_enabled`, only `bet_amount > 0`.
