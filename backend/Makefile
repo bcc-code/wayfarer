@@ -219,3 +219,16 @@ loadtest-remote-smoke: ## Scaled-down off-box rampspike (~200 users) to verify p
 
 loadtest-remote-rampspike: ## Full 10k ramped QR-stampede spike from this machine
 	@./scripts/loadtest-remote.sh run ramp_offbox
+
+# Betting load test on the dedicated LT pair (interact-lt-server/-client,
+# TLS via Let's Encrypt on 2-29-101-91.sslip.io). See scripts/loadtest-lt.sh;
+# one-time setup: provision, env, deploy, seed.
+
+loadtest-betting-config: ## Mint user/Auth0/admin tokens on the LT server and fetch config.json
+	@./scripts/loadtest-lt.sh config
+
+loadtest-betting-smoke: ## Betting rampspike at ~200 users on the LT pair, settles bets
+	@./scripts/loadtest-lt.sh smoke
+
+loadtest-betting-rampspike: ## Full 10k betting rampspike on the LT pair, settles bets
+	@./scripts/loadtest-lt.sh run betting_ramp

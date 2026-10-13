@@ -24,6 +24,30 @@
 #                       heuristics get their connections killed (EOFs). Use a
 #                       VM in the same DC as the box; k6 output still streams
 #                       here and results are fetched back.
+#   LOADTEST_K6_SCRIPT  k6 script, relative to cmd/loadtest
+#                       (k6/freetext-quiz-rampspike.js)
+#   LOADTEST_SERVICE    systemd unit of the server (wayfarer); "active" means
+#                       the live blue/green color (wayfarer@$(cat active))
+#   LOADTEST_PSQL       psql command on the box (bench user on wayfarer_bench)
+#   LOADTEST_PREP_CMD   command on the box that resets the test data; default
+#                       resets the free-text quiz (completion points = $1)
+#   LOADTEST_TOKENGEN_ARGS  extra tokengen flags (e.g. -auth0-count 13000)
+#   LOADTEST_SSH_KEY    optional key file to use instead of the ssh agent
+#   LOADTEST_GENERATOR  may list several hosts (space-separated): each runs
+#                       one shard (SHARDS/SHARD env) of the k6 script
+#   LOADTEST_SAMPLE_SQL optional query sampled on the box once per second
+#                       during a run (e.g. settled bets): server/sql-sample.tsv
+#   LOADTEST_EXPORT_SQL "name|query" lines exported as server/<name>.csv after
+#                       the run (exact rows for later analysis)
+#   LOADTEST_SETTLE_SCRIPT  k6 script run once on the first generator after
+#                       all shards finish (shards then get SETTLE=0)
+#   LOADTEST_HTTPSTATS_FILE server HTTP stats file copied into the run
+#   LOADTEST_WAIT_SQL   query polled after k6 until it returns 0 (work that
+#                       outlives the request, e.g. bet settlement)
+#
+# Every run writes cmd/loadtest/results/<label>-<UTC timestamp>/: manifest,
+# per-shard k6 CSV + summary JSON + log + CPU, server/box CPU, SQL samples,
+# exports and pg_stat_statements. See analyze_run.py for the derived files.
 set -euo pipefail
 
 LOADTEST_SSH=${LOADTEST_SSH:-root@49.12.121.62}
@@ -33,6 +57,16 @@ LOADTEST_TOKENS=${LOADTEST_TOKENS:-13000}
 LOADTEST_WARMUP=${LOADTEST_WARMUP:-18}
 LOADTEST_GENERATOR=${LOADTEST_GENERATOR:-}
 LOADTEST_GENERATOR_DIR=${LOADTEST_GENERATOR_DIR:-/root/wayfarer-loadtest}
+LOADTEST_K6_SCRIPT=${LOADTEST_K6_SCRIPT:-k6/freetext-quiz-rampspike.js}
+LOADTEST_SERVICE=${LOADTEST_SERVICE:-wayfarer}
+LOADTEST_PSQL=${LOADTEST_PSQL:-PGPASSWORD=bench psql -h localhost -U bench -d wayfarer_bench}
+LOADTEST_PREP_CMD=${LOADTEST_PREP_CMD:-}
+LOADTEST_TOKENGEN_ARGS=${LOADTEST_TOKENGEN_ARGS:-}
+LOADTEST_SAMPLE_SQL=${LOADTEST_SAMPLE_SQL:-}
+LOADTEST_EXPORT_SQL=${LOADTEST_EXPORT_SQL:-}
+LOADTEST_SETTLE_SCRIPT=${LOADTEST_SETTLE_SCRIPT:-}
+LOADTEST_HTTPSTATS_FILE=${LOADTEST_HTTPSTATS_FILE:-}
+LOADTEST_WAIT_SQL=${LOADTEST_WAIT_SQL:-}
 
 QUIZ_ID='QZ01LOADTESTFREETEXT00000000'
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
@@ -41,29 +75,61 @@ LOADTEST_DIR=$BACKEND_DIR/cmd/loadtest
 RESULTS_DIR=$LOADTEST_DIR/results
 REMOTE_RESULTS=$LOADTEST_REMOTE_DIR/results
 
-rssh() { ssh -o BatchMode=yes "$LOADTEST_SSH" "$@"; }
+# One multiplexed connection per host: the prod firewall role rate-limits SSH
+# (ufw limit, 6 connections / 30s) and a run opens many more than that
+SSH_OPTS=(-o BatchMode=yes -o ControlMaster=auto -o "ControlPath=/tmp/loadtest-ssh-%C" -o ControlPersist=120)
+# LOADTEST_SSH_KEY: use this key file only, bypassing the ssh agent
+if [ -n "${LOADTEST_SSH_KEY:-}" ]; then
+    SSH_OPTS+=(-o IdentityAgent=none -o IdentitiesOnly=yes -i "$LOADTEST_SSH_KEY")
+fi
+rssh() { ssh "${SSH_OPTS[@]}" "$LOADTEST_SSH" "$@"; }
+rscp() { scp -q "${SSH_OPTS[@]}" "$@"; }
 rpsql() {
     # shellcheck disable=SC2029  # $1 expands locally on purpose
-    rssh "PGPASSWORD=bench psql -h localhost -U bench -d wayfarer_bench -q -Atc \"$1\""
+    rssh "$LOADTEST_PSQL -q -Atc \"$1\""
+}
+# service resolves LOADTEST_SERVICE on the box (blue/green: the active color)
+service() {
+    if [ "$LOADTEST_SERVICE" = active ]; then
+        echo "wayfarer@$(rssh "cat $LOADTEST_REMOTE_DIR/active")"
+    else
+        echo "$LOADTEST_SERVICE"
+    fi
 }
 
 cmd_config() {
+    # Built here and shipped, so the box needs no Go toolchain
+    echo "Building tokengen (linux/amd64)..."
+    (cd "$BACKEND_DIR" && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o "$RESULTS_DIR/tokengen.linux" ./cmd/loadtest/tokengen)
+    rssh "mkdir -p $LOADTEST_REMOTE_DIR/loadtest"
+    rscp "$RESULTS_DIR/tokengen.linux" "$LOADTEST_SSH:$LOADTEST_REMOTE_DIR/loadtest/tokengen"
     echo "Minting $LOADTEST_TOKENS tokens on $LOADTEST_SSH (baseUrl=$LOADTEST_BASE_URL)..."
+    # shellcheck disable=SC2029  # locals expand here on purpose
     rssh "set -a; . $LOADTEST_REMOTE_DIR/wayfarer.env; set +a; \
-        cd $LOADTEST_REMOTE_DIR/backend/cmd/loadtest && \
-        go run ./tokengen -limit $LOADTEST_TOKENS -base-url $LOADTEST_BASE_URL -output ./config.json"
-    scp -q "$LOADTEST_SSH:$LOADTEST_REMOTE_DIR/backend/cmd/loadtest/config.json" "$LOADTEST_DIR/config.json"
+        cd $LOADTEST_REMOTE_DIR/loadtest && \
+        ./tokengen -limit $LOADTEST_TOKENS -base-url $LOADTEST_BASE_URL -output ./config.json $LOADTEST_TOKENGEN_ARGS"
+    rscp "$LOADTEST_SSH:$LOADTEST_REMOTE_DIR/loadtest/config.json" "$LOADTEST_DIR/config.json"
     echo "Fetched $LOADTEST_DIR/config.json:"
     python3 -c "import json;c=json.load(open('$LOADTEST_DIR/config.json'));print(' baseUrl:',c['baseUrl']);print(' tokens: ',len(c['tokens']))"
 }
 
 cmd_prep() {
     local points=${1:-10}
-    echo "Resetting quiz state (completion_points=$points) and restarting wayfarer..."
-    rpsql "UPDATE quizzes SET completion_points=$points WHERE id='$QUIZ_ID';" >/dev/null
-    rpsql "DELETE FROM quiz_responses WHERE submission_id IN (SELECT id FROM quiz_submissions WHERE quiz_id='$QUIZ_ID');" >/dev/null
-    rpsql "DELETE FROM quiz_submissions WHERE quiz_id='$QUIZ_ID';" >/dev/null
-    rssh "systemctl restart wayfarer"
+    local svc
+    svc=$(service)
+    if [ -n "$LOADTEST_PREP_CMD" ]; then
+        # Server stopped while the data is reset: its background workers
+        # (e.g. the leaderboard drain) would race the reset's deletes
+        echo "Stopping $svc, resetting test data ($LOADTEST_PREP_CMD $points)..."
+        rssh "systemctl stop $svc && $LOADTEST_PREP_CMD $points"
+    else
+        echo "Resetting quiz state (completion_points=$points)..."
+        rpsql "UPDATE quizzes SET completion_points=$points WHERE id='$QUIZ_ID';" >/dev/null
+        rpsql "DELETE FROM quiz_responses WHERE submission_id IN (SELECT id FROM quiz_submissions WHERE quiz_id='$QUIZ_ID');" >/dev/null
+        rpsql "DELETE FROM quiz_submissions WHERE quiz_id='$QUIZ_ID';" >/dev/null
+    fi
+    echo "Restarting $svc..."
+    rssh "systemctl restart $svc"
     echo "Waiting ${LOADTEST_WARMUP}s for token-warmer boot pass..."
     sleep "$LOADTEST_WARMUP"
     curl -sf --max-time 5 "$LOADTEST_BASE_URL/health" >/dev/null || {
@@ -72,68 +138,195 @@ cmd_prep() {
     }
 }
 
+# Samplers write to $RUN_REMOTE on the box (and $GEN_DIR/<run> on each
+# generator), 1s resolution, ISO timestamps, capped at 1h; stopped after k6.
 start_samplers() {
-    local label=$1
-    # 2s interval x 300 samples = 10 min hard cap; stopped early after k6 exits.
-    rssh "mkdir -p $REMOTE_RESULTS; \
-        SRVPID=\$(systemctl show -p MainPID --value wayfarer); \
+    local svc
+    svc=$(service)
+    rssh "mkdir -p $RUN_REMOTE && chmod 777 $RUN_REMOTE; \
+        SRVPID=\$(systemctl show -p MainPID --value $svc); \
         export S_TIME_FORMAT=ISO LC_ALL=C; \
-        nohup pidstat -u -p \$SRVPID 2 300 > $REMOTE_RESULTS/$label.server.cpu 2>&1 & \
-        nohup pidstat -u -C postgres 2 300 > $REMOTE_RESULTS/$label.pg.cpu 2>&1 & \
-        nohup mpstat 2 300 > $REMOTE_RESULTS/$label.all.cpu 2>&1 & \
+        nohup pidstat -u -r -h -p \$SRVPID 1 3600 > $RUN_REMOTE/server.pidstat 2>&1 & \
+        nohup pidstat -u -h -C postgres 1 3600 > $RUN_REMOTE/postgres.pidstat 2>&1 & \
+        nohup mpstat 1 3600 > $RUN_REMOTE/server-box.mpstat 2>&1 & \
         true"
+    if [ -n "$LOADTEST_SAMPLE_SQL" ]; then
+        # The query travels as an argument, so its quotes need no escaping
+        printf '%s\n' '#!/bin/bash' \
+            "for i in \$(seq 3600); do echo \"\$(date -u +%Y-%m-%dT%H:%M:%SZ) \$($LOADTEST_PSQL -Atc \"\$1\")\"; sleep 1; done" |
+            rssh "cat > $RUN_REMOTE/sql-sampler.sh"
+        # shellcheck disable=SC2029  # locals expand here on purpose
+        rssh "nohup bash $RUN_REMOTE/sql-sampler.sh $(printf %q "$LOADTEST_SAMPLE_SQL") \
+            > $RUN_REMOTE/sql-sample.tsv 2>&1 & echo \$! > $RUN_REMOTE/sql-sampler.pid"
+    fi
+    # Reset query stats so pg_stat_statements covers exactly this run
+    rpsql "SELECT pg_stat_statements_reset();" >/dev/null 2>&1 || true
 }
 
 stop_samplers() {
-    rssh "pkill -x pidstat; pkill -x mpstat; true"
+    rssh "pkill -x pidstat; pkill -x mpstat; \
+        [ -f $RUN_REMOTE/sql-sampler.pid ] && kill \$(cat $RUN_REMOTE/sql-sampler.pid) 2>/dev/null; \
+        rm -f $RUN_REMOTE/sql-sampler.pid; true"
+}
+
+# collect_server_data copies the box's samplers and exports the run's rows
+# and query stats as CSV (LOADTEST_EXPORT_SQL: "name|query" lines)
+collect_server_data() {
+    rpsql "\\copy (SELECT * FROM pg_stat_statements WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database()) ORDER BY total_exec_time DESC) TO '$RUN_REMOTE/pg_stat_statements.csv' CSV HEADER" \
+        >/dev/null 2>&1 || echo "  (pg_stat_statements not available)"
+    if [ -n "$LOADTEST_EXPORT_SQL" ]; then
+        local name query
+        while IFS='|' read -r name query; do
+            [ -n "$name" ] || continue
+            # </dev/null: ssh would otherwise eat the rest of the loop's input
+            rpsql "\\copy ($query) TO '$RUN_REMOTE/$name.csv' CSV HEADER" </dev/null >/dev/null ||
+                echo "  export $name failed"
+        done <<< "$LOADTEST_EXPORT_SQL"
+    fi
+    if [ -n "$LOADTEST_HTTPSTATS_FILE" ]; then
+        rssh "cp $LOADTEST_HTTPSTATS_FILE $RUN_REMOTE/httpstats.jsonl 2>/dev/null; true"
+    fi
+    rssh "cd $RUN_REMOTE && chmod a+r * 2>/dev/null; true"
+    mkdir -p "$RUN_DIR/server"
+    rscp "$LOADTEST_SSH:$RUN_REMOTE/*" "$RUN_DIR/server/" || true
+}
+
+# write_manifest records what produced the data: code, target, knobs, hosts
+write_manifest() {
+    local started=$1 finished=$2 k6_exit=$3
+    shift 3
+    local server_env
+    # Non-secret server settings only
+    server_env=$(rssh "grep -E '^(ENVIRONMENT|DB_|SERVER_|TLS_AUTO_DOMAINS|GOGC|GOMEMLIMIT|LOG_LEVEL|OTEL_ENABLED|HTTP_STATS)' $LOADTEST_REMOTE_DIR/wayfarer.env $LOADTEST_REMOTE_DIR/env.* 2>/dev/null" || true)
+    local pg_settings
+    pg_settings=$(rpsql "SELECT name || '=' || setting FROM pg_settings WHERE name IN ('max_connections','shared_buffers','effective_cache_size','work_mem','synchronous_commit','max_wal_size','random_page_cost','server_version')" 2>/dev/null || true)
+    local hosts
+    hosts=$(for h in "$LOADTEST_SSH" "${GENERATORS[@]}"; do
+        ssh "${SSH_OPTS[@]}" "$h" 'echo "$(hostname) nproc=$(nproc) mem=$(free -g | awk "/Mem:/{print \$2}")G kernel=$(uname -r)"' 2>/dev/null | sed "s|^|$h |"
+    done)
+    MANIFEST_LABEL=$LABEL MANIFEST_RUN=$RUN_ID MANIFEST_STARTED=$started MANIFEST_FINISHED=$finished \
+    MANIFEST_K6_EXIT=$k6_exit MANIFEST_SCRIPT=$LOADTEST_K6_SCRIPT MANIFEST_BASE_URL=$LOADTEST_BASE_URL \
+    MANIFEST_GENERATORS="${GENERATORS[*]}" MANIFEST_SERVER=$LOADTEST_SSH MANIFEST_K6_ARGS="$*" \
+    MANIFEST_COMMIT="$(git -C "$BACKEND_DIR" rev-parse HEAD)" \
+    MANIFEST_DIRTY="$(git -C "$BACKEND_DIR" status --porcelain | wc -l | tr -d ' ')" \
+    MANIFEST_SERVER_ENV=$server_env MANIFEST_PG=$pg_settings MANIFEST_HOSTS=$hosts \
+        python3 -I -c '
+import json, os
+e = os.environ
+lines = lambda k: [l for l in e.get(k, "").splitlines() if l.strip()]
+print(json.dumps({
+    "label": e["MANIFEST_LABEL"], "run_id": e["MANIFEST_RUN"],
+    "started_utc": e["MANIFEST_STARTED"], "finished_utc": e["MANIFEST_FINISHED"],
+    "k6_exit": int(e["MANIFEST_K6_EXIT"]), "k6_script": e["MANIFEST_SCRIPT"],
+    "k6_args": e["MANIFEST_K6_ARGS"], "base_url": e["MANIFEST_BASE_URL"],
+    "server": e["MANIFEST_SERVER"], "generators": e["MANIFEST_GENERATORS"].split(),
+    "git_commit": e["MANIFEST_COMMIT"], "git_uncommitted_files": int(e["MANIFEST_DIRTY"]),
+    "server_env": lines("MANIFEST_SERVER_ENV"), "postgres": lines("MANIFEST_PG"),
+    "hosts": lines("MANIFEST_HOSTS"),
+}, indent=2))' > "$RUN_DIR/manifest.json"
+}
+
+# run_generator <host> <shard> <shards> [k6 args...]: one k6 shard on a
+# generator, with its own CPU samplers; outputs land in $GEN_DIR/$RUN_ID
+run_generator() {
+    local host=$1 shard=$2 shards=$3
+    shift 3
+    local out=$LOADTEST_GENERATOR_DIR/$RUN_ID name=shard$shard
+    local settle_env=""
+    [ -n "$LOADTEST_SETTLE_SCRIPT" ] && settle_env="--env SETTLE=0"
+    # shellcheck disable=SC2029  # locals expand here on purpose
+    ssh "${SSH_OPTS[@]}" "$host" \
+        "ulimit -n 65535; mkdir -p $out; cd $LOADTEST_GENERATOR_DIR && \
+         export S_TIME_FORMAT=ISO LC_ALL=C; \
+         (pidstat -u -r -h -C k6 1 3600 > $out/$name.k6.pidstat 2>&1 &); \
+         (mpstat 1 3600 > $out/$name.box.mpstat 2>&1 &); \
+         k6 run --env BASE_URL=$LOADTEST_BASE_URL --env SHARDS=$shards --env SHARD=$shard $settle_env $* \
+            --out csv=$out/$name.csv.gz --summary-export=$out/$name.summary.json \
+            $LOADTEST_K6_SCRIPT > $out/$name.k6.log 2>&1; rc=\$?; \
+         pkill -x pidstat; pkill -x mpstat; exit \$rc"
 }
 
 cmd_run() {
-    local label=${1:?usage: loadtest-remote.sh run <label> [k6 args...]}
+    LABEL=${1:?usage: loadtest-remote.sh run <label> [k6 args...]}
     shift
-    mkdir -p "$RESULTS_DIR"
+    RUN_ID=$LABEL-$(date -u +%Y%m%dT%H%M%SZ)
+    RUN_DIR=$RESULTS_DIR/$RUN_ID
+    RUN_REMOTE=$REMOTE_RESULTS/$RUN_ID
+    read -r -a GENERATORS <<< "$LOADTEST_GENERATOR"
+    mkdir -p "$RUN_DIR"
+    echo "Run $RUN_ID -> $RUN_DIR"
 
     cmd_prep
-    local sj_before
-    sj_before=$(rpsql "SELECT count(*) FROM score_journal;")
-    start_samplers "$label"
+    local started
+    started=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+    start_samplers
 
     local k6_exit=0
-    if [ -n "$LOADTEST_GENERATOR" ]; then
-        echo "Syncing loadtest tree to generator $LOADTEST_GENERATOR..."
-        rsync -az --delete "$LOADTEST_DIR/k6" "$LOADTEST_DIR/config.json" \
-            "$LOADTEST_GENERATOR:$LOADTEST_GENERATOR_DIR/"
-        echo "Running k6 on $LOADTEST_GENERATOR against $LOADTEST_BASE_URL (label=$label)..."
-        # shellcheck disable=SC2029  # locals expand here on purpose
-        ssh -o BatchMode=yes "$LOADTEST_GENERATOR" \
-            "ulimit -n 65535; cd $LOADTEST_GENERATOR_DIR && \
-             k6 run --env BASE_URL=$LOADTEST_BASE_URL $* \
-                --out csv=$label.csv.gz k6/freetext-quiz-rampspike.js" \
-            2>&1 | tee "$RESULTS_DIR/$label.k6.log" || k6_exit=$?
-        scp -q "$LOADTEST_GENERATOR:$LOADTEST_GENERATOR_DIR/$label.csv.gz" "$RESULTS_DIR/" || true
+    if [ ${#GENERATORS[@]} -gt 0 ]; then
+        local shards=${#GENERATORS[@]} i pids=()
+        for i in "${!GENERATORS[@]}"; do
+            echo "Syncing loadtest tree to ${GENERATORS[$i]}..."
+            rsync -az --delete -e "ssh ${SSH_OPTS[*]}" "$LOADTEST_DIR/k6" "$LOADTEST_DIR/config.json" \
+                "${GENERATORS[$i]}:$LOADTEST_GENERATOR_DIR/"
+        done
+        echo "Running $shards k6 shard(s) against $LOADTEST_BASE_URL..."
+        for i in "${!GENERATORS[@]}"; do
+            run_generator "${GENERATORS[$i]}" "$i" "$shards" "$@" &
+            pids+=($!)
+        done
+        for i in "${!pids[@]}"; do
+            local rc=0
+            wait "${pids[$i]}" || rc=$?
+            echo "  shard $i on ${GENERATORS[$i]} exited $rc"
+            [ "$rc" -ne 0 ] && k6_exit=$rc
+        done
+        if [ -n "$LOADTEST_SETTLE_SCRIPT" ]; then
+            echo "All shards done; settling on ${GENERATORS[0]} ($LOADTEST_SETTLE_SCRIPT)..."
+            local out=$LOADTEST_GENERATOR_DIR/$RUN_ID rc=0
+            # shellcheck disable=SC2029  # locals expand here on purpose
+            ssh "${SSH_OPTS[@]}" "${GENERATORS[0]}" \
+                "cd $LOADTEST_GENERATOR_DIR && k6 run --env BASE_URL=$LOADTEST_BASE_URL \
+                    --out csv=$out/settle.csv.gz --summary-export=$out/settle.summary.json \
+                    $LOADTEST_SETTLE_SCRIPT > $out/settle.k6.log 2>&1" || rc=$?
+            echo "  settle exited $rc"
+            [ "$rc" -ne 0 ] && k6_exit=$rc
+        fi
+        for i in "${!GENERATORS[@]}"; do
+            mkdir -p "$RUN_DIR/generator$i"
+            rscp "${GENERATORS[$i]}:$LOADTEST_GENERATOR_DIR/$RUN_ID/*" "$RUN_DIR/generator$i/" || true
+        done
     else
-        echo "Running k6 locally against $LOADTEST_BASE_URL (label=$label)..."
+        echo "Running k6 locally against $LOADTEST_BASE_URL..."
         k6 run --env "BASE_URL=$LOADTEST_BASE_URL" "$@" \
-            --out "csv=$RESULTS_DIR/$label.csv" \
-            "$LOADTEST_DIR/k6/freetext-quiz-rampspike.js" 2>&1 | tee "$RESULTS_DIR/$label.k6.log" || k6_exit=$?
+            --out "csv=$RUN_DIR/local.csv.gz" --summary-export="$RUN_DIR/local.summary.json" \
+            "$LOADTEST_DIR/$LOADTEST_K6_SCRIPT" 2>&1 | tee "$RUN_DIR/local.k6.log" || k6_exit=$?
     fi
 
+    if [ -n "$LOADTEST_WAIT_SQL" ]; then
+        # Work can outlive the k6 request (e.g. settlement past the server's
+        # write timeout): keep sampling until the query returns 0 (max 30 min)
+        echo "Waiting for the server to finish ($LOADTEST_WAIT_SQL)..."
+        local left i
+        for i in $(seq 1 360); do
+            left=$(rpsql "$LOADTEST_WAIT_SQL" 2>/dev/null || echo "?")
+            [ "$left" = 0 ] && break
+            [ $((i % 6)) = 1 ] && echo "  $left left"
+            sleep 5
+        done
+        echo "  done waiting ($left left)"
+    fi
     stop_samplers
-    local sj_after
-    sj_after=$(rpsql "SELECT count(*) FROM score_journal;")
-    scp -q "$LOADTEST_SSH:$REMOTE_RESULTS/$label.*.cpu" "$RESULTS_DIR/" || true
+    local finished
+    finished=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+    echo "Collecting server data..."
+    collect_server_data
+    write_manifest "$started" "$finished" "$k6_exit" "$@"
 
     echo ""
-    echo "=== $label summary ==="
-    echo "k6 exit=$k6_exit  score_journal delta=$((sj_after - sj_before))"
-    grep -E "http_req_duration\.|http_req_failed|http_reqs|graphql_errors\.|quiz_completions|quiz_failures|dropped_iter" \
-        "$RESULTS_DIR/$label.k6.log" | head -8 || true
-    awk '$1 ~ /:/ && $NF != "Command" {c=$(NF-2); if(c+0>m)m=c+0} END{printf "server peak %%CPU: %.0f\n", m}' \
-        "$RESULTS_DIR/$label.server.cpu" 2>/dev/null || true
-    awk '$1 ~ /:/ && $NF != "Command" {c=$(NF-2); s[$1]+=c+0} END{for(t in s) if(s[t]>m)m=s[t]; printf "postgres peak %%CPU: %.0f\n", m}' \
-        "$RESULTS_DIR/$label.pg.cpu" 2>/dev/null || true
-    awk '$2=="all" && $3 ~ /^[0-9.]/ {b=100-$NF; if(b>m)m=b} END{printf "box peak busy: %.1f%%\n", m}' \
-        "$RESULTS_DIR/$label.all.cpu" 2>/dev/null || true
+    echo "=== $RUN_ID summary ==="
+    echo "k6 exit=$k6_exit"
+    python3 -I "$LOADTEST_DIR/analyze_run.py" "$RUN_DIR" || true
+    echo "Data: $RUN_DIR"
     exit "$k6_exit"
 }
 
