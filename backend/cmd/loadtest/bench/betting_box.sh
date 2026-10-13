@@ -77,14 +77,21 @@ cmd_reset() {
     # trigger made deleting them take minutes on one core, so it is off for
     # the delete and the leaderboards are rebuilt once instead (as
     # gendata2.sql does for its bulk load). The server is stopped meanwhile.
+    # The responses go first: quiz_responses.score_journal_id references the
+    # journal (ON DELETE SET NULL) without an index, so every deleted journal
+    # row scans quiz_responses. With the run's responses still there (~50k),
+    # deleting ~90k journal rows took ~7 min on one core.
     psql_q -v quiz_id="'$QUIZ_ID'" <<'SQL'
 BEGIN;
+CREATE TEMP TABLE run_responses ON COMMIT DROP AS
+    SELECT r.id FROM quiz_responses r
+    JOIN quiz_submissions s ON s.id = r.submission_id
+    WHERE s.quiz_id = :quiz_id;
+DELETE FROM quiz_responses WHERE id IN (SELECT id FROM run_responses);
+DELETE FROM quiz_submissions WHERE quiz_id = :quiz_id;
 ALTER TABLE score_journal DISABLE TRIGGER trigger_score_journal_leaderboard;
 DELETE FROM score_journal
-WHERE (source_type = 'BET' AND source_id IN (
-        SELECT r.id FROM quiz_responses r
-        JOIN quiz_submissions s ON s.id = r.submission_id
-        WHERE s.quiz_id = :quiz_id))
+WHERE (source_type = 'BET' AND source_id IN (SELECT id FROM run_responses))
    OR (source_type = 'QUIZ' AND source_id = :quiz_id);
 ALTER TABLE score_journal ENABLE TRIGGER trigger_score_journal_leaderboard;
 SELECT regenerate_leaderboards();
