@@ -167,6 +167,29 @@ SET points_earned = @pointsearned::int,
 WHERE id = @id::char(28)
   AND score_journal_id IS NULL;
 
+-- name: ClaimUnsettledBets :many
+-- Locks the responses of a settlement batch that are not settled yet and
+-- returns their IDs. A concurrent settlement waits for the lock, re-checks
+-- score_journal_id and gets only what is still unsettled, so a bet is never
+-- paid twice. Run it in the transaction that settles the batch.
+SELECT id FROM quiz_responses
+WHERE id = ANY(@ids::char(28)[])
+  AND score_journal_id IS NULL
+ORDER BY id
+FOR UPDATE;
+
+-- name: SettleBetResults :exec
+-- Stores the results of a claimed settlement batch (see ClaimUnsettledBets).
+UPDATE quiz_responses r
+SET points_earned = v.points_earned,
+    score_journal_id = v.score_journal_id
+FROM (
+    SELECT unnest(@ids::char(28)[]) AS id,
+           unnest(@points_earned::int[]) AS points_earned,
+           unnest(@score_journal_ids::char(28)[]) AS score_journal_id
+) v
+WHERE r.id = v.id;
+
 -- name: GetUserAvailableBetPoints :one
 -- The points a user can still bet in a project: their score minus their open
 -- stakes. A stake is open until it is paid out; once its session is finished
