@@ -274,6 +274,21 @@ second × request name: count, failed, p50/p95/p99/max), `tls_per_second.csv`,
 `settlement_per_second.csv` (from the exact journal timestamps). It also
 writes a `summary.json`.
 
+### Results on the LT pair (2026-10-13, ~10k users, ~47k bets, two generators)
+
+| Change | finishQuizSession | Leaderboards caught up |
+|---|---|---|
+| One transaction per bet | ~329s (cut off at the 300s write timeout) | together with settlement |
+| Batched settlement (500/tx) | 11.2s | ~2 min after (one delta applied at a time, ~1.1k/s, one core) |
+| + grouped leaderboard drain (migration 00110) | 12.8s | same second as the last bet (queue peak 4,500 instead of ~105k) |
+
+In every run, all bets were settled with matching journal rows, and the
+leaderboards matched the journal for all 13,162 players. The open item is
+first-page-load p95 of 1.0–1.4s during the 10s stampede, with both 8-vCPU
+generators at ~800% CPU (part of it is k6 itself). The RAM-first "World"
+(`ram-first-architecture.html` §18) was not needed: the grouped drain
+already keeps the lag under the 10–20s target.
+
 Gotchas, all found while bringing the pair up:
 
 - **SSH key:** the scripts use a dedicated key,
