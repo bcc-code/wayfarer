@@ -299,6 +299,30 @@ func TestQuizSessionBetSettlement(t *testing.T) {
 		}
 	})
 
+	// Points as the app shows them (Project.myPoints, cached per user), and as
+	// the score journal has them
+	apiPoints := func(t *testing.T, token string) int {
+		t.Helper()
+		resp := client.WithAuth(token).MustExecute(t, `query($id: ID!) { project(id: $id) { myPoints } }`,
+			map[string]any{"id": projectID})
+		require.False(t, resp.HasErrors(), resp.ErrorMessage())
+		var res struct {
+			Project struct{ MyPoints int } `json:"project"`
+		}
+		require.NoError(t, resp.UnmarshalData(&res))
+		return res.Project.MyPoints
+	}
+	journalPoints := func(t *testing.T, userID string) int {
+		t.Helper()
+		var sum int
+		require.NoError(t, dbMgr.DB.Pool.QueryRow(ctx,
+			`SELECT COALESCE(SUM(points), 0) FROM score_journal WHERE user_id = $1 AND project_id = $2`,
+			userID, projectID).Scan(&sum))
+		return sum
+	}
+	// Read (and so cache) both users' points before the payout
+	pointsBefore := map[string]int{winnerID: apiPoints(t, winnerToken), loserID: apiPoints(t, loserToken)}
+
 	// Two finishes at once (e.g. a double click) must still pay out each bet once
 	var wg sync.WaitGroup
 	for range 2 {
@@ -333,6 +357,20 @@ func TestQuizSessionBetSettlement(t *testing.T) {
 			assert.Equal(t, tt.wantNet, sum)
 		})
 	}
+
+	t.Run("myPoints shows the payout right after finishing, not the cached points", func(t *testing.T) {
+		for _, u := range []struct {
+			id, token string
+			wantNet   int
+		}{
+			{winnerID, winnerToken, 200 + 40}, // custom 3x and default 2x won, the void bet nets 0
+			{loserID, loserToken, -50 - 40},   // custom half back and default lost
+		} {
+			got := apiPoints(t, u.token)
+			assert.Equal(t, journalPoints(t, u.id), got, "myPoints matches the score journal")
+			assert.Equal(t, pointsBefore[u.id]+u.wantNet, got, "myPoints moved by the settled bets")
+		}
+	})
 
 	t.Run("bet without an answer is void, the stake is returned", func(t *testing.T) {
 		count, sum := betJournal(t, winnerUngraded)

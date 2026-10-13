@@ -22,6 +22,9 @@ const (
 	leaderboardApplyReportEvery   = time.Minute
 	leaderboardApplyErrorBackoff  = 2 * time.Second
 	leaderboardApplyDrainMaxLoops = 100 // per tick; bounds one tick's work
+	// Applied deltas refresh the cached leaderboards at most this often, so
+	// a steady trickle of scores doesn't flush the caches on every tick
+	leaderboardApplyRefreshEvery = time.Second
 )
 
 // LeaderboardApplyWorker drains the leaderboard_apply_queue outbox filled by
@@ -30,6 +33,10 @@ const (
 // so batching and concurrent instances (SKIP LOCKED) are safe.
 type LeaderboardApplyWorker struct {
 	queries LeaderboardApplyQuerier
+	// onApplied runs after deltas were applied (throttled to refreshEvery),
+	// e.g. to drop cached leaderboards that are now stale. Optional.
+	onApplied    func()
+	refreshEvery time.Duration
 
 	interval  time.Duration
 	batchSize int32
@@ -39,11 +46,16 @@ type LeaderboardApplyWorker struct {
 }
 
 // NewLeaderboardApplyWorker constructs the worker with production defaults.
-func NewLeaderboardApplyWorker(queries LeaderboardApplyQuerier) *LeaderboardApplyWorker {
+// onApplied (may be nil) runs at most once per second while deltas are being
+// applied, and once more after the last ones, so leaderboard caches never
+// outlive the table state they were read from by more than about a second.
+func NewLeaderboardApplyWorker(queries LeaderboardApplyQuerier, onApplied func()) *LeaderboardApplyWorker {
 	return &LeaderboardApplyWorker{
-		queries:   queries,
-		interval:  leaderboardApplyInterval,
-		batchSize: leaderboardApplyBatchSize,
+		queries:      queries,
+		onApplied:    onApplied,
+		refreshEvery: leaderboardApplyRefreshEvery,
+		interval:     leaderboardApplyInterval,
+		batchSize:    leaderboardApplyBatchSize,
 	}
 }
 
@@ -67,6 +79,9 @@ func (w *LeaderboardApplyWorker) Stop() {
 	defer cancel()
 	if n := w.drain(ctx); n > 0 {
 		slog.Info("leaderboard apply: drained on shutdown", "applied", n)
+		if w.onApplied != nil {
+			w.onApplied()
+		}
 	}
 }
 
@@ -78,12 +93,21 @@ func (w *LeaderboardApplyWorker) run(ctx context.Context) {
 	report := time.NewTicker(leaderboardApplyReportEvery)
 	defer report.Stop()
 
+	var pending bool // deltas applied since the last onApplied
+	var lastRefresh time.Time
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			w.drain(ctx)
+			if w.drain(ctx) > 0 {
+				pending = true
+			}
+			if pending && w.onApplied != nil && time.Since(lastRefresh) >= w.refreshEvery {
+				w.onApplied()
+				pending = false
+				lastRefresh = time.Now()
+			}
 		case <-report.C:
 			backlog, err := w.queries.CountLeaderboardApplyQueue(ctx)
 			if err == nil && backlog > leaderboardApplyBacklogWarn {
