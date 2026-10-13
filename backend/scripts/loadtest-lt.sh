@@ -238,7 +238,7 @@ remote() {
     LOADTEST_SETTLE_SCRIPT=k6/betting-settle.js \
     LOADTEST_HTTPSTATS_FILE=$REMOTE/httpstats.jsonl \
     LOADTEST_EXPORT_SQL="$EXPORT_SQL" \
-    LOADTEST_WAIT_SQL="SELECT count(*) FROM quiz_responses r JOIN quiz_submissions s ON s.id = r.submission_id WHERE s.quiz_id = '$QUIZ' AND r.bet_amount > 0 AND r.score_journal_id IS NULL" \
+    LOADTEST_WAIT_SQL="SELECT (SELECT count(*) FROM quiz_responses r JOIN quiz_submissions s ON s.id = r.submission_id WHERE s.quiz_id = '$QUIZ' AND r.bet_amount > 0 AND r.score_journal_id IS NULL) + (SELECT count(*) FROM leaderboard_apply_queue)" \
     LOADTEST_BASE_URL=https://$LT_DOMAIN \
     LOADTEST_REMOTE_DIR=$REMOTE \
     LOADTEST_SERVICE=active \
@@ -247,7 +247,7 @@ remote() {
     LOADTEST_PREP_CMD="$REMOTE/loadtest/betting_box.sh reset" \
     LOADTEST_K6_SCRIPT=k6/betting-quiz-rampspike.js \
     LOADTEST_TOKENGEN_ARGS="-auth0-count ${LOADTEST_TOKENS:-13000} -admin-user $LT_ADMIN_USER" \
-    LOADTEST_SAMPLE_SQL="SELECT count(*) FILTER (WHERE r.score_journal_id IS NOT NULL) || ' settled / ' || count(*) || ' bets' FROM quiz_responses r JOIN quiz_submissions s ON s.id = r.submission_id WHERE s.quiz_id = 'QZ01LOADTESTBETTING000000000' AND r.bet_amount > 0" \
+    LOADTEST_SAMPLE_SQL="SELECT count(*) FILTER (WHERE r.score_journal_id IS NOT NULL) || ' settled / ' || count(*) || ' bets, leaderboard queue ' || (SELECT count(*) FROM leaderboard_apply_queue) FROM quiz_responses r JOIN quiz_submissions s ON s.id = r.submission_id WHERE s.quiz_id = '$QUIZ' AND r.bet_amount > 0" \
         "$SCRIPT_DIR/loadtest-remote.sh" "$@"
 }
 
