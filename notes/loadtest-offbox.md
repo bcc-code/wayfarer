@@ -267,8 +267,8 @@ Every run writes `backend/cmd/loadtest/results/<label>-<UTC timestamp>/`
 | `server/pg_stat_statements.csv` | per-query stats for exactly this run (reset at start) |
 | `server/httpstats.jsonl` | the server's own HTTP stats (15s) |
 
-`cmd/loadtest/analyze_run.py <run-dir>` (stdlib only, run automatically)
-merges the shards. It adds graph-ready CSVs: `requests_per_second.csv` (per
+`go run ./cmd/loadtest/analyzerun <run-dir>` (from `backend/`, run
+automatically after every run) merges the shards. It adds graph-ready CSVs: `requests_per_second.csv` (per
 second × request name: count, failed, p50/p95/p99/max), `tls_per_second.csv`,
 `cpu_per_second.csv` (server/postgres/boxes/k6 side by side) and
 `settlement_per_second.csv` (from the exact journal timestamps). It also
