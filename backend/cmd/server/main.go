@@ -378,7 +378,9 @@ func main() {
 	// Leaderboard apply worker: drains the score-delta outbox filled by the
 	// score_journal INSERT trigger (migration 00101) outside request
 	// transactions. Replaces the synchronous 38-statement trigger fan-out.
-	leaderboardApplyWorker := services.NewLeaderboardApplyWorker(db.Queries)
+	// Applied deltas drop the cached leaderboards, which were invalidated
+	// when the scores were written but may have been re-read in between.
+	leaderboardApplyWorker := services.NewLeaderboardApplyWorker(db.Queries, cacheInstance.InvalidateLeaderboardScores)
 	leaderboardApplyWorker.Start(ctx)
 	defer leaderboardApplyWorker.Stop()
 	slog.Info("Leaderboard apply worker started")

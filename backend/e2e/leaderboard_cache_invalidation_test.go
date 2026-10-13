@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/bcc-media/wayfarer/e2e/testutil"
+	"github.com/bcc-media/wayfarer/internal/services"
+	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -112,4 +114,84 @@ func TestLeaderboardCacheInvalidationAfterScoreChange(t *testing.T) {
 	require.Equal(t, 1, result2.Project.Leaderboard.TotalCount)
 	assert.Equal(t, 150, result2.Project.Leaderboard.Edges[0].Node.Score,
 		"score should be 150 after invalidation, not stale 100")
+}
+
+// TestLeaderboardCacheRefreshedAfterAsyncApply covers the gap between a score
+// write and its asynchronous leaderboard apply (migration 00101): a ranking
+// read in between is cached with the old score, and the write-time project
+// invalidation has already happened. The apply worker must drop it once the
+// delta is applied, or the stale ranking lives for the full cache TTL (seen
+// after batched bet settlement: ~1 min of queued deltas).
+func TestLeaderboardCacheRefreshedAfterAsyncApply(t *testing.T) {
+	const (
+		churchID  = "CH01TEST0000000000000ASYNC01"
+		projectID = "PR01TEST0000000000000ASYNC01"
+		userID    = "US01TEST0000000000000ASYNC01"
+	)
+	ctx := context.Background()
+	dbMgr, _ := GetTestEnv()
+	require.NoError(t, dbMgr.Clean(ctx))
+
+	require.NoError(t, dbMgr.CreateTestChurch(ctx, churchID, "Async Church", "NO", "S"))
+	require.NoError(t, dbMgr.CreateTestProject(ctx, projectID, "Async Project"))
+	_, err := dbMgr.DB.Pool.Exec(ctx, `UPDATE settings SET value_text = $1 WHERE key = 'current_project_id'`, projectID)
+	require.NoError(t, err)
+	require.NoError(t, dbMgr.CreateTestUser(ctx, userID, "AsyncUser", "MALE", time.Now().AddDate(-25, 0, 0), churchID))
+	require.NoError(t, dbMgr.EnrollUserInProject(ctx, userID, projectID))
+	require.NoError(t, dbMgr.AddLeaderboardConsent(ctx, userID))
+	require.NoError(t, dbMgr.AddScoreForUser(ctx, userID, projectID, 100))
+
+	router, testCache, cleanup, err := testutil.SetupTestServerWithCache(ctx, dbMgr)
+	require.NoError(t, err)
+	defer cleanup()
+	client := testutil.NewGraphQLClient(router)
+	defer client.Close()
+	token, err := testutil.GenerateAdminToken(userID)
+	require.NoError(t, err)
+
+	score := func(t *testing.T) int {
+		t.Helper()
+		resp := client.WithAuth(token).MustExecute(t, `query($projectId: ID!) {
+			project(id: $projectId) { leaderboard(entityType: PERSONS, first: 10) { edges { node { id score } } totalCount } }
+		}`, map[string]any{"projectId": projectID})
+		require.False(t, resp.HasErrors(), resp.ErrorMessage())
+		var res leaderboardResult
+		require.NoError(t, resp.UnmarshalData(&res))
+		require.Equal(t, 1, res.Project.Leaderboard.TotalCount)
+		return res.Project.Leaderboard.Edges[0].Node.Score
+	}
+
+	// The ranking is cached with the old score
+	require.Equal(t, 100, score(t))
+
+	// A score write: the journal row commits (its delta is queued, not yet
+	// applied) and the write invalidates the project, as every score write does
+	_, err = dbMgr.DB.Pool.Exec(ctx, `INSERT INTO score_journal (id, project_id, user_id, points, source_type, reason)
+		VALUES ($1, $2, $3, 50, 'MANUAL', 'async')`, ulid.NewScoreJournalID(), projectID, userID)
+	require.NoError(t, err)
+	testCache.InvalidateProject(projectID)
+
+	// A ranking read lands before the apply. The test router drains the queue
+	// before each request; holding the queued row's lock makes that drain skip
+	// it (SKIP LOCKED), exactly like a read that beats the production worker.
+	lock, err := dbMgr.DB.Pool.Begin(ctx)
+	require.NoError(t, err)
+	var queued int
+	require.NoError(t, lock.QueryRow(ctx,
+		`SELECT count(*) FROM (SELECT id FROM leaderboard_apply_queue FOR UPDATE) q`).Scan(&queued))
+	require.Equal(t, 1, queued, "the delta is waiting for the apply worker")
+	require.Equal(t, 100, score(t), "read before the apply: the old score, now cached")
+	require.NoError(t, lock.Rollback(ctx))
+
+	// The production apply worker applies the delta and refreshes the caches
+	worker := services.NewLeaderboardApplyWorker(dbMgr.DB.Queries, testCache.InvalidateLeaderboardScores)
+	worker.Start(ctx)
+	defer worker.Stop()
+	require.Eventually(t, func() bool {
+		var n int
+		return dbMgr.DB.Pool.QueryRow(ctx, `SELECT count(*) FROM leaderboard_apply_queue`).Scan(&n) == nil && n == 0
+	}, 5*time.Second, 20*time.Millisecond)
+
+	assert.Eventually(t, func() bool { return score(t) == 150 }, 3*time.Second, 50*time.Millisecond,
+		"the ranking must show the applied score, not the one cached before the apply")
 }
