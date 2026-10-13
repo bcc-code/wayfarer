@@ -128,4 +128,4 @@ SELECT n_teams, count(*) AS users FROM (
 ) s GROUP BY n_teams ORDER BY n_teams;
 
 \echo '=== db size ==='
-SELECT pg_size_pretty(pg_database_size('wayfarer_bench'));
+SELECT pg_size_pretty(pg_database_size(current_database()));

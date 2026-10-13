@@ -74,4 +74,4 @@ SELECT min(c), round(avg(c),1) AS avg, max(c) FROM (
 ) s;
 
 \echo '=== db size ==='
-SELECT pg_size_pretty(pg_database_size('wayfarer_bench'));
+SELECT pg_size_pretty(pg_database_size(current_database()));
