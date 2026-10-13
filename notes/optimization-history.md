@@ -120,9 +120,9 @@ ES256 unavailable there), then TLS handshakes (fixed by EC256, available).
 ## The distilled lessons
 
 1. **Locality beats machinery.** Local Postgres removed more latency than any
-   code change; most of the "distributed" code (cross-instance invalidation,
-   connection ceilings, per-instance cache skew) existed to compensate for
-   distance the system didn't need.
+   code change; most of the "distributed" code (connection ceilings,
+   per-instance cache skew) existed to compensate for distance the system
+   didn't need.
 2. **RAM is the budget, not the architecture.** The dataset fits in cache
    many times over; the resident in-memory World was measured (builds in
    178 ms) and *rejected* because Postgres-in-RAM already delivers.
