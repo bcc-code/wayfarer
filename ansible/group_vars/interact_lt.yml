@@ -4,8 +4,9 @@
 machine_hostname: interact-lt-server
 
 # Free Let's Encrypt cert via sslip.io (resolves to the IP, no DNS needed),
-# obtained by the wayfarer server's own autocert like prod
-loadtest_domain: 2-29-101-91.sslip.io
+# obtained by the wayfarer server's own autocert like prod. Derived from the
+# box's IP (boxes are recreated per test round); loadtest-lt.sh uses the same rule.
+loadtest_domain: "{{ ansible_host | replace('.', '-') }}.sslip.io"
 postgres_tls_domain: "{{ loadtest_domain }}"
 
 # No tailnet, no external read-only clients: Postgres stays on loopback

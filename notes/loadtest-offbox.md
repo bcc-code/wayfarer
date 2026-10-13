@@ -138,28 +138,37 @@ containers after dokploy redeploys (traefik "multiple Services" errors).
 Two Hetzner CCX33 boxes in Helsinki (8 dedicated vCPU, 32 GB each), close to
 prod's Ryzen 5 3600 (6C/12T):
 
-- **interact-lt-server** (`root@2.29.101.91`): a prod copy built from the prod
-  Ansible roles via `ansible/loadtest.yml` + `inventory-loadtest.yml`. It runs
+- **interact-lt-server**: a prod copy built from the prod Ansible roles via
+  `ansible/loadtest.yml`. It runs
   hardening, tuning, firewall, postgres, interact and wayfarer, and skips
   tailscale, backup and jobs. `group_vars/interact_lt.yml` turns off the
   postgres role's tailnet assert and keeps Postgres on loopback.
   - The app runs natively as `wayfarer@{blue,green}` (SO_REUSEPORT,
     `DB_MAX_OPEN_CONNS=230`) and terminates TLS itself, like prod. The
-    certificate is a free Let's Encrypt cert for **`2-29-101-91.sslip.io`**,
+    certificate is a free Let's Encrypt cert for **`<server-ip-with-dashes>.sslip.io`**,
     obtained by autocert (ECDSA); the sslip.io name resolves to the IP, so no
     DNS record is needed.
   - Firestore, S3, Pub/Sub, push and mail are not configured.
-- **interact-lt-client** (`root@2.29.97.60`): k6 only, with the same
+- **interact-lt-client**: k6 only, with the same
   `tuning` role (nofile, somaxconn, ports) so the generator isn't the limit.
 
 Everything is driven by `backend/scripts/loadtest-lt.sh`. Secrets (DB
 password, JWT secret, Auth0 load-test key) are generated once into
 `backend/cmd/loadtest/results/lt-secrets.env`, which is gitignored.
 
-One-time setup:
+The boxes are created for a round of tests and deleted afterwards, so their
+IPs are not in the repo. `loadtest-lt.sh hosts` records them in
+`results/lt-hosts.env` (gitignored); every other command reads that file, or
+`LT_SERVER_IP`/`LT_CLIENT_IPS` from the environment. The Ansible inventory is
+generated from it (`results/lt-inventory.yml`), and the TLS name is the
+server's IP with dashes plus `.sslip.io`. A recreated box that reuses an IP
+has a new SSH host key: `ssh-keygen -R <ip>`.
+
+One-time setup per set of boxes:
 
 ```
 cd backend
+./scripts/loadtest-lt.sh hosts <server-ip> <client-ip> [<client-ip>...]
 ./scripts/loadtest-lt.sh provision   # ansible, both boxes
 ./scripts/loadtest-lt.sh env         # /opt/wayfarer/wayfarer.env on the server
 ./scripts/loadtest-lt.sh deploy      # build like CI, ship, deploy.sh, wait for TLS
@@ -223,8 +232,8 @@ One CCX33 running k6 tops out at about 800% CPU during the 10k stampede.
 The first full run delivered only 7,400 of the 10,000 arrivals (3,620
 dropped iterations). There are now two client boxes:
 
-- `interact-lt-client` (2.29.97.60)
-- `interact-lt-client2` (2.29.107.165)
+- `interact-lt-client`
+- `interact-lt-client2`
 
 How a run is split across them:
 
@@ -233,7 +242,7 @@ How a run is split across them:
 - After both shards finish, `k6/betting-settle.js` runs once on the first
   generator (the shards run with `SETTLE=0`). Settlement therefore starts
   only when every user is done.
-- Override the generator list with `LT_CLIENTS="root@a root@b ..."`.
+- The generator list is every client IP given to `loadtest-lt.sh hosts`.
 
 ### Run data (for graphing afterwards)
 
