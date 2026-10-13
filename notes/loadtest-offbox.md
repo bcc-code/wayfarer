@@ -132,3 +132,167 @@ Operational notes: quiz fixtures reset via /tmp/quiz_fixtures.sql on the box
 (psql -d wayfarer_bench); traefik config backup at traefik.yml.bak, old RSA
 cert store at dynamic/acme.json.rsa.bak; watch for stale duplicate app
 containers after dokploy redeploys (traefik "multiple Services" errors).
+
+## Betting load test on the LT pair (2026-10-13)
+
+Two Hetzner CCX33 boxes in Helsinki (8 dedicated vCPU, 32 GB each), close to
+prod's Ryzen 5 3600 (6C/12T):
+
+- **interact-lt-server** (`root@2.29.101.91`): a prod copy built from the prod
+  Ansible roles via `ansible/loadtest.yml` + `inventory-loadtest.yml`. It runs
+  hardening, tuning, firewall, postgres, interact and wayfarer, and skips
+  tailscale, backup and jobs. `group_vars/interact_lt.yml` turns off the
+  postgres role's tailnet assert and keeps Postgres on loopback.
+  - The app runs natively as `wayfarer@{blue,green}` (SO_REUSEPORT,
+    `DB_MAX_OPEN_CONNS=230`) and terminates TLS itself, like prod. The
+    certificate is a free Let's Encrypt cert for **`2-29-101-91.sslip.io`**,
+    obtained by autocert (ECDSA); the sslip.io name resolves to the IP, so no
+    DNS record is needed.
+  - Firestore, S3, Pub/Sub, push and mail are not configured.
+- **interact-lt-client** (`root@2.29.97.60`): k6 only, with the same
+  `tuning` role (nofile, somaxconn, ports) so the generator isn't the limit.
+
+Everything is driven by `backend/scripts/loadtest-lt.sh`. Secrets (DB
+password, JWT secret, Auth0 load-test key) are generated once into
+`backend/cmd/loadtest/results/lt-secrets.env`, which is gitignored.
+
+One-time setup:
+
+```
+cd backend
+./scripts/loadtest-lt.sh provision   # ansible, both boxes
+./scripts/loadtest-lt.sh env         # /opt/wayfarer/wayfarer.env on the server
+./scripts/loadtest-lt.sh deploy      # build like CI, ship, deploy.sh, wait for TLS
+./scripts/loadtest-lt.sh seed        # gendata*.sql (~13k users with points) + betting quiz
+make loadtest-betting-config         # 13k user + 13k Auth0 tokens + admin token
+```
+
+Runs:
+
+- `make loadtest-betting-smoke` (~200 users)
+- `make loadtest-betting-rampspike` (full 10k)
+
+Every run does the following:
+
+- Resets the betting quiz with `bench/betting_box.sh reset`. This removes the
+  previous run's submissions and BET/QUIZ score_journal rows, so user points
+  are the same each time.
+- Restarts the active color.
+- Runs `k6/betting-quiz-rampspike.js` from the client with `REALISM=1`
+  (Firebase fetches off).
+- Samples CPU on both boxes, and the settled-bet count once per second
+  (`<label>.sql.tsv`).
+- Ends with a per-bet settlement check: every settled bet has exactly two BET
+  journal rows (stake and winnings) whose sum equals the response's
+  `points_earned`.
+
+The k6 script reuses the free-text rampspike's front-loaded curve: cumulative
+1k@1s, 5k@2s, 8k@4s and 10k@10s. Each user answers 5 PREDEFINED betting
+questions, one per limit style (max 25%, max 50%, max 100 absolute, min 5 +
+max 50% at ×3, unlimited at ×1.5/×0.5). Per question:
+
+| Share | Behaviour | Expected outcome |
+|---|---|---|
+| 90% | A bet the app's slider allows: within the limits and the user's points minus stakes already placed (read once via `UserPoints`) | Accepted |
+| 5% | No bet | Accepted |
+| 3% | Double tap: the same bet sent twice in parallel | Both accepted |
+| 2% | A bet above the available points, then a retry with a sensible bet | First must be rejected for points |
+
+- **Correct answers:** a user answers correctly with probability
+  `CORRECT_RATE` (0.5), so both win and loss payouts are exercised.
+- **`bets_wrong_outcome` threshold is 0:** a sensible bet refused, or an
+  over-limit bet accepted, fails the run.
+- **Settlement is measured inside the run:** `teardown()` locks and finishes
+  the session with the admin token (30m request timeout,
+  `settlement_duration` metric), like the admin pressing finish after the
+  quiz. Prod settles bets inside the `finishQuizSession` request, so this
+  also shows whether settlement outlives `SERVER_WRITE_TIMEOUT` (5m) at camp
+  scale.
+
+The knobs are the same as the free-text rampspike (`RAMP_SCALE`,
+`THINK_SCALE`, `THINK_UNIFORM`, `PRE_ENROLLED`, `REALISM`), plus:
+
+- `CORRECT_RATE`
+- `NO_BET_FRACTION`, `DOUBLE_TAP_FRACTION`, `OVER_BET_FRACTION`
+- `SETTLE=0` to skip settlement
+- `FINISH_TIMEOUT`
+
+### Two generators
+
+One CCX33 running k6 tops out at about 800% CPU during the 10k stampede.
+The first full run delivered only 7,400 of the 10,000 arrivals (3,620
+dropped iterations). There are now two client boxes:
+
+- `interact-lt-client` (2.29.97.60)
+- `interact-lt-client2` (2.29.107.165)
+
+How a run is split across them:
+
+- Each generator runs one shard (`SHARDS`/`SHARD`): half of every phase's
+  arrival rate, and every second token of each phase's slice.
+- After both shards finish, `k6/betting-settle.js` runs once on the first
+  generator (the shards run with `SETTLE=0`). Settlement therefore starts
+  only when every user is done.
+- Override the generator list with `LT_CLIENTS="root@a root@b ..."`.
+
+### Run data (for graphing afterwards)
+
+Every run writes `backend/cmd/loadtest/results/<label>-<UTC timestamp>/`
+(gitignored):
+
+| File | Content |
+|---|---|
+| `manifest.json` | git commit, k6 args, hosts (nproc/mem/kernel), non-secret server env, Postgres settings, start/end UTC |
+| `generator<i>/shard<i>.csv.gz` | every k6 sample with tags (`name`, `scenario`, status, …): the exact per-request data |
+| `generator<i>/shard<i>.summary.json`, `.k6.log` | k6 end-of-test summary and console |
+| `generator<i>/shard<i>.k6.pidstat`, `.box.mpstat` | k6 process and generator box CPU, 1s |
+| `generator0/settle.*` | the settlement request (`FinishQuizSession` duration) |
+| `server/server.pidstat` | server process CPU + RSS, 1s |
+| `server/postgres.pidstat` | all postgres processes, 1s |
+| `server/server-box.mpstat` | whole server box, 1s |
+| `server/sql-sample.tsv` | settled/total bets, 1s |
+| `server/bets.csv` | every response: bet, correctness, points, `answered_at`, `settled_at` |
+| `server/submissions.csv` | every submission: start/complete times, score, points |
+| `server/bet_journal.csv` | every BET score_journal row (stake/winnings, `created_at`) |
+| `server/quiz_journal.csv` | completion points rows |
+| `server/pg_stat_statements.csv` | per-query stats for exactly this run (reset at start) |
+| `server/httpstats.jsonl` | the server's own HTTP stats (15s) |
+
+`cmd/loadtest/analyze_run.py <run-dir>` (stdlib only, run automatically)
+merges the shards. It adds graph-ready CSVs: `requests_per_second.csv` (per
+second × request name: count, failed, p50/p95/p99/max), `tls_per_second.csv`,
+`cpu_per_second.csv` (server/postgres/boxes/k6 side by side) and
+`settlement_per_second.csv` (from the exact journal timestamps). It also
+writes a `summary.json`.
+
+Gotchas, all found while bringing the pair up:
+
+- **SSH key:** the scripts use a dedicated key,
+  `backend/cmd/loadtest/results/lt_ed25519` (gitignored, installed on both
+  boxes). A developer's agent may refuse to sign for background tools (it
+  prompts or confirms), and the hardening role turns password login off.
+- **SSH is rate-limited:** the prod firewall role limits SSH to 6 connections
+  per 30s per IP. The runners multiplex SSH (`ControlMaster`); ad-hoc loops of
+  `ssh` calls get refused. Inside `while read` loops give ssh `</dev/null`,
+  or it consumes the loop's input.
+- **The CPU governor unit failed on VMs** (no cpufreq). The tuning role's
+  loop now skips missing files instead of failing.
+- **The server won't start on an empty DB:** migrations seed a
+  `current_project_id` that doesn't exist, so SettingsService exits. Run
+  `seed` (which repoints it) before the first successful deploy; the first
+  boot still applies the migrations.
+- **gendata identities aren't prod-shaped:** `members_id` is `M<n>`, and there
+  is no `person_uuid` and no church `external_id`. `betting_box.sh seed`
+  fills them in like prod (numeric person id, UUID, numeric church id),
+  otherwise `tokengen -auth0-count` mints nothing.
+- **The bet slider's input is `myCurrentProject.myPoints`** on the challenge
+  page. `User.points(projectId:)` is a plain model field that is 0 here; don't
+  use it.
+- **Auth0 dances 401 for ~30s after a restart:** the server fetches its own
+  `/jwks.json`, which fails at boot and is retried every 30s. LT runs wait
+  40s (`LOADTEST_WARMUP`). Prod is not affected.
+- **Reset deadlocked with the server:** the leaderboard drain worker raced
+  the reset's synchronous delete trigger. The runner now stops the server
+  around `betting_box.sh reset`, and reset drains the leaderboard queue first.
+- **Postgres version:** the boxes run PG 17 from Debian 13, same as prod. CI
+  e2e uses 16.

@@ -59,6 +59,8 @@
       so join the node first (`make tailscale`) and rerun.
   # In --check on a fresh box tailscale is not installed/joined yet.
   ignore_errors: "{{ ansible_check_mode }}"
+  # Load-test boxes run without a tailnet (group_vars/interact_lt.yml)
+  when: postgres_require_tailscale | default(true)
 
 - name: Deploy tuning configuration
   ansible.builtin.template:

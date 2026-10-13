@@ -1,0 +1,14 @@
+# Load-test server: prod roles minus tailscale/backup/jobs (see loadtest.yml).
+# Overrides group_vars/all.yml; the prod vault (group_vars/interact) is not
+# loaded for this group, so pass -e interact_db_password=... on the command line.
+machine_hostname: interact-lt-server
+
+# Free Let's Encrypt cert via sslip.io (resolves to the IP, no DNS needed),
+# obtained by the wayfarer server's own autocert like prod
+loadtest_domain: 2-29-101-91.sslip.io
+postgres_tls_domain: "{{ loadtest_domain }}"
+
+# No tailnet, no external read-only clients: Postgres stays on loopback
+postgres_require_tailscale: false
+postgres_external_clients: []
+postgres_listen_addresses: 127.0.0.1,::1
