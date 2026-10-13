@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/bcc-media/wayfarer/e2e/testutil"
+	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -314,11 +315,9 @@ func TestQuizSessionBetSettlement(t *testing.T) {
 	}
 	journalPoints := func(t *testing.T, userID string) int {
 		t.Helper()
-		var sum int
-		require.NoError(t, dbMgr.DB.Pool.QueryRow(ctx,
-			`SELECT COALESCE(SUM(points), 0) FROM score_journal WHERE user_id = $1 AND project_id = $2`,
-			userID, projectID).Scan(&sum))
-		return sum
+		sum, err := dbMgr.DB.Queries.GetUserProjectScore(ctx, sqlc.GetUserProjectScoreParams{UserID: userID, ProjectID: projectID})
+		require.NoError(t, err)
+		return int(sum)
 	}
 	// Read (and so cache) both users' points before the payout
 	pointsBefore := map[string]int{winnerID: apiPoints(t, winnerToken), loserID: apiPoints(t, loserToken)}

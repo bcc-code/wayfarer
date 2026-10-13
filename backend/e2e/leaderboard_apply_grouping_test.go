@@ -6,8 +6,9 @@ import (
 	"time"
 
 	"github.com/bcc-media/wayfarer/e2e/testutil"
+	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/ulid"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,20 +23,13 @@ var leaderboardTables = []string{
 
 // snapshotLeaderboards returns every leaderboard row as JSON (without
 // updated_at, which only says when a row was written), keyed by table
-func snapshotLeaderboards(t *testing.T, ctx context.Context, q interface {
-	Query(context.Context, string, ...any) (pgx.Rows, error)
-}) map[string][]string {
+func snapshotLeaderboards(t *testing.T, ctx context.Context, q *sqlc.Queries) map[string][]string {
 	t.Helper()
+	rows, err := q.SnapshotLeaderboardRows(ctx)
+	require.NoError(t, err)
 	snap := map[string][]string{}
-	for _, table := range leaderboardTables {
-		rows, err := q.Query(ctx, `SELECT (to_jsonb(l) - 'updated_at')::text FROM `+table+` l ORDER BY 1`)
-		require.NoError(t, err)
-		for rows.Next() {
-			var row string
-			require.NoError(t, rows.Scan(&row))
-			snap[table] = append(snap[table], row)
-		}
-		require.NoError(t, rows.Err())
+	for _, r := range rows {
+		snap[r.TableName] = append(snap[r.TableName], r.RowJson)
 	}
 	return snap
 }
@@ -78,27 +72,34 @@ func TestLeaderboardApplyGroupsDeltas(t *testing.T) {
 		}
 		entries = append(entries, entry{u, &eventID, 7 - i, base.Add(time.Duration(i) * time.Minute)})
 	}
+	reason := "grouping test"
 	for _, e := range entries {
-		_, err := dbMgr.DB.Pool.Exec(ctx,
-			`INSERT INTO score_journal (id, project_id, user_id, event_id, points, source_type, reason, created_at)
-			 VALUES ($1, $2, $3, $4, $5, 'MANUAL', 'grouping test', $6)`,
-			ulid.NewScoreJournalID(), projectID, e.user, e.event, e.points, e.created)
+		_, err := dbMgr.DB.Queries.CreateScoreJournalEntry(ctx, sqlc.CreateScoreJournalEntryParams{
+			ID:         ulid.NewScoreJournalID(),
+			ProjectID:  projectID,
+			UserID:     e.user,
+			EventID:    e.event,
+			Points:     int32(e.points),
+			SourceType: "MANUAL",
+			Reason:     &reason,
+			CreatedAt:  pgtype.Timestamptz{Time: e.created, Valid: true},
+		})
 		require.NoError(t, err)
 	}
 
-	var queued int
-	require.NoError(t, dbMgr.DB.Pool.QueryRow(ctx, `SELECT count(*) FROM leaderboard_apply_queue`).Scan(&queued))
-	require.Equal(t, len(entries), queued)
+	queued, err := dbMgr.DB.Queries.CountLeaderboardApplyQueue(ctx)
+	require.NoError(t, err)
+	require.EqualValues(t, len(entries), queued)
 
 	// Reference: every queued delta applied on its own, in queue order, in a
 	// transaction that is rolled back afterwards
 	tx, err := dbMgr.DB.Pool.Begin(ctx)
 	require.NoError(t, err)
-	_, err = tx.Exec(ctx, `SELECT count(*) FROM (
-		SELECT apply_score_journal_delta(user_id, project_id, event_id, points_delta, score_at)
-		FROM leaderboard_apply_queue ORDER BY id) applied`)
+	txq := dbMgr.DB.Queries.WithTx(tx)
+	applied, err := txq.ApplyLeaderboardApplyQueuePerDelta(ctx)
 	require.NoError(t, err)
-	perDelta := snapshotLeaderboards(t, ctx, tx)
+	require.EqualValues(t, len(entries), applied)
+	perDelta := snapshotLeaderboards(t, ctx, txq)
 	require.NoError(t, tx.Rollback(ctx))
 
 	// Small batches split users' deltas across drains; the return value is
@@ -113,10 +114,11 @@ func TestLeaderboardApplyGroupsDeltas(t *testing.T) {
 		}
 	}
 	assert.Equal(t, len(entries), consumed, "every queued row is reported as applied")
-	require.NoError(t, dbMgr.DB.Pool.QueryRow(ctx, `SELECT count(*) FROM leaderboard_apply_queue`).Scan(&queued))
+	queued, err = dbMgr.DB.Queries.CountLeaderboardApplyQueue(ctx)
+	require.NoError(t, err)
 	assert.Zero(t, queued)
 
-	grouped := snapshotLeaderboards(t, ctx, dbMgr.DB.Pool)
+	grouped := snapshotLeaderboards(t, ctx, dbMgr.DB.Queries)
 	for _, table := range leaderboardTables {
 		assert.NotEmpty(t, perDelta[table], "%s has rows", table)
 		assert.Equal(t, perDelta[table], grouped[table], "%s: grouped drain equals applying each delta", table)
