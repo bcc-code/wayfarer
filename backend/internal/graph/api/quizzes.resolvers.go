@@ -20,10 +20,10 @@ import (
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/otel"
 	"github.com/bcc-media/wayfarer/internal/services/push"
+	"github.com/bcc-media/wayfarer/internal/services/quizgrading"
 	"github.com/bcc-media/wayfarer/internal/services/webhooks"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	pgx "github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -353,6 +353,24 @@ func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, i
 		maxAbs := int32(*input.BettingMaxAbsolute)
 		params.Bettingmaxabsolute = &maxAbs
 	}
+	if err := ValidateQuestionBetting(QuestionBettingSettings{
+		Points:            input.Points,
+		BettingEnabled:    input.BettingEnabled != nil && *input.BettingEnabled,
+		MinPercentage:     input.BettingMinPercentage,
+		MaxPercentage:     input.BettingMaxPercentage,
+		MinAbsolute:       input.BettingMinAbsolute,
+		MaxAbsolute:       input.BettingMaxAbsolute,
+		MultiplierCorrect: input.BettingMultiplierCorrect,
+		MultiplierWrong:   input.BettingMultiplierWrong,
+	}, true); err != nil {
+		return nil, err
+	}
+	if input.BettingMultiplierCorrect != nil {
+		_ = params.Bettingmultipliercorrect.Scan(fmt.Sprintf("%f", *input.BettingMultiplierCorrect))
+	}
+	if input.BettingMultiplierWrong != nil {
+		_ = params.Bettingmultiplierwrong.Scan(fmt.Sprintf("%f", *input.BettingMultiplierWrong))
+	}
 
 	// Create question
 	questionRow, err := qtx.CreateQuizQuestion(ctx, params)
@@ -489,6 +507,108 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 		maxAbs := int32(*input.BettingMaxAbsolute)
 		params.Bettingmaxabsolute = &maxAbs
 	}
+	// Validate the settings the question will have after this update
+	next := storedBettingSettings(question)
+	if input.Points != nil {
+		next.Points = input.Points
+	}
+	if input.BettingEnabled != nil {
+		next.BettingEnabled = *input.BettingEnabled
+	}
+	if input.BettingMinPercentage != nil {
+		next.MinPercentage = input.BettingMinPercentage
+	}
+	if input.BettingMaxPercentage != nil {
+		next.MaxPercentage = input.BettingMaxPercentage
+	}
+	if input.BettingMinAbsolute != nil {
+		next.MinAbsolute = input.BettingMinAbsolute
+	}
+	if input.BettingMaxAbsolute != nil {
+		next.MaxAbsolute = input.BettingMaxAbsolute
+	}
+	if input.BettingMultiplierCorrect != nil {
+		next.MultiplierCorrect = input.BettingMultiplierCorrect
+	}
+	if input.BettingMultiplierWrong != nil {
+		next.MultiplierWrong = input.BettingMultiplierWrong
+	}
+	changesPointsOrBetting := input.Points != nil || input.BettingEnabled != nil
+	if err := ValidateQuestionBetting(next, changesPointsOrBetting); err != nil {
+		return nil, err
+	}
+
+	// Placed bets keep the terms they were placed under: no turning betting
+	// off and no other payout while the question has open bets
+	turnsBettingOff := question.BettingEnabled && input.BettingEnabled != nil && !*input.BettingEnabled
+	changesPayout, err := payoutChanged(question.BettingMultiplierCorrect, question.BettingMultiplierWrong,
+		input.BettingMultiplierCorrect, input.BettingMultiplierWrong)
+	if err != nil {
+		return nil, err
+	}
+	if turnsBettingOff || changesPayout {
+		openBets, err := qtx.CountOpenBetsForQuestion(ctx, sqlc.CountOpenBetsForQuestionParams{
+			Questionid:       id,
+			Coresettledtypes: sessionBetQuestionTypes,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to count open bets: %w", err)
+		}
+		if openBets > 0 {
+			field := "bettingMultiplierCorrect"
+			if turnsBettingOff {
+				field = "bettingEnabled"
+			}
+			return nil, openBetsError(field, openBets)
+		}
+	}
+
+	// Answers are only replaced when they change, and not once users answered:
+	// replacing gives them new IDs, so stored selections would point to
+	// deleted answers (and answer translations would be lost)
+	replaceAnswers := func(field string, next []answerSpec) (bool, error) {
+		stored, err := qtx.GetPredefinedAnswersByQuestionID(ctx, id)
+		if err != nil {
+			return false, fmt.Errorf("failed to load answers: %w", err)
+		}
+		if sameAnswers(storedAnswerSpecs(stored), next) {
+			return false, nil
+		}
+		answered, err := qtx.QuestionHasResponses(ctx, id)
+		if err != nil {
+			return false, fmt.Errorf("failed to check responses: %w", err)
+		}
+		if answered {
+			return false, answeredError(field)
+		}
+		return true, nil
+	}
+	replacePredefined := false
+	if input.PredefinedAnswers != nil {
+		next := make([]answerSpec, len(input.PredefinedAnswers))
+		for i, a := range input.PredefinedAnswers {
+			next[i] = answerSpec{Text: a.AnswerText, Correct: a.IsCorrect, Order: int32(a.AnswerOrder)}
+		}
+		if replacePredefined, err = replaceAnswers("predefinedAnswers", next); err != nil {
+			return nil, err
+		}
+	}
+	replaceOrdering := false
+	if input.OrderingItems != nil {
+		next := make([]answerSpec, len(input.OrderingItems))
+		for i, item := range input.OrderingItems {
+			next[i] = answerSpec{Text: item.ItemText, Order: int32(item.CorrectOrder)}
+		}
+		if replaceOrdering, err = replaceAnswers("orderingItems", next); err != nil {
+			return nil, err
+		}
+	}
+	if input.BettingMultiplierCorrect != nil {
+		_ = params.Bettingmultipliercorrect.Scan(fmt.Sprintf("%f", *input.BettingMultiplierCorrect))
+	}
+	if input.BettingMultiplierWrong != nil {
+		_ = params.Bettingmultiplierwrong.Scan(fmt.Sprintf("%f", *input.BettingMultiplierWrong))
+	}
 
 	// Update question
 	updatedQuestion, err := qtx.UpdateQuizQuestion(ctx, params)
@@ -496,8 +616,8 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 		return nil, fmt.Errorf("failed to update question: %w", err)
 	}
 
-	// If predefined answers provided, replace all answers
-	if input.PredefinedAnswers != nil {
+	// If predefined answers changed, replace all answers
+	if replacePredefined {
 		// Delete existing answers
 		err = qtx.DeletePredefinedAnswersByQuestion(ctx, id)
 		if err != nil {
@@ -520,8 +640,8 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 		}
 	}
 
-	// If ordering items provided, replace all items (stored in quiz_predefined_answers table)
-	if input.OrderingItems != nil {
+	// If ordering items changed, replace all items (stored in quiz_predefined_answers table)
+	if replaceOrdering {
 		// Delete existing items
 		err = qtx.DeletePredefinedAnswersByQuestion(ctx, id)
 		if err != nil {
@@ -549,8 +669,8 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 	}
 
 	r.Cache.InvalidateQuizWithChallenge(question.QuizID, quiz.ChallengeID)
-	// Also invalidate answers cache if answers or ordering items were updated
-	if len(input.PredefinedAnswers) > 0 || len(input.OrderingItems) > 0 {
+	// Also invalidate answers cache if answers or ordering items were replaced
+	if replacePredefined || replaceOrdering {
 		r.Cache.InvalidateQuizAnswers(id)
 	}
 
@@ -830,7 +950,10 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 	questionType := quizQuestionTypeString(question)
 	span.SetAttributes(attribute.String("question.type", questionType))
 
-	// Validate bet - always validate when betting is enabled to enforce required bets
+	// Validate bet - always validate when betting is enabled to enforce required
+	// bets. The check runs in the transaction that stores the answer, against
+	// the points the user has left after their open bets.
+	var checkBet *betCheck
 	if question.GetBettingEnabled() || (input.BetAmount != nil && *input.BetAmount > 0) {
 		// Load quiz to get project ID for score lookup
 		quizThunk := r.Loaders.QuizByIDLoader.Load(ctx, submission.QuizID)
@@ -856,10 +979,7 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 			BettingMaxAbsolute:   questionRow.BettingMaxAbsolute,
 		}
 
-		if err := ValidateBet(ctx, r.DB.Queries, userID, quiz.ProjectID, betConfig, input.BetAmount); err != nil {
-			otel.RecordError(span, err)
-			return nil, fmt.Errorf("invalid bet: %w", err)
-		}
+		checkBet = newBetCheck(userID, quiz.ProjectID, nil, betConfig, input.BetAmount)
 	}
 
 	// Build response params
@@ -870,36 +990,12 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 		Questionid:   input.QuestionID,
 	}
 
-	// Set type-specific response and calculate correctness
+	// Set type-specific response
 	switch questionType {
 	case "PREDEFINED":
 		if input.SelectedAnswerIds != nil {
 			selectedJSON, _ := json.Marshal(input.SelectedAnswerIds)
 			params.Selectedanswerids = selectedJSON
-
-			// Calculate correctness (answers are Ristretto-cached static data)
-			correctAnswers, _ := r.Loaders.QuizAnswersByQuestionLoader.Load(ctx, input.QuestionID)()
-			correctIDs := make(map[string]bool)
-			for _, ans := range correctAnswers {
-				if ans.IsCorrectValue {
-					correctIDs[ans.ID] = true
-				}
-			}
-
-			// Check if selected answers match correct answers exactly
-			if len(input.SelectedAnswerIds) == len(correctIDs) {
-				allCorrect := true
-				for _, selectedID := range input.SelectedAnswerIds {
-					if !correctIDs[selectedID] {
-						allCorrect = false
-						break
-					}
-				}
-				params.Iscorrect = &allCorrect
-			} else {
-				falseVal := false
-				params.Iscorrect = &falseVal
-			}
 		}
 	case "FREE_TEXT":
 		if input.TextResponse != nil {
@@ -921,23 +1017,17 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 			// Store submitted order as JSON in json_response
 			orderJSON, _ := json.Marshal(input.SubmittedOrder)
 			params.Jsonresponse = orderJSON
-
-			// Calculate correctness by comparing against correct order
-			// (answers are Ristretto-cached static data)
-			correctAnswers, _ := r.Loaders.QuizAnswersByQuestionLoader.Load(ctx, input.QuestionID)()
-
-			// correctAnswers are returned sorted by answer_order (correct position)
-			isCorrect := len(input.SubmittedOrder) == len(correctAnswers)
-			if isCorrect {
-				for i, ans := range correctAnswers {
-					if input.SubmittedOrder[i] != ans.ID {
-						isCorrect = false
-						break
-					}
-				}
-			}
-			params.Iscorrect = &isCorrect
 		}
+	}
+
+	// Calculate correctness (all or nothing; nil for ungraded types)
+	params.Iscorrect, err = gradeQuizResponse(ctx, r.Loaders, questionType, input.QuestionID, quizgrading.Response{
+		SelectedAnswerIDs: input.SelectedAnswerIds,
+		SubmittedOrder:    input.SubmittedOrder,
+	})
+	if err != nil {
+		otel.RecordError(span, err)
+		return nil, fmt.Errorf("failed to grade answer: %w", err)
 	}
 
 	// Calculate points_earned for correct answers
@@ -957,62 +1047,18 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 		params.Betamount = &ba
 	}
 
-	// Try to create new response
-	response, err := r.DB.Queries.CreateQuizResponse(ctx, params)
+	// Create the response under the submission lock (returns the existing
+	// response if the question was already answered)
+	response, err := r.createQuizResponseLocked(ctx, userID, params, checkBet)
 	if err != nil {
-		// Check for duplicate key error (unique violation on submission_id + question_id)
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-			// Race condition: another request created the response first
-			// Fetch the existing response and return it
-			existing, fetchErr := r.DB.Queries.GetQuizResponseBySubmissionAndQuestion(ctx, sqlc.GetQuizResponseBySubmissionAndQuestionParams{
-				Submissionid: submissionID,
-				Questionid:   input.QuestionID,
-			})
-			if fetchErr != nil {
-				return nil, fmt.Errorf("failed to fetch existing response: %w", fetchErr)
-			}
-			r.Cache.InvalidateQuizSubmission(submissionID)
-			r.Cache.InvalidateUserQuizSubmissions(userID)
-			// Convert existing response to QuizResponse model
-			existingAsModel := &sqlc.QuizResponse{
-				ID:                existing.ID,
-				SubmissionID:      existing.SubmissionID,
-				QuestionID:        existing.QuestionID,
-				SelectedAnswerIds: existing.SelectedAnswerIds,
-				TextResponse:      existing.TextResponse,
-				NumberResponse:    existing.NumberResponse,
-				JsonResponse:      existing.JsonResponse,
-				IsCorrect:         existing.IsCorrect,
-				PointsEarned:      existing.PointsEarned,
-				AnsweredAt:        existing.AnsweredAt,
-				TimeSpentSeconds:  existing.TimeSpentSeconds,
-				BetAmount:         existing.BetAmount,
-			}
-			return convertResponseRowToInterface(existingAsModel, questionType), nil
-		}
-		return nil, fmt.Errorf("failed to save response: %w", err)
+		otel.RecordError(span, err)
+		return nil, err
 	}
 
 	r.Cache.InvalidateQuizSubmission(submissionID)
 	r.Cache.InvalidateUserQuizSubmissions(userID)
 
-	// Convert response to QuizResponse model
-	responseAsModel := &sqlc.QuizResponse{
-		ID:                response.ID,
-		SubmissionID:      response.SubmissionID,
-		QuestionID:        response.QuestionID,
-		SelectedAnswerIds: response.SelectedAnswerIds,
-		TextResponse:      response.TextResponse,
-		NumberResponse:    response.NumberResponse,
-		JsonResponse:      response.JsonResponse,
-		IsCorrect:         response.IsCorrect,
-		PointsEarned:      response.PointsEarned,
-		AnsweredAt:        response.AnsweredAt,
-		TimeSpentSeconds:  response.TimeSpentSeconds,
-		BetAmount:         response.BetAmount,
-	}
-	return convertResponseRowToInterface(responseAsModel, questionType), nil
+	return convertResponseRowToInterface(response, questionType), nil
 }
 
 // UpdateQuizAnswer is the resolver for the updateQuizAnswer field.
@@ -1073,7 +1119,9 @@ func (r *mutationResolver) UpdateQuizAnswer(ctx context.Context, responseID stri
 		ID: responseID,
 	}
 
-	// Handle betAmount update if provided
+	// Handle betAmount update if provided; validated in the transaction that
+	// stores it, against the points left after the user's other open bets
+	var checkBet *betCheck
 	if input.BetAmount != nil {
 		// Load quiz to get project ID for score lookup
 		quizThunk := r.Loaders.QuizByIDLoader.Load(ctx, submission.QuizID)
@@ -1091,9 +1139,7 @@ func (r *mutationResolver) UpdateQuizAnswer(ctx context.Context, responseID stri
 			BettingMaxAbsolute:   question.BettingMaxAbsolute,
 		}
 
-		if err := ValidateBet(ctx, r.DB.Queries, userID, quiz.ProjectID, betConfig, input.BetAmount); err != nil {
-			return nil, err
-		}
+		checkBet = newBetCheck(userID, quiz.ProjectID, &responseID, betConfig, input.BetAmount)
 		betAmount := int32(*input.BetAmount)
 		params.Betamount = &betAmount
 	}
@@ -1104,22 +1150,17 @@ func (r *mutationResolver) UpdateQuizAnswer(ctx context.Context, responseID stri
 		orderJSON, _ := json.Marshal(input.SubmittedOrder)
 		params.Jsonresponse = orderJSON
 
-		// Calculate correctness by comparing against correct order
-		correctAnswers, _ := r.DB.Queries.GetPredefinedAnswersByQuestionID(ctx, existingResponse.QuestionID)
-
-		isCorrect := len(input.SubmittedOrder) == len(correctAnswers)
-		if isCorrect {
-			for i, ans := range correctAnswers {
-				if input.SubmittedOrder[i] != ans.ID {
-					isCorrect = false
-					break
-				}
-			}
+		// Calculate correctness (all or nothing)
+		params.Iscorrect, err = gradeQuizResponse(ctx, r.Loaders, question.QuestionType, existingResponse.QuestionID, quizgrading.Response{
+			SubmittedOrder: input.SubmittedOrder,
+		})
+		if err != nil {
+			otel.RecordError(span, err)
+			return nil, fmt.Errorf("failed to grade answer: %w", err)
 		}
-		params.Iscorrect = &isCorrect
 
 		// Calculate points_earned for correct answers
-		if isCorrect && question.Points != nil {
+		if *params.Iscorrect && question.Points != nil {
 			params.Pointsearned = question.Points
 		} else {
 			zero := int32(0)
@@ -1129,11 +1170,11 @@ func (r *mutationResolver) UpdateQuizAnswer(ctx context.Context, responseID stri
 		return nil, fmt.Errorf("update not supported for this question type")
 	}
 
-	// Update the response
-	updatedResponse, err := r.DB.Queries.UpdateQuizResponse(ctx, params)
+	// Update the response under the submission lock
+	updatedResponse, err := r.updateQuizResponseLocked(ctx, submission.ID, params, checkBet)
 	if err != nil {
 		otel.RecordError(span, err)
-		return nil, fmt.Errorf("failed to update response: %w", err)
+		return nil, err
 	}
 
 	r.Cache.InvalidateQuizSubmission(submission.ID)
@@ -1563,8 +1604,6 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 			Questionid:   questionID,
 		}
 
-		var isCorrect *bool
-
 		switch foundQuestion.(type) {
 		case *model.PredefinedQuestion:
 			if responseInput.SelectedAnswerIds == nil {
@@ -1576,44 +1615,6 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 				return nil, fmt.Errorf("failed to marshal selected answer IDs: %w", err)
 			}
 			responseParams.Selectedanswerids = selectedJSON
-
-			// Calculate correctness
-			answersThunk := r.Loaders.QuizAnswersByQuestionLoader.Load(ctx, questionID)
-			answers, err := answersThunk()
-			if err != nil {
-				return nil, fmt.Errorf("failed to load answers: %w", err)
-			}
-
-			correctAnswerIDs := make(map[string]bool)
-			for _, ans := range answers {
-				if ans.IsCorrectValue {
-					correctAnswerIDs[ans.ID] = true
-				}
-			}
-
-			selectedMap := make(map[string]bool)
-			for _, id := range responseInput.SelectedAnswerIds {
-				selectedMap[id] = true
-			}
-
-			correct := len(correctAnswerIDs) == len(selectedMap)
-			if correct {
-				for id := range correctAnswerIDs {
-					if !selectedMap[id] {
-						correct = false
-						break
-					}
-				}
-				for id := range selectedMap {
-					if !correctAnswerIDs[id] {
-						correct = false
-						break
-					}
-				}
-			}
-
-			isCorrect = &correct
-			responseParams.Iscorrect = &correct
 
 		case *model.FreeTextQuestion:
 			if responseInput.TextResponse == nil {
@@ -1644,28 +1645,17 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 				return nil, fmt.Errorf("failed to marshal submitted order: %w", err)
 			}
 			responseParams.Jsonresponse = orderJSON
-
-			// Calculate correctness
-			answersThunk := r.Loaders.QuizAnswersByQuestionLoader.Load(ctx, questionID)
-			answers, err := answersThunk()
-			if err != nil {
-				return nil, fmt.Errorf("failed to load ordering items: %w", err)
-			}
-
-			// answers are sorted by answer_order (correct position)
-			correct := len(responseInput.SubmittedOrder) == len(answers)
-			if correct {
-				for i, ans := range answers {
-					if responseInput.SubmittedOrder[i] != ans.ID {
-						correct = false
-						break
-					}
-				}
-			}
-
-			isCorrect = &correct
-			responseParams.Iscorrect = &correct
 		}
+
+		// Calculate correctness (all or nothing; nil for ungraded types)
+		isCorrect, err := gradeQuizResponse(ctx, r.Loaders, quizQuestionTypeString(foundQuestion), questionID, quizgrading.Response{
+			SelectedAnswerIDs: responseInput.SelectedAnswerIds,
+			SubmittedOrder:    responseInput.SubmittedOrder,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to grade answer: %w", err)
+		}
+		responseParams.Iscorrect = isCorrect
 
 		// Calculate points_earned for correct answers
 		if isCorrect != nil && *isCorrect && foundQuestion.GetPoints() != nil {

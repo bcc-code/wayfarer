@@ -13,9 +13,10 @@ export const graphqlDuration = new Trend('graphql_duration');
  * @param {object} variables - Query variables
  * @param {string} token - JWT token for authorization
  * @param {string} operationName - Optional operation name for tagging
+ * @param {object} extraParams - Optional k6 request params merged in (e.g. timeout)
  * @returns {object} HTTP response
  */
-export function graphqlRequest(baseUrl, query, variables, token, operationName) {
+export function graphqlRequest(baseUrl, query, variables, token, operationName, extraParams) {
     const url = `${baseUrl}/graphql`;
     const payload = JSON.stringify({
         query: query,
@@ -30,6 +31,7 @@ export function graphqlRequest(baseUrl, query, variables, token, operationName) 
         tags: {
             name: operationName || 'GraphQL',
         },
+        ...extraParams,
     };
 
     const startTime = Date.now();

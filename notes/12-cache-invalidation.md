@@ -9,6 +9,10 @@ The system uses a two-tier caching system with tag-based invalidation to ensure 
 - **Base Cache**: Ristretto (high-performance concurrent cache)
 - **Cache with Registry**: Extended version that tracks all cache keys for tag-based bulk invalidation
 - **Location**: `backend/internal/cache/`
+- **One process**: invalidation is in-process only. Prod runs a single server
+  (blue/green deploys overlap for a few seconds, during which the two colors'
+  caches can disagree until TTL; deploys are not done at critical times). The
+  former cross-instance `pg_notify` sync (`cache/sync.go`) was removed.
 
 ### Key Pattern Structure
 
@@ -94,23 +98,11 @@ Invalidates all cache entries related to a user:
 
 Called automatically by `UserSyncService.SyncUser()` and `MaintenanceHandler` sync endpoints after updating user data.
 
-### InvalidateSettings
+### Settings
 
-Not a cache invalidation at all, despite living here. Settings are kept in a
-process-local map in `SettingsService`, refreshed on a five-minute ticker, so a
-change made on one instance is invisible to the others until their next tick.
-`InvalidateSettings()` reuses the NOTIFY bus to close that window:
-
-```go
-func (c *CacheWithRegistry) InvalidateSettings() {
-    c.refreshSettings()
-    c.broadcast(InvalidationMessage{Type: InvalidationTypeSettings})
-}
-```
-
-The reload itself runs through a callback registered by `cmd/server/main.go`
-(`SetSettingsRefresher`), because `internal/services` already imports
-`internal/cache` and the dependency cannot run both ways.
+Settings are not in this cache. They live in a process-local map in
+`SettingsService`: `SetSettings` writes them and reloads the map in the same
+call, and a five-minute ticker picks up changes made outside the API.
 
 Changing the current project also calls `InvalidateProject` for the outgoing
 and incoming project — that is what drops the `gqlresponse:` entries holding

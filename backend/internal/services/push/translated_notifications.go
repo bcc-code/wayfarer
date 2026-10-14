@@ -120,6 +120,21 @@ func SendTranslatedBetResultNotification(
 	quizName string,
 	points int,
 ) {
+	SendTranslatedBetResultNotificationCtx(context.Background(), pushService, loadersInstance,
+		userID, challengeID, quizID, quizName, points)
+}
+
+// SendTranslatedBetResultNotificationCtx is SendTranslatedBetResultNotification with a caller context
+func SendTranslatedBetResultNotificationCtx(
+	ctx context.Context,
+	pushService *Service,
+	loadersInstance *loaders.Loaders,
+	userID string,
+	challengeID string,
+	quizID string,
+	quizName string,
+	points int,
+) {
 	if pushService == nil || !pushService.IsConfigured() || loadersInstance == nil {
 		return
 	}
@@ -129,11 +144,9 @@ func SendTranslatedBetResultNotification(
 		return
 	}
 
-	bgCtx := context.Background()
-
 	// Get user's language
 	userLang := "nb" // default
-	userThunk := loadersInstance.UserByIDLoader.Load(bgCtx, userID)
+	userThunk := loadersInstance.UserByIDLoader.Load(ctx, userID)
 	if user, err := userThunk(); err == nil && user != nil {
 		userLang = user.Language
 	}
@@ -141,7 +154,7 @@ func SendTranslatedBetResultNotification(
 	// Get translated title and message
 	title, message := i18n.FormatBetResultMessage(userLang, points)
 
-	pushService.SendBetResultNotification(bgCtx, userID, BetResultInfo{
+	pushService.SendBetResultNotification(ctx, userID, BetResultInfo{
 		ChallengeID: challengeID,
 		QuizID:      quizID,
 		QuizName:    quizName,

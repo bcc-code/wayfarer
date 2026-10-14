@@ -422,18 +422,20 @@ type ComplexityRoot struct {
 	}
 
 	FreeTextQuestion struct {
-		BettingEnabled       func(childComplexity int) int
-		BettingMaxAbsolute   func(childComplexity int) int
-		BettingMaxPercentage func(childComplexity int) int
-		BettingMinAbsolute   func(childComplexity int) int
-		BettingMinPercentage func(childComplexity int) int
-		ID                   func(childComplexity int) int
-		Points               func(childComplexity int) int
-		QuestionOrder        func(childComplexity int) int
-		QuestionText         func(childComplexity int) int
-		Quiz                 func(childComplexity int) int
-		TimeoutSeconds       func(childComplexity int) int
-		TranslationStatus    func(childComplexity int) int
+		BettingEnabled           func(childComplexity int) int
+		BettingMaxAbsolute       func(childComplexity int) int
+		BettingMaxPercentage     func(childComplexity int) int
+		BettingMinAbsolute       func(childComplexity int) int
+		BettingMinPercentage     func(childComplexity int) int
+		BettingMultiplierCorrect func(childComplexity int) int
+		BettingMultiplierWrong   func(childComplexity int) int
+		ID                       func(childComplexity int) int
+		Points                   func(childComplexity int) int
+		QuestionOrder            func(childComplexity int) int
+		QuestionText             func(childComplexity int) int
+		Quiz                     func(childComplexity int) int
+		TimeoutSeconds           func(childComplexity int) int
+		TranslationStatus        func(childComplexity int) int
 	}
 
 	FreeTextQuestionResults struct {
@@ -464,18 +466,20 @@ type ComplexityRoot struct {
 	}
 
 	JsonQuestion struct {
-		BettingEnabled       func(childComplexity int) int
-		BettingMaxAbsolute   func(childComplexity int) int
-		BettingMaxPercentage func(childComplexity int) int
-		BettingMinAbsolute   func(childComplexity int) int
-		BettingMinPercentage func(childComplexity int) int
-		ID                   func(childComplexity int) int
-		Points               func(childComplexity int) int
-		QuestionOrder        func(childComplexity int) int
-		QuestionText         func(childComplexity int) int
-		Quiz                 func(childComplexity int) int
-		TimeoutSeconds       func(childComplexity int) int
-		TranslationStatus    func(childComplexity int) int
+		BettingEnabled           func(childComplexity int) int
+		BettingMaxAbsolute       func(childComplexity int) int
+		BettingMaxPercentage     func(childComplexity int) int
+		BettingMinAbsolute       func(childComplexity int) int
+		BettingMinPercentage     func(childComplexity int) int
+		BettingMultiplierCorrect func(childComplexity int) int
+		BettingMultiplierWrong   func(childComplexity int) int
+		ID                       func(childComplexity int) int
+		Points                   func(childComplexity int) int
+		QuestionOrder            func(childComplexity int) int
+		QuestionText             func(childComplexity int) int
+		Quiz                     func(childComplexity int) int
+		TimeoutSeconds           func(childComplexity int) int
+		TranslationStatus        func(childComplexity int) int
 	}
 
 	JsonQuestionResults struct {
@@ -750,21 +754,23 @@ type ComplexityRoot struct {
 	}
 
 	NumberQuestion struct {
-		BettingEnabled       func(childComplexity int) int
-		BettingMaxAbsolute   func(childComplexity int) int
-		BettingMaxPercentage func(childComplexity int) int
-		BettingMinAbsolute   func(childComplexity int) int
-		BettingMinPercentage func(childComplexity int) int
-		ID                   func(childComplexity int) int
-		MaxValue             func(childComplexity int) int
-		MinValue             func(childComplexity int) int
-		Points               func(childComplexity int) int
-		QuestionOrder        func(childComplexity int) int
-		QuestionText         func(childComplexity int) int
-		Quiz                 func(childComplexity int) int
-		StepValue            func(childComplexity int) int
-		TimeoutSeconds       func(childComplexity int) int
-		TranslationStatus    func(childComplexity int) int
+		BettingEnabled           func(childComplexity int) int
+		BettingMaxAbsolute       func(childComplexity int) int
+		BettingMaxPercentage     func(childComplexity int) int
+		BettingMinAbsolute       func(childComplexity int) int
+		BettingMinPercentage     func(childComplexity int) int
+		BettingMultiplierCorrect func(childComplexity int) int
+		BettingMultiplierWrong   func(childComplexity int) int
+		ID                       func(childComplexity int) int
+		MaxValue                 func(childComplexity int) int
+		MinValue                 func(childComplexity int) int
+		Points                   func(childComplexity int) int
+		QuestionOrder            func(childComplexity int) int
+		QuestionText             func(childComplexity int) int
+		Quiz                     func(childComplexity int) int
+		StepValue                func(childComplexity int) int
+		TimeoutSeconds           func(childComplexity int) int
+		TranslationStatus        func(childComplexity int) int
 	}
 
 	NumberQuestionResults struct {
@@ -797,19 +803,21 @@ type ComplexityRoot struct {
 	}
 
 	OrderingQuestion struct {
-		BettingEnabled       func(childComplexity int) int
-		BettingMaxAbsolute   func(childComplexity int) int
-		BettingMaxPercentage func(childComplexity int) int
-		BettingMinAbsolute   func(childComplexity int) int
-		BettingMinPercentage func(childComplexity int) int
-		ID                   func(childComplexity int) int
-		OrderingItems        func(childComplexity int) int
-		Points               func(childComplexity int) int
-		QuestionOrder        func(childComplexity int) int
-		QuestionText         func(childComplexity int) int
-		Quiz                 func(childComplexity int) int
-		TimeoutSeconds       func(childComplexity int) int
-		TranslationStatus    func(childComplexity int) int
+		BettingEnabled           func(childComplexity int) int
+		BettingMaxAbsolute       func(childComplexity int) int
+		BettingMaxPercentage     func(childComplexity int) int
+		BettingMinAbsolute       func(childComplexity int) int
+		BettingMinPercentage     func(childComplexity int) int
+		BettingMultiplierCorrect func(childComplexity int) int
+		BettingMultiplierWrong   func(childComplexity int) int
+		ID                       func(childComplexity int) int
+		OrderingItems            func(childComplexity int) int
+		Points                   func(childComplexity int) int
+		QuestionOrder            func(childComplexity int) int
+		QuestionText             func(childComplexity int) int
+		Quiz                     func(childComplexity int) int
+		TimeoutSeconds           func(childComplexity int) int
+		TranslationStatus        func(childComplexity int) int
 	}
 
 	OrderingQuestionResults struct {
@@ -870,20 +878,22 @@ type ComplexityRoot struct {
 	}
 
 	PredefinedQuestion struct {
-		AllowMultipleSelection func(childComplexity int) int
-		BettingEnabled         func(childComplexity int) int
-		BettingMaxAbsolute     func(childComplexity int) int
-		BettingMaxPercentage   func(childComplexity int) int
-		BettingMinAbsolute     func(childComplexity int) int
-		BettingMinPercentage   func(childComplexity int) int
-		ID                     func(childComplexity int) int
-		Points                 func(childComplexity int) int
-		PredefinedAnswers      func(childComplexity int) int
-		QuestionOrder          func(childComplexity int) int
-		QuestionText           func(childComplexity int) int
-		Quiz                   func(childComplexity int) int
-		TimeoutSeconds         func(childComplexity int) int
-		TranslationStatus      func(childComplexity int) int
+		AllowMultipleSelection   func(childComplexity int) int
+		BettingEnabled           func(childComplexity int) int
+		BettingMaxAbsolute       func(childComplexity int) int
+		BettingMaxPercentage     func(childComplexity int) int
+		BettingMinAbsolute       func(childComplexity int) int
+		BettingMinPercentage     func(childComplexity int) int
+		BettingMultiplierCorrect func(childComplexity int) int
+		BettingMultiplierWrong   func(childComplexity int) int
+		ID                       func(childComplexity int) int
+		Points                   func(childComplexity int) int
+		PredefinedAnswers        func(childComplexity int) int
+		QuestionOrder            func(childComplexity int) int
+		QuestionText             func(childComplexity int) int
+		Quiz                     func(childComplexity int) int
+		TimeoutSeconds           func(childComplexity int) int
+		TranslationStatus        func(childComplexity int) int
 	}
 
 	PredefinedQuestionResults struct {
@@ -3443,6 +3453,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.FreeTextQuestion.BettingMinPercentage(childComplexity), true
+	case "FreeTextQuestion.bettingMultiplierCorrect":
+		if e.complexity.FreeTextQuestion.BettingMultiplierCorrect == nil {
+			break
+		}
+
+		return e.complexity.FreeTextQuestion.BettingMultiplierCorrect(childComplexity), true
+	case "FreeTextQuestion.bettingMultiplierWrong":
+		if e.complexity.FreeTextQuestion.BettingMultiplierWrong == nil {
+			break
+		}
+
+		return e.complexity.FreeTextQuestion.BettingMultiplierWrong(childComplexity), true
 	case "FreeTextQuestion.id":
 		if e.complexity.FreeTextQuestion.ID == nil {
 			break
@@ -3627,6 +3649,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.JsonQuestion.BettingMinPercentage(childComplexity), true
+	case "JsonQuestion.bettingMultiplierCorrect":
+		if e.complexity.JsonQuestion.BettingMultiplierCorrect == nil {
+			break
+		}
+
+		return e.complexity.JsonQuestion.BettingMultiplierCorrect(childComplexity), true
+	case "JsonQuestion.bettingMultiplierWrong":
+		if e.complexity.JsonQuestion.BettingMultiplierWrong == nil {
+			break
+		}
+
+		return e.complexity.JsonQuestion.BettingMultiplierWrong(childComplexity), true
 	case "JsonQuestion.id":
 		if e.complexity.JsonQuestion.ID == nil {
 			break
@@ -5705,6 +5739,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.NumberQuestion.BettingMinPercentage(childComplexity), true
+	case "NumberQuestion.bettingMultiplierCorrect":
+		if e.complexity.NumberQuestion.BettingMultiplierCorrect == nil {
+			break
+		}
+
+		return e.complexity.NumberQuestion.BettingMultiplierCorrect(childComplexity), true
+	case "NumberQuestion.bettingMultiplierWrong":
+		if e.complexity.NumberQuestion.BettingMultiplierWrong == nil {
+			break
+		}
+
+		return e.complexity.NumberQuestion.BettingMultiplierWrong(childComplexity), true
 	case "NumberQuestion.id":
 		if e.complexity.NumberQuestion.ID == nil {
 			break
@@ -5919,6 +5965,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.OrderingQuestion.BettingMinPercentage(childComplexity), true
+	case "OrderingQuestion.bettingMultiplierCorrect":
+		if e.complexity.OrderingQuestion.BettingMultiplierCorrect == nil {
+			break
+		}
+
+		return e.complexity.OrderingQuestion.BettingMultiplierCorrect(childComplexity), true
+	case "OrderingQuestion.bettingMultiplierWrong":
+		if e.complexity.OrderingQuestion.BettingMultiplierWrong == nil {
+			break
+		}
+
+		return e.complexity.OrderingQuestion.BettingMultiplierWrong(childComplexity), true
 	case "OrderingQuestion.id":
 		if e.complexity.OrderingQuestion.ID == nil {
 			break
@@ -6261,6 +6319,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PredefinedQuestion.BettingMinPercentage(childComplexity), true
+	case "PredefinedQuestion.bettingMultiplierCorrect":
+		if e.complexity.PredefinedQuestion.BettingMultiplierCorrect == nil {
+			break
+		}
+
+		return e.complexity.PredefinedQuestion.BettingMultiplierCorrect(childComplexity), true
+	case "PredefinedQuestion.bettingMultiplierWrong":
+		if e.complexity.PredefinedQuestion.BettingMultiplierWrong == nil {
+			break
+		}
+
+		return e.complexity.PredefinedQuestion.BettingMultiplierWrong(childComplexity), true
 	case "PredefinedQuestion.id":
 		if e.complexity.PredefinedQuestion.ID == nil {
 			break
@@ -11449,6 +11519,8 @@ interface QuizQuestion {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    bettingMultiplierCorrect: Float
+    bettingMultiplierWrong: Float
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
@@ -11464,6 +11536,8 @@ type PredefinedQuestion implements QuizQuestion {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    bettingMultiplierCorrect: Float
+    bettingMultiplierWrong: Float
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     allowMultipleSelection: Boolean!
     predefinedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
@@ -11481,6 +11555,8 @@ type FreeTextQuestion implements QuizQuestion {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    bettingMultiplierCorrect: Float
+    bettingMultiplierWrong: Float
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
@@ -11496,6 +11572,8 @@ type NumberQuestion implements QuizQuestion {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    bettingMultiplierCorrect: Float
+    bettingMultiplierWrong: Float
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     minValue: Float
     maxValue: Float
@@ -11514,6 +11592,8 @@ type JsonQuestion implements QuizQuestion {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    bettingMultiplierCorrect: Float
+    bettingMultiplierWrong: Float
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
 
@@ -11529,6 +11609,8 @@ type OrderingQuestion implements QuizQuestion {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    bettingMultiplierCorrect: Float
+    bettingMultiplierWrong: Float
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     orderingItems: [QuizOrderingItem!]! @goField(forceResolver: true)
 }
@@ -11695,6 +11777,8 @@ input CreateQuizQuestionInput {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    bettingMultiplierCorrect: Float
+    bettingMultiplierWrong: Float
 
     allowMultipleSelection: Boolean
     predefinedAnswers: [CreatePredefinedAnswerInput!]
@@ -11728,6 +11812,8 @@ input UpdateQuizQuestionInput {
     bettingMaxPercentage: Float
     bettingMinAbsolute: Int
     bettingMaxAbsolute: Int
+    bettingMultiplierCorrect: Float
+    bettingMultiplierWrong: Float
     # Set to true to clear betting absolute values (set them to null)
     clearBettingMinAbsolute: Boolean
     clearBettingMaxAbsolute: Boolean
@@ -23252,6 +23338,64 @@ func (ec *executionContext) fieldContext_FreeTextQuestion_bettingMaxAbsolute(_ c
 	return fc, nil
 }
 
+func (ec *executionContext) _FreeTextQuestion_bettingMultiplierCorrect(ctx context.Context, field graphql.CollectedField, obj *model.FreeTextQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FreeTextQuestion_bettingMultiplierCorrect,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMultiplierCorrect, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FreeTextQuestion_bettingMultiplierCorrect(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FreeTextQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FreeTextQuestion_bettingMultiplierWrong(ctx context.Context, field graphql.CollectedField, obj *model.FreeTextQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FreeTextQuestion_bettingMultiplierWrong,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMultiplierWrong, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FreeTextQuestion_bettingMultiplierWrong(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FreeTextQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _FreeTextQuestion_translationStatus(ctx context.Context, field graphql.CollectedField, obj *model.FreeTextQuestion) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -24233,6 +24377,64 @@ func (ec *executionContext) fieldContext_JsonQuestion_bettingMaxAbsolute(_ conte
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JsonQuestion_bettingMultiplierCorrect(ctx context.Context, field graphql.CollectedField, obj *model.JSONQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_JsonQuestion_bettingMultiplierCorrect,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMultiplierCorrect, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_JsonQuestion_bettingMultiplierCorrect(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JsonQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JsonQuestion_bettingMultiplierWrong(ctx context.Context, field graphql.CollectedField, obj *model.JSONQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_JsonQuestion_bettingMultiplierWrong,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMultiplierWrong, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_JsonQuestion_bettingMultiplierWrong(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JsonQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
 		},
 	}
 	return fc, nil
@@ -37657,6 +37859,64 @@ func (ec *executionContext) fieldContext_NumberQuestion_bettingMaxAbsolute(_ con
 	return fc, nil
 }
 
+func (ec *executionContext) _NumberQuestion_bettingMultiplierCorrect(ctx context.Context, field graphql.CollectedField, obj *model.NumberQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberQuestion_bettingMultiplierCorrect,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMultiplierCorrect, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberQuestion_bettingMultiplierCorrect(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NumberQuestion_bettingMultiplierWrong(ctx context.Context, field graphql.CollectedField, obj *model.NumberQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberQuestion_bettingMultiplierWrong,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMultiplierWrong, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberQuestion_bettingMultiplierWrong(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _NumberQuestion_translationStatus(ctx context.Context, field graphql.CollectedField, obj *model.NumberQuestion) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -38795,6 +39055,64 @@ func (ec *executionContext) fieldContext_OrderingQuestion_bettingMaxAbsolute(_ c
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrderingQuestion_bettingMultiplierCorrect(ctx context.Context, field graphql.CollectedField, obj *model.OrderingQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingQuestion_bettingMultiplierCorrect,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMultiplierCorrect, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingQuestion_bettingMultiplierCorrect(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrderingQuestion_bettingMultiplierWrong(ctx context.Context, field graphql.CollectedField, obj *model.OrderingQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingQuestion_bettingMultiplierWrong,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMultiplierWrong, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingQuestion_bettingMultiplierWrong(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
 		},
 	}
 	return fc, nil
@@ -40624,6 +40942,64 @@ func (ec *executionContext) fieldContext_PredefinedQuestion_bettingMaxAbsolute(_
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PredefinedQuestion_bettingMultiplierCorrect(ctx context.Context, field graphql.CollectedField, obj *model.PredefinedQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PredefinedQuestion_bettingMultiplierCorrect,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMultiplierCorrect, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_PredefinedQuestion_bettingMultiplierCorrect(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PredefinedQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PredefinedQuestion_bettingMultiplierWrong(ctx context.Context, field graphql.CollectedField, obj *model.PredefinedQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PredefinedQuestion_bettingMultiplierWrong,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMultiplierWrong, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_PredefinedQuestion_bettingMultiplierWrong(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PredefinedQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
 		},
 	}
 	return fc, nil
@@ -62186,7 +62562,7 @@ func (ec *executionContext) unmarshalInputCreateQuizQuestionInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"questionType", "questionText", "questionOrder", "timeoutSeconds", "points", "bettingEnabled", "bettingMinPercentage", "bettingMaxPercentage", "bettingMinAbsolute", "bettingMaxAbsolute", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
+	fieldsInOrder := [...]string{"questionType", "questionText", "questionOrder", "timeoutSeconds", "points", "bettingEnabled", "bettingMinPercentage", "bettingMaxPercentage", "bettingMinAbsolute", "bettingMaxAbsolute", "bettingMultiplierCorrect", "bettingMultiplierWrong", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -62263,6 +62639,20 @@ func (ec *executionContext) unmarshalInputCreateQuizQuestionInput(ctx context.Co
 				return it, err
 			}
 			it.BettingMaxAbsolute = data
+		case "bettingMultiplierCorrect":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bettingMultiplierCorrect"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BettingMultiplierCorrect = data
+		case "bettingMultiplierWrong":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bettingMultiplierWrong"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BettingMultiplierWrong = data
 		case "allowMultipleSelection":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowMultipleSelection"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -64977,7 +65367,7 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"questionText", "questionOrder", "timeoutSeconds", "points", "bettingEnabled", "bettingMinPercentage", "bettingMaxPercentage", "bettingMinAbsolute", "bettingMaxAbsolute", "clearBettingMinAbsolute", "clearBettingMaxAbsolute", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
+	fieldsInOrder := [...]string{"questionText", "questionOrder", "timeoutSeconds", "points", "bettingEnabled", "bettingMinPercentage", "bettingMaxPercentage", "bettingMinAbsolute", "bettingMaxAbsolute", "bettingMultiplierCorrect", "bettingMultiplierWrong", "clearBettingMinAbsolute", "clearBettingMaxAbsolute", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -65047,6 +65437,20 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 				return it, err
 			}
 			it.BettingMaxAbsolute = data
+		case "bettingMultiplierCorrect":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bettingMultiplierCorrect"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BettingMultiplierCorrect = data
+		case "bettingMultiplierWrong":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bettingMultiplierWrong"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BettingMultiplierWrong = data
 		case "clearBettingMinAbsolute":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearBettingMinAbsolute"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -69187,6 +69591,10 @@ func (ec *executionContext) _FreeTextQuestion(ctx context.Context, sel ast.Selec
 			out.Values[i] = ec._FreeTextQuestion_bettingMinAbsolute(ctx, field, obj)
 		case "bettingMaxAbsolute":
 			out.Values[i] = ec._FreeTextQuestion_bettingMaxAbsolute(ctx, field, obj)
+		case "bettingMultiplierCorrect":
+			out.Values[i] = ec._FreeTextQuestion_bettingMultiplierCorrect(ctx, field, obj)
+		case "bettingMultiplierWrong":
+			out.Values[i] = ec._FreeTextQuestion_bettingMultiplierWrong(ctx, field, obj)
 		case "translationStatus":
 			field := field
 
@@ -69586,6 +69994,10 @@ func (ec *executionContext) _JsonQuestion(ctx context.Context, sel ast.Selection
 			out.Values[i] = ec._JsonQuestion_bettingMinAbsolute(ctx, field, obj)
 		case "bettingMaxAbsolute":
 			out.Values[i] = ec._JsonQuestion_bettingMaxAbsolute(ctx, field, obj)
+		case "bettingMultiplierCorrect":
+			out.Values[i] = ec._JsonQuestion_bettingMultiplierCorrect(ctx, field, obj)
+		case "bettingMultiplierWrong":
+			out.Values[i] = ec._JsonQuestion_bettingMultiplierWrong(ctx, field, obj)
 		case "translationStatus":
 			field := field
 
@@ -71908,6 +72320,10 @@ func (ec *executionContext) _NumberQuestion(ctx context.Context, sel ast.Selecti
 			out.Values[i] = ec._NumberQuestion_bettingMinAbsolute(ctx, field, obj)
 		case "bettingMaxAbsolute":
 			out.Values[i] = ec._NumberQuestion_bettingMaxAbsolute(ctx, field, obj)
+		case "bettingMultiplierCorrect":
+			out.Values[i] = ec._NumberQuestion_bettingMultiplierCorrect(ctx, field, obj)
+		case "bettingMultiplierWrong":
+			out.Values[i] = ec._NumberQuestion_bettingMultiplierWrong(ctx, field, obj)
 		case "translationStatus":
 			field := field
 
@@ -72320,6 +72736,10 @@ func (ec *executionContext) _OrderingQuestion(ctx context.Context, sel ast.Selec
 			out.Values[i] = ec._OrderingQuestion_bettingMinAbsolute(ctx, field, obj)
 		case "bettingMaxAbsolute":
 			out.Values[i] = ec._OrderingQuestion_bettingMaxAbsolute(ctx, field, obj)
+		case "bettingMultiplierCorrect":
+			out.Values[i] = ec._OrderingQuestion_bettingMultiplierCorrect(ctx, field, obj)
+		case "bettingMultiplierWrong":
+			out.Values[i] = ec._OrderingQuestion_bettingMultiplierWrong(ctx, field, obj)
 		case "translationStatus":
 			field := field
 
@@ -73161,6 +73581,10 @@ func (ec *executionContext) _PredefinedQuestion(ctx context.Context, sel ast.Sel
 			out.Values[i] = ec._PredefinedQuestion_bettingMinAbsolute(ctx, field, obj)
 		case "bettingMaxAbsolute":
 			out.Values[i] = ec._PredefinedQuestion_bettingMaxAbsolute(ctx, field, obj)
+		case "bettingMultiplierCorrect":
+			out.Values[i] = ec._PredefinedQuestion_bettingMultiplierCorrect(ctx, field, obj)
+		case "bettingMultiplierWrong":
+			out.Values[i] = ec._PredefinedQuestion_bettingMultiplierWrong(ctx, field, obj)
 		case "translationStatus":
 			field := field
 
