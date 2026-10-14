@@ -21,7 +21,10 @@ type LoadTestConfig struct {
 	BaseURL     string      `json:"baseUrl"`
 	Tokens      []UserToken `json:"tokens"`
 	Auth0Tokens []UserToken `json:"auth0Tokens,omitempty"`
-	Generated   time.Time   `json:"generated"`
+	// AdminToken is an admin-role token for -admin-user, used by scenarios
+	// that drive admin mutations (e.g. finishing a quiz session)
+	AdminToken *UserToken `json:"adminToken,omitempty"`
+	Generated  time.Time  `json:"generated"`
 }
 
 // UserToken contains a user ID and their JWT token
@@ -47,6 +50,7 @@ func main() {
 	auth0Count := flag.Int("auth0-count", 0, "Also mint simulated Auth0 (RS256) tokens for this many users, for the auth-dance scenario")
 	auth0Issuer := flag.String("auth0-issuer", "https://login.bcc.no/", "Issuer for simulated Auth0 tokens (must match the server's AUTH0_JWT_ISSUER)")
 	auth0Key := flag.String("auth0-key", "", "RSA private key (PEM or base64 PEM) for signing simulated Auth0 tokens (defaults to AUTH0_LOADTEST_PRIVATE_KEY env var; generated if empty)")
+	adminUser := flag.String("admin-user", "", "Also mint an admin-role token for this user ID (the user needs an ADMIN role in user_roles)")
 	flag.Parse()
 
 	// Determine JWT secret
@@ -121,19 +125,10 @@ func main() {
 	tokens := make([]UserToken, 0, len(userIDs))
 	now := time.Now()
 
-	for _, userID := range userIDs {
-		claims := WayfarerClaims{
-			UserID:    userID,
-			UserRoles: []string{"user"},
-			RegisteredClaims: jwt.RegisteredClaims{
-				Issuer:    "wayfarer",
-				IssuedAt:  jwt.NewNumericDate(now),
-				ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(*validDays) * 24 * time.Hour)),
-			},
-		}
+	validity := time.Duration(*validDays) * 24 * time.Hour
 
-		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-		tokenString, err := token.SignedString([]byte(jwtSecret))
+	for _, userID := range userIDs {
+		tokenString, err := mintWayfarerToken(jwtSecret, userID, []string{"user"}, now, validity)
 		if err != nil {
 			slog.Error("Failed to sign token", "userId", userID, "error", err)
 			os.Exit(1)
@@ -157,7 +152,7 @@ func main() {
 			slog.Error("Failed to resolve Auth0 signing key", "error", err)
 			os.Exit(1)
 		}
-		auth0Tokens, err = generateAuth0Tokens(ctx, db, *auth0Count, *auth0Issuer, key, now, time.Duration(*validDays)*24*time.Hour)
+		auth0Tokens, err = generateAuth0Tokens(ctx, db, *auth0Count, *auth0Issuer, key, now, validity)
 		if err != nil {
 			slog.Error("Failed to generate simulated Auth0 tokens", "error", err)
 			os.Exit(1)
@@ -170,11 +165,22 @@ func main() {
 		}
 	}
 
+	var adminToken *UserToken
+	if *adminUser != "" {
+		tokenString, err := mintWayfarerToken(jwtSecret, *adminUser, []string{"user", "admin"}, now, validity)
+		if err != nil {
+			slog.Error("Failed to sign admin token", "userId", *adminUser, "error", err)
+			os.Exit(1)
+		}
+		adminToken = &UserToken{UserID: *adminUser, Token: tokenString}
+	}
+
 	// Create output config
 	outputConfig := LoadTestConfig{
 		BaseURL:     *baseURL,
 		Tokens:      tokens,
 		Auth0Tokens: auth0Tokens,
+		AdminToken:  adminToken,
 		Generated:   now,
 	}
 

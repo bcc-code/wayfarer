@@ -45,6 +45,14 @@ type Querier interface {
 	SettleBetResult(ctx context.Context, arg sqlc.SettleBetResultParams) (int64, error)
 }
 
+// BatchQuerier defines the database operations SettleBatch needs. Pass a
+// transaction-bound querier: a batch is settled completely or not at all.
+type BatchQuerier interface {
+	ClaimUnsettledBets(ctx context.Context, ids []string) ([]string, error)
+	CreateScoreJournalEntries(ctx context.Context, arg sqlc.CreateScoreJournalEntriesParams) error
+	SettleBetResults(ctx context.Context, arg sqlc.SettleBetResultsParams) error
+}
+
 // Bet is one response with a bet that is ready to be settled.
 type Bet struct {
 	ResponseID string

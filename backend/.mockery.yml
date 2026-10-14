@@ -33,3 +33,4 @@ packages:
   github.com/bcc-media/wayfarer/internal/services/betting:
     interfaces:
       Querier:
+      BatchQuerier:

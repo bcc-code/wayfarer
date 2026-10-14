@@ -1,13 +1,10 @@
 package cache
 
 import (
-	"context"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // KeyRegistry tracks all keys in the cache for tag-based bulk invalidation
@@ -152,6 +149,8 @@ func extractPrefixes(key string) []string {
 	// - leaderboard:position:project:{projectID}:{entityType}:{paramsHash}:{userID}
 	// - leaderboard:count:project:{projectID}:{entityType}:{paramsHash}
 	if strings.HasPrefix(key, PrefixLeaderboard) {
+		// Umbrella prefix: every ranking, for InvalidateLeaderboardScores
+		prefixes = append(prefixes, PrefixLeaderboard)
 		parts := strings.Split(key, ":")
 		if len(parts) >= 4 {
 			// Register under the base prefix for invalidation
@@ -221,13 +220,6 @@ func extractPrefixes(key string) []string {
 type CacheWithRegistry struct {
 	*Cache
 	registry *KeyRegistry
-	sync     *CacheSync
-	pool     *pgxpool.Pool
-
-	// settingsRefresher reloads the settings service's in-memory map. It is a
-	// callback rather than a direct call because internal/services already
-	// depends on this package, so the dependency cannot run the other way.
-	settingsRefresher atomic.Pointer[func()]
 
 	// evictedKeys feeds the pruneEvictedKeys worker; needsSweep is set when
 	// the queue overflows and a notification is dropped, requesting a full
@@ -358,40 +350,6 @@ func (c *CacheWithRegistry) Close() {
 	c.Cache.Close()
 }
 
-// SetSync configures the cache sync for cross-instance invalidation
-func (c *CacheWithRegistry) SetSync(sync *CacheSync, pool *pgxpool.Pool) {
-	c.sync = sync
-	c.pool = pool
-}
-
-// SetSettingsRefresher registers the callback run when a settings change
-// arrives, either locally or from another instance.
-func (c *CacheWithRegistry) SetSettingsRefresher(fn func()) {
-	c.settingsRefresher.Store(&fn)
-}
-
-// refreshSettings runs the registered refresher, if any.
-func (c *CacheWithRegistry) refreshSettings() {
-	if fn := c.settingsRefresher.Load(); fn != nil {
-		(*fn)()
-	}
-}
-
-// InvalidateSettings reloads settings on this instance and tells the others to
-// do the same, so a change takes effect now rather than on their next
-// five-minute refresh.
-func (c *CacheWithRegistry) InvalidateSettings() {
-	c.refreshSettings()
-	c.broadcast(InvalidationMessage{Type: InvalidationTypeSettings})
-}
-
-// broadcast sends an invalidation message to other instances if sync is configured
-func (c *CacheWithRegistry) broadcast(msg InvalidationMessage) {
-	if c.sync != nil && c.pool != nil {
-		c.sync.BroadcastWithPool(context.Background(), c.pool, msg)
-	}
-}
-
 // Set stores a value and registers the key
 func (c *CacheWithRegistry) Set(key string, value interface{}) bool {
 	if ok := c.Cache.Set(key, value); ok {
@@ -432,14 +390,8 @@ func (c *CacheWithRegistry) Clear() {
 
 // Invalidation helper functions for common operations
 
-// InvalidateUser invalidates all cache entries related to a user and broadcasts to other instances
+// InvalidateUser invalidates all cache entries related to a user
 func (c *CacheWithRegistry) InvalidateUser(userID string) {
-	c.invalidateUserLocal(userID)
-	c.broadcast(InvalidationMessage{Type: InvalidationTypeUser, ID: userID})
-}
-
-// invalidateUserLocal invalidates user cache entries on this instance only
-func (c *CacheWithRegistry) invalidateUserLocal(userID string) {
 	c.Delete(UserKey(userID))
 	c.Delete(ProjectsByUserKey(userID))
 	c.Delete(EventsByUserKey(userID))
@@ -466,14 +418,8 @@ func (c *CacheWithRegistry) invalidateUserLocal(userID string) {
 	c.DeletePrefix(GQLResponseUserPrefix(userID))
 }
 
-// InvalidateProject invalidates all cache entries related to a project and broadcasts to other instances
+// InvalidateProject invalidates all cache entries related to a project
 func (c *CacheWithRegistry) InvalidateProject(projectID string) {
-	c.invalidateProjectLocal(projectID)
-	c.broadcast(InvalidationMessage{Type: InvalidationTypeProject, ID: projectID})
-}
-
-// invalidateProjectLocal invalidates project cache entries on this instance only
-func (c *CacheWithRegistry) invalidateProjectLocal(projectID string) {
 	// Direct project entity
 	c.Delete(ProjectKey(projectID))
 
@@ -502,14 +448,8 @@ func (c *CacheWithRegistry) invalidateProjectLocal(projectID string) {
 	c.DeletePrefix(PrefixGQLResponse)
 }
 
-// InvalidateEvent invalidates all cache entries related to an event and broadcasts to other instances
+// InvalidateEvent invalidates all cache entries related to an event
 func (c *CacheWithRegistry) InvalidateEvent(eventID string) {
-	c.invalidateEventLocal(eventID)
-	c.broadcast(InvalidationMessage{Type: InvalidationTypeEvent, ID: eventID})
-}
-
-// invalidateEventLocal invalidates event cache entries on this instance only
-func (c *CacheWithRegistry) invalidateEventLocal(eventID string) {
 	c.Delete(EventKey(eventID))
 	c.DeletePrefix("event:" + eventID)
 
@@ -526,14 +466,8 @@ func (c *CacheWithRegistry) invalidateEventLocal(eventID string) {
 	c.DeletePrefix("leaderboard:full:event:" + eventID)
 }
 
-// InvalidateTeam invalidates all cache entries related to a team and broadcasts to other instances
+// InvalidateTeam invalidates all cache entries related to a team
 func (c *CacheWithRegistry) InvalidateTeam(teamID string) {
-	c.invalidateTeamLocal(teamID)
-	c.broadcast(InvalidationMessage{Type: InvalidationTypeTeam, ID: teamID})
-}
-
-// invalidateTeamLocal invalidates team cache entries on this instance only
-func (c *CacheWithRegistry) invalidateTeamLocal(teamID string) {
 	c.Delete(TeamKey(teamID))
 	c.Delete(TeamMembersByTeamKey(teamID))
 	c.Delete(TeamMemberLeaderboardKey(teamID))
@@ -542,27 +476,11 @@ func (c *CacheWithRegistry) invalidateTeamLocal(teamID string) {
 	c.DeletePrefix("team:" + teamID)
 }
 
-// InvalidateSuperTeam invalidates all cache entries related to a super team and broadcasts to other instances
+// InvalidateSuperTeam invalidates all cache entries related to a super team
 func (c *CacheWithRegistry) InvalidateSuperTeam(superTeamID string) {
-	c.invalidateSuperTeamLocal(superTeamID)
-	c.broadcast(InvalidationMessage{Type: InvalidationTypeSuperTeam, ID: superTeamID})
-}
-
-// invalidateSuperTeamLocal invalidates super team cache entries on this instance only
-func (c *CacheWithRegistry) invalidateSuperTeamLocal(superTeamID string) {
 	c.Delete(SuperTeamKey(superTeamID))
 	c.Delete(TeamsBySuperTeamKey(superTeamID))
 	c.DeletePrefix("superteam:" + superTeamID)
-}
-
-// InvalidateChallenge invalidates all cache entries related to a challenge and broadcasts to other instances
-func (c *CacheWithRegistry) InvalidateChallenge(challengeID, projectID string, eventID *string) {
-	c.invalidateChallengeLocal(challengeID, projectID, eventID)
-	msg := InvalidationMessage{Type: InvalidationTypeChallenge, ID: challengeID, ProjectID: projectID}
-	if eventID != nil {
-		msg.EventID = *eventID
-	}
-	c.broadcast(msg)
 }
 
 // InvalidateUserChallengeEnrollment invalidates only the cache entries that one
@@ -581,20 +499,8 @@ func (c *CacheWithRegistry) InvalidateChallenge(challengeID, projectID string, e
 //
 // A self-enrollment only changes state scoped to (userID, projectID, challengeID),
 // and every one of those keys is directly addressable, so no prefix sweep is
-// needed. Broadcasts the same narrow invalidation to other instances, so
-// multi-replica deployments stay coherent without the InvalidateUser blast
-// radius.
+// needed.
 func (c *CacheWithRegistry) InvalidateUserChallengeEnrollment(userID, projectID, challengeID string) {
-	c.invalidateUserChallengeEnrollmentLocal(userID, projectID, challengeID)
-	c.broadcast(InvalidationMessage{
-		Type: InvalidationTypeUserEnrollment, ID: userID,
-		ProjectID: projectID, ChallengeID: challengeID,
-	})
-}
-
-// invalidateUserChallengeEnrollmentLocal drops the enrollment-scoped keys on
-// this instance only.
-func (c *CacheWithRegistry) invalidateUserChallengeEnrollmentLocal(userID, projectID, challengeID string) {
 	c.Delete(UserChallengeEnrollmentKey(userID, challengeID))
 	c.Delete(UserChallengeCompletionKey(userID, challengeID))
 	c.Delete(UserEnrolledChallengesKey(userID, projectID))
@@ -605,8 +511,8 @@ func (c *CacheWithRegistry) invalidateUserChallengeEnrollmentLocal(userID, proje
 	c.DeletePrefix(GQLResponseUserPrefix(userID))
 }
 
-// invalidateChallengeLocal invalidates challenge cache entries on this instance only
-func (c *CacheWithRegistry) invalidateChallengeLocal(challengeID, projectID string, eventID *string) {
+// InvalidateChallenge invalidates all cache entries related to a challenge
+func (c *CacheWithRegistry) InvalidateChallenge(challengeID, projectID string, eventID *string) {
 	c.Delete(ChallengeKey(challengeID))
 
 	// Invalidate challenge list caches for project and event
@@ -634,18 +540,8 @@ func (c *CacheWithRegistry) invalidateChallengeLocal(challengeID, projectID stri
 	c.DeletePrefix(PrefixActiveChallengesCount)
 }
 
-// InvalidateLeaderboardConfig invalidates all cache entries related to a leaderboard config and broadcasts to other instances
+// InvalidateLeaderboardConfig invalidates all cache entries related to a leaderboard config
 func (c *CacheWithRegistry) InvalidateLeaderboardConfig(configID, projectID string, eventID *string) {
-	c.invalidateLeaderboardConfigLocal(configID, projectID, eventID)
-	msg := InvalidationMessage{Type: InvalidationTypeLeaderboardConfig, ID: configID, ProjectID: projectID}
-	if eventID != nil {
-		msg.EventID = *eventID
-	}
-	c.broadcast(msg)
-}
-
-// invalidateLeaderboardConfigLocal invalidates leaderboard config cache entries on this instance only
-func (c *CacheWithRegistry) invalidateLeaderboardConfigLocal(configID, projectID string, eventID *string) {
 	c.Delete(LeaderboardConfigKey(configID))
 
 	// Invalidate config list caches for project and event
@@ -655,14 +551,8 @@ func (c *CacheWithRegistry) invalidateLeaderboardConfigLocal(configID, projectID
 	}
 }
 
-// InvalidateAchievement invalidates all cache entries related to an achievement and broadcasts to other instances
+// InvalidateAchievement invalidates all cache entries related to an achievement
 func (c *CacheWithRegistry) InvalidateAchievement(achievementID string) {
-	c.invalidateAchievementLocal(achievementID)
-	c.broadcast(InvalidationMessage{Type: InvalidationTypeAchievement, ID: achievementID})
-}
-
-// invalidateAchievementLocal invalidates achievement cache entries on this instance only
-func (c *CacheWithRegistry) invalidateAchievementLocal(achievementID string) {
 	c.Delete(AchievementKey(achievementID))
 	c.Delete(ContentItemsByAchievementKey(achievementID))
 	c.Delete(StreakItemsByAchievementKey(achievementID))
@@ -675,13 +565,8 @@ func (c *CacheWithRegistry) invalidateAchievementLocal(achievementID string) {
 }
 
 // InvalidateUserAchievementProgress refreshes one user's progress and award state
-// on every instance, without evicting their roles or other users' cached data.
+// without evicting their roles or other users' cached data.
 func (c *CacheWithRegistry) InvalidateUserAchievementProgress(userID string) {
-	c.invalidateUserAchievementProgressLocal(userID)
-	c.broadcast(InvalidationMessage{Type: InvalidationTypeUserAchievementProgress, ID: userID})
-}
-
-func (c *CacheWithRegistry) invalidateUserAchievementProgressLocal(userID string) {
 	// Relationship keys are registered under a user tag, not a literal prefix
 	// such as "usercontent:<userID>".
 	for _, key := range c.registry.GetKeys("user:" + userID) {
@@ -694,20 +579,14 @@ func (c *CacheWithRegistry) invalidateUserAchievementProgressLocal(userID string
 	c.DeletePrefix(GQLResponseUserPrefix(userID))
 }
 
-// InvalidateQuiz invalidates all cache entries related to a quiz and broadcasts to other instances
+// InvalidateQuiz invalidates all cache entries related to a quiz
 func (c *CacheWithRegistry) InvalidateQuiz(quizID string) {
-	c.invalidateQuizLocal(quizID, "")
-	c.broadcast(InvalidationMessage{Type: InvalidationTypeQuiz, ID: quizID})
+	c.InvalidateQuizWithChallenge(quizID, "")
 }
 
-// InvalidateQuizWithChallenge invalidates all cache entries related to a quiz including the challenge lookup cache
+// InvalidateQuizWithChallenge invalidates all cache entries related to a quiz
+// including the challenge lookup cache (skipped for an empty challengeID)
 func (c *CacheWithRegistry) InvalidateQuizWithChallenge(quizID, challengeID string) {
-	c.invalidateQuizLocal(quizID, challengeID)
-	c.broadcast(InvalidationMessage{Type: InvalidationTypeQuiz, ID: quizID, ChallengeID: challengeID})
-}
-
-// invalidateQuizLocal invalidates quiz cache entries on this instance only
-func (c *CacheWithRegistry) invalidateQuizLocal(quizID, challengeID string) {
 	c.Delete(QuizKey(quizID))
 
 	// Invalidate quiz by challenge lookup if challenge ID is provided
@@ -733,30 +612,18 @@ func (c *CacheWithRegistry) invalidateQuizLocal(quizID, challengeID string) {
 	c.Delete(QuizSubmissionsByQuizKey(quizID))
 }
 
-// InvalidateQuizSessionAccess invalidates all per-user quiz session access caches
-// and broadcasts to other instances. Call this when session state changes
-// (open/lock/finish/reopen/delete) or access is granted/revoked.
+// InvalidateQuizSessionAccess invalidates all per-user quiz session access
+// caches. Call this when session state changes (open/lock/finish/reopen/delete)
+// or access is granted/revoked.
 func (c *CacheWithRegistry) InvalidateQuizSessionAccess() {
-	c.invalidateQuizSessionAccessLocal()
-	c.broadcast(InvalidationMessage{Type: InvalidationTypeQuizSessionAccess})
-}
-
-// invalidateQuizSessionAccessLocal invalidates quiz session access caches on this instance only
-func (c *CacheWithRegistry) invalidateQuizSessionAccessLocal() {
 	c.DeletePrefix(PrefixUserQuizSessionAccess)
 	c.DeletePrefix(PrefixUserActiveQuizSession)
 }
 
-// InvalidateQuizSession invalidates the cached session row and broadcasts to
-// other instances. Call this whenever session state changes (open/lock/finish/
-// reopen/update/delete), alongside InvalidateQuizSessionAccess for the
-// per-user visibility caches.
+// InvalidateQuizSession invalidates the cached session row. Call this whenever
+// session state changes (open/lock/finish/reopen/update/delete), alongside
+// InvalidateQuizSessionAccess for the per-user visibility caches.
 func (c *CacheWithRegistry) InvalidateQuizSession(sessionID string) {
-	c.invalidateQuizSessionLocal(sessionID)
-	c.broadcast(InvalidationMessage{Type: InvalidationTypeQuizSession, ID: sessionID})
-}
-
-func (c *CacheWithRegistry) invalidateQuizSessionLocal(sessionID string) {
 	c.Delete(QuizSessionKey(sessionID))
 }
 
@@ -780,6 +647,19 @@ func (c *CacheWithRegistry) InvalidateQuizSubmission(submissionID string) {
 // InvalidateUserQuizSubmissions invalidates cached quiz submissions for a user
 func (c *CacheWithRegistry) InvalidateUserQuizSubmissions(userID string) {
 	c.Delete(QuizSubmissionsByUserKey(userID))
+}
+
+// InvalidateLeaderboardScores drops every cached leaderboard ranking (all
+// projects and events) and every cached GraphQL response, which can embed
+// standings. Score writes invalidate their project when they commit, but the
+// leaderboard tables are only updated afterwards by the apply worker
+// (services.LeaderboardApplyWorker); a ranking read in between would be
+// cached stale for the full TTL. The worker calls this after applying deltas.
+// Leaderboard configs ("leaderboardconfig:") are kept.
+func (c *CacheWithRegistry) InvalidateLeaderboardScores() {
+	c.DeletePrefix(PrefixLeaderboard) // rankings, positions and counts
+	c.DeletePrefix(PrefixTeamMemberLeaderboard)
+	c.DeletePrefix(PrefixGQLResponse)
 }
 
 // InvalidateTeamMemberLeaderboardTags invalidates all tag caches for team member leaderboards.

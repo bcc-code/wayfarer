@@ -80,6 +80,9 @@ func (r *Resolver) closeSessionAndSettleBets(ctx context.Context, span trace.Spa
 // invalidateSessionSubmissionCaches invalidates the caches of every user and
 // submission in a session, e.g. after its submissions were auto-submitted.
 func (r *Resolver) invalidateSessionSubmissionCaches(ctx context.Context, sessionID, projectID string) {
+	// Not cancelled with the request: a long settlement can outlast the
+	// client, and the caches must still be cleared afterwards
+	ctx = context.WithoutCancel(ctx)
 	submissions, err := r.DB.Queries.GetSessionSubmissionsWithUserData(ctx, sessionID)
 	if err != nil {
 		slog.Warn("failed to get session submissions for cache invalidation",
@@ -109,9 +112,16 @@ type settleSessionBetsResult struct {
 	VoidedUsers map[string]bool
 }
 
-// settleSessionBets pays out all unsettled bets in a finished session.
-// Each bet is settled in its own transaction; a failing bet is logged and
-// skipped so the others are still paid out.
+// betSettleBatchSize is how many bets settleSessionBets settles per
+// transaction: large enough that per-transaction overhead (commit flush,
+// round trips) stops dominating, small enough to keep lock time and a
+// failed batch's retry cheap.
+const betSettleBatchSize = 500
+
+// settleSessionBets pays out all unsettled bets in a finished session, in
+// batches of betSettleBatchSize per transaction (betting.SettleBatch). If a
+// batch fails, its bets are retried one per transaction, so a failing bet is
+// logged and skipped and the others are still paid out.
 func (r *Resolver) settleSessionBets(ctx context.Context, sessionID string, quiz *model.Quiz) (settleSessionBetsResult, error) {
 	result := settleSessionBetsResult{UserNetPoints: make(map[string]int), VoidedUsers: make(map[string]bool)}
 
@@ -134,57 +144,100 @@ func (r *Resolver) settleSessionBets(ctx context.Context, sessionID string, quiz
 	if challengeName == "" {
 		challengeName = quiz.Name
 	}
+	// The translated challenge name per language, looked up once
+	namesByLanguage := make(map[string]string)
 
 	submissions := make(map[string]bool)
-	for _, row := range bets {
-		multiplierCorrect, errCorrect := numericToMultiplier(row.BettingMultiplierCorrect)
-		multiplierWrong, errWrong := numericToMultiplier(row.BettingMultiplierWrong)
-		if err := errors.Join(errCorrect, errWrong); err != nil {
-			result.Failed++
-			slog.Error("invalid bet multiplier, bet left unsettled",
-				"error", err, "session_id", sessionID, "response_id", row.ID, "question_id", row.QuestionID)
-			continue
-		}
-
-		lang := r.userLanguage(ctx, row.UserID)
-		in := betting.SettleInput{
-			Bet: betting.Bet{
-				ResponseID:        row.ID,
-				UserID:            row.UserID,
-				Amount:            derefInt32(row.BetAmount),
-				IsCorrect:         row.IsCorrect,
-				MultiplierCorrect: multiplierCorrect,
-				MultiplierWrong:   multiplierWrong,
-			},
-			ProjectID:     quiz.ProjectID,
-			EventID:       eventID,
-			Language:      lang,
-			ChallengeName: r.translatedChallengeName(ctx, quiz.ChallengeID, lang, challengeName),
-		}
-
-		res, err := r.settleBetInTx(ctx, in)
-		if errors.Is(err, betting.ErrAlreadySettled) {
-			continue // settled by a concurrent run; this run's writes were rolled back
-		}
-		if err != nil {
-			result.Failed++
-			slog.Error("failed to settle bet",
-				"error", err, "session_id", sessionID, "response_id", row.ID, "user_id", row.UserID)
-			continue
-		}
-		if !res.Settled {
-			continue
-		}
-
+	record := func(row *sqlc.GetUnsettledSessionBetsRow, res betting.Result) {
 		result.Settled++
 		submissions[row.SubmissionID] = true
 		if res.Void {
 			// No result to announce: the stake was simply returned
 			result.Voided++
 			result.VoidedUsers[row.UserID] = true
-			continue
+			return
 		}
 		result.UserNetPoints[row.UserID] += res.NetPoints
+	}
+
+	for start := 0; start < len(bets); start += betSettleBatchSize {
+		batch := bets[start:min(start+betSettleBatchSize, len(bets))]
+
+		languages := r.userLanguages(ctx, batch)
+		rows := make([]*sqlc.GetUnsettledSessionBetsRow, 0, len(batch))
+		inputs := make([]betting.SettleInput, 0, len(batch))
+		for _, row := range batch {
+			multiplierCorrect, errCorrect := numericToMultiplier(row.BettingMultiplierCorrect)
+			multiplierWrong, errWrong := numericToMultiplier(row.BettingMultiplierWrong)
+			if err := errors.Join(errCorrect, errWrong); err != nil {
+				result.Failed++
+				slog.Error("invalid bet multiplier, bet left unsettled",
+					"error", err, "session_id", sessionID, "response_id", row.ID, "question_id", row.QuestionID)
+				continue
+			}
+
+			lang := languages[row.UserID]
+			name, ok := namesByLanguage[lang]
+			if !ok {
+				name = r.translatedChallengeName(ctx, quiz.ChallengeID, lang, challengeName)
+				namesByLanguage[lang] = name
+			}
+			rows = append(rows, row)
+			inputs = append(inputs, betting.SettleInput{
+				Bet: betting.Bet{
+					ResponseID:        row.ID,
+					UserID:            row.UserID,
+					Amount:            derefInt32(row.BetAmount),
+					IsCorrect:         row.IsCorrect,
+					MultiplierCorrect: multiplierCorrect,
+					MultiplierWrong:   multiplierWrong,
+				},
+				ProjectID:     quiz.ProjectID,
+				EventID:       eventID,
+				Language:      lang,
+				ChallengeName: name,
+			})
+		}
+		if len(inputs) == 0 {
+			continue
+		}
+
+		results, err := r.settleBatchInTx(ctx, inputs)
+		if err != nil {
+			slog.Error("failed to settle bet batch, retrying its bets one by one",
+				"error", err, "session_id", sessionID, "bets", len(inputs))
+			for i, in := range inputs {
+				res, err := r.settleBetInTx(ctx, in)
+				if errors.Is(err, betting.ErrAlreadySettled) {
+					continue // settled by a concurrent run; this run's writes were rolled back
+				}
+				if err != nil {
+					result.Failed++
+					slog.Error("failed to settle bet",
+						"error", err, "session_id", sessionID, "response_id", rows[i].ID, "user_id", rows[i].UserID)
+					continue
+				}
+				if res.Settled {
+					record(rows[i], res)
+				}
+			}
+			continue
+		}
+
+		for i, res := range results {
+			if errors.Is(res.Err, betting.ErrAlreadySettled) {
+				continue // settled by a concurrent run; nothing was written for it
+			}
+			if res.Err != nil {
+				result.Failed++
+				slog.Error("failed to settle bet",
+					"error", res.Err, "session_id", sessionID, "response_id", rows[i].ID, "user_id", rows[i].UserID)
+				continue
+			}
+			if res.Settled {
+				record(rows[i], res.Result)
+			}
+		}
 	}
 
 	if result.Settled > 0 {
@@ -199,6 +252,27 @@ func (r *Resolver) settleSessionBets(ctx context.Context, sessionID string, quiz
 		"users", len(result.UserNetPoints))
 
 	return result, nil
+}
+
+// settleBatchInTx settles a batch of bets in one transaction: all of the
+// batch's journal entries and results are written, or none.
+func (r *Resolver) settleBatchInTx(ctx context.Context, ins []betting.SettleInput) ([]betting.BatchResult, error) {
+	tx, err := r.DB.Pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
+	results, err := betting.SettleBatch(ctx, r.DB.Queries.WithTx(tx), ins)
+	if err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+	return results, nil
 }
 
 // settleBetInTx settles one bet so that its journal entries and response update
@@ -298,13 +372,26 @@ func (r *Resolver) challengeEventAndName(ctx context.Context, challengeID string
 	return nil, ""
 }
 
-// userLanguage returns the user's language, or the default language.
-func (r *Resolver) userLanguage(ctx context.Context, userID string) string {
-	user, err := r.Loaders.UserByIDLoader.Load(ctx, userID)()
-	if err == nil && user != nil && user.Language != "" {
-		return user.Language
+// userLanguages returns the language of every user with a bet in rows (the
+// default language when unknown), loaded in one batch.
+func (r *Resolver) userLanguages(ctx context.Context, rows []*sqlc.GetUnsettledSessionBetsRow) map[string]string {
+	var userIDs []string
+	seen := make(map[string]bool)
+	for _, row := range rows {
+		if !seen[row.UserID] {
+			seen[row.UserID] = true
+			userIDs = append(userIDs, row.UserID)
+		}
 	}
-	return i18n.DefaultLanguage
+	users, errs := r.Loaders.UserByIDLoader.LoadMany(ctx, userIDs)()
+	languages := make(map[string]string, len(userIDs))
+	for i, id := range userIDs {
+		languages[id] = i18n.DefaultLanguage
+		if i < len(users) && (len(errs) <= i || errs[i] == nil) && users[i] != nil && users[i].Language != "" {
+			languages[id] = users[i].Language
+		}
+	}
+	return languages
 }
 
 // translatedChallengeName returns the challenge name in lang, or fallback.

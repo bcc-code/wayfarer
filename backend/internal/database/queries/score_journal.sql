@@ -25,6 +25,22 @@ INSERT INTO score_journal (
     COALESCE(sqlc.narg('created_at')::timestamptz, now())
 ) RETURNING *;
 
+-- name: CreateScoreJournalEntries :exec
+-- Bulk insert for settlement batches. Arrays are parallel, one element per
+-- entry; an empty event_id means none. No challenge, awarder or backdating.
+INSERT INTO score_journal (id, project_id, user_id, event_id, points, source_type, source_id, reason)
+SELECT e.id, e.project_id, e.user_id, NULLIF(e.event_id, ''), e.points, e.source_type, e.source_id, e.reason
+FROM (
+    SELECT unnest(@ids::text[]) AS id,
+           unnest(@project_ids::text[]) AS project_id,
+           unnest(@user_ids::text[]) AS user_id,
+           unnest(@event_ids::text[]) AS event_id,
+           unnest(@points::int[]) AS points,
+           unnest(@source_types::text[]) AS source_type,
+           unnest(@source_ids::text[]) AS source_id,
+           unnest(@reasons::text[]) AS reason
+) e;
+
 -- name: GetScoreJournalFiltered :many
 SELECT
     id,
