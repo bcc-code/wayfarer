@@ -21,6 +21,10 @@ gql(`
       managementType
       managedBy
       isRequired
+      project {
+        id
+        name
+      }
       translationStatus {
         ...TranslationStatus
       }
@@ -280,6 +284,21 @@ async function publishConsent() {
                 {{ formatDateTime(data.consent.publishedAt) }}
               </dd>
               <dd v-else class="text-dimmed">Ikke publisert</dd>
+            </div>
+            <div class="flex gap-6 py-2">
+              <dt class="text-muted w-32 shrink-0">Prosjekt</dt>
+              <dd v-if="data.consent.project">
+                <NuxtLink
+                  :to="{
+                    name: 'admin-projects-projectId',
+                    params: { projectId: data.consent.project.id },
+                  }"
+                  class="admin-link"
+                >
+                  {{ data.consent.project.name }}
+                </NuxtLink>
+              </dd>
+              <dd v-else>Alle prosjekter</dd>
             </div>
             <div class="flex gap-6 py-2">
               <dt class="text-muted w-32 shrink-0">Påkrevd</dt>

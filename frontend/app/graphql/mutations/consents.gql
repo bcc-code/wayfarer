@@ -24,6 +24,7 @@ mutation CreateConsent(
   $isRemote: Boolean
   $isRequired: Boolean
   $managedBy: String
+  $projectId: ID
 ) {
   createConsent(
     key: $key
@@ -35,6 +36,7 @@ mutation CreateConsent(
     isRemote: $isRemote
     isRequired: $isRequired
     managedBy: $managedBy
+    projectId: $projectId
   ) {
     id
     key

@@ -4023,6 +4023,7 @@ export type CreateConsentMutationVariables = Exact<{
   isRemote?: InputMaybe<Scalars['Boolean']['input']>;
   isRequired?: InputMaybe<Scalars['Boolean']['input']>;
   managedBy?: InputMaybe<Scalars['String']['input']>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
 }>;
 
 
@@ -4762,12 +4763,17 @@ export type AdminConsentPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminConsentPageQuery = { __typename?: 'Query', consent: { __typename?: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, publishedAt?: any | null, managementType: ConsentManagementType, managedBy?: string | null, isRequired: boolean, body: { __typename?: 'MarkdownText', markdown: string, html: string }, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> } };
+export type AdminConsentPageQuery = { __typename?: 'Query', consent: { __typename?: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, publishedAt?: any | null, managementType: ConsentManagementType, managedBy?: string | null, isRequired: boolean, body: { __typename?: 'MarkdownText', markdown: string, html: string }, project?: { __typename?: 'Project', id: string, name: string } | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> } };
 
 export type AdminConsentsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type AdminConsentsPageQuery = { __typename?: 'Query', consents: Array<{ __typename?: 'Consent', id: string, key: string, version: number, title: string, shortText: string, publishedAt?: any | null, managementType: ConsentManagementType, managedBy?: string | null }> };
+
+export type AdminNewConsentProjectsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminNewConsentProjectsQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, startDate: any, endDate: any } }> } };
 
 export type AdminFeedbackPageQueryVariables = Exact<{
   filter?: InputMaybe<FeedbackFilter>;
@@ -5873,7 +5879,7 @@ export function useRejectConsentMutation() {
   return Urql.useMutation<RejectConsentMutation, RejectConsentMutationVariables>(RejectConsentDocument);
 };
 export const CreateConsentDocument = gql`
-    mutation CreateConsent($key: String!, $title: String!, $shortText: String, $body: String!, $url: String, $publishedAt: DateTime, $isRemote: Boolean, $isRequired: Boolean, $managedBy: String) {
+    mutation CreateConsent($key: String!, $title: String!, $shortText: String, $body: String!, $url: String, $publishedAt: DateTime, $isRemote: Boolean, $isRequired: Boolean, $managedBy: String, $projectId: ID) {
   createConsent(
     key: $key
     title: $title
@@ -5884,6 +5890,7 @@ export const CreateConsentDocument = gql`
     isRemote: $isRemote
     isRequired: $isRequired
     managedBy: $managedBy
+    projectId: $projectId
   ) {
     id
     key
@@ -7394,6 +7401,10 @@ export const AdminConsentPageDocument = gql`
     managementType
     managedBy
     isRequired
+    project {
+      id
+      name
+    }
     translationStatus {
       ...TranslationStatus
     }
@@ -7421,6 +7432,24 @@ export const AdminConsentsPageDocument = gql`
 
 export function useAdminConsentsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminConsentsPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminConsentsPageQuery, AdminConsentsPageQueryVariables | undefined>({ query: AdminConsentsPageDocument, variables: undefined, ...options });
+};
+export const AdminNewConsentProjectsDocument = gql`
+    query AdminNewConsentProjects {
+  projects(first: 100, filter: {archived: false}) {
+    edges {
+      node {
+        id
+        name
+        startDate
+        endDate
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminNewConsentProjectsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminNewConsentProjectsQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminNewConsentProjectsQuery, AdminNewConsentProjectsQueryVariables | undefined>({ query: AdminNewConsentProjectsDocument, variables: undefined, ...options });
 };
 export const AdminFeedbackPageDocument = gql`
     query AdminFeedbackPage($filter: FeedbackFilter, $first: Int, $after: String, $last: Int, $before: String) {
