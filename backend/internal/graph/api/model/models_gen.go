@@ -354,6 +354,7 @@ type Consent struct {
 	PublishedAt       *scalars.DateTime         `json:"publishedAt,omitempty"`
 	ManagementType    ConsentManagementType     `json:"managementType"`
 	ManagedBy         *string                   `json:"managedBy,omitempty"`
+	IsRequired        bool                      `json:"isRequired"`
 	Project           *Project                  `json:"project,omitempty"`
 	UserHistory       []UserConsentHistoryEntry `json:"userHistory"`
 	TranslationStatus []TranslationFieldStatus  `json:"translationStatus"`

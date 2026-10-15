@@ -361,6 +361,7 @@ export type Consent = {
   __typename?: 'Consent';
   body: MarkdownText;
   id: Scalars['ID']['output'];
+  isRequired: Scalars['Boolean']['output'];
   key: Scalars['String']['output'];
   managedBy?: Maybe<Scalars['String']['output']>;
   managementType: ConsentManagementType;
@@ -1506,6 +1507,7 @@ export type MutationCreateChallengeArgs = {
 export type MutationCreateConsentArgs = {
   body: Scalars['String']['input'];
   isRemote?: InputMaybe<Scalars['Boolean']['input']>;
+  isRequired?: InputMaybe<Scalars['Boolean']['input']>;
   key: Scalars['String']['input'];
   managedBy?: InputMaybe<Scalars['String']['input']>;
   projectId?: InputMaybe<Scalars['ID']['input']>;
@@ -2017,6 +2019,7 @@ export type MutationUpdateChurchArgs = {
 export type MutationUpdateConsentArgs = {
   body?: InputMaybe<Scalars['String']['input']>;
   id: Scalars['ID']['input'];
+  isRequired?: InputMaybe<Scalars['Boolean']['input']>;
   managedBy?: InputMaybe<Scalars['String']['input']>;
   publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
   shortText?: InputMaybe<Scalars['String']['input']>;

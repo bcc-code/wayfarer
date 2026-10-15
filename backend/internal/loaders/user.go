@@ -167,6 +167,7 @@ func fetchConsentDataForUsers(ctx context.Context, db *database.DB, c *cache.Cac
 					ManagementType: managementType,
 					ManagedBy:      row.ManagedBy,
 					ProjectID:      row.ProjectID,
+					IsRequired:     row.IsRequired,
 				}
 				latestConsents[row.ID] = consent
 			}
