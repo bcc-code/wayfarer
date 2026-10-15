@@ -94,6 +94,14 @@ const url = computed(() => {
   return props.consent.url ?? undefined
 })
 
+// A required consent cannot be rejected, so the card offers no way to.
+const isRequired = computed(() => {
+  if (props.consent.__typename == 'UserConsent') {
+    return props.consent.consent.isRequired
+  }
+  return props.consent.isRequired
+})
+
 const changing = ref(false)
 </script>
 
@@ -152,6 +160,7 @@ const changing = ref(false)
           {{ $t('consent.acceptButton') }}
         </DesignButton>
         <DesignButton
+          v-if="!isRequired"
           variant="tertiary"
           size="small"
           class="w-full"

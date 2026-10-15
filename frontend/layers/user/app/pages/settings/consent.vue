@@ -15,6 +15,24 @@ function finishOnboarding() {
   navigateTo({ name: 'index' })
 }
 
+// A required consent counts until it is ACCEPTED, so a rejected one still
+// blocks — unlike `pending`, which only means "no action yet". Blocking wins
+// over `hasCompletedOnboarding`, which is per-device localStorage and clearable.
+const hasBlockingConsents = computed(() => {
+  const status = data.value?.me.consentStatus
+  if (!status) return false
+
+  const isLocal = (c: { managementType: ConsentManagementType }) =>
+    c.managementType === ConsentManagementType.Local
+
+  return (
+    status.pendingConsents.some((c) => c.isRequired && isLocal(c)) ||
+    status.rejectedConsents.some(
+      (entry) => entry.consent.isRequired && isLocal(entry.consent),
+    )
+  )
+})
+
 const hasPendingInternalConsents = computed(() => {
   const pending = data.value?.me.consentStatus.pendingConsents.filter(
     (c) => c.managementType === ConsentManagementType.Local,
@@ -64,7 +82,7 @@ const sortedConsents = computed(() => {
 
 <template>
   <PageLayout :title="$t('pages.consents')">
-    <template v-if="hasCompletedOnboarding" #action>
+    <template v-if="hasCompletedOnboarding && !hasBlockingConsents" #action>
       <NuxtLink :to="{ name: 'settings' }">
         <DesignIconButton icon="IconClose" />
       </NuxtLink>
@@ -102,7 +120,11 @@ const sortedConsents = computed(() => {
       />
     </div>
     <div
-      v-if="!hasCompletedOnboarding && !hasPendingInternalConsents"
+      v-if="
+        !hasCompletedOnboarding &&
+        !hasPendingInternalConsents &&
+        !hasBlockingConsents
+      "
       class="fixed bottom-default left-default right-default"
     >
       <DesignButton

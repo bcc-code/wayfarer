@@ -16,6 +16,7 @@ query ProfilePage($ageFilter: LeaderboardFilter) {
         url
         managementType
         managedBy
+        isRequired
       }
     }
   }

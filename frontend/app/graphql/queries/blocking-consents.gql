@@ -1,0 +1,19 @@
+query BlockingConsents {
+  me {
+    consentStatus {
+      pendingConsents {
+        id
+        isRequired
+        managementType
+      }
+      rejectedConsents {
+        id
+        consent {
+          id
+          isRequired
+          managementType
+        }
+      }
+    }
+  }
+}

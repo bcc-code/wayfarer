@@ -292,7 +292,29 @@ fall back to a denormalised `user_projects.consent_blocked` flag maintained on
 accept / reject / consent publish. Do not start with the denormalised column —
 it must be swept on every publish of a required consent, and it will drift.
 
-### Phase 3 — user frontend
+### Phase 3 — user frontend ✅ done 2026-10-15 (client-side gate only)
+
+- [x] `app/graphql/queries/blocking-consents.gql` — the gate's own minimal
+      query; `isRequired` added to the consent and profile page queries.
+- [x] `app/middleware/03.consent.global.ts` — root, so it runs after
+      `01.auth`. Skips the auth paths, `/settings/consent` and `/admin/**`.
+      Blocks on a required LOCAL consent that is pending **or rejected**.
+      Fails open on a query error, so offline never locks anyone out.
+- [x] `app/plugins/0.urql.ts` exports `getUrqlClient()`. Middleware runs
+      outside component setup, so the Vue-provided client is unreachable;
+      returning it as a Nuxt `provide` instead collapses every other plugin's
+      injection type to `unknown` (it broke `useAnalytics`).
+- [x] `settings/consent.vue` — close button and "Gå videre" hidden while
+      blocking. Blocking wins over `hasCompletedOnboarding`.
+- [x] `ConsentCard.vue` — no reject button on a required consent. A rejected
+      one keeps its "Endre" button, which is the recovery path.
+- [x] `test/unit/middleware-consent-global.test.ts` — 10 cases, all passing.
+
+**Still client-side only.** Phase 2 (the API guard and the participation
+filter) is untouched: a crafted GraphQL call still works, and a blocked user is
+still visible in units, leaderboards and notification audiences.
+
+### Phase 3 — original plan (superseded)
 
 - [ ] `pnpm codegen` after the schema lands.
 - [ ] New `frontend/app/middleware/03.consent.global.ts` (root, so it runs
