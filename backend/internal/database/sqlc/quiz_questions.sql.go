@@ -37,7 +37,16 @@ type CreatePredefinedAnswerParams struct {
 	Answerorder int32  `json:"answerorder"`
 }
 
-func (q *Queries) CreatePredefinedAnswer(ctx context.Context, arg CreatePredefinedAnswerParams) (*QuizPredefinedAnswer, error) {
+type CreatePredefinedAnswerRow struct {
+	ID          string             `json:"id"`
+	QuestionID  string             `json:"question_id"`
+	AnswerText  string             `json:"answer_text"`
+	IsCorrect   bool               `json:"is_correct"`
+	AnswerOrder int32              `json:"answer_order"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) CreatePredefinedAnswer(ctx context.Context, arg CreatePredefinedAnswerParams) (*CreatePredefinedAnswerRow, error) {
 	row := q.db.QueryRow(ctx, CreatePredefinedAnswer,
 		arg.ID,
 		arg.Questionid,
@@ -45,7 +54,7 @@ func (q *Queries) CreatePredefinedAnswer(ctx context.Context, arg CreatePredefin
 		arg.Iscorrect,
 		arg.Answerorder,
 	)
-	var i QuizPredefinedAnswer
+	var i CreatePredefinedAnswerRow
 	err := row.Scan(
 		&i.ID,
 		&i.QuestionID,
@@ -226,15 +235,24 @@ FROM quiz_predefined_answers
 WHERE id = ANY($1::char(28)[])
 `
 
-func (q *Queries) GetPredefinedAnswersByIDs(ctx context.Context, ids []string) ([]*QuizPredefinedAnswer, error) {
+type GetPredefinedAnswersByIDsRow struct {
+	ID          string             `json:"id"`
+	QuestionID  string             `json:"question_id"`
+	AnswerText  string             `json:"answer_text"`
+	IsCorrect   bool               `json:"is_correct"`
+	AnswerOrder int32              `json:"answer_order"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) GetPredefinedAnswersByIDs(ctx context.Context, ids []string) ([]*GetPredefinedAnswersByIDsRow, error) {
 	rows, err := q.db.Query(ctx, GetPredefinedAnswersByIDs, ids)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*QuizPredefinedAnswer{}
+	items := []*GetPredefinedAnswersByIDsRow{}
 	for rows.Next() {
-		var i QuizPredefinedAnswer
+		var i GetPredefinedAnswersByIDsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.QuestionID,
@@ -260,15 +278,24 @@ WHERE question_id = $1::char(28)
 ORDER BY answer_order ASC
 `
 
-func (q *Queries) GetPredefinedAnswersByQuestionID(ctx context.Context, questionid string) ([]*QuizPredefinedAnswer, error) {
+type GetPredefinedAnswersByQuestionIDRow struct {
+	ID          string             `json:"id"`
+	QuestionID  string             `json:"question_id"`
+	AnswerText  string             `json:"answer_text"`
+	IsCorrect   bool               `json:"is_correct"`
+	AnswerOrder int32              `json:"answer_order"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) GetPredefinedAnswersByQuestionID(ctx context.Context, questionid string) ([]*GetPredefinedAnswersByQuestionIDRow, error) {
 	rows, err := q.db.Query(ctx, GetPredefinedAnswersByQuestionID, questionid)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*QuizPredefinedAnswer{}
+	items := []*GetPredefinedAnswersByQuestionIDRow{}
 	for rows.Next() {
-		var i QuizPredefinedAnswer
+		var i GetPredefinedAnswersByQuestionIDRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.QuestionID,
@@ -294,15 +321,24 @@ WHERE question_id = ANY($1::char(28)[])
 ORDER BY question_id, answer_order ASC
 `
 
-func (q *Queries) GetPredefinedAnswersByQuestionIDs(ctx context.Context, questionIds []string) ([]*QuizPredefinedAnswer, error) {
+type GetPredefinedAnswersByQuestionIDsRow struct {
+	ID          string             `json:"id"`
+	QuestionID  string             `json:"question_id"`
+	AnswerText  string             `json:"answer_text"`
+	IsCorrect   bool               `json:"is_correct"`
+	AnswerOrder int32              `json:"answer_order"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) GetPredefinedAnswersByQuestionIDs(ctx context.Context, questionIds []string) ([]*GetPredefinedAnswersByQuestionIDsRow, error) {
 	rows, err := q.db.Query(ctx, GetPredefinedAnswersByQuestionIDs, questionIds)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*QuizPredefinedAnswer{}
+	items := []*GetPredefinedAnswersByQuestionIDsRow{}
 	for rows.Next() {
-		var i QuizPredefinedAnswer
+		var i GetPredefinedAnswersByQuestionIDsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.QuestionID,
