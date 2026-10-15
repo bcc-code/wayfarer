@@ -24,6 +24,7 @@ const schema = z.object({
   url: z.url('Må være en gyldig URL').optional().or(z.literal('')),
   publishNow: z.boolean().default(false),
   isRemote: z.boolean().default(false),
+  isRequired: z.boolean().default(false),
   managedBy: z.string().optional(),
 })
 
@@ -37,6 +38,7 @@ const state = reactive<Schema>({
   url: '',
   publishNow: false,
   isRemote: false,
+  isRequired: false,
   managedBy: '',
 })
 
@@ -57,6 +59,7 @@ async function handleSubmit(event: FormSubmitEvent<Schema>) {
     url: event.data.url || undefined,
     publishedAt: event.data.publishNow ? new Date().toISOString() : undefined,
     isRemote: event.data.isRemote || undefined,
+    isRequired: event.data.isRequired || undefined,
     managedBy: event.data.managedBy || undefined,
   })
 
@@ -163,6 +166,13 @@ async function handleSubmit(event: FormSubmitEvent<Schema>) {
                   class="w-full"
                   placeholder="Eksternt systemnavn"
                 />
+              </UFormField>
+
+              <UFormField name="isRequired">
+                <UCheckbox v-model="state.isRequired" label="Påkrevd" />
+                <template #description>
+                  Må godtas for å delta i prosjektet, og kan ikke avslås
+                </template>
               </UFormField>
 
               <UFormField name="publishNow">

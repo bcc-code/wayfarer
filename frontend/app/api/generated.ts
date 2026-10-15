@@ -4021,6 +4021,7 @@ export type CreateConsentMutationVariables = Exact<{
   url?: InputMaybe<Scalars['String']['input']>;
   publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
   isRemote?: InputMaybe<Scalars['Boolean']['input']>;
+  isRequired?: InputMaybe<Scalars['Boolean']['input']>;
   managedBy?: InputMaybe<Scalars['String']['input']>;
 }>;
 
@@ -4035,6 +4036,7 @@ export type UpdateConsentMutationVariables = Exact<{
   url?: InputMaybe<Scalars['String']['input']>;
   publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
   managedBy?: InputMaybe<Scalars['String']['input']>;
+  isRequired?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 
@@ -4760,7 +4762,7 @@ export type AdminConsentPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminConsentPageQuery = { __typename?: 'Query', consent: { __typename?: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, publishedAt?: any | null, managementType: ConsentManagementType, managedBy?: string | null, body: { __typename?: 'MarkdownText', markdown: string, html: string }, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> } };
+export type AdminConsentPageQuery = { __typename?: 'Query', consent: { __typename?: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, publishedAt?: any | null, managementType: ConsentManagementType, managedBy?: string | null, isRequired: boolean, body: { __typename?: 'MarkdownText', markdown: string, html: string }, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> } };
 
 export type AdminConsentsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -5871,7 +5873,7 @@ export function useRejectConsentMutation() {
   return Urql.useMutation<RejectConsentMutation, RejectConsentMutationVariables>(RejectConsentDocument);
 };
 export const CreateConsentDocument = gql`
-    mutation CreateConsent($key: String!, $title: String!, $shortText: String, $body: String!, $url: String, $publishedAt: DateTime, $isRemote: Boolean, $managedBy: String) {
+    mutation CreateConsent($key: String!, $title: String!, $shortText: String, $body: String!, $url: String, $publishedAt: DateTime, $isRemote: Boolean, $isRequired: Boolean, $managedBy: String) {
   createConsent(
     key: $key
     title: $title
@@ -5880,6 +5882,7 @@ export const CreateConsentDocument = gql`
     url: $url
     publishedAt: $publishedAt
     isRemote: $isRemote
+    isRequired: $isRequired
     managedBy: $managedBy
   ) {
     id
@@ -5894,7 +5897,7 @@ export function useCreateConsentMutation() {
   return Urql.useMutation<CreateConsentMutation, CreateConsentMutationVariables>(CreateConsentDocument);
 };
 export const UpdateConsentDocument = gql`
-    mutation UpdateConsent($id: ID!, $title: String, $shortText: String, $body: String, $url: String, $publishedAt: DateTime, $managedBy: String) {
+    mutation UpdateConsent($id: ID!, $title: String, $shortText: String, $body: String, $url: String, $publishedAt: DateTime, $managedBy: String, $isRequired: Boolean) {
   updateConsent(
     id: $id
     title: $title
@@ -5903,6 +5906,7 @@ export const UpdateConsentDocument = gql`
     url: $url
     publishedAt: $publishedAt
     managedBy: $managedBy
+    isRequired: $isRequired
   ) {
     id
     key
@@ -7389,6 +7393,7 @@ export const AdminConsentPageDocument = gql`
     publishedAt
     managementType
     managedBy
+    isRequired
     translationStatus {
       ...TranslationStatus
     }

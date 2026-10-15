@@ -155,8 +155,12 @@ Not in scope now. Captured so the analysis is not redone:
 Shipped exactly the field, no behaviour. `required` defaults to `false`, so
 every existing consent behaves as it did.
 
-- [x] Migration `00108_add_consent_is_required.sql` — **written, not yet run
-      against any real database.** Applied cleanly in the e2e container.
+- [x] Migration `00109_add_consent_is_required.sql`. **Was 00108, renumbered:**
+      `main` stops at 107, but the shared dev database had 108 applied on
+      2026-10-08 from the unmerged quiz answer-description branch. goose keys
+      off the version number, so a second 00108 is silently treated as already
+      applied — `make migrate` reports success and the column never appears.
+      Check every branch, not just `main`, before picking a number here.
 - [x] `is_required` added to every consent select, to `CreateConsent`'s insert and
       to `UpdateConsent`. Update uses `COALESCE(sqlc.narg('is_required'), is_required)`
       — a bool has no "empty string means keep" sentinel like the text fields
@@ -368,7 +372,7 @@ it must be swept on every publish of a required consent, and it will drift.
 ## Files to touch
 
 ```
-backend/internal/database/migrations/00108_add_consent_is_required.sql (new)
+backend/internal/database/migrations/00109_add_consent_is_required.sql (new)
 backend/internal/database/queries/consents.sql
 backend/internal/loaders/user.go
 backend/internal/loaders/consent.go

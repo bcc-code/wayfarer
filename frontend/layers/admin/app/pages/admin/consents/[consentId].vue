@@ -20,6 +20,7 @@ gql(`
       publishedAt
       managementType
       managedBy
+      isRequired
       translationStatus {
         ...TranslationStatus
       }
@@ -63,6 +64,7 @@ const editState = reactive({
   url: '',
   publishedAt: null as string | null,
   managedBy: '',
+  isRequired: false,
 })
 
 function startEditing() {
@@ -73,6 +75,7 @@ function startEditing() {
     editState.url = data.value.consent.url ?? ''
     editState.publishedAt = data.value.consent.publishedAt ?? null
     editState.managedBy = data.value.consent.managedBy ?? ''
+    editState.isRequired = data.value.consent.isRequired
     isEditing.value = true
   }
 }
@@ -90,6 +93,7 @@ async function saveChanges() {
     url: editState.url || null,
     publishedAt: editState.publishedAt || null,
     managedBy: editState.managedBy || null,
+    isRequired: editState.isRequired,
   })
 
   if (result.error) {
@@ -150,6 +154,9 @@ async function publishConsent() {
               color="warning"
             >
               Utkast
+            </UBadge>
+            <UBadge v-if="data.consent.isRequired" variant="soft" color="error">
+              Påkrevd
             </UBadge>
           </div>
           <div class="flex shrink-0 gap-2">
@@ -221,6 +228,12 @@ async function publishConsent() {
                 placeholder="Ekstern systemidentifikator"
               />
             </UFormField>
+            <UFormField>
+              <UCheckbox v-model="editState.isRequired" label="Påkrevd" />
+              <template #description>
+                Må godtas for å delta i prosjektet, og kan ikke avslås
+              </template>
+            </UFormField>
           </div>
           <!-- `AdminSection` has no footer slot; the actions sit at the end
                of the section instead. -->
@@ -267,6 +280,10 @@ async function publishConsent() {
                 {{ formatDateTime(data.consent.publishedAt) }}
               </dd>
               <dd v-else class="text-dimmed">Ikke publisert</dd>
+            </div>
+            <div class="flex gap-6 py-2">
+              <dt class="text-muted w-32 shrink-0">Påkrevd</dt>
+              <dd>{{ data.consent.isRequired ? 'Ja' : 'Nei' }}</dd>
             </div>
             <div class="flex gap-6 py-2">
               <dt class="text-muted w-32 shrink-0">Type</dt>
