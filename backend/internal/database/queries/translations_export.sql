@@ -30,7 +30,7 @@ WHERE quiz_id = @quiz_id::char(28)
 ORDER BY question_order;
 
 -- name: GetQuizAnswersForTranslation :many
-SELECT id, answer_text
+SELECT id, answer_text, description
 FROM quiz_predefined_answers
 WHERE question_id = @question_id::char(28)
 ORDER BY answer_order;

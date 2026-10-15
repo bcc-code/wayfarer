@@ -237,7 +237,7 @@ func (q *Queries) GetProjectTranslationsByIDs(ctx context.Context, arg GetProjec
 }
 
 const GetQuizAnswerTranslationsByIDs = `-- name: GetQuizAnswerTranslationsByIDs :many
-SELECT answer_id, language_code, answer_text
+SELECT answer_id, language_code, answer_text, description
 FROM quiz_answer_translations
 WHERE answer_id = ANY($1::char(28)[])
   AND language_code = $2::text
@@ -252,6 +252,7 @@ type GetQuizAnswerTranslationsByIDsRow struct {
 	AnswerID     string  `json:"answer_id"`
 	LanguageCode string  `json:"language_code"`
 	AnswerText   *string `json:"answer_text"`
+	Description  *string `json:"description"`
 }
 
 func (q *Queries) GetQuizAnswerTranslationsByIDs(ctx context.Context, arg GetQuizAnswerTranslationsByIDsParams) ([]*GetQuizAnswerTranslationsByIDsRow, error) {
@@ -263,7 +264,12 @@ func (q *Queries) GetQuizAnswerTranslationsByIDs(ctx context.Context, arg GetQui
 	items := []*GetQuizAnswerTranslationsByIDsRow{}
 	for rows.Next() {
 		var i GetQuizAnswerTranslationsByIDsRow
-		if err := rows.Scan(&i.AnswerID, &i.LanguageCode, &i.AnswerText); err != nil {
+		if err := rows.Scan(
+			&i.AnswerID,
+			&i.LanguageCode,
+			&i.AnswerText,
+			&i.Description,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, &i)

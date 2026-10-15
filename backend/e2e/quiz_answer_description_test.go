@@ -2,11 +2,16 @@ package e2e
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
 	"testing"
 
+	"github.com/bcc-media/wayfarer/common"
 	"github.com/bcc-media/wayfarer/e2e/testutil"
+	"github.com/bcc-media/wayfarer/translations"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/guregu/null.v4"
 )
 
 func TestQuizAnswerDescription(t *testing.T) {
@@ -239,4 +244,126 @@ func TestQuizAnswerDescription(t *testing.T) {
 		assert.Equal(t, want, descriptionsByText(t, updated.UpdateQuizQuestion.PredefinedAnswers), "mutation response")
 		assert.Equal(t, want, descriptionsByText(t, readQuestion(t, quizID).PredefinedAnswers), "quiz query")
 	})
+
+	t.Run("descriptions round-trip through translation export and import", func(t *testing.T) {
+		quizID := createQuiz(t, "Answer Description Translation")
+		addQuestion(t, quizID, []map[string]any{
+			{"answerText": "Kjøttgryten fra Egypt", "description": "En gryte som symboliserer maten.", "isCorrect": true, "answerOrder": 0},
+			{"answerText": "Fangelenken fra Egypt", "isCorrect": false, "answerOrder": 1},
+		})
+
+		provider := &capturingTranslationsProvider{}
+		svc := translations.NewService(dbMgr.DB.Queries, provider)
+
+		// Export: the described answer carries its description, the other has none
+		require.NoError(t, svc.SendCollectionToTranslation(ctx, translations.CollectionQuizzes))
+		exported := provider.find(t, quizID)
+
+		var quiz translations.QuizTranslation
+		require.NoError(t, json.Unmarshal(exported.Value, &quiz))
+		require.Len(t, quiz.Questions, 1)
+		require.Len(t, quiz.Questions[0].Answers, 2)
+		pot, chain := quiz.Questions[0].Answers[0], quiz.Questions[0].Answers[1]
+		assert.Equal(t, null.StringFrom("En gryte som symboliserer maten."), pot.Description)
+		assert.False(t, chain.Description.Valid, "answer without description must not export one")
+
+		// Import an English translation, the way the Phrase webhook does
+		quiz.Name = "Answer Description Translation (en)"
+		quiz.Questions[0].QuestionText = "Which item is this week's?"
+		quiz.Questions[0].Answers[0].AnswerText = "The meat pot from Egypt"
+		quiz.Questions[0].Answers[0].Description = null.StringFrom("A pot symbolising the food.")
+		quiz.Questions[0].Answers[1].AnswerText = "The chain from Egypt"
+		value, err := json.Marshal(quiz)
+		require.NoError(t, err)
+
+		errs := svc.UpdateTranslations(ctx, &translations.CollectionQuizzes, []common.TranslationData{
+			{Language: "en", ID: quizID, Value: value},
+		})
+		require.Empty(t, errs)
+
+		type translatedAnswer struct {
+			AnswerText        string  `json:"answerText"`
+			Description       *string `json:"description"`
+			TranslationStatus []struct {
+				LanguageCode string   `json:"languageCode"`
+				Fields       []string `json:"fields"`
+			} `json:"translationStatus"`
+		}
+		readAnswers := func(t *testing.T, lang string) []translatedAnswer {
+			resp := client.WithAuth(adminToken).WithLanguage(lang).MustExecute(t, `
+				query GetQuiz($id: ID!) {
+					quiz(id: $id) {
+						questions {
+							... on PredefinedQuestion {
+								predefinedAnswers {
+									answerText
+									description
+									translationStatus {
+										languageCode
+										fields
+									}
+								}
+							}
+						}
+					}
+				}
+			`, map[string]any{"id": quizID})
+			require.False(t, resp.HasErrors(), "failed to read quiz: %s", resp.ErrorMessage())
+
+			var result struct {
+				Quiz struct {
+					Questions []struct {
+						PredefinedAnswers []translatedAnswer `json:"predefinedAnswers"`
+					} `json:"questions"`
+				} `json:"quiz"`
+			}
+			require.NoError(t, resp.UnmarshalData(&result))
+			require.Len(t, result.Quiz.Questions, 1)
+			require.Len(t, result.Quiz.Questions[0].PredefinedAnswers, 2)
+			return result.Quiz.Questions[0].PredefinedAnswers
+		}
+
+		english := readAnswers(t, "en")
+		assert.Equal(t, "The meat pot from Egypt", english[0].AnswerText)
+		assert.Equal(t, strPtr("A pot symbolising the food."), english[0].Description)
+		assert.Equal(t, "The chain from Egypt", english[1].AnswerText)
+		assert.Nil(t, english[1].Description, "answer without a Norwegian description gets none in English")
+
+		require.Len(t, english[0].TranslationStatus, 1)
+		assert.Equal(t, "en", english[0].TranslationStatus[0].LanguageCode)
+		assert.ElementsMatch(t, []string{"answerText", "description"}, english[0].TranslationStatus[0].Fields)
+		require.Len(t, english[1].TranslationStatus, 1)
+		assert.ElementsMatch(t, []string{"answerText"}, english[1].TranslationStatus[0].Fields)
+
+		// Norwegian is untouched by the import
+		norwegian := readAnswers(t, "no")
+		assert.Equal(t, "Kjøttgryten fra Egypt", norwegian[0].AnswerText)
+		assert.Equal(t, strPtr("En gryte som symboliserer maten."), norwegian[0].Description)
+	})
+}
+
+// capturingTranslationsProvider records what the translation service exports
+// instead of sending it to Phrase.
+type capturingTranslationsProvider struct {
+	sent []common.TranslationData
+}
+
+func (p *capturingTranslationsProvider) SendToTranslation(_ context.Context, _ string, data []common.TranslationData) error {
+	p.sent = append(p.sent, data...)
+	return nil
+}
+
+func (p *capturingTranslationsProvider) ProcessWebhook(context.Context, *http.Request, []byte) (*translations.TranslatableCollection, []common.TranslationData, error) {
+	return nil, nil, nil
+}
+
+func (p *capturingTranslationsProvider) find(t *testing.T, id string) common.TranslationData {
+	t.Helper()
+	for _, d := range p.sent {
+		if d.ID == id {
+			return d
+		}
+	}
+	require.FailNow(t, "entity was not exported", id)
+	return common.TranslationData{}
 }
