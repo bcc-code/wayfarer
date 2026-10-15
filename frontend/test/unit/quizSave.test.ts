@@ -3,7 +3,9 @@ import {
   planQuizQuestionSave,
   orderedQuestionIds,
   bettingClearFlags,
+  quizQuestionInput,
 } from '../../layers/admin/app/utils/quizSave'
+import { QuizQuestionType } from '../../app/api/generated'
 
 const q = (id: string | undefined, questionOrder: number) => ({
   id,
@@ -100,5 +102,62 @@ describe('bettingClearFlags', () => {
         { bettingMinAbsolute: Number.NaN },
       ).clearBettingMinAbsolute,
     ).toBe(true)
+  })
+})
+
+describe('quizQuestionInput', () => {
+  const question = {
+    id: 'QQ1',
+    localKey: 'q1',
+    questionType: QuizQuestionType.Predefined,
+    questionText: 'Hva er ukas greie?',
+    questionOrder: 1,
+    predefinedAnswers: [
+      {
+        id: 'QA1',
+        localKey: 'a1',
+        answerText: 'Kjøttgryten fra Egypt',
+        description: 'En gryte som symboliserer maten.',
+        isCorrect: true,
+        answerOrder: 1,
+        translationStatus: [{ languageCode: 'en', fields: ['description'] }],
+      },
+      {
+        id: 'QA2',
+        localKey: 'a2',
+        answerText: 'Melkekrukken',
+        isCorrect: false,
+        answerOrder: 2,
+      },
+    ],
+  }
+
+  // The update replaces every answer, so a description left out here is
+  // erased on the next save of the question.
+  it('sends each answer with its description', () => {
+    expect(quizQuestionInput(question).predefinedAnswers).toEqual([
+      {
+        answerText: 'Kjøttgryten fra Egypt',
+        description: 'En gryte som symboliserer maten.',
+        isCorrect: true,
+        answerOrder: 1,
+      },
+      {
+        answerText: 'Melkekrukken',
+        description: undefined,
+        isCorrect: false,
+        answerOrder: 2,
+      },
+    ])
+  })
+
+  it('sends no answers for a question without them', () => {
+    expect(
+      quizQuestionInput({
+        questionType: QuizQuestionType.FreeText,
+        questionText: 'Hva husker du best?',
+        questionOrder: 1,
+      }).predefinedAnswers,
+    ).toBeUndefined()
   })
 })

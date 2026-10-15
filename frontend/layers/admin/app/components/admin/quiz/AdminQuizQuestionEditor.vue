@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { VueDraggable } from 'vue-draggable-plus'
-import type { QuizQuestionFormData } from './AdminQuizForm.vue'
+import type {
+  QuizAnswerFormData,
+  QuizQuestionFormData,
+} from './AdminQuizForm.vue'
 import { validateQuizQuestion } from '../../../utils/quizQuestionValidation'
 
 const props = defineProps<{
@@ -58,6 +61,18 @@ function addAnswer() {
     isCorrect: false,
     answerOrder: localQuestion.predefinedAnswers.length + 1,
   })
+}
+
+/** The answer whose description was just opened, so that field takes focus. */
+const focusedDescriptionKey = ref<string>()
+
+/**
+ * Most answers have no description, so the field stays closed until asked
+ * for. An answer that already has one loads with it open.
+ */
+function openDescription(answer: QuizAnswerFormData) {
+  answer.description = ''
+  focusedDescriptionKey.value = answer.localKey
 }
 
 function removeAnswer(index: number) {
@@ -269,6 +284,35 @@ function handleSave() {
                     :translation-status="answer.translationStatus"
                     field-name="answerText"
                   />
+                  <template v-if="answer.description !== undefined">
+                    <UTextarea
+                      v-model="answer.description"
+                      placeholder="Beskrivelse – vises under svaret"
+                      :aria-label="`Beskrivelse for svar ${index + 1}`"
+                      class="w-full"
+                      size="sm"
+                      autoresize
+                      :rows="1"
+                      :autofocus="answer.localKey === focusedDescriptionKey"
+                    />
+                    <AdminTranslationIndicator
+                      v-if="answer.translationStatus?.length"
+                      :translation-status="answer.translationStatus"
+                      field-name="description"
+                    />
+                  </template>
+                  <UButton
+                    v-else
+                    size="xs"
+                    variant="link"
+                    color="neutral"
+                    icon="lucide:plus"
+                    class="self-start px-0"
+                    :aria-label="`Legg til beskrivelse for svar ${index + 1}`"
+                    @click="openDescription(answer)"
+                  >
+                    Beskrivelse
+                  </UButton>
                 </div>
                 <UTooltip
                   :text="

@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import type { RouteLocationRaw } from 'vue-router'
-import type {
-  QuizFormData,
-  QuizQuestionFormData,
-} from '../../../../../../components/admin/quiz/AdminQuizForm.vue'
+import type { QuizFormData } from '../../../../../../components/admin/quiz/AdminQuizForm.vue'
 import {
   planQuizQuestionSave,
   orderedQuestionIds,
   bettingClearFlags,
+  quizQuestionInput,
 } from '../../../../../../utils/quizSave'
 
 definePageMeta({
@@ -144,6 +142,7 @@ const quizData = computed<QuizFormData | undefined>(() => {
           ? q.predefinedAnswers.map((a) => ({
               id: a.id,
               answerText: a.answerText,
+              description: a.description ?? undefined,
               isCorrect: a.isCorrect ?? false,
               answerOrder: a.answerOrder,
               translationStatus: a.translationStatus,
@@ -183,33 +182,6 @@ const isNewQuiz = computed(() => !quizData.value?.id)
 
 const saving = ref(false)
 const form = useTemplateRef('form')
-
-/** Shared by add and update; the two inputs take the same shape. */
-function questionInput(question: QuizQuestionFormData) {
-  return {
-    questionText: question.questionText,
-    timeoutSeconds: question.timeoutSeconds,
-    points: question.points,
-    allowMultipleSelection: question.allowMultipleSelection,
-    predefinedAnswers: question.predefinedAnswers?.map((a) => ({
-      answerText: a.answerText,
-      isCorrect: a.isCorrect,
-      answerOrder: a.answerOrder,
-    })),
-    orderingItems: question.orderingItems?.map((item) => ({
-      itemText: item.itemText,
-      correctOrder: item.correctOrder,
-    })),
-    minValue: question.minValue,
-    maxValue: question.maxValue,
-    stepValue: question.stepValue,
-    bettingEnabled: question.bettingEnabled,
-    bettingMinPercentage: question.bettingMinPercentage,
-    bettingMaxPercentage: question.bettingMaxPercentage,
-    bettingMinAbsolute: question.bettingMinAbsolute,
-    bettingMaxAbsolute: question.bettingMaxAbsolute,
-  }
-}
 
 async function saveQuizSettings(form: QuizFormData) {
   const input = {
@@ -266,7 +238,7 @@ async function saveQuestions(quizId: string, form: QuizFormData) {
     const result = await updateQuizQuestion({
       id,
       input: {
-        ...questionInput(question),
+        ...quizQuestionInput(question),
         ...bettingClearFlags(original, question),
       },
     })
@@ -282,7 +254,7 @@ async function saveQuestions(quizId: string, form: QuizFormData) {
       input: {
         questionType: question.questionType,
         questionOrder: order,
-        ...questionInput(question),
+        ...quizQuestionInput(question),
       },
     })
     const id = result.data?.addQuizQuestion.id
