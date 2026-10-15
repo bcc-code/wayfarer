@@ -6,6 +6,11 @@
 const props = defineProps<{
   consent: TConsent
   dismissible?: boolean
+  /**
+   * The card is the whole screen: terms inline rather than behind a drawer,
+   * filling the available height with the action at the bottom.
+   */
+  expanded?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -102,14 +107,27 @@ const isRequired = computed(() => {
   return props.consent.isRequired
 })
 
+const bodyHtml = computed(() => {
+  if (props.consent.__typename == 'UserConsent') {
+    return props.consent.consent.body.html
+  }
+  return props.consent.body.html
+})
+
 const changing = ref(false)
 </script>
 
 <template>
-  <DesignPanel class="p-default! space-y-3">
+  <DesignPanel
+    :class="['p-default! space-y-3', expanded ? 'flex grow flex-col' : '']"
+  >
     <div>
-      <p v-if="managedBy" class="text-caption text-text-muted">
-        {{ managedBy }}
+      <p v-if="managedBy || isRequired" class="text-caption text-text-muted">
+        <span v-if="isRequired" class="text-accent-contrast">
+          {{ $t('consent.required') }}
+        </span>
+        <template v-if="managedBy && isRequired"> · </template>
+        <template v-if="managedBy">{{ managedBy }}</template>
       </p>
       <h3 class="text-title text-text-default pr-2">{{ title }}</h3>
     </div>
@@ -143,7 +161,12 @@ const changing = ref(false)
     </template>
     <template v-else>
       <template v-if="localStatus === 'pending' || changing">
-        <ConsentDetails :consent>
+        <div
+          v-if="expanded"
+          class="text-label text-text-default prose-sm [&_a]:text-accent-contrast [&_a]:underline"
+          v-html="bodyHtml"
+        />
+        <ConsentDetails v-else :consent>
           <button
             class="text-label text-accent-contrast py-2 flex items-center gap-1"
           >
@@ -151,14 +174,16 @@ const changing = ref(false)
             <IconArrowRight class="size-5" />
           </button>
         </ConsentDetails>
-        <DesignButton
-          variant="primary"
-          size="large"
-          class="w-full"
-          @click="handleAccept"
-        >
-          {{ $t('consent.acceptButton') }}
-        </DesignButton>
+        <div :class="expanded ? 'mt-auto' : ''">
+          <DesignButton
+            variant="primary"
+            size="large"
+            class="w-full"
+            @click="handleAccept"
+          >
+            {{ $t('consent.acceptButton') }}
+          </DesignButton>
+        </div>
         <DesignButton
           v-if="!isRequired"
           variant="tertiary"
