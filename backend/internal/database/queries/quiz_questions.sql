@@ -95,19 +95,19 @@ DELETE FROM quiz_question_translations
 WHERE question_id = @questionid::char(28);
 
 -- name: GetPredefinedAnswersByQuestionID :many
-SELECT id, question_id, answer_text, is_correct, answer_order, created_at
+SELECT id, question_id, answer_text, is_correct, answer_order, created_at, description
 FROM quiz_predefined_answers
 WHERE question_id = @questionid::char(28)
 ORDER BY answer_order ASC;
 
 -- name: GetPredefinedAnswersByQuestionIDs :many
-SELECT id, question_id, answer_text, is_correct, answer_order, created_at
+SELECT id, question_id, answer_text, is_correct, answer_order, created_at, description
 FROM quiz_predefined_answers
 WHERE question_id = ANY(@question_ids::char(28)[])
 ORDER BY question_id, answer_order ASC;
 
 -- name: GetPredefinedAnswersByIDs :many
-SELECT id, question_id, answer_text, is_correct, answer_order, created_at
+SELECT id, question_id, answer_text, is_correct, answer_order, created_at, description
 FROM quiz_predefined_answers
 WHERE id = ANY(@ids::char(28)[]);
 
@@ -117,16 +117,20 @@ INSERT INTO quiz_predefined_answers (
     question_id,
     answer_text,
     is_correct,
-    answer_order
+    answer_order,
+    description
 )
 VALUES (
     @id::text,
     @questionid::text,
     @answertext::text,
     @iscorrect::bool,
-    @answerorder::int
+    @answerorder::int,
+    -- A blank description means "no description", stored as NULL. BTRIM
+    -- strips only spaces unless given the characters to strip.
+    NULLIF(BTRIM(sqlc.narg('description')::text, E' \t\r\n'), '')
 )
-RETURNING id, question_id, answer_text, is_correct, answer_order, created_at;
+RETURNING id, question_id, answer_text, is_correct, answer_order, created_at, description;
 
 -- name: DeletePredefinedAnswersByQuestion :exec
 DELETE FROM quiz_predefined_answers

@@ -17,44 +17,41 @@ INSERT INTO quiz_predefined_answers (
     question_id,
     answer_text,
     is_correct,
-    answer_order
+    answer_order,
+    description
 )
 VALUES (
     $1::text,
     $2::text,
     $3::text,
     $4::bool,
-    $5::int
+    $5::int,
+    -- A blank description means "no description", stored as NULL. BTRIM
+    -- strips only spaces unless given the characters to strip.
+    NULLIF(BTRIM($6::text, E' \t\r\n'), '')
 )
-RETURNING id, question_id, answer_text, is_correct, answer_order, created_at
+RETURNING id, question_id, answer_text, is_correct, answer_order, created_at, description
 `
 
 type CreatePredefinedAnswerParams struct {
-	ID          string `json:"id"`
-	Questionid  string `json:"questionid"`
-	Answertext  string `json:"answertext"`
-	Iscorrect   bool   `json:"iscorrect"`
-	Answerorder int32  `json:"answerorder"`
+	ID          string  `json:"id"`
+	Questionid  string  `json:"questionid"`
+	Answertext  string  `json:"answertext"`
+	Iscorrect   bool    `json:"iscorrect"`
+	Answerorder int32   `json:"answerorder"`
+	Description *string `json:"description"`
 }
 
-type CreatePredefinedAnswerRow struct {
-	ID          string             `json:"id"`
-	QuestionID  string             `json:"question_id"`
-	AnswerText  string             `json:"answer_text"`
-	IsCorrect   bool               `json:"is_correct"`
-	AnswerOrder int32              `json:"answer_order"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-}
-
-func (q *Queries) CreatePredefinedAnswer(ctx context.Context, arg CreatePredefinedAnswerParams) (*CreatePredefinedAnswerRow, error) {
+func (q *Queries) CreatePredefinedAnswer(ctx context.Context, arg CreatePredefinedAnswerParams) (*QuizPredefinedAnswer, error) {
 	row := q.db.QueryRow(ctx, CreatePredefinedAnswer,
 		arg.ID,
 		arg.Questionid,
 		arg.Answertext,
 		arg.Iscorrect,
 		arg.Answerorder,
+		arg.Description,
 	)
-	var i CreatePredefinedAnswerRow
+	var i QuizPredefinedAnswer
 	err := row.Scan(
 		&i.ID,
 		&i.QuestionID,
@@ -62,6 +59,7 @@ func (q *Queries) CreatePredefinedAnswer(ctx context.Context, arg CreatePredefin
 		&i.IsCorrect,
 		&i.AnswerOrder,
 		&i.CreatedAt,
+		&i.Description,
 	)
 	return &i, err
 }
@@ -230,29 +228,20 @@ func (q *Queries) DeleteQuizQuestionTranslations(ctx context.Context, questionid
 }
 
 const GetPredefinedAnswersByIDs = `-- name: GetPredefinedAnswersByIDs :many
-SELECT id, question_id, answer_text, is_correct, answer_order, created_at
+SELECT id, question_id, answer_text, is_correct, answer_order, created_at, description
 FROM quiz_predefined_answers
 WHERE id = ANY($1::char(28)[])
 `
 
-type GetPredefinedAnswersByIDsRow struct {
-	ID          string             `json:"id"`
-	QuestionID  string             `json:"question_id"`
-	AnswerText  string             `json:"answer_text"`
-	IsCorrect   bool               `json:"is_correct"`
-	AnswerOrder int32              `json:"answer_order"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-}
-
-func (q *Queries) GetPredefinedAnswersByIDs(ctx context.Context, ids []string) ([]*GetPredefinedAnswersByIDsRow, error) {
+func (q *Queries) GetPredefinedAnswersByIDs(ctx context.Context, ids []string) ([]*QuizPredefinedAnswer, error) {
 	rows, err := q.db.Query(ctx, GetPredefinedAnswersByIDs, ids)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*GetPredefinedAnswersByIDsRow{}
+	items := []*QuizPredefinedAnswer{}
 	for rows.Next() {
-		var i GetPredefinedAnswersByIDsRow
+		var i QuizPredefinedAnswer
 		if err := rows.Scan(
 			&i.ID,
 			&i.QuestionID,
@@ -260,6 +249,7 @@ func (q *Queries) GetPredefinedAnswersByIDs(ctx context.Context, ids []string) (
 			&i.IsCorrect,
 			&i.AnswerOrder,
 			&i.CreatedAt,
+			&i.Description,
 		); err != nil {
 			return nil, err
 		}
@@ -272,30 +262,21 @@ func (q *Queries) GetPredefinedAnswersByIDs(ctx context.Context, ids []string) (
 }
 
 const GetPredefinedAnswersByQuestionID = `-- name: GetPredefinedAnswersByQuestionID :many
-SELECT id, question_id, answer_text, is_correct, answer_order, created_at
+SELECT id, question_id, answer_text, is_correct, answer_order, created_at, description
 FROM quiz_predefined_answers
 WHERE question_id = $1::char(28)
 ORDER BY answer_order ASC
 `
 
-type GetPredefinedAnswersByQuestionIDRow struct {
-	ID          string             `json:"id"`
-	QuestionID  string             `json:"question_id"`
-	AnswerText  string             `json:"answer_text"`
-	IsCorrect   bool               `json:"is_correct"`
-	AnswerOrder int32              `json:"answer_order"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-}
-
-func (q *Queries) GetPredefinedAnswersByQuestionID(ctx context.Context, questionid string) ([]*GetPredefinedAnswersByQuestionIDRow, error) {
+func (q *Queries) GetPredefinedAnswersByQuestionID(ctx context.Context, questionid string) ([]*QuizPredefinedAnswer, error) {
 	rows, err := q.db.Query(ctx, GetPredefinedAnswersByQuestionID, questionid)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*GetPredefinedAnswersByQuestionIDRow{}
+	items := []*QuizPredefinedAnswer{}
 	for rows.Next() {
-		var i GetPredefinedAnswersByQuestionIDRow
+		var i QuizPredefinedAnswer
 		if err := rows.Scan(
 			&i.ID,
 			&i.QuestionID,
@@ -303,6 +284,7 @@ func (q *Queries) GetPredefinedAnswersByQuestionID(ctx context.Context, question
 			&i.IsCorrect,
 			&i.AnswerOrder,
 			&i.CreatedAt,
+			&i.Description,
 		); err != nil {
 			return nil, err
 		}
@@ -315,30 +297,21 @@ func (q *Queries) GetPredefinedAnswersByQuestionID(ctx context.Context, question
 }
 
 const GetPredefinedAnswersByQuestionIDs = `-- name: GetPredefinedAnswersByQuestionIDs :many
-SELECT id, question_id, answer_text, is_correct, answer_order, created_at
+SELECT id, question_id, answer_text, is_correct, answer_order, created_at, description
 FROM quiz_predefined_answers
 WHERE question_id = ANY($1::char(28)[])
 ORDER BY question_id, answer_order ASC
 `
 
-type GetPredefinedAnswersByQuestionIDsRow struct {
-	ID          string             `json:"id"`
-	QuestionID  string             `json:"question_id"`
-	AnswerText  string             `json:"answer_text"`
-	IsCorrect   bool               `json:"is_correct"`
-	AnswerOrder int32              `json:"answer_order"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-}
-
-func (q *Queries) GetPredefinedAnswersByQuestionIDs(ctx context.Context, questionIds []string) ([]*GetPredefinedAnswersByQuestionIDsRow, error) {
+func (q *Queries) GetPredefinedAnswersByQuestionIDs(ctx context.Context, questionIds []string) ([]*QuizPredefinedAnswer, error) {
 	rows, err := q.db.Query(ctx, GetPredefinedAnswersByQuestionIDs, questionIds)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*GetPredefinedAnswersByQuestionIDsRow{}
+	items := []*QuizPredefinedAnswer{}
 	for rows.Next() {
-		var i GetPredefinedAnswersByQuestionIDsRow
+		var i QuizPredefinedAnswer
 		if err := rows.Scan(
 			&i.ID,
 			&i.QuestionID,
@@ -346,6 +319,7 @@ func (q *Queries) GetPredefinedAnswersByQuestionIDs(ctx context.Context, questio
 			&i.IsCorrect,
 			&i.AnswerOrder,
 			&i.CreatedAt,
+			&i.Description,
 		); err != nil {
 			return nil, err
 		}

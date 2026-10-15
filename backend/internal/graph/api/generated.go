@@ -1126,6 +1126,7 @@ type ComplexityRoot struct {
 	QuizPredefinedAnswer struct {
 		AnswerOrder       func(childComplexity int) int
 		AnswerText        func(childComplexity int) int
+		Description       func(childComplexity int) int
 		ID                func(childComplexity int) int
 		IsCorrect         func(childComplexity int) int
 		Question          func(childComplexity int) int
@@ -7734,6 +7735,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.QuizPredefinedAnswer.AnswerText(childComplexity), true
+	case "QuizPredefinedAnswer.description":
+		if e.complexity.QuizPredefinedAnswer.Description == nil {
+			break
+		}
+
+		return e.complexity.QuizPredefinedAnswer.Description(childComplexity), true
 	case "QuizPredefinedAnswer.id":
 		if e.complexity.QuizPredefinedAnswer.ID == nil {
 			break
@@ -11545,6 +11552,8 @@ type QuizPredefinedAnswer {
     id: ID!
     question: QuizQuestion! @goField(forceResolver: true)
     answerText: String!
+    # Optional explanation shown with the answer; null when there is none.
+    description: String
     answerOrder: Int!
     isCorrect: Boolean @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
@@ -11708,6 +11717,8 @@ input CreateQuizQuestionInput {
 
 input CreatePredefinedAnswerInput {
     answerText: String!
+    # Optional; a blank value is stored as no description.
+    description: String
     isCorrect: Boolean!
     answerOrder: Int!
 }
@@ -40166,6 +40177,8 @@ func (ec *executionContext) fieldContext_PredefinedOptionResult_answer(_ context
 				return ec.fieldContext_QuizPredefinedAnswer_question(ctx, field)
 			case "answerText":
 				return ec.fieldContext_QuizPredefinedAnswer_answerText(ctx, field)
+			case "description":
+				return ec.fieldContext_QuizPredefinedAnswer_description(ctx, field)
 			case "answerOrder":
 				return ec.fieldContext_QuizPredefinedAnswer_answerOrder(ctx, field)
 			case "isCorrect":
@@ -40723,6 +40736,8 @@ func (ec *executionContext) fieldContext_PredefinedQuestion_predefinedAnswers(_ 
 				return ec.fieldContext_QuizPredefinedAnswer_question(ctx, field)
 			case "answerText":
 				return ec.fieldContext_QuizPredefinedAnswer_answerText(ctx, field)
+			case "description":
+				return ec.fieldContext_QuizPredefinedAnswer_description(ctx, field)
 			case "answerOrder":
 				return ec.fieldContext_QuizPredefinedAnswer_answerOrder(ctx, field)
 			case "isCorrect":
@@ -41211,6 +41226,8 @@ func (ec *executionContext) fieldContext_PredefinedResponse_selectedAnswers(_ co
 				return ec.fieldContext_QuizPredefinedAnswer_question(ctx, field)
 			case "answerText":
 				return ec.fieldContext_QuizPredefinedAnswer_answerText(ctx, field)
+			case "description":
+				return ec.fieldContext_QuizPredefinedAnswer_description(ctx, field)
 			case "answerOrder":
 				return ec.fieldContext_QuizPredefinedAnswer_answerOrder(ctx, field)
 			case "isCorrect":
@@ -49483,6 +49500,35 @@ func (ec *executionContext) _QuizPredefinedAnswer_answerText(ctx context.Context
 }
 
 func (ec *executionContext) fieldContext_QuizPredefinedAnswer_answerText(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizPredefinedAnswer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizPredefinedAnswer_description(ctx context.Context, field graphql.CollectedField, obj *model.QuizPredefinedAnswer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizPredefinedAnswer_description,
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizPredefinedAnswer_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "QuizPredefinedAnswer",
 		Field:      field,
@@ -61847,7 +61893,7 @@ func (ec *executionContext) unmarshalInputCreatePredefinedAnswerInput(ctx contex
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"answerText", "isCorrect", "answerOrder"}
+	fieldsInOrder := [...]string{"answerText", "description", "isCorrect", "answerOrder"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -61861,6 +61907,13 @@ func (ec *executionContext) unmarshalInputCreatePredefinedAnswerInput(ctx contex
 				return it, err
 			}
 			it.AnswerText = data
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
 		case "isCorrect":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("isCorrect"))
 			data, err := ec.unmarshalNBoolean2bool(ctx, v)
@@ -77418,6 +77471,8 @@ func (ec *executionContext) _QuizPredefinedAnswer(ctx context.Context, sel ast.S
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "description":
+			out.Values[i] = ec._QuizPredefinedAnswer_description(ctx, field, obj)
 		case "answerOrder":
 			out.Values[i] = ec._QuizPredefinedAnswer_answerOrder(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

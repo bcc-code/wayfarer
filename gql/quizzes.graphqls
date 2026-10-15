@@ -151,6 +151,8 @@ type QuizPredefinedAnswer {
     id: ID!
     question: QuizQuestion! @goField(forceResolver: true)
     answerText: String!
+    # Optional explanation shown with the answer; null when there is none.
+    description: String
     answerOrder: Int!
     isCorrect: Boolean @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
@@ -314,6 +316,8 @@ input CreateQuizQuestionInput {
 
 input CreatePredefinedAnswerInput {
     answerText: String!
+    # Optional; a blank value is stored as no description.
+    description: String
     isCorrect: Boolean!
     answerOrder: Int!
 }
