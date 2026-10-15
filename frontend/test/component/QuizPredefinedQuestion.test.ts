@@ -72,6 +72,38 @@ describe('QuizPredefinedQuestion', () => {
     expect(wrapper.text()).toContain('No')
   })
 
+  it('shows a description under its answer, and nothing for one without', async () => {
+    const wrapper = await mountQ({
+      question: {
+        id: 'Q1',
+        predefinedAnswers: [
+          {
+            id: 'a1',
+            answerText: 'Melkekrukken',
+            description: 'En krukke til oppbevaring av melk.',
+            isCorrect: true,
+          },
+          {
+            id: 'a2',
+            answerText: 'Melkisedeks kappe',
+            description: null,
+            isCorrect: false,
+          },
+        ],
+      } as Props['question'],
+    })
+
+    const described = alt(wrapper, 'Melkekrukken')
+    expect(described.text()).toContain('En krukke til oppbevaring av melk.')
+    // The description sits below the answer text, not before or beside it.
+    expect(described.text().indexOf('Melkekrukken')).toBeLessThan(
+      described.text().indexOf('En krukke'),
+    )
+
+    // Without one, the card is exactly the answer text, as before.
+    expect(alt(wrapper, 'Melkisedeks kappe').text()).toBe('Melkisedeks kappe')
+  })
+
   it('cannot submit until an answer is selected', async () => {
     const wrapper = await mountQ()
     expect(state(wrapper).canSubmit).toBe(false)

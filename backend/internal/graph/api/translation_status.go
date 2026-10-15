@@ -196,6 +196,9 @@ func (r *Resolver) quizAnswerTranslationStatus(ctx context.Context, answerID str
 		if boolTrue(row.HasAnswerText) {
 			fields = append(fields, "answerText")
 		}
+		if boolTrue(row.HasDescription) {
+			fields = append(fields, "description")
+		}
 		if len(fields) > 0 {
 			result = append(result, model.TranslationFieldStatus{
 				LanguageCode: row.LanguageCode,

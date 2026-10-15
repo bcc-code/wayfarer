@@ -215,14 +215,16 @@ func (q *Queries) GetProjectTranslationStatus(ctx context.Context, projectID str
 
 const GetQuizAnswerTranslationStatus = `-- name: GetQuizAnswerTranslationStatus :many
 SELECT language_code,
-  (answer_text IS NOT NULL AND answer_text != '') AS has_answer_text
+  (answer_text IS NOT NULL AND answer_text != '') AS has_answer_text,
+  (description IS NOT NULL AND description != '') AS has_description
 FROM quiz_answer_translations
 WHERE answer_id = $1::char(28)
 `
 
 type GetQuizAnswerTranslationStatusRow struct {
-	LanguageCode  string `json:"language_code"`
-	HasAnswerText *bool  `json:"has_answer_text"`
+	LanguageCode   string `json:"language_code"`
+	HasAnswerText  *bool  `json:"has_answer_text"`
+	HasDescription *bool  `json:"has_description"`
 }
 
 func (q *Queries) GetQuizAnswerTranslationStatus(ctx context.Context, answerID string) ([]*GetQuizAnswerTranslationStatusRow, error) {
@@ -234,7 +236,7 @@ func (q *Queries) GetQuizAnswerTranslationStatus(ctx context.Context, answerID s
 	items := []*GetQuizAnswerTranslationStatusRow{}
 	for rows.Next() {
 		var i GetQuizAnswerTranslationStatusRow
-		if err := rows.Scan(&i.LanguageCode, &i.HasAnswerText); err != nil {
+		if err := rows.Scan(&i.LanguageCode, &i.HasAnswerText, &i.HasDescription); err != nil {
 			return nil, err
 		}
 		items = append(items, &i)

@@ -65,11 +65,12 @@ DO UPDATE SET
     updated_at = now();
 
 -- name: UpsertQuizAnswerTranslation :exec
-INSERT INTO quiz_answer_translations (answer_id, language_code, answer_text, updated_at)
-VALUES (@answer_id::text, @language_code::text, @answer_text::text, now())
+INSERT INTO quiz_answer_translations (answer_id, language_code, answer_text, description, updated_at)
+VALUES (@answer_id::text, @language_code::text, @answer_text::text, @description::text, now())
 ON CONFLICT (answer_id, language_code)
 DO UPDATE SET
     answer_text = COALESCE(NULLIF(@answer_text::text, ''), quiz_answer_translations.answer_text),
+    description = COALESCE(NULLIF(@description::text, ''), quiz_answer_translations.description),
     updated_at = now();
 
 -- name: UpsertConsentTranslationFromPhrase :exec

@@ -54,6 +54,7 @@ WHERE question_id = @question_id::char(28);
 
 -- name: GetQuizAnswerTranslationStatus :many
 SELECT language_code,
-  (answer_text IS NOT NULL AND answer_text != '') AS has_answer_text
+  (answer_text IS NOT NULL AND answer_text != '') AS has_answer_text,
+  (description IS NOT NULL AND description != '') AS has_description
 FROM quiz_answer_translations
 WHERE answer_id = @answer_id::char(28);

@@ -17,24 +17,29 @@ INSERT INTO quiz_predefined_answers (
     question_id,
     answer_text,
     is_correct,
-    answer_order
+    answer_order,
+    description
 )
 VALUES (
     $1::text,
     $2::text,
     $3::text,
     $4::bool,
-    $5::int
+    $5::int,
+    -- A blank description means "no description", stored as NULL. BTRIM
+    -- strips only spaces unless given the characters to strip.
+    NULLIF(BTRIM($6::text, E' \t\r\n'), '')
 )
-RETURNING id, question_id, answer_text, is_correct, answer_order, created_at
+RETURNING id, question_id, answer_text, is_correct, answer_order, created_at, description
 `
 
 type CreatePredefinedAnswerParams struct {
-	ID          string `json:"id"`
-	Questionid  string `json:"questionid"`
-	Answertext  string `json:"answertext"`
-	Iscorrect   bool   `json:"iscorrect"`
-	Answerorder int32  `json:"answerorder"`
+	ID          string  `json:"id"`
+	Questionid  string  `json:"questionid"`
+	Answertext  string  `json:"answertext"`
+	Iscorrect   bool    `json:"iscorrect"`
+	Answerorder int32   `json:"answerorder"`
+	Description *string `json:"description"`
 }
 
 func (q *Queries) CreatePredefinedAnswer(ctx context.Context, arg CreatePredefinedAnswerParams) (*QuizPredefinedAnswer, error) {
@@ -44,6 +49,7 @@ func (q *Queries) CreatePredefinedAnswer(ctx context.Context, arg CreatePredefin
 		arg.Answertext,
 		arg.Iscorrect,
 		arg.Answerorder,
+		arg.Description,
 	)
 	var i QuizPredefinedAnswer
 	err := row.Scan(
@@ -53,6 +59,7 @@ func (q *Queries) CreatePredefinedAnswer(ctx context.Context, arg CreatePredefin
 		&i.IsCorrect,
 		&i.AnswerOrder,
 		&i.CreatedAt,
+		&i.Description,
 	)
 	return &i, err
 }
@@ -221,7 +228,7 @@ func (q *Queries) DeleteQuizQuestionTranslations(ctx context.Context, questionid
 }
 
 const GetPredefinedAnswersByIDs = `-- name: GetPredefinedAnswersByIDs :many
-SELECT id, question_id, answer_text, is_correct, answer_order, created_at
+SELECT id, question_id, answer_text, is_correct, answer_order, created_at, description
 FROM quiz_predefined_answers
 WHERE id = ANY($1::char(28)[])
 `
@@ -242,6 +249,7 @@ func (q *Queries) GetPredefinedAnswersByIDs(ctx context.Context, ids []string) (
 			&i.IsCorrect,
 			&i.AnswerOrder,
 			&i.CreatedAt,
+			&i.Description,
 		); err != nil {
 			return nil, err
 		}
@@ -254,7 +262,7 @@ func (q *Queries) GetPredefinedAnswersByIDs(ctx context.Context, ids []string) (
 }
 
 const GetPredefinedAnswersByQuestionID = `-- name: GetPredefinedAnswersByQuestionID :many
-SELECT id, question_id, answer_text, is_correct, answer_order, created_at
+SELECT id, question_id, answer_text, is_correct, answer_order, created_at, description
 FROM quiz_predefined_answers
 WHERE question_id = $1::char(28)
 ORDER BY answer_order ASC
@@ -276,6 +284,7 @@ func (q *Queries) GetPredefinedAnswersByQuestionID(ctx context.Context, question
 			&i.IsCorrect,
 			&i.AnswerOrder,
 			&i.CreatedAt,
+			&i.Description,
 		); err != nil {
 			return nil, err
 		}
@@ -288,7 +297,7 @@ func (q *Queries) GetPredefinedAnswersByQuestionID(ctx context.Context, question
 }
 
 const GetPredefinedAnswersByQuestionIDs = `-- name: GetPredefinedAnswersByQuestionIDs :many
-SELECT id, question_id, answer_text, is_correct, answer_order, created_at
+SELECT id, question_id, answer_text, is_correct, answer_order, created_at, description
 FROM quiz_predefined_answers
 WHERE question_id = ANY($1::char(28)[])
 ORDER BY question_id, answer_order ASC
@@ -310,6 +319,7 @@ func (q *Queries) GetPredefinedAnswersByQuestionIDs(ctx context.Context, questio
 			&i.IsCorrect,
 			&i.AnswerOrder,
 			&i.CreatedAt,
+			&i.Description,
 		); err != nil {
 			return nil, err
 		}

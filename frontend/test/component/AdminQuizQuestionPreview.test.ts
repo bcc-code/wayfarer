@@ -34,6 +34,38 @@ describe('AdminQuizQuestionPreview', () => {
     expect(wrapper.text()).toContain('Peter')
   })
 
+  // The preview follows the editor, so a description shows while it is typed,
+  // and a field opened but left empty adds nothing.
+  it('shows answer descriptions as a participant sees them', async () => {
+    const wrapper = await mountSuspended(AdminQuizQuestionPreview, {
+      props: {
+        question: {
+          ...predefined,
+          predefinedAnswers: [
+            {
+              answerText: 'Paulus',
+              description: 'Apostelen som skrev til romerne.',
+              isCorrect: true,
+              answerOrder: 1,
+            },
+            {
+              answerText: 'Peter',
+              description: '',
+              isCorrect: false,
+              answerOrder: 2,
+            },
+          ],
+        },
+      },
+    })
+
+    const alternatives = wrapper.findAll('button')
+    const paulus = alternatives.find((b) => b.text().includes('Paulus'))!
+    const peter = alternatives.find((b) => b.text().includes('Peter'))!
+    expect(paulus.text()).toContain('Apostelen som skrev til romerne.')
+    expect(peter.text()).toBe('Peter')
+  })
+
   it.each([
     ['ordering', QuizQuestionType.Ordering, QuizOrderingQuestion],
     ['free text', QuizQuestionType.FreeText, QuizFreeTextQuestion],
