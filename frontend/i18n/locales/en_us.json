@@ -136,7 +136,9 @@
     "goToConsent": "Go to consent",
     "continue": "Continue",
     "changeDescription": "To change your consent, please contact us at {email}",
-    "changeConsent": "Change consent"
+    "changeConsent": "Change consent",
+    "required": "Required",
+    "requiredTitle": "Before you continue"
   },
   "achievement": {
     "title": "Achievement",
