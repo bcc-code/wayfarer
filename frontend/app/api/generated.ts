@@ -4462,10 +4462,10 @@ export type AdminProjectQuizzesQueryVariables = Exact<{
 
 export type AdminProjectQuizzesQuery = { __typename?: 'Query', quizzes: { __typename?: 'QuizConnection', edges: Array<{ __typename?: 'QuizEdge', node: { __typename?: 'Quiz', id: string, name: string } }> } };
 
-export type BlockingConsentsQueryVariables = Exact<{ [key: string]: never; }>;
+export type ConsentGateQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type BlockingConsentsQuery = { __typename?: 'Query', me: { __typename?: 'User', consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename?: 'Consent', id: string, isRequired: boolean, managementType: ConsentManagementType }>, rejectedConsents: Array<{ __typename?: 'UserConsent', id: string, consent: { __typename?: 'Consent', id: string, isRequired: boolean, managementType: ConsentManagementType } }> } } };
+export type ConsentGateQuery = { __typename?: 'Query', me: { __typename?: 'User', consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename?: 'Consent', id: string, isRequired: boolean, managementType: ConsentManagementType }>, rejectedConsents: Array<{ __typename?: 'UserConsent', id: string, consent: { __typename?: 'Consent', id: string, isRequired: boolean, managementType: ConsentManagementType } }> } } };
 
 export type GetFirebaseTokenQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -6599,8 +6599,8 @@ export const AdminProjectQuizzesDocument = gql`
 export function useAdminProjectQuizzesQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectQuizzesQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectQuizzesQuery, AdminProjectQuizzesQueryVariables | undefined>({ query: AdminProjectQuizzesDocument, variables: undefined, ...options });
 };
-export const BlockingConsentsDocument = gql`
-    query BlockingConsents {
+export const ConsentGateDocument = gql`
+    query ConsentGate {
   me {
     consentStatus {
       pendingConsents {
@@ -6621,8 +6621,8 @@ export const BlockingConsentsDocument = gql`
 }
     `;
 
-export function useBlockingConsentsQuery(options?: Omit<Urql.UseQueryArgs<never, BlockingConsentsQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<BlockingConsentsQuery, BlockingConsentsQueryVariables | undefined>({ query: BlockingConsentsDocument, variables: undefined, ...options });
+export function useConsentGateQuery(options?: Omit<Urql.UseQueryArgs<never, ConsentGateQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<ConsentGateQuery, ConsentGateQueryVariables | undefined>({ query: ConsentGateDocument, variables: undefined, ...options });
 };
 export const GetFirebaseTokenDocument = gql`
     query GetFirebaseToken {

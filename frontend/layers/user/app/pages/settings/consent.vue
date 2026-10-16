@@ -15,35 +15,17 @@ function finishOnboarding() {
   navigateTo({ name: 'index' })
 }
 
-// A required consent counts until it is ACCEPTED, so a rejected one still
-// blocks — unlike `pending`, which only means "no action yet". Blocking wins
-// over `hasCompletedOnboarding`, which is per-device localStorage and clearable.
-const blockingIds = computed(() => {
-  const status = data.value?.me.consentStatus
-  if (!status) return new Set<string>()
-
-  const isLocal = (c: { managementType: ConsentManagementType }) =>
-    c.managementType === ConsentManagementType.Local
-
-  return new Set([
-    ...status.pendingConsents
-      .filter((c) => c.isRequired && isLocal(c))
-      .map((c) => c.id),
-    ...status.rejectedConsents
-      .filter((entry) => entry.consent.isRequired && isLocal(entry.consent))
-      .map((entry) => entry.consent.id),
-  ])
-})
+// Blocking wins over `hasCompletedOnboarding`, which is per-device
+// localStorage and clearable.
+const blockingIds = computed(() =>
+  blockingConsentIds(data.value?.me.consentStatus),
+)
 
 const hasBlockingConsents = computed(() => blockingIds.value.size > 0)
 
-const hasPendingInternalConsents = computed(() => {
-  const pending = data.value?.me.consentStatus.pendingConsents.filter(
-    (c) => c.managementType === ConsentManagementType.Local,
-  )
-  if (!pending) return false
-  return pending.length > 0
-})
+const hasPendingInternalConsents = computed(
+  () => unansweredLocalConsents(data.value?.me.consentStatus).length > 0,
+)
 
 // We want to preserve the order of the consents, even when data is refetched
 const initialSorting = ref<string[]>([])

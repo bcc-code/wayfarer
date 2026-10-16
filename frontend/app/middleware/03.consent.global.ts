@@ -1,9 +1,5 @@
 import { getUrqlClient } from '~/plugins/0.urql'
-import {
-  BlockingConsentsDocument,
-  ConsentManagementType,
-  type BlockingConsentsQuery,
-} from '~/api/generated'
+import { ConsentGateDocument, type ConsentGateQuery } from '~/api/generated'
 
 // Auth pages have no user to gate, and the consent screen is where the gate
 // sends people — bouncing it would loop.
@@ -15,29 +11,13 @@ const EXEMPT_PATHS = [
 ]
 
 /**
- * A required consent the user has not accepted blocks the whole project, so the
- * gate runs on every route rather than only on the front page.
+ * The one place that decides whether the user is sent to the consent screen.
  *
- * Only LOCAL consents count. A remote one cannot be accepted in the app, so
- * gating on it would strand the user on a screen with no accept button —
- * the API is meant to reject that combination, but until it does, failing open
- * here is the safer half.
+ * Two tiers, deliberately different in reach:
+ *  - a required consent blocks the project, so it redirects from any route;
+ *  - an unanswered optional one is the onboarding nudge, so it only pulls the
+ *    user in from the front page, as it did when it lived in `index.vue`.
  */
-function isBlocking(data: BlockingConsentsQuery | undefined): boolean {
-  const status = data?.me.consentStatus
-  if (!status) return false
-
-  const local = (c: { managementType: ConsentManagementType }) =>
-    c.managementType === ConsentManagementType.Local
-
-  const pending = status.pendingConsents.filter((c) => c.isRequired && local(c))
-  const rejected = status.rejectedConsents.filter(
-    (entry) => entry.consent.isRequired && local(entry.consent),
-  )
-
-  return pending.length > 0 || rejected.length > 0
-}
-
 export default defineNuxtRouteMiddleware(async (to) => {
   if (EXEMPT_PATHS.includes(to.path)) return
   if (to.path.startsWith('/admin')) return
@@ -46,8 +26,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (!client) return
 
   const result = await client
-    .query<BlockingConsentsQuery>(
-      BlockingConsentsDocument,
+    .query<ConsentGateQuery>(
+      ConsentGateDocument,
       {},
       { requestPolicy: 'cache-first' },
     )
@@ -56,7 +36,16 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // Fail open: offline or a failed query must not lock a user out of the app.
   if (result.error) return
 
-  if (isBlocking(result.data)) {
+  const status = result.data?.me.consentStatus
+
+  if (blockingConsentIds(status).size > 0) {
+    return navigateTo({ name: 'settings-consent' })
+  }
+
+  if (to.path === '/' && unansweredLocalConsents(status).length > 0) {
+    // Re-enter onboarding presentation: a consent published after the user
+    // finished onboarding has to be presented the same way the first ones were.
+    useLocalStorage('hasCompletedOnboarding', false).value = false
     return navigateTo({ name: 'settings-consent' })
   }
 })

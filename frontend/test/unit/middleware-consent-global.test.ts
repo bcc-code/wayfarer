@@ -1,12 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ConsentManagementType } from '../../app/api/generated'
+import {
+  blockingConsentIds,
+  unansweredLocalConsents,
+} from '../../app/utils/consentGate'
 
 /**
- * The required-consent gate, running the REAL
- * `middleware/03.consent.global.ts` against a stubbed urql client.
+ * The consent gate, running the REAL `middleware/03.consent.global.ts` against
+ * a stubbed urql client.
  *
- * The rule it encodes is not "pending": a required consent blocks until it is
- * ACCEPTED, so a REJECTED one blocks too.
+ * Two tiers: a required consent redirects from anywhere, an unanswered optional
+ * one only from the front page. The required rule is not "pending" — a REJECTED
+ * required consent blocks too.
  */
 
 const navigateTo = vi.fn((to: unknown) => ({ __redirect: to }))
@@ -29,7 +34,7 @@ function consent(
   return { id: 'CN01', isRequired, managementType }
 }
 
-/** Shapes the BlockingConsents result the middleware reads. */
+/** Shapes the ConsentGate result the middleware reads. */
 function respond(opts: {
   pending?: ConsentStub[]
   rejected?: ConsentStub[]
@@ -56,9 +61,14 @@ function respond(opts: {
   })
 }
 
+const onboardingFlag = { value: true }
+
 async function loadMiddleware() {
   vi.stubGlobal('defineNuxtRouteMiddleware', (fn: unknown) => fn)
   vi.stubGlobal('navigateTo', navigateTo)
+  vi.stubGlobal('useLocalStorage', () => onboardingFlag)
+  vi.stubGlobal('blockingConsentIds', blockingConsentIds)
+  vi.stubGlobal('unansweredLocalConsents', unansweredLocalConsents)
   vi.resetModules()
   const mod = await import('../../app/middleware/03.consent.global')
   return mod.default as (to: { path: string }) => Promise<unknown>
@@ -66,6 +76,7 @@ async function loadMiddleware() {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  onboardingFlag.value = true
   respond({})
 })
 
@@ -114,6 +125,25 @@ describe('consent gate', () => {
 
     expect(await middleware({ path })).toBeUndefined()
     expect(query).not.toHaveBeenCalled()
+  })
+
+  it('pulls the user in from the front page for an unanswered optional consent', async () => {
+    respond({ pending: [consent(false)] })
+    const middleware = await loadMiddleware()
+
+    expect(await middleware({ path: '/' })).toEqual({
+      __redirect: { name: 'settings-consent' },
+    })
+    // Presented as onboarding, the way the first consents were.
+    expect(onboardingFlag.value).toBe(false)
+  })
+
+  it('does not pull the user in from other routes for an optional consent', async () => {
+    respond({ pending: [consent(false)] })
+    const middleware = await loadMiddleware()
+
+    expect(await middleware({ path: '/challenges' })).toBeUndefined()
+    expect(onboardingFlag.value).toBe(true)
   })
 
   it('fails open when the query errors, rather than locking the user out', async () => {

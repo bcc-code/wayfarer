@@ -72,7 +72,6 @@ const {
   data,
   error,
   fetching,
-  stale,
   executeQuery: refresh,
 } = useProfilePageQuery({
   variables: computed(() => {
@@ -93,31 +92,11 @@ useAchievementCelebration(achievements)
 const showBanner = useLocalStorage('showBanner', false, {
   listenToStorageChanges: true,
 })
-const hasCompletedOnboarding = useLocalStorage('hasCompletedOnboarding', false)
-
-const pendingInternal = computed(() => {
-  return data.value?.me.consentStatus.pendingConsents.filter(
-    (c) => c.managementType === ConsentManagementType.Local,
-  )
-})
-
 const pendingRemote = computed(() => {
   return data.value?.me.consentStatus.pendingConsents.filter(
     (c) => c.managementType === ConsentManagementType.Remote,
   )
 })
-
-watch(
-  pendingInternal,
-  (pending) => {
-    if (fetching.value || stale.value) return
-    if (pending?.length) {
-      hasCompletedOnboarding.value = false
-      navigateTo({ name: 'settings-consent' })
-    }
-  },
-  { immediate: true },
-)
 
 watch(
   pendingRemote,

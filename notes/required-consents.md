@@ -314,6 +314,33 @@ it must be swept on every publish of a required consent, and it will drift.
 filter) is untouched: a crafted GraphQL call still works, and a blocked user is
 still visible in units, leaderboards and notification audiences.
 
+#### Consolidation, 2026-10-16
+
+The show/hide decision had grown to four predicates across three files, with
+the blocking rule written twice (`.some()` in the middleware, a `Set` in the
+page) and `index.vue` writing localStorage from a render-time watcher.
+
+- [x] `app/utils/consentGate.ts` — `blockingConsentIds()` and
+      `unansweredLocalConsents()`, pure and structural over the consent-status
+      shape. Not a composable: route middleware cannot call one, and the two
+      callers read different queries with different selections. Lives in root
+      `app/utils` without a `PINNED_TO_ROOT` entry because
+      `test/unit/shared-root.test.ts` exempts anything a root file references.
+- [x] The middleware is the single redirect owner, with two tiers: required
+      redirects from any route, unanswered-optional only from `/`. The query is
+      now `ConsentGate`, not `BlockingConsents`, since it serves both.
+- [x] `index.vue`'s `pendingInternal` watcher deleted; the remote-consent
+      banner stays. (`stale` went unused with it.)
+- [x] `consent.vue` calls the shared functions instead of its own copies.
+- [x] Gate test extended to 12 cases, covering both tiers.
+
+**Left for later (item 3):** `hasCompletedOnboarding` still does two jobs —
+journey state and presentation switch — and is still per-device localStorage,
+now written from the middleware rather than a watcher. Replacing it with a
+derived `mode` (`'gate' | 'onboarding' | 'settings'`) needs one decision first:
+whether a reload mid-onboarding should resume onboarding presentation, which is
+the only thing the persistence buys.
+
 ### Phase 3 — original plan (superseded)
 
 - [ ] `pnpm codegen` after the schema lands.
