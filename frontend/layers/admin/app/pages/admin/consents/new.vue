@@ -10,6 +10,52 @@ definePageMeta({
 // Trailing breadcrumb crumbs; the path above them is derived from the route.
 useAdminPage(() => 'Nytt samtykke')
 
+gql(`
+  query AdminNewConsentProjects {
+    projects(first: 100, filter: { archived: false }) {
+      edges {
+        node {
+          id
+          name
+          startDate
+          endDate
+        }
+      }
+    }
+  }
+`)
+
+const { isAuthReady } = useAuthReady()
+const { data: projectsData } = useAdminNewConsentProjectsQuery({
+  pause: computed(() => !isAuthReady.value),
+})
+
+const projects = computed(
+  () => projectsData.value?.projects.edges.map((edge) => edge.node) ?? [],
+)
+
+const { currentProjects, futureProjects, pastProjects } = useGroupedProjects(
+  () => projects.value,
+)
+
+type ConsentProject = (typeof projects.value)[number]
+
+function groupToItems(group: ConsentProject[]) {
+  return group.map((project) => ({ label: project.name, value: project.id }))
+}
+
+// A sentinel rather than '': reka-ui's Combobox reserves the empty string for
+// "cleared", and an item carrying it throws. Sent to the server as no
+// projectId at all, which is what makes a consent apply to every project.
+const GLOBAL_PROJECT = '__all__'
+
+const projectItems = computed(() => [
+  [{ label: 'Alle prosjekter', value: GLOBAL_PROJECT }],
+  ...[currentProjects.value, futureProjects.value, pastProjects.value]
+    .filter((group) => group.length > 0)
+    .map(groupToItems),
+])
+
 const schema = z.object({
   key: z
     .string()
@@ -24,7 +70,9 @@ const schema = z.object({
   url: z.url('Må være en gyldig URL').optional().or(z.literal('')),
   publishNow: z.boolean().default(false),
   isRemote: z.boolean().default(false),
+  isRequired: z.boolean().default(false),
   managedBy: z.string().optional(),
+  projectId: z.string().default(GLOBAL_PROJECT),
 })
 
 type Schema = z.infer<typeof schema>
@@ -37,7 +85,9 @@ const state = reactive<Schema>({
   url: '',
   publishNow: false,
   isRemote: false,
+  isRequired: false,
   managedBy: '',
+  projectId: GLOBAL_PROJECT,
 })
 
 const { markSaved } = useUnsavedChanges(() => ({ ...state }))
@@ -57,7 +107,12 @@ async function handleSubmit(event: FormSubmitEvent<Schema>) {
     url: event.data.url || undefined,
     publishedAt: event.data.publishNow ? new Date().toISOString() : undefined,
     isRemote: event.data.isRemote || undefined,
+    isRequired: event.data.isRequired || undefined,
     managedBy: event.data.managedBy || undefined,
+    projectId:
+      event.data.projectId === GLOBAL_PROJECT
+        ? undefined
+        : event.data.projectId,
   })
 
   if (result.error) {
@@ -103,6 +158,18 @@ async function handleSubmit(event: FormSubmitEvent<Schema>) {
               />
             </UFormField>
 
+            <UFormField name="projectId" label="Prosjekt">
+              <USelectMenu
+                v-model="state.projectId"
+                :items="projectItems"
+                value-key="value"
+                class="w-full"
+              />
+              <template #description>
+                Hvilket prosjekt samtykket gjelder for. Kan ikke endres senere.
+              </template>
+            </UFormField>
+
             <AdminTranslatableFormField name="title" label="Tittel">
               <UInput
                 v-model="state.title"
@@ -139,7 +206,7 @@ async function handleSubmit(event: FormSubmitEvent<Schema>) {
               />
             </UFormField>
 
-            <UDivider />
+            <USeparator />
 
             <div class="space-y-4">
               <UFormField name="isRemote">
@@ -163,6 +230,13 @@ async function handleSubmit(event: FormSubmitEvent<Schema>) {
                   class="w-full"
                   placeholder="Eksternt systemnavn"
                 />
+              </UFormField>
+
+              <UFormField name="isRequired">
+                <UCheckbox v-model="state.isRequired" label="Påkrevd" />
+                <template #description>
+                  Må godtas for å delta i prosjektet, og kan ikke avslås
+                </template>
               </UFormField>
 
               <UFormField name="publishNow">

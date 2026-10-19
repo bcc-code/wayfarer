@@ -361,6 +361,7 @@ export type Consent = {
   __typename?: 'Consent';
   body: MarkdownText;
   id: Scalars['ID']['output'];
+  isRequired: Scalars['Boolean']['output'];
   key: Scalars['String']['output'];
   managedBy?: Maybe<Scalars['String']['output']>;
   managementType: ConsentManagementType;
@@ -1507,6 +1508,7 @@ export type MutationCreateChallengeArgs = {
 export type MutationCreateConsentArgs = {
   body: Scalars['String']['input'];
   isRemote?: InputMaybe<Scalars['Boolean']['input']>;
+  isRequired?: InputMaybe<Scalars['Boolean']['input']>;
   key: Scalars['String']['input'];
   managedBy?: InputMaybe<Scalars['String']['input']>;
   projectId?: InputMaybe<Scalars['ID']['input']>;
@@ -2018,6 +2020,7 @@ export type MutationUpdateChurchArgs = {
 export type MutationUpdateConsentArgs = {
   body?: InputMaybe<Scalars['String']['input']>;
   id: Scalars['ID']['input'];
+  isRequired?: InputMaybe<Scalars['Boolean']['input']>;
   managedBy?: InputMaybe<Scalars['String']['input']>;
   publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
   shortText?: InputMaybe<Scalars['String']['input']>;
@@ -4020,7 +4023,9 @@ export type CreateConsentMutationVariables = Exact<{
   url?: InputMaybe<Scalars['String']['input']>;
   publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
   isRemote?: InputMaybe<Scalars['Boolean']['input']>;
+  isRequired?: InputMaybe<Scalars['Boolean']['input']>;
   managedBy?: InputMaybe<Scalars['String']['input']>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
 }>;
 
 
@@ -4034,6 +4039,7 @@ export type UpdateConsentMutationVariables = Exact<{
   url?: InputMaybe<Scalars['String']['input']>;
   publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
   managedBy?: InputMaybe<Scalars['String']['input']>;
+  isRequired?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 
@@ -4458,6 +4464,11 @@ export type AdminProjectQuizzesQueryVariables = Exact<{
 
 export type AdminProjectQuizzesQuery = { __typename?: 'Query', quizzes: { __typename?: 'QuizConnection', edges: Array<{ __typename?: 'QuizEdge', node: { __typename?: 'Quiz', id: string, name: string } }> } };
 
+export type ConsentGateQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ConsentGateQuery = { __typename?: 'Query', me: { __typename?: 'User', consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename?: 'Consent', id: string, isRequired: boolean, managementType: ConsentManagementType }>, rejectedConsents: Array<{ __typename?: 'UserConsent', id: string, consent: { __typename?: 'Consent', id: string, isRequired: boolean, managementType: ConsentManagementType } }> } } };
+
 export type GetFirebaseTokenQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -4542,7 +4553,7 @@ export type ProfilePageQueryVariables = Exact<{
 }>;
 
 
-export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, managementType: ConsentManagementType, managedBy?: string | null, body: { __typename?: 'MarkdownText', html: string } }> } }, myCurrentProject: { __typename?: 'Project', id: string, name: string, infoMessageStart?: any | null, infoMessageEnd?: any | null, myPoints: number, infoMessage?: { __typename?: 'MarkdownText', markdown: string, html: string } | null, branding: { __typename?: 'Branding', rounding: number, logoImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, bannerImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } }, achievements: Array<
+export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, managementType: ConsentManagementType, managedBy?: string | null, isRequired: boolean, body: { __typename?: 'MarkdownText', html: string } }> } }, myCurrentProject: { __typename?: 'Project', id: string, name: string, infoMessageStart?: any | null, infoMessageEnd?: any | null, myPoints: number, infoMessage?: { __typename?: 'MarkdownText', markdown: string, html: string } | null, branding: { __typename?: 'Branding', rounding: number, logoImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, bannerImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } }, achievements: Array<
       | { __typename: 'ContentAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
       | { __typename: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
       | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
@@ -4574,7 +4585,7 @@ export type ProjectArchiveQuery = { __typename?: 'Query', me: { __typename?: 'Us
 export type ConsentsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ConsentsPageQuery = { __typename?: 'Query', me: { __typename?: 'User', consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, shortText: string, publishedAt?: any | null, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } }>, acceptedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, title: string, shortText: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }>, rejectedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, title: string, shortText: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }> } } };
+export type ConsentsPageQuery = { __typename?: 'Query', me: { __typename?: 'User', consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, shortText: string, publishedAt?: any | null, managedBy?: string | null, managementType: ConsentManagementType, isRequired: boolean, url?: string | null, body: { __typename?: 'MarkdownText', html: string } }>, acceptedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, title: string, shortText: string, managedBy?: string | null, managementType: ConsentManagementType, isRequired: boolean, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }>, rejectedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, title: string, shortText: string, managedBy?: string | null, managementType: ConsentManagementType, isRequired: boolean, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }> } } };
 
 export type StandingsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4759,12 +4770,17 @@ export type AdminConsentPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminConsentPageQuery = { __typename?: 'Query', consent: { __typename?: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, publishedAt?: any | null, managementType: ConsentManagementType, managedBy?: string | null, body: { __typename?: 'MarkdownText', markdown: string, html: string }, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> } };
+export type AdminConsentPageQuery = { __typename?: 'Query', consent: { __typename?: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, publishedAt?: any | null, managementType: ConsentManagementType, managedBy?: string | null, isRequired: boolean, body: { __typename?: 'MarkdownText', markdown: string, html: string }, project?: { __typename?: 'Project', id: string, name: string } | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> } };
 
 export type AdminConsentsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type AdminConsentsPageQuery = { __typename?: 'Query', consents: Array<{ __typename?: 'Consent', id: string, key: string, version: number, title: string, shortText: string, publishedAt?: any | null, managementType: ConsentManagementType, managedBy?: string | null }> };
+
+export type AdminNewConsentProjectsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminNewConsentProjectsQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, startDate: any, endDate: any } }> } };
 
 export type AdminFeedbackPageQueryVariables = Exact<{
   filter?: InputMaybe<FeedbackFilter>;
@@ -5871,7 +5887,7 @@ export function useRejectConsentMutation() {
   return Urql.useMutation<RejectConsentMutation, RejectConsentMutationVariables>(RejectConsentDocument);
 };
 export const CreateConsentDocument = gql`
-    mutation CreateConsent($key: String!, $title: String!, $shortText: String, $body: String!, $url: String, $publishedAt: DateTime, $isRemote: Boolean, $managedBy: String) {
+    mutation CreateConsent($key: String!, $title: String!, $shortText: String, $body: String!, $url: String, $publishedAt: DateTime, $isRemote: Boolean, $isRequired: Boolean, $managedBy: String, $projectId: ID) {
   createConsent(
     key: $key
     title: $title
@@ -5880,7 +5896,9 @@ export const CreateConsentDocument = gql`
     url: $url
     publishedAt: $publishedAt
     isRemote: $isRemote
+    isRequired: $isRequired
     managedBy: $managedBy
+    projectId: $projectId
   ) {
     id
     key
@@ -5894,7 +5912,7 @@ export function useCreateConsentMutation() {
   return Urql.useMutation<CreateConsentMutation, CreateConsentMutationVariables>(CreateConsentDocument);
 };
 export const UpdateConsentDocument = gql`
-    mutation UpdateConsent($id: ID!, $title: String, $shortText: String, $body: String, $url: String, $publishedAt: DateTime, $managedBy: String) {
+    mutation UpdateConsent($id: ID!, $title: String, $shortText: String, $body: String, $url: String, $publishedAt: DateTime, $managedBy: String, $isRequired: Boolean) {
   updateConsent(
     id: $id
     title: $title
@@ -5903,6 +5921,7 @@ export const UpdateConsentDocument = gql`
     url: $url
     publishedAt: $publishedAt
     managedBy: $managedBy
+    isRequired: $isRequired
   ) {
     id
     key
@@ -6583,6 +6602,31 @@ export const AdminProjectQuizzesDocument = gql`
 export function useAdminProjectQuizzesQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectQuizzesQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectQuizzesQuery, AdminProjectQuizzesQueryVariables | undefined>({ query: AdminProjectQuizzesDocument, variables: undefined, ...options });
 };
+export const ConsentGateDocument = gql`
+    query ConsentGate {
+  me {
+    consentStatus {
+      pendingConsents {
+        id
+        isRequired
+        managementType
+      }
+      rejectedConsents {
+        id
+        consent {
+          id
+          isRequired
+          managementType
+        }
+      }
+    }
+  }
+}
+    `;
+
+export function useConsentGateQuery(options?: Omit<Urql.UseQueryArgs<never, ConsentGateQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<ConsentGateQuery, ConsentGateQueryVariables | undefined>({ query: ConsentGateDocument, variables: undefined, ...options });
+};
 export const GetFirebaseTokenDocument = gql`
     query GetFirebaseToken {
   firebaseToken {
@@ -6741,6 +6785,7 @@ export const ProfilePageDocument = gql`
         url
         managementType
         managedBy
+        isRequired
       }
     }
   }
@@ -6818,6 +6863,7 @@ export const ConsentsPageDocument = gql`
         publishedAt
         managedBy
         managementType
+        isRequired
         url
       }
       acceptedConsents {
@@ -6832,6 +6878,7 @@ export const ConsentsPageDocument = gql`
           shortText
           managedBy
           managementType
+          isRequired
           url
         }
         action
@@ -6849,6 +6896,7 @@ export const ConsentsPageDocument = gql`
           shortText
           managedBy
           managementType
+          isRequired
           url
         }
         action
@@ -7389,6 +7437,11 @@ export const AdminConsentPageDocument = gql`
     publishedAt
     managementType
     managedBy
+    isRequired
+    project {
+      id
+      name
+    }
     translationStatus {
       ...TranslationStatus
     }
@@ -7416,6 +7469,24 @@ export const AdminConsentsPageDocument = gql`
 
 export function useAdminConsentsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminConsentsPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminConsentsPageQuery, AdminConsentsPageQueryVariables | undefined>({ query: AdminConsentsPageDocument, variables: undefined, ...options });
+};
+export const AdminNewConsentProjectsDocument = gql`
+    query AdminNewConsentProjects {
+  projects(first: 100, filter: {archived: false}) {
+    edges {
+      node {
+        id
+        name
+        startDate
+        endDate
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminNewConsentProjectsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminNewConsentProjectsQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminNewConsentProjectsQuery, AdminNewConsentProjectsQueryVariables | undefined>({ query: AdminNewConsentProjectsDocument, variables: undefined, ...options });
 };
 export const AdminFeedbackPageDocument = gql`
     query AdminFeedbackPage($filter: FeedbackFilter, $first: Int, $after: String, $last: Int, $before: String) {

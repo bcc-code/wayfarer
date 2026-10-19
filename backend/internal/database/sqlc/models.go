@@ -139,6 +139,8 @@ type Consent struct {
 	ShortText   string             `json:"short_text"`
 	// Project this consent applies to; NULL means it applies to every project
 	ProjectID *string `json:"project_id"`
+	// Consent must be accepted to take part in the project; cannot be rejected
+	IsRequired bool `json:"is_required"`
 }
 
 type ConsentTranslation struct {

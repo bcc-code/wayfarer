@@ -66,6 +66,7 @@ func consentByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(cont
 					ManagementType: managementType,
 					ManagedBy:      row.ManagedBy,
 					ProjectID:      row.ProjectID,
+					IsRequired:     row.IsRequired,
 				}
 
 				consentMap[row.ID] = consent
