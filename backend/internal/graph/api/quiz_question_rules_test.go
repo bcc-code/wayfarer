@@ -3,6 +3,7 @@ package api
 import (
 	"testing"
 
+	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -97,6 +98,7 @@ func TestSameAnswers(t *testing.T) {
 		{name: "answer added", next: []answerSpec{{Text: "a", Correct: true, Order: 0}, {Text: "b", Order: 1}, {Text: "c", Order: 2}}},
 		{name: "answer removed", next: []answerSpec{{Text: "a", Correct: true, Order: 0}}},
 		{name: "empty", next: nil},
+		{name: "description added", next: []answerSpec{{Text: "a", Correct: true, Order: 0, Description: "Why."}, {Text: "b", Order: 1}}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -104,4 +106,75 @@ func TestSameAnswers(t *testing.T) {
 		})
 	}
 	assert.True(t, sameAnswers(nil, nil))
+}
+
+func TestSameAnswersDescriptions(t *testing.T) {
+	described := []answerSpec{{Text: "a", Correct: true, Order: 0, Description: "Old."}, {Text: "b", Order: 1}}
+	tests := []struct {
+		name string
+		next []answerSpec
+		want bool
+	}{
+		{name: "identical", next: []answerSpec{{Text: "a", Correct: true, Order: 0, Description: "Old."}, {Text: "b", Order: 1}}, want: true},
+		{name: "description changed", next: []answerSpec{{Text: "a", Correct: true, Order: 0, Description: "New."}, {Text: "b", Order: 1}}},
+		{name: "description removed", next: []answerSpec{{Text: "a", Correct: true, Order: 0}, {Text: "b", Order: 1}}},
+		{name: "description moved to other answer", next: []answerSpec{{Text: "a", Correct: true, Order: 0}, {Text: "b", Order: 1, Description: "Old."}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, sameAnswers(described, tt.next))
+		})
+	}
+}
+
+func TestSameAnswersIgnoresListOrderForTiedAnswers(t *testing.T) {
+	// Answers sharing order and text differ only in correctness or
+	// description; the comparison must still not depend on list order
+	a := []answerSpec{
+		{Text: "x", Order: 0, Correct: true, Description: "1"},
+		{Text: "x", Order: 0, Correct: false, Description: "2"},
+		{Text: "x", Order: 0, Correct: false, Description: "1"},
+	}
+	b := []answerSpec{a[2], a[1], a[0]}
+	assert.True(t, sameAnswers(a, b))
+	assert.True(t, sameAnswers(b, a))
+
+	swapped := []answerSpec{
+		{Text: "x", Order: 0, Correct: false, Description: "1"},
+		{Text: "x", Order: 0, Correct: true, Description: "2"},
+		{Text: "x", Order: 0, Correct: false, Description: "1"},
+	}
+	assert.False(t, sameAnswers(a, swapped))
+}
+
+func TestAnswerDescription(t *testing.T) {
+	s := func(v string) *string { return &v }
+	tests := []struct {
+		name string
+		in   *string
+		want string
+	}{
+		{name: "nil", in: nil, want: ""},
+		{name: "empty", in: s(""), want: ""},
+		{name: "whitespace only", in: s("  \n\t\r "), want: ""},
+		{name: "padded", in: s("  Slekt og etterkommere.  "), want: "Slekt og etterkommere."},
+		{name: "inner whitespace kept", in: s("a  b\nc"), want: "a  b\nc"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, answerDescription(tt.in))
+		})
+	}
+}
+
+func TestStoredAnswerSpecsIncludeDescription(t *testing.T) {
+	desc := "Why."
+	rows := []*sqlc.QuizPredefinedAnswer{
+		{AnswerText: "a", IsCorrect: true, AnswerOrder: 0, Description: &desc},
+		{AnswerText: "b", AnswerOrder: 1},
+	}
+	assert.Equal(t, []answerSpec{
+		{Text: "a", Correct: true, Order: 0, Description: "Why."},
+		{Text: "b", Order: 1},
+	}, storedAnswerSpecs(rows))
 }
