@@ -16,7 +16,7 @@ are maintained two ways that must end in the same state:
 (`backend/e2e/leaderboard_regenerate_test.go`) seeds data, drains the queue,
 snapshots all 8 tables, rebuilds and requires identical rows.
 
-## Fixed in 00111 (2026-10-19)
+## Fixed in 00113 (2026-10-19)
 
 Found as "event leaderboards differ from `regenerate_leaderboards()` on seed
 data" (PR #218 review notes). The rebuild disagreed with the incremental apply
