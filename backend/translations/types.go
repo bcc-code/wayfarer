@@ -58,5 +58,7 @@ type QuestionWithID struct {
 // AnswerWithID represents a quiz answer with its ID for tracking
 type AnswerWithID struct {
 	AnswerText string `json:"answer_text"`
-	ID         string `json:"@id"` // Special field for Phrase to track answer ID
+	// Omitted when empty, so answers without a description export unchanged
+	Description null.String `json:"description,omitzero"`
+	ID          string      `json:"@id"` // Special field for Phrase to track answer ID
 }

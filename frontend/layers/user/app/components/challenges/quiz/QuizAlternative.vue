@@ -3,6 +3,7 @@ import { cva } from 'cva'
 
 const props = defineProps<{
   text: string
+  description?: string | null
   highlighted?: boolean
   confirmed?: boolean
   wrong?: boolean
@@ -102,7 +103,11 @@ const classes = cva(
     :class="classes({ highlighted, confirmed, wrong, correct, disabled })"
     :disabled="disabled"
   >
-    {{ text }}
+    <span v-if="description" class="flex flex-col gap-1">
+      <span>{{ text }}</span>
+      <span class="text-caption opacity-70">{{ description }}</span>
+    </span>
+    <template v-else>{{ text }}</template>
 
     <span
       v-if="confirmed && wrong && selected"

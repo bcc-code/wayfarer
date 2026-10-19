@@ -136,7 +136,9 @@
     "goToConsent": "Gå til samtykke",
     "continue": "Gå videre",
     "changeDescription": "For å endre samtykket ditt, kontakt oss på {email}",
-    "changeConsent": "Endre samtykke"
+    "changeConsent": "Endre samtykke",
+    "required": "Påkrevd",
+    "requiredTitle": "Før du fortsetter"
   },
   "achievement": {
     "title": "Utmerkelse",

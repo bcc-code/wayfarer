@@ -1,6 +1,7 @@
 fragment PredefinedAnswerFields on QuizPredefinedAnswer {
   id
   answerText
+  description
   answerOrder
   isCorrect
   translationStatus {

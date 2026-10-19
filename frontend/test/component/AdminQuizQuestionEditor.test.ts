@@ -233,4 +233,93 @@ describe('AdminQuizQuestionEditor', () => {
       points: undefined,
     })
   })
+
+  describe('answer descriptions', () => {
+    const withDescription = () =>
+      predefined([
+        {
+          answerText: 'Kjøttgryten fra Egypt',
+          description: 'En gryte som symboliserer maten.',
+          isCorrect: true,
+          answerOrder: 1,
+        },
+        { answerText: 'Melkekrukken', isCorrect: false, answerOrder: 2 },
+      ] as Parameters<typeof predefined>[0])
+
+    const descriptionButtons = (wrapper: Awaited<ReturnType<typeof mount>>) =>
+      wrapper
+        .findAllComponents({ name: 'UButton' })
+        .filter((button) => button.text() === 'Beskrivelse')
+
+    const descriptionFields = (wrapper: Awaited<ReturnType<typeof mount>>) =>
+      wrapper
+        .findAllComponents({ name: 'UTextarea' })
+        .filter((area) =>
+          area
+            .find('textarea')
+            .attributes('aria-label')
+            ?.startsWith('Beskrivelse'),
+        )
+
+    // Most quizzes never use descriptions; they should look as before.
+    it('keeps the field closed for answers without a description', async () => {
+      const wrapper = await mount(answered())
+
+      expect(descriptionFields(wrapper)).toHaveLength(0)
+      expect(descriptionButtons(wrapper)).toHaveLength(2)
+    })
+
+    it('shows an existing description open', async () => {
+      const wrapper = await mount(withDescription())
+
+      const fields = descriptionFields(wrapper)
+      expect(fields).toHaveLength(1)
+      expect(fields[0]!.find('textarea').element.value).toBe(
+        'En gryte som symboliserer maten.',
+      )
+      // Only the answer without one offers to add it.
+      expect(descriptionButtons(wrapper)).toHaveLength(1)
+    })
+
+    it('opens the field for an answer and saves what is typed', async () => {
+      const wrapper = await mount(answered())
+
+      await descriptionButtons(wrapper)[1]!.trigger('click')
+      const fields = descriptionFields(wrapper)
+      expect(fields).toHaveLength(1)
+      expect(fields[0]!.find('textarea').attributes('aria-label')).toBe(
+        'Beskrivelse for svar 2',
+      )
+
+      await fields[0]!.find('textarea').setValue('Han ble korsfestet i Roma.')
+      await saveButton(wrapper).trigger('click')
+
+      const saved = wrapper.emitted('save')?.[0]?.[0] as {
+        predefinedAnswers: { answerText: string; description?: string }[]
+      }
+      expect(saved.predefinedAnswers[0]!.description).toBeUndefined()
+      expect(saved.predefinedAnswers[1]!.description).toBe(
+        'Han ble korsfestet i Roma.',
+      )
+    })
+
+    // Saving rewrites every answer, so a description the editor did not carry
+    // through would be erased by an unrelated edit.
+    it('keeps an existing description when something else is edited', async () => {
+      const wrapper = await mount(withDescription())
+
+      await wrapper
+        .findAllComponents({ name: 'UTextarea' })[0]!
+        .find('textarea')
+        .setValue('Hva er ukas greie?')
+      await saveButton(wrapper).trigger('click')
+
+      const saved = wrapper.emitted('save')?.[0]?.[0] as {
+        predefinedAnswers: { description?: string }[]
+      }
+      expect(saved.predefinedAnswers[0]!.description).toBe(
+        'En gryte som symboliserer maten.',
+      )
+    })
+  })
 })

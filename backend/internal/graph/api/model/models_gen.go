@@ -356,6 +356,7 @@ type Consent struct {
 	PublishedAt       *scalars.DateTime         `json:"publishedAt,omitempty"`
 	ManagementType    ConsentManagementType     `json:"managementType"`
 	ManagedBy         *string                   `json:"managedBy,omitempty"`
+	IsRequired        bool                      `json:"isRequired"`
 	Project           *Project                  `json:"project,omitempty"`
 	UserHistory       []UserConsentHistoryEntry `json:"userHistory"`
 	TranslationStatus []TranslationFieldStatus  `json:"translationStatus"`
@@ -520,9 +521,10 @@ type CreateOrderingItemInput struct {
 }
 
 type CreatePredefinedAnswerInput struct {
-	AnswerText  string `json:"answerText"`
-	IsCorrect   bool   `json:"isCorrect"`
-	AnswerOrder int    `json:"answerOrder"`
+	AnswerText  string  `json:"answerText"`
+	Description *string `json:"description,omitempty"`
+	IsCorrect   bool    `json:"isCorrect"`
+	AnswerOrder int     `json:"answerOrder"`
 }
 
 type CreateProjectInput struct {
@@ -1829,6 +1831,7 @@ type QuizPredefinedAnswer struct {
 	ID                string                   `json:"id"`
 	Question          QuizQuestion             `json:"question"`
 	AnswerText        string                   `json:"answerText"`
+	Description       *string                  `json:"description,omitempty"`
 	AnswerOrder       int                      `json:"answerOrder"`
 	IsCorrect         *bool                    `json:"isCorrect,omitempty"`
 	TranslationStatus []TranslationFieldStatus `json:"translationStatus"`

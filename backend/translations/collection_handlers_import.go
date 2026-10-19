@@ -150,6 +150,7 @@ func (s *Service) updateQuizzes(ctx context.Context, data []common.TranslationDa
 					AnswerID:     a.ID,
 					LanguageCode: d.Language,
 					AnswerText:   a.AnswerText,
+					Description:  a.Description.String,
 				})
 				if err != nil {
 					errs = append(errs, err)

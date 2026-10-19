@@ -171,11 +171,12 @@ func (q *Queries) UpsertProjectTranslation(ctx context.Context, arg UpsertProjec
 }
 
 const UpsertQuizAnswerTranslation = `-- name: UpsertQuizAnswerTranslation :exec
-INSERT INTO quiz_answer_translations (answer_id, language_code, answer_text, updated_at)
-VALUES ($1::text, $2::text, $3::text, now())
+INSERT INTO quiz_answer_translations (answer_id, language_code, answer_text, description, updated_at)
+VALUES ($1::text, $2::text, $3::text, $4::text, now())
 ON CONFLICT (answer_id, language_code)
 DO UPDATE SET
     answer_text = COALESCE(NULLIF($3::text, ''), quiz_answer_translations.answer_text),
+    description = COALESCE(NULLIF($4::text, ''), quiz_answer_translations.description),
     updated_at = now()
 `
 
@@ -183,10 +184,16 @@ type UpsertQuizAnswerTranslationParams struct {
 	AnswerID     string `json:"answer_id"`
 	LanguageCode string `json:"language_code"`
 	AnswerText   string `json:"answer_text"`
+	Description  string `json:"description"`
 }
 
 func (q *Queries) UpsertQuizAnswerTranslation(ctx context.Context, arg UpsertQuizAnswerTranslationParams) error {
-	_, err := q.db.Exec(ctx, UpsertQuizAnswerTranslation, arg.AnswerID, arg.LanguageCode, arg.AnswerText)
+	_, err := q.db.Exec(ctx, UpsertQuizAnswerTranslation,
+		arg.AnswerID,
+		arg.LanguageCode,
+		arg.AnswerText,
+		arg.Description,
+	)
 	return err
 }
 

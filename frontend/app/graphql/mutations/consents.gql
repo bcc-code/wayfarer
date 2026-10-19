@@ -22,7 +22,9 @@ mutation CreateConsent(
   $url: String
   $publishedAt: DateTime
   $isRemote: Boolean
+  $isRequired: Boolean
   $managedBy: String
+  $projectId: ID
 ) {
   createConsent(
     key: $key
@@ -32,7 +34,9 @@ mutation CreateConsent(
     url: $url
     publishedAt: $publishedAt
     isRemote: $isRemote
+    isRequired: $isRequired
     managedBy: $managedBy
+    projectId: $projectId
   ) {
     id
     key
@@ -49,6 +53,7 @@ mutation UpdateConsent(
   $url: String
   $publishedAt: DateTime
   $managedBy: String
+  $isRequired: Boolean
 ) {
   updateConsent(
     id: $id
@@ -58,6 +63,7 @@ mutation UpdateConsent(
     url: $url
     publishedAt: $publishedAt
     managedBy: $managedBy
+    isRequired: $isRequired
   ) {
     id
     key

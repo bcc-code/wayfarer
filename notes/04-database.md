@@ -53,6 +53,26 @@ Migrations are stored in `internal/database/migrations/` and embedded into binar
 - **Naming**: `00001_initial_schema.sql`, `00002_add_feature.sql`, etc.
 - **Embedded**: Via `//go:embed migrations/*.sql` in `database` package
 
+### Migration Numbering
+
+Every migration needs a unique version, higher than every migration already on
+`main`. Goose refuses to run with duplicate versions, and rejects out-of-order
+versions once a higher one has been applied. Parallel PRs that both grab "the
+next number" are the usual cause.
+
+Guards:
+
+- `internal/database/migrations_test.go` (`make test`) fails on duplicate
+  versions or filenames not matching `NNNNN_snake_case.sql`.
+- `.github/workflows/migrations-check.yml` runs on PRs touching migrations, on
+  push to `main`, and in the merge queue. It fails on duplicates in the merge
+  result and on any added migration numbered ≤ the highest on the base branch.
+
+If the check fails: rebase on `main` and rename your migration to the next
+free number. A PR check only sees `main` as of its last run, so the workflow
+should be a required status check with "Require branches to be up to date
+before merging" (or a merge queue) enabled on `main`.
+
 ### Initial Schema
 
 The initial migration (`00001_initial_schema.sql`) creates all 21 tables:

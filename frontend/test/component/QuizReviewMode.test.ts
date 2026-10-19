@@ -96,6 +96,39 @@ describe('QuizReviewMode', () => {
     ).toEqual(['a1'])
   })
 
+  // Review is where a participant reads why an answer was right, so the
+  // descriptions must come along with the answers.
+  it('shows answer descriptions on the reviewed question', async () => {
+    const [predefined, ...rest] = QUESTIONS
+    const wrapper = await mountReview({
+      questions: [
+        {
+          ...predefined,
+          predefinedAnswers: [
+            {
+              id: 'a1',
+              answerText: 'Four',
+              description: 'Two pairs make four.',
+              isCorrect: true,
+            },
+            {
+              id: 'a2',
+              answerText: 'Five',
+              description: null,
+              isCorrect: false,
+            },
+          ],
+        },
+        ...rest,
+      ],
+    })
+
+    const four = wrapper
+      .findAll('button')
+      .find((b) => b.text().includes('Four'))!
+    expect(four.text()).toContain('Two pairs make four.')
+  })
+
   it('navigates forward to the next question', async () => {
     const wrapper = await mountReview()
 

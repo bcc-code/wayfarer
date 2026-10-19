@@ -264,9 +264,10 @@ func queryTranslations(ctx context.Context, db *database.DB, entityType string, 
 		translations := make([]*Translation, len(rows))
 		for i, row := range rows {
 			translations[i] = &Translation{
-				EntityID:   row.AnswerID,
-				LangCode:   row.LanguageCode,
-				AnswerText: row.AnswerText,
+				EntityID:    row.AnswerID,
+				LangCode:    row.LanguageCode,
+				AnswerText:  row.AnswerText,
+				Description: row.Description,
 			}
 		}
 		return translations, nil

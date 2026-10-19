@@ -386,6 +386,7 @@ func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, i
 				ID:          answerID,
 				Questionid:  questionID,
 				Answertext:  answerInput.AnswerText,
+				Description: answerInput.Description,
 				Iscorrect:   answerInput.IsCorrect,
 				Answerorder: int32(answerInput.AnswerOrder),
 			})
@@ -587,7 +588,12 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 	if input.PredefinedAnswers != nil {
 		next := make([]answerSpec, len(input.PredefinedAnswers))
 		for i, a := range input.PredefinedAnswers {
-			next[i] = answerSpec{Text: a.AnswerText, Correct: a.IsCorrect, Order: int32(a.AnswerOrder)}
+			next[i] = answerSpec{
+				Text:        a.AnswerText,
+				Correct:     a.IsCorrect,
+				Order:       int32(a.AnswerOrder),
+				Description: answerDescription(a.Description),
+			}
 		}
 		if replacePredefined, err = replaceAnswers("predefinedAnswers", next); err != nil {
 			return nil, err
@@ -631,6 +637,7 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 				ID:          answerID,
 				Questionid:  id,
 				Answertext:  answerInput.AnswerText,
+				Description: answerInput.Description,
 				Iscorrect:   answerInput.IsCorrect,
 				Answerorder: int32(answerInput.AnswerOrder),
 			})

@@ -139,6 +139,8 @@ type Consent struct {
 	ShortText   string             `json:"short_text"`
 	// Project this consent applies to; NULL means it applies to every project
 	ProjectID *string `json:"project_id"`
+	// Consent must be accepted to take part in the project; cannot be rejected
+	IsRequired bool `json:"is_required"`
 }
 
 type ConsentTranslation struct {
@@ -491,6 +493,7 @@ type QuizAnswerTranslation struct {
 	AnswerText   *string            `json:"answer_text"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	Description  *string            `json:"description"`
 }
 
 type QuizPredefinedAnswer struct {
@@ -500,6 +503,7 @@ type QuizPredefinedAnswer struct {
 	IsCorrect   bool               `json:"is_correct"`
 	AnswerOrder int32              `json:"answer_order"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	Description *string            `json:"description"`
 }
 
 type QuizQuestion struct {

@@ -248,6 +248,7 @@ type ComplexityRoot struct {
 	Consent struct {
 		Body              func(childComplexity int) int
 		ID                func(childComplexity int) int
+		IsRequired        func(childComplexity int) int
 		Key               func(childComplexity int) int
 		ManagedBy         func(childComplexity int) int
 		ManagementType    func(childComplexity int) int
@@ -633,7 +634,7 @@ type ComplexityRoot struct {
 		ClearAllCache                               func(childComplexity int) int
 		CompleteChallenge                           func(childComplexity int, userID string, challengeID string, completedAt *scalars.DateTime) int
 		CreateChallenge                             func(childComplexity int, projectID string, eventID *string, input model.CreateChallengeInput) int
-		CreateConsent                               func(childComplexity int, key string, title string, shortText *string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string, projectID *string) int
+		CreateConsent                               func(childComplexity int, key string, title string, shortText *string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string, projectID *string, isRequired *bool) int
 		CreateContentAchievement                    func(childComplexity int, input model.CreateContentAchievementInput) int
 		CreateContentAchievementFromExternalContent func(childComplexity int, input model.CreateContentAchievementFromExternalContentInput) int
 		CreateEvent                                 func(childComplexity int, projectID string, input model.CreateEventInput) int
@@ -729,7 +730,7 @@ type ComplexityRoot struct {
 		UpdateAvatar                                func(childComplexity int, file graphql.Upload) int
 		UpdateChallenge                             func(childComplexity int, id string, input model.UpdateChallengeInput) int
 		UpdateChurch                                func(childComplexity int, id string, input model.UpdateChurchInput) int
-		UpdateConsent                               func(childComplexity int, id string, title *string, shortText *string, body *string, url *string, publishedAt *scalars.DateTime, managedBy *string) int
+		UpdateConsent                               func(childComplexity int, id string, title *string, shortText *string, body *string, url *string, publishedAt *scalars.DateTime, managedBy *string, isRequired *bool) int
 		UpdateContentAchievement                    func(childComplexity int, id string, input model.UpdateContentAchievementInput) int
 		UpdateEvent                                 func(childComplexity int, id string, input model.UpdateEventInput) int
 		UpdateFeedbackTags                          func(childComplexity int, feedbackID string, tags []string) int
@@ -1136,6 +1137,7 @@ type ComplexityRoot struct {
 	QuizPredefinedAnswer struct {
 		AnswerOrder       func(childComplexity int) int
 		AnswerText        func(childComplexity int) int
+		Description       func(childComplexity int) int
 		ID                func(childComplexity int) int
 		IsCorrect         func(childComplexity int) int
 		Question          func(childComplexity int) int
@@ -1698,8 +1700,8 @@ type MutationResolver interface {
 	AsyncBulkScoreAdjustmentByTarget(ctx context.Context, input model.AsyncBulkScoreAdjustmentByTargetInput) (*model.BulkJob, error)
 	AcceptConsent(ctx context.Context, consentID string) (*model.UserConsent, error)
 	RejectConsent(ctx context.Context, consentID string) (*model.UserConsent, error)
-	CreateConsent(ctx context.Context, key string, title string, shortText *string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string, projectID *string) (*model.Consent, error)
-	UpdateConsent(ctx context.Context, id string, title *string, shortText *string, body *string, url *string, publishedAt *scalars.DateTime, managedBy *string) (*model.Consent, error)
+	CreateConsent(ctx context.Context, key string, title string, shortText *string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string, projectID *string, isRequired *bool) (*model.Consent, error)
+	UpdateConsent(ctx context.Context, id string, title *string, shortText *string, body *string, url *string, publishedAt *scalars.DateTime, managedBy *string, isRequired *bool) (*model.Consent, error)
 	AdminSetUserConsent(ctx context.Context, userID string, consentID string, action model.ConsentAction) (*model.UserConsentHistoryEntry, error)
 	CreateQuiz(ctx context.Context, input model.CreateQuizInput) (*model.Quiz, error)
 	UpdateQuiz(ctx context.Context, id string, input model.UpdateQuizInput) (*model.Quiz, error)
@@ -2680,6 +2682,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Consent.ID(childComplexity), true
+	case "Consent.isRequired":
+		if e.complexity.Consent.IsRequired == nil {
+			break
+		}
+
+		return e.complexity.Consent.IsRequired(childComplexity), true
 	case "Consent.key":
 		if e.complexity.Consent.Key == nil {
 			break
@@ -4487,7 +4495,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateConsent(childComplexity, args["key"].(string), args["title"].(string), args["shortText"].(*string), args["body"].(string), args["url"].(*string), args["publishedAt"].(*scalars.DateTime), args["isRemote"].(*bool), args["managedBy"].(*string), args["projectId"].(*string)), true
+		return e.complexity.Mutation.CreateConsent(childComplexity, args["key"].(string), args["title"].(string), args["shortText"].(*string), args["body"].(string), args["url"].(*string), args["publishedAt"].(*scalars.DateTime), args["isRemote"].(*bool), args["managedBy"].(*string), args["projectId"].(*string), args["isRequired"].(*bool)), true
 	case "Mutation.createContentAchievement":
 		if e.complexity.Mutation.CreateContentAchievement == nil {
 			break
@@ -5528,7 +5536,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateConsent(childComplexity, args["id"].(string), args["title"].(*string), args["shortText"].(*string), args["body"].(*string), args["url"].(*string), args["publishedAt"].(*scalars.DateTime), args["managedBy"].(*string)), true
+		return e.complexity.Mutation.UpdateConsent(childComplexity, args["id"].(string), args["title"].(*string), args["shortText"].(*string), args["body"].(*string), args["url"].(*string), args["publishedAt"].(*scalars.DateTime), args["managedBy"].(*string), args["isRequired"].(*bool)), true
 	case "Mutation.updateContentAchievement":
 		if e.complexity.Mutation.UpdateContentAchievement == nil {
 			break
@@ -7804,6 +7812,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.QuizPredefinedAnswer.AnswerText(childComplexity), true
+	case "QuizPredefinedAnswer.description":
+		if e.complexity.QuizPredefinedAnswer.Description == nil {
+			break
+		}
+
+		return e.complexity.QuizPredefinedAnswer.Description(childComplexity), true
 	case "QuizPredefinedAnswer.id":
 		if e.complexity.QuizPredefinedAnswer.ID == nil {
 			break
@@ -11379,6 +11393,8 @@ type Consent {
     publishedAt: DateTime
     managementType: ConsentManagementType!
     managedBy: String
+    # Must be accepted to take part in the project; cannot be rejected
+    isRequired: Boolean!
     project: Project @goField(forceResolver: true)
     userHistory: [UserConsentHistoryEntry!]! @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
@@ -11440,6 +11456,7 @@ extend type Mutation {
         isRemote: Boolean
         managedBy: String
         projectId: ID
+        isRequired: Boolean
     ): Consent! @requireRole(roles: ["admin", "superadmin"])
 
     # Update an existing consent (admin action)
@@ -11451,6 +11468,7 @@ extend type Mutation {
         url: String
         publishedAt: DateTime
         managedBy: String
+        isRequired: Boolean
     ): Consent! @requireRole(roles: ["admin", "superadmin"])
 
     # Manually set a user's consent action (admin action)
@@ -11627,6 +11645,8 @@ type QuizPredefinedAnswer {
     id: ID!
     question: QuizQuestion! @goField(forceResolver: true)
     answerText: String!
+    # Optional explanation shown with the answer; null when there is none.
+    description: String
     answerOrder: Int!
     isCorrect: Boolean @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
@@ -11792,6 +11812,8 @@ input CreateQuizQuestionInput {
 
 input CreatePredefinedAnswerInput {
     answerText: String!
+    # Optional; a blank value is stored as no description.
+    description: String
     isCorrect: Boolean!
     answerOrder: Int!
 }
@@ -13379,6 +13401,11 @@ func (ec *executionContext) field_Mutation_createConsent_args(ctx context.Contex
 		return nil, err
 	}
 	args["projectId"] = arg8
+	arg9, err := graphql.ProcessArgField(ctx, rawArgs, "isRequired", ec.unmarshalOBoolean2ᚖbool)
+	if err != nil {
+		return nil, err
+	}
+	args["isRequired"] = arg9
 	return args, nil
 }
 
@@ -14622,6 +14649,11 @@ func (ec *executionContext) field_Mutation_updateConsent_args(ctx context.Contex
 		return nil, err
 	}
 	args["managedBy"] = arg6
+	arg7, err := graphql.ProcessArgField(ctx, rawArgs, "isRequired", ec.unmarshalOBoolean2ᚖbool)
+	if err != nil {
+		return nil, err
+	}
+	args["isRequired"] = arg7
 	return args, nil
 }
 
@@ -19105,6 +19137,35 @@ func (ec *executionContext) fieldContext_Consent_managedBy(_ context.Context, fi
 	return fc, nil
 }
 
+func (ec *executionContext) _Consent_isRequired(ctx context.Context, field graphql.CollectedField, obj *model.Consent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Consent_isRequired,
+		func(ctx context.Context) (any, error) {
+			return obj.IsRequired, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Consent_isRequired(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Consent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Consent_project(ctx context.Context, field graphql.CollectedField, obj *model.Consent) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -19312,6 +19373,8 @@ func (ec *executionContext) fieldContext_ConsentStatus_pendingConsents(_ context
 				return ec.fieldContext_Consent_managementType(ctx, field)
 			case "managedBy":
 				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "isRequired":
+				return ec.fieldContext_Consent_isRequired(ctx, field)
 			case "project":
 				return ec.fieldContext_Consent_project(ctx, field)
 			case "userHistory":
@@ -33776,7 +33839,7 @@ func (ec *executionContext) _Mutation_createConsent(ctx context.Context, field g
 		ec.fieldContext_Mutation_createConsent,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().CreateConsent(ctx, fc.Args["key"].(string), fc.Args["title"].(string), fc.Args["shortText"].(*string), fc.Args["body"].(string), fc.Args["url"].(*string), fc.Args["publishedAt"].(*scalars.DateTime), fc.Args["isRemote"].(*bool), fc.Args["managedBy"].(*string), fc.Args["projectId"].(*string))
+			return ec.resolvers.Mutation().CreateConsent(ctx, fc.Args["key"].(string), fc.Args["title"].(string), fc.Args["shortText"].(*string), fc.Args["body"].(string), fc.Args["url"].(*string), fc.Args["publishedAt"].(*scalars.DateTime), fc.Args["isRemote"].(*bool), fc.Args["managedBy"].(*string), fc.Args["projectId"].(*string), fc.Args["isRequired"].(*bool))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -33831,6 +33894,8 @@ func (ec *executionContext) fieldContext_Mutation_createConsent(ctx context.Cont
 				return ec.fieldContext_Consent_managementType(ctx, field)
 			case "managedBy":
 				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "isRequired":
+				return ec.fieldContext_Consent_isRequired(ctx, field)
 			case "project":
 				return ec.fieldContext_Consent_project(ctx, field)
 			case "userHistory":
@@ -33863,7 +33928,7 @@ func (ec *executionContext) _Mutation_updateConsent(ctx context.Context, field g
 		ec.fieldContext_Mutation_updateConsent,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().UpdateConsent(ctx, fc.Args["id"].(string), fc.Args["title"].(*string), fc.Args["shortText"].(*string), fc.Args["body"].(*string), fc.Args["url"].(*string), fc.Args["publishedAt"].(*scalars.DateTime), fc.Args["managedBy"].(*string))
+			return ec.resolvers.Mutation().UpdateConsent(ctx, fc.Args["id"].(string), fc.Args["title"].(*string), fc.Args["shortText"].(*string), fc.Args["body"].(*string), fc.Args["url"].(*string), fc.Args["publishedAt"].(*scalars.DateTime), fc.Args["managedBy"].(*string), fc.Args["isRequired"].(*bool))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -33918,6 +33983,8 @@ func (ec *executionContext) fieldContext_Mutation_updateConsent(ctx context.Cont
 				return ec.fieldContext_Consent_managementType(ctx, field)
 			case "managedBy":
 				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "isRequired":
+				return ec.fieldContext_Consent_isRequired(ctx, field)
 			case "project":
 				return ec.fieldContext_Consent_project(ctx, field)
 			case "userHistory":
@@ -40484,6 +40551,8 @@ func (ec *executionContext) fieldContext_PredefinedOptionResult_answer(_ context
 				return ec.fieldContext_QuizPredefinedAnswer_question(ctx, field)
 			case "answerText":
 				return ec.fieldContext_QuizPredefinedAnswer_answerText(ctx, field)
+			case "description":
+				return ec.fieldContext_QuizPredefinedAnswer_description(ctx, field)
 			case "answerOrder":
 				return ec.fieldContext_QuizPredefinedAnswer_answerOrder(ctx, field)
 			case "isCorrect":
@@ -41099,6 +41168,8 @@ func (ec *executionContext) fieldContext_PredefinedQuestion_predefinedAnswers(_ 
 				return ec.fieldContext_QuizPredefinedAnswer_question(ctx, field)
 			case "answerText":
 				return ec.fieldContext_QuizPredefinedAnswer_answerText(ctx, field)
+			case "description":
+				return ec.fieldContext_QuizPredefinedAnswer_description(ctx, field)
 			case "answerOrder":
 				return ec.fieldContext_QuizPredefinedAnswer_answerOrder(ctx, field)
 			case "isCorrect":
@@ -41587,6 +41658,8 @@ func (ec *executionContext) fieldContext_PredefinedResponse_selectedAnswers(_ co
 				return ec.fieldContext_QuizPredefinedAnswer_question(ctx, field)
 			case "answerText":
 				return ec.fieldContext_QuizPredefinedAnswer_answerText(ctx, field)
+			case "description":
+				return ec.fieldContext_QuizPredefinedAnswer_description(ctx, field)
 			case "answerOrder":
 				return ec.fieldContext_QuizPredefinedAnswer_answerOrder(ctx, field)
 			case "isCorrect":
@@ -45001,6 +45074,8 @@ func (ec *executionContext) fieldContext_Query_consents(_ context.Context, field
 				return ec.fieldContext_Consent_managementType(ctx, field)
 			case "managedBy":
 				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "isRequired":
+				return ec.fieldContext_Consent_isRequired(ctx, field)
 			case "project":
 				return ec.fieldContext_Consent_project(ctx, field)
 			case "userHistory":
@@ -45059,6 +45134,8 @@ func (ec *executionContext) fieldContext_Query_consent(ctx context.Context, fiel
 				return ec.fieldContext_Consent_managementType(ctx, field)
 			case "managedBy":
 				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "isRequired":
+				return ec.fieldContext_Consent_isRequired(ctx, field)
 			case "project":
 				return ec.fieldContext_Consent_project(ctx, field)
 			case "userHistory":
@@ -45127,6 +45204,8 @@ func (ec *executionContext) fieldContext_Query_pendingConsents(_ context.Context
 				return ec.fieldContext_Consent_managementType(ctx, field)
 			case "managedBy":
 				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "isRequired":
+				return ec.fieldContext_Consent_isRequired(ctx, field)
 			case "project":
 				return ec.fieldContext_Consent_project(ctx, field)
 			case "userHistory":
@@ -49859,6 +49938,35 @@ func (ec *executionContext) _QuizPredefinedAnswer_answerText(ctx context.Context
 }
 
 func (ec *executionContext) fieldContext_QuizPredefinedAnswer_answerText(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizPredefinedAnswer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizPredefinedAnswer_description(ctx context.Context, field graphql.CollectedField, obj *model.QuizPredefinedAnswer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizPredefinedAnswer_description,
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizPredefinedAnswer_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "QuizPredefinedAnswer",
 		Field:      field,
@@ -57606,6 +57714,8 @@ func (ec *executionContext) fieldContext_UserConsent_consent(_ context.Context, 
 				return ec.fieldContext_Consent_managementType(ctx, field)
 			case "managedBy":
 				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "isRequired":
+				return ec.fieldContext_Consent_isRequired(ctx, field)
 			case "project":
 				return ec.fieldContext_Consent_project(ctx, field)
 			case "userHistory":
@@ -57750,6 +57860,8 @@ func (ec *executionContext) fieldContext_UserConsentHistoryEntry_consent(_ conte
 				return ec.fieldContext_Consent_managementType(ctx, field)
 			case "managedBy":
 				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "isRequired":
+				return ec.fieldContext_Consent_isRequired(ctx, field)
 			case "project":
 				return ec.fieldContext_Consent_project(ctx, field)
 			case "userHistory":
@@ -62223,7 +62335,7 @@ func (ec *executionContext) unmarshalInputCreatePredefinedAnswerInput(ctx contex
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"answerText", "isCorrect", "answerOrder"}
+	fieldsInOrder := [...]string{"answerText", "description", "isCorrect", "answerOrder"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -62237,6 +62349,13 @@ func (ec *executionContext) unmarshalInputCreatePredefinedAnswerInput(ctx contex
 				return it, err
 			}
 			it.AnswerText = data
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
 		case "isCorrect":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("isCorrect"))
 			data, err := ec.unmarshalNBoolean2bool(ctx, v)
@@ -67431,6 +67550,11 @@ func (ec *executionContext) _Consent(ctx context.Context, sel ast.SelectionSet, 
 			}
 		case "managedBy":
 			out.Values[i] = ec._Consent_managedBy(ctx, field, obj)
+		case "isRequired":
+			out.Values[i] = ec._Consent_isRequired(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "project":
 			field := field
 
@@ -77842,6 +77966,8 @@ func (ec *executionContext) _QuizPredefinedAnswer(ctx context.Context, sel ast.S
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "description":
+			out.Values[i] = ec._QuizPredefinedAnswer_description(ctx, field, obj)
 		case "answerOrder":
 			out.Values[i] = ec._QuizPredefinedAnswer_answerOrder(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
