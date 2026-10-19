@@ -1634,6 +1634,12 @@ func TestLeaderboardMultiTeamWithSuperTeam(t *testing.T) {
 		_, err := dbMgr.DB.Pool.Exec(ctx, `SELECT * FROM regenerate_leaderboards()`)
 		require.NoError(t, err)
 
+		// Read the table directly: the query below can be answered from the
+		// leaderboard cache filled before the regeneration
+		points, err := dbMgr.GetLeaderboardProjectSuperTeamPoints(ctx, testProjectID, superTeamID)
+		require.NoError(t, err)
+		assert.Equal(t, int64(100), points, "regenerated super team total should be 100, not 200")
+
 		resp := client.WithAuth(adminToken).MustExecute(t, superTeamLeaderboardQuery, map[string]any{
 			"projectId": testProjectID,
 		})
