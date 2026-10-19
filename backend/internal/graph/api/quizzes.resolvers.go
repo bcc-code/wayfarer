@@ -588,7 +588,12 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 	if input.PredefinedAnswers != nil {
 		next := make([]answerSpec, len(input.PredefinedAnswers))
 		for i, a := range input.PredefinedAnswers {
-			next[i] = answerSpec{Text: a.AnswerText, Correct: a.IsCorrect, Order: int32(a.AnswerOrder)}
+			next[i] = answerSpec{
+				Text:        a.AnswerText,
+				Correct:     a.IsCorrect,
+				Order:       int32(a.AnswerOrder),
+				Description: answerDescription(a.Description),
+			}
 		}
 		if replacePredefined, err = replaceAnswers("predefinedAnswers", next); err != nil {
 			return nil, err

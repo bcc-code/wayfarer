@@ -1,6 +1,7 @@
 package api
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
 	"strings"
@@ -117,9 +118,19 @@ func payoutChanged(storedCorrect, storedWrong pgtype.Numeric, newCorrect, newWro
 
 // answerSpec is an answer (or ordering item) as an admin edits it.
 type answerSpec struct {
-	Text    string
-	Correct bool
-	Order   int32
+	Text        string
+	Correct     bool
+	Order       int32
+	Description string
+}
+
+// answerDescription normalizes a description the way CreatePredefinedAnswer
+// stores it: trimmed, with nil and blank both meaning "no description".
+func answerDescription(d *string) string {
+	if d == nil {
+		return ""
+	}
+	return strings.Trim(*d, " \t\r\n")
 }
 
 // sameAnswers reports whether two answer lists are the same, ignoring list order.
@@ -130,21 +141,39 @@ func sameAnswers(a, b []answerSpec) bool {
 	sorted := func(s []answerSpec) []answerSpec {
 		s = slices.Clone(s)
 		slices.SortFunc(s, func(x, y answerSpec) int {
-			if x.Order != y.Order {
-				return int(x.Order - y.Order)
-			}
-			return strings.Compare(x.Text, y.Text)
+			return cmp.Or(
+				cmp.Compare(x.Order, y.Order),
+				strings.Compare(x.Text, y.Text),
+				compareBool(x.Correct, y.Correct),
+				strings.Compare(x.Description, y.Description),
+			)
 		})
 		return s
 	}
 	return slices.Equal(sorted(a), sorted(b))
 }
 
+func compareBool(x, y bool) int {
+	switch {
+	case x == y:
+		return 0
+	case x:
+		return 1
+	default:
+		return -1
+	}
+}
+
 // storedAnswerSpecs converts stored answers for sameAnswers.
 func storedAnswerSpecs(rows []*sqlc.QuizPredefinedAnswer) []answerSpec {
 	specs := make([]answerSpec, len(rows))
 	for i, r := range rows {
-		specs[i] = answerSpec{Text: r.AnswerText, Correct: r.IsCorrect, Order: r.AnswerOrder}
+		specs[i] = answerSpec{
+			Text:        r.AnswerText,
+			Correct:     r.IsCorrect,
+			Order:       r.AnswerOrder,
+			Description: answerDescription(r.Description),
+		}
 	}
 	return specs
 }
