@@ -189,7 +189,7 @@ func NewLeaderboardConfigID() string {
 }
 
 // NewInstanceID generates a new instance ID (no prefix, just raw ULID)
-// Used for identifying server instances in distributed cache invalidation
+// Identifies the running server process (Query.instanceID)
 func NewInstanceID() string {
 	entropyMutex.Lock()
 	defer entropyMutex.Unlock()

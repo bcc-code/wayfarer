@@ -165,6 +165,48 @@ func (q *Queries) CreateBulkScoreAdjustmentBatch(ctx context.Context, arg Create
 	return items, nil
 }
 
+const CreateScoreJournalEntries = `-- name: CreateScoreJournalEntries :exec
+INSERT INTO score_journal (id, project_id, user_id, event_id, points, source_type, source_id, reason)
+SELECT e.id, e.project_id, e.user_id, NULLIF(e.event_id, ''), e.points, e.source_type, e.source_id, e.reason
+FROM (
+    SELECT unnest($1::text[]) AS id,
+           unnest($2::text[]) AS project_id,
+           unnest($3::text[]) AS user_id,
+           unnest($4::text[]) AS event_id,
+           unnest($5::int[]) AS points,
+           unnest($6::text[]) AS source_type,
+           unnest($7::text[]) AS source_id,
+           unnest($8::text[]) AS reason
+) e
+`
+
+type CreateScoreJournalEntriesParams struct {
+	Ids         []string `json:"ids"`
+	ProjectIds  []string `json:"project_ids"`
+	UserIds     []string `json:"user_ids"`
+	EventIds    []string `json:"event_ids"`
+	Points      []int32  `json:"points"`
+	SourceTypes []string `json:"source_types"`
+	SourceIds   []string `json:"source_ids"`
+	Reasons     []string `json:"reasons"`
+}
+
+// Bulk insert for settlement batches. Arrays are parallel, one element per
+// entry; an empty event_id means none. No challenge, awarder or backdating.
+func (q *Queries) CreateScoreJournalEntries(ctx context.Context, arg CreateScoreJournalEntriesParams) error {
+	_, err := q.db.Exec(ctx, CreateScoreJournalEntries,
+		arg.Ids,
+		arg.ProjectIds,
+		arg.UserIds,
+		arg.EventIds,
+		arg.Points,
+		arg.SourceTypes,
+		arg.SourceIds,
+		arg.Reasons,
+	)
+	return err
+}
+
 const CreateScoreJournalEntry = `-- name: CreateScoreJournalEntry :one
 INSERT INTO score_journal (
     id,

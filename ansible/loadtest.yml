@@ -1,0 +1,49 @@
+---
+# Load-test pair: the server gets the prod roles except tailscale, backup and
+# jobs (no tailnet, no off-box backups, no cron calls against a test box); the
+# k6 client gets the same kernel/limits tuning so it is not the bottleneck.
+#
+# Run through backend/scripts/loadtest-lt.sh provision, which generates the
+# inventory for the current (throwaway) boxes from their IPs.
+- name: Provision Interact load-test server
+  hosts: interact_lt
+  become: true
+  force_handlers: true
+  roles:
+    - { role: hardening, tags: [hardening] }
+    - { role: tuning, tags: [tuning] }
+    - { role: firewall, tags: [firewall] }
+    - { role: postgres, tags: [postgres] }
+    - { role: interact, tags: [interact] }
+    - { role: wayfarer, tags: [wayfarer] }
+  tasks:
+    # pidstat/mpstat for the load-test runner's CPU samplers
+    - name: Install load-test tools
+      ansible.builtin.apt:
+        name: [sysstat]
+        state: present
+      tags: [tools]
+
+- name: Provision Interact load-test client (k6)
+  hosts: interact_lt_client
+  become: true
+  roles:
+    - { role: tuning, tags: [tuning] }
+  tasks:
+    - name: Install k6 apt repository key
+      ansible.builtin.get_url:
+        url: https://dl.k6.io/key.gpg
+        dest: /usr/share/keyrings/k6-archive-keyring.asc
+        mode: "0644"
+      tags: [k6]
+    - name: Install k6 apt repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.asc] https://dl.k6.io/deb stable main"
+        filename: k6
+      tags: [k6]
+    - name: Install k6 and tools
+      ansible.builtin.apt:
+        name: [k6, sysstat, rsync]
+        state: present
+        update_cache: true
+      tags: [k6]
