@@ -355,7 +355,7 @@
         "couldNotReopenBetting": "Impossible de réouvrir le pari",
         "couldNotFinishBetting": "Impossible de terminer les paris",
         "couldNotSendUnitLeaderAccess": "Impossible d'envoyer le code aux responsables d'unité",
-        "couldNotGrantBettingAccess": "Impossible de donner aux utilisateurs l'accès aux paris"
+        "couldNotGrantBettingAccess": "Impossible de donner aux utilisateurs l’accès aux paris"
       }
     },
     "statistics": {
