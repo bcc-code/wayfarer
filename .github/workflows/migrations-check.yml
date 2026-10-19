@@ -1,0 +1,65 @@
+name: Migrations check
+
+on:
+  pull_request:
+    paths:
+      - 'backend/internal/database/migrations/**'
+      - '.github/workflows/migrations-check.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/internal/database/migrations/**'
+  merge_group:
+
+env:
+  MIGRATIONS_DIR: backend/internal/database/migrations
+
+jobs:
+  migration-numbers:
+    name: Migration numbers
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # On pull_request this checks the merge result with the base branch,
+      # so a collision with a migration that already landed is caught here.
+      - name: Check for duplicate versions
+        run: |
+          dups=$(ls "$MIGRATIONS_DIR" | grep -E '^[0-9]+_.*\.sql$' | sed -E 's/^([0-9]+)_.*/\1/' | sort | uniq -d)
+          if [ -z "$dups" ]; then
+            echo "No duplicate migration versions."
+            exit 0
+          fi
+          for v in $dups; do
+            for f in "$MIGRATIONS_DIR"/${v}_*.sql; do
+              echo "::error file=$f::Migration version $v is used by more than one file"
+            done
+          done
+          exit 1
+
+      - name: Check new migrations are numbered after base branch
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          base_max=$(git ls-tree --name-only "origin/$BASE_REF" "$MIGRATIONS_DIR/" \
+            | xargs -n1 basename | grep -E '^[0-9]+_.*\.sql$' | sed -E 's/^([0-9]+)_.*/\1/' | sort | tail -1)
+          echo "Highest migration on $BASE_REF: $base_max"
+
+          added=$(git diff --name-only --diff-filter=A "origin/$BASE_REF...$HEAD_SHA" -- "$MIGRATIONS_DIR/" \
+            | grep -E '/[0-9]+_[^/]*\.sql$' || true)
+
+          failed=0
+          for f in $added; do
+            v=$(basename "$f" | sed -E 's/^([0-9]+)_.*/\1/')
+            if [ "$((10#$v))" -le "$((10#$base_max))" ]; then
+              echo "::error file=$f::Migration $v is not newer than $base_max on $BASE_REF — rebase and renumber it above $base_max"
+              failed=1
+            fi
+          done
+          exit $failed
