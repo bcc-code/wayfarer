@@ -136,7 +136,9 @@
     "goToConsent": "Zum Einverständnis",
     "continue": "Weiter",
     "changeDescription": "Wenn du deine Einwilligung ändern willst, schreibe an {email}",
-    "changeConsent": "Zustimmung ändern"
+    "changeConsent": "Zustimmung ändern",
+    "required": "Erforderlich",
+    "requiredTitle": "Bevor du fortfährst"
   },
   "achievement": {
     "title": "Auszeichnung",
@@ -355,7 +357,7 @@
         "couldNotReopenBetting": "Tippspiel konnte nicht wieder geöffnet werden",
         "couldNotFinishBetting": "Tippspiel konnte nicht abgeschlossen werden",
         "couldNotSendUnitLeaderAccess": "Code konnte nicht an die Unit-Leiter verschickt werden",
-        "couldNotGrantBettingAccess": "Benutzer konnten keinen Zugang zum Tippspiel erhalten"
+        "couldNotGrantBettingAccess": "Den Benutzern konnte kein Zugriff auf das Tippspiel gewährt werden"
       }
     },
     "statistics": {
