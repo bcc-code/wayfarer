@@ -386,6 +386,7 @@ func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, i
 				ID:          answerID,
 				Questionid:  questionID,
 				Answertext:  answerInput.AnswerText,
+				Description: answerInput.Description,
 				Iscorrect:   answerInput.IsCorrect,
 				Answerorder: int32(answerInput.AnswerOrder),
 			})
@@ -631,6 +632,7 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 				ID:          answerID,
 				Questionid:  id,
 				Answertext:  answerInput.AnswerText,
+				Description: answerInput.Description,
 				Iscorrect:   answerInput.IsCorrect,
 				Answerorder: int32(answerInput.AnswerOrder),
 			})

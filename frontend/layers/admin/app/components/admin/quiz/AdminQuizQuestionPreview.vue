@@ -36,6 +36,7 @@ const preview = computed(() => ({
     (answer, i) => ({
       id: answer.id ?? `answer-${i}`,
       answerText: answer.answerText,
+      description: answer.description,
       answerOrder: answer.answerOrder,
       isCorrect: answer.isCorrect,
     }),

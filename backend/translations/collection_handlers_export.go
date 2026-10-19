@@ -127,8 +127,9 @@ func (s *Service) getDataForQuizzes(ctx context.Context) ([]common.TranslationDa
 			answerItems := make([]AnswerWithID, 0, len(answers))
 			for _, a := range answers {
 				answerItems = append(answerItems, AnswerWithID{
-					AnswerText: a.AnswerText,
-					ID:         a.ID,
+					AnswerText:  a.AnswerText,
+					Description: null.StringFromPtr(a.Description),
+					ID:          a.ID,
 				})
 			}
 

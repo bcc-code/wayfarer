@@ -1,3 +1,5 @@
+import type { QuizQuestionFormData } from '../components/admin/quiz/AdminQuizForm.vue'
+
 interface PlannableQuestion {
   id?: string
   questionOrder: number
@@ -85,5 +87,37 @@ export function bettingClearFlags(
       !hasValue(updated.bettingMaxAbsolute)
         ? true
         : undefined,
+  }
+}
+
+/**
+ * The input shared by `addQuizQuestion` and `updateQuizQuestion`. Every field
+ * of an answer must be carried here: the update replaces the whole answer set,
+ * so a field left out is erased, not kept.
+ */
+export function quizQuestionInput(question: QuizQuestionFormData) {
+  return {
+    questionText: question.questionText,
+    timeoutSeconds: question.timeoutSeconds,
+    points: question.points,
+    allowMultipleSelection: question.allowMultipleSelection,
+    predefinedAnswers: question.predefinedAnswers?.map((a) => ({
+      answerText: a.answerText,
+      description: a.description,
+      isCorrect: a.isCorrect,
+      answerOrder: a.answerOrder,
+    })),
+    orderingItems: question.orderingItems?.map((item) => ({
+      itemText: item.itemText,
+      correctOrder: item.correctOrder,
+    })),
+    minValue: question.minValue,
+    maxValue: question.maxValue,
+    stepValue: question.stepValue,
+    bettingEnabled: question.bettingEnabled,
+    bettingMinPercentage: question.bettingMinPercentage,
+    bettingMaxPercentage: question.bettingMaxPercentage,
+    bettingMinAbsolute: question.bettingMinAbsolute,
+    bettingMaxAbsolute: question.bettingMaxAbsolute,
   }
 }

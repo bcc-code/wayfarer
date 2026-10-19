@@ -22,6 +22,8 @@ export interface QuizAnswerFormData {
   /** Stable across reorders, which `id` is not for a new answer. */
   localKey?: string
   answerText: string
+  /** Undefined until the editor opens the field; blank is saved as none. */
+  description?: string
   isCorrect: boolean
   answerOrder: number
   translationStatus?: TranslationStatusFragment[]

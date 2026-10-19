@@ -491,6 +491,7 @@ type QuizAnswerTranslation struct {
 	AnswerText   *string            `json:"answer_text"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	Description  *string            `json:"description"`
 }
 
 type QuizPredefinedAnswer struct {
@@ -500,6 +501,7 @@ type QuizPredefinedAnswer struct {
 	IsCorrect   bool               `json:"is_correct"`
 	AnswerOrder int32              `json:"answer_order"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	Description *string            `json:"description"`
 }
 
 type QuizQuestion struct {
