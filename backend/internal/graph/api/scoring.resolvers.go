@@ -14,7 +14,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
-	"github.com/bcc-media/wayfarer/internal/pubsub"
+	"github.com/bcc-media/wayfarer/internal/services/bulk"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 )
 
@@ -233,14 +233,14 @@ func (r *mutationResolver) AsyncBulkScoreAdjustment(ctx context.Context, input m
 		awardedBy = userID
 	}
 
-	// Convert input to pubsub params
-	adjustments := make([]pubsub.BulkScoreAdjustmentItem, len(input.Adjustments))
+	// Convert input to bulk job params
+	adjustments := make([]bulk.BulkScoreAdjustmentItem, len(input.Adjustments))
 	for i, adj := range input.Adjustments {
 		reason := ""
 		if adj.Reason != nil {
 			reason = *adj.Reason
 		}
-		adjustments[i] = pubsub.BulkScoreAdjustmentItem{
+		adjustments[i] = bulk.BulkScoreAdjustmentItem{
 			UserID: adj.UserID,
 			Points: int32(adj.Points),
 			Reason: reason,
@@ -256,15 +256,15 @@ func (r *mutationResolver) AsyncBulkScoreAdjustment(ctx context.Context, input m
 		eventID = *input.EventID
 	}
 
-	params := pubsub.BulkScoreAdjustmentParams{
+	params := bulk.BulkScoreAdjustmentParams{
 		ProjectID:   input.ProjectID,
 		EventID:     eventID,
 		Adjustments: adjustments,
 		AwardedBy:   awardedBy,
 	}
 
-	// Create job and publish to Pub/Sub
-	job, err := r.BulkService.CreateBulkJobAndPublish(
+	// Create and run the bulk job
+	job, err := r.BulkService.CreateAndRunBulkJob(
 		ctx,
 		createdBy,
 		&input.ProjectID,
@@ -330,7 +330,7 @@ func (r *mutationResolver) AsyncBulkScoreAdjustmentByTarget(ctx context.Context,
 		reason = *input.Reason
 	}
 
-	adjustments := make([]pubsub.BulkScoreAdjustmentItem, len(targetUserIDs))
+	adjustments := make([]bulk.BulkScoreAdjustmentItem, len(targetUserIDs))
 
 	switch input.DistributionMode {
 	case model.TeamScoreDistributionModeSplit:
@@ -341,7 +341,7 @@ func (r *mutationResolver) AsyncBulkScoreAdjustmentByTarget(ctx context.Context,
 			if i < remainder {
 				points++
 			}
-			adjustments[i] = pubsub.BulkScoreAdjustmentItem{
+			adjustments[i] = bulk.BulkScoreAdjustmentItem{
 				UserID: uid,
 				Points: points,
 				Reason: reason,
@@ -349,7 +349,7 @@ func (r *mutationResolver) AsyncBulkScoreAdjustmentByTarget(ctx context.Context,
 		}
 	case model.TeamScoreDistributionModeEach:
 		for i, uid := range targetUserIDs {
-			adjustments[i] = pubsub.BulkScoreAdjustmentItem{
+			adjustments[i] = bulk.BulkScoreAdjustmentItem{
 				UserID: uid,
 				Points: int32(input.Points),
 				Reason: reason,
@@ -364,7 +364,7 @@ func (r *mutationResolver) AsyncBulkScoreAdjustmentByTarget(ctx context.Context,
 		eventID = *input.EventID
 	}
 
-	params := pubsub.BulkScoreAdjustmentParams{
+	params := bulk.BulkScoreAdjustmentParams{
 		ProjectID:   input.ProjectID,
 		EventID:     eventID,
 		Adjustments: adjustments,
@@ -383,8 +383,8 @@ func (r *mutationResolver) AsyncBulkScoreAdjustmentByTarget(ctx context.Context,
 		}
 	}
 
-	// Create job and publish to Pub/Sub
-	return r.BulkService.CreateBulkJobAndPublish(
+	// Create and run the bulk job
+	return r.BulkService.CreateAndRunBulkJob(
 		ctx,
 		createdBy,
 		&input.ProjectID,

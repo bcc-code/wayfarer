@@ -13,8 +13,8 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
-	"github.com/bcc-media/wayfarer/internal/pubsub"
 	"github.com/bcc-media/wayfarer/internal/services"
+	"github.com/bcc-media/wayfarer/internal/services/bulk"
 )
 
 // ClearAllCache is the resolver for the clearAllCache field.
@@ -49,12 +49,12 @@ func (r *mutationResolver) FixMissingContentProgressAsync(ctx context.Context) (
 		}
 		batch := affectedUserIDs[i:end]
 
-		job, err := r.BulkService.CreateBulkJobAndPublish(
+		job, err := r.BulkService.CreateAndRunBulkJob(
 			ctx,
 			userID,
 			nil, // No project scope - this is a global maintenance operation
 			len(batch),
-			pubsub.FixMissingContentProgressParams{
+			bulk.FixMissingContentProgressParams{
 				UserIDs: batch,
 			},
 		)
@@ -102,12 +102,12 @@ func (r *mutationResolver) FixMissingStreakProgressAsync(ctx context.Context) ([
 		}
 		batch := affectedUserIDs[i:end]
 
-		job, err := r.BulkService.CreateBulkJobAndPublish(
+		job, err := r.BulkService.CreateAndRunBulkJob(
 			ctx,
 			userID,
 			nil,
 			len(batch),
-			pubsub.FixMissingStreakProgressParams{
+			bulk.FixMissingStreakProgressParams{
 				UserIDs: batch,
 			},
 		)
@@ -204,7 +204,7 @@ func (r *queryResolver) ChurchAdminStatistics(ctx context.Context) (*model.Churc
 	}
 
 	// Get current project ID
-	projectID, err := r.Settings.GetCurrentProjectID(ctx)
+	projectID, err := r.SettingsService.GetCurrentProjectID(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current project: %w", err)
 	}

@@ -2,15 +2,13 @@
 import type { AvatarProps, DropdownMenuItem } from '@nuxt/ui'
 import type { RouteLocationRaw } from 'vue-router'
 
-// The switcher marks the active project with a trailing check, so the leading
-// slot stays free for its logo. `projectId` is what the trailing slot matches
-// on; DropdownMenuItem carries no field for it.
+// `projectId` is what the trailing check matches on; DropdownMenuItem has no
+// field for it.
 type ProjectMenuItem = DropdownMenuItem & { projectId?: string }
 
 defineProps<{ collapsed?: boolean }>()
 
-// Deliberately lighter than AdminProjectsPage: the switcher needs a label, the
-// logo, and enough date context to group — not the full branding colours.
+// Lighter than AdminProjectsPage: no branding colours needed here.
 gql(`
   query AdminProjectSwitcher {
     projects(first: 100, filter: { archived: false }) {
@@ -27,6 +25,9 @@ gql(`
           }
         }
       }
+    }
+    currentProject {
+      id
     }
   }
 `)
@@ -63,10 +64,12 @@ const activeProject = computed(() =>
   projects.value.find((project) => project.id === projectId.value),
 )
 
+// The project end users see, not the one this route is browsing.
+const currentProjectId = computed(() => data.value?.currentProject.id)
+
 type SwitcherProject = (typeof projects.value)[number]
 
-// A project without a logo keeps the old layers icon, so the rows stay aligned
-// whether or not branding has been filled in.
+// The icon fallback keeps rows aligned when a project has no logo.
 function projectAvatar(project: SwitcherProject): AvatarProps {
   return {
     src: project.branding.logoImage?.url ?? undefined,
@@ -136,11 +139,21 @@ const items = computed<ProjectMenuItem[][]>(() => {
     }"
   >
     <template #item-trailing="{ item }">
-      <UIcon
-        v-if="item.projectId && item.projectId === projectId"
-        name="lucide:check"
-        class="text-dimmed size-5 shrink-0"
-      />
+      <div class="flex shrink-0 items-center gap-1.5">
+        <UBadge
+          v-if="item.projectId && item.projectId === currentProjectId"
+          color="primary"
+          variant="subtle"
+          size="sm"
+        >
+          Gjeldende
+        </UBadge>
+        <UIcon
+          v-if="item.projectId && item.projectId === projectId"
+          name="lucide:check"
+          class="text-dimmed size-5"
+        />
+      </div>
     </template>
 
     <UButton

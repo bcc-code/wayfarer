@@ -69,6 +69,7 @@ const events = computed(() => data.value?.events.edges.map((e) => e.node) ?? [])
       <template #actions-cell="{ row }">
         <div class="flex justify-end">
           <UButton
+            icon="lucide:pencil"
             variant="ghost"
             size="sm"
             :to="{

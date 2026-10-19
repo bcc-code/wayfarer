@@ -355,7 +355,7 @@
         "couldNotReopenBetting": "Tippspiel konnte nicht wieder geöffnet werden",
         "couldNotFinishBetting": "Tippspiel konnte nicht abgeschlossen werden",
         "couldNotSendUnitLeaderAccess": "Code konnte nicht an die Unit-Leiter verschickt werden",
-        "couldNotGrantBettingAccess": "Den Benutzern konnte kein Zugriff auf das Tippspiel gewährt werden"
+        "couldNotGrantBettingAccess": "Benutzer konnten keinen Zugang zum Tippspiel erhalten"
       }
     },
     "statistics": {

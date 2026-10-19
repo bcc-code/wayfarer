@@ -12,9 +12,9 @@ import (
 )
 
 const CreateConsent = `-- name: CreateConsent :one
-INSERT INTO consents (id, key, version, title, short_text, body, url, published_at, is_remote, managed_by)
-VALUES ($1::text, $2::text, $3::int, $4::text, $5::text, $6::text, $7, $8, $9::bool, $10)
-RETURNING id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, created_at, updated_at
+INSERT INTO consents (id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required)
+VALUES ($1::text, $2::text, $3::int, $4::text, $5::text, $6::text, $7, $8, $9::bool, $10, $11, $12::bool)
+RETURNING id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at
 `
 
 type CreateConsentParams struct {
@@ -28,6 +28,8 @@ type CreateConsentParams struct {
 	PublishedAt pgtype.Timestamptz `json:"published_at"`
 	IsRemote    bool               `json:"is_remote"`
 	ManagedBy   *string            `json:"managed_by"`
+	ProjectID   *string            `json:"project_id"`
+	IsRequired  bool               `json:"is_required"`
 }
 
 type CreateConsentRow struct {
@@ -41,6 +43,8 @@ type CreateConsentRow struct {
 	PublishedAt pgtype.Timestamptz `json:"published_at"`
 	IsRemote    bool               `json:"is_remote"`
 	ManagedBy   *string            `json:"managed_by"`
+	ProjectID   *string            `json:"project_id"`
+	IsRequired  bool               `json:"is_required"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
@@ -57,6 +61,8 @@ func (q *Queries) CreateConsent(ctx context.Context, arg CreateConsentParams) (*
 		arg.PublishedAt,
 		arg.IsRemote,
 		arg.ManagedBy,
+		arg.ProjectID,
+		arg.IsRequired,
 	)
 	var i CreateConsentRow
 	err := row.Scan(
@@ -70,6 +76,8 @@ func (q *Queries) CreateConsent(ctx context.Context, arg CreateConsentParams) (*
 		&i.PublishedAt,
 		&i.IsRemote,
 		&i.ManagedBy,
+		&i.ProjectID,
+		&i.IsRequired,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -152,7 +160,7 @@ func (q *Queries) DeleteConsentTranslations(ctx context.Context, consentID strin
 }
 
 const GetAllLatestPublishedConsents = `-- name: GetAllLatestPublishedConsents :many
-SELECT DISTINCT ON (key) id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, created_at, updated_at
+SELECT DISTINCT ON (key) id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at
 FROM consents
 WHERE published_at IS NOT NULL AND published_at <= now()
 ORDER BY key, version DESC
@@ -169,6 +177,8 @@ type GetAllLatestPublishedConsentsRow struct {
 	PublishedAt pgtype.Timestamptz `json:"published_at"`
 	IsRemote    bool               `json:"is_remote"`
 	ManagedBy   *string            `json:"managed_by"`
+	ProjectID   *string            `json:"project_id"`
+	IsRequired  bool               `json:"is_required"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
@@ -193,6 +203,8 @@ func (q *Queries) GetAllLatestPublishedConsents(ctx context.Context) ([]*GetAllL
 			&i.PublishedAt,
 			&i.IsRemote,
 			&i.ManagedBy,
+			&i.ProjectID,
+			&i.IsRequired,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -208,7 +220,7 @@ func (q *Queries) GetAllLatestPublishedConsents(ctx context.Context) ([]*GetAllL
 
 const GetConsentByID = `-- name: GetConsentByID :one
 
-SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, created_at, updated_at
+SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at
 FROM consents WHERE id = $1::char(28)
 `
 
@@ -223,6 +235,8 @@ type GetConsentByIDRow struct {
 	PublishedAt pgtype.Timestamptz `json:"published_at"`
 	IsRemote    bool               `json:"is_remote"`
 	ManagedBy   *string            `json:"managed_by"`
+	ProjectID   *string            `json:"project_id"`
+	IsRequired  bool               `json:"is_required"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
@@ -242,6 +256,8 @@ func (q *Queries) GetConsentByID(ctx context.Context, id string) (*GetConsentByI
 		&i.PublishedAt,
 		&i.IsRemote,
 		&i.ManagedBy,
+		&i.ProjectID,
+		&i.IsRequired,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -297,7 +313,7 @@ func (q *Queries) GetConsentTranslationsByIDs(ctx context.Context, arg GetConsen
 }
 
 const GetConsentsByIDs = `-- name: GetConsentsByIDs :many
-SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, created_at, updated_at
+SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at
 FROM consents WHERE id = ANY($1::char(28)[])
 `
 
@@ -312,6 +328,8 @@ type GetConsentsByIDsRow struct {
 	PublishedAt pgtype.Timestamptz `json:"published_at"`
 	IsRemote    bool               `json:"is_remote"`
 	ManagedBy   *string            `json:"managed_by"`
+	ProjectID   *string            `json:"project_id"`
+	IsRequired  bool               `json:"is_required"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
@@ -336,6 +354,8 @@ func (q *Queries) GetConsentsByIDs(ctx context.Context, ids []string) ([]*GetCon
 			&i.PublishedAt,
 			&i.IsRemote,
 			&i.ManagedBy,
+			&i.ProjectID,
+			&i.IsRequired,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -397,7 +417,7 @@ func (q *Queries) GetCurrentUserConsentStatusesByUsers(ctx context.Context, user
 }
 
 const GetLatestConsentByKey = `-- name: GetLatestConsentByKey :one
-SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, created_at, updated_at
+SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at
 FROM consents
 WHERE key = $1::text
 ORDER BY version DESC
@@ -415,6 +435,8 @@ type GetLatestConsentByKeyRow struct {
 	PublishedAt pgtype.Timestamptz `json:"published_at"`
 	IsRemote    bool               `json:"is_remote"`
 	ManagedBy   *string            `json:"managed_by"`
+	ProjectID   *string            `json:"project_id"`
+	IsRequired  bool               `json:"is_required"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
@@ -433,6 +455,8 @@ func (q *Queries) GetLatestConsentByKey(ctx context.Context, key string) (*GetLa
 		&i.PublishedAt,
 		&i.IsRemote,
 		&i.ManagedBy,
+		&i.ProjectID,
+		&i.IsRequired,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -440,7 +464,7 @@ func (q *Queries) GetLatestConsentByKey(ctx context.Context, key string) (*GetLa
 }
 
 const GetLatestPublishedConsentByKey = `-- name: GetLatestPublishedConsentByKey :one
-SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, created_at, updated_at
+SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at
 FROM consents
 WHERE key = $1::text AND published_at IS NOT NULL AND published_at <= now()
 ORDER BY version DESC LIMIT 1
@@ -457,6 +481,8 @@ type GetLatestPublishedConsentByKeyRow struct {
 	PublishedAt pgtype.Timestamptz `json:"published_at"`
 	IsRemote    bool               `json:"is_remote"`
 	ManagedBy   *string            `json:"managed_by"`
+	ProjectID   *string            `json:"project_id"`
+	IsRequired  bool               `json:"is_required"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
@@ -475,10 +501,75 @@ func (q *Queries) GetLatestPublishedConsentByKey(ctx context.Context, key string
 		&i.PublishedAt,
 		&i.IsRemote,
 		&i.ManagedBy,
+		&i.ProjectID,
+		&i.IsRequired,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return &i, err
+}
+
+const GetLatestPublishedConsentsForProject = `-- name: GetLatestPublishedConsentsForProject :many
+SELECT DISTINCT ON (key) id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at
+FROM consents
+WHERE published_at IS NOT NULL AND published_at <= now()
+  AND (project_id IS NULL OR project_id = $1::char(28))
+ORDER BY key, version DESC
+`
+
+type GetLatestPublishedConsentsForProjectRow struct {
+	ID          string             `json:"id"`
+	Key         string             `json:"key"`
+	Version     int32              `json:"version"`
+	Title       string             `json:"title"`
+	ShortText   string             `json:"short_text"`
+	Body        string             `json:"body"`
+	Url         *string            `json:"url"`
+	PublishedAt pgtype.Timestamptz `json:"published_at"`
+	IsRemote    bool               `json:"is_remote"`
+	ManagedBy   *string            `json:"managed_by"`
+	ProjectID   *string            `json:"project_id"`
+	IsRequired  bool               `json:"is_required"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+// Latest published consents that apply to the given project: the project's own
+// consents plus global ones (project_id IS NULL). Consent keys are globally
+// unique, so DISTINCT ON (key) cannot hide another project's consent here.
+func (q *Queries) GetLatestPublishedConsentsForProject(ctx context.Context, projectID string) ([]*GetLatestPublishedConsentsForProjectRow, error) {
+	rows, err := q.db.Query(ctx, GetLatestPublishedConsentsForProject, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetLatestPublishedConsentsForProjectRow{}
+	for rows.Next() {
+		var i GetLatestPublishedConsentsForProjectRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Key,
+			&i.Version,
+			&i.Title,
+			&i.ShortText,
+			&i.Body,
+			&i.Url,
+			&i.PublishedAt,
+			&i.IsRemote,
+			&i.ManagedBy,
+			&i.ProjectID,
+			&i.IsRequired,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const GetLatestUserConsentActionByKey = `-- name: GetLatestUserConsentActionByKey :one
@@ -526,20 +617,26 @@ func (q *Queries) GetLatestUserConsentActionByKey(ctx context.Context, arg GetLa
 
 const GetMissingConsentsForUserWithRejections = `-- name: GetMissingConsentsForUserWithRejections :many
 SELECT c.id, c.key, c.version, c.title, c.short_text, c.body, c.url, c.published_at,
-       c.is_remote, c.managed_by, c.created_at, c.updated_at
+       c.is_remote, c.managed_by, c.project_id, c.is_required, c.created_at, c.updated_at
 FROM (
     SELECT DISTINCT ON (key) id, key, version, title, short_text, body, url, published_at,
-           is_remote, managed_by, created_at, updated_at
+           is_remote, managed_by, project_id, is_required, created_at, updated_at
     FROM consents
     WHERE published_at IS NOT NULL AND published_at <= now()
+      AND (project_id IS NULL OR project_id = $1::char(28))
     ORDER BY key, version DESC
 ) c
 WHERE NOT EXISTS (
     SELECT 1 FROM user_consent_history uch
-    WHERE uch.user_id = $1::char(28)
+    WHERE uch.user_id = $2::char(28)
     AND uch.consent_key = c.key
 )
 `
+
+type GetMissingConsentsForUserWithRejectionsParams struct {
+	ProjectID string `json:"project_id"`
+	UserID    string `json:"user_id"`
+}
 
 type GetMissingConsentsForUserWithRejectionsRow struct {
 	ID          string             `json:"id"`
@@ -552,13 +649,15 @@ type GetMissingConsentsForUserWithRejectionsRow struct {
 	PublishedAt pgtype.Timestamptz `json:"published_at"`
 	IsRemote    bool               `json:"is_remote"`
 	ManagedBy   *string            `json:"managed_by"`
+	ProjectID   *string            `json:"project_id"`
+	IsRequired  bool               `json:"is_required"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
 // Gets consents that user has never acted upon (no history)
-func (q *Queries) GetMissingConsentsForUserWithRejections(ctx context.Context, userID string) ([]*GetMissingConsentsForUserWithRejectionsRow, error) {
-	rows, err := q.db.Query(ctx, GetMissingConsentsForUserWithRejections, userID)
+func (q *Queries) GetMissingConsentsForUserWithRejections(ctx context.Context, arg GetMissingConsentsForUserWithRejectionsParams) ([]*GetMissingConsentsForUserWithRejectionsRow, error) {
+	rows, err := q.db.Query(ctx, GetMissingConsentsForUserWithRejections, arg.ProjectID, arg.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -577,6 +676,8 @@ func (q *Queries) GetMissingConsentsForUserWithRejections(ctx context.Context, u
 			&i.PublishedAt,
 			&i.IsRemote,
 			&i.ManagedBy,
+			&i.ProjectID,
+			&i.IsRequired,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -811,10 +912,12 @@ UPDATE consents SET
     body = CASE WHEN $3::text = '' THEN body ELSE $3::text END,
     url = CASE WHEN $4::text = '' THEN url ELSE $4::text END,
     managed_by = CASE WHEN $5::text = '' THEN managed_by ELSE $5 END,
-    published_at = $6,
+    -- COALESCE, not the '' sentinel above: a bool has no empty value to spare
+    is_required = COALESCE($6::bool, is_required),
+    published_at = $7,
     updated_at = now()
-WHERE id = $7::char(28)
-RETURNING id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, created_at, updated_at
+WHERE id = $8::char(28)
+RETURNING id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at
 `
 
 type UpdateConsentParams struct {
@@ -823,6 +926,7 @@ type UpdateConsentParams struct {
 	Body        string             `json:"body"`
 	Url         string             `json:"url"`
 	ManagedBy   string             `json:"managed_by"`
+	IsRequired  *bool              `json:"is_required"`
 	PublishedAt pgtype.Timestamptz `json:"published_at"`
 	ID          string             `json:"id"`
 }
@@ -838,6 +942,8 @@ type UpdateConsentRow struct {
 	PublishedAt pgtype.Timestamptz `json:"published_at"`
 	IsRemote    bool               `json:"is_remote"`
 	ManagedBy   *string            `json:"managed_by"`
+	ProjectID   *string            `json:"project_id"`
+	IsRequired  bool               `json:"is_required"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
@@ -849,6 +955,7 @@ func (q *Queries) UpdateConsent(ctx context.Context, arg UpdateConsentParams) (*
 		arg.Body,
 		arg.Url,
 		arg.ManagedBy,
+		arg.IsRequired,
 		arg.PublishedAt,
 		arg.ID,
 	)
@@ -864,6 +971,8 @@ func (q *Queries) UpdateConsent(ctx context.Context, arg UpdateConsentParams) (*
 		&i.PublishedAt,
 		&i.IsRemote,
 		&i.ManagedBy,
+		&i.ProjectID,
+		&i.IsRequired,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

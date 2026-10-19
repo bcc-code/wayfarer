@@ -90,8 +90,8 @@ const greeting = computed(() => {
 })
 </script>
 
+<!-- Capped: a single column of blocks, not a table or a card grid. -->
 <template>
-  <!-- Capped: a single column of blocks, not a table or a card grid. -->
   <div class="max-w-6xl">
     <h1 v-if="projectData?.me" class="my-8 text-3xl text-balance">
       {{ greeting }}, {{ projectData.me.name }}

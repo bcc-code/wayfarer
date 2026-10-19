@@ -107,6 +107,7 @@ const superteams = computed(
       <template #actions-cell="{ row }">
         <div class="flex justify-end">
           <UButton
+            icon="lucide:pencil"
             variant="ghost"
             size="sm"
             :to="{

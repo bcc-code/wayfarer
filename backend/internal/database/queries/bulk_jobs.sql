@@ -63,11 +63,6 @@ SET
 WHERE id = @id::char(28)
 RETURNING *;
 
--- name: UpdateBulkJobMessageID :exec
-UPDATE bulk_jobs
-SET message_id = @messageid::text
-WHERE id = @id::char(28);
-
 -- name: MarkBulkJobProcessing :one
 UPDATE bulk_jobs
 SET

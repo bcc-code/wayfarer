@@ -165,4 +165,161 @@ describe('AdminQuizQuestionEditor', () => {
       text.indexOf('Aktiver betting'),
     )
   })
+
+  // The button that adds to a list belongs under the list, where the next
+  // alternative will appear.
+  it('puts the add button under the alternatives', async () => {
+    const wrapper = await mount(
+      predefined([
+        { answerText: 'Paulus', isCorrect: true, answerOrder: 1 },
+        { answerText: 'Peter', isCorrect: false, answerOrder: 2 },
+      ]),
+    )
+
+    // By document position, not by text: the answers live in textareas, whose
+    // values never reach `text()`, and the preview repeats them further down.
+    const list = wrapper.findComponent({ name: 'VueDraggable' }).element
+    const button = wrapper
+      .findAll('button')
+      .find((candidate) =>
+        candidate.text().includes('Legg til svaralternativ'),
+      )!
+
+    expect(
+      list.compareDocumentPosition(button.element) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+
+  // Points are awarded off `is_correct`, which free text and number answers
+  // never get.
+  it('says when points are actually awarded', async () => {
+    const wrapper = await mount(
+      predefined([
+        { answerText: 'Paulus', isCorrect: true, answerOrder: 1 },
+        { answerText: 'Peter', isCorrect: false, answerOrder: 2 },
+      ]),
+    )
+
+    expect(wrapper.text()).toContain('Gis når deltakeren treffer helt riktig')
+  })
+
+  it.each([
+    ['Fritekst', QuizQuestionType.FreeText],
+    ['Tall', QuizQuestionType.Number],
+  ])('offers no points field for %s', async (_label, questionType) => {
+    const wrapper = await mount({
+      questionType,
+      questionText: 'Hva husker du best?',
+      questionOrder: 1,
+    })
+
+    expect(wrapper.text()).not.toContain('Poeng')
+  })
+
+  // A number left behind by an earlier type choice would still count towards
+  // the max score a participant is shown, while never paying out.
+  it('drops points a question type cannot earn', async () => {
+    const wrapper = await mount({
+      questionType: QuizQuestionType.FreeText,
+      questionText: 'Hva husker du best?',
+      questionOrder: 1,
+      points: 10,
+    })
+
+    await saveButton(wrapper).trigger('click')
+
+    expect(wrapper.emitted('save')?.[0]?.[0]).toMatchObject({
+      points: undefined,
+    })
+  })
+
+  describe('answer descriptions', () => {
+    const withDescription = () =>
+      predefined([
+        {
+          answerText: 'Kjøttgryten fra Egypt',
+          description: 'En gryte som symboliserer maten.',
+          isCorrect: true,
+          answerOrder: 1,
+        },
+        { answerText: 'Melkekrukken', isCorrect: false, answerOrder: 2 },
+      ] as Parameters<typeof predefined>[0])
+
+    const descriptionButtons = (wrapper: Awaited<ReturnType<typeof mount>>) =>
+      wrapper
+        .findAllComponents({ name: 'UButton' })
+        .filter((button) => button.text() === 'Beskrivelse')
+
+    const descriptionFields = (wrapper: Awaited<ReturnType<typeof mount>>) =>
+      wrapper
+        .findAllComponents({ name: 'UTextarea' })
+        .filter((area) =>
+          area
+            .find('textarea')
+            .attributes('aria-label')
+            ?.startsWith('Beskrivelse'),
+        )
+
+    // Most quizzes never use descriptions; they should look as before.
+    it('keeps the field closed for answers without a description', async () => {
+      const wrapper = await mount(answered())
+
+      expect(descriptionFields(wrapper)).toHaveLength(0)
+      expect(descriptionButtons(wrapper)).toHaveLength(2)
+    })
+
+    it('shows an existing description open', async () => {
+      const wrapper = await mount(withDescription())
+
+      const fields = descriptionFields(wrapper)
+      expect(fields).toHaveLength(1)
+      expect(fields[0]!.find('textarea').element.value).toBe(
+        'En gryte som symboliserer maten.',
+      )
+      // Only the answer without one offers to add it.
+      expect(descriptionButtons(wrapper)).toHaveLength(1)
+    })
+
+    it('opens the field for an answer and saves what is typed', async () => {
+      const wrapper = await mount(answered())
+
+      await descriptionButtons(wrapper)[1]!.trigger('click')
+      const fields = descriptionFields(wrapper)
+      expect(fields).toHaveLength(1)
+      expect(fields[0]!.find('textarea').attributes('aria-label')).toBe(
+        'Beskrivelse for svar 2',
+      )
+
+      await fields[0]!.find('textarea').setValue('Han ble korsfestet i Roma.')
+      await saveButton(wrapper).trigger('click')
+
+      const saved = wrapper.emitted('save')?.[0]?.[0] as {
+        predefinedAnswers: { answerText: string; description?: string }[]
+      }
+      expect(saved.predefinedAnswers[0]!.description).toBeUndefined()
+      expect(saved.predefinedAnswers[1]!.description).toBe(
+        'Han ble korsfestet i Roma.',
+      )
+    })
+
+    // Saving rewrites every answer, so a description the editor did not carry
+    // through would be erased by an unrelated edit.
+    it('keeps an existing description when something else is edited', async () => {
+      const wrapper = await mount(withDescription())
+
+      await wrapper
+        .findAllComponents({ name: 'UTextarea' })[0]!
+        .find('textarea')
+        .setValue('Hva er ukas greie?')
+      await saveButton(wrapper).trigger('click')
+
+      const saved = wrapper.emitted('save')?.[0]?.[0] as {
+        predefinedAnswers: { description?: string }[]
+      }
+      expect(saved.predefinedAnswers[0]!.description).toBe(
+        'En gryte som symboliserer maten.',
+      )
+    })
+  })
 })

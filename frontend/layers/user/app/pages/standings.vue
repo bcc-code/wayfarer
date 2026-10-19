@@ -76,7 +76,7 @@ const isInitialLoading = computed(() => fetching.value && !data.value)
   <PageLayout :title="$t('pages.standings')">
     <div class="p-list-outside">
       <StandingsListSkeleton v-if="isInitialLoading" />
-      <ErrorState v-else-if="error" :error />
+      <ErrorState v-else-if="error && !data" :error />
       <template v-else>
         <!-- A single tab is not a choice; the board names itself in its own
              heading. -->

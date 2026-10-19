@@ -623,22 +623,6 @@ func (q *Queries) MarkBulkJobProcessing(ctx context.Context, id string) (*BulkJo
 	return &i, err
 }
 
-const UpdateBulkJobMessageID = `-- name: UpdateBulkJobMessageID :exec
-UPDATE bulk_jobs
-SET message_id = $1::text
-WHERE id = $2::char(28)
-`
-
-type UpdateBulkJobMessageIDParams struct {
-	Messageid string `json:"messageid"`
-	ID        string `json:"id"`
-}
-
-func (q *Queries) UpdateBulkJobMessageID(ctx context.Context, arg UpdateBulkJobMessageIDParams) error {
-	_, err := q.db.Exec(ctx, UpdateBulkJobMessageID, arg.Messageid, arg.ID)
-	return err
-}
-
 const UpdateBulkJobProgress = `-- name: UpdateBulkJobProgress :one
 UPDATE bulk_jobs
 SET

@@ -35,7 +35,10 @@ const close = () => {
       <slot />
     </template>
     <template #content>
-      <TitleBar :title="title" size="small" :animate="false">
+      <!-- Both paint to the bar's rectangular box and would square off
+           `rounded-t-modal`, and neither has anything to act on: content
+           scrolls in the container below the bar, never under it. -->
+      <TitleBar :title="title" size="small" :shadow="false" :blurred="false">
         <template #action>
           <DesignIconButton
             v-if="dismissible"

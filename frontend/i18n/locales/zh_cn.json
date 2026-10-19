@@ -349,7 +349,8 @@
         "couldNotLockBetting": "无法锁定投注",
         "couldNotReopenBetting": "无法重新开放投注",
         "couldNotFinishBetting": "无法完成投注",
-        "couldNotSendUnitLeaderAccess": "无法将代码发送给小队长"
+        "couldNotSendUnitLeaderAccess": "无法将代码发送给小队长",
+        "couldNotGrantBettingAccess": "无法为用户开通投注权限"
       }
     },
     "statistics": {

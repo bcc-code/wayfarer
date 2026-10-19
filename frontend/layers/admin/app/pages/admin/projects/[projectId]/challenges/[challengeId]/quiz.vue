@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import type { RouteLocationRaw } from 'vue-router'
-import type {
-  QuizFormData,
-  QuizQuestionFormData,
-} from '../../../../../../components/admin/quiz/AdminQuizForm.vue'
+import type { QuizFormData } from '../../../../../../components/admin/quiz/AdminQuizForm.vue'
 import {
   planQuizQuestionSave,
   orderedQuestionIds,
   bettingClearFlags,
+  quizQuestionInput,
 } from '../../../../../../utils/quizSave'
 
 definePageMeta({
@@ -24,6 +22,11 @@ gql(`
       project {
         id
         name
+        branding {
+          colors {
+            ...BrandingColorsFields
+          }
+        }
       }
       ... on QuizChallenge {
         quiz {
@@ -38,9 +41,6 @@ gql(`
           completionPoints
           questions {
             ...QuizQuestionFields
-          }
-          translationStatus {
-            ...TranslationStatus
           }
         }
       }
@@ -142,6 +142,7 @@ const quizData = computed<QuizFormData | undefined>(() => {
           ? q.predefinedAnswers.map((a) => ({
               id: a.id,
               answerText: a.answerText,
+              description: a.description ?? undefined,
               isCorrect: a.isCorrect ?? false,
               answerOrder: a.answerOrder,
               translationStatus: a.translationStatus,
@@ -180,34 +181,7 @@ const quizData = computed<QuizFormData | undefined>(() => {
 const isNewQuiz = computed(() => !quizData.value?.id)
 
 const saving = ref(false)
-const formDirty = ref(false)
-
-/** Shared by add and update; the two inputs take the same shape. */
-function questionInput(question: QuizQuestionFormData) {
-  return {
-    questionText: question.questionText,
-    timeoutSeconds: question.timeoutSeconds,
-    points: question.points,
-    allowMultipleSelection: question.allowMultipleSelection,
-    predefinedAnswers: question.predefinedAnswers?.map((a) => ({
-      answerText: a.answerText,
-      isCorrect: a.isCorrect,
-      answerOrder: a.answerOrder,
-    })),
-    orderingItems: question.orderingItems?.map((item) => ({
-      itemText: item.itemText,
-      correctOrder: item.correctOrder,
-    })),
-    minValue: question.minValue,
-    maxValue: question.maxValue,
-    stepValue: question.stepValue,
-    bettingEnabled: question.bettingEnabled,
-    bettingMinPercentage: question.bettingMinPercentage,
-    bettingMaxPercentage: question.bettingMaxPercentage,
-    bettingMinAbsolute: question.bettingMinAbsolute,
-    bettingMaxAbsolute: question.bettingMaxAbsolute,
-  }
-}
+const form = useTemplateRef('form')
 
 async function saveQuizSettings(form: QuizFormData) {
   const input = {
@@ -264,7 +238,7 @@ async function saveQuestions(quizId: string, form: QuizFormData) {
     const result = await updateQuizQuestion({
       id,
       input: {
-        ...questionInput(question),
+        ...quizQuestionInput(question),
         ...bettingClearFlags(original, question),
       },
     })
@@ -280,7 +254,7 @@ async function saveQuestions(quizId: string, form: QuizFormData) {
       input: {
         questionType: question.questionType,
         questionOrder: order,
-        ...questionInput(question),
+        ...quizQuestionInput(question),
       },
     })
     const id = result.data?.addQuizQuestion.id
@@ -340,7 +314,7 @@ async function saveQuiz(quizFormData: QuizFormData) {
       title: isNewQuiz.value ? 'Quiz opprettet' : 'Quiz oppdatert',
       color: 'success',
     })
-    formDirty.value = false
+    form.value?.markSaved()
 
     navigateTo({
       name: 'admin-projects-projectId-challenges-challengeId',
@@ -370,6 +344,7 @@ const isQuizChallenge = computed(() => {
               Denne utfordringen er ikke en quiz-utfordring.
             </p>
             <UButton
+              icon="lucide:arrow-left"
               class="mt-4"
               :to="{
                 name: 'admin-projects-projectId-challenges-challengeId',
@@ -387,14 +362,10 @@ const isQuizChallenge = computed(() => {
               {{ isNewQuiz ? 'Opprett quiz' : 'Rediger quiz' }}
             </h1>
             <AdminQuizForm
-              v-model:dirty="formDirty"
+              ref="form"
+              :colors="data.challenge.project.branding.colors"
               :saving
               :quiz-data="quizData"
-              :translation-status="
-                data?.challenge.__typename === 'QuizChallenge'
-                  ? (data.challenge.quiz?.translationStatus ?? [])
-                  : []
-              "
               :project-id="route.params.projectId"
               :challenge-id="route.params.challengeId"
               @save="saveQuiz"

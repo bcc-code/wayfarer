@@ -40,6 +40,25 @@ type AchievementTranslation struct {
 	NotificationText     *string            `json:"notification_text"`
 }
 
+type AuthSession struct {
+	ID                   string             `json:"id"`
+	UserID               string             `json:"user_id"`
+	RefreshTokenHash     []byte             `json:"refresh_token_hash"`
+	PrevRefreshTokenHash []byte             `json:"prev_refresh_token_hash"`
+	RotatedAt            pgtype.Timestamptz `json:"rotated_at"`
+	ExpiresAt            pgtype.Timestamptz `json:"expires_at"`
+	LastUsedAt           pgtype.Timestamptz `json:"last_used_at"`
+	RevokedAt            pgtype.Timestamptz `json:"revoked_at"`
+	UserAgent            *string            `json:"user_agent"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+}
+
+type AuthSessionRetiredToken struct {
+	TokenHash []byte             `json:"token_hash"`
+	SessionID string             `json:"session_id"`
+	RetiredAt pgtype.Timestamptz `json:"retired_at"`
+}
+
 type BulkJob struct {
 	ID             string             `json:"id"`
 	OperationType  string             `json:"operation_type"`
@@ -118,6 +137,10 @@ type Consent struct {
 	ManagedBy   *string            `json:"managed_by"`
 	IsRemote    bool               `json:"is_remote"`
 	ShortText   string             `json:"short_text"`
+	// Project this consent applies to; NULL means it applies to every project
+	ProjectID *string `json:"project_id"`
+	// Consent must be accepted to take part in the project; cannot be rejected
+	IsRequired bool `json:"is_required"`
 }
 
 type ConsentTranslation struct {
@@ -254,6 +277,7 @@ type LeaderboardConfig struct {
 	CreatedAt  pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
 	MaxEntries *int32             `json:"max_entries"`
+	LimitMode  string             `json:"limit_mode"`
 }
 
 type LeaderboardEventChurch struct {
@@ -469,6 +493,7 @@ type QuizAnswerTranslation struct {
 	AnswerText   *string            `json:"answer_text"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	Description  *string            `json:"description"`
 }
 
 type QuizPredefinedAnswer struct {
@@ -478,27 +503,30 @@ type QuizPredefinedAnswer struct {
 	IsCorrect   bool               `json:"is_correct"`
 	AnswerOrder int32              `json:"answer_order"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	Description *string            `json:"description"`
 }
 
 type QuizQuestion struct {
-	ID                     string             `json:"id"`
-	QuizID                 string             `json:"quiz_id"`
-	QuestionType           string             `json:"question_type"`
-	QuestionText           string             `json:"question_text"`
-	QuestionOrder          int32              `json:"question_order"`
-	AllowMultipleSelection *bool              `json:"allow_multiple_selection"`
-	MinValue               pgtype.Numeric     `json:"min_value"`
-	MaxValue               pgtype.Numeric     `json:"max_value"`
-	StepValue              pgtype.Numeric     `json:"step_value"`
-	CreatedAt              pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
-	TimeoutSeconds         *int32             `json:"timeout_seconds"`
-	Points                 *int32             `json:"points"`
-	BettingEnabled         bool               `json:"betting_enabled"`
-	BettingMinPercentage   pgtype.Numeric     `json:"betting_min_percentage"`
-	BettingMaxPercentage   pgtype.Numeric     `json:"betting_max_percentage"`
-	BettingMinAbsolute     *int32             `json:"betting_min_absolute"`
-	BettingMaxAbsolute     *int32             `json:"betting_max_absolute"`
+	ID                       string             `json:"id"`
+	QuizID                   string             `json:"quiz_id"`
+	QuestionType             string             `json:"question_type"`
+	QuestionText             string             `json:"question_text"`
+	QuestionOrder            int32              `json:"question_order"`
+	AllowMultipleSelection   *bool              `json:"allow_multiple_selection"`
+	MinValue                 pgtype.Numeric     `json:"min_value"`
+	MaxValue                 pgtype.Numeric     `json:"max_value"`
+	StepValue                pgtype.Numeric     `json:"step_value"`
+	CreatedAt                pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                pgtype.Timestamptz `json:"updated_at"`
+	TimeoutSeconds           *int32             `json:"timeout_seconds"`
+	Points                   *int32             `json:"points"`
+	BettingEnabled           bool               `json:"betting_enabled"`
+	BettingMinPercentage     pgtype.Numeric     `json:"betting_min_percentage"`
+	BettingMaxPercentage     pgtype.Numeric     `json:"betting_max_percentage"`
+	BettingMinAbsolute       *int32             `json:"betting_min_absolute"`
+	BettingMaxAbsolute       *int32             `json:"betting_max_absolute"`
+	BettingMultiplierCorrect pgtype.Numeric     `json:"betting_multiplier_correct"`
+	BettingMultiplierWrong   pgtype.Numeric     `json:"betting_multiplier_wrong"`
 }
 
 type QuizQuestionTranslation struct {

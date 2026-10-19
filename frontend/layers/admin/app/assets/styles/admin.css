@@ -20,8 +20,27 @@
  */
 
 :root {
-  --ui-primary: #5d0045;
-  --ui-radius: 0.3rem;
+  /* `primary` is ink, not a hue. Every Nuxt UI component that defaults to it —
+     buttons, checkboxes, switches, active nav links, progress — then comes out
+     black on light and white on dark. What is left carrying colour is the
+     logo and the semantic palettes below, so a coloured thing in the admin
+     panel means something rather than just being chrome. These are the two
+     values `--ui-bg-inverted` already flips between, so `text-inverted` stays
+     the correct pair on a solid surface. */
+  --ui-primary: var(--ui-color-neutral-900);
+
+  /* Nuxt UI derives the whole `--radius-*` scale from this one token
+     (`sm` = 1x, `md` = 1.5x, `lg` = 2x, `3xl` = 6x), so it sets how soft every
+     panel, control and tag in the panel reads. 0.5rem puts a `rounded-lg`
+     surface at 16px — the softness the dashboards this is modelled on use, and
+     far enough from a square corner that the glass reads as a card.
+
+     This was previously held at 0.3rem out of concern for the user-facing
+     Design* components. They turn out not to use the derived scale: the whole
+     user layer reaches it three times, and the one that matters
+     (`DesignSwitch`'s `rounded-3xl` on a 24px-tall pill) is clamped to a
+     half-height radius at either value. */
+  --ui-radius: 0.5rem;
 
   /* One step deeper than Nuxt UI's default 500: on the light tints that
      `subtle` badges and alerts use, 500 reads as neon and sits low on
@@ -30,10 +49,17 @@
   --ui-error: var(--ui-color-error-600);
   --ui-warning: var(--ui-color-warning-600);
   --ui-info: var(--ui-color-info-600);
+
+  /* Links. Now that `primary` is ink, a link coloured with it is
+     indistinguishable from the sentence around it, so the one convention every
+     reader already knows carries the affordance instead. It borrows the `info`
+     ramp rather than declaring a blue of its own: the panel keeps a single
+     blue, and a link next to an in-progress badge reads as the same family. */
+  --ui-link: var(--ui-color-info-600);
 }
 
 .dark {
-  --ui-primary: #ffaedf;
+  --ui-primary: #ffffff;
 
   /* 400 on dark, where the tints are dark and a 600 would disappear. This
      matches Nuxt UI's own dark default, restated so the light/dark pairing is
@@ -42,4 +68,27 @@
   --ui-error: var(--ui-color-error-400);
   --ui-warning: var(--ui-color-warning-400);
   --ui-info: var(--ui-color-info-400);
+  --ui-link: var(--ui-color-info-400);
+}
+
+/**
+ * A link in prose: something a reader has to be able to pick out of surrounding
+ * text. Not for a whole clickable row or card — a table of blue names is worse
+ * than a table of plain ones — which is why those keep `hover:underline` alone.
+ *
+ * Declared as a class rather than a set of utilities because the treatment is
+ * four properties that must travel together; retyping them at each call site is
+ * how two of them end up drifting.
+ */
+.admin-link {
+  color: var(--ui-link);
+  text-decoration-line: underline;
+  text-underline-offset: 2px;
+  /* Muted at rest so the colour does the identifying and the rule does not
+     fight the text; full strength once the pointer is on it. */
+  text-decoration-color: color-mix(in oklch, var(--ui-link) 40%, transparent);
+}
+
+.admin-link:hover {
+  text-decoration-color: currentColor;
 }

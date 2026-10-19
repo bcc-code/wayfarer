@@ -235,6 +235,40 @@ function openAccessModal(sessionId: string) {
   accessModalOpen.value = true
 }
 
+// The job may come back already finished: on Cloud Run bulk jobs run inside
+// the request, elsewhere they run in the background and are still pending.
+function notifyGrantJob(
+  job:
+    | {
+        status: BulkJobStatus
+        totalCount: number
+        successCount: number
+        errorMessage?: string | null
+      }
+    | null
+    | undefined,
+) {
+  if (job?.status === BulkJobStatus.Failed) {
+    toast.add({
+      title: 'Feil',
+      description: job.errorMessage ?? 'Kunne ikke gi tilgang',
+      color: 'error',
+    })
+  } else if (job?.status === BulkJobStatus.Completed) {
+    toast.add({
+      title: 'Suksess',
+      description: `${job.successCount} av ${job.totalCount} tilganger gitt`,
+      color: 'success',
+    })
+  } else {
+    toast.add({
+      title: 'Suksess',
+      description: `Jobb opprettet — ${job?.totalCount ?? 0} tilganger behandles`,
+      color: 'success',
+    })
+  }
+}
+
 async function handleGrantAllProjectUsers() {
   if (!accessSessionId.value) return
   const result = await grantAccess({
@@ -251,12 +285,7 @@ async function handleGrantAllProjectUsers() {
     })
     return
   }
-  const job = result.data?.grantQuizSessionAccessAsync
-  toast.add({
-    title: 'Suksess',
-    description: `Jobb opprettet — ${job?.totalCount ?? 0} tilganger behandles`,
-    color: 'success',
-  })
+  notifyGrantJob(result.data?.grantQuizSessionAccessAsync)
   accessModalOpen.value = false
   refetchSessions({ requestPolicy: 'network-only' })
 }
@@ -290,12 +319,7 @@ async function handleGrantAccess() {
     })
     return
   }
-  const job = result.data?.grantQuizSessionAccessAsync
-  toast.add({
-    title: 'Suksess',
-    description: `Jobb opprettet — ${job?.totalCount ?? 0} tilganger behandles`,
-    color: 'success',
-  })
+  notifyGrantJob(result.data?.grantQuizSessionAccessAsync)
   accessModalOpen.value = false
   refetchSessions({ requestPolicy: 'network-only' })
 }
@@ -421,6 +445,7 @@ function getDropdownItems(session: (typeof sessions.value)[number]) {
               Denne utfordringen er ikke en quiz-utfordring.
             </p>
             <UButton
+              icon="lucide:arrow-left"
               class="mt-4"
               :to="{
                 name: 'admin-projects-projectId-challenges-challengeId',

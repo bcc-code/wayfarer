@@ -20,6 +20,11 @@ gql(`
       publishedAt
       managementType
       managedBy
+      isRequired
+      project {
+        id
+        name
+      }
       translationStatus {
         ...TranslationStatus
       }
@@ -63,6 +68,7 @@ const editState = reactive({
   url: '',
   publishedAt: null as string | null,
   managedBy: '',
+  isRequired: false,
 })
 
 function startEditing() {
@@ -73,6 +79,7 @@ function startEditing() {
     editState.url = data.value.consent.url ?? ''
     editState.publishedAt = data.value.consent.publishedAt ?? null
     editState.managedBy = data.value.consent.managedBy ?? ''
+    editState.isRequired = data.value.consent.isRequired
     isEditing.value = true
   }
 }
@@ -90,6 +97,7 @@ async function saveChanges() {
     url: editState.url || null,
     publishedAt: editState.publishedAt || null,
     managedBy: editState.managedBy || null,
+    isRequired: editState.isRequired,
   })
 
   if (result.error) {
@@ -134,9 +142,9 @@ async function publishConsent() {
 }
 </script>
 
+<!-- Capped tighter than the data pages: this one is mostly prose, and the
+     body preview at full panel width is unreadable. -->
 <template>
-  <!-- Capped tighter than the data pages: this one is mostly prose, and the
-       body preview at full panel width is unreadable. -->
   <div class="max-w-4xl">
     <AdminQueryState :fetching :error>
       <div v-if="data" class="space-y-8">
@@ -151,17 +159,26 @@ async function publishConsent() {
             >
               Utkast
             </UBadge>
+            <UBadge v-if="data.consent.isRequired" variant="soft" color="error">
+              Påkrevd
+            </UBadge>
           </div>
           <div class="flex shrink-0 gap-2">
             <UButton
               v-if="!data.consent.publishedAt"
+              icon="lucide:send"
               variant="soft"
               color="success"
               @click="publishConsent"
             >
               Publiser
             </UButton>
-            <UButton v-if="!isEditing" variant="soft" @click="startEditing">
+            <UButton
+              v-if="!isEditing"
+              icon="lucide:pencil"
+              variant="soft"
+              @click="startEditing"
+            >
               Rediger
             </UButton>
           </div>
@@ -215,12 +232,20 @@ async function publishConsent() {
                 placeholder="Ekstern systemidentifikator"
               />
             </UFormField>
+            <UFormField>
+              <UCheckbox v-model="editState.isRequired" label="Påkrevd" />
+              <template #description>
+                Må godtas for å delta i prosjektet, og kan ikke avslås
+              </template>
+            </UFormField>
           </div>
           <!-- `AdminSection` has no footer slot; the actions sit at the end
                of the section instead. -->
           <div class="flex justify-end gap-3 pt-4">
             <UButton variant="ghost" @click="cancelEditing">Avbryt</UButton>
-            <UButton @click="saveChanges">Lagre endringer</UButton>
+            <UButton icon="lucide:check" @click="saveChanges"
+              >Lagre endringer</UButton
+            >
           </div>
         </AdminSection>
 
@@ -261,6 +286,25 @@ async function publishConsent() {
               <dd v-else class="text-dimmed">Ikke publisert</dd>
             </div>
             <div class="flex gap-6 py-2">
+              <dt class="text-muted w-32 shrink-0">Prosjekt</dt>
+              <dd v-if="data.consent.project">
+                <NuxtLink
+                  :to="{
+                    name: 'admin-projects-projectId',
+                    params: { projectId: data.consent.project.id },
+                  }"
+                  class="admin-link"
+                >
+                  {{ data.consent.project.name }}
+                </NuxtLink>
+              </dd>
+              <dd v-else>Alle prosjekter</dd>
+            </div>
+            <div class="flex gap-6 py-2">
+              <dt class="text-muted w-32 shrink-0">Påkrevd</dt>
+              <dd>{{ data.consent.isRequired ? 'Ja' : 'Nei' }}</dd>
+            </div>
+            <div class="flex gap-6 py-2">
               <dt class="text-muted w-32 shrink-0">Type</dt>
               <dd>
                 {{
@@ -280,7 +324,7 @@ async function publishConsent() {
                   :href="data.consent.url"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="text-primary hover:underline"
+                  class="admin-link"
                 >
                   {{ data.consent.url }}
                 </a>

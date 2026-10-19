@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { useSubmitFeedbackMutation } from '~/api/generated'
-
 const props = defineProps<{
   projectId?: string
 }>()
 
 const { locale } = useI18n()
+const route = useRoute()
 
 const open = ref(false)
 const message = ref<string>()
@@ -51,6 +50,7 @@ function getDeviceMetadata() {
     appVersion: useRuntimeConfig().public.appVersion,
     locale: locale.value,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    contextUrl: route.fullPath,
   }
 }
 

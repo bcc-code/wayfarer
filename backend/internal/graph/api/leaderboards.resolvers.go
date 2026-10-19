@@ -12,6 +12,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 )
 
@@ -41,11 +42,19 @@ func (r *mutationResolver) CreateLeaderboardConfig(ctx context.Context, input mo
 		return nil, fmt.Errorf("unauthorized to create leaderboard configs in this project")
 	}
 
+	limitMode, err := leaderboardLimitModeToDB(input.LimitMode, input.EntityType, input.Filter)
+	if err != nil {
+		return nil, err
+	}
+
 	maxEntries, err := leaderboardMaxEntriesToDB(input.MaxEntries)
 	if err != nil {
 		return nil, err
 	}
 
+	if err := services.ValidateLeaderboardRelativeFilter(input.Filter, input.EntityType); err != nil {
+		return nil, err
+	}
 	filterBytes, err := marshalLeaderboardFilter(input.Filter)
 	if err != nil {
 		return nil, fmt.Errorf("invalid filter: %w", err)
@@ -65,6 +74,7 @@ func (r *mutationResolver) CreateLeaderboardConfig(ctx context.Context, input mo
 		Entitytype: string(input.EntityType),
 		Filter:     filterBytes,
 		Maxentries: maxEntries,
+		Limitmode:  limitMode,
 		Sortorder:  sortOrder,
 		Isactive:   input.IsActive,
 	}
@@ -95,11 +105,19 @@ func (r *mutationResolver) UpdateLeaderboardConfig(ctx context.Context, id strin
 		return nil, fmt.Errorf("unauthorized to update leaderboard configs in this project")
 	}
 
+	limitMode, err := leaderboardLimitModeToDB(input.LimitMode, input.EntityType, input.Filter)
+	if err != nil {
+		return nil, err
+	}
+
 	maxEntries, err := leaderboardMaxEntriesToDB(input.MaxEntries)
 	if err != nil {
 		return nil, err
 	}
 
+	if err := services.ValidateLeaderboardRelativeFilter(input.Filter, input.EntityType); err != nil {
+		return nil, err
+	}
 	filterBytes, err := marshalLeaderboardFilter(input.Filter)
 	if err != nil {
 		return nil, fmt.Errorf("invalid filter: %w", err)
@@ -111,6 +129,7 @@ func (r *mutationResolver) UpdateLeaderboardConfig(ctx context.Context, id strin
 		Entitytype: string(input.EntityType),
 		Filter:     filterBytes,
 		Maxentries: maxEntries,
+		Limitmode:  limitMode,
 		Sortorder:  int32(input.SortOrder),
 		Isactive:   input.IsActive,
 	}

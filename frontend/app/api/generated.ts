@@ -361,9 +361,11 @@ export type Consent = {
   __typename?: 'Consent';
   body: MarkdownText;
   id: Scalars['ID']['output'];
+  isRequired: Scalars['Boolean']['output'];
   key: Scalars['String']['output'];
   managedBy?: Maybe<Scalars['String']['output']>;
   managementType: ConsentManagementType;
+  project?: Maybe<Project>;
   publishedAt?: Maybe<Scalars['DateTime']['output']>;
   shortText: Scalars['String']['output'];
   title: Scalars['String']['output'];
@@ -496,6 +498,7 @@ export type CreateLeaderboardConfigInput = {
   eventId?: InputMaybe<Scalars['ID']['input']>;
   filter?: InputMaybe<LeaderboardFilter>;
   isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  limitMode?: InputMaybe<LeaderboardLimitMode>;
   maxEntries?: InputMaybe<Scalars['Int']['input']>;
   name: Scalars['String']['input'];
   projectId: Scalars['ID']['input'];
@@ -510,6 +513,7 @@ export type CreateOrderingItemInput = {
 export type CreatePredefinedAnswerInput = {
   answerOrder: Scalars['Int']['input'];
   answerText: Scalars['String']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
   isCorrect: Scalars['Boolean']['input'];
 };
 
@@ -883,6 +887,13 @@ export enum ForwardDestination {
   SsfTicket = 'SSF_TICKET'
 }
 
+export type FreeTextGroup = {
+  __typename?: 'FreeTextGroup';
+  count: Scalars['Int']['output'];
+  percentage: Scalars['Float']['output'];
+  text: Scalars['String']['output'];
+};
+
 export type FreeTextQuestion = QuizQuestion & {
   __typename?: 'FreeTextQuestion';
   bettingEnabled: Scalars['Boolean']['output'];
@@ -897,6 +908,21 @@ export type FreeTextQuestion = QuizQuestion & {
   quiz: Quiz;
   timeoutSeconds?: Maybe<Scalars['Int']['output']>;
   translationStatus: Array<TranslationFieldStatus>;
+};
+
+/**
+ * Not graded. Grouped by a normalised form (trimmed, whitespace collapsed,
+ * case-folded), labelled with the most common original spelling.
+ */
+export type FreeTextQuestionResults = QuizQuestionResults & {
+  __typename?: 'FreeTextQuestionResults';
+  distinctCount: Scalars['Int']['output'];
+  /** Groups, most common first. */
+  groups: Array<FreeTextGroup>;
+  question: QuizQuestion;
+  responseCount: Scalars['Int']['output'];
+  /** Every answer as submitted, for the expanded view. */
+  responses: Array<Scalars['String']['output']>;
 };
 
 export type FreeTextResponse = QuizResponse & {
@@ -950,6 +976,16 @@ export type JsonQuestion = QuizQuestion & {
   translationStatus: Array<TranslationFieldStatus>;
 };
 
+/**
+ * Arbitrary structured data, so only a count. Kept in the list so question
+ * numbering stays intact.
+ */
+export type JsonQuestionResults = QuizQuestionResults & {
+  __typename?: 'JsonQuestionResults';
+  question: QuizQuestion;
+  responseCount: Scalars['Int']['output'];
+};
+
 export type JsonResponse = QuizResponse & {
   __typename?: 'JsonResponse';
   answeredAt?: Maybe<Scalars['DateTime']['output']>;
@@ -973,9 +1009,11 @@ export type LeaderboardConfig = {
   isActive: Scalars['Boolean']['output'];
   /**
    * The finished leaderboard, capped before pagination. With no page size, returns
-   * the configured limit, or 100 entries when maxEntries is null.
+   * the automatic church-size limit, the manual maxEntries limit, or 100 entries
+   * when the manual limit is null.
    */
   leaderboard: LeaderboardConnection;
+  limitMode: LeaderboardLimitMode;
   maxEntries?: Maybe<Scalars['Int']['output']>;
   name: Scalars['String']['output'];
   project: Project;
@@ -1070,6 +1108,9 @@ export type LeaderboardFilter = {
   gender?: InputMaybe<Gender>;
   maxScore?: InputMaybe<Scalars['Int']['input']>;
   minScore?: InputMaybe<Scalars['Int']['input']>;
+  myChurch?: InputMaybe<Scalars['Boolean']['input']>;
+  mySuperTeam?: InputMaybe<Scalars['Boolean']['input']>;
+  myTeam?: InputMaybe<Scalars['Boolean']['input']>;
   superTeamId?: InputMaybe<Scalars['ID']['input']>;
   teamId?: InputMaybe<Scalars['ID']['input']>;
 };
@@ -1088,9 +1129,18 @@ export type LeaderboardFilterView = {
   gender?: Maybe<Gender>;
   maxScore?: Maybe<Scalars['Int']['output']>;
   minScore?: Maybe<Scalars['Int']['output']>;
+  myChurch?: Maybe<Scalars['Boolean']['output']>;
+  mySuperTeam?: Maybe<Scalars['Boolean']['output']>;
+  myTeam?: Maybe<Scalars['Boolean']['output']>;
   superTeamId?: Maybe<Scalars['ID']['output']>;
   teamId?: Maybe<Scalars['ID']['output']>;
 };
+
+export enum LeaderboardLimitMode {
+  /** Top N filtered church participants. Requires PERSONS and churchId. */
+  ChurchSize = 'CHURCH_SIZE',
+  Manual = 'MANUAL'
+}
 
 export type MarkdownText = {
   __typename?: 'MarkdownText';
@@ -1244,7 +1294,15 @@ export type Mutation = {
   sendPushNotification: SendPushNotificationResult;
   setChallengeRequirements: Challenge;
   setChallengeVisibility: Challenge;
+  /** Changes the project every end user sees. Validates that the project exists. */
+  setCurrentProject: Project;
   setNotificationPreference: PushNotificationPreference;
+  /**
+   * Writes existing settings keys in one transaction. Every value is validated
+   * before any of them is written, so a bad value leaves nothing changed. New
+   * keys cannot be invented here.
+   */
+  setSettings: Array<Setting>;
   startQuizSession: QuizSubmission;
   submitFeedback: UserFeedback;
   submitQuizAnswer: QuizResponse;
@@ -1450,8 +1508,10 @@ export type MutationCreateChallengeArgs = {
 export type MutationCreateConsentArgs = {
   body: Scalars['String']['input'];
   isRemote?: InputMaybe<Scalars['Boolean']['input']>;
+  isRequired?: InputMaybe<Scalars['Boolean']['input']>;
   key: Scalars['String']['input'];
   managedBy?: InputMaybe<Scalars['String']['input']>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
   publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
   shortText?: InputMaybe<Scalars['String']['input']>;
   title: Scalars['String']['input'];
@@ -1854,8 +1914,18 @@ export type MutationSetChallengeVisibilityArgs = {
 };
 
 
+export type MutationSetCurrentProjectArgs = {
+  projectId: Scalars['ID']['input'];
+};
+
+
 export type MutationSetNotificationPreferenceArgs = {
   input: SetNotificationPreferenceInput;
+};
+
+
+export type MutationSetSettingsArgs = {
+  input: Array<SettingInput>;
 };
 
 
@@ -1950,6 +2020,7 @@ export type MutationUpdateChurchArgs = {
 export type MutationUpdateConsentArgs = {
   body?: InputMaybe<Scalars['String']['input']>;
   id: Scalars['ID']['input'];
+  isRequired?: InputMaybe<Scalars['Boolean']['input']>;
   managedBy?: InputMaybe<Scalars['String']['input']>;
   publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
   shortText?: InputMaybe<Scalars['String']['input']>;
@@ -2047,6 +2118,14 @@ export enum NotificationType {
   Generic = 'GENERIC'
 }
 
+export type NumberBucket = {
+  __typename?: 'NumberBucket';
+  count: Scalars['Int']['output'];
+  from: Scalars['Float']['output'];
+  percentage: Scalars['Float']['output'];
+  to: Scalars['Float']['output'];
+};
+
 export type NumberQuestion = QuizQuestion & {
   __typename?: 'NumberQuestion';
   bettingEnabled: Scalars['Boolean']['output'];
@@ -2066,6 +2145,18 @@ export type NumberQuestion = QuizQuestion & {
   translationStatus: Array<TranslationFieldStatus>;
 };
 
+/** NUMBER stores no correct answer, so results describe the distribution. */
+export type NumberQuestionResults = QuizQuestionResults & {
+  __typename?: 'NumberQuestionResults';
+  average?: Maybe<Scalars['Float']['output']>;
+  buckets: Array<NumberBucket>;
+  max?: Maybe<Scalars['Float']['output']>;
+  median?: Maybe<Scalars['Float']['output']>;
+  min?: Maybe<Scalars['Float']['output']>;
+  question: QuizQuestion;
+  responseCount: Scalars['Int']['output'];
+};
+
 export type NumberResponse = QuizResponse & {
   __typename?: 'NumberResponse';
   answeredAt?: Maybe<Scalars['DateTime']['output']>;
@@ -2077,6 +2168,14 @@ export type NumberResponse = QuizResponse & {
   question: QuizQuestion;
   submission: QuizSubmission;
   timeSpentSeconds?: Maybe<Scalars['Int']['output']>;
+};
+
+export type OrderingItemResult = {
+  __typename?: 'OrderingItemResult';
+  correctPosition: Scalars['Int']['output'];
+  correctlyPlacedCount: Scalars['Int']['output'];
+  item: QuizOrderingItem;
+  percentage: Scalars['Float']['output'];
 };
 
 export type OrderingQuestion = QuizQuestion & {
@@ -2094,6 +2193,18 @@ export type OrderingQuestion = QuizQuestion & {
   quiz: Quiz;
   timeoutSeconds?: Maybe<Scalars['Int']['output']>;
   translationStatus: Array<TranslationFieldStatus>;
+};
+
+/**
+ * Graded all-or-nothing, so per-position accuracy is what shows where people
+ * went wrong.
+ */
+export type OrderingQuestionResults = QuizQuestionResults & {
+  __typename?: 'OrderingQuestionResults';
+  fullyCorrectCount: Scalars['Int']['output'];
+  items: Array<OrderingItemResult>;
+  question: QuizQuestion;
+  responseCount: Scalars['Int']['output'];
 };
 
 export type OrderingResponse = QuizResponse & {
@@ -2143,6 +2254,14 @@ export type PluginChallenge = Challenge & {
   visibleAt?: Maybe<Scalars['DateTime']['output']>;
 };
 
+export type PredefinedOptionResult = {
+  __typename?: 'PredefinedOptionResult';
+  answer: QuizPredefinedAnswer;
+  count: Scalars['Int']['output'];
+  isCorrect: Scalars['Boolean']['output'];
+  percentage: Scalars['Float']['output'];
+};
+
 export type PredefinedQuestion = QuizQuestion & {
   __typename?: 'PredefinedQuestion';
   allowMultipleSelection: Scalars['Boolean']['output'];
@@ -2159,6 +2278,15 @@ export type PredefinedQuestion = QuizQuestion & {
   quiz: Quiz;
   timeoutSeconds?: Maybe<Scalars['Int']['output']>;
   translationStatus: Array<TranslationFieldStatus>;
+};
+
+export type PredefinedQuestionResults = QuizQuestionResults & {
+  __typename?: 'PredefinedQuestionResults';
+  /** Responses that selected exactly the correct set of answers. */
+  correctCount: Scalars['Int']['output'];
+  options: Array<PredefinedOptionResult>;
+  question: QuizQuestion;
+  responseCount: Scalars['Int']['output'];
 };
 
 export type PredefinedResponse = QuizResponse & {
@@ -2308,6 +2436,7 @@ export type Query = {
   consents: Array<Consent>;
   currentEvent: Event;
   currentProject: Project;
+  currentTime: Scalars['DateTime']['output'];
   event: Event;
   events: EventConnection;
   externalContent: ExternalContent;
@@ -2336,12 +2465,15 @@ export type Query = {
   projects: ProjectConnection;
   pushNotificationsEnabled: Scalars['Boolean']['output'];
   quiz: Quiz;
+  quizResults: QuizResults;
   quizSession?: Maybe<QuizSession>;
   quizSessions: Array<QuizSession>;
   quizSubmission: QuizSubmission;
   quizSubmissions: QuizSubmissionConnection;
   quizzes: QuizConnection;
   scoreJournal: ScoreJournalConnection;
+  /** Superadmin only — enforced in the resolver, not by @requireRole. */
+  settings: Array<Setting>;
   superteam: SuperTeam;
   superteams: SuperTeamConnection;
   team: Team;
@@ -2535,6 +2667,11 @@ export type QueryProjectsArgs = {
 
 export type QueryQuizArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryQuizResultsArgs = {
+  quizId: Scalars['ID']['input'];
 };
 
 
@@ -2776,6 +2913,7 @@ export type QuizPredefinedAnswer = {
   __typename?: 'QuizPredefinedAnswer';
   answerOrder: Scalars['Int']['output'];
   answerText: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   isCorrect?: Maybe<Scalars['Boolean']['output']>;
   question: QuizQuestion;
@@ -2797,6 +2935,16 @@ export type QuizQuestion = {
   translationStatus: Array<TranslationFieldStatus>;
 };
 
+/** Per-question aggregates, one implementation per question type. */
+export type QuizQuestionResults = {
+  question: QuizQuestion;
+  /**
+   * Submissions that answered this question. Every percentage below is a share
+   * of this, never of the quiz-wide submission count.
+   */
+  responseCount: Scalars['Int']['output'];
+};
+
 export enum QuizQuestionType {
   FreeText = 'FREE_TEXT',
   Json = 'JSON',
@@ -2814,6 +2962,21 @@ export type QuizResponse = {
   question: QuizQuestion;
   submission: QuizSubmission;
   timeSpentSeconds?: Maybe<Scalars['Int']['output']>;
+};
+
+export type QuizResults = {
+  __typename?: 'QuizResults';
+  averageMaxScore?: Maybe<Scalars['Float']['output']>;
+  averageScore?: Maybe<Scalars['Float']['output']>;
+  averageScorePercentage?: Maybe<Scalars['Float']['output']>;
+  /** Distinct users behind those submissions. */
+  participantCount: Scalars['Int']['output'];
+  questions: Array<QuizQuestionResults>;
+  quiz: Quiz;
+  /** Submissions created outside a session (M2M imports) are not counted here. */
+  sessionCount: Scalars['Int']['output'];
+  /** Completed submissions across all sessions. */
+  submissionCount: Scalars['Int']['output'];
 };
 
 export type QuizSession = {
@@ -2995,6 +3158,45 @@ export type SetNotificationPreferenceInput = {
   enabled: Scalars['Boolean']['input'];
   notificationType: NotificationType;
 };
+
+export type Setting = {
+  __typename?: 'Setting';
+  description?: Maybe<Scalars['String']['output']>;
+  /**
+   * False for a row the application does not know about. Writing is restricted
+   * to known keys, so a row added to the database is not writable through the
+   * API by virtue of existing.
+   */
+  editable: Scalars['Boolean']['output'];
+  /**
+   * The environment variable this setting overrides, when it backs one. Null
+   * for application data such as current_project_id.
+   */
+  envVar?: Maybe<Scalars['String']['output']>;
+  key: Scalars['String']['output'];
+  /**
+   * True when the value is only read while the process starts up, so a change
+   * takes effect on the next restart rather than immediately.
+   */
+  requiresRestart: Scalars['Boolean']['output'];
+  updatedAt: Scalars['DateTime']['output'];
+  /** Canonical string form of whichever value column valueType names. */
+  value: Scalars['String']['output'];
+  valueType: SettingValueType;
+};
+
+export type SettingInput = {
+  key: Scalars['String']['input'];
+  value: Scalars['String']['input'];
+};
+
+export enum SettingValueType {
+  Bool = 'BOOL',
+  Float = 'FLOAT',
+  Int = 'INT',
+  Json = 'JSON',
+  Text = 'TEXT'
+}
 
 export type SimpleAchievement = Achievement & {
   __typename?: 'SimpleAchievement';
@@ -3269,6 +3471,7 @@ export type UpdateLeaderboardConfigInput = {
   entityType: LeaderboardEntityType;
   filter?: InputMaybe<LeaderboardFilter>;
   isActive: Scalars['Boolean']['input'];
+  limitMode?: InputMaybe<LeaderboardLimitMode>;
   maxEntries?: InputMaybe<Scalars['Int']['input']>;
   name: Scalars['String']['input'];
   sortOrder: Scalars['Int']['input'];
@@ -3554,6 +3757,21 @@ export type GetMeQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type GetMeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, membersId: string, language: string, gender: Gender, birthdate: string, age?: number | null, createdAt: any, church: { __typename?: 'Church', id: string, name: string, country: string, category: ChurchCategory }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType, scope?: { __typename?: 'RoleScope', id: string, type: ScopeType, church?: { __typename?: 'Church', id: string } | null, team?: { __typename?: 'Team', id: string } | null, project?: { __typename?: 'Project', id: string } | null } | null }> } };
 
+type AchievementBadgeFields_ContentAchievement_Fragment = { __typename: 'ContentAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } };
+
+type AchievementBadgeFields_QuizAchievement_Fragment = { __typename: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } };
+
+type AchievementBadgeFields_SimpleAchievement_Fragment = { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } };
+
+type AchievementBadgeFields_StreakAchievement_Fragment = { __typename: 'StreakAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } };
+
+export type AchievementBadgeFieldsFragment =
+  | AchievementBadgeFields_ContentAchievement_Fragment
+  | AchievementBadgeFields_QuizAchievement_Fragment
+  | AchievementBadgeFields_SimpleAchievement_Fragment
+  | AchievementBadgeFields_StreakAchievement_Fragment
+;
+
 export type ColorSetFieldsFragment = { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string };
 
 export type BrandingColorsFieldsFragment = { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } };
@@ -3581,9 +3799,9 @@ export type LeaderboardEntryFieldsFragment = { __typename?: 'LeaderboardEntry', 
 
 export type LeaderboardEntryWithDescriptionFieldsFragment = { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> };
 
-export type LeaderboardConfigFieldsFragment = { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null };
+export type LeaderboardConfigFieldsFragment = { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, limitMode: LeaderboardLimitMode, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', myChurch?: boolean | null, myTeam?: boolean | null, mySuperTeam?: boolean | null, minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null };
 
-export type PredefinedAnswerFieldsFragment = { __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> };
+export type PredefinedAnswerFieldsFragment = { __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, description?: string | null, answerOrder: number, isCorrect?: boolean | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> };
 
 type QuizQuestionFields_FreeTextQuestion_Fragment = { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> };
 
@@ -3593,7 +3811,7 @@ type QuizQuestionFields_NumberQuestion_Fragment = { __typename: 'NumberQuestion'
 
 type QuizQuestionFields_OrderingQuestion_Fragment = { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string, correctOrder?: number | null }>, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> };
 
-type QuizQuestionFields_PredefinedQuestion_Fragment = { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }>, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> };
+type QuizQuestionFields_PredefinedQuestion_Fragment = { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, description?: string | null, answerOrder: number, isCorrect?: boolean | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }>, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> };
 
 export type QuizQuestionFieldsFragment =
   | QuizQuestionFields_FreeTextQuestion_Fragment
@@ -3611,7 +3829,7 @@ type QuizQuestionUserFields_NumberQuestion_Fragment = { __typename: 'NumberQuest
 
 type QuizQuestionUserFields_OrderingQuestion_Fragment = { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string, correctOrder?: number | null }> };
 
-type QuizQuestionUserFields_PredefinedQuestion_Fragment = { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }> };
+type QuizQuestionUserFields_PredefinedQuestion_Fragment = { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, description?: string | null, answerOrder: number, isCorrect?: boolean | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }> };
 
 export type QuizQuestionUserFieldsFragment =
   | QuizQuestionUserFields_FreeTextQuestion_Fragment
@@ -3805,7 +4023,9 @@ export type CreateConsentMutationVariables = Exact<{
   url?: InputMaybe<Scalars['String']['input']>;
   publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
   isRemote?: InputMaybe<Scalars['Boolean']['input']>;
+  isRequired?: InputMaybe<Scalars['Boolean']['input']>;
   managedBy?: InputMaybe<Scalars['String']['input']>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
 }>;
 
 
@@ -3819,6 +4039,7 @@ export type UpdateConsentMutationVariables = Exact<{
   url?: InputMaybe<Scalars['String']['input']>;
   publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
   managedBy?: InputMaybe<Scalars['String']['input']>;
+  isRequired?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 
@@ -3889,7 +4110,7 @@ export type UpdateLeaderboardConfigMutationVariables = Exact<{
 }>;
 
 
-export type UpdateLeaderboardConfigMutation = { __typename?: 'Mutation', updateLeaderboardConfig: { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null } };
+export type UpdateLeaderboardConfigMutation = { __typename?: 'Mutation', updateLeaderboardConfig: { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, limitMode: LeaderboardLimitMode, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', myChurch?: boolean | null, myTeam?: boolean | null, mySuperTeam?: boolean | null, minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null } };
 
 export type DeleteLeaderboardConfigMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -3960,7 +4181,7 @@ export type AddQuizQuestionMutation = { __typename?: 'Mutation', addQuizQuestion
     | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
     | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
     | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string, correctOrder?: number | null }>, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
-    | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }>, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
+    | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, description?: string | null, answerOrder: number, isCorrect?: boolean | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }>, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
    };
 
 export type UpdateQuizQuestionMutationVariables = Exact<{
@@ -3974,7 +4195,7 @@ export type UpdateQuizQuestionMutation = { __typename?: 'Mutation', updateQuizQu
     | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
     | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
     | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string, correctOrder?: number | null }>, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
-    | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }>, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
+    | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, description?: string | null, answerOrder: number, isCorrect?: boolean | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }>, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
    };
 
 export type DeleteQuizQuestionMutationVariables = Exact<{
@@ -4025,7 +4246,7 @@ export type GrantQuizSessionAccessAsyncMutationVariables = Exact<{
 }>;
 
 
-export type GrantQuizSessionAccessAsyncMutation = { __typename?: 'Mutation', grantQuizSessionAccessAsync: { __typename?: 'BulkJob', id: string, operationType: string, status: BulkJobStatus, totalCount: number } };
+export type GrantQuizSessionAccessAsyncMutation = { __typename?: 'Mutation', grantQuizSessionAccessAsync: { __typename?: 'BulkJob', id: string, operationType: string, status: BulkJobStatus, totalCount: number, successCount: number, errorMessage?: string | null } };
 
 export type LockQuizSessionMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -4058,7 +4279,7 @@ export type StartQuizSessionMutation = { __typename?: 'Mutation', startQuizSessi
       | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null }
       | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null }
       | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string, correctOrder?: number | null }> }
-      | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }> }
+      | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, description?: string | null, answerOrder: number, isCorrect?: boolean | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }> }
     >, quiz: { __typename?: 'Quiz', id: string, name: string, timeoutSeconds?: number | null } } };
 
 export type SubmitQuizAnswerMutationVariables = Exact<{
@@ -4243,6 +4464,11 @@ export type AdminProjectQuizzesQueryVariables = Exact<{
 
 export type AdminProjectQuizzesQuery = { __typename?: 'Query', quizzes: { __typename?: 'QuizConnection', edges: Array<{ __typename?: 'QuizEdge', node: { __typename?: 'Quiz', id: string, name: string } }> } };
 
+export type ConsentGateQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ConsentGateQuery = { __typename?: 'Query', me: { __typename?: 'User', consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename?: 'Consent', id: string, isRequired: boolean, managementType: ConsentManagementType }>, rejectedConsents: Array<{ __typename?: 'UserConsent', id: string, consent: { __typename?: 'Consent', id: string, isRequired: boolean, managementType: ConsentManagementType } }> } } };
+
 export type GetFirebaseTokenQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -4261,7 +4487,7 @@ export type ChallengePageQuery = { __typename?: 'Query', myCurrentProject: { __t
             | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null }
             | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null }
             | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string, correctOrder?: number | null }> }
-            | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }> }
+            | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, description?: string | null, answerOrder: number, isCorrect?: boolean | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }> }
           >, responses: Array<
             | { __typename: 'FreeTextResponse', textResponse: string, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, pointsEarned?: number | null, question:
                 | { __typename?: 'FreeTextQuestion', id: string }
@@ -4327,17 +4553,39 @@ export type ProfilePageQueryVariables = Exact<{
 }>;
 
 
-export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, managementType: ConsentManagementType, managedBy?: string | null, body: { __typename?: 'MarkdownText', html: string } }> } }, myCurrentProject: { __typename?: 'Project', id: string, name: string, infoMessageStart?: any | null, infoMessageEnd?: any | null, myPoints: number, infoMessage?: { __typename?: 'MarkdownText', markdown: string, html: string } | null, branding: { __typename?: 'Branding', rounding: number, logoImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, bannerImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } }, achievements: Array<
+export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, managementType: ConsentManagementType, managedBy?: string | null, isRequired: boolean, body: { __typename?: 'MarkdownText', html: string } }> } }, myCurrentProject: { __typename?: 'Project', id: string, name: string, infoMessageStart?: any | null, infoMessageEnd?: any | null, myPoints: number, infoMessage?: { __typename?: 'MarkdownText', markdown: string, html: string } | null, branding: { __typename?: 'Branding', rounding: number, logoImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, bannerImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } }, achievements: Array<
       | { __typename: 'ContentAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
       | { __typename: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
       | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
       | { __typename: 'StreakAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
     >, leaderboard: { __typename?: 'LeaderboardConnection', me?: { __typename?: 'LeaderboardEntry', rank?: number | null } | null }, myTeam?: { __typename?: 'Team', superTeam?: { __typename?: 'SuperTeam', id: string, name: string, color?: string | null, imageObject?: { __typename?: 'Image', url: string, blurhash?: string | null } | null } | null } | null } };
 
+export type ArchiveProjectFieldsFragment = { __typename?: 'Project', id: string, name: string, startDate: any, archivedAt?: boolean | null, achievements: Array<
+    | { __typename: 'ContentAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+    | { __typename: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+    | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+    | { __typename: 'StreakAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+  > };
+
+export type ProjectArchiveQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ProjectArchiveQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, projects: Array<{ __typename?: 'Project', id: string, name: string, startDate: any, archivedAt?: boolean | null, achievements: Array<
+        | { __typename: 'ContentAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+        | { __typename: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+        | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+        | { __typename: 'StreakAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+      > }> }, myCurrentProject: { __typename?: 'Project', id: string, name: string, startDate: any, archivedAt?: boolean | null, achievements: Array<
+      | { __typename: 'ContentAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+      | { __typename: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+      | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+      | { __typename: 'StreakAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+    > } };
+
 export type ConsentsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ConsentsPageQuery = { __typename?: 'Query', me: { __typename?: 'User', consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, shortText: string, publishedAt?: any | null, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } }>, acceptedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, title: string, shortText: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }>, rejectedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, title: string, shortText: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }> } } };
+export type ConsentsPageQuery = { __typename?: 'Query', me: { __typename?: 'User', consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, shortText: string, publishedAt?: any | null, managedBy?: string | null, managementType: ConsentManagementType, isRequired: boolean, url?: string | null, body: { __typename?: 'MarkdownText', html: string } }>, acceptedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, title: string, shortText: string, managedBy?: string | null, managementType: ConsentManagementType, isRequired: boolean, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }>, rejectedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, title: string, shortText: string, managedBy?: string | null, managementType: ConsentManagementType, isRequired: boolean, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }> } } };
 
 export type StandingsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4385,7 +4633,7 @@ export type AdminExternalContentEventsQuery = { __typename?: 'Query', adminExter
 export type AdminProjectSwitcherQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminProjectSwitcherQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', logoImage?: { __typename?: 'Image', url: string } | null } } }> } };
+export type AdminProjectSwitcherQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', logoImage?: { __typename?: 'Image', url: string } | null } } }> }, currentProject: { __typename?: 'Project', id: string } };
 
 export type AdminUserPickerSearchQueryVariables = Exact<{
   query?: InputMaybe<Scalars['String']['input']>;
@@ -4407,7 +4655,14 @@ export type AdminLeaderboardConfigFormOptionsQueryVariables = Exact<{
 }>;
 
 
-export type AdminLeaderboardConfigFormOptionsQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, events: Array<{ __typename?: 'Event', id: string, name: string }> }, teams: { __typename?: 'TeamConnection', edges: Array<{ __typename?: 'TeamEdge', node: { __typename?: 'Team', id: string, name: string } }> }, superteams: { __typename?: 'SuperTeamConnection', edges: Array<{ __typename?: 'SuperTeamEdge', node: { __typename?: 'SuperTeam', id: string, name: string } }> }, churches: { __typename?: 'ChurchConnection', edges: Array<{ __typename?: 'ChurchEdge', node: { __typename?: 'Church', id: string, name: string } }> } };
+export type AdminLeaderboardConfigFormOptionsQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string }, teams: { __typename?: 'TeamConnection', edges: Array<{ __typename?: 'TeamEdge', node: { __typename?: 'Team', id: string, name: string } }> }, superteams: { __typename?: 'SuperTeamConnection', edges: Array<{ __typename?: 'SuperTeamEdge', node: { __typename?: 'SuperTeam', id: string, name: string } }> }, churches: { __typename?: 'ChurchConnection', edges: Array<{ __typename?: 'ChurchEdge', node: { __typename?: 'Church', id: string, name: string } }> } };
+
+export type AdminLeaderboardPreviewQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type AdminLeaderboardPreviewQuery = { __typename?: 'Query', leaderboardConfig: { __typename?: 'LeaderboardConfig', id: string, name: string, leaderboard: { __typename?: 'LeaderboardConnection', totalCount: number, edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } | null, nearestChurchRivals: Array<{ __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> }> } } };
 
 export type AdminProjectEngagementQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
@@ -4515,12 +4770,17 @@ export type AdminConsentPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminConsentPageQuery = { __typename?: 'Query', consent: { __typename?: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, publishedAt?: any | null, managementType: ConsentManagementType, managedBy?: string | null, body: { __typename?: 'MarkdownText', markdown: string, html: string }, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> } };
+export type AdminConsentPageQuery = { __typename?: 'Query', consent: { __typename?: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, publishedAt?: any | null, managementType: ConsentManagementType, managedBy?: string | null, isRequired: boolean, body: { __typename?: 'MarkdownText', markdown: string, html: string }, project?: { __typename?: 'Project', id: string, name: string } | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> } };
 
 export type AdminConsentsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type AdminConsentsPageQuery = { __typename?: 'Query', consents: Array<{ __typename?: 'Consent', id: string, key: string, version: number, title: string, shortText: string, publishedAt?: any | null, managementType: ConsentManagementType, managedBy?: string | null }> };
+
+export type AdminNewConsentProjectsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminNewConsentProjectsQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, startDate: any, endDate: any } }> } };
 
 export type AdminFeedbackPageQueryVariables = Exact<{
   filter?: InputMaybe<FeedbackFilter>;
@@ -4704,16 +4964,16 @@ export type AdminChallengeQuizPageQueryVariables = Exact<{
 
 
 export type AdminChallengeQuizPageQuery = { __typename?: 'Query', challenge:
-    | { __typename: 'ExternalChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
-    | { __typename: 'PluginChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename: 'ExternalChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'PluginChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
     | { __typename: 'QuizChallenge', id: string, name: string, quiz: { __typename?: 'Quiz', id: string, name: string, description: string, image?: string | null, timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, questions: Array<
           | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
           | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
           | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
           | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string, correctOrder?: number | null }>, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
-          | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }>, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
-        >, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }, project: { __typename?: 'Project', id: string, name: string } }
-    | { __typename: 'SimpleChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
+          | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, bettingEnabled: boolean, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, description?: string | null, answerOrder: number, isCorrect?: boolean | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }>, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }
+        > }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'SimpleChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
    };
 
 export type ReorderQuizQuestionsMutationVariables = Exact<{
@@ -4729,6 +4989,61 @@ export type ReorderQuizQuestionsMutation = { __typename?: 'Mutation', reorderQui
     | { __typename?: 'OrderingQuestion', id: string, questionOrder: number }
     | { __typename?: 'PredefinedQuestion', id: string, questionOrder: number }
   > };
+
+export type AdminChallengeResultsPageQueryVariables = Exact<{
+  challengeId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminChallengeResultsPageQuery = { __typename?: 'Query', challenge:
+    | { __typename: 'ExternalChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename: 'PluginChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename: 'QuizChallenge', id: string, name: string, quiz: { __typename?: 'Quiz', id: string, name: string }, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename: 'SimpleChallenge', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } }
+   };
+
+export type AdminQuizResultsQueryVariables = Exact<{
+  quizId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminQuizResultsQuery = { __typename?: 'Query', quizResults: { __typename?: 'QuizResults', submissionCount: number, participantCount: number, sessionCount: number, averageScore?: number | null, averageMaxScore?: number | null, averageScorePercentage?: number | null, questions: Array<
+      | { __typename: 'FreeTextQuestionResults', distinctCount: number, responses: Array<string>, responseCount: number, groups: Array<{ __typename?: 'FreeTextGroup', text: string, count: number, percentage: number }>, question:
+          | { __typename?: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'JsonQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'NumberQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'OrderingQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'PredefinedQuestion', id: string, questionText: string, questionOrder: number }
+         }
+      | { __typename: 'JsonQuestionResults', responseCount: number, question:
+          | { __typename?: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'JsonQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'NumberQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'OrderingQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'PredefinedQuestion', id: string, questionText: string, questionOrder: number }
+         }
+      | { __typename: 'NumberQuestionResults', average?: number | null, median?: number | null, min?: number | null, max?: number | null, responseCount: number, buckets: Array<{ __typename?: 'NumberBucket', from: number, to: number, count: number, percentage: number }>, question:
+          | { __typename?: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'JsonQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'NumberQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'OrderingQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'PredefinedQuestion', id: string, questionText: string, questionOrder: number }
+         }
+      | { __typename: 'OrderingQuestionResults', fullyCorrectCount: number, responseCount: number, items: Array<{ __typename?: 'OrderingItemResult', correctPosition: number, correctlyPlacedCount: number, percentage: number, item: { __typename?: 'QuizOrderingItem', id: string, itemText: string } }>, question:
+          | { __typename?: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'JsonQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'NumberQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'OrderingQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'PredefinedQuestion', id: string, questionText: string, questionOrder: number }
+         }
+      | { __typename: 'PredefinedQuestionResults', correctCount: number, responseCount: number, options: Array<{ __typename?: 'PredefinedOptionResult', count: number, percentage: number, isCorrect: boolean, answer: { __typename?: 'QuizPredefinedAnswer', id: string, answerText: string } }>, question:
+          | { __typename?: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'JsonQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'NumberQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'OrderingQuestion', id: string, questionText: string, questionOrder: number }
+          | { __typename?: 'PredefinedQuestion', id: string, questionText: string, questionOrder: number }
+         }
+    > } };
 
 export type AdminChallengeSessionsPageQueryVariables = Exact<{
   challengeId: Scalars['ID']['input'];
@@ -4764,7 +5079,7 @@ export type AdminProjectChallengeNewPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminProjectChallengeNewPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } }, events: { __typename?: 'EventConnection', edges: Array<{ __typename?: 'EventEdge', node: { __typename?: 'Event', id: string, name: string } }> } };
+export type AdminProjectChallengeNewPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } };
 
 export type AdminProjectEditPageQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
@@ -4793,21 +5108,28 @@ export type AdminProjectOverviewQueryVariables = Exact<{
 }>;
 
 
-export type AdminProjectOverviewQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, activityTrend?: Array<{ __typename?: 'ProjectActivityPoint', date: any, points: number, activeUsers: number }> }, users: { __typename?: 'UserConnection', totalCount: number }, teams: { __typename?: 'TeamConnection', totalCount: number }, challenges: { __typename?: 'ChallengeConnection', totalCount: number }, achievements: { __typename?: 'AchievementConnection', totalCount: number }, events: { __typename?: 'EventConnection', totalCount: number }, superteams: { __typename?: 'SuperTeamConnection', totalCount: number } };
+export type AdminProjectOverviewQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, activityTrend?: Array<{ __typename?: 'ProjectActivityPoint', date: any, points: number, activeUsers: number }> }, users: { __typename?: 'UserConnection', totalCount: number }, teams: { __typename?: 'TeamConnection', totalCount: number }, challenges: { __typename?: 'ChallengeConnection', totalCount: number }, achievements: { __typename?: 'AchievementConnection', totalCount: number }, events: { __typename?: 'EventConnection', totalCount: number }, superteams: { __typename?: 'SuperTeamConnection', totalCount: number }, currentProject: { __typename?: 'Project', id: string } };
+
+export type AdminSetCurrentProjectMutationVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminSetCurrentProjectMutation = { __typename?: 'Mutation', setCurrentProject: { __typename?: 'Project', id: string, name: string } };
 
 export type AdminProjectLeaderboardPageQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type AdminProjectLeaderboardPageQuery = { __typename?: 'Query', leaderboardConfig: { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null } };
+export type AdminProjectLeaderboardPageQuery = { __typename?: 'Query', leaderboardConfig: { __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, limitMode: LeaderboardLimitMode, maxEntries?: number | null, sortOrder: number, isActive: boolean, project: { __typename?: 'Project', id: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } }, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', myChurch?: boolean | null, myTeam?: boolean | null, mySuperTeam?: boolean | null, minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null } };
 
 export type AdminProjectLeaderboardsQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
 }>;
 
 
-export type AdminProjectLeaderboardsQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, leaderboards: Array<{ __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null }> } };
+export type AdminProjectLeaderboardsQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, leaderboards: Array<{ __typename?: 'LeaderboardConfig', id: string, name: string, entityType: LeaderboardEntityType, limitMode: LeaderboardLimitMode, maxEntries?: number | null, sortOrder: number, isActive: boolean, event?: { __typename?: 'Event', id: string, name: string } | null, filter?: { __typename?: 'LeaderboardFilterView', myChurch?: boolean | null, myTeam?: boolean | null, mySuperTeam?: boolean | null, minScore?: number | null, maxScore?: number | null, churchId?: string | null, country?: string | null, churchCategory?: ChurchCategory | null, gender?: Gender | null, teamId?: string | null, superTeamId?: string | null, ageRange?: { __typename?: 'AgeRange', min: number, max: number } | null } | null }> } };
 
 export type AdminScoresPageQueryVariables = Exact<{
   filter?: InputMaybe<ScoreJournalFilter>;
@@ -4884,7 +5206,26 @@ export type AdminTeamsPageSuperTeamsQuery = { __typename?: 'Query', superteams: 
 export type AdminProjectsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminProjectsPageQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logoImage?: { __typename?: 'Image', url: string } | null } } }> } };
+export type AdminProjectsPageQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logoImage?: { __typename?: 'Image', url: string } | null } } }> }, currentProject: { __typename?: 'Project', id: string } };
+
+export type AdminSettingsPageQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminSettingsPageQuery = { __typename?: 'Query', settings: Array<{ __typename?: 'Setting', key: string, value: string, valueType: SettingValueType, description?: string | null, requiresRestart: boolean, envVar?: string | null, editable: boolean }>, currentProject: { __typename?: 'Project', id: string, name: string }, projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, startDate: any, endDate: any } }> } };
+
+export type SetCurrentProjectMutationVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type SetCurrentProjectMutation = { __typename?: 'Mutation', setCurrentProject: { __typename?: 'Project', id: string, name: string } };
+
+export type SetSettingsMutationVariables = Exact<{
+  input: Array<SettingInput> | SettingInput;
+}>;
+
+
+export type SetSettingsMutation = { __typename?: 'Mutation', setSettings: Array<{ __typename?: 'Setting', key: string, value: string }> };
 
 export type LegacyTeamRedirectQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -5130,6 +5471,7 @@ export const LeaderboardConfigFieldsFragmentDoc = gql`
   id
   name
   entityType
+  limitMode
   maxEntries
   sortOrder
   isActive
@@ -5138,6 +5480,9 @@ export const LeaderboardConfigFieldsFragmentDoc = gql`
     name
   }
   filter {
+    myChurch
+    myTeam
+    mySuperTeam
     minScore
     maxScore
     churchId
@@ -5163,6 +5508,7 @@ export const PredefinedAnswerFieldsFragmentDoc = gql`
     fragment PredefinedAnswerFields on QuizPredefinedAnswer {
   id
   answerText
+  description
   answerOrder
   isCorrect
   translationStatus {
@@ -5249,6 +5595,44 @@ export const QuizSubmissionResultFieldsFragmentDoc = gql`
   pointsAwarded
 }
     `;
+export const AchievementBadgeFieldsFragmentDoc = gql`
+    fragment AchievementBadgeFields on Achievement {
+  __typename
+  id
+  name
+  descriptionPending
+  descriptionCompleted
+  imagePendingObject {
+    ...ImageFields
+  }
+  imageCompletedObject {
+    ...ImageFields
+  }
+  hidden
+  achievedAt
+  celebratedAt
+  points
+  ... on ContentAchievement {
+    totalItems
+    completedItemCount
+  }
+  ... on StreakAchievement {
+    totalItems
+    completedItemCount
+  }
+}
+    ${ImageFieldsFragmentDoc}`;
+export const ArchiveProjectFieldsFragmentDoc = gql`
+    fragment ArchiveProjectFields on Project {
+  id
+  name
+  startDate
+  archivedAt
+  achievements {
+    ...AchievementBadgeFields
+  }
+}
+    ${AchievementBadgeFieldsFragmentDoc}`;
 export const GetMeDocument = gql`
     query GetMe {
   me {
@@ -5503,7 +5887,7 @@ export function useRejectConsentMutation() {
   return Urql.useMutation<RejectConsentMutation, RejectConsentMutationVariables>(RejectConsentDocument);
 };
 export const CreateConsentDocument = gql`
-    mutation CreateConsent($key: String!, $title: String!, $shortText: String, $body: String!, $url: String, $publishedAt: DateTime, $isRemote: Boolean, $managedBy: String) {
+    mutation CreateConsent($key: String!, $title: String!, $shortText: String, $body: String!, $url: String, $publishedAt: DateTime, $isRemote: Boolean, $isRequired: Boolean, $managedBy: String, $projectId: ID) {
   createConsent(
     key: $key
     title: $title
@@ -5512,7 +5896,9 @@ export const CreateConsentDocument = gql`
     url: $url
     publishedAt: $publishedAt
     isRemote: $isRemote
+    isRequired: $isRequired
     managedBy: $managedBy
+    projectId: $projectId
   ) {
     id
     key
@@ -5526,7 +5912,7 @@ export function useCreateConsentMutation() {
   return Urql.useMutation<CreateConsentMutation, CreateConsentMutationVariables>(CreateConsentDocument);
 };
 export const UpdateConsentDocument = gql`
-    mutation UpdateConsent($id: ID!, $title: String, $shortText: String, $body: String, $url: String, $publishedAt: DateTime, $managedBy: String) {
+    mutation UpdateConsent($id: ID!, $title: String, $shortText: String, $body: String, $url: String, $publishedAt: DateTime, $managedBy: String, $isRequired: Boolean) {
   updateConsent(
     id: $id
     title: $title
@@ -5535,6 +5921,7 @@ export const UpdateConsentDocument = gql`
     url: $url
     publishedAt: $publishedAt
     managedBy: $managedBy
+    isRequired: $isRequired
   ) {
     id
     key
@@ -5851,6 +6238,8 @@ export const GrantQuizSessionAccessAsyncDocument = gql`
     operationType
     status
     totalCount
+    successCount
+    errorMessage
   }
 }
     `;
@@ -6213,6 +6602,31 @@ export const AdminProjectQuizzesDocument = gql`
 export function useAdminProjectQuizzesQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectQuizzesQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectQuizzesQuery, AdminProjectQuizzesQueryVariables | undefined>({ query: AdminProjectQuizzesDocument, variables: undefined, ...options });
 };
+export const ConsentGateDocument = gql`
+    query ConsentGate {
+  me {
+    consentStatus {
+      pendingConsents {
+        id
+        isRequired
+        managementType
+      }
+      rejectedConsents {
+        id
+        consent {
+          id
+          isRequired
+          managementType
+        }
+      }
+    }
+  }
+}
+    `;
+
+export function useConsentGateQuery(options?: Omit<Urql.UseQueryArgs<never, ConsentGateQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<ConsentGateQuery, ConsentGateQueryVariables | undefined>({ query: ConsentGateDocument, variables: undefined, ...options });
+};
 export const GetFirebaseTokenDocument = gql`
     query GetFirebaseToken {
   firebaseToken {
@@ -6371,6 +6785,7 @@ export const ProfilePageDocument = gql`
         url
         managementType
         managedBy
+        isRequired
       }
     }
   }
@@ -6387,29 +6802,7 @@ export const ProfilePageDocument = gql`
       ...BrandingFields
     }
     achievements {
-      __typename
-      id
-      name
-      descriptionPending
-      descriptionCompleted
-      imagePendingObject {
-        ...ImageFields
-      }
-      imageCompletedObject {
-        ...ImageFields
-      }
-      hidden
-      achievedAt
-      celebratedAt
-      points
-      ... on ContentAchievement {
-        totalItems
-        completedItemCount
-      }
-      ... on StreakAchievement {
-        totalItems
-        completedItemCount
-      }
+      ...AchievementBadgeFields
     }
     myPoints
     leaderboard(entityType: PERSONS, filter: $ageFilter) {
@@ -6431,10 +6824,27 @@ export const ProfilePageDocument = gql`
   }
 }
     ${BrandingFieldsFragmentDoc}
-${ImageFieldsFragmentDoc}`;
+${AchievementBadgeFieldsFragmentDoc}`;
 
 export function useProfilePageQuery(options?: Omit<Urql.UseQueryArgs<never, ProfilePageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<ProfilePageQuery, ProfilePageQueryVariables | undefined>({ query: ProfilePageDocument, variables: undefined, ...options });
+};
+export const ProjectArchiveDocument = gql`
+    query ProjectArchive {
+  me {
+    id
+    projects {
+      ...ArchiveProjectFields
+    }
+  }
+  myCurrentProject {
+    ...ArchiveProjectFields
+  }
+}
+    ${ArchiveProjectFieldsFragmentDoc}`;
+
+export function useProjectArchiveQuery(options?: Omit<Urql.UseQueryArgs<never, ProjectArchiveQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<ProjectArchiveQuery, ProjectArchiveQueryVariables | undefined>({ query: ProjectArchiveDocument, variables: undefined, ...options });
 };
 export const ConsentsPageDocument = gql`
     query ConsentsPage {
@@ -6453,6 +6863,7 @@ export const ConsentsPageDocument = gql`
         publishedAt
         managedBy
         managementType
+        isRequired
         url
       }
       acceptedConsents {
@@ -6467,6 +6878,7 @@ export const ConsentsPageDocument = gql`
           shortText
           managedBy
           managementType
+          isRequired
           url
         }
         action
@@ -6484,6 +6896,7 @@ export const ConsentsPageDocument = gql`
           shortText
           managedBy
           managementType
+          isRequired
           url
         }
         action
@@ -6643,6 +7056,9 @@ export const AdminProjectSwitcherDocument = gql`
       }
     }
   }
+  currentProject {
+    id
+  }
 }
     `;
 
@@ -6695,10 +7111,6 @@ export const AdminLeaderboardConfigFormOptionsDocument = gql`
     query AdminLeaderboardConfigFormOptions($projectId: ID!) {
   project(id: $projectId) {
     id
-    events {
-      id
-      name
-    }
   }
   teams(filter: {projectId: $projectId}, first: 500) {
     edges {
@@ -6729,6 +7141,32 @@ export const AdminLeaderboardConfigFormOptionsDocument = gql`
 
 export function useAdminLeaderboardConfigFormOptionsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminLeaderboardConfigFormOptionsQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminLeaderboardConfigFormOptionsQuery, AdminLeaderboardConfigFormOptionsQueryVariables | undefined>({ query: AdminLeaderboardConfigFormOptionsDocument, variables: undefined, ...options });
+};
+export const AdminLeaderboardPreviewDocument = gql`
+    query AdminLeaderboardPreview($id: ID!) {
+  leaderboardConfig(id: $id) {
+    id
+    name
+    leaderboard {
+      totalCount
+      edges {
+        node {
+          ...LeaderboardEntryWithDescriptionFields
+        }
+      }
+      me {
+        ...LeaderboardEntryWithDescriptionFields
+      }
+      nearestChurchRivals {
+        ...LeaderboardEntryWithDescriptionFields
+      }
+    }
+  }
+}
+    ${LeaderboardEntryWithDescriptionFieldsFragmentDoc}`;
+
+export function useAdminLeaderboardPreviewQuery(options?: Omit<Urql.UseQueryArgs<never, AdminLeaderboardPreviewQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminLeaderboardPreviewQuery, AdminLeaderboardPreviewQueryVariables | undefined>({ query: AdminLeaderboardPreviewDocument, variables: undefined, ...options });
 };
 export const AdminProjectEngagementDocument = gql`
     query AdminProjectEngagement($projectId: ID!) {
@@ -6999,6 +7437,11 @@ export const AdminConsentPageDocument = gql`
     publishedAt
     managementType
     managedBy
+    isRequired
+    project {
+      id
+      name
+    }
     translationStatus {
       ...TranslationStatus
     }
@@ -7026,6 +7469,24 @@ export const AdminConsentsPageDocument = gql`
 
 export function useAdminConsentsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminConsentsPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminConsentsPageQuery, AdminConsentsPageQueryVariables | undefined>({ query: AdminConsentsPageDocument, variables: undefined, ...options });
+};
+export const AdminNewConsentProjectsDocument = gql`
+    query AdminNewConsentProjects {
+  projects(first: 100, filter: {archived: false}) {
+    edges {
+      node {
+        id
+        name
+        startDate
+        endDate
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminNewConsentProjectsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminNewConsentProjectsQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminNewConsentProjectsQuery, AdminNewConsentProjectsQueryVariables | undefined>({ query: AdminNewConsentProjectsDocument, variables: undefined, ...options });
 };
 export const AdminFeedbackPageDocument = gql`
     query AdminFeedbackPage($filter: FeedbackFilter, $first: Int, $after: String, $last: Int, $before: String) {
@@ -7644,6 +8105,11 @@ export const AdminChallengeQuizPageDocument = gql`
     project {
       id
       name
+      branding {
+        colors {
+          ...BrandingColorsFields
+        }
+      }
     }
     ... on QuizChallenge {
       quiz {
@@ -7659,15 +8125,12 @@ export const AdminChallengeQuizPageDocument = gql`
         questions {
           ...QuizQuestionFields
         }
-        translationStatus {
-          ...TranslationStatus
-        }
       }
     }
   }
 }
-    ${QuizQuestionFieldsFragmentDoc}
-${TranslationStatusFragmentDoc}`;
+    ${BrandingColorsFieldsFragmentDoc}
+${QuizQuestionFieldsFragmentDoc}`;
 
 export function useAdminChallengeQuizPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminChallengeQuizPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminChallengeQuizPageQuery, AdminChallengeQuizPageQueryVariables | undefined>({ query: AdminChallengeQuizPageDocument, variables: undefined, ...options });
@@ -7683,6 +8146,99 @@ export const ReorderQuizQuestionsDocument = gql`
 
 export function useReorderQuizQuestionsMutation() {
   return Urql.useMutation<ReorderQuizQuestionsMutation, ReorderQuizQuestionsMutationVariables>(ReorderQuizQuestionsDocument);
+};
+export const AdminChallengeResultsPageDocument = gql`
+    query AdminChallengeResultsPage($challengeId: ID!) {
+  challenge(id: $challengeId) {
+    __typename
+    id
+    name
+    project {
+      id
+      name
+    }
+    ... on QuizChallenge {
+      quiz {
+        id
+        name
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminChallengeResultsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminChallengeResultsPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminChallengeResultsPageQuery, AdminChallengeResultsPageQueryVariables | undefined>({ query: AdminChallengeResultsPageDocument, variables: undefined, ...options });
+};
+export const AdminQuizResultsDocument = gql`
+    query AdminQuizResults($quizId: ID!) {
+  quizResults(quizId: $quizId) {
+    submissionCount
+    participantCount
+    sessionCount
+    averageScore
+    averageMaxScore
+    averageScorePercentage
+    questions {
+      __typename
+      question {
+        id
+        questionText
+        questionOrder
+      }
+      responseCount
+      ... on PredefinedQuestionResults {
+        correctCount
+        options {
+          answer {
+            id
+            answerText
+          }
+          count
+          percentage
+          isCorrect
+        }
+      }
+      ... on NumberQuestionResults {
+        average
+        median
+        min
+        max
+        buckets {
+          from
+          to
+          count
+          percentage
+        }
+      }
+      ... on FreeTextQuestionResults {
+        distinctCount
+        groups {
+          text
+          count
+          percentage
+        }
+        responses
+      }
+      ... on OrderingQuestionResults {
+        fullyCorrectCount
+        items {
+          item {
+            id
+            itemText
+          }
+          correctPosition
+          correctlyPlacedCount
+          percentage
+        }
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminQuizResultsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminQuizResultsQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminQuizResultsQuery, AdminQuizResultsQueryVariables | undefined>({ query: AdminQuizResultsDocument, variables: undefined, ...options });
 };
 export const AdminChallengeSessionsPageDocument = gql`
     query AdminChallengeSessionsPage($challengeId: ID!) {
@@ -7753,14 +8309,6 @@ export const AdminProjectChallengeNewPageDocument = gql`
     branding {
       colors {
         ...BrandingColorsFields
-      }
-    }
-  }
-  events(first: 100, filter: {projectId: $projectId}) {
-    edges {
-      node {
-        id
-        name
       }
     }
   }
@@ -7872,19 +8420,43 @@ export const AdminProjectOverviewDocument = gql`
   superteams(first: 0, filter: {projectId: $projectId}) {
     totalCount
   }
+  currentProject {
+    id
+  }
 }
     `;
 
 export function useAdminProjectOverviewQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectOverviewQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectOverviewQuery, AdminProjectOverviewQueryVariables | undefined>({ query: AdminProjectOverviewDocument, variables: undefined, ...options });
 };
+export const AdminSetCurrentProjectDocument = gql`
+    mutation AdminSetCurrentProject($projectId: ID!) {
+  setCurrentProject(projectId: $projectId) {
+    id
+    name
+  }
+}
+    `;
+
+export function useAdminSetCurrentProjectMutation() {
+  return Urql.useMutation<AdminSetCurrentProjectMutation, AdminSetCurrentProjectMutationVariables>(AdminSetCurrentProjectDocument);
+};
 export const AdminProjectLeaderboardPageDocument = gql`
     query AdminProjectLeaderboardPage($id: ID!) {
   leaderboardConfig(id: $id) {
     ...LeaderboardConfigFields
+    project {
+      id
+      branding {
+        colors {
+          ...BrandingColorsFields
+        }
+      }
+    }
   }
 }
-    ${LeaderboardConfigFieldsFragmentDoc}`;
+    ${LeaderboardConfigFieldsFragmentDoc}
+${BrandingColorsFieldsFragmentDoc}`;
 
 export function useAdminProjectLeaderboardPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectLeaderboardPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectLeaderboardPageQuery, AdminProjectLeaderboardPageQueryVariables | undefined>({ query: AdminProjectLeaderboardPageDocument, variables: undefined, ...options });
@@ -8158,11 +8730,69 @@ export const AdminProjectsPageDocument = gql`
       }
     }
   }
+  currentProject {
+    id
+  }
 }
     `;
 
 export function useAdminProjectsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectsPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectsPageQuery, AdminProjectsPageQueryVariables | undefined>({ query: AdminProjectsPageDocument, variables: undefined, ...options });
+};
+export const AdminSettingsPageDocument = gql`
+    query AdminSettingsPage {
+  settings {
+    key
+    value
+    valueType
+    description
+    requiresRestart
+    envVar
+    editable
+  }
+  currentProject {
+    id
+    name
+  }
+  projects(first: 100, filter: {archived: false}) {
+    edges {
+      node {
+        id
+        name
+        startDate
+        endDate
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminSettingsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminSettingsPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminSettingsPageQuery, AdminSettingsPageQueryVariables | undefined>({ query: AdminSettingsPageDocument, variables: undefined, ...options });
+};
+export const SetCurrentProjectDocument = gql`
+    mutation SetCurrentProject($projectId: ID!) {
+  setCurrentProject(projectId: $projectId) {
+    id
+    name
+  }
+}
+    `;
+
+export function useSetCurrentProjectMutation() {
+  return Urql.useMutation<SetCurrentProjectMutation, SetCurrentProjectMutationVariables>(SetCurrentProjectDocument);
+};
+export const SetSettingsDocument = gql`
+    mutation SetSettings($input: [SettingInput!]!) {
+  setSettings(input: $input) {
+    key
+    value
+  }
+}
+    `;
+
+export function useSetSettingsMutation() {
+  return Urql.useMutation<SetSettingsMutation, SetSettingsMutationVariables>(SetSettingsDocument);
 };
 export const LegacyTeamRedirectDocument = gql`
     query LegacyTeamRedirect($id: ID!) {

@@ -95,12 +95,11 @@ watch(useMinScore, (enabled) => {
       label="Minste poengandel"
     >
       <div class="flex items-center gap-2">
-        <UInput
+        <UInputNumber
           :model-value="minScorePercentage ?? 70"
-          type="number"
-          min="0"
-          max="100"
-          class="w-24"
+          :min="0"
+          :max="100"
+          class="w-28"
           @update:model-value="
             (v) => emit('update:minScorePercentage', Number(v))
           "

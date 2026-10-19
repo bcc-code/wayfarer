@@ -28,7 +28,8 @@ type Config struct {
 	Plugin   PluginConfig
 	Firebase FirebaseConfig
 	Resend   ResendConfig
-	PubSub   PubSubConfig
+	Jobs     JobsConfig
+	Settings SettingsConfig
 }
 
 // ServerConfig holds HTTP server configuration
@@ -86,8 +87,14 @@ type DatabaseConfig struct {
 
 // JWTConfig holds JWT authentication configuration
 type JWTConfig struct {
-	Secret            string
+	Secret string
+	// PreviousSecret is still accepted for verification (selected by the
+	// token's kid) so JWT_SECRET can be rotated without logging users out.
+	PreviousSecret    string
 	Issuer            string
+	AccessTokenTTL    time.Duration // Lifetime of Wayfarer access tokens
+	RefreshTokenTTL   time.Duration // Sliding lifetime of refresh tokens
+	Auth0Audience     string        // Expected aud of login.bcc.no tokens (empty = not checked)
 	BrunstadTVJWKSURL string
 	BrunstadTVIssuer  string
 	Auth0JWKSURL      string
@@ -98,6 +105,21 @@ type JWTConfig struct {
 	// tolerates a failed boot-time fetch of Auth0JWKSURL — so Auth0JWKSURL
 	// can point at the server itself. Load-test only; never set in production.
 	Auth0LoadtestKey string
+	// RevokedUsers is the emergency kill switch (AUTH_REVOKED_USERS). Maps a
+	// user ID to a cutoff: tokens issued before it are rejected. A zero
+	// cutoff rejects every token for that user. Normally empty.
+	RevokedUsers map[string]time.Time
+}
+
+// IsRevoked reports whether a token for userID issued at issuedAt is blocked
+// by the emergency revocation list. It is on the per-request path, so it is
+// a single map lookup.
+func (c JWTConfig) IsRevoked(userID string, issuedAt time.Time) bool {
+	cutoff, ok := c.RevokedUsers[userID]
+	if !ok {
+		return false
+	}
+	return cutoff.IsZero() || issuedAt.Before(cutoff)
 }
 
 // APIKeyConfig holds API key authentication configuration for external systems
@@ -195,11 +217,23 @@ type ResendConfig struct {
 	SSFTicketEmail string // Email address for SSF ticket forwarding
 }
 
-// PubSubConfig holds GCP Pub/Sub configuration for async bulk operations
-type PubSubConfig struct {
-	Enabled   bool   // Enable/disable Pub/Sub integration
-	ProjectID string // GCP project ID
-	TopicID   string // Pub/Sub topic ID for bulk operations
+// JobsConfig controls how bulk jobs are executed
+type JobsConfig struct {
+	// Sync runs bulk jobs inside the request that created them instead of in a
+	// background goroutine. Defaults to true on Cloud Run: services (K_SERVICE)
+	// throttle CPU once a response has been sent, and jobs (CLOUD_RUN_JOB) kill
+	// leftover goroutines when the process exits.
+	Sync bool
+}
+
+// SettingsConfig controls how much authority the `settings` table has over the
+// environment.
+type SettingsConfig struct {
+	// OverrideEnv lets rows in the settings table win over the environment
+	// variables they shadow. Off by default: a bad row reaches every instance
+	// at once, including one that is only being rolled out, so the override is
+	// opted into per deployment rather than assumed.
+	OverrideEnv bool
 }
 
 // Load reads all environment variables and returns a Config struct
@@ -229,6 +263,9 @@ func Load() (*Config, error) {
 			HTTPStatsFile:     getEnv("HTTP_STATS_FILE", ""),
 			HTTPStatsInterval: getEnvAsDuration("HTTP_STATS_INTERVAL", time.Minute),
 		},
+		Settings: SettingsConfig{
+			OverrideEnv: getEnvAsBool("SETTINGS_OVERRIDE_ENV", false),
+		},
 		Database: DatabaseConfig{
 			URL:             getEnv("DATABASE_URL", ""),
 			MaxOpenConns:    getEnvAsInt("DB_MAX_OPEN_CONNS", 25),
@@ -239,7 +276,12 @@ func Load() (*Config, error) {
 		},
 		JWT: JWTConfig{
 			Secret:            getEnv("JWT_SECRET", ""),
+			PreviousSecret:    getEnv("JWT_SECRET_PREVIOUS", ""),
 			Issuer:            getEnv("JWT_ISSUER", "wayfarer"),
+			AccessTokenTTL:    getEnvAsDuration("JWT_ACCESS_TOKEN_TTL", 7*24*time.Hour),
+			RefreshTokenTTL:   getEnvAsDuration("JWT_REFRESH_TOKEN_TTL", 183*24*time.Hour),
+			Auth0Audience:     getEnv("AUTH0_AUDIENCE", ""),
+			RevokedUsers:      parseRevokedUsers(getEnv("AUTH_REVOKED_USERS", "")),
 			BrunstadTVJWKSURL: getEnv("BRUNSTAD_TV_JWKS_URL", "https://api.brunstad.tv/.well-known/jwks.json"),
 			BrunstadTVIssuer:  getEnv("BRUNSTAD_TV_JWT_ISSUER", "https://api.brunstad.tv/"),
 			Auth0JWKSURL:      getEnv("AUTH0_JWKS_URL", "https://login.bcc.no/.well-known/jwks.json"),
@@ -317,10 +359,8 @@ func Load() (*Config, error) {
 			AdminBaseURL:   getEnv("ADMIN_BASE_URL", ""),
 			SSFTicketEmail: getEnv("SSF_TICKET_EMAIL", ""),
 		},
-		PubSub: PubSubConfig{
-			Enabled:   getEnvAsBool("PUBSUB_ENABLED", false),
-			ProjectID: getEnv("PUBSUB_PROJECT_ID", ""),
-			TopicID:   getEnv("PUBSUB_TOPIC_ID", "wayfarer-bulk-operations"),
+		Jobs: JobsConfig{
+			Sync: getEnvAsBool("BULK_JOBS_SYNC", isCloudRun()),
 		},
 	}
 
@@ -376,6 +416,12 @@ func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration {
 	return value
 }
 
+// isCloudRun reports whether we're running on Cloud Run, either as a service
+// (K_SERVICE) or as a job (CLOUD_RUN_JOB).
+func isCloudRun() bool {
+	return os.Getenv("K_SERVICE") != "" || os.Getenv("CLOUD_RUN_JOB") != ""
+}
+
 func getEnvAsBool(key string, defaultValue bool) bool {
 	valueStr := os.Getenv(key)
 	if valueStr == "" {
@@ -422,6 +468,35 @@ func parseAPIKeys(value string) map[string]string {
 	}
 
 	return keys
+}
+
+// parseRevokedUsers parses the emergency revocation list.
+// Format: "US01...:2026-10-01T12:00:00Z,US01..." (the cutoff is optional).
+// An entry whose cutoff can't be parsed blocks the user entirely, so a typo
+// never silently lets a revoked user through.
+func parseRevokedUsers(value string) map[string]time.Time {
+	revoked := make(map[string]time.Time)
+	for _, entry := range strings.Split(value, ",") {
+		entry = strings.TrimSpace(entry)
+		if entry == "" {
+			continue
+		}
+		userID, cutoffStr, hasCutoff := strings.Cut(entry, ":")
+		userID = strings.TrimSpace(userID)
+		if userID == "" {
+			continue
+		}
+		var cutoff time.Time
+		if hasCutoff {
+			if parsed, err := time.Parse(time.RFC3339, strings.TrimSpace(cutoffStr)); err == nil {
+				cutoff = parsed
+			} else {
+				fmt.Fprintf(os.Stderr, "config: invalid cutoff in AUTH_REVOKED_USERS for %s, blocking all tokens: %v\n", userID, err)
+			}
+		}
+		revoked[userID] = cutoff
+	}
+	return revoked
 }
 
 // parseLanguages parses comma-separated language codes

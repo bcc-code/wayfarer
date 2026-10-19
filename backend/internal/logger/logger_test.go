@@ -36,7 +36,7 @@ func TestGCPSeverity(t *testing.T) {
 }
 
 func TestGCPHandlerEnabled(t *testing.T) {
-	handler := newGCPHandler(slog.LevelWarn)
+	handler := newGCPHandler(levelVar(slog.LevelWarn))
 
 	if handler.Enabled(context.Background(), slog.LevelDebug) {
 		t.Error("Expected DEBUG to be disabled when level is WARN")
@@ -58,7 +58,7 @@ func TestGCPHandlerHandle(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	handler := newGCPHandler(slog.LevelInfo)
+	handler := newGCPHandler(levelVar(slog.LevelInfo))
 	testTime := time.Date(2024, 1, 15, 10, 30, 45, 123456000, time.UTC)
 
 	record := slog.NewRecord(testTime, slog.LevelError, "test message", 0)
@@ -107,7 +107,7 @@ func TestGCPHandlerWithAttrs(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	handler := newGCPHandler(slog.LevelInfo)
+	handler := newGCPHandler(levelVar(slog.LevelInfo))
 	handlerWithAttrs := handler.WithAttrs([]slog.Attr{
 		slog.String("service", "test-service"),
 	})
@@ -150,7 +150,7 @@ func TestGCPHandlerWithGroup(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	handler := newGCPHandler(slog.LevelInfo)
+	handler := newGCPHandler(levelVar(slog.LevelInfo))
 	handlerWithGroup := handler.WithGroup("request")
 	handlerWithGroupAndAttrs := handlerWithGroup.WithAttrs([]slog.Attr{
 		slog.String("method", "GET"),
@@ -193,7 +193,7 @@ func TestGCPHandlerWithGroup(t *testing.T) {
 }
 
 func TestGCPHandlerWithEmptyGroup(t *testing.T) {
-	handler := newGCPHandler(slog.LevelInfo)
+	handler := newGCPHandler(levelVar(slog.LevelInfo))
 	handlerWithEmptyGroup := handler.WithGroup("")
 
 	// Should return the same handler
@@ -236,5 +236,47 @@ func TestNewLogger(t *testing.T) {
 	devLogger := New("development", slog.LevelInfo)
 	if devLogger == nil {
 		t.Error("New(development) returned nil")
+	}
+}
+
+// levelVar wraps a fixed level for the handlers, which read their threshold
+// through a slog.LevelVar so `log_level` can change without a restart.
+func levelVar(level slog.Level) *slog.LevelVar {
+	v := new(slog.LevelVar)
+	v.Set(level)
+	return v
+}
+
+func TestSetLevel_ChangesWhatExistingLoggersEmit(t *testing.T) {
+	original := Level()
+	t.Cleanup(func() { SetLevel(original) })
+
+	lgr := New("development", slog.LevelInfo)
+	if lgr.Enabled(context.Background(), slog.LevelDebug) {
+		t.Fatal("debug should be suppressed at info level")
+	}
+
+	SetLevel(slog.LevelDebug)
+
+	// The same logger, built before the change — this is what makes the
+	// setting apply without a restart.
+	if !lgr.Enabled(context.Background(), slog.LevelDebug) {
+		t.Fatal("debug should be emitted after raising the level")
+	}
+	if Level() != slog.LevelDebug {
+		t.Fatalf("Level() = %v, want debug", Level())
+	}
+}
+
+// WithAttrs/WithGroup clone the handler; the clones must share the level.
+func TestSetLevel_ReachesHandlerClones(t *testing.T) {
+	original := Level()
+	t.Cleanup(func() { SetLevel(original) })
+
+	child := New("production", slog.LevelInfo).With("component", "test")
+	SetLevel(slog.LevelDebug)
+
+	if !child.Enabled(context.Background(), slog.LevelDebug) {
+		t.Fatal("a cloned handler kept a stale level")
 	}
 }

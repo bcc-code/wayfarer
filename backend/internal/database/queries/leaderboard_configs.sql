@@ -1,17 +1,17 @@
 -- name: GetLeaderboardConfigByID :one
-SELECT id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at, max_entries
+SELECT id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at, max_entries, limit_mode
 FROM leaderboard_configs
 WHERE id = @id::char(28);
 
 -- name: GetLeaderboardConfigsByIDs :many
-SELECT id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at, max_entries
+SELECT id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at, max_entries, limit_mode
 FROM leaderboard_configs
 WHERE id = ANY(@ids::char(28)[]);
 
 -- name: GetLeaderboardConfigsByProjectIDs :many
 -- Returns ALL configs (including inactive) for the given project IDs.
 -- Non-admin visibility filtering must be done at the application layer.
-SELECT id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at, max_entries
+SELECT id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at, max_entries, limit_mode
 FROM leaderboard_configs
 WHERE project_id = ANY(@project_ids::char(28)[])
 ORDER BY project_id, sort_order, id;
@@ -19,13 +19,13 @@ ORDER BY project_id, sort_order, id;
 -- name: GetLeaderboardConfigsByEventIDs :many
 -- Returns ALL configs (including inactive) for the given event IDs.
 -- Non-admin visibility filtering must be done at the application layer.
-SELECT id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at, max_entries
+SELECT id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at, max_entries, limit_mode
 FROM leaderboard_configs
 WHERE event_id = ANY(@event_ids::char(28)[])
 ORDER BY event_id, sort_order, id;
 
 -- name: GetLeaderboardConfigsFilteredCursor :many
-SELECT id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at, max_entries
+SELECT id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at, max_entries, limit_mode
 FROM leaderboard_configs
 WHERE
     (@ids::char(28)[] IS NULL OR id = ANY(@ids::char(28)[]))
@@ -65,6 +65,7 @@ INSERT INTO leaderboard_configs (
     entity_type,
     filter,
     max_entries,
+    limit_mode,
     sort_order,
     is_active
 )
@@ -76,10 +77,11 @@ VALUES (
     @entitytype::text,
     sqlc.narg('filter')::jsonb,
     sqlc.narg('maxentries')::int,
+    COALESCE(sqlc.narg('limitmode')::text, 'MANUAL'),
     COALESCE(sqlc.narg('sortorder')::int, 0),
     COALESCE(sqlc.narg('isactive')::bool, true)
 )
-RETURNING id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at, max_entries;
+RETURNING id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at, max_entries, limit_mode;
 
 -- name: UpdateLeaderboardConfig :one
 -- Full-replace update: the caller always sends the complete desired state.
@@ -90,10 +92,11 @@ SET
     entity_type = @entitytype::text,
     filter = @filter::jsonb,
     max_entries = sqlc.narg('maxentries')::int,
+    limit_mode = COALESCE(sqlc.narg('limitmode')::text, 'MANUAL'),
     sort_order = @sortorder::int,
     is_active = @isactive::bool
 WHERE id = @id::char(28)
-RETURNING id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at, max_entries;
+RETURNING id, project_id, event_id, name, entity_type, filter, sort_order, is_active, created_at, updated_at, max_entries, limit_mode;
 
 -- name: DeleteLeaderboardConfig :exec
 DELETE FROM leaderboard_configs

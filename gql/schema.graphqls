@@ -9,6 +9,7 @@ schema {
 type Query {
     me: User!
     instanceID: String!
+    currentTime: DateTime!
     firebaseToken: FirebaseTokenResponse!
 }
 

@@ -350,7 +350,8 @@
         "couldNotLockBetting": "Ei saanud ennustamist lukustada",
         "couldNotReopenBetting": "Ei saanud ennustamist uuesti avada",
         "couldNotFinishBetting": "Ennustamist ei õnnestunud lõpetada",
-        "couldNotSendUnitLeaderAccess": "Ei saanud koodi üksuste juhtidele saata"
+        "couldNotSendUnitLeaderAccess": "Ei saanud koodi üksuste juhtidele saata",
+        "couldNotGrantBettingAccess": "Kasutajatele ei saanud ennustamisele ligipääsu anda"
       }
     },
     "statistics": {

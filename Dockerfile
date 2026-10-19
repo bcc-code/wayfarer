@@ -9,7 +9,12 @@ WORKDIR /build
 # pnpm-workspace.yaml carries the allowBuilds/minimumReleaseAge config; without it
 # pnpm ignores all dependency build scripts and fails with ERR_PNPM_IGNORED_BUILDS.
 COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml ./
-RUN pnpm install --frozen-lockfile
+# Scripts are deferred to the `pnpm rebuild` below. The root `postinstall` is
+# `nuxt prepare`, which needs nuxt.config.ts — not copied yet, so this layer
+# stays cacheable. Without that config Nuxt falls back to devtools being
+# enabled, and @nuxt/devtools' `import Git from 'simple-git'` fails: the
+# simple-git security override pulls v4, which dropped the default export.
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 # Copy frontend source
 COPY frontend/ ./
@@ -33,6 +38,11 @@ ARG APP_VERSION
 ENV APP_VERSION=${APP_VERSION}
 # Nuxt/Vite "rendering chunks" exceeds Node's default ~2GB old-space heap; raise it.
 ENV NODE_OPTIONS=--max-old-space-size=4096
+# Run the scripts deferred above, now that nuxt.config.ts is present and
+# APP_VERSION is set (nuxt.config.ts requires it, and there is no .git here):
+# the native dependency builds (esbuild, sharp, protobufjs, ...) and
+# `nuxt prepare`.
+RUN pnpm rebuild
 RUN pnpm run build
 
 # Stage 2: Build Go backend

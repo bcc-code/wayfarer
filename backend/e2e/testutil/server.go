@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
@@ -12,6 +13,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/graph/api"
 	"github.com/bcc-media/wayfarer/internal/graph/directives"
+	"github.com/bcc-media/wayfarer/internal/handlers"
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/plugins"
@@ -31,6 +33,16 @@ type TestServerConfig struct {
 	LanguageService    *services.LanguageService
 	BulkService        *bulk.Service
 	Loaders            *loaders.Loaders
+}
+
+// TestJWTConfig is the JWT configuration used by the test server.
+func TestJWTConfig() config.JWTConfig {
+	return config.JWTConfig{
+		Secret:          TestJWTSecret,
+		Issuer:          TestJWTIssuer,
+		AccessTokenTTL:  7 * 24 * time.Hour,
+		RefreshTokenTTL: 183 * 24 * time.Hour,
+	}
 }
 
 // NewTestCache creates a cache instance for testing
@@ -56,7 +68,7 @@ func NewTestRouter(cfg TestServerConfig) *gin.Engine {
 		Cache:              cfg.Cache,
 		RoleService:        cfg.RoleService,
 		LeaderboardService: cfg.LeaderboardService,
-		Settings:           cfg.SettingsService,
+		SettingsService:    cfg.SettingsService,
 		BulkService:        cfg.BulkService,
 		InstanceID:         "test-instance",
 	}
@@ -72,10 +84,7 @@ func NewTestRouter(cfg TestServerConfig) *gin.Engine {
 	gqlHandler.AddTransport(transport.POST{})
 
 	// JWT config for testing
-	jwtConfig := config.JWTConfig{
-		Secret: TestJWTSecret,
-		Issuer: TestJWTIssuer,
-	}
+	jwtConfig := TestJWTConfig()
 
 	// GraphQL endpoint with language and JWT middleware. In production a
 	// background worker (services.LeaderboardApplyWorker) drains the score
@@ -88,6 +97,16 @@ func NewTestRouter(cfg TestServerConfig) *gin.Engine {
 		drainLeaderboardApplyQueue(cfg.DB),
 		graphqlHandlerWithLanguage(gqlHandler, cfg.LanguageService),
 	)
+
+	// Session endpoints. /auth/exchange needs a real identity provider, so
+	// tests open sessions through AuthSessionService.StartSession directly.
+	authHandler := &handlers.AuthHandler{
+		DB:             cfg.DB,
+		SessionService: services.NewAuthSessionService(cfg.DB.Queries, cfg.RoleService, jwtConfig),
+	}
+	authGroup := router.Group("/auth", middleware.MaxBodyBytes(handlers.AuthRequestBodyLimit))
+	authGroup.POST("/refresh", authHandler.Refresh)
+	authGroup.POST("/logout", authHandler.Logout)
 
 	// Register plugins
 	pluginDeps := plugins.Dependencies{
@@ -180,7 +199,7 @@ func SetupTestServer(ctx context.Context, dbMgr *TestDBManager) (*gin.Engine, fu
 	languageService := services.NewLanguageService(dbMgr.DB.Queries, testCache, dataLoaders.UserByIDLoader, logger)
 
 	// Create settings service
-	settingsService, err := services.NewSettingsService(ctx, dbMgr.DB.Queries, logger)
+	settingsService, err := services.NewSettingsService(ctx, dbMgr.DB.Queries, services.NewSettingsTxRunner(dbMgr.DB.Pool, dbMgr.DB.Queries), logger, true)
 	if err != nil {
 		testCache.Close()
 		return nil, nil, err
@@ -193,14 +212,14 @@ func SetupTestServer(ctx context.Context, dbMgr *TestDBManager) (*gin.Engine, fu
 		Loaders: dataLoaders,
 	}
 
-	// Create bulk service (without pub/sub for testing - sync processing only)
+	// Create bulk service (jobs run synchronously in tests)
 	bulkService := bulk.NewService(
 		dbMgr.DB,
 		testCache,
 		dataLoaders,
-		nil, // PushService
-		nil, // FirebaseService
-		nil, // Publisher
+		nil,  // PushService
+		nil,  // FirebaseService
+		true, // syncJobs
 		logger,
 		contentAchievementService,
 	)
@@ -246,7 +265,7 @@ func SetupTestServerWithCache(ctx context.Context, dbMgr *TestDBManager) (*gin.E
 	languageService := services.NewLanguageService(dbMgr.DB.Queries, testCache, dataLoaders.UserByIDLoader, logger)
 
 	// Create settings service
-	settingsService, err := services.NewSettingsService(ctx, dbMgr.DB.Queries, logger)
+	settingsService, err := services.NewSettingsService(ctx, dbMgr.DB.Queries, services.NewSettingsTxRunner(dbMgr.DB.Pool, dbMgr.DB.Queries), logger, true)
 	if err != nil {
 		testCache.Close()
 		return nil, nil, nil, err
@@ -259,14 +278,14 @@ func SetupTestServerWithCache(ctx context.Context, dbMgr *TestDBManager) (*gin.E
 		Loaders: dataLoaders,
 	}
 
-	// Create bulk service (without pub/sub for testing - sync processing only)
+	// Create bulk service (jobs run synchronously in tests)
 	bulkService := bulk.NewService(
 		dbMgr.DB,
 		testCache,
 		dataLoaders,
-		nil, // PushService
-		nil, // FirebaseService
-		nil, // Publisher
+		nil,  // PushService
+		nil,  // FirebaseService
+		true, // syncJobs
 		logger,
 		contentAchievementService,
 	)

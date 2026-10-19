@@ -57,6 +57,17 @@ func (s *Service) NotifyProjectQuizSessions(ctx context.Context, projectID strin
 	return s.updateTimestamp(ctx, fmt.Sprintf("projects/%s/notifications/quiz_sessions", projectID))
 }
 
+// NotifyProjectCurrentProject updates the timestamp clients watch to learn
+// that the system-wide current project has moved.
+// Path: projects/{projectId}/notifications/current_project
+//
+// Fired against the outgoing project as well as the incoming one: a connected
+// client is subscribed to the project it currently believes in, so the
+// outgoing id is the only channel that reaches it.
+func (s *Service) NotifyProjectCurrentProject(ctx context.Context, projectID string) error {
+	return s.updateTimestamp(ctx, fmt.Sprintf("projects/%s/notifications/current_project", projectID))
+}
+
 // NotifyAdminFeedback updates the timestamp for admin feedback notifications.
 // Path: admin/feedback
 func (s *Service) NotifyAdminFeedback(ctx context.Context) error {

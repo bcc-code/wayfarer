@@ -780,9 +780,8 @@ function handleDropMember(
                       <p class="text-sm font-medium mb-3">
                         {{ $t('admin.units.bulkCreate.countLabel') }}
                       </p>
-                      <UInput
-                        v-model.number="bulkCount"
-                        type="number"
+                      <UInputNumber
+                        v-model="bulkCount"
                         :min="1"
                         :max="50"
                         class="mb-3"

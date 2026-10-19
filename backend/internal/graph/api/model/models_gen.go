@@ -70,7 +70,18 @@ type QuizQuestion interface {
 	GetBettingMaxPercentage() *float64
 	GetBettingMinAbsolute() *int
 	GetBettingMaxAbsolute() *int
+	GetBettingMultiplierCorrect() *float64
+	GetBettingMultiplierWrong() *float64
 	GetTranslationStatus() []TranslationFieldStatus
+}
+
+// Per-question aggregates, one implementation per question type.
+type QuizQuestionResults interface {
+	IsQuizQuestionResults()
+	GetQuestion() QuizQuestion
+	// Submissions that answered this question. Every percentage below is a share
+	// of this, never of the quiz-wide submission count.
+	GetResponseCount() int
 }
 
 type QuizResponse interface {
@@ -345,9 +356,12 @@ type Consent struct {
 	PublishedAt       *scalars.DateTime         `json:"publishedAt,omitempty"`
 	ManagementType    ConsentManagementType     `json:"managementType"`
 	ManagedBy         *string                   `json:"managedBy,omitempty"`
+	IsRequired        bool                      `json:"isRequired"`
+	Project           *Project                  `json:"project,omitempty"`
 	UserHistory       []UserConsentHistoryEntry `json:"userHistory"`
 	TranslationStatus []TranslationFieldStatus  `json:"translationStatus"`
 	BodyMarkdown      string                    `json:"-"`
+	ProjectID         *string                   `json:"-"`
 }
 
 type ConsentStatus struct {
@@ -495,6 +509,7 @@ type CreateLeaderboardConfigInput struct {
 	Name       string                `json:"name"`
 	EntityType LeaderboardEntityType `json:"entityType"`
 	Filter     *LeaderboardFilter    `json:"filter,omitempty"`
+	LimitMode  *LeaderboardLimitMode `json:"limitMode,omitempty"`
 	MaxEntries *int                  `json:"maxEntries,omitempty"`
 	SortOrder  *int                  `json:"sortOrder,omitempty"`
 	IsActive   *bool                 `json:"isActive,omitempty"`
@@ -506,9 +521,10 @@ type CreateOrderingItemInput struct {
 }
 
 type CreatePredefinedAnswerInput struct {
-	AnswerText  string `json:"answerText"`
-	IsCorrect   bool   `json:"isCorrect"`
-	AnswerOrder int    `json:"answerOrder"`
+	AnswerText  string  `json:"answerText"`
+	Description *string `json:"description,omitempty"`
+	IsCorrect   bool    `json:"isCorrect"`
+	AnswerOrder int     `json:"answerOrder"`
 }
 
 type CreateProjectInput struct {
@@ -555,22 +571,24 @@ type CreateQuizInput struct {
 }
 
 type CreateQuizQuestionInput struct {
-	QuestionType           QuizQuestionType              `json:"questionType"`
-	QuestionText           string                        `json:"questionText"`
-	QuestionOrder          int                           `json:"questionOrder"`
-	TimeoutSeconds         *int                          `json:"timeoutSeconds,omitempty"`
-	Points                 *int                          `json:"points,omitempty"`
-	BettingEnabled         *bool                         `json:"bettingEnabled,omitempty"`
-	BettingMinPercentage   *float64                      `json:"bettingMinPercentage,omitempty"`
-	BettingMaxPercentage   *float64                      `json:"bettingMaxPercentage,omitempty"`
-	BettingMinAbsolute     *int                          `json:"bettingMinAbsolute,omitempty"`
-	BettingMaxAbsolute     *int                          `json:"bettingMaxAbsolute,omitempty"`
-	AllowMultipleSelection *bool                         `json:"allowMultipleSelection,omitempty"`
-	PredefinedAnswers      []CreatePredefinedAnswerInput `json:"predefinedAnswers,omitempty"`
-	MinValue               *float64                      `json:"minValue,omitempty"`
-	MaxValue               *float64                      `json:"maxValue,omitempty"`
-	StepValue              *float64                      `json:"stepValue,omitempty"`
-	OrderingItems          []CreateOrderingItemInput     `json:"orderingItems,omitempty"`
+	QuestionType             QuizQuestionType              `json:"questionType"`
+	QuestionText             string                        `json:"questionText"`
+	QuestionOrder            int                           `json:"questionOrder"`
+	TimeoutSeconds           *int                          `json:"timeoutSeconds,omitempty"`
+	Points                   *int                          `json:"points,omitempty"`
+	BettingEnabled           *bool                         `json:"bettingEnabled,omitempty"`
+	BettingMinPercentage     *float64                      `json:"bettingMinPercentage,omitempty"`
+	BettingMaxPercentage     *float64                      `json:"bettingMaxPercentage,omitempty"`
+	BettingMinAbsolute       *int                          `json:"bettingMinAbsolute,omitempty"`
+	BettingMaxAbsolute       *int                          `json:"bettingMaxAbsolute,omitempty"`
+	BettingMultiplierCorrect *float64                      `json:"bettingMultiplierCorrect,omitempty"`
+	BettingMultiplierWrong   *float64                      `json:"bettingMultiplierWrong,omitempty"`
+	AllowMultipleSelection   *bool                         `json:"allowMultipleSelection,omitempty"`
+	PredefinedAnswers        []CreatePredefinedAnswerInput `json:"predefinedAnswers,omitempty"`
+	MinValue                 *float64                      `json:"minValue,omitempty"`
+	MaxValue                 *float64                      `json:"maxValue,omitempty"`
+	StepValue                *float64                      `json:"stepValue,omitempty"`
+	OrderingItems            []CreateOrderingItemInput     `json:"orderingItems,omitempty"`
 }
 
 type CreateQuizSessionInput struct {
@@ -865,20 +883,28 @@ type FixMissingContentProgressResult struct {
 	AchievementsAwarded    int `json:"achievementsAwarded"`
 }
 
+type FreeTextGroup struct {
+	Text       string  `json:"text"`
+	Count      int     `json:"count"`
+	Percentage float64 `json:"percentage"`
+}
+
 type FreeTextQuestion struct {
-	ID                   string                   `json:"id"`
-	Quiz                 *Quiz                    `json:"quiz"`
-	QuestionText         string                   `json:"questionText"`
-	QuestionOrder        int                      `json:"questionOrder"`
-	TimeoutSeconds       *int                     `json:"timeoutSeconds,omitempty"`
-	Points               *int                     `json:"points,omitempty"`
-	BettingEnabled       bool                     `json:"bettingEnabled"`
-	BettingMinPercentage *float64                 `json:"bettingMinPercentage,omitempty"`
-	BettingMaxPercentage *float64                 `json:"bettingMaxPercentage,omitempty"`
-	BettingMinAbsolute   *int                     `json:"bettingMinAbsolute,omitempty"`
-	BettingMaxAbsolute   *int                     `json:"bettingMaxAbsolute,omitempty"`
-	TranslationStatus    []TranslationFieldStatus `json:"translationStatus"`
-	QuizID               string                   `json:"-"`
+	ID                       string                   `json:"id"`
+	Quiz                     *Quiz                    `json:"quiz"`
+	QuestionText             string                   `json:"questionText"`
+	QuestionOrder            int                      `json:"questionOrder"`
+	TimeoutSeconds           *int                     `json:"timeoutSeconds,omitempty"`
+	Points                   *int                     `json:"points,omitempty"`
+	BettingEnabled           bool                     `json:"bettingEnabled"`
+	BettingMinPercentage     *float64                 `json:"bettingMinPercentage,omitempty"`
+	BettingMaxPercentage     *float64                 `json:"bettingMaxPercentage,omitempty"`
+	BettingMinAbsolute       *int                     `json:"bettingMinAbsolute,omitempty"`
+	BettingMaxAbsolute       *int                     `json:"bettingMaxAbsolute,omitempty"`
+	BettingMultiplierCorrect *float64                 `json:"bettingMultiplierCorrect,omitempty"`
+	BettingMultiplierWrong   *float64                 `json:"bettingMultiplierWrong,omitempty"`
+	TranslationStatus        []TranslationFieldStatus `json:"translationStatus"`
+	QuizID                   string                   `json:"-"`
 }
 
 func (FreeTextQuestion) IsQuizQuestion()                        {}
@@ -893,6 +919,10 @@ func (this FreeTextQuestion) GetBettingMinPercentage() *float64 { return this.Be
 func (this FreeTextQuestion) GetBettingMaxPercentage() *float64 { return this.BettingMaxPercentage }
 func (this FreeTextQuestion) GetBettingMinAbsolute() *int       { return this.BettingMinAbsolute }
 func (this FreeTextQuestion) GetBettingMaxAbsolute() *int       { return this.BettingMaxAbsolute }
+func (this FreeTextQuestion) GetBettingMultiplierCorrect() *float64 {
+	return this.BettingMultiplierCorrect
+}
+func (this FreeTextQuestion) GetBettingMultiplierWrong() *float64 { return this.BettingMultiplierWrong }
 func (this FreeTextQuestion) GetTranslationStatus() []TranslationFieldStatus {
 	if this.TranslationStatus == nil {
 		return nil
@@ -903,6 +933,25 @@ func (this FreeTextQuestion) GetTranslationStatus() []TranslationFieldStatus {
 	}
 	return interfaceSlice
 }
+
+// Not graded. Grouped by a normalised form (trimmed, whitespace collapsed,
+// case-folded), labelled with the most common original spelling.
+type FreeTextQuestionResults struct {
+	Question      QuizQuestion `json:"question"`
+	ResponseCount int          `json:"responseCount"`
+	DistinctCount int          `json:"distinctCount"`
+	// Groups, most common first.
+	Groups []FreeTextGroup `json:"groups"`
+	// Every answer as submitted, for the expanded view.
+	Responses []string `json:"responses"`
+}
+
+func (FreeTextQuestionResults) IsQuizQuestionResults()         {}
+func (this FreeTextQuestionResults) GetQuestion() QuizQuestion { return this.Question }
+
+// Submissions that answered this question. Every percentage below is a share
+// of this, never of the quiz-wide submission count.
+func (this FreeTextQuestionResults) GetResponseCount() int { return this.ResponseCount }
 
 type FreeTextResponse struct {
 	ID               string            `json:"id"`
@@ -946,33 +995,37 @@ type Image struct {
 }
 
 type JSONQuestion struct {
-	ID                   string                   `json:"id"`
-	Quiz                 *Quiz                    `json:"quiz"`
-	QuestionText         string                   `json:"questionText"`
-	QuestionOrder        int                      `json:"questionOrder"`
-	TimeoutSeconds       *int                     `json:"timeoutSeconds,omitempty"`
-	Points               *int                     `json:"points,omitempty"`
-	BettingEnabled       bool                     `json:"bettingEnabled"`
-	BettingMinPercentage *float64                 `json:"bettingMinPercentage,omitempty"`
-	BettingMaxPercentage *float64                 `json:"bettingMaxPercentage,omitempty"`
-	BettingMinAbsolute   *int                     `json:"bettingMinAbsolute,omitempty"`
-	BettingMaxAbsolute   *int                     `json:"bettingMaxAbsolute,omitempty"`
-	TranslationStatus    []TranslationFieldStatus `json:"translationStatus"`
-	QuizID               string                   `json:"-"`
+	ID                       string                   `json:"id"`
+	Quiz                     *Quiz                    `json:"quiz"`
+	QuestionText             string                   `json:"questionText"`
+	QuestionOrder            int                      `json:"questionOrder"`
+	TimeoutSeconds           *int                     `json:"timeoutSeconds,omitempty"`
+	Points                   *int                     `json:"points,omitempty"`
+	BettingEnabled           bool                     `json:"bettingEnabled"`
+	BettingMinPercentage     *float64                 `json:"bettingMinPercentage,omitempty"`
+	BettingMaxPercentage     *float64                 `json:"bettingMaxPercentage,omitempty"`
+	BettingMinAbsolute       *int                     `json:"bettingMinAbsolute,omitempty"`
+	BettingMaxAbsolute       *int                     `json:"bettingMaxAbsolute,omitempty"`
+	BettingMultiplierCorrect *float64                 `json:"bettingMultiplierCorrect,omitempty"`
+	BettingMultiplierWrong   *float64                 `json:"bettingMultiplierWrong,omitempty"`
+	TranslationStatus        []TranslationFieldStatus `json:"translationStatus"`
+	QuizID                   string                   `json:"-"`
 }
 
-func (JSONQuestion) IsQuizQuestion()                        {}
-func (this JSONQuestion) GetID() string                     { return this.ID }
-func (this JSONQuestion) GetQuiz() *Quiz                    { return this.Quiz }
-func (this JSONQuestion) GetQuestionText() string           { return this.QuestionText }
-func (this JSONQuestion) GetQuestionOrder() int             { return this.QuestionOrder }
-func (this JSONQuestion) GetTimeoutSeconds() *int           { return this.TimeoutSeconds }
-func (this JSONQuestion) GetPoints() *int                   { return this.Points }
-func (this JSONQuestion) GetBettingEnabled() bool           { return this.BettingEnabled }
-func (this JSONQuestion) GetBettingMinPercentage() *float64 { return this.BettingMinPercentage }
-func (this JSONQuestion) GetBettingMaxPercentage() *float64 { return this.BettingMaxPercentage }
-func (this JSONQuestion) GetBettingMinAbsolute() *int       { return this.BettingMinAbsolute }
-func (this JSONQuestion) GetBettingMaxAbsolute() *int       { return this.BettingMaxAbsolute }
+func (JSONQuestion) IsQuizQuestion()                            {}
+func (this JSONQuestion) GetID() string                         { return this.ID }
+func (this JSONQuestion) GetQuiz() *Quiz                        { return this.Quiz }
+func (this JSONQuestion) GetQuestionText() string               { return this.QuestionText }
+func (this JSONQuestion) GetQuestionOrder() int                 { return this.QuestionOrder }
+func (this JSONQuestion) GetTimeoutSeconds() *int               { return this.TimeoutSeconds }
+func (this JSONQuestion) GetPoints() *int                       { return this.Points }
+func (this JSONQuestion) GetBettingEnabled() bool               { return this.BettingEnabled }
+func (this JSONQuestion) GetBettingMinPercentage() *float64     { return this.BettingMinPercentage }
+func (this JSONQuestion) GetBettingMaxPercentage() *float64     { return this.BettingMaxPercentage }
+func (this JSONQuestion) GetBettingMinAbsolute() *int           { return this.BettingMinAbsolute }
+func (this JSONQuestion) GetBettingMaxAbsolute() *int           { return this.BettingMaxAbsolute }
+func (this JSONQuestion) GetBettingMultiplierCorrect() *float64 { return this.BettingMultiplierCorrect }
+func (this JSONQuestion) GetBettingMultiplierWrong() *float64   { return this.BettingMultiplierWrong }
 func (this JSONQuestion) GetTranslationStatus() []TranslationFieldStatus {
 	if this.TranslationStatus == nil {
 		return nil
@@ -983,6 +1036,20 @@ func (this JSONQuestion) GetTranslationStatus() []TranslationFieldStatus {
 	}
 	return interfaceSlice
 }
+
+// Arbitrary structured data, so only a count. Kept in the list so question
+// numbering stays intact.
+type JSONQuestionResults struct {
+	Question      QuizQuestion `json:"question"`
+	ResponseCount int          `json:"responseCount"`
+}
+
+func (JSONQuestionResults) IsQuizQuestionResults()         {}
+func (this JSONQuestionResults) GetQuestion() QuizQuestion { return this.Question }
+
+// Submissions that answered this question. Every percentage below is a share
+// of this, never of the quiz-wide submission count.
+func (this JSONQuestionResults) GetResponseCount() int { return this.ResponseCount }
 
 type JSONResponse struct {
 	ID               string            `json:"id"`
@@ -1016,13 +1083,15 @@ type LeaderboardConfig struct {
 	Name       string                 `json:"name"`
 	EntityType LeaderboardEntityType  `json:"entityType"`
 	Filter     *LeaderboardFilterView `json:"filter,omitempty"`
+	LimitMode  LeaderboardLimitMode   `json:"limitMode"`
 	MaxEntries *int                   `json:"maxEntries,omitempty"`
 	SortOrder  int                    `json:"sortOrder"`
 	IsActive   bool                   `json:"isActive"`
 	CreatedAt  scalars.DateTime       `json:"createdAt"`
 	UpdatedAt  scalars.DateTime       `json:"updatedAt"`
 	// The finished leaderboard, capped before pagination. With no page size, returns
-	// the configured limit, or 100 entries when maxEntries is null.
+	// the automatic church-size limit, the manual maxEntries limit, or 100 entries
+	// when the manual limit is null.
 	Leaderboard *LeaderboardConnection `json:"leaderboard"`
 	EventID     *string                `json:"-"`
 	ProjectID   string                 `json:"-"`
@@ -1078,6 +1147,9 @@ type LeaderboardEntry struct {
 }
 
 type LeaderboardFilter struct {
+	MyChurch       *bool           `json:"myChurch,omitempty"`
+	MyTeam         *bool           `json:"myTeam,omitempty"`
+	MySuperTeam    *bool           `json:"mySuperTeam,omitempty"`
 	MinScore       *int            `json:"minScore,omitempty"`
 	MaxScore       *int            `json:"maxScore,omitempty"`
 	ChurchID       *string         `json:"churchId,omitempty"`
@@ -1093,6 +1165,9 @@ type LeaderboardFilter struct {
 // Kept as a separate type because GraphQL doesn't allow an `input` type as an output field's
 // type — mirrors the AgeRange/AgeRangeInput pattern already used elsewhere in this schema.
 type LeaderboardFilterView struct {
+	MyChurch       *bool           `json:"myChurch,omitempty"`
+	MyTeam         *bool           `json:"myTeam,omitempty"`
+	MySuperTeam    *bool           `json:"mySuperTeam,omitempty"`
 	MinScore       *int            `json:"minScore,omitempty"`
 	MaxScore       *int            `json:"maxScore,omitempty"`
 	ChurchID       *string         `json:"churchId,omitempty"`
@@ -1140,23 +1215,32 @@ type MissingStreakProgressUser struct {
 type Mutation struct {
 }
 
+type NumberBucket struct {
+	From       float64 `json:"from"`
+	To         float64 `json:"to"`
+	Count      int     `json:"count"`
+	Percentage float64 `json:"percentage"`
+}
+
 type NumberQuestion struct {
-	ID                   string                   `json:"id"`
-	Quiz                 *Quiz                    `json:"quiz"`
-	QuestionText         string                   `json:"questionText"`
-	QuestionOrder        int                      `json:"questionOrder"`
-	TimeoutSeconds       *int                     `json:"timeoutSeconds,omitempty"`
-	Points               *int                     `json:"points,omitempty"`
-	BettingEnabled       bool                     `json:"bettingEnabled"`
-	BettingMinPercentage *float64                 `json:"bettingMinPercentage,omitempty"`
-	BettingMaxPercentage *float64                 `json:"bettingMaxPercentage,omitempty"`
-	BettingMinAbsolute   *int                     `json:"bettingMinAbsolute,omitempty"`
-	BettingMaxAbsolute   *int                     `json:"bettingMaxAbsolute,omitempty"`
-	TranslationStatus    []TranslationFieldStatus `json:"translationStatus"`
-	MinValue             *float64                 `json:"minValue,omitempty"`
-	MaxValue             *float64                 `json:"maxValue,omitempty"`
-	StepValue            *float64                 `json:"stepValue,omitempty"`
-	QuizID               string                   `json:"-"`
+	ID                       string                   `json:"id"`
+	Quiz                     *Quiz                    `json:"quiz"`
+	QuestionText             string                   `json:"questionText"`
+	QuestionOrder            int                      `json:"questionOrder"`
+	TimeoutSeconds           *int                     `json:"timeoutSeconds,omitempty"`
+	Points                   *int                     `json:"points,omitempty"`
+	BettingEnabled           bool                     `json:"bettingEnabled"`
+	BettingMinPercentage     *float64                 `json:"bettingMinPercentage,omitempty"`
+	BettingMaxPercentage     *float64                 `json:"bettingMaxPercentage,omitempty"`
+	BettingMinAbsolute       *int                     `json:"bettingMinAbsolute,omitempty"`
+	BettingMaxAbsolute       *int                     `json:"bettingMaxAbsolute,omitempty"`
+	BettingMultiplierCorrect *float64                 `json:"bettingMultiplierCorrect,omitempty"`
+	BettingMultiplierWrong   *float64                 `json:"bettingMultiplierWrong,omitempty"`
+	TranslationStatus        []TranslationFieldStatus `json:"translationStatus"`
+	MinValue                 *float64                 `json:"minValue,omitempty"`
+	MaxValue                 *float64                 `json:"maxValue,omitempty"`
+	StepValue                *float64                 `json:"stepValue,omitempty"`
+	QuizID                   string                   `json:"-"`
 }
 
 func (NumberQuestion) IsQuizQuestion()                        {}
@@ -1171,6 +1255,10 @@ func (this NumberQuestion) GetBettingMinPercentage() *float64 { return this.Bett
 func (this NumberQuestion) GetBettingMaxPercentage() *float64 { return this.BettingMaxPercentage }
 func (this NumberQuestion) GetBettingMinAbsolute() *int       { return this.BettingMinAbsolute }
 func (this NumberQuestion) GetBettingMaxAbsolute() *int       { return this.BettingMaxAbsolute }
+func (this NumberQuestion) GetBettingMultiplierCorrect() *float64 {
+	return this.BettingMultiplierCorrect
+}
+func (this NumberQuestion) GetBettingMultiplierWrong() *float64 { return this.BettingMultiplierWrong }
 func (this NumberQuestion) GetTranslationStatus() []TranslationFieldStatus {
 	if this.TranslationStatus == nil {
 		return nil
@@ -1181,6 +1269,24 @@ func (this NumberQuestion) GetTranslationStatus() []TranslationFieldStatus {
 	}
 	return interfaceSlice
 }
+
+// NUMBER stores no correct answer, so results describe the distribution.
+type NumberQuestionResults struct {
+	Question      QuizQuestion   `json:"question"`
+	ResponseCount int            `json:"responseCount"`
+	Average       *float64       `json:"average,omitempty"`
+	Median        *float64       `json:"median,omitempty"`
+	Min           *float64       `json:"min,omitempty"`
+	Max           *float64       `json:"max,omitempty"`
+	Buckets       []NumberBucket `json:"buckets"`
+}
+
+func (NumberQuestionResults) IsQuizQuestionResults()         {}
+func (this NumberQuestionResults) GetQuestion() QuizQuestion { return this.Question }
+
+// Submissions that answered this question. Every percentage below is a share
+// of this, never of the quiz-wide submission count.
+func (this NumberQuestionResults) GetResponseCount() int { return this.ResponseCount }
 
 type NumberResponse struct {
 	ID               string            `json:"id"`
@@ -1207,21 +1313,30 @@ func (this NumberResponse) GetPointsEarned() *int            { return this.Point
 func (this NumberResponse) GetBetAmount() *int               { return this.BetAmount }
 func (this NumberResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
 
+type OrderingItemResult struct {
+	Item                 *QuizOrderingItem `json:"item"`
+	CorrectPosition      int               `json:"correctPosition"`
+	CorrectlyPlacedCount int               `json:"correctlyPlacedCount"`
+	Percentage           float64           `json:"percentage"`
+}
+
 type OrderingQuestion struct {
-	ID                   string                   `json:"id"`
-	Quiz                 *Quiz                    `json:"quiz"`
-	QuestionText         string                   `json:"questionText"`
-	QuestionOrder        int                      `json:"questionOrder"`
-	TimeoutSeconds       *int                     `json:"timeoutSeconds,omitempty"`
-	Points               *int                     `json:"points,omitempty"`
-	BettingEnabled       bool                     `json:"bettingEnabled"`
-	BettingMinPercentage *float64                 `json:"bettingMinPercentage,omitempty"`
-	BettingMaxPercentage *float64                 `json:"bettingMaxPercentage,omitempty"`
-	BettingMinAbsolute   *int                     `json:"bettingMinAbsolute,omitempty"`
-	BettingMaxAbsolute   *int                     `json:"bettingMaxAbsolute,omitempty"`
-	TranslationStatus    []TranslationFieldStatus `json:"translationStatus"`
-	OrderingItems        []QuizOrderingItem       `json:"orderingItems"`
-	QuizID               string                   `json:"-"`
+	ID                       string                   `json:"id"`
+	Quiz                     *Quiz                    `json:"quiz"`
+	QuestionText             string                   `json:"questionText"`
+	QuestionOrder            int                      `json:"questionOrder"`
+	TimeoutSeconds           *int                     `json:"timeoutSeconds,omitempty"`
+	Points                   *int                     `json:"points,omitempty"`
+	BettingEnabled           bool                     `json:"bettingEnabled"`
+	BettingMinPercentage     *float64                 `json:"bettingMinPercentage,omitempty"`
+	BettingMaxPercentage     *float64                 `json:"bettingMaxPercentage,omitempty"`
+	BettingMinAbsolute       *int                     `json:"bettingMinAbsolute,omitempty"`
+	BettingMaxAbsolute       *int                     `json:"bettingMaxAbsolute,omitempty"`
+	BettingMultiplierCorrect *float64                 `json:"bettingMultiplierCorrect,omitempty"`
+	BettingMultiplierWrong   *float64                 `json:"bettingMultiplierWrong,omitempty"`
+	TranslationStatus        []TranslationFieldStatus `json:"translationStatus"`
+	OrderingItems            []QuizOrderingItem       `json:"orderingItems"`
+	QuizID                   string                   `json:"-"`
 }
 
 func (OrderingQuestion) IsQuizQuestion()                        {}
@@ -1236,6 +1351,10 @@ func (this OrderingQuestion) GetBettingMinPercentage() *float64 { return this.Be
 func (this OrderingQuestion) GetBettingMaxPercentage() *float64 { return this.BettingMaxPercentage }
 func (this OrderingQuestion) GetBettingMinAbsolute() *int       { return this.BettingMinAbsolute }
 func (this OrderingQuestion) GetBettingMaxAbsolute() *int       { return this.BettingMaxAbsolute }
+func (this OrderingQuestion) GetBettingMultiplierCorrect() *float64 {
+	return this.BettingMultiplierCorrect
+}
+func (this OrderingQuestion) GetBettingMultiplierWrong() *float64 { return this.BettingMultiplierWrong }
 func (this OrderingQuestion) GetTranslationStatus() []TranslationFieldStatus {
 	if this.TranslationStatus == nil {
 		return nil
@@ -1246,6 +1365,22 @@ func (this OrderingQuestion) GetTranslationStatus() []TranslationFieldStatus {
 	}
 	return interfaceSlice
 }
+
+// Graded all-or-nothing, so per-position accuracy is what shows where people
+// went wrong.
+type OrderingQuestionResults struct {
+	Question          QuizQuestion         `json:"question"`
+	ResponseCount     int                  `json:"responseCount"`
+	FullyCorrectCount int                  `json:"fullyCorrectCount"`
+	Items             []OrderingItemResult `json:"items"`
+}
+
+func (OrderingQuestionResults) IsQuizQuestionResults()         {}
+func (this OrderingQuestionResults) GetQuestion() QuizQuestion { return this.Question }
+
+// Submissions that answered this question. Every percentage below is a share
+// of this, never of the quiz-wide submission count.
+func (this OrderingQuestionResults) GetResponseCount() int { return this.ResponseCount }
 
 type OrderingResponse struct {
 	ID               string            `json:"id"`
@@ -1340,22 +1475,31 @@ func (this PluginChallenge) GetTranslationStatus() []TranslationFieldStatus {
 
 func (PluginChallenge) IsScoreSource() {}
 
+type PredefinedOptionResult struct {
+	Answer     *QuizPredefinedAnswer `json:"answer"`
+	Count      int                   `json:"count"`
+	Percentage float64               `json:"percentage"`
+	IsCorrect  bool                  `json:"isCorrect"`
+}
+
 type PredefinedQuestion struct {
-	ID                     string                   `json:"id"`
-	Quiz                   *Quiz                    `json:"quiz"`
-	QuestionText           string                   `json:"questionText"`
-	QuestionOrder          int                      `json:"questionOrder"`
-	TimeoutSeconds         *int                     `json:"timeoutSeconds,omitempty"`
-	Points                 *int                     `json:"points,omitempty"`
-	BettingEnabled         bool                     `json:"bettingEnabled"`
-	BettingMinPercentage   *float64                 `json:"bettingMinPercentage,omitempty"`
-	BettingMaxPercentage   *float64                 `json:"bettingMaxPercentage,omitempty"`
-	BettingMinAbsolute     *int                     `json:"bettingMinAbsolute,omitempty"`
-	BettingMaxAbsolute     *int                     `json:"bettingMaxAbsolute,omitempty"`
-	TranslationStatus      []TranslationFieldStatus `json:"translationStatus"`
-	AllowMultipleSelection bool                     `json:"allowMultipleSelection"`
-	PredefinedAnswers      []QuizPredefinedAnswer   `json:"predefinedAnswers"`
-	QuizID                 string                   `json:"-"`
+	ID                       string                   `json:"id"`
+	Quiz                     *Quiz                    `json:"quiz"`
+	QuestionText             string                   `json:"questionText"`
+	QuestionOrder            int                      `json:"questionOrder"`
+	TimeoutSeconds           *int                     `json:"timeoutSeconds,omitempty"`
+	Points                   *int                     `json:"points,omitempty"`
+	BettingEnabled           bool                     `json:"bettingEnabled"`
+	BettingMinPercentage     *float64                 `json:"bettingMinPercentage,omitempty"`
+	BettingMaxPercentage     *float64                 `json:"bettingMaxPercentage,omitempty"`
+	BettingMinAbsolute       *int                     `json:"bettingMinAbsolute,omitempty"`
+	BettingMaxAbsolute       *int                     `json:"bettingMaxAbsolute,omitempty"`
+	BettingMultiplierCorrect *float64                 `json:"bettingMultiplierCorrect,omitempty"`
+	BettingMultiplierWrong   *float64                 `json:"bettingMultiplierWrong,omitempty"`
+	TranslationStatus        []TranslationFieldStatus `json:"translationStatus"`
+	AllowMultipleSelection   bool                     `json:"allowMultipleSelection"`
+	PredefinedAnswers        []QuizPredefinedAnswer   `json:"predefinedAnswers"`
+	QuizID                   string                   `json:"-"`
 }
 
 func (PredefinedQuestion) IsQuizQuestion()                        {}
@@ -1370,6 +1514,12 @@ func (this PredefinedQuestion) GetBettingMinPercentage() *float64 { return this.
 func (this PredefinedQuestion) GetBettingMaxPercentage() *float64 { return this.BettingMaxPercentage }
 func (this PredefinedQuestion) GetBettingMinAbsolute() *int       { return this.BettingMinAbsolute }
 func (this PredefinedQuestion) GetBettingMaxAbsolute() *int       { return this.BettingMaxAbsolute }
+func (this PredefinedQuestion) GetBettingMultiplierCorrect() *float64 {
+	return this.BettingMultiplierCorrect
+}
+func (this PredefinedQuestion) GetBettingMultiplierWrong() *float64 {
+	return this.BettingMultiplierWrong
+}
 func (this PredefinedQuestion) GetTranslationStatus() []TranslationFieldStatus {
 	if this.TranslationStatus == nil {
 		return nil
@@ -1380,6 +1530,21 @@ func (this PredefinedQuestion) GetTranslationStatus() []TranslationFieldStatus {
 	}
 	return interfaceSlice
 }
+
+type PredefinedQuestionResults struct {
+	Question      QuizQuestion `json:"question"`
+	ResponseCount int          `json:"responseCount"`
+	// Responses that selected exactly the correct set of answers.
+	CorrectCount int                      `json:"correctCount"`
+	Options      []PredefinedOptionResult `json:"options"`
+}
+
+func (PredefinedQuestionResults) IsQuizQuestionResults()         {}
+func (this PredefinedQuestionResults) GetQuestion() QuizQuestion { return this.Question }
+
+// Submissions that answered this question. Every percentage below is a share
+// of this, never of the quiz-wide submission count.
+func (this PredefinedQuestionResults) GetResponseCount() int { return this.ResponseCount }
 
 type PredefinedResponse struct {
 	ID                string                 `json:"id"`
@@ -1666,11 +1831,27 @@ type QuizPredefinedAnswer struct {
 	ID                string                   `json:"id"`
 	Question          QuizQuestion             `json:"question"`
 	AnswerText        string                   `json:"answerText"`
+	Description       *string                  `json:"description,omitempty"`
 	AnswerOrder       int                      `json:"answerOrder"`
 	IsCorrect         *bool                    `json:"isCorrect,omitempty"`
 	TranslationStatus []TranslationFieldStatus `json:"translationStatus"`
 	IsCorrectValue    bool                     `json:"-"`
 	QuestionID        string                   `json:"-"`
+}
+
+type QuizResults struct {
+	Quiz *Quiz `json:"quiz"`
+	// Completed submissions across all sessions.
+	SubmissionCount int `json:"submissionCount"`
+	// Distinct users behind those submissions.
+	ParticipantCount int `json:"participantCount"`
+	// Submissions created outside a session (M2M imports) are not counted here.
+	SessionCount           int                   `json:"sessionCount"`
+	AverageScore           *float64              `json:"averageScore,omitempty"`
+	AverageMaxScore        *float64              `json:"averageMaxScore,omitempty"`
+	AverageScorePercentage *float64              `json:"averageScorePercentage,omitempty"`
+	Questions              []QuizQuestionResults `json:"questions"`
+	QuizID                 string                `json:"-"`
 }
 
 type QuizSession struct {
@@ -1819,6 +2000,30 @@ type SendPushNotificationResult struct {
 type SetNotificationPreferenceInput struct {
 	NotificationType NotificationType `json:"notificationType"`
 	Enabled          bool             `json:"enabled"`
+}
+
+type Setting struct {
+	Key string `json:"key"`
+	// Canonical string form of whichever value column valueType names.
+	Value       string           `json:"value"`
+	ValueType   SettingValueType `json:"valueType"`
+	Description *string          `json:"description,omitempty"`
+	// True when the value is only read while the process starts up, so a change
+	// takes effect on the next restart rather than immediately.
+	RequiresRestart bool `json:"requiresRestart"`
+	// False for a row the application does not know about. Writing is restricted
+	// to known keys, so a row added to the database is not writable through the
+	// API by virtue of existing.
+	Editable bool `json:"editable"`
+	// The environment variable this setting overrides, when it backs one. Null
+	// for application data such as current_project_id.
+	EnvVar    *string          `json:"envVar,omitempty"`
+	UpdatedAt scalars.DateTime `json:"updatedAt"`
+}
+
+type SettingInput struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 type SimpleAchievement struct {
@@ -2177,6 +2382,7 @@ type UpdateLeaderboardConfigInput struct {
 	Name       string                `json:"name"`
 	EntityType LeaderboardEntityType `json:"entityType"`
 	Filter     *LeaderboardFilter    `json:"filter,omitempty"`
+	LimitMode  *LeaderboardLimitMode `json:"limitMode,omitempty"`
 	MaxEntries *int                  `json:"maxEntries,omitempty"`
 	SortOrder  int                   `json:"sortOrder"`
 	IsActive   bool                  `json:"isActive"`
@@ -2228,23 +2434,25 @@ type UpdateQuizInput struct {
 }
 
 type UpdateQuizQuestionInput struct {
-	QuestionText            *string                       `json:"questionText,omitempty"`
-	QuestionOrder           *int                          `json:"questionOrder,omitempty"`
-	TimeoutSeconds          *int                          `json:"timeoutSeconds,omitempty"`
-	Points                  *int                          `json:"points,omitempty"`
-	BettingEnabled          *bool                         `json:"bettingEnabled,omitempty"`
-	BettingMinPercentage    *float64                      `json:"bettingMinPercentage,omitempty"`
-	BettingMaxPercentage    *float64                      `json:"bettingMaxPercentage,omitempty"`
-	BettingMinAbsolute      *int                          `json:"bettingMinAbsolute,omitempty"`
-	BettingMaxAbsolute      *int                          `json:"bettingMaxAbsolute,omitempty"`
-	ClearBettingMinAbsolute *bool                         `json:"clearBettingMinAbsolute,omitempty"`
-	ClearBettingMaxAbsolute *bool                         `json:"clearBettingMaxAbsolute,omitempty"`
-	AllowMultipleSelection  *bool                         `json:"allowMultipleSelection,omitempty"`
-	PredefinedAnswers       []CreatePredefinedAnswerInput `json:"predefinedAnswers,omitempty"`
-	MinValue                *float64                      `json:"minValue,omitempty"`
-	MaxValue                *float64                      `json:"maxValue,omitempty"`
-	StepValue               *float64                      `json:"stepValue,omitempty"`
-	OrderingItems           []CreateOrderingItemInput     `json:"orderingItems,omitempty"`
+	QuestionText             *string                       `json:"questionText,omitempty"`
+	QuestionOrder            *int                          `json:"questionOrder,omitempty"`
+	TimeoutSeconds           *int                          `json:"timeoutSeconds,omitempty"`
+	Points                   *int                          `json:"points,omitempty"`
+	BettingEnabled           *bool                         `json:"bettingEnabled,omitempty"`
+	BettingMinPercentage     *float64                      `json:"bettingMinPercentage,omitempty"`
+	BettingMaxPercentage     *float64                      `json:"bettingMaxPercentage,omitempty"`
+	BettingMinAbsolute       *int                          `json:"bettingMinAbsolute,omitempty"`
+	BettingMaxAbsolute       *int                          `json:"bettingMaxAbsolute,omitempty"`
+	BettingMultiplierCorrect *float64                      `json:"bettingMultiplierCorrect,omitempty"`
+	BettingMultiplierWrong   *float64                      `json:"bettingMultiplierWrong,omitempty"`
+	ClearBettingMinAbsolute  *bool                         `json:"clearBettingMinAbsolute,omitempty"`
+	ClearBettingMaxAbsolute  *bool                         `json:"clearBettingMaxAbsolute,omitempty"`
+	AllowMultipleSelection   *bool                         `json:"allowMultipleSelection,omitempty"`
+	PredefinedAnswers        []CreatePredefinedAnswerInput `json:"predefinedAnswers,omitempty"`
+	MinValue                 *float64                      `json:"minValue,omitempty"`
+	MaxValue                 *float64                      `json:"maxValue,omitempty"`
+	StepValue                *float64                      `json:"stepValue,omitempty"`
+	OrderingItems            []CreateOrderingItemInput     `json:"orderingItems,omitempty"`
 }
 
 type UpdateQuizSessionInput struct {
@@ -3123,6 +3331,62 @@ func (e LeaderboardEntryTag) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+type LeaderboardLimitMode string
+
+const (
+	LeaderboardLimitModeManual LeaderboardLimitMode = "MANUAL"
+	// Top N filtered church participants. Requires PERSONS and churchId.
+	LeaderboardLimitModeChurchSize LeaderboardLimitMode = "CHURCH_SIZE"
+)
+
+var AllLeaderboardLimitMode = []LeaderboardLimitMode{
+	LeaderboardLimitModeManual,
+	LeaderboardLimitModeChurchSize,
+}
+
+func (e LeaderboardLimitMode) IsValid() bool {
+	switch e {
+	case LeaderboardLimitModeManual, LeaderboardLimitModeChurchSize:
+		return true
+	}
+	return false
+}
+
+func (e LeaderboardLimitMode) String() string {
+	return string(e)
+}
+
+func (e *LeaderboardLimitMode) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = LeaderboardLimitMode(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid LeaderboardLimitMode", str)
+	}
+	return nil
+}
+
+func (e LeaderboardLimitMode) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *LeaderboardLimitMode) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e LeaderboardLimitMode) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
 type NotificationType string
 
 const (
@@ -3539,6 +3803,67 @@ func (e *ScoreSourceType) UnmarshalJSON(b []byte) error {
 }
 
 func (e ScoreSourceType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SettingValueType string
+
+const (
+	SettingValueTypeText  SettingValueType = "TEXT"
+	SettingValueTypeInt   SettingValueType = "INT"
+	SettingValueTypeBool  SettingValueType = "BOOL"
+	SettingValueTypeFloat SettingValueType = "FLOAT"
+	SettingValueTypeJSON  SettingValueType = "JSON"
+)
+
+var AllSettingValueType = []SettingValueType{
+	SettingValueTypeText,
+	SettingValueTypeInt,
+	SettingValueTypeBool,
+	SettingValueTypeFloat,
+	SettingValueTypeJSON,
+}
+
+func (e SettingValueType) IsValid() bool {
+	switch e {
+	case SettingValueTypeText, SettingValueTypeInt, SettingValueTypeBool, SettingValueTypeFloat, SettingValueTypeJSON:
+		return true
+	}
+	return false
+}
+
+func (e SettingValueType) String() string {
+	return string(e)
+}
+
+func (e *SettingValueType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SettingValueType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SettingValueType", str)
+	}
+	return nil
+}
+
+func (e SettingValueType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SettingValueType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SettingValueType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

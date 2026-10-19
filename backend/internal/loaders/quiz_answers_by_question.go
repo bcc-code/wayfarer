@@ -51,6 +51,7 @@ func quizAnswersByQuestionBatchFunc(db *database.DB, c *cache.CacheWithRegistry)
 				answer := &model.QuizPredefinedAnswer{
 					ID:          row.ID,
 					AnswerText:  row.AnswerText,
+					Description: row.Description,
 					AnswerOrder: int(row.AnswerOrder),
 					// IsCorrect is handled by field resolver that checks reveal_correct_answers
 					// Fields for resolvers

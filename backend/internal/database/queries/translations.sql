@@ -38,7 +38,7 @@ WHERE question_id = ANY(@entity_ids::char(28)[])
   AND language_code = @language_code::text;
 
 -- name: GetQuizAnswerTranslationsByIDs :many
-SELECT answer_id, language_code, answer_text
+SELECT answer_id, language_code, answer_text, description
 FROM quiz_answer_translations
 WHERE answer_id = ANY(@entity_ids::char(28)[])
   AND language_code = @language_code::text;

@@ -228,12 +228,23 @@ async function finishBetting() {
 async function giveUsersBettingAccess() {
   if (!state.value.quizSessionId || !me.value?.church.id) return
 
-  await grantQuizSessionAccess({
+  const result = await grantQuizSessionAccess({
     input: {
       sessionId: state.value.quizSessionId,
       churchIds: [me.value.church.id],
     },
   })
+  // On Cloud Run the job runs inside the request, so a failure shows up here.
+  if (
+    result.error ||
+    result.data?.grantQuizSessionAccessAsync.status === BulkJobStatus.Failed
+  ) {
+    toast.add({
+      color: 'error',
+      icon: 'lucide:alert-triangle',
+      title: t('admin.gamenight.errors.couldNotGrantBettingAccess'),
+    })
+  }
 }
 
 async function enrollUsersInChallenge() {

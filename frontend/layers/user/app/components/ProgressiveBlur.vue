@@ -1,14 +1,22 @@
 <script setup lang="ts">
 interface Props {
   maxBlur?: number // Maximum blur amount in pixels
-  layers?: number // Number of blur layers for smoothness
+  /**
+   * Each layer is a separate masked `backdrop-filter`, and a masked backdrop
+   * filter is among the most expensive things WebKit composites. One is the
+   * default because both call sites sit over content that moves: the sticky
+   * `TitleBar` and the fixed bottom navigation both re-blur every scroll
+   * frame, so the cost is paid continuously rather than once. Raise it only
+   * for a surface whose backdrop is genuinely static.
+   */
+  layers?: number
   direction?: 'up' | 'down'
   enabled?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   maxBlur: 8,
-  layers: 4,
+  layers: 1,
   direction: 'down',
   enabled: true,
 })

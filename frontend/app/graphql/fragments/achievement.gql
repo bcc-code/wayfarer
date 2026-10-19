@@ -1,0 +1,27 @@
+# Everything AchievementBadge and AchievementDetails need to render a badge,
+# so the home tab's current project and its archive select the same shape.
+fragment AchievementBadgeFields on Achievement {
+  __typename
+  id
+  name
+  descriptionPending
+  descriptionCompleted
+  imagePendingObject {
+    ...ImageFields
+  }
+  imageCompletedObject {
+    ...ImageFields
+  }
+  hidden
+  achievedAt
+  celebratedAt
+  points
+  ... on ContentAchievement {
+    totalItems
+    completedItemCount
+  }
+  ... on StreakAchievement {
+    totalItems
+    completedItemCount
+  }
+}

@@ -9,6 +9,10 @@ The system uses a two-tier caching system with tag-based invalidation to ensure 
 - **Base Cache**: Ristretto (high-performance concurrent cache)
 - **Cache with Registry**: Extended version that tracks all cache keys for tag-based bulk invalidation
 - **Location**: `backend/internal/cache/`
+- **One process**: invalidation is in-process only. Prod runs a single server
+  (blue/green deploys overlap for a few seconds, during which the two colors'
+  caches can disagree until TTL; deploys are not done at critical times). The
+  former cross-instance `pg_notify` sync (`cache/sync.go`) was removed.
 
 ### Key Pattern Structure
 
@@ -93,6 +97,16 @@ Invalidates all cache entries related to a user:
 - User filter/count queries (since user attributes like gender/church affect results)
 
 Called automatically by `UserSyncService.SyncUser()` and `MaintenanceHandler` sync endpoints after updating user data.
+
+### Settings
+
+Settings are not in this cache. They live in a process-local map in
+`SettingsService`: `SetSettings` writes them and reloads the map in the same
+call, and a five-minute ticker picks up changes made outside the API.
+
+Changing the current project also calls `InvalidateProject` for the outgoing
+and incoming project — that is what drops the `gqlresponse:` entries holding
+the old `currentProject` / `myCurrentProject` payloads.
 
 ### Other Helpers
 

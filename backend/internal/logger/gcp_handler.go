@@ -12,13 +12,13 @@ import (
 // gcpHandler is a custom slog handler for Google Cloud Logging.
 // It outputs JSON with fields that GCP expects: "severity", "message", "time".
 type gcpHandler struct {
-	level  slog.Level
+	level  *slog.LevelVar
 	attrs  []slog.Attr
 	groups []string
 	mu     sync.Mutex
 }
 
-func newGCPHandler(level slog.Level) *gcpHandler {
+func newGCPHandler(level *slog.LevelVar) *gcpHandler {
 	return &gcpHandler{level: level}
 }
 
@@ -37,7 +37,7 @@ func gcpSeverity(level slog.Level) string {
 }
 
 func (h *gcpHandler) Enabled(_ context.Context, level slog.Level) bool {
-	return level >= h.level
+	return level >= h.level.Level()
 }
 
 func (h *gcpHandler) Handle(_ context.Context, r slog.Record) error {

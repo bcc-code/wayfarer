@@ -1,5 +1,10 @@
 <script setup lang="ts">
 const props = defineProps<{
+  /**
+   * Pins the preview to one mode instead of following the panel's. The theme
+   * editor shows light and dark at once, which is the whole point of it.
+   */
+  mode?: 'light' | 'dark'
   colors?: {
     light: {
       accent: string
@@ -37,8 +42,8 @@ const colorMode = useColorMode()
 const themeStyles = computed(() => {
   if (!props.colors) return {}
 
-  const colors =
-    colorMode.value === 'dark' ? props.colors.dark : props.colors.light
+  const mode = props.mode ?? (colorMode.value === 'dark' ? 'dark' : 'light')
+  const colors = props.colors[mode]
 
   return {
     '--color-accent': colors.accent,
@@ -58,7 +63,12 @@ const themeStyles = computed(() => {
 </script>
 
 <template>
-  <div :style="themeStyles">
+  <!-- A width and the project's palette, nothing else. 390px is the viewport
+       the user layer's breakpoints are drawn for, so the content is judged at
+       a width a participant will actually see. No surface of its own: a card
+       already carries one, and a frame around a frame is just two borders. A
+       preview that needs a background paints it itself. -->
+  <div inert :style="themeStyles" class="w-[390px] max-w-full">
     <slot />
   </div>
 </template>

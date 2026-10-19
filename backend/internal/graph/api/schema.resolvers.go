@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/services"
 )
@@ -40,6 +41,11 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 // InstanceID is the resolver for the instanceID field.
 func (r *queryResolver) InstanceID(ctx context.Context) (string, error) {
 	return r.Resolver.InstanceID, nil
+}
+
+// CurrentTime is the resolver for the currentTime field.
+func (r *queryResolver) CurrentTime(ctx context.Context) (*scalars.DateTime, error) {
+	return &scalars.DateTime{Time: time.Now().UTC()}, nil
 }
 
 // FirebaseToken is the resolver for the firebaseToken field.

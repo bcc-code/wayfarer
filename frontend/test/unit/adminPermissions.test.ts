@@ -42,8 +42,10 @@ function permissionsFor(role: Role, ownsProject = true): Perms {
     canAccessUsers: computed(() => isSuperAdmin),
     canAccessScores: computed(() => full),
     canAccessConsents: computed(() => isSuperAdmin),
+    canAccessChurches: computed(() => isSuperAdmin),
     canAccessFeedback: computed(() => full),
     canAccessMaintenance: computed(() => isSuperAdmin),
+    canManageSettings: computed(() => isSuperAdmin),
     canManageChurchAdmins: computed(() => full || isChurchAdmin),
     canEditProject: () => full || (isProjectAdmin && ownsProject),
   } as unknown as Perms
@@ -57,9 +59,11 @@ const PERMISSIONS: AdminPermission[] = [
   'users:view',
   'scores:view',
   'consents:view',
+  'churches:view',
   'feedback:view',
   'maintenance:view',
   'church:manage',
+  'settings:manage',
 ]
 
 /** Expected allow-list per role. Anything not listed must be denied. */

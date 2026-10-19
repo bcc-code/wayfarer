@@ -12,20 +12,19 @@ interface ProjectCardProps {
 
 defineProps<{
   project: ProjectCardProps
+  /** The project end users currently see — distinct from "Active", which is
+      merely about dates. */
+  isCurrent?: boolean
 }>()
 </script>
 
 <template>
   <!--
-    Sized by its content, not by a ratio. `aspect-video` forced a 16:9 box, so a
-    card in a wide column stretched to ~320px tall for three lines of text and a
-    date. Cards in a row still match: the grid stretches them and `h-full`
-    carries that down.
+    Content-sized, not `aspect-video`: that forced a 16:9 box and stretched cards
+    in wide columns. `h-full` keeps a row matched.
 
-    Uniform neutral, deliberately. Tinting each card with its own project accent
-    turned the grid into a patchwork where the colour carried no meaning — the
-    logo already identifies the project, and the accent belongs on that
-    project's own pages.
+    Neutral on purpose — tinting each card with its project accent made the grid
+    a patchwork where colour carried no meaning.
   -->
   <UCard
     class="hover:ring-accented h-full shadow-md transition"
@@ -53,11 +52,8 @@ defineProps<{
         class="h-8 w-auto max-w-24 rounded object-contain"
         alt=""
       />
-      <UBadge
-        v-if="isWithinRange(new Date(), project.startDate, project.endDate)"
-        variant="outline"
-      >
-        Active
+      <UBadge v-if="isCurrent" color="primary" variant="subtle">
+        Gjeldende
       </UBadge>
     </div>
   </UCard>

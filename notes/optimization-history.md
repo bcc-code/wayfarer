@@ -22,7 +22,6 @@ the pain was not application logic but the price of being distributed:
 | Remote DB connections | Each new pool connection did TLS + pooler auth to Neon | **5–9 s connect spans** at spike onset; `GetMe` averaged 8.5 s while queries queued behind `pool.acquire` |
 | Connection ceiling | Neon limits forced `DB_MAX_OPEN_CONNS=25` | Pool starvation under any burst |
 | Statement latency | Network round-trip per statement | 30–90 ms baseline vs sub-ms on loopback |
-| Cross-instance cache invalidation | `internal/cache/sync.go`: a dedicated non-pooled `LISTEN cache_invalidate` connection per instance, `pg_notify` fan-out, full `cache.Clear()` on any reconnect | ~300 lines of failure-prone machinery; a connection blip cold-flushed the whole cache |
 | Per-instance caches | Ristretto with guessed TTLs (45 s…1 h), hashed filter keys that can't be selectively invalidated | Stampedes and stale windows; instances could disagree |
 
 ## Phase 1 — the RAM-first decision: scale up, not out (2026-08-14)
@@ -121,9 +120,9 @@ ES256 unavailable there), then TLS handshakes (fixed by EC256, available).
 ## The distilled lessons
 
 1. **Locality beats machinery.** Local Postgres removed more latency than any
-   code change; most of the "distributed" code (cross-instance invalidation,
-   connection ceilings, per-instance cache skew) existed to compensate for
-   distance the system didn't need.
+   code change; most of the "distributed" code (connection ceilings,
+   per-instance cache skew) existed to compensate for distance the system
+   didn't need.
 2. **RAM is the budget, not the architecture.** The dataset fits in cache
    many times over; the resident in-memory World was measured (builds in
    178 ms) and *rejected* because Postgres-in-RAM already delivers.

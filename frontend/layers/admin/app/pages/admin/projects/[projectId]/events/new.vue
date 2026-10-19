@@ -28,10 +28,14 @@ const state = reactive<Schema>({
   endDate: '',
 })
 
+const { markSaved } = useUnsavedChanges(() => ({ ...state }))
+
 async function createEvent(event: FormSubmitEvent<Schema>) {
   if (!event.data) {
     return
   }
+
+  markSaved()
 
   executeMutation({
     projectId: route.params.projectId,

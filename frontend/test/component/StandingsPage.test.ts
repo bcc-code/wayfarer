@@ -95,6 +95,19 @@ describe('standings page', () => {
     expect(wrapper.findComponent(ErrorState).exists()).toBe(true)
   })
 
+  // `cache-and-network` sets `error` on a failed background refresh while the
+  // cached `data` is still good, which is the offline case. Showing the error
+  // there throws away a perfectly usable page.
+  it('keeps showing cached data when a refresh fails', async () => {
+    const wrapper = await mountWith({
+      data: makeData([board('LC1', 'Topp', ['Ola'])]),
+      error: new Error('Failed to fetch'),
+    })
+
+    expect(wrapper.findComponent(ErrorState).exists()).toBe(false)
+    expect(wrapper.findComponent(StandingsBoard).exists()).toBe(true)
+  })
+
   // Config-driven only: there is no fallback to the old hardcoded boards.
   it('shows an empty state for a project with no configs and no team', async () => {
     const wrapper = await mountWith({ data: makeData([]) })

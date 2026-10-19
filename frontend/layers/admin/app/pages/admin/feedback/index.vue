@@ -456,7 +456,7 @@ async function handleUpdateTags(feedbackId: string, tags: string[]) {
             </p>
             <button
               v-if="row.original.message.length > 100"
-              class="text-primary text-xs hover:underline mt-1"
+              class="admin-link text-xs mt-1"
               @click="toggleMessage(row.original.id)"
             >
               {{

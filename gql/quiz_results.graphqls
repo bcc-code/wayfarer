@@ -1,0 +1,133 @@
+# Aggregated quiz results for the admin panel. Scope is the whole quiz: every
+# completed submission across every session is pooled.
+
+# ==================== Result Types ====================
+
+type QuizResults {
+    quiz: Quiz! @goField(forceResolver: true)
+
+    """
+    Completed submissions across all sessions.
+    """
+    submissionCount: Int!
+    """
+    Distinct users behind those submissions.
+    """
+    participantCount: Int!
+    """
+    Submissions created outside a session (M2M imports) are not counted here.
+    """
+    sessionCount: Int!
+
+    averageScore: Float
+    averageMaxScore: Float
+    averageScorePercentage: Float
+
+    questions: [QuizQuestionResults!]!
+}
+
+"""
+Per-question aggregates, one implementation per question type.
+"""
+interface QuizQuestionResults {
+    question: QuizQuestion!
+    """
+    Submissions that answered this question. Every percentage below is a share
+    of this, never of the quiz-wide submission count.
+    """
+    responseCount: Int!
+}
+
+type PredefinedQuestionResults implements QuizQuestionResults {
+    question: QuizQuestion!
+    responseCount: Int!
+    """
+    Responses that selected exactly the correct set of answers.
+    """
+    correctCount: Int!
+    options: [PredefinedOptionResult!]!
+}
+
+type PredefinedOptionResult {
+    answer: QuizPredefinedAnswer!
+    count: Int!
+    percentage: Float!
+    isCorrect: Boolean!
+}
+
+"""
+NUMBER stores no correct answer, so results describe the distribution.
+"""
+type NumberQuestionResults implements QuizQuestionResults {
+    question: QuizQuestion!
+    responseCount: Int!
+    average: Float
+    median: Float
+    min: Float
+    max: Float
+    buckets: [NumberBucket!]!
+}
+
+type NumberBucket {
+    from: Float!
+    to: Float!
+    count: Int!
+    percentage: Float!
+}
+
+"""
+Not graded. Grouped by a normalised form (trimmed, whitespace collapsed,
+case-folded), labelled with the most common original spelling.
+"""
+type FreeTextQuestionResults implements QuizQuestionResults {
+    question: QuizQuestion!
+    responseCount: Int!
+    distinctCount: Int!
+    """
+    Groups, most common first.
+    """
+    groups: [FreeTextGroup!]!
+    """
+    Every answer as submitted, for the expanded view.
+    """
+    responses: [String!]!
+}
+
+type FreeTextGroup {
+    text: String!
+    count: Int!
+    percentage: Float!
+}
+
+"""
+Graded all-or-nothing, so per-position accuracy is what shows where people
+went wrong.
+"""
+type OrderingQuestionResults implements QuizQuestionResults {
+    question: QuizQuestion!
+    responseCount: Int!
+    fullyCorrectCount: Int!
+    items: [OrderingItemResult!]!
+}
+
+type OrderingItemResult {
+    item: QuizOrderingItem!
+    correctPosition: Int!
+    correctlyPlacedCount: Int!
+    percentage: Float!
+}
+
+"""
+Arbitrary structured data, so only a count. Kept in the list so question
+numbering stays intact.
+"""
+type JsonQuestionResults implements QuizQuestionResults {
+    question: QuizQuestion!
+    responseCount: Int!
+}
+
+# ==================== Queries ====================
+
+extend type Query {
+    quizResults(quizId: ID!): QuizResults!
+}

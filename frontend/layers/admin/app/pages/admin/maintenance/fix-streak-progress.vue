@@ -287,7 +287,7 @@ watch(fixComplete, (complete) => {
               name: 'admin-users-userId',
               params: { userId: row.original.user.id },
             }"
-            class="hover:text-primary font-medium hover:underline"
+            class="hover:text-highlighted font-medium hover:underline"
           >
             {{ row.original.user.name }}
           </NuxtLink>
@@ -339,7 +339,12 @@ watch(fixComplete, (complete) => {
               >
                 Avbryt
               </UButton>
-              <UButton color="primary" :loading="fixing" @click="handleFix">
+              <UButton
+                icon="lucide:wrench"
+                color="primary"
+                :loading="fixing"
+                @click="handleFix"
+              >
                 Kjør reparasjon
               </UButton>
             </div>

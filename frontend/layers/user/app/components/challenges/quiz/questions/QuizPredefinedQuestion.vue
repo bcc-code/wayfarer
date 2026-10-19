@@ -175,6 +175,7 @@ defineExpose({ actionState, handlers })
     >
       <QuizAlternative
         :text="alternative.answerText"
+        :description="alternative.description"
         :highlighted="selectedAnswer === alternative.id"
         :confirmed="isAnswerConfirmed"
         :correct="shouldShowCorrect(alternative)"

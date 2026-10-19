@@ -69,7 +69,7 @@ describe('AdminAchievementForm', () => {
 
     const text = wrapper.text()
     for (const label of [
-      'Navn',
+      'Tittel',
       'Beskrivelse (ikke oppnådd)',
       'Beskrivelse (oppnådd)',
       'Varslingstekst',

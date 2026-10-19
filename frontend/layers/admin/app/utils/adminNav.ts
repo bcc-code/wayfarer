@@ -79,10 +79,24 @@ export const GLOBAL_NAV: AdminNavItem[] = [
     match: 'admin-maintenance',
     can: (p) => !!p.canAccessMaintenance.value,
   },
+  {
+    // "Systeminnstillinger", not "Innstillinger": PROJECT_NAV already has an
+    // "Innstillinger" entry for a project's own settings, and two entries
+    // under the same label read as the same destination.
+    label: 'Systeminnstillinger',
+    icon: 'lucide:sliders-horizontal',
+    to: 'admin-settings',
+    match: 'admin-settings',
+    can: (p) => !!p.canManageSettings.value,
+  },
 ]
 
 /**
  * Shown only while inside `/admin/projects/:projectId`.
+ *
+ * Ordered by who reaches for what: the three an organiser sets up a study with
+ * come first, then the groups they are set up over, then the entries that
+ * belong to support and to setup that happens once.
  */
 export const PROJECT_NAV: AdminNavItem[] = [
   {
@@ -103,16 +117,10 @@ export const PROJECT_NAV: AdminNavItem[] = [
     match: 'admin-projects-projectId-achievements',
   },
   {
-    label: 'Arrangement',
-    icon: 'lucide:calendar',
-    to: 'admin-projects-projectId-events',
-    match: 'admin-projects-projectId-events',
-  },
-  {
-    label: 'Superlag',
-    icon: 'lucide:users',
-    to: 'admin-projects-projectId-superteams',
-    match: 'admin-projects-projectId-superteams',
+    label: 'Ledertavler',
+    icon: 'lucide:list-ordered',
+    to: 'admin-projects-projectId-leaderboards',
+    match: 'admin-projects-projectId-leaderboards',
   },
   {
     label: 'Lag',
@@ -122,10 +130,10 @@ export const PROJECT_NAV: AdminNavItem[] = [
     can: (p) => !!p.canAccessTeams.value,
   },
   {
-    label: 'Ledertavler',
-    icon: 'lucide:list-ordered',
-    to: 'admin-projects-projectId-leaderboards',
-    match: 'admin-projects-projectId-leaderboards',
+    label: 'Superlag',
+    icon: 'lucide:users',
+    to: 'admin-projects-projectId-superteams',
+    match: 'admin-projects-projectId-superteams',
   },
   {
     label: 'Poeng',
@@ -133,6 +141,12 @@ export const PROJECT_NAV: AdminNavItem[] = [
     to: 'admin-projects-projectId-scores',
     match: 'admin-projects-projectId-scores',
     can: (p) => !!p.canAccessScores.value,
+  },
+  {
+    label: 'Arrangement',
+    icon: 'lucide:calendar',
+    to: 'admin-projects-projectId-events',
+    match: 'admin-projects-projectId-events',
   },
   {
     label: 'Innstillinger',

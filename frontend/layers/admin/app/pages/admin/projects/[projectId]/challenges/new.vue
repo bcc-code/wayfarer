@@ -20,14 +20,6 @@ gql(`
         }
       }
     }
-    events(first: 100, filter: { projectId: $projectId }) {
-      edges {
-        node {
-          id
-          name
-        }
-      }
-    }
   }
 `)
 
@@ -45,20 +37,9 @@ const { data } = useAdminProjectChallengeNewPageQuery({
 const { executeMutation } = useCreateChallengeMutation()
 const { executeMutation: createQuiz } = useCreateQuizMutation()
 
-const eventId = ref('')
-
 // Mirrors the form's type select, so the page knows whether to show the quiz
 // notice.
-const type = ref<ChallengeType>(ChallengeType.Simple)
-
-const eventOptions = computed(() => {
-  return (
-    data.value?.events.edges.map((e) => ({
-      value: e.node.id,
-      label: e.node.name,
-    })) ?? []
-  )
-})
+const type = ref<ChallengeType>(ChallengeType.Quiz)
 
 async function handleSubmit(formData: ChallengeFormData) {
   const {
@@ -66,6 +47,9 @@ async function handleSubmit(formData: ChallengeFormData) {
     allowSelfCompletion,
     url,
     publishedAt,
+    endTime,
+    visibleAt,
+    startedAt: _startedAt,
     pluginChallengeId,
     ...rest
   } = formData
@@ -74,7 +58,11 @@ async function handleSubmit(formData: ChallengeFormData) {
   const input = {
     ...rest,
     type,
+    // The API reads a bare `YYYY-MM-DDTHH:mm` as UTC, so every timestamp goes
+    // through toISOString or it lands an offset off.
     publishedAt: publishedAt ? toISOString(publishedAt) : undefined,
+    endTime: toISOString(endTime),
+    visibleAt: toISOString(visibleAt),
     ...(type === ChallengeType.Simple && { allowSelfCompletion }),
     ...(type === ChallengeType.External && { url }),
     ...(type === ChallengeType.Plugin && { pluginChallengeId }),
@@ -82,7 +70,6 @@ async function handleSubmit(formData: ChallengeFormData) {
 
   const response = await executeMutation({
     projectId: route.params.projectId,
-    eventId: eventId.value || undefined,
     input,
   })
 
@@ -158,18 +145,7 @@ async function handleSubmit(formData: ChallengeFormData) {
       :colors="data?.project.branding.colors"
       submit-label="Opprett utfordring"
       @submit="handleSubmit"
-    >
-      <template #before-type>
-        <UFormField name="eventId" label="Arrangement (valgfritt)">
-          <USelect
-            v-model="eventId"
-            :items="eventOptions"
-            placeholder="Ingen (prosjekt-nivå)"
-            class="w-full"
-          />
-        </UFormField>
-      </template>
-    </AdminChallengeForm>
+    />
 
     <!-- The quiz itself cannot exist before the challenge does; saying so here
          beats a dead "Rediger quiz" button. -->

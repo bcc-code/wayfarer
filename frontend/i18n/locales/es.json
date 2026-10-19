@@ -349,7 +349,8 @@
         "couldNotLockBetting": "No se pudo bloquear la apuesta",
         "couldNotReopenBetting": "No se pudo reabrir la casa de apuestas",
         "couldNotFinishBetting": "No pude cerrar la apuesta",
-        "couldNotSendUnitLeaderAccess": "No se pudo enviar el código a los jefes de unidad"
+        "couldNotSendUnitLeaderAccess": "No se pudo enviar el código a los jefes de unidad",
+        "couldNotGrantBettingAccess": "No se pudo dar a los usuarios acceso al juego"
       }
     },
     "statistics": {

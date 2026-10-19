@@ -2,6 +2,7 @@
 **/generated.go linguist-generated=true
 **/models_gen.go linguist-generated=true
 **/*.resolvers.go linguist-generated=true
+**/generated.ts linguist-generated=true
 
 # Other generated files
 **/sqlc_gen.go linguist-generated=true

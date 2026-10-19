@@ -72,7 +72,6 @@ const {
   data,
   error,
   fetching,
-  stale,
   executeQuery: refresh,
 } = useProfilePageQuery({
   variables: computed(() => {
@@ -93,14 +92,6 @@ useAchievementCelebration(achievements)
 const showBanner = useLocalStorage('showBanner', false, {
   listenToStorageChanges: true,
 })
-const hasCompletedOnboarding = useLocalStorage('hasCompletedOnboarding', false)
-
-const pendingInternal = computed(() => {
-  return data.value?.me.consentStatus.pendingConsents.filter(
-    (c) => c.managementType === ConsentManagementType.Local,
-  )
-})
-
 const pendingRemote = computed(() => {
   return data.value?.me.consentStatus.pendingConsents.filter(
     (c) => c.managementType === ConsentManagementType.Remote,
@@ -108,20 +99,13 @@ const pendingRemote = computed(() => {
 })
 
 watch(
-  pendingInternal,
-  (pending) => {
-    if (fetching.value || stale.value) return
-    if (pending?.length) {
-      hasCompletedOnboarding.value = false
-      navigateTo({ name: 'settings-consent' })
-    }
-  },
-  { immediate: true },
-)
-
-watch(
   pendingRemote,
   (pending) => {
+    // Prevent the SSF banner from clogging up the home screen in dev
+    if (import.meta.dev) {
+      showBanner.value = false
+      return
+    }
     if (pending?.length) {
       if (!showBanner.value) {
         showBanner.value = true
@@ -183,7 +167,7 @@ useFirestoreRefresh(['ProfilePageDocument'], () => {
     <div v-if="isInitialLoading" class="space-y-default p-list-outside">
       <ProfileProjectCardSkeleton />
     </div>
-    <ErrorState v-else-if="error" :error />
+    <ErrorState v-else-if="error && !data" :error />
     <TransitionGroup
       v-else-if="data"
       tag="div"

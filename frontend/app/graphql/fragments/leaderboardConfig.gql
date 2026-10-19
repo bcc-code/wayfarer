@@ -2,6 +2,7 @@ fragment LeaderboardConfigFields on LeaderboardConfig {
   id
   name
   entityType
+  limitMode
   maxEntries
   sortOrder
   isActive
@@ -10,6 +11,9 @@ fragment LeaderboardConfigFields on LeaderboardConfig {
     name
   }
   filter {
+    myChurch
+    myTeam
+    mySuperTeam
     minScore
     maxScore
     churchId

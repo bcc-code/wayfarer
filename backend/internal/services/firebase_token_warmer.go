@@ -40,7 +40,7 @@ type TokenWarmerQuerier interface {
 	GetUsersByIDs(ctx context.Context, ids []string) ([]*sqlc.GetUsersByIDsRow, error)
 }
 
-// ProjectIDProvider resolves the project whose users should be kept warm.
+// ProjectIDProvider resolves the currently active project.
 type ProjectIDProvider interface {
 	GetCurrentProjectID(ctx context.Context) (string, error)
 }

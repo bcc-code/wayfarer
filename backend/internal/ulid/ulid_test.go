@@ -29,6 +29,7 @@ func TestNewIDs(t *testing.T) {
 		{"NewScoreJournalID", NewScoreJournalID, PrefixScoreJournal, IsScoreJournalID},
 		{"NewUserFeedbackID", NewUserFeedbackID, PrefixUserFeedback, IsUserFeedbackID},
 		{"NewLeaderboardConfigID", NewLeaderboardConfigID, PrefixLeaderboardConfig, IsLeaderboardConfigID},
+		{"NewAuthSessionID", NewAuthSessionID, PrefixAuthSession, IsAuthSessionID},
 	}
 
 	for _, tt := range tests {

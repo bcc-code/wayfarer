@@ -6,6 +6,7 @@
   },
   "bet_reason": {
     "stake": "{challenge} - satset",
-    "winnings": "{challenge} - gevinst"
+    "winnings": "{challenge} - gevinst",
+    "refund": "{challenge} - innsats tilbakebetalt"
   }
 }

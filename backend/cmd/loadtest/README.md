@@ -145,6 +145,28 @@ Smoke run at small scale:
 k6 run --env SPIKE_USERS=25 --env SPIKE_WINDOW=5 ./cmd/loadtest/k6/freetext-quiz-spike.js
 ```
 
+### 7. Betting Quiz Ramped Spike (`betting-quiz-rampspike.js`)
+The free-text rampspike's front-loaded QR stampede (cumulative 1k@1s, 5k@2s,
+8k@4s, 10k@10s), with five PREDEFINED betting questions per user:
+
+- 90% of answers carry a bet the app's slider allows
+- 5% carry no bet
+- 3% are double taps
+- 2% carry an over-the-points bet that must be rejected
+
+After the last journey, `teardown()` finishes the session as an admin, which
+settles every bet (`settlement_duration`). It runs off-box on the dedicated
+load-test pair, with TLS on the server like prod:
+
+```bash
+make loadtest-betting-config      # tokens incl. Auth0 + admin (tokengen -admin-user)
+make loadtest-betting-smoke       # ~200 users
+make loadtest-betting-rampspike   # full 10k
+```
+
+Setup, fixtures (`bench/betting_box.sh`) and every knob are described in
+`notes/loadtest-offbox.md` ("Betting load test on the LT pair").
+
 ## Configuration
 
 ### Environment Variables
@@ -184,6 +206,7 @@ go run ./cmd/loadtest/tokengen \
   -auth0-count 100 \      # Also mint simulated Auth0 (RS256) tokens for the auth-dance scenario
   -auth0-issuer https://login.bcc.no/ \  # Must match the server's AUTH0_JWT_ISSUER
   -auth0-key "$AUTH0_LOADTEST_PRIVATE_KEY"  # RSA key (base64 PEM); generated + printed if omitted
+  -admin-user US00000000000000000000000001  # Also mint an admin-role token (config.json adminToken)
 ```
 
 ### Simulated Auth0 dance

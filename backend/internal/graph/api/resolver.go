@@ -30,7 +30,7 @@ type Resolver struct {
 	Cache              *cache.CacheWithRegistry
 	RoleService        *services.RoleService
 	LeaderboardService *services.LeaderboardService
-	Settings           *services.SettingsService
+	SettingsService    *services.SettingsService
 	PushService        *push.Service
 	WebhookService     *webhooks.Service
 	FirebaseService    *firebase.Service

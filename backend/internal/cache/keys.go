@@ -1182,9 +1182,9 @@ func UserConsentsKey(userID string) string {
 	return PrefixUserConsents + userID
 }
 
-// LatestConsentsKey builds a cache key for all latest published consents
-func LatestConsentsKey() string {
-	return PrefixLatestConsents
+// LatestConsentsKey builds a cache key for a project's consents, plus global ones
+func LatestConsentsKey(projectID string) string {
+	return PrefixLatestConsents + ":" + projectID
 }
 
 // ExternalContentKey builds a cache key for external content by ID

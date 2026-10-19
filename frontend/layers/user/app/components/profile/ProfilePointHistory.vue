@@ -89,7 +89,7 @@ function getScoreJournalName(
       </p>
 
       <LoadingState v-if="isInitialLoading" />
-      <ErrorState v-else-if="error" :error />
+      <ErrorState v-else-if="error && !data" :error />
       <DesignPanel
         v-else-if="data?.myCurrentProject.journal.edges.length"
         class="space-y-list-section-inset p-list-section-inset"

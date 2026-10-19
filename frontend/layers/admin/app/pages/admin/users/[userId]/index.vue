@@ -188,9 +188,9 @@ const feedbackEntries = computed(
 const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
 </script>
 
+<!-- Capped: full panel width left each row's delete button ~1500px from
+     the label it deletes. -->
 <template>
-  <!-- Capped: full panel width left each row's delete button ~1500px from
-       the label it deletes. -->
   <div class="max-w-6xl">
     <AdminQueryState :fetching :error>
       <div v-if="data" class="space-y-10">

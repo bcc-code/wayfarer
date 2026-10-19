@@ -15,13 +15,17 @@ function finishOnboarding() {
   navigateTo({ name: 'index' })
 }
 
-const hasPendingInternalConsents = computed(() => {
-  const pending = data.value?.me.consentStatus.pendingConsents.filter(
-    (c) => c.managementType === ConsentManagementType.Local,
-  )
-  if (!pending) return false
-  return pending.length > 0
-})
+// Blocking wins over `hasCompletedOnboarding`, which is per-device
+// localStorage and clearable.
+const blockingIds = computed(() =>
+  blockingConsentIds(data.value?.me.consentStatus),
+)
+
+const hasBlockingConsents = computed(() => blockingIds.value.size > 0)
+
+const hasPendingInternalConsents = computed(
+  () => unansweredLocalConsents(data.value?.me.consentStatus).length > 0,
+)
 
 // We want to preserve the order of the consents, even when data is refetched
 const initialSorting = ref<string[]>([])
@@ -29,11 +33,19 @@ watch(
   data,
   (newData) => {
     if (newData) {
+      // Blocking ones first: a rejected required consent would otherwise sort
+      // last, leaving the user stuck on a screen whose reason is off-screen.
+      // `sort` is stable, so the buckets keep their order within each half.
       initialSorting.value = [
         ...newData.me.consentStatus.pendingConsents,
         ...newData.me.consentStatus.acceptedConsents,
         ...newData.me.consentStatus.rejectedConsents,
-      ].map((c) => (c.__typename === 'Consent' ? c.id : c.consent.id))
+      ]
+        .map((c) => (c.__typename === 'Consent' ? c.id : c.consent.id))
+        .sort(
+          (a, b) =>
+            Number(blockingIds.value.has(b)) - Number(blockingIds.value.has(a)),
+        )
     }
   },
   {
@@ -60,17 +72,40 @@ const sortedConsents = computed(() => {
     )
     .filter(Boolean)
 })
+
+/**
+ * While a required consent is unanswered the page stops being a list and
+ * becomes a gate: only the blocking consents are shown. A list invites
+ * browsing, and the one card that has to be dealt with should not compete with
+ * optional ones the user cannot reach the app to use anyway. The rest come
+ * back the moment the requirement is met.
+ */
+const visibleConsents = computed(() => {
+  if (!hasBlockingConsents.value) return sortedConsents.value
+
+  return sortedConsents.value.filter((c) =>
+    blockingIds.value.has(c!.__typename === 'Consent' ? c!.id : c!.consent.id),
+  )
+})
 </script>
 
 <template>
-  <PageLayout :title="$t('pages.consents')">
-    <template v-if="hasCompletedOnboarding" #action>
+  <PageLayout
+    :title="
+      hasBlockingConsents ? $t('consent.requiredTitle') : $t('pages.consents')
+    "
+    :bottom-padding="!hasBlockingConsents"
+  >
+    <template v-if="hasCompletedOnboarding && !hasBlockingConsents" #action>
       <NuxtLink :to="{ name: 'settings' }">
         <DesignIconButton icon="IconClose" />
       </NuxtLink>
     </template>
 
-    <LocaleSelector v-if="!hasCompletedOnboarding" v-slot="{ selectedLocale }">
+    <LocaleSelector
+      v-if="!hasCompletedOnboarding || hasBlockingConsents"
+      v-slot="{ selectedLocale }"
+    >
       <DesignPanel
         class="mx-default border border-border-default bg-background-default! mb-default"
       >
@@ -83,26 +118,38 @@ const sortedConsents = computed(() => {
       </DesignPanel>
     </LocaleSelector>
 
-    <ErrorState v-if="error" :error />
-    <div
-      v-else-if="data"
-      :class="[
-        'space-y-list-section-gap',
-        {
-          'px-default py-list-outside': !hasCompletedOnboarding,
-          'p-list-outside': hasCompletedOnboarding,
-        },
-      ]"
-    >
-      <ConsentCard
-        v-for="consent in sortedConsents"
-        :key="consent!.id"
-        :consent="consent!"
-        @update="refetch"
-      />
+    <div :class="hasBlockingConsents ? 'flex grow flex-col' : ''">
+      <ErrorState v-if="error && !data" :error />
+      <div
+        v-else-if="data"
+        :class="[
+          'space-y-list-section-gap',
+          // Gated, the card is the screen: an even `default` gutter on every
+          // side. The top one comes from the language picker's own mb-default,
+          // so adding pt here would double it.
+          hasBlockingConsents
+            ? 'flex grow flex-col px-default pb-default'
+            : {
+                'px-default py-list-outside': !hasCompletedOnboarding,
+                'p-list-outside': hasCompletedOnboarding,
+              },
+        ]"
+      >
+        <ConsentCard
+          v-for="consent in visibleConsents"
+          :key="consent!.id"
+          :consent="consent!"
+          :expanded="hasBlockingConsents"
+          @update="refetch"
+        />
+      </div>
     </div>
     <div
-      v-if="!hasCompletedOnboarding && !hasPendingInternalConsents"
+      v-if="
+        !hasCompletedOnboarding &&
+        !hasPendingInternalConsents &&
+        !hasBlockingConsents
+      "
       class="fixed bottom-default left-default right-default"
     >
       <DesignButton

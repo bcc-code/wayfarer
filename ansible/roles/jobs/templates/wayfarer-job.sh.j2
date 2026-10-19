@@ -6,7 +6,7 @@
 # EnvironmentFile), so no secret is duplicated into Ansible. Secrets are fed
 # to curl through a file descriptor to keep them out of `ps`.
 #
-# Usage: wayfarer-job <export-translations|sync-ssf|sync-members>
+# Usage: wayfarer-job <export-translations|sync-ssf|sync-members|cleanup-auth-sessions>
 set -euo pipefail
 
 BASE_URL="{{ wayfarer_jobs_base_url }}"
@@ -49,8 +49,11 @@ sync-members)
 	post /api/maintenance/sync-user-data "Authorization: Bearer ${key}"
 	post /api/maintenance/import-new-members "Authorization: Bearer ${key}"
 	;;
+cleanup-auth-sessions)
+	post /api/maintenance/cleanup-auth-sessions "Authorization: Bearer $(api_key)"
+	;;
 *)
-	echo "usage: $0 <export-translations|sync-ssf|sync-members>" >&2
+	echo "usage: $0 <export-translations|sync-ssf|sync-members|cleanup-auth-sessions>" >&2
 	exit 2
 	;;
 esac

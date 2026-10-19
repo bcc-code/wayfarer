@@ -34,6 +34,7 @@ type AuthHandler struct {
 	ContentAchievementService *services.ContentAchievementService
 	ChurchResolver            *services.ChurchResolver
 	UserSyncService           *services.UserSyncService
+	SessionService            *services.AuthSessionService
 }
 
 // BrunstadTVClaims represents the JWT claims from Brunstad TV
@@ -73,11 +74,18 @@ type CallbackResponse struct {
 	Token string `json:"token"`
 }
 
+// authError is an authentication failure with the HTTP status and message
+// to send back to the client.
+type authError struct {
+	status  int
+	message string
+}
+
 // Callback handles the OAuth callback from Brunstad TV or Auth0
 // It validates the incoming JWT, finds or creates the user, and returns a Wayfarer JWT
+//
+// Deprecated: kept for clients that haven't moved to POST /auth/exchange.
 func (h *AuthHandler) Callback(c *gin.Context) {
-	ctx := c.Request.Context()
-
 	// 1. Extract token from query parameter
 	token := c.Query("token")
 	if token == "" {
@@ -85,6 +93,19 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "token parameter is required"})
 		return
 	}
+
+	userID, authErr := h.authenticateExternalToken(c.Request.Context(), token)
+	if authErr != nil {
+		c.JSON(authErr.status, gin.H{"error": authErr.message})
+		return
+	}
+	h.respondWithToken(c, userID)
+}
+
+// authenticateExternalToken validates a login.bcc.no (Auth0) or Brunstad TV
+// token and returns the ID of the matching Wayfarer user, creating the user
+// on first login.
+func (h *AuthHandler) authenticateExternalToken(ctx context.Context, token string) (string, *authError) {
 
 	// 2. Validate and parse JWT - try Auth0 first, then fall back to Brunstad TV
 	var claims *BrunstadTVClaims
@@ -97,8 +118,7 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 			slog.Warn("callback: user does not have membership",
 				"person_id", auth0Claims.PersonID,
 			)
-			c.JSON(http.StatusForbidden, gin.H{"error": "membership required"})
-			return
+			return "", &authError{http.StatusForbidden, "membership required"}
 		}
 
 		// Auth0 token validated successfully, convert to BrunstadTVClaims format
@@ -123,8 +143,7 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 				"auth0_error", auth0Err,
 				"brunstad_error", brunstadErr,
 			)
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
-			return
+			return "", &authError{http.StatusUnauthorized, "invalid or expired token"}
 		}
 		claims = brunstadClaims
 		slog.Info("callback: validated Brunstad TV token",
@@ -140,16 +159,14 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 	existing, _, err := h.findExistingUser(ctx, claims)
 	if err != nil {
 		slog.Error("callback: failed to look up user", "person_id", claims.PersonID, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to process user"})
-		return
+		return "", &authError{http.StatusInternalServerError, "failed to process user"}
 	}
 	if existing != nil {
 		slog.Info("callback: user authenticated",
 			"user_id", existing.ID,
 			"members_id", existing.MembersID,
 		)
-		h.respondWithToken(c, existing.ID)
-		return
+		return existing.ID, nil
 	}
 
 	// 4. Fetch member data from Members API (needed for Auth0 tokens, optional for Brunstad TV)
@@ -195,8 +212,7 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 				church, err = h.GetOrCreateDefaultChurch(ctx)
 				if err != nil {
 					slog.Error("callback: failed to get default church", "error", err)
-					c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to find church"})
-					return
+					return "", &authError{http.StatusInternalServerError, "failed to find church"}
 				}
 			}
 		} else {
@@ -207,8 +223,7 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 			church, err = h.GetOrCreateDefaultChurch(ctx)
 			if err != nil {
 				slog.Error("callback: failed to get default church", "error", err)
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to find church"})
-				return
+				return "", &authError{http.StatusInternalServerError, "failed to find church"}
 			}
 		}
 	} else {
@@ -219,8 +234,7 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 				"church_id", claims.ChurchID,
 				"error", err,
 			)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to find church"})
-			return
+			return "", &authError{http.StatusInternalServerError, "failed to find church"}
 		}
 	}
 
@@ -231,8 +245,7 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 			"person_id", claims.PersonID,
 			"error", err,
 		)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to process user"})
-		return
+		return "", &authError{http.StatusInternalServerError, "failed to process user"}
 	}
 
 	slog.Info("callback: user authenticated",
@@ -240,8 +253,7 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		"members_id", user.MembersID,
 	)
 
-	// 8. Issue the Wayfarer JWT
-	h.respondWithToken(c, user.ID)
+	return user.ID, nil
 }
 
 // respondWithToken generates the Wayfarer JWT for userID and writes the
@@ -256,10 +268,19 @@ func (h *AuthHandler) respondWithToken(c *gin.Context, userID string) {
 	c.JSON(http.StatusOK, CallbackResponse{Token: wayfarerToken})
 }
 
+// externalTokenAlgs are the signing algorithms accepted from external
+// identity providers. Pinning them stops a token signed with an unexpected
+// algorithm from being checked against the JWKS at all.
+var externalTokenAlgs = []string{"RS256"}
+
 // validateBrunstadTVToken validates the JWT from Brunstad TV using JWKS
 func (h *AuthHandler) validateBrunstadTVToken(tokenString string) (*BrunstadTVClaims, error) {
+	if h.JWKS == nil {
+		return nil, errors.New("Brunstad TV JWKS not configured")
+	}
+
 	// Parse and validate the token using JWKS
-	token, err := jwt.ParseWithClaims(tokenString, &BrunstadTVClaims{}, h.JWKS.Keyfunc)
+	token, err := jwt.ParseWithClaims(tokenString, &BrunstadTVClaims{}, h.JWKS.Keyfunc, jwt.WithValidMethods(externalTokenAlgs))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse token: %w", err)
 	}
@@ -290,7 +311,11 @@ func (h *AuthHandler) validateAuth0Token(tokenString string) (*Auth0Claims, erro
 	}
 
 	// Parse and validate the token using Auth0 JWKS
-	token, err := jwt.ParseWithClaims(tokenString, &Auth0Claims{}, h.Auth0JWKS.Keyfunc)
+	opts := []jwt.ParserOption{jwt.WithValidMethods(externalTokenAlgs)}
+	if h.Cfg.JWT.Auth0Audience != "" {
+		opts = append(opts, jwt.WithAudience(h.Cfg.JWT.Auth0Audience))
+	}
+	token, err := jwt.ParseWithClaims(tokenString, &Auth0Claims{}, h.Auth0JWKS.Keyfunc, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse token: %w", err)
 	}

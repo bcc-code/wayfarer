@@ -3,7 +3,7 @@
 Frontend work for the persisted `LeaderboardConfig` entity. The backend side is
 already merged and documented in [`leaderboard-configs.md`](./leaderboard-configs.md);
 read that first — it explains the schema, the full-replace update input, and why
-the ad-hoc `Project.leaderboard(...)` / `Event.leaderboard(...)` fields are *not*
+the ad-hoc `Project.leaderboard(...)` / `Event.leaderboard(...)` fields are _not_
 deprecated.
 
 This file tracks the frontend plan and its progress.
@@ -28,15 +28,15 @@ The two phases are deliberately sequential, not parallel:
 
 ## What the API gives us
 
-| Operation | Field |
-| --- | --- |
-| List (admin) | `leaderboardConfigs(filter: LeaderboardConfigFilter, first, after, last, before)` |
-| Read one (admin) | `leaderboardConfig(id: ID!)` |
-| Create | `createLeaderboardConfig(input: CreateLeaderboardConfigInput!)` |
-| Update | `updateLeaderboardConfig(id: ID!, input: UpdateLeaderboardConfigInput!)` |
-| Delete | `deleteLeaderboardConfig(id: ID!)` |
-| Serve (user) | `Project.leaderboards` / `Event.leaderboards` → `[LeaderboardConfig!]!` |
-| Computed board | `LeaderboardConfig.leaderboard(first, after, last, before)` → `LeaderboardConnection!` |
+| Operation        | Field                                                                                  |
+| ---------------- | -------------------------------------------------------------------------------------- |
+| List (admin)     | `leaderboardConfigs(filter: LeaderboardConfigFilter, first, after, last, before)`      |
+| Read one (admin) | `leaderboardConfig(id: ID!)`                                                           |
+| Create           | `createLeaderboardConfig(input: CreateLeaderboardConfigInput!)`                        |
+| Update           | `updateLeaderboardConfig(id: ID!, input: UpdateLeaderboardConfigInput!)`               |
+| Delete           | `deleteLeaderboardConfig(id: ID!)`                                                     |
+| Serve (user)     | `Project.leaderboards` / `Event.leaderboards` → `[LeaderboardConfig!]!`                |
+| Computed board   | `LeaderboardConfig.leaderboard(first, after, last, before)` → `LeaderboardConnection!` |
 
 Two shapes to keep straight:
 
@@ -95,10 +95,13 @@ Files:
   row whose index changed, each resending the filter it is not touching (hence
   `leaderboardFilterViewToInput`). Partial failure refetches to the server's
   order, same as the achievements page.
-- **All nine filter fields get a control**, including ones an admin rarely
+- **All nine filter fields got a control**, including ones an admin rarely
   touches. Not thoroughness for its own sake: the update input is full-replace,
   so a field with no control would be silently wiped the first time someone
-  opened an existing config and saved it.
+  opened an existing config and saved it. Superseded in part — see
+  [Which controls the form shows](#which-controls-the-form-shows) below; the
+  full-replace hazard is now handled by carrying uncontrolled fields in form
+  state rather than by giving every field a control.
 - **Event scope is create-only.** `UpdateLeaderboardConfigInput` has no
   `eventId`, so the edit form hides the picker rather than showing a control
   whose change cannot be saved.
@@ -108,6 +111,134 @@ Files:
   `USelectMenu` yields `null`; an emptied `UInput` yields `''`. The form treats
   any falsy value as unset rather than pinning one sentinel, which also keeps a
   legitimate `0` score bound from collapsing to "no bound".
+
+## Which controls the form shows
+
+The form originally offered every `LeaderboardFilter` field at all times. It no
+longer does, because most of them do nothing on most boards. What the backend
+actually applies, read off the eight `buildFull*Params` builders in
+`backend/internal/services/leaderboard.go`:
+
+| Filter                                | PERSONS | TEAMS | SUPERTEAMS | CHURCHES |
+| ------------------------------------- | ------- | ----- | ---------- | -------- |
+| `minScore` / `maxScore`               | yes     | yes   | yes        | yes      |
+| `churchId` / `myChurch`               | yes     | yes   | no         | no       |
+| `ageRange`                            | yes     | no    | no         | no       |
+| `teamId` / `myTeam`                   | yes     | no    | no         | no       |
+| `superTeamId` / `mySuperTeam`         | yes     | no    | no         | no       |
+| `gender`, `country`, `churchCategory` | no      | no    | no         | no       |
+
+So the form gates the age, team and superteam sections on a persons board, and
+the church section on a persons or teams board. Scores are always shown.
+
+### gender / country / churchCategory are not wired up
+
+These three are in the GraphQL input, the JSONB column and the cache key, and
+they reach **no live query**. `buildFilterParamsMap` puts them in the key, and
+none of the `GetFull*` builders passes them on — so a persons board filtered to
+"Jente" comes back unfiltered, under its own cache entry.
+
+The `WHERE` clauses for them do exist, in `GetProjectPersonLeaderboard`,
+`CountProjectPersonLeaderboard` and their event twins. Those queries are **dead
+code**: nothing calls `queries.GetProjectPersonLeaderboard` any more. Reading
+the SQL file alone suggests the filters work; they stopped working when the
+cached full-board path replaced the paginated one.
+
+They are wanted later, so nothing was removed. The schema, the column and the
+`LeaderboardFilterView` → `LeaderboardFilter` mapping all still carry them, and
+the form keeps them in state and resends what it loaded — only the three
+controls are gone. **To finish them:** add the clauses to the `GetFull*`
+queries, pass the params in the builders, regenerate sqlc, and put the controls
+back behind the entity types that then support them.
+
+### Two kinds of inapplicable filter
+
+The distinction matters, because it decides whether a hidden value is resent:
+
+- **Ignored** — a fixed filter the board cannot use (`ageRange` on a teams
+  board). The backend accepts and ignores it, so the form keeps it. Switching a
+  board's entity type by mistake does not destroy what was configured.
+- **Rejected** — `myChurch`, `myTeam`, `mySuperTeam` outside the entity types
+  `ValidateLeaderboardRelativeFilter` allows. Sending one fails the save, and
+  the error would point at a control the entity type has hidden. `buildFilter`
+  drops these.
+
+The same reasoning removed the matching zod rules: a validation error on a
+hidden control is unfixable from the form, so the entity-type rules moved into
+`buildFilter` and the `limitMode` watcher.
+
+### The age presets are a segmented control
+
+Alle / U18 / U36 / O36 are `UTabs` with `variant="pill"`, the segmented control
+`app.config.ts` themes (a well with a raised indicator) and the one
+`my-church/units.vue` already uses for its filters. They were three `UButton`s
+with `solid`/`outline`, which rendered the selected preset as a primary action
+rather than as a choice among several.
+
+**"Alle" is a preset, not an empty state.** It is what no age bounds looks like,
+so the control always shows a selection and "no age limit" is one click rather
+than two cleared fields. It also sidesteps the indicator bug below in the case
+that actually comes up.
+
+Three things to keep if this is touched:
+
+- **The model value is `''`, never `undefined`, for a range matching no preset.**
+  A custom range typed into the two fields below is the only way to reach that
+  state. Left uncontrolled, `UTabs` falls back to its first item, and the
+  control would claim "Alle" on a board that has an age filter.
+- **`indicator: 'hidden'` when nothing matches.** reka-ui's
+  `updateIndicatorStyle` (`Tabs/TabsIndicator.js`) returns early when no tab is
+  active — `if (!activeTab) return` — without resetting `indicatorStyle`, and
+  the render condition is `typeof indicatorStyle.size === 'number'`. So once a
+  preset has been picked, the pill stays mounted at its last position forever.
+  This is what "Nullstill filter" looked like before "Alle" existed: the ages
+  cleared, the pill stayed parked on U36.
+- **`trigger: 'w-auto'` and `shrink-0`.** The theme puts `w-full` on the
+  trigger, which is right when the bar spans a column (units.vue) and truncates
+  the labels to "U…" / "O…" when it sits in a heading row next to "Alder".
+
+Note that **jsdom cannot see the indicator at all** — it has no layout, so
+`offsetWidth` is 0 and the element either never mounts or mounts invisibly. The
+component tests assert on `[role="tab"][data-state="active"]`, which is the part
+jsdom does model correctly. The indicator bug was found by reading reka-ui's
+source, not by a failing test, and a test would not catch a regression in it.
+
+### Viewer-relative filters are labelled from the admin's seat
+
+The three switches read **"Deltakerens menighet" / "lag" / "superlag"**, not
+"Min menighet" / "Mitt lag". The `my*` naming comes from the GraphQL field, and
+it is written from the _viewer's_ perspective — but the person reading the form
+is the admin, who is not the viewer. The old labels needed a sentence under the
+section heading ("«Min» og «mitt» følger personen som ser tavlen") to be
+decodable at all; naming the subject outright removed the need for it, and that
+sentence is gone.
+
+"Deltakeren" rather than "Brukeren": it is what the achievement, quiz and
+challenge forms already use, and what this form's own `maxEntries` help says.
+The same strings appear as chips in `summarizeLeaderboardFilter`, so the list
+and the form stay in step.
+
+Each switch also carries a `description` — "Tavlen blir forskjellig for hver
+deltaker." — which is the one thing the label cannot say: the board is resolved
+per viewer rather than once. `USwitch`'s `description` prop is how every other
+switch in this panel is explained (`AdminQuizQuestionEditor`,
+`AdminAchievementForm`); `UTooltip` is reserved for icon-only buttons, so it
+was the wrong tool here even though it would have been more compact. The
+switches moved onto their own row under the group heading to make space, and
+the "Følger menigheten til den som ser tavlen" line that used to replace the
+picker is gone — the description says the same thing, permanently.
+
+### The limit mode picker
+
+A new config starts on **MANUAL**. It used to start on CHURCH_SIZE, which fails
+`leaderboardLimitModeToDB` until a church is picked — a new form that cannot be
+submitted.
+
+The picker itself is hidden whenever MANUAL is the only valid choice: on any
+non-persons board, and when `myChurch` is on (CHURCH_SIZE needs a concrete
+`churchId`, and `myChurch` only resolves per viewer at request time). A watcher
+coerces `limitMode` back to MANUAL in both cases, hydration included. `maxEntries`
+stays visible in both modes — under CHURCH_SIZE it is an optional extra cap.
 
 ## Phase 2 — user-facing app — done
 
@@ -139,7 +270,7 @@ resolvers call `IsAdmin` and return "permission denied" otherwise (see
 `leaderboards.resolvers.go`). A normal user can only reach configs through
 `myCurrentProject.leaderboards`, which takes no arguments.
 
-So there is no way to fetch *one* config's board by id as a user. The page
+So there is no way to fetch _one_ config's board by id as a user. The page
 fetches the whole list with each config's `leaderboard` in a single query and
 switches tabs client-side. Consequences to keep in mind:
 
@@ -204,7 +335,7 @@ behaviour is the product decision, not a limitation to route around; leave the
 filter alone.
 
 Ordering is the one thing the client has to get right: the server walks
-*backward* from the viewer, so rivals arrive nearest-first. `getExtraItemsWithRivals`
+_backward_ from the viewer, so rivals arrive nearest-first. `getExtraItemsWithRivals`
 (in `app/utils/leaderboard.ts`) re-sorts them by rank so the block reads
 downward like the board it continues, drops any rival already in the main list,
 and returns nothing at all when the viewer is on the board — in that case every
@@ -227,7 +358,7 @@ rival is on it too.
   untranslated. `standings.unit` stays for the unit tab; `standings.global`,
   `local`, `top`, `u18`, `o18` and `units` were removed from all 16 locale files
   that carried them.
-- **Analytics.** `LeaderboardTabChanged` sends tab *labels*, not ids — a config
+- **Analytics.** `LeaderboardTabChanged` sends tab _labels_, not ids — a config
   id says nothing in a dashboard, where the old values were readable
   (`global` / `local` / `unit`). `TeamLeaderboardViewed` still fires on the unit
   tab.

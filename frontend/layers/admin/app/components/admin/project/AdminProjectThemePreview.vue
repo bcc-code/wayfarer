@@ -37,7 +37,7 @@ const leaderboard: LeaderboardEntry[] = [
 
 <template>
   <div
-    class="border-default bg-background-default aspect-1/2 w-[400px] overflow-clip rounded-xl border text-start"
+    class="bg-background-default aspect-[9/19.5] w-full overflow-y-auto rounded-xl text-start"
   >
     <PageLayout title="Forhåndsvisning">
       <div class="gap-list-section-gap flex flex-col p-list-outside">

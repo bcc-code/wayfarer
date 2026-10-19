@@ -69,7 +69,7 @@ const route = reactive({
 
 mockNuxtImport('useRoute', () => () => route)
 
-/** Flattens the grouped menu down to the rows that stand for a project. */
+/** The grouped menu flattened to its project rows. */
 function projectItems(wrapper: { vm: unknown }): ProjectItem[] {
   const items = (wrapper.vm as { items: ProjectItem[][] }).items
   return items.flat().filter((item) => item.projectId)
@@ -106,8 +106,7 @@ describe('AdminProjectSwitcher', () => {
   it('keeps the logo on the rows rather than replacing it with a check', async () => {
     const wrapper = await mountSuspended(AdminProjectSwitcher)
 
-    // The active row used to carry `icon: 'lucide:check'`, which wins over
-    // `avatar` in Nuxt UI's item template — the check now trails instead.
+    // `icon` wins over `avatar` in Nuxt UI's item template, so the check trails.
     for (const item of projectItems(wrapper)) {
       expect(item.icon).toBeUndefined()
     }

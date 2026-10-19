@@ -2,14 +2,13 @@ package middleware
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
 
+	"github.com/bcc-media/wayfarer/internal/authtoken"
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 // Context key types for user information
@@ -20,6 +19,9 @@ const (
 	UserIDKey contextKey = "user_id"
 	// UserRolesKey is the context key for user roles (array)
 	UserRolesKey contextKey = "user_roles"
+	// SessionIDKey is the context key for the auth session ID (empty for
+	// legacy and m2m tokens)
+	SessionIDKey contextKey = "session_id"
 	// LanguageKey is the context key for the preferred language
 	LanguageKey contextKey = "language"
 	// UserAgentKey is the context key for the User-Agent header
@@ -27,11 +29,7 @@ const (
 )
 
 // WayfarerClaims represents the JWT claims issued by Wayfarer
-type WayfarerClaims struct {
-	UserID    string   `json:"user_id"`
-	UserRoles []string `json:"user_roles"` // All roles the user has
-	jwt.RegisteredClaims
-}
+type WayfarerClaims = authtoken.Claims
 
 // JWTAuth is a middleware that validates JWT tokens and extracts user information
 func JWTAuth(cfg config.JWTConfig) gin.HandlerFunc {
@@ -82,6 +80,7 @@ func JWTAuth(cfg config.JWTConfig) gin.HandlerFunc {
 		// Set user context for GraphQL resolvers
 		c.Set("user_id", claims.UserID)
 		c.Set("user_roles", claims.UserRoles)
+		c.Set("session_id", claims.SessionID)
 
 		slog.Debug("JWT validated",
 			"user_id", claims.UserID,
@@ -94,34 +93,7 @@ func JWTAuth(cfg config.JWTConfig) gin.HandlerFunc {
 
 // validateToken parses and validates a JWT token
 func validateToken(tokenString string, cfg config.JWTConfig) (*WayfarerClaims, error) {
-	// Parse the token
-	token, err := jwt.ParseWithClaims(tokenString, &WayfarerClaims{}, func(token *jwt.Token) (interface{}, error) {
-		// Verify signing method is HS256
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("unexpected signing method")
-		}
-		return []byte(cfg.Secret), nil
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	if !token.Valid {
-		return nil, errors.New("invalid token")
-	}
-
-	claims, ok := token.Claims.(*WayfarerClaims)
-	if !ok {
-		return nil, errors.New("invalid token claims")
-	}
-
-	// Verify issuer if configured
-	if cfg.Issuer != "" && claims.Issuer != cfg.Issuer {
-		return nil, errors.New("invalid token issuer")
-	}
-
-	return claims, nil
+	return authtoken.Parse(tokenString, cfg)
 }
 
 // GetUserID retrieves the user ID from the context

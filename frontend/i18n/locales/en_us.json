@@ -136,12 +136,18 @@
     "goToConsent": "Go to consent",
     "continue": "Continue",
     "changeDescription": "To change your consent, please contact us at {email}",
-    "changeConsent": "Change consent"
+    "changeConsent": "Change consent",
+    "required": "Required",
+    "requiredTitle": "Before you continue"
   },
   "achievement": {
     "title": "Achievement",
     "unlocked": "Unlocked!",
     "progress": "{completed} of {total} completed"
+  },
+  "archive": {
+    "title": "Previous projects",
+    "empty": "You have no previous projects yet."
   },
   "feedback": {
     "title": "Give us your feedback",
@@ -350,7 +356,8 @@
         "couldNotLockBetting": "Could not lock betting",
         "couldNotReopenBetting": "Could not reopen betting",
         "couldNotFinishBetting": "Could not complete betting",
-        "couldNotSendUnitLeaderAccess": "Could not send code to unit leaders"
+        "couldNotSendUnitLeaderAccess": "Could not send code to unit leaders",
+        "couldNotGrantBettingAccess": "Could not give users access to betting"
       }
     },
     "statistics": {
@@ -368,5 +375,8 @@
       "peopleInAUnit": "People in a unit",
       "lastUpdated": "Last updated"
     }
+  },
+  "offline": {
+    "notice": "You're offline. Information may be out of date."
   }
 }

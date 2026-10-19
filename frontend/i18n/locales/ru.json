@@ -349,7 +349,8 @@
         "couldNotLockBetting": "Не удалось заблокировать ставки",
         "couldNotReopenBetting": "Не удалось повторно открыть ставки",
         "couldNotFinishBetting": "Не удалось завершить ставки",
-        "couldNotSendUnitLeaderAccess": "Не удалось отправить код капитанам команд"
+        "couldNotSendUnitLeaderAccess": "Не удалось отправить код капитанам команд",
+        "couldNotGrantBettingAccess": "Не удалось предоставить пользователям доступ к ставкам"
       }
     },
     "statistics": {

@@ -136,12 +136,18 @@
     "goToConsent": "Gå til samtykke",
     "continue": "Gå videre",
     "changeDescription": "For å endre samtykket ditt, kontakt oss på {email}",
-    "changeConsent": "Endre samtykke"
+    "changeConsent": "Endre samtykke",
+    "required": "Påkrevd",
+    "requiredTitle": "Før du fortsetter"
   },
   "achievement": {
     "title": "Utmerkelse",
     "unlocked": "Oppnådd!",
     "progress": "{completed} av {total} fullført"
+  },
+  "archive": {
+    "title": "Tidligere prosjekter",
+    "empty": "Du har ingen tidligere prosjekter ennå."
   },
   "feedback": {
     "title": "Gi oss tilbakemelding",
@@ -350,7 +356,8 @@
         "couldNotLockBetting": "Kunne ikke låse tipping",
         "couldNotReopenBetting": "Kunne ikke gjenåpne tipping",
         "couldNotFinishBetting": "Kunne ikke avslutte tipping",
-        "couldNotSendUnitLeaderAccess": "Kunne ikke sende kode til unitledere"
+        "couldNotSendUnitLeaderAccess": "Kunne ikke sende kode til unitledere",
+        "couldNotGrantBettingAccess": "Kunne ikke gi brukerne tilgang til betting"
       }
     },
     "statistics": {
@@ -368,5 +375,8 @@
       "peopleInAUnit": "Personer i en unit",
       "lastUpdated": "Sist oppdatert"
     }
+  },
+  "offline": {
+    "notice": "Du er frakoblet. Informasjonen kan være utdatert."
   }
 }

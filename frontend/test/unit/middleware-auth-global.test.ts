@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ref, type Ref } from 'vue'
 import { createMockToken } from '../utils/auth-mocks'
+import { safeRedirectPath } from '../../app/utils/redirect'
 
 /**
  * Global auth middleware tests.
@@ -23,6 +24,10 @@ const auth0 = {
 vi.mock('@auth0/auth0-vue', () => ({ useAuth0: () => auth0 }))
 
 const navigateTo = vi.fn()
+const refreshSession = vi.fn()
+
+/** Session state seen by the stubbed utils/authSession helpers. */
+let session: { refreshToken: string | null; refreshedToken: string | null }
 
 /** Backing store for the stubbed `useLocalStorage`. */
 let storage: Record<string, Ref<unknown>> = {}
@@ -30,7 +35,22 @@ let storage: Record<string, Ref<unknown>> = {}
 function stubGlobals(tokenIsExpired = false) {
   vi.stubGlobal('defineNuxtRouteMiddleware', (fn: unknown) => fn)
   vi.stubGlobal('navigateTo', navigateTo)
-  vi.stubGlobal('isTokenExpired', () => tokenIsExpired)
+  // Expiry is decided per token: the one a refresh stores is always fresh.
+  vi.stubGlobal(
+    'isTokenExpired',
+    (token: string | null) =>
+      token !== session.refreshedToken && (tokenIsExpired || !token),
+  )
+  vi.stubGlobal('ACCESS_TOKEN_KEY', 'token')
+  vi.stubGlobal('hasRefreshToken', () => !!session.refreshToken)
+  vi.stubGlobal('refreshSession', refreshSession)
+  vi.stubGlobal('getStoredAccessToken', () => storage.token?.value ?? null)
+  vi.stubGlobal('authBaseUrl', () => 'https://api.test/auth')
+  // The real one: the page being asked for has to survive the hop.
+  vi.stubGlobal('safeRedirectPath', safeRedirectPath)
+  vi.stubGlobal('useRuntimeConfig', () => ({
+    public: { apiUrl: 'https://api.test/graphql' },
+  }))
   vi.stubGlobal('useLocalStorage', (key: string, init: unknown) => {
     storage[key] ??= ref(typeof init === 'function' ? init() : init)
     return storage[key]
@@ -53,6 +73,9 @@ function route(path: string) {
 
 beforeEach(() => {
   storage = {}
+  session = { refreshToken: null, refreshedToken: null }
+  refreshSession.mockReset()
+  refreshSession.mockResolvedValue(false)
   navigateTo.mockClear()
   auth0.logout.mockClear()
   auth0.isLoading.value = false
@@ -114,9 +137,27 @@ describe('middleware/auth.global', () => {
 
     await middleware(route('/challenges'))
 
-    expect(navigateTo).toHaveBeenCalledWith('/auth0-callback', {
-      replace: true,
-    })
+    expect(navigateTo).toHaveBeenCalledWith(
+      { path: '/auth0-callback', query: { redirect: '/challenges' } },
+      { replace: true },
+    )
+  })
+
+  // An admin whose token had expired used to land on the user app's front
+  // page, and had to type /admin again.
+  it('keeps the page being asked for across the token exchange', async () => {
+    const middleware = await loadMiddleware()
+    auth0.isAuthenticated.value = true
+
+    await middleware(route('/admin/projects/PR1'))
+
+    expect(navigateTo).toHaveBeenCalledWith(
+      {
+        path: '/auth0-callback',
+        query: { redirect: '/admin/projects/PR1' },
+      },
+      { replace: true },
+    )
   })
 
   it('clears an expired token and re-exchanges it', async () => {
@@ -127,8 +168,69 @@ describe('middleware/auth.global', () => {
     await middleware(route('/challenges'))
 
     expect(storage.token!.value).toBeNull()
-    expect(navigateTo).toHaveBeenCalledWith('/auth0-callback', {
-      replace: true,
+    expect(navigateTo).toHaveBeenCalledWith(
+      { path: '/auth0-callback', query: { redirect: '/challenges' } },
+      { replace: true },
+    )
+  })
+
+  describe('Wayfarer session refresh', () => {
+    it('refreshes an expired token without involving Auth0', async () => {
+      const middleware = await loadMiddleware(true)
+      storage.token = ref(createMockToken())
+      session.refreshToken = 'wfr_abc'
+      session.refreshedToken = 'fresh-token'
+      refreshSession.mockImplementation(async () => {
+        storage.token!.value = 'fresh-token'
+        return true
+      })
+      // Auth0 still initialising must not block a refreshed session.
+      auth0.isLoading.value = true
+
+      await middleware(route('/challenges'))
+
+      expect(refreshSession).toHaveBeenCalledWith('https://api.test/auth')
+      expect(storage.token!.value).toBe('fresh-token')
+      expect(navigateTo).not.toHaveBeenCalled()
+    })
+
+    it('refreshes when only a refresh token is stored', async () => {
+      const middleware = await loadMiddleware()
+      session.refreshToken = 'wfr_abc'
+      session.refreshedToken = 'fresh-token'
+      refreshSession.mockImplementation(async () => {
+        storage.token!.value = 'fresh-token'
+        return true
+      })
+
+      await middleware(route('/challenges'))
+
+      expect(navigateTo).not.toHaveBeenCalled()
+    })
+
+    it('falls back to login when the refresh fails', async () => {
+      const middleware = await loadMiddleware(true)
+      storage.token = ref(createMockToken())
+      session.refreshToken = 'wfr_abc'
+
+      await middleware(route('/challenges'))
+
+      expect(refreshSession).toHaveBeenCalled()
+      expect(navigateTo).toHaveBeenCalledWith(
+        { path: '/login', query: { redirect: '/challenges' } },
+        { replace: true },
+      )
+    })
+
+    it('does not refresh a valid token', async () => {
+      const middleware = await loadMiddleware()
+      storage.token = ref(createMockToken())
+      session.refreshToken = 'wfr_abc'
+
+      await middleware(route('/challenges'))
+
+      expect(refreshSession).not.toHaveBeenCalled()
+      expect(navigateTo).not.toHaveBeenCalled()
     })
   })
 

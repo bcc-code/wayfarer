@@ -20,6 +20,16 @@ func applyStringTranslation(translated *string, base string) string {
 	return base
 }
 
+// applyOptionalStringTranslation is applyStringTranslation for optional fields.
+// A field the base language leaves empty stays empty in every language.
+func applyOptionalStringTranslation(translated *string, base *string) *string {
+	if base == nil {
+		return nil
+	}
+	value := applyStringTranslation(translated, *base)
+	return &value
+}
+
 // applyHTMLTranslation returns the translated value as HTML if non-nil and non-empty, otherwise the base value
 func applyHTMLTranslation(translated *string, base scalars.HTML) scalars.HTML {
 	if translated != nil && *translated != "" {
@@ -371,8 +381,14 @@ func (r *Resolver) ApplyTranslationToQuizAnswer(ctx context.Context, answer *mod
 		return answer
 	}
 
+	return applyQuizAnswerTranslation(answer, trans)
+}
+
+// applyQuizAnswerTranslation applies translation to a quiz predefined answer
+func applyQuizAnswerTranslation(answer *model.QuizPredefinedAnswer, trans *loaders.Translation) *model.QuizPredefinedAnswer {
 	translated := *answer
 	translated.AnswerText = applyStringTranslation(trans.AnswerText, answer.AnswerText)
+	translated.Description = applyOptionalStringTranslation(trans.Description, answer.Description)
 	return &translated
 }
 

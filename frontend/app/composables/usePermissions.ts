@@ -276,6 +276,16 @@ export function usePermissions() {
   })
 
   /**
+   * Can read and change system settings, including which project is the
+   * current one. That one changes what every end user sees, so it is
+   * superadmin only — `setCurrentProject` and `setSetting` both carry
+   * `@requireRole(roles: ["superadmin"])`.
+   */
+  const canManageSettings = computed(() => {
+    return isSuperAdmin.value
+  })
+
+  /**
    * Can check achievement progress for users (superadmin only)
    */
   const canCheckAchievements = computed(() => {
@@ -320,6 +330,7 @@ export function usePermissions() {
     canToggleLeaderboardExclusion,
     canManageChurchAdmins,
     canAccessMaintenance,
+    canManageSettings,
     canCheckAchievements,
   }
 }

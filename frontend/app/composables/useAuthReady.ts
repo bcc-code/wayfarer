@@ -3,7 +3,7 @@
  * Use this to pause queries until we have a valid token and are not on the callback page.
  */
 export function useAuthReady(providedRoute?: { path: string }) {
-  const token = useLocalStorage<string>('token', () => null)
+  const token = useLocalStorage<string>(ACCESS_TOKEN_KEY, () => null)
   // `useRouter().currentRoute` rather than `useRoute()`: this also runs inside
   // route middleware (via useAuth), where `useRoute()` warns that it returns
   // the route being navigated *away* from. That is the value we want either

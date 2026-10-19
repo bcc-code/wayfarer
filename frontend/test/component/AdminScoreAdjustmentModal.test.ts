@@ -60,7 +60,7 @@ describe('AdminScoreAdjustmentModal', () => {
     await wrapper.vm.$nextTick()
     expect(submitButton(wrapper).props('disabled')).toBe(true)
 
-    await wrapper.findComponent({ name: 'UInput' }).setValue(50)
+    await wrapper.findComponent({ name: 'UInputNumber' }).setValue(50)
     expect(submitButton(wrapper).props('disabled')).toBe(false)
   })
 
@@ -68,7 +68,7 @@ describe('AdminScoreAdjustmentModal', () => {
     const wrapper = await mount()
 
     wrapper.findComponent(AdminUserPicker).vm.$emit('update:modelValue', 'US1')
-    await wrapper.findComponent({ name: 'UInput' }).setValue(-25)
+    await wrapper.findComponent({ name: 'UInputNumber' }).setValue(-25)
     await submitButton(wrapper).trigger('click')
 
     expect(createAdjustment).toHaveBeenCalledWith({
@@ -89,7 +89,7 @@ describe('AdminScoreAdjustmentModal', () => {
 
     const wrapper = await mount()
     wrapper.findComponent(AdminUserPicker).vm.$emit('update:modelValue', 'US1')
-    await wrapper.findComponent({ name: 'UInput' }).setValue(10)
+    await wrapper.findComponent({ name: 'UInputNumber' }).setValue(10)
     await submitButton(wrapper).trigger('click')
 
     expect(wrapper.emitted('created')).toBeUndefined()

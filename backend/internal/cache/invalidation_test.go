@@ -13,7 +13,8 @@ func TestExtractPrefixes_LeaderboardFullProject(t *testing.T) {
 	prefixes := extractPrefixes(key)
 
 	assert.Contains(t, prefixes, "leaderboard:full:project:PROJ123")
-	assert.Len(t, prefixes, 1)
+	assert.Contains(t, prefixes, PrefixLeaderboard, "umbrella prefix")
+	assert.Len(t, prefixes, 2)
 }
 
 func TestExtractPrefixes_LeaderboardFullEvent(t *testing.T) {
@@ -22,7 +23,8 @@ func TestExtractPrefixes_LeaderboardFullEvent(t *testing.T) {
 	prefixes := extractPrefixes(key)
 
 	assert.Contains(t, prefixes, "leaderboard:full:event:EV456")
-	assert.Len(t, prefixes, 1)
+	assert.Contains(t, prefixes, PrefixLeaderboard, "umbrella prefix")
+	assert.Len(t, prefixes, 2)
 }
 
 func TestExtractPrefixes_LeaderboardProject(t *testing.T) {
@@ -31,7 +33,8 @@ func TestExtractPrefixes_LeaderboardProject(t *testing.T) {
 	prefixes := extractPrefixes(key)
 
 	assert.Contains(t, prefixes, "leaderboard:project:PROJ123")
-	assert.Len(t, prefixes, 1)
+	assert.Contains(t, prefixes, PrefixLeaderboard, "umbrella prefix")
+	assert.Len(t, prefixes, 2)
 }
 
 func TestExtractPrefixes_LeaderboardPositionProject(t *testing.T) {
@@ -40,7 +43,8 @@ func TestExtractPrefixes_LeaderboardPositionProject(t *testing.T) {
 	prefixes := extractPrefixes(key)
 
 	assert.Contains(t, prefixes, "leaderboard:position:project:PROJ123")
-	assert.Len(t, prefixes, 1)
+	assert.Contains(t, prefixes, PrefixLeaderboard, "umbrella prefix")
+	assert.Len(t, prefixes, 2)
 }
 
 func TestExtractPrefixes_LeaderboardCountProject(t *testing.T) {
@@ -49,7 +53,8 @@ func TestExtractPrefixes_LeaderboardCountProject(t *testing.T) {
 	prefixes := extractPrefixes(key)
 
 	assert.Contains(t, prefixes, "leaderboard:count:project:PROJ123")
-	assert.Len(t, prefixes, 1)
+	assert.Contains(t, prefixes, PrefixLeaderboard, "umbrella prefix")
+	assert.Len(t, prefixes, 2)
 }
 
 func TestExtractPrefixes_LeaderboardPositionEvent(t *testing.T) {
@@ -58,7 +63,8 @@ func TestExtractPrefixes_LeaderboardPositionEvent(t *testing.T) {
 	prefixes := extractPrefixes(key)
 
 	assert.Contains(t, prefixes, "leaderboard:position:event:EV789")
-	assert.Len(t, prefixes, 1)
+	assert.Contains(t, prefixes, PrefixLeaderboard, "umbrella prefix")
+	assert.Len(t, prefixes, 2)
 }
 
 func TestExtractPrefixes_LeaderboardCountEvent(t *testing.T) {
@@ -67,7 +73,8 @@ func TestExtractPrefixes_LeaderboardCountEvent(t *testing.T) {
 	prefixes := extractPrefixes(key)
 
 	assert.Contains(t, prefixes, "leaderboard:count:event:EV789")
-	assert.Len(t, prefixes, 1)
+	assert.Contains(t, prefixes, PrefixLeaderboard, "umbrella prefix")
+	assert.Len(t, prefixes, 2)
 }
 
 func TestExtractPrefixes_NonLeaderboardKey(t *testing.T) {
@@ -299,7 +306,7 @@ func TestCacheWithRegistry_UserInvalidation(t *testing.T) {
 	assert.True(t, found, "achievement timestamp should exist before invalidation")
 
 	// Invalidate user
-	c.invalidateUserLocal(userID)
+	c.InvalidateUser(userID)
 	c.cache.Wait()
 
 	// Verify all user keys are deleted
@@ -344,7 +351,7 @@ func TestCacheWithRegistry_ChallengeInvalidationClearsActiveChallengeCounts(t *t
 	c.Set(ActiveChallengesCountKey("US999", "PR456"), 7)
 	c.cache.Wait()
 
-	c.invalidateChallengeLocal("CH123", "PR123", nil)
+	c.InvalidateChallenge("CH123", "PR123", nil)
 	c.cache.Wait()
 
 	_, found := c.Get(ActiveChallengesCountKey("US123", "PR123"))
@@ -379,7 +386,7 @@ func TestCacheWithRegistry_TeamMemberLeaderboardInvalidationViaProject(t *testin
 	_, found = c.Get(TeamMemberLeaderboardTeamLeadTagsKey(teamID1))
 	assert.True(t, found, "team1 lead tags should exist before invalidation")
 
-	// Simulate what invalidateProjectLocal does for team member leaderboards
+	// Simulate what InvalidateProject does for team member leaderboards
 	c.DeletePrefix(PrefixTeamMemberLeaderboard)
 	c.cache.Wait()
 

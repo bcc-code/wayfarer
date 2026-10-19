@@ -38,7 +38,6 @@ import (
 	"github.com/bcc-media/wayfarer/internal/otel"
 	"github.com/bcc-media/wayfarer/internal/plugins"
 	"github.com/bcc-media/wayfarer/internal/plugins/ladder_to_heaven"
-	"github.com/bcc-media/wayfarer/internal/pubsub"
 	"github.com/bcc-media/wayfarer/internal/reuseport"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/services/bulk"
@@ -46,6 +45,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/services/webhooks"
 	"github.com/bcc-media/wayfarer/internal/ssf"
+	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/bcc-media/wayfarer/translations"
 	"github.com/bcc-media/wayfarer/translations/phrase"
 	"github.com/gin-contrib/cors"
@@ -64,12 +64,27 @@ func main() {
 		os.Exit(1)
 	}
 
+	ctx := context.Background()
+
+	// Before the logger, tracer and pool: each is configured from a value the
+	// settings table can override, and db_log_queries is an input to building
+	// the pool itself. Opt-in, because a row applies to an instance that is
+	// still rolling out as much as to the ones already serving.
+	var appliedOverrides []string
+	if cfg.Settings.OverrideEnv {
+		settingOverrides := config.LoadSettings(ctx, cfg.Database.URL)
+		appliedOverrides = config.ApplySettings(cfg, settingOverrides)
+	}
+
 	// Initialize structured logger
 	lgr := logger.New(cfg.Server.Environment, logger.ParseLevel(cfg.Log.Level))
 	slog.SetDefault(lgr)
 
+	if len(appliedOverrides) > 0 {
+		slog.Info("Configuration overridden from settings table", "keys", appliedOverrides)
+	}
+
 	// Initialize OpenTelemetry tracer
-	ctx := context.Background()
 	tracerProvider, err := otel.InitTracer(ctx, otel.Config{
 		Enabled:          cfg.OTEL.Enabled,
 		ServiceName:      cfg.OTEL.ServiceName,
@@ -260,15 +275,6 @@ func main() {
 	defer cacheInstance.Close()
 	slog.Info("Cache initialized", "default_ttl", "15m", "max_cost", "100MB")
 
-	// Initialize cache sync for cross-instance invalidation via PostgreSQL NOTIFY/LISTEN
-	cacheSync := cache.NewCacheSync(cacheInstance, cfg.Database.URL)
-	if err := cacheSync.Start(ctx); err != nil {
-		slog.Warn("Failed to start cache sync, continuing without cross-instance invalidation", "error", err)
-	} else {
-		cacheInstance.SetSync(cacheSync, db.Pool)
-		defer cacheSync.Stop()
-	}
-
 	// Initialize DataLoaders (shared globally across all requests)
 	// Dataloaders handle request batching while Ristretto cache handles data caching
 	dataLoaders := loaders.NewLoaders(db, cacheInstance)
@@ -276,6 +282,10 @@ func main() {
 
 	// Initialize RoleService
 	roleService := services.NewRoleService(db.Queries, cacheInstance)
+	authSessionService := services.NewAuthSessionService(db.Queries, roleService, cfg.JWT)
+	if n := len(cfg.JWT.RevokedUsers); n > 0 {
+		slog.Warn("Emergency token revocation list is active", "users", n)
+	}
 	slog.Info("RoleService initialized with caching")
 
 	// Initialize LeaderboardService
@@ -283,12 +293,13 @@ func main() {
 	slog.Info("LeaderboardService initialized with caching and loaders")
 
 	// Initialize SettingsService
-	settingsService, err := services.NewSettingsService(ctx, db.Queries, lgr)
+	settingsService, err := services.NewSettingsService(ctx, db.Queries, services.NewSettingsTxRunner(db.Pool, db.Queries), lgr, cfg.Settings.OverrideEnv)
 	if err != nil {
 		slog.Error("Failed to initialize SettingsService", "error", err)
 		os.Exit(1)
 	}
 	defer settingsService.Stop()
+
 	slog.Info("SettingsService initialized with background refresh")
 
 	// Initialize S3 upload service
@@ -349,7 +360,9 @@ func main() {
 	// Leaderboard apply worker: drains the score-delta outbox filled by the
 	// score_journal INSERT trigger (migration 00101) outside request
 	// transactions. Replaces the synchronous 38-statement trigger fan-out.
-	leaderboardApplyWorker := services.NewLeaderboardApplyWorker(db.Queries)
+	// Applied deltas drop the cached leaderboards, which were invalidated
+	// when the scores were written but may have been re-read in between.
+	leaderboardApplyWorker := services.NewLeaderboardApplyWorker(db.Queries, cacheInstance.InvalidateLeaderboardScores)
 	leaderboardApplyWorker.Start(ctx)
 	defer leaderboardApplyWorker.Stop()
 	slog.Info("Leaderboard apply worker started")
@@ -361,28 +374,6 @@ func main() {
 		slog.Info("Email service initialized")
 	} else {
 		slog.Warn("Email service not configured - RESEND_API_KEY not set")
-	}
-
-	// Initialize Pub/Sub publisher for async bulk operations
-	var pubsubPublisher *pubsub.Publisher
-	if cfg.PubSub.Enabled {
-		var err error
-		pubsubPublisher, err = pubsub.NewPublisher(ctx, pubsub.PublisherConfig{
-			Enabled:   cfg.PubSub.Enabled,
-			ProjectID: cfg.PubSub.ProjectID,
-			TopicID:   cfg.PubSub.TopicID,
-		}, lgr)
-		if err != nil {
-			slog.Error("Failed to initialize Pub/Sub publisher", "error", err)
-			os.Exit(1)
-		}
-		defer pubsubPublisher.Close()
-		slog.Info("Pub/Sub publisher initialized",
-			"project_id", cfg.PubSub.ProjectID,
-			"topic_id", cfg.PubSub.TopicID,
-		)
-	} else {
-		slog.Warn("Pub/Sub publisher not initialized - PUBSUB_ENABLED is false")
 	}
 
 	// Content achievement service (shared between auth and webhook handlers)
@@ -430,11 +421,11 @@ func main() {
 		dataLoaders,
 		pushService,
 		firebaseService,
-		pubsubPublisher,
+		cfg.Jobs.Sync,
 		lgr,
 		contentAchievementService,
 	)
-	slog.Info("Bulk operations service initialized")
+	slog.Info("Bulk operations service initialized", "sync_jobs", cfg.Jobs.Sync)
 
 	// Initialize GraphQL resolver
 	apiResolver := &api.Resolver{
@@ -443,14 +434,14 @@ func main() {
 		Cache:              cacheInstance,
 		RoleService:        roleService,
 		LeaderboardService: leaderboardService,
-		Settings:           settingsService,
+		SettingsService:    settingsService,
 		PushService:        pushService,
 		WebhookService:     webhookService,
 		FirebaseService:    firebaseService,
 		EmailService:       emailService,
 		UserSyncService:    userSyncService,
 		BulkService:        bulkService,
-		InstanceID:         cacheSync.InstanceID(),
+		InstanceID:         ulid.NewInstanceID(),
 	}
 
 	apiHandler := handler.New(api.NewExecutableSchema(api.Config{
@@ -594,8 +585,15 @@ func main() {
 		ContentAchievementService: contentAchievementService,
 		ChurchResolver:            churchResolver,
 		UserSyncService:           userSyncService,
+		SessionService:            authSessionService,
 	}
 	router.GET("/token", authHandler.Callback)
+	authGroup := router.Group("/auth", middleware.MaxBodyBytes(handlers.AuthRequestBodyLimit))
+	{
+		authGroup.POST("/exchange", authHandler.Exchange)
+		authGroup.POST("/refresh", authHandler.Refresh)
+		authGroup.POST("/logout", authHandler.Logout)
+	}
 
 	// Load-test only: serve the simulated-Auth0 JWKS derived from
 	// AUTH0_LOADTEST_PRIVATE_KEY, so AUTH0_JWKS_URL can point back at this
@@ -656,16 +654,19 @@ func main() {
 		ContentAchievementService: contentAchievementService,
 		SSFClient:                 ssfClient,
 		MemberImportService:       memberImportService,
+		AuthSessionService:        authSessionService,
 	}
 	router.POST("/api/maintenance/sync-user-data", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.SyncUserData)
 	router.POST("/api/maintenance/sync-user/:user_id", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.SyncSingleUser)
 	router.POST("/api/maintenance/backfill-ssf-events", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.BackfillSSFEvents)
 	router.POST("/api/maintenance/import-new-members", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.ImportNewMembers)
+	router.POST("/api/maintenance/cleanup-auth-sessions", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.CleanupAuthSessions)
 	slog.Info("Maintenance endpoints registered",
 		"batch_sync", "POST /api/maintenance/sync-user-data",
 		"single_sync", "POST /api/maintenance/sync-user/:user_id",
 		"backfill_ssf", "POST /api/maintenance/backfill-ssf-events",
 		"import_new_members", "POST /api/maintenance/import-new-members",
+		"cleanup_auth_sessions", "POST /api/maintenance/cleanup-auth-sessions",
 	)
 
 	// Quiz scheduler handler for timed session state transitions
@@ -678,16 +679,6 @@ func main() {
 	router.POST("/api/scheduler/quiz-session-transitions", middleware.APIKeyAuth(cfg.APIKey), quizSchedulerHandler.ProcessScheduledTransitions)
 	slog.Info("Quiz scheduler endpoint registered",
 		"endpoint", "POST /api/scheduler/quiz-session-transitions",
-	)
-
-	// Pub/Sub push handler for bulk operations (always registered - for receiving messages)
-	// This is separate from the publisher initialization which requires PUBSUB_ENABLED=true
-	bulkProcessor := bulk.NewProcessor(bulkService)
-	pubsubProcessor := pubsub.NewProcessor(db, bulkProcessor, lgr)
-	pubsubHandler := pubsub.NewHandler(pubsubProcessor, lgr)
-	router.POST("/pubsub/bulk-operations", pubsubHandler.HandlePush)
-	slog.Info("Pub/Sub bulk operations endpoint registered",
-		"endpoint", "POST /pubsub/bulk-operations",
 	)
 
 	// File upload handler
@@ -904,6 +895,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Let background bulk jobs finish
+	jobsCtx, jobsCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer jobsCancel()
+	if err := bulkService.Runner.Wait(jobsCtx); err != nil {
+		slog.Warn("Bulk jobs still running at shutdown", "error", err)
+	}
+
 	slog.Info("Server exited")
 }
 
@@ -925,6 +923,11 @@ func graphqlHandler(h *handler.Server, languageService *services.LanguageService
 		if roles, exists := c.Get("user_roles"); exists {
 			userRoles = roles.([]string)
 			ctx = context.WithValue(ctx, middleware.UserRolesKey, roles)
+		}
+
+		// Transfer session_id if present (empty for legacy and m2m tokens)
+		if sid, exists := c.Get("session_id"); exists {
+			ctx = context.WithValue(ctx, middleware.SessionIDKey, sid)
 		}
 
 		// Transfer language if present
