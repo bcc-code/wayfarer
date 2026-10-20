@@ -37,7 +37,7 @@ defineProps<{
       v-if="image?.url"
       :image="image"
       :alt="questionText"
-      class="rounded-card w-full"
+      class="w-full mb-6"
     />
     <h1
       class="text-heading limitedHeight:text-label text-text-default text-balance"
