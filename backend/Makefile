@@ -40,6 +40,9 @@ test: ## Run unit tests
 	@echo "Running unit tests..."
 	@go test -v -race ./...
 
+test-bugrepro: ## Run tests that reproduce confirmed, not-yet-fixed bugs (build tag bugrepro; expected to FAIL)
+	@go test -race -tags bugrepro $$(go list ./... | grep -v '/e2e')
+
 test-ci: ## Run unit tests for CI (quiet output, race detector on, e2e excluded — CI runs it in a parallel job)
 	@go test -race $$(go list ./... | grep -v '/e2e')
 
