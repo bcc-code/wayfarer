@@ -235,3 +235,15 @@ loadtest-betting-smoke: ## Betting rampspike at ~200 users on the LT pair, settl
 
 loadtest-betting-rampspike: ## Full 10k betting rampspike on the LT pair, settles bets
 	@./scripts/loadtest-lt.sh run betting_ramp
+
+loadtest-multisession-reset: ## Multi-session fixture on the LT server (1000 churches, 10k players) — resets data, needs approval
+	@./scripts/loadtest-lt.sh multi-reset
+
+loadtest-multisession-config: ## Mint church admin + player tokens on the LT server and fetch config.json
+	@./scripts/loadtest-lt.sh multi-config
+
+loadtest-multisession-smoke: ## Multi-session gamenight with 50 sampled churches and a 5-minute session on the LT pair
+	@./scripts/loadtest-lt.sh multi-smoke
+
+loadtest-multisession-run: ## Full multi-session gamenight (1000 sessions, 19:00 start, 45 min) on the LT pair
+	@./scripts/loadtest-lt.sh multi-run multisession
