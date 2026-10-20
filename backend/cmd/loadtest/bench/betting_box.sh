@@ -11,14 +11,15 @@
 #                                  the previous run's submissions and points.
 #                                  Stop the server first (see loadtest-remote.sh).
 #                                  points = quiz completion points (default 10).
-#   betting_box.sh reset-multi [churches] [players] [sigma] [webhook_url] [points]
+#   betting_box.sh reset-multi [buckets] [webhook_url] [points]
 #                                  the betting quiz with NO session, plus
-#                                  load-test churches (default 1000) holding
-#                                  players (default 10000, lognormal sizes,
-#                                  sigma 1.0) and one church admin each, for
-#                                  k6/betting-multisession.js. webhook_url
-#                                  registers the plugin's quiz_session_finished
-#                                  receiver. Stop the server first.
+#                                  load-test churches sized by buckets (default
+#                                  "885:1-9,90:10-49,20:50-99,5:100-500" =
+#                                  1000 churches, ~10k players), each with one
+#                                  church admin, for k6/betting-multisession.js.
+#                                  webhook_url registers the plugin's
+#                                  quiz_session_finished receiver. Stop the
+#                                  server first.
 #
 # Env: PSQL (default "sudo -u postgres psql -d interact"),
 #      BENCH_DIR (dir holding gendata.sql/gendata2.sql, default: this dir).
@@ -170,59 +171,38 @@ SQL
     $PSQL -Atc "SELECT 'users with points to bet=' || count(*) FROM (SELECT user_id FROM score_journal WHERE project_id='$PROJECT_ID' GROUP BY user_id HAVING SUM(points) > 0) t"
 }
 
-# church_sizes <churches> <players> <sigma> prints "<index>\t<players>" for
-# each load-test church. Sizes follow a lognormal distribution with the given
-# mean (players/churches) and sigma, taken at fixed quantiles instead of random
-# draws, so every run has the same mix: most churches small, a few with 100+
-# (sigma 1.0, mean 10: median ~6, top three ~160/~120/~100). The sizes are then
-# adjusted to add up to exactly <players>, with a minimum of 1.
+# DEFAULT_BUCKETS: 5 big churches (100-500 players), 20 medium (50-99),
+# 90 small (10-49) and 885 tiny (1-9): 1000 churches, ~10k players
+DEFAULT_BUCKETS="885:1-9,90:10-49,20:50-99,5:100-500"
+
+# church_sizes <buckets> prints "<index>\t<players>" for each load-test church.
+# buckets is a comma-separated list of <churches>:<min>-<max>; each bucket's
+# sizes are spread evenly from min to max (fixed, not random, so every run
+# has the same mix). Sizes ascend with the index.
 church_sizes() {
-    awk -v n="$1" -v total="$2" -v sigma="$3" '
-    # Inverse standard normal CDF (Acklam, relative error < 1.15e-9)
-    function ninv(p,    q, r) {
-        if (p < 0.02425) {
-            q = sqrt(-2 * log(p))
-            return (((((-7.784894002430293e-03*q - 3.223964580411365e-01)*q - 2.400758277161838e+00)*q - 2.549732539343734e+00)*q + 4.374664141464968e+00)*q + 2.938163982698783e+00) / \
-                ((((7.784695709041462e-03*q + 3.224671290700398e-01)*q + 2.445134137142996e+00)*q + 3.754408661907416e+00)*q + 1)
-        }
-        if (p > 1 - 0.02425) {
-            return -ninv(1 - p)
-        }
-        q = p - 0.5; r = q * q
-        return (((((-3.969683028665376e+01*r + 2.209460984245205e+02)*r - 2.759285104469687e+02)*r + 1.383577518672690e+02)*r - 3.066479806614716e+01)*r + 2.506628277459239e+00)*q / \
-            (((((-5.447609879822406e+01*r + 1.615858368580409e+02)*r - 1.556989798598866e+02)*r + 6.680131188771972e+01)*r - 1.328068155288572e+01)*r + 1)
-    }
-    BEGIN {
-        mu = log(total / n) - sigma * sigma / 2
-        for (i = 1; i <= n; i++) { raw[i] = exp(mu + sigma * ninv((i - 0.5) / n)); rawsum += raw[i] }
-        for (i = 1; i <= n; i++) {
-            size[i] = int(raw[i] * total / rawsum + 0.5)
-            if (size[i] < 1) size[i] = 1
-            sum += size[i]
-        }
-        # Fix rounding drift on the largest churches (sizes ascend with i)
-        for (i = n; sum != total; i = (i > 1 ? i - 1 : n)) {
-            if (sum < total) { size[i]++; sum++ }
-            else if (size[i] > 1) { size[i]--; sum-- }
-        }
-        for (i = 1; i <= n; i++) printf "%d\t%d\n", i, size[i]
-    }'
+    echo "$1" | tr ',' '\n' | awk -F'[:-]' '
+    NF != 3 || $1 < 1 || $2 < 1 || $3 < $2 { print "bad bucket: " $0 > "/dev/stderr"; exit 1 }
+    { for (j = 0; j < $1; j++) print ($1 == 1 ? $3 : int($2 + ($3 - $2) * j / ($1 - 1) + 0.5)) }' |
+        sort -n | awk '{ printf "%d\t%d\n", NR, $1 }'
 }
 
-# reset-multi: the betting quiz with no sessions, plus <churches> load-test
-# churches holding <players> players (users in the project with points) and
+# reset-multi: the betting quiz with no sessions, plus load-test churches
+# sized by <buckets>, holding players (users in the project with points), and
 # one CHURCH_ADMIN each. The admin VUs of k6/betting-multisession.js create,
 # open, grant, lock and finish one session per church through GraphQL.
 # Users moved into the load-test churches are restored to their own church
 # first, so the reset can be rerun.
 cmd_reset_multi() {
-    local churches=${1:-1000} players=${2:-10000} sigma=${3:-1.0} webhook_url=${4:-} points=${5:-10}
+    local buckets=${1:-$DEFAULT_BUCKETS} webhook_url=${2:-} points=${3:-10}
     remove_previous_run
     create_quiz "$points"
 
-    echo "=== $churches load-test churches, $players players (lognormal sigma $sigma) ==="
-    local sizes
-    sizes=$(church_sizes "$churches" "$players" "$sigma" | awk -F'\t' '{printf "%s(%d,%d)", (NR>1?",":""), $1, $2}')
+    local table churches players sizes
+    table=$(church_sizes "$buckets")
+    churches=$(echo "$table" | wc -l | tr -d ' ')
+    players=$(echo "$table" | awk -F'\t' '{ s += $2 } END { print s }')
+    echo "=== $churches load-test churches, $players players (buckets $buckets) ==="
+    sizes=$(echo "$table" | awk -F'\t' '{printf "%s(%d,%d)", (NR>1?",":""), $1, $2}')
     # Right after the bulk seed the planner has no statistics yet: the first
     # reset then took ~10 min instead of ~6s
     psql_q -c "ANALYZE users" -c "ANALYZE user_projects" -c "ANALYZE score_journal" -c "ANALYZE churches"

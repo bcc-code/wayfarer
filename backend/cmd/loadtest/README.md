@@ -171,9 +171,10 @@ Setup, fixtures (`bench/betting_box.sh`) and every knob are described in
 About 1,000 church admins each run their own betting session on the same
 quiz, around a coordinated 19:00 start (T0), with ~10k players in total:
 
-- **Fixture:** `bench/betting_box.sh reset-multi` builds load-test churches
-  with lognormal sizes (median ~6, three churches with 100+) and one church
-  admin each. No sessions are seeded.
+- **Fixture:** `bench/betting_box.sh reset-multi` builds 1,000 load-test
+  churches with ~10k players: 5 with 100–500, 20 with 50–99, 90 with 10–49
+  and 885 with 1–9 (sizes spread evenly within each bucket; `MULTI_BUCKETS`
+  changes the mix). Each church gets one church admin. No sessions are seeded.
 - **Admins:** one VU per church. Each one clicks start around T0 (70% within
   about a minute, the rest spread over T0 ± 5 min), then waits through the
   page's 10s countdown. It then creates, opens, grants access to its church and

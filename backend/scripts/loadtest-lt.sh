@@ -24,8 +24,9 @@
 #
 # Multi-session gamenight (k6/betting-multisession.js, notes/multi-session-loadtest-plan.md):
 #   loadtest-lt.sh multi-reset    stop the server, bench/betting_box.sh reset-multi
-#                                 (MULTI_CHURCHES=1000 MULTI_PLAYERS=10000
-#                                 MULTI_SIGMA=1.0), restart. Needed once before
+#                                 (MULTI_BUCKETS, default 5 churches of 100-500,
+#                                 20 of 50-99, 90 of 10-49, 885 of 1-9: ~10k
+#                                 players), restart. Needed once before
 #                                 multi-config; every multi run resets again.
 #   loadtest-lt.sh multi-config   mint church admin + player tokens, fetch config.json
 #   loadtest-lt.sh multi-smoke    50 sampled churches, 5-minute session
@@ -277,7 +278,7 @@ remote() {
 use_multi() {
     K6_SCRIPT=k6/betting-multisession.js
     SETTLE_SCRIPT=""
-    PREP_CMD="$REMOTE/loadtest/betting_box.sh reset-multi ${MULTI_CHURCHES:-1000} ${MULTI_PLAYERS:-10000} ${MULTI_SIGMA:-1.0} https://$LT_DOMAIN/plugins/ladder-to-heaven/quiz-finalized"
+    PREP_CMD="$REMOTE/loadtest/betting_box.sh reset-multi ${MULTI_BUCKETS:-885:1-9,90:10-49,20:50-99,5:100-500} https://$LT_DOMAIN/plugins/ladder-to-heaven/quiz-finalized"
     TOKENGEN_ARGS="-limit 1 -auth0-count ${LOADTEST_TOKENS:-13000} -church-prefix CH01LOADTESTCHURCH"
     # k6 inits ~5k VUs per generator before the timeline starts
     START_DELAY=${LOADTEST_START_DELAY:-120}
