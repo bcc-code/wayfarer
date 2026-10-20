@@ -35,6 +35,8 @@ export interface QuizQuestionFormData {
   localKey?: string
   questionType: QuizQuestionType
   questionText: string
+  /** Public URL of an image shown above the question; blank means none. */
+  image?: string
   questionOrder: number
   timeoutSeconds?: number
   points?: number

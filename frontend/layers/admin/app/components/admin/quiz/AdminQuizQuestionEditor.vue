@@ -160,6 +160,8 @@ function handleSave() {
     localKey: localQuestion.localKey,
     questionType: localQuestion.questionType,
     questionText: localQuestion.questionText,
+    // `AdminFileUpload` clears to null; the save input wants a blank string.
+    image: localQuestion.image ?? '',
     questionOrder: localQuestion.questionOrder,
     timeoutSeconds: toOptionalNumber(localQuestion.timeoutSeconds),
     points: canEarnPoints.value ? localQuestion.points : undefined,
@@ -218,6 +220,15 @@ function handleSave() {
             required
           />
         </AdminTranslatableFormField>
+
+        <UFormField
+          name="image"
+          label="Bilde"
+          hint="(valgfritt)"
+          help="Vises over spørsmålsteksten."
+        >
+          <AdminFileUpload v-model="localQuestion.image" />
+        </UFormField>
 
         <!-- The answers are the question, so they come before the scoring and
          betting settings rather than after them. -->

@@ -90,6 +90,7 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 					question = &model.PredefinedQuestion{
 						ID:                       row.ID,
 						QuestionText:             row.QuestionText,
+						ImageURL:                 row.ImageUrl,
 						QuestionOrder:            int(row.QuestionOrder),
 						AllowMultipleSelection:   allowMultiple,
 						QuizID:                   row.QuizID,
@@ -107,6 +108,7 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 					question = &model.FreeTextQuestion{
 						ID:                       row.ID,
 						QuestionText:             row.QuestionText,
+						ImageURL:                 row.ImageUrl,
 						QuestionOrder:            int(row.QuestionOrder),
 						QuizID:                   row.QuizID,
 						Points:                   points,
@@ -126,6 +128,7 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 					question = &model.NumberQuestion{
 						ID:                       row.ID,
 						QuestionText:             row.QuestionText,
+						ImageURL:                 row.ImageUrl,
 						QuestionOrder:            int(row.QuestionOrder),
 						MinValue:                 minValue,
 						MaxValue:                 maxValue,
@@ -145,6 +148,7 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 					question = &model.JSONQuestion{
 						ID:                       row.ID,
 						QuestionText:             row.QuestionText,
+						ImageURL:                 row.ImageUrl,
 						QuestionOrder:            int(row.QuestionOrder),
 						QuizID:                   row.QuizID,
 						Points:                   points,
@@ -161,6 +165,7 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 					question = &model.OrderingQuestion{
 						ID:                       row.ID,
 						QuestionText:             row.QuestionText,
+						ImageURL:                 row.ImageUrl,
 						QuestionOrder:            int(row.QuestionOrder),
 						QuizID:                   row.QuizID,
 						Points:                   points,
@@ -178,6 +183,7 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 					question = &model.FreeTextQuestion{
 						ID:                       row.ID,
 						QuestionText:             row.QuestionText,
+						ImageURL:                 row.ImageUrl,
 						QuestionOrder:            int(row.QuestionOrder),
 						QuizID:                   row.QuizID,
 						Points:                   points,

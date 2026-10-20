@@ -47,6 +47,8 @@ interface QuizQuestion {
     id: ID!
     quiz: Quiz! @goField(forceResolver: true)
     questionText: String!
+    # Shown above the question text; null when the question has no image.
+    imageObject: Image @goField(forceResolver: true)
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
@@ -64,6 +66,8 @@ type PredefinedQuestion implements QuizQuestion {
     id: ID!
     quiz: Quiz! @goField(forceResolver: true)
     questionText: String!
+    # Shown above the question text; null when the question has no image.
+    imageObject: Image @goField(forceResolver: true)
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
@@ -83,6 +87,8 @@ type FreeTextQuestion implements QuizQuestion {
     id: ID!
     quiz: Quiz! @goField(forceResolver: true)
     questionText: String!
+    # Shown above the question text; null when the question has no image.
+    imageObject: Image @goField(forceResolver: true)
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
@@ -100,6 +106,8 @@ type NumberQuestion implements QuizQuestion {
     id: ID!
     quiz: Quiz! @goField(forceResolver: true)
     questionText: String!
+    # Shown above the question text; null when the question has no image.
+    imageObject: Image @goField(forceResolver: true)
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
@@ -120,6 +128,8 @@ type JsonQuestion implements QuizQuestion {
     id: ID!
     quiz: Quiz! @goField(forceResolver: true)
     questionText: String!
+    # Shown above the question text; null when the question has no image.
+    imageObject: Image @goField(forceResolver: true)
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
@@ -137,6 +147,8 @@ type OrderingQuestion implements QuizQuestion {
     id: ID!
     quiz: Quiz! @goField(forceResolver: true)
     questionText: String!
+    # Shown above the question text; null when the question has no image.
+    imageObject: Image @goField(forceResolver: true)
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
@@ -306,6 +318,8 @@ input UpdateQuizInput {
 input CreateQuizQuestionInput {
     questionType: QuizQuestionType!
     questionText: String!
+    # URL of an image shown above the question. Blank is stored as no image.
+    image: String
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
@@ -343,6 +357,9 @@ input CreateOrderingItemInput {
 
 input UpdateQuizQuestionInput {
     questionText: String
+    # URL of an image shown above the question. Omit to leave it alone; pass a
+    # blank string to remove the image.
+    image: String
     questionOrder: Int
     timeoutSeconds: Int
     points: Int

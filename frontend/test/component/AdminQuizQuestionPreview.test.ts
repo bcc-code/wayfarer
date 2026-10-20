@@ -114,3 +114,27 @@ describe('AdminQuizQuestionPreview', () => {
     ).toBe(true)
   })
 })
+
+describe('AdminQuizQuestionPreview image', () => {
+  it('shows the question image above the question text', async () => {
+    const wrapper = await mountSuspended(AdminQuizQuestionPreview, {
+      props: {
+        question: { ...predefined, image: 'https://cdn.example.test/q.png' },
+      },
+    })
+
+    const img = wrapper.find('img')
+    expect(img.exists()).toBe(true)
+    expect(img.attributes('src')).toBe('https://cdn.example.test/q.png')
+    // The alt text is the question: the image is what is being asked about.
+    expect(img.attributes('alt')).toBe('Hvem skrev Romerbrevet?')
+  })
+
+  it('renders no image when the question has none', async () => {
+    const wrapper = await mountSuspended(AdminQuizQuestionPreview, {
+      props: { question: predefined },
+    })
+
+    expect(wrapper.find('img').exists()).toBe(false)
+  })
+})

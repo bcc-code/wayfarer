@@ -1,22 +1,22 @@
 -- name: GetQuizQuestionsByQuizID :many
-SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
 FROM quiz_questions
 WHERE quiz_id = @quizid::char(28)
 ORDER BY question_order ASC;
 
 -- name: GetQuizQuestionsByQuizIDs :many
-SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
 FROM quiz_questions
 WHERE quiz_id = ANY(@quiz_ids::char(28)[])
 ORDER BY quiz_id, question_order ASC;
 
 -- name: GetQuizQuestionByID :one
-SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
 FROM quiz_questions
 WHERE id = @id::char(28);
 
 -- name: GetQuizQuestionsByIDs :many
-SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
 FROM quiz_questions
 WHERE id = ANY(@ids::char(28)[]);
 
@@ -26,6 +26,7 @@ INSERT INTO quiz_questions (
     quiz_id,
     question_type,
     question_text,
+    image_url,
     question_order,
     allow_multiple_selection,
     min_value,
@@ -46,6 +47,7 @@ VALUES (
     @quizid::text,
     @questiontype::text,
     @questiontext::text,
+    sqlc.narg('imageurl')::text,
     @questionorder::int,
     sqlc.narg('allowmultipleselection')::bool,
     sqlc.narg('minvalue')::decimal,
@@ -61,12 +63,14 @@ VALUES (
     sqlc.narg('bettingmultipliercorrect')::decimal,
     sqlc.narg('bettingmultiplierwrong')::decimal
 )
-RETURNING id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at;
+RETURNING id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at;
 
 -- name: UpdateQuizQuestion :one
 UPDATE quiz_questions
 SET
     question_text = COALESCE(sqlc.narg('questiontext')::text, question_text),
+    image_url = CASE WHEN @clearimage::bool THEN NULL
+                     ELSE COALESCE(sqlc.narg('imageurl')::text, image_url) END,
     question_order = COALESCE(sqlc.narg('questionorder')::int, question_order),
     allow_multiple_selection = COALESCE(sqlc.narg('allowmultipleselection')::bool, allow_multiple_selection),
     min_value = COALESCE(sqlc.narg('minvalue')::decimal, min_value),
@@ -83,7 +87,7 @@ SET
     betting_multiplier_wrong = COALESCE(sqlc.narg('bettingmultiplierwrong')::decimal, betting_multiplier_wrong),
     updated_at = now()
 WHERE id = @id::char(28)
-RETURNING id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at;
+RETURNING id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at;
 
 -- name: DeleteQuizQuestion :exec
 DELETE FROM quiz_questions

@@ -13,6 +13,9 @@ fragment QuizQuestionFields on QuizQuestion {
   __typename
   id
   questionText
+  imageObject {
+    ...ImageFields
+  }
   questionOrder
   timeoutSeconds
   points
@@ -49,6 +52,9 @@ fragment QuizQuestionUserFields on QuizQuestion {
   __typename
   id
   questionText
+  imageObject {
+    ...ImageFields
+  }
   questionOrder
   timeoutSeconds
   bettingEnabled
