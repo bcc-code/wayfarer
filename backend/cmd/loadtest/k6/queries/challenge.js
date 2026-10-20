@@ -171,3 +171,34 @@ export function challengePage(baseUrl, token, challengeId) {
     checkGraphQLResponse(response, 'ChallengePage');
     return response;
 }
+
+// k6's error code for a request that hit its timeout
+const REQUEST_TIMEOUT = 1050;
+
+/**
+ * The ChallengePage refetch a Firestore ping triggers. Today's frontend aborts
+ * an in-flight refetch when the next ping arrives
+ * (frontend/test/unit/firestoreRefetchCoalescing.test.ts), so the request
+ * gets the time until that ping as its timeout: k6 then drops it like the
+ * browser's abort. Tagged kind=refetch; a cancelled refetch is not an error.
+ * @returns {{cancelled: boolean, ok: boolean, data: object|null, error: string|null, durationMs: number}}
+ */
+export function challengePageRefetch(baseUrl, token, challengeId, timeoutMs) {
+    const response = graphqlRequest(baseUrl, CHALLENGE_PAGE_QUERY, { challengeId }, token, 'ChallengePageRefetch', {
+        tags: { name: 'ChallengePageRefetch', kind: 'refetch' },
+        timeout: `${Math.max(1, Math.round(timeoutMs))}ms`,
+    });
+    if (response.error_code === REQUEST_TIMEOUT) {
+        return { cancelled: true, ok: false, data: null, durationMs: response.timings.duration };
+    }
+    let body = null;
+    try {
+        body = JSON.parse(response.body);
+    } catch {
+        // reported below
+    }
+    const data = response.status === 200 && body && !body.errors ? body.data : null;
+    const error = data ? null
+        : `HTTP ${response.status}${response.error ? ` ${response.error}` : ''}${body && body.errors ? ` ${JSON.stringify(body.errors.map((e) => e.message))}` : ''}`;
+    return { cancelled: false, ok: Boolean(data), data, error, durationMs: response.timings.duration };
+}
