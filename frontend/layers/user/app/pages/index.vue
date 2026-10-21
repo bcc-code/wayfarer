@@ -140,9 +140,9 @@ watch([visibilityState, isWindowFocused], ([visibility, focused]) => {
 })
 
 // Listen for Firestore realtime updates
-useFirestoreRefresh(['ProfilePageDocument'], () => {
-  refresh({ requestPolicy: 'network-only' })
-})
+useFirestoreRefresh(['ProfilePageDocument'], () =>
+  refresh({ requestPolicy: 'network-only' }),
+)
 </script>
 
 <template>
