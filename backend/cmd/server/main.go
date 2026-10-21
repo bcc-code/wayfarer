@@ -288,6 +288,7 @@ func main() {
 
 	// Initialize DataLoaders (shared globally across all requests)
 	// Dataloaders handle request batching while Ristretto cache handles data caching
+	loaders.BatchTimeout = cfg.Database.LoaderBatchTimeout
 	dataLoaders := loaders.NewLoaders(db, cacheInstance)
 	slog.Info("DataLoaders initialized with Ristretto cache integration")
 
