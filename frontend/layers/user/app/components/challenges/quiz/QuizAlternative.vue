@@ -31,9 +31,18 @@ watch(
 )
 
 const classes = cva(
-  'border-2 relative text-label rounded-list p-medium flex gap-list-section-inset text-center justify-center items-center min-h-22 transition-colors',
+  'border-2 relative text-label rounded-list p-medium flex gap-list-section-inset items-center min-h-22 transition-colors',
   {
     variants: {
+      /**
+       * A title with an explanation under it is a block of copy, and two
+       * centred wrapped lines give the eye no edge to come back to. A bare
+       * alternative is a few words, so it stays centred.
+       */
+      withDescription: {
+        true: 'text-left justify-start',
+        false: 'text-center justify-center',
+      },
       highlighted: {
         true: '',
         false: '',
@@ -100,10 +109,19 @@ const classes = cva(
 <template>
   <button
     ref="buttonRef"
-    :class="classes({ highlighted, confirmed, wrong, correct, disabled })"
+    :class="
+      classes({
+        withDescription: !!description,
+        highlighted,
+        confirmed,
+        wrong,
+        correct,
+        disabled,
+      })
+    "
     :disabled="disabled"
   >
-    <span v-if="description" class="flex flex-col gap-1">
+    <span v-if="description" class="flex w-full flex-col gap-1">
       <span>{{ text }}</span>
       <span class="text-caption opacity-70">{{ description }}</span>
     </span>

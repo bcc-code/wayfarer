@@ -85,3 +85,39 @@ describe('QuizAlternative', () => {
     expect(wrapper.find('.bg-accent-negative').exists()).toBe(false)
   })
 })
+
+describe('QuizAlternative alignment', () => {
+  it('centres a bare alternative', async () => {
+    const wrapper = await mountSuspended(QuizAlternative, {
+      props: { text: 'Paulus' },
+    })
+
+    const classes = wrapper.find('button').classes()
+    expect(classes).toContain('text-center')
+    expect(classes).not.toContain('text-left')
+  })
+
+  // Two centred wrapped lines give the eye no edge to come back to.
+  it('aligns an alternative with a description to the left', async () => {
+    const wrapper = await mountSuspended(QuizAlternative, {
+      props: {
+        text: 'A. Kjøttgryten fra Egypt',
+        description:
+          'En gryte som symboliserer maten israelittene lengtet tilbake til.',
+      },
+    })
+
+    const classes = wrapper.find('button').classes()
+    expect(classes).toContain('text-left')
+    expect(classes).not.toContain('text-center')
+  })
+
+  it('still shows both the text and the description', async () => {
+    const wrapper = await mountSuspended(QuizAlternative, {
+      props: { text: 'A. Kjøttgryten', description: 'En gryte fra Egypt.' },
+    })
+
+    expect(wrapper.text()).toContain('A. Kjøttgryten')
+    expect(wrapper.text()).toContain('En gryte fra Egypt.')
+  })
+})
