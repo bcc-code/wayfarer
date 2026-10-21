@@ -104,6 +104,7 @@ export function quizQuestionInput(question: QuizQuestionFormData) {
     timeoutSeconds: question.timeoutSeconds,
     points: question.points,
     allowMultipleSelection: question.allowMultipleSelection,
+    answerLabelStyle: question.answerLabelStyle,
     predefinedAnswers: question.predefinedAnswers?.map((a) => ({
       answerText: a.answerText,
       description: a.description,

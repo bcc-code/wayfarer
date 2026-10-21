@@ -93,6 +93,7 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 						ImageURL:                 row.ImageUrl,
 						QuestionOrder:            int(row.QuestionOrder),
 						AllowMultipleSelection:   allowMultiple,
+						AnswerLabelStyle:         answerLabelStyle(row.AnswerLabelStyle),
 						QuizID:                   row.QuizID,
 						Points:                   points,
 						TimeoutSeconds:           timeoutSeconds,
@@ -231,4 +232,15 @@ func numericToFloat(n pgtype.Numeric) *float64 {
 		return nil
 	}
 	return &val.Float64
+}
+
+// answerLabelStyle maps the stored label style to the enum, falling back to
+// NONE for anything unrecognised — a question whose style cannot be read
+// should show its alternatives unlabelled rather than fail to load.
+func answerLabelStyle(style string) model.QuizAnswerLabelStyle {
+	parsed := model.QuizAnswerLabelStyle(style)
+	if !parsed.IsValid() {
+		return model.QuizAnswerLabelStyleNone
+	}
+	return parsed
 }

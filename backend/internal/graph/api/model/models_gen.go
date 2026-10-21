@@ -586,6 +586,7 @@ type CreateQuizQuestionInput struct {
 	BettingMultiplierCorrect *float64                      `json:"bettingMultiplierCorrect,omitempty"`
 	BettingMultiplierWrong   *float64                      `json:"bettingMultiplierWrong,omitempty"`
 	AllowMultipleSelection   *bool                         `json:"allowMultipleSelection,omitempty"`
+	AnswerLabelStyle         *QuizAnswerLabelStyle         `json:"answerLabelStyle,omitempty"`
 	PredefinedAnswers        []CreatePredefinedAnswerInput `json:"predefinedAnswers,omitempty"`
 	MinValue                 *float64                      `json:"minValue,omitempty"`
 	MaxValue                 *float64                      `json:"maxValue,omitempty"`
@@ -1513,6 +1514,7 @@ type PredefinedQuestion struct {
 	BettingMultiplierWrong   *float64                 `json:"bettingMultiplierWrong,omitempty"`
 	TranslationStatus        []TranslationFieldStatus `json:"translationStatus"`
 	AllowMultipleSelection   bool                     `json:"allowMultipleSelection"`
+	AnswerLabelStyle         QuizAnswerLabelStyle     `json:"answerLabelStyle"`
 	PredefinedAnswers        []QuizPredefinedAnswer   `json:"predefinedAnswers"`
 	ImageURL                 *string                  `json:"-"`
 	QuizID                   string                   `json:"-"`
@@ -2466,6 +2468,7 @@ type UpdateQuizQuestionInput struct {
 	ClearBettingMinAbsolute  *bool                         `json:"clearBettingMinAbsolute,omitempty"`
 	ClearBettingMaxAbsolute  *bool                         `json:"clearBettingMaxAbsolute,omitempty"`
 	AllowMultipleSelection   *bool                         `json:"allowMultipleSelection,omitempty"`
+	AnswerLabelStyle         *QuizAnswerLabelStyle         `json:"answerLabelStyle,omitempty"`
 	PredefinedAnswers        []CreatePredefinedAnswerInput `json:"predefinedAnswers,omitempty"`
 	MinValue                 *float64                      `json:"minValue,omitempty"`
 	MaxValue                 *float64                      `json:"maxValue,omitempty"`
@@ -3518,6 +3521,63 @@ func (e *QuizAccessSourceType) UnmarshalJSON(b []byte) error {
 }
 
 func (e QuizAccessSourceType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type QuizAnswerLabelStyle string
+
+const (
+	QuizAnswerLabelStyleNone    QuizAnswerLabelStyle = "NONE"
+	QuizAnswerLabelStyleNumeric QuizAnswerLabelStyle = "NUMERIC"
+	QuizAnswerLabelStyleAlpha   QuizAnswerLabelStyle = "ALPHA"
+)
+
+var AllQuizAnswerLabelStyle = []QuizAnswerLabelStyle{
+	QuizAnswerLabelStyleNone,
+	QuizAnswerLabelStyleNumeric,
+	QuizAnswerLabelStyleAlpha,
+}
+
+func (e QuizAnswerLabelStyle) IsValid() bool {
+	switch e {
+	case QuizAnswerLabelStyleNone, QuizAnswerLabelStyleNumeric, QuizAnswerLabelStyleAlpha:
+		return true
+	}
+	return false
+}
+
+func (e QuizAnswerLabelStyle) String() string {
+	return string(e)
+}
+
+func (e *QuizAnswerLabelStyle) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = QuizAnswerLabelStyle(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid QuizAnswerLabelStyle", str)
+	}
+	return nil
+}
+
+func (e QuizAnswerLabelStyle) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *QuizAnswerLabelStyle) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e QuizAnswerLabelStyle) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

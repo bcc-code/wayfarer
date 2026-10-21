@@ -1,7 +1,7 @@
 // @vitest-environment nuxt
 import { describe, it, expect } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { QuizQuestionType } from '../../app/api/generated'
+import { QuizQuestionType, QuizAnswerLabelStyle } from '../../app/api/generated'
 import AdminQuizQuestionEditor from '../../layers/admin/app/components/admin/quiz/AdminQuizQuestionEditor.vue'
 
 const questionTypeOptions = [
@@ -380,5 +380,54 @@ describe('AdminQuizQuestionEditor image', () => {
     expect(wrapper.findComponent({ name: 'AdminFileUpload' }).exists()).toBe(
       true,
     )
+  })
+})
+
+/**
+ * The label follows each alternative's position, so the editor stores only
+ * the style — nothing to retype after a drag.
+ */
+describe('AdminQuizQuestionEditor answer labels', () => {
+  const twoAnswers = [
+    { answerText: 'Paulus', isCorrect: true, answerOrder: 1 },
+    { answerText: 'Peter', isCorrect: false, answerOrder: 2 },
+  ]
+
+  it('saves the chosen label style', async () => {
+    const wrapper = await mount({
+      ...predefined(twoAnswers),
+      answerLabelStyle: QuizAnswerLabelStyle.Alpha,
+    })
+    await saveButton(wrapper).trigger('click')
+
+    const saved = wrapper.emitted('save')?.[0]?.[0] as {
+      answerLabelStyle?: string
+    }
+    expect(saved.answerLabelStyle).toBe(QuizAnswerLabelStyle.Alpha)
+  })
+
+  it('saves NONE for a question that was never given a style', async () => {
+    const wrapper = await mount(predefined(twoAnswers))
+    await saveButton(wrapper).trigger('click')
+
+    const saved = wrapper.emitted('save')?.[0]?.[0] as {
+      answerLabelStyle?: string
+    }
+    expect(saved.answerLabelStyle).toBe(QuizAnswerLabelStyle.None)
+  })
+
+  // Only predefined questions have alternatives to label.
+  it('leaves the style off a question type with no alternatives', async () => {
+    const wrapper = await mount({
+      questionType: QuizQuestionType.FreeText,
+      questionText: 'Hva betyr nåde?',
+      questionOrder: 1,
+    })
+    await saveButton(wrapper).trigger('click')
+
+    const saved = wrapper.emitted('save')?.[0]?.[0] as {
+      answerLabelStyle?: string
+    }
+    expect(saved.answerLabelStyle).toBeUndefined()
   })
 })

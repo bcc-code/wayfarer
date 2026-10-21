@@ -41,6 +41,8 @@ export interface QuizQuestionFormData {
   timeoutSeconds?: number
   points?: number
   allowMultipleSelection?: boolean
+  /** How the alternatives are labelled; the label itself is derived on render. */
+  answerLabelStyle?: QuizAnswerLabelStyle
   predefinedAnswers?: QuizAnswerFormData[]
   minValue?: number
   maxValue?: number

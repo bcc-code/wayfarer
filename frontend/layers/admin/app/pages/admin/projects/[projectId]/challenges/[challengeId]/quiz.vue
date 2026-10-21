@@ -138,6 +138,8 @@ const quizData = computed<QuizFormData | undefined>(() => {
         q.__typename === 'PredefinedQuestion'
           ? q.allowMultipleSelection
           : undefined,
+      answerLabelStyle:
+        q.__typename === 'PredefinedQuestion' ? q.answerLabelStyle : undefined,
       predefinedAnswers:
         q.__typename === 'PredefinedQuestion'
           ? q.predefinedAnswers.map((a) => ({

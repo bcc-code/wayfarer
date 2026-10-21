@@ -327,6 +327,10 @@ func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, i
 	if input.AllowMultipleSelection != nil {
 		params.Allowmultipleselection = input.AllowMultipleSelection
 	}
+	if input.AnswerLabelStyle != nil {
+		style := string(*input.AnswerLabelStyle)
+		params.Answerlabelstyle = &style
+	}
 	// pgtype.Numeric.Scan() requires a string representation to properly set Valid=true
 	if input.MinValue != nil {
 		_ = params.Minvalue.Scan(fmt.Sprintf("%f", *input.MinValue))
@@ -485,6 +489,10 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 	}
 	if input.AllowMultipleSelection != nil {
 		params.Allowmultipleselection = input.AllowMultipleSelection
+	}
+	if input.AnswerLabelStyle != nil {
+		style := string(*input.AnswerLabelStyle)
+		params.Answerlabelstyle = &style
 	}
 	// pgtype.Numeric.Scan() requires a string representation to properly set Valid=true
 	if input.MinValue != nil {

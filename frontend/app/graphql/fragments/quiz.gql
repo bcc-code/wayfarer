@@ -29,6 +29,7 @@ fragment QuizQuestionFields on QuizQuestion {
   }
   ... on PredefinedQuestion {
     allowMultipleSelection
+    answerLabelStyle
     predefinedAnswers {
       ...PredefinedAnswerFields
     }
@@ -64,6 +65,7 @@ fragment QuizQuestionUserFields on QuizQuestion {
   bettingMaxPercentage
   ... on PredefinedQuestion {
     allowMultipleSelection
+    answerLabelStyle
     predefinedAnswers {
       ...PredefinedAnswerFields
     }

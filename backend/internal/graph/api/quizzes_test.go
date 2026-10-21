@@ -465,6 +465,7 @@ type mockQuestionRow struct {
 	imageURL               *string
 	questionOrder          int32
 	allowMultipleSelection *bool
+	answerLabelStyle       string
 	timeoutSeconds         *int32
 	points                 *int32
 	bettingEnabled         bool
@@ -483,6 +484,7 @@ func (m *mockQuestionRow) GetQuestionText() string                 { return m.qu
 func (m *mockQuestionRow) GetImageURL() *string                    { return m.imageURL }
 func (m *mockQuestionRow) GetQuestionOrder() int32                 { return m.questionOrder }
 func (m *mockQuestionRow) GetAllowMultipleSelection() *bool        { return m.allowMultipleSelection }
+func (m *mockQuestionRow) GetAnswerLabelStyle() string             { return m.answerLabelStyle }
 func (m *mockQuestionRow) GetMinValue() pgtype.Numeric             { return pgtype.Numeric{} }
 func (m *mockQuestionRow) GetMaxValue() pgtype.Numeric             { return pgtype.Numeric{} }
 func (m *mockQuestionRow) GetStepValue() pgtype.Numeric            { return pgtype.Numeric{} }
@@ -715,6 +717,33 @@ func TestNormalizeImageURL(t *testing.T) {
 			}
 			require.NotNil(t, got)
 			assert.Equal(t, *tt.want, *got)
+		})
+	}
+}
+
+// TestConvertAnswerLabelStyle covers the stored style reaching the model. An
+// unknown value must not fail the question: the alternatives simply go
+// unlabelled.
+func TestConvertAnswerLabelStyle(t *testing.T) {
+	tests := []struct {
+		stored string
+		want   model.QuizAnswerLabelStyle
+	}{
+		{stored: "NONE", want: model.QuizAnswerLabelStyleNone},
+		{stored: "NUMERIC", want: model.QuizAnswerLabelStyleNumeric},
+		{stored: "ALPHA", want: model.QuizAnswerLabelStyleAlpha},
+		{stored: "", want: model.QuizAnswerLabelStyleNone},
+		{stored: "ROMAN", want: model.QuizAnswerLabelStyleNone},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.stored, func(t *testing.T) {
+			result := convertToPredefinedQuestion(&mockQuestionRow{
+				id:               "QQ001",
+				questionType:     "PREDEFINED",
+				answerLabelStyle: tt.stored,
+			})
+			assert.Equal(t, tt.want, result.AnswerLabelStyle)
 		})
 	}
 }

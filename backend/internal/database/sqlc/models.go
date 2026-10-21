@@ -528,6 +528,7 @@ type QuizQuestion struct {
 	BettingMultiplierCorrect pgtype.Numeric     `json:"betting_multiplier_correct"`
 	BettingMultiplierWrong   pgtype.Numeric     `json:"betting_multiplier_wrong"`
 	ImageUrl                 *string            `json:"image_url"`
+	AnswerLabelStyle         string             `json:"answer_label_style"`
 }
 
 type QuizQuestionTranslation struct {

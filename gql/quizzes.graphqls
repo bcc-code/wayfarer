@@ -10,6 +10,17 @@ enum QuizQuestionType {
     ORDERING
 }
 
+# How a predefined question's alternatives are labelled. The label is derived
+# from the answer's position when it is rendered, never stored per answer:
+# answers are always served in answer_order, so a derived label cannot
+# disagree with the order they are shown in, and it stays out of the
+# translated answer text.
+enum QuizAnswerLabelStyle {
+    NONE
+    NUMERIC
+    ALPHA
+}
+
 type Quiz {
     id: ID!
     name: String!
@@ -80,6 +91,7 @@ type PredefinedQuestion implements QuizQuestion {
     bettingMultiplierWrong: Float
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     allowMultipleSelection: Boolean!
+    answerLabelStyle: QuizAnswerLabelStyle!
     predefinedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
 }
 
@@ -333,6 +345,7 @@ input CreateQuizQuestionInput {
     bettingMultiplierWrong: Float
 
     allowMultipleSelection: Boolean
+    answerLabelStyle: QuizAnswerLabelStyle
     predefinedAnswers: [CreatePredefinedAnswerInput!]
 
     minValue: Float
@@ -376,6 +389,7 @@ input UpdateQuizQuestionInput {
     clearBettingMaxAbsolute: Boolean
 
     allowMultipleSelection: Boolean
+    answerLabelStyle: QuizAnswerLabelStyle
     predefinedAnswers: [CreatePredefinedAnswerInput!]
 
     minValue: Float

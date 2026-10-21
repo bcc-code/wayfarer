@@ -130,6 +130,7 @@ type quizQuestionRow interface {
 	GetImageURL() *string
 	GetQuestionOrder() int32
 	GetAllowMultipleSelection() *bool
+	GetAnswerLabelStyle() string
 	GetMinValue() pgtype.Numeric
 	GetMaxValue() pgtype.Numeric
 	GetStepValue() pgtype.Numeric
@@ -158,6 +159,7 @@ func (r createQuizQuestionRowAdapter) GetQuestionOrder() int32 { return r.Questi
 func (r createQuizQuestionRowAdapter) GetAllowMultipleSelection() *bool {
 	return r.AllowMultipleSelection
 }
+func (r createQuizQuestionRowAdapter) GetAnswerLabelStyle() string  { return r.AnswerLabelStyle }
 func (r createQuizQuestionRowAdapter) GetMinValue() pgtype.Numeric  { return r.MinValue }
 func (r createQuizQuestionRowAdapter) GetMaxValue() pgtype.Numeric  { return r.MaxValue }
 func (r createQuizQuestionRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
@@ -193,6 +195,7 @@ func (r updateQuizQuestionRowAdapter) GetQuestionOrder() int32 { return r.Questi
 func (r updateQuizQuestionRowAdapter) GetAllowMultipleSelection() *bool {
 	return r.AllowMultipleSelection
 }
+func (r updateQuizQuestionRowAdapter) GetAnswerLabelStyle() string  { return r.AnswerLabelStyle }
 func (r updateQuizQuestionRowAdapter) GetMinValue() pgtype.Numeric  { return r.MinValue }
 func (r updateQuizQuestionRowAdapter) GetMaxValue() pgtype.Numeric  { return r.MaxValue }
 func (r updateQuizQuestionRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
@@ -228,6 +231,7 @@ func (r getQuizQuestionByIDRowAdapter) GetQuestionOrder() int32 { return r.Quest
 func (r getQuizQuestionByIDRowAdapter) GetAllowMultipleSelection() *bool {
 	return r.AllowMultipleSelection
 }
+func (r getQuizQuestionByIDRowAdapter) GetAnswerLabelStyle() string  { return r.AnswerLabelStyle }
 func (r getQuizQuestionByIDRowAdapter) GetMinValue() pgtype.Numeric  { return r.MinValue }
 func (r getQuizQuestionByIDRowAdapter) GetMaxValue() pgtype.Numeric  { return r.MaxValue }
 func (r getQuizQuestionByIDRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
@@ -330,6 +334,7 @@ func convertToPredefinedQuestion(row quizQuestionRow) *model.PredefinedQuestion 
 		BettingMultiplierCorrect: convertBettingPercentage(row.GetBettingMultiplierCorrect()),
 		BettingMultiplierWrong:   convertBettingPercentage(row.GetBettingMultiplierWrong()),
 		AllowMultipleSelection:   allowMultiple,
+		AnswerLabelStyle:         convertAnswerLabelStyle(row.GetAnswerLabelStyle()),
 	}
 }
 
@@ -806,4 +811,15 @@ func normalizeImageURL(url *string) *string {
 		return nil
 	}
 	return &trimmed
+}
+
+// convertAnswerLabelStyle maps the stored label style to the enum, falling
+// back to NONE for anything unrecognised — a question whose style cannot be
+// read should show its alternatives unlabelled rather than fail to load.
+func convertAnswerLabelStyle(style string) model.QuizAnswerLabelStyle {
+	parsed := model.QuizAnswerLabelStyle(style)
+	if !parsed.IsValid() {
+		return model.QuizAnswerLabelStyleNone
+	}
+	return parsed
 }

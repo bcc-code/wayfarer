@@ -884,6 +884,7 @@ type ComplexityRoot struct {
 
 	PredefinedQuestion struct {
 		AllowMultipleSelection   func(childComplexity int) int
+		AnswerLabelStyle         func(childComplexity int) int
 		BettingEnabled           func(childComplexity int) int
 		BettingMaxAbsolute       func(childComplexity int) int
 		BettingMaxPercentage     func(childComplexity int) int
@@ -6336,6 +6337,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PredefinedQuestion.AllowMultipleSelection(childComplexity), true
+	case "PredefinedQuestion.answerLabelStyle":
+		if e.complexity.PredefinedQuestion.AnswerLabelStyle == nil {
+			break
+		}
+
+		return e.complexity.PredefinedQuestion.AnswerLabelStyle(childComplexity), true
 	case "PredefinedQuestion.bettingEnabled":
 		if e.complexity.PredefinedQuestion.BettingEnabled == nil {
 			break
@@ -11537,6 +11544,17 @@ enum QuizQuestionType {
     ORDERING
 }
 
+# How a predefined question's alternatives are labelled. The label is derived
+# from the answer's position when it is rendered, never stored per answer:
+# answers are always served in answer_order, so a derived label cannot
+# disagree with the order they are shown in, and it stays out of the
+# translated answer text.
+enum QuizAnswerLabelStyle {
+    NONE
+    NUMERIC
+    ALPHA
+}
+
 type Quiz {
     id: ID!
     name: String!
@@ -11607,6 +11625,7 @@ type PredefinedQuestion implements QuizQuestion {
     bettingMultiplierWrong: Float
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     allowMultipleSelection: Boolean!
+    answerLabelStyle: QuizAnswerLabelStyle!
     predefinedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
 }
 
@@ -11860,6 +11879,7 @@ input CreateQuizQuestionInput {
     bettingMultiplierWrong: Float
 
     allowMultipleSelection: Boolean
+    answerLabelStyle: QuizAnswerLabelStyle
     predefinedAnswers: [CreatePredefinedAnswerInput!]
 
     minValue: Float
@@ -11903,6 +11923,7 @@ input UpdateQuizQuestionInput {
     clearBettingMaxAbsolute: Boolean
 
     allowMultipleSelection: Boolean
+    answerLabelStyle: QuizAnswerLabelStyle
     predefinedAnswers: [CreatePredefinedAnswerInput!]
 
     minValue: Float
@@ -41395,6 +41416,35 @@ func (ec *executionContext) fieldContext_PredefinedQuestion_allowMultipleSelecti
 	return fc, nil
 }
 
+func (ec *executionContext) _PredefinedQuestion_answerLabelStyle(ctx context.Context, field graphql.CollectedField, obj *model.PredefinedQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PredefinedQuestion_answerLabelStyle,
+		func(ctx context.Context) (any, error) {
+			return obj.AnswerLabelStyle, nil
+		},
+		nil,
+		ec.marshalNQuizAnswerLabelStyle2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizAnswerLabelStyle,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PredefinedQuestion_answerLabelStyle(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PredefinedQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type QuizAnswerLabelStyle does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _PredefinedQuestion_predefinedAnswers(ctx context.Context, field graphql.CollectedField, obj *model.PredefinedQuestion) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -62938,7 +62988,7 @@ func (ec *executionContext) unmarshalInputCreateQuizQuestionInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"questionType", "questionText", "image", "questionOrder", "timeoutSeconds", "points", "bettingEnabled", "bettingMinPercentage", "bettingMaxPercentage", "bettingMinAbsolute", "bettingMaxAbsolute", "bettingMultiplierCorrect", "bettingMultiplierWrong", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
+	fieldsInOrder := [...]string{"questionType", "questionText", "image", "questionOrder", "timeoutSeconds", "points", "bettingEnabled", "bettingMinPercentage", "bettingMaxPercentage", "bettingMinAbsolute", "bettingMaxAbsolute", "bettingMultiplierCorrect", "bettingMultiplierWrong", "allowMultipleSelection", "answerLabelStyle", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -63043,6 +63093,13 @@ func (ec *executionContext) unmarshalInputCreateQuizQuestionInput(ctx context.Co
 				return it, err
 			}
 			it.AllowMultipleSelection = data
+		case "answerLabelStyle":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("answerLabelStyle"))
+			data, err := ec.unmarshalOQuizAnswerLabelStyle2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizAnswerLabelStyle(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AnswerLabelStyle = data
 		case "predefinedAnswers":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("predefinedAnswers"))
 			data, err := ec.unmarshalOCreatePredefinedAnswerInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreatePredefinedAnswerInputᚄ(ctx, v)
@@ -65750,7 +65807,7 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"questionText", "image", "questionOrder", "timeoutSeconds", "points", "bettingEnabled", "bettingMinPercentage", "bettingMaxPercentage", "bettingMinAbsolute", "bettingMaxAbsolute", "bettingMultiplierCorrect", "bettingMultiplierWrong", "clearBettingMinAbsolute", "clearBettingMaxAbsolute", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
+	fieldsInOrder := [...]string{"questionText", "image", "questionOrder", "timeoutSeconds", "points", "bettingEnabled", "bettingMinPercentage", "bettingMaxPercentage", "bettingMinAbsolute", "bettingMaxAbsolute", "bettingMultiplierCorrect", "bettingMultiplierWrong", "clearBettingMinAbsolute", "clearBettingMaxAbsolute", "allowMultipleSelection", "answerLabelStyle", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -65862,6 +65919,13 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 				return it, err
 			}
 			it.AllowMultipleSelection = data
+		case "answerLabelStyle":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("answerLabelStyle"))
+			data, err := ec.unmarshalOQuizAnswerLabelStyle2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizAnswerLabelStyle(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AnswerLabelStyle = data
 		case "predefinedAnswers":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("predefinedAnswers"))
 			data, err := ec.unmarshalOCreatePredefinedAnswerInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreatePredefinedAnswerInputᚄ(ctx, v)
@@ -74183,6 +74247,11 @@ func (ec *executionContext) _PredefinedQuestion(ctx context.Context, sel ast.Sel
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "allowMultipleSelection":
 			out.Values[i] = ec._PredefinedQuestion_allowMultipleSelection(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "answerLabelStyle":
+			out.Values[i] = ec._PredefinedQuestion_answerLabelStyle(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
@@ -86266,6 +86335,16 @@ func (ec *executionContext) marshalNQuizAchievement2ᚖgithubᚗcomᚋbccᚑmedi
 	return ec._QuizAchievement(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNQuizAnswerLabelStyle2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizAnswerLabelStyle(ctx context.Context, v any) (model.QuizAnswerLabelStyle, error) {
+	var res model.QuizAnswerLabelStyle
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNQuizAnswerLabelStyle2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizAnswerLabelStyle(ctx context.Context, sel ast.SelectionSet, v model.QuizAnswerLabelStyle) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) marshalNQuizConnection2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizConnection(ctx context.Context, sel ast.SelectionSet, v model.QuizConnection) graphql.Marshaler {
 	return ec._QuizConnection(ctx, sel, &v)
 }
@@ -89022,6 +89101,22 @@ func (ec *executionContext) marshalOQuiz2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfare
 		return graphql.Null
 	}
 	return ec._Quiz(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOQuizAnswerLabelStyle2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizAnswerLabelStyle(ctx context.Context, v any) (*model.QuizAnswerLabelStyle, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.QuizAnswerLabelStyle)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOQuizAnswerLabelStyle2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizAnswerLabelStyle(ctx context.Context, sel ast.SelectionSet, v *model.QuizAnswerLabelStyle) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) unmarshalOQuizFilter2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizFilter(ctx context.Context, v any) (*model.QuizFilter, error) {

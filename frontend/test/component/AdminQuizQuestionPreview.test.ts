@@ -1,7 +1,7 @@
 // @vitest-environment nuxt
 import { describe, it, expect } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { QuizQuestionType } from '../../app/api/generated'
+import { QuizQuestionType, QuizAnswerLabelStyle } from '../../app/api/generated'
 import AdminQuizQuestionPreview from '../../layers/admin/app/components/admin/quiz/AdminQuizQuestionPreview.vue'
 import QuizPredefinedQuestion from '../../layers/user/app/components/challenges/quiz/questions/QuizPredefinedQuestion.vue'
 import QuizOrderingQuestion from '../../layers/user/app/components/challenges/quiz/questions/QuizOrderingQuestion.vue'
@@ -136,5 +136,29 @@ describe('AdminQuizQuestionPreview image', () => {
     })
 
     expect(wrapper.find('img').exists()).toBe(false)
+  })
+})
+
+describe('AdminQuizQuestionPreview answer labels', () => {
+  it('shows the labels a participant will see', async () => {
+    const wrapper = await mountSuspended(AdminQuizQuestionPreview, {
+      props: {
+        question: {
+          ...predefined,
+          answerLabelStyle: QuizAnswerLabelStyle.Alpha,
+        },
+      },
+    })
+
+    expect(wrapper.text()).toContain('A.')
+    expect(wrapper.text()).toContain('B.')
+  })
+
+  it('shows no labels when the question is unlabelled', async () => {
+    const wrapper = await mountSuspended(AdminQuizQuestionPreview, {
+      props: { question: predefined },
+    })
+
+    expect(wrapper.text()).not.toContain('A.')
   })
 })

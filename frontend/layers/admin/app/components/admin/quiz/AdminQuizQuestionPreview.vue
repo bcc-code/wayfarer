@@ -32,6 +32,8 @@ const preview = computed(() => ({
   id: props.question.id ?? 'preview',
   questionText: props.question.questionText,
   allowMultipleSelection: props.question.allowMultipleSelection ?? false,
+  answerLabelStyle:
+    props.question.answerLabelStyle ?? QuizAnswerLabelStyle.None,
   predefinedAnswers: (props.question.predefinedAnswers ?? []).map(
     (answer, i) => ({
       id: answer.id ?? `answer-${i}`,

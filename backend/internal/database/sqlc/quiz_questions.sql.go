@@ -73,6 +73,7 @@ INSERT INTO quiz_questions (
     image_url,
     question_order,
     allow_multiple_selection,
+    answer_label_style,
     min_value,
     max_value,
     step_value,
@@ -94,20 +95,21 @@ VALUES (
     $5::text,
     $6::int,
     $7::bool,
-    $8::decimal,
+    COALESCE($8::text, 'NONE'),
     $9::decimal,
     $10::decimal,
-    $11::int,
+    $11::decimal,
     $12::int,
-    COALESCE($13::bool, false),
-    $14::decimal,
+    $13::int,
+    COALESCE($14::bool, false),
     $15::decimal,
-    $16::int,
+    $16::decimal,
     $17::int,
-    $18::decimal,
-    $19::decimal
+    $18::int,
+    $19::decimal,
+    $20::decimal
 )
-RETURNING id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
+RETURNING id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
 `
 
 type CreateQuizQuestionParams struct {
@@ -118,6 +120,7 @@ type CreateQuizQuestionParams struct {
 	Imageurl                 *string        `json:"imageurl"`
 	Questionorder            int32          `json:"questionorder"`
 	Allowmultipleselection   *bool          `json:"allowmultipleselection"`
+	Answerlabelstyle         *string        `json:"answerlabelstyle"`
 	Minvalue                 pgtype.Numeric `json:"minvalue"`
 	Maxvalue                 pgtype.Numeric `json:"maxvalue"`
 	Stepvalue                pgtype.Numeric `json:"stepvalue"`
@@ -140,6 +143,7 @@ type CreateQuizQuestionRow struct {
 	ImageUrl                 *string            `json:"image_url"`
 	QuestionOrder            int32              `json:"question_order"`
 	AllowMultipleSelection   *bool              `json:"allow_multiple_selection"`
+	AnswerLabelStyle         string             `json:"answer_label_style"`
 	MinValue                 pgtype.Numeric     `json:"min_value"`
 	MaxValue                 pgtype.Numeric     `json:"max_value"`
 	StepValue                pgtype.Numeric     `json:"step_value"`
@@ -165,6 +169,7 @@ func (q *Queries) CreateQuizQuestion(ctx context.Context, arg CreateQuizQuestion
 		arg.Imageurl,
 		arg.Questionorder,
 		arg.Allowmultipleselection,
+		arg.Answerlabelstyle,
 		arg.Minvalue,
 		arg.Maxvalue,
 		arg.Stepvalue,
@@ -187,6 +192,7 @@ func (q *Queries) CreateQuizQuestion(ctx context.Context, arg CreateQuizQuestion
 		&i.ImageUrl,
 		&i.QuestionOrder,
 		&i.AllowMultipleSelection,
+		&i.AnswerLabelStyle,
 		&i.MinValue,
 		&i.MaxValue,
 		&i.StepValue,
@@ -350,7 +356,7 @@ func (q *Queries) GetPredefinedAnswersByQuestionIDs(ctx context.Context, questio
 }
 
 const GetQuizQuestionByID = `-- name: GetQuizQuestionByID :one
-SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
 FROM quiz_questions
 WHERE id = $1::char(28)
 `
@@ -363,6 +369,7 @@ type GetQuizQuestionByIDRow struct {
 	ImageUrl                 *string            `json:"image_url"`
 	QuestionOrder            int32              `json:"question_order"`
 	AllowMultipleSelection   *bool              `json:"allow_multiple_selection"`
+	AnswerLabelStyle         string             `json:"answer_label_style"`
 	MinValue                 pgtype.Numeric     `json:"min_value"`
 	MaxValue                 pgtype.Numeric     `json:"max_value"`
 	StepValue                pgtype.Numeric     `json:"step_value"`
@@ -390,6 +397,7 @@ func (q *Queries) GetQuizQuestionByID(ctx context.Context, id string) (*GetQuizQ
 		&i.ImageUrl,
 		&i.QuestionOrder,
 		&i.AllowMultipleSelection,
+		&i.AnswerLabelStyle,
 		&i.MinValue,
 		&i.MaxValue,
 		&i.StepValue,
@@ -409,7 +417,7 @@ func (q *Queries) GetQuizQuestionByID(ctx context.Context, id string) (*GetQuizQ
 }
 
 const GetQuizQuestionsByIDs = `-- name: GetQuizQuestionsByIDs :many
-SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
 FROM quiz_questions
 WHERE id = ANY($1::char(28)[])
 `
@@ -422,6 +430,7 @@ type GetQuizQuestionsByIDsRow struct {
 	ImageUrl                 *string            `json:"image_url"`
 	QuestionOrder            int32              `json:"question_order"`
 	AllowMultipleSelection   *bool              `json:"allow_multiple_selection"`
+	AnswerLabelStyle         string             `json:"answer_label_style"`
 	MinValue                 pgtype.Numeric     `json:"min_value"`
 	MaxValue                 pgtype.Numeric     `json:"max_value"`
 	StepValue                pgtype.Numeric     `json:"step_value"`
@@ -455,6 +464,7 @@ func (q *Queries) GetQuizQuestionsByIDs(ctx context.Context, ids []string) ([]*G
 			&i.ImageUrl,
 			&i.QuestionOrder,
 			&i.AllowMultipleSelection,
+			&i.AnswerLabelStyle,
 			&i.MinValue,
 			&i.MaxValue,
 			&i.StepValue,
@@ -481,7 +491,7 @@ func (q *Queries) GetQuizQuestionsByIDs(ctx context.Context, ids []string) ([]*G
 }
 
 const GetQuizQuestionsByQuizID = `-- name: GetQuizQuestionsByQuizID :many
-SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
 FROM quiz_questions
 WHERE quiz_id = $1::char(28)
 ORDER BY question_order ASC
@@ -495,6 +505,7 @@ type GetQuizQuestionsByQuizIDRow struct {
 	ImageUrl                 *string            `json:"image_url"`
 	QuestionOrder            int32              `json:"question_order"`
 	AllowMultipleSelection   *bool              `json:"allow_multiple_selection"`
+	AnswerLabelStyle         string             `json:"answer_label_style"`
 	MinValue                 pgtype.Numeric     `json:"min_value"`
 	MaxValue                 pgtype.Numeric     `json:"max_value"`
 	StepValue                pgtype.Numeric     `json:"step_value"`
@@ -528,6 +539,7 @@ func (q *Queries) GetQuizQuestionsByQuizID(ctx context.Context, quizid string) (
 			&i.ImageUrl,
 			&i.QuestionOrder,
 			&i.AllowMultipleSelection,
+			&i.AnswerLabelStyle,
 			&i.MinValue,
 			&i.MaxValue,
 			&i.StepValue,
@@ -554,7 +566,7 @@ func (q *Queries) GetQuizQuestionsByQuizID(ctx context.Context, quizid string) (
 }
 
 const GetQuizQuestionsByQuizIDs = `-- name: GetQuizQuestionsByQuizIDs :many
-SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
 FROM quiz_questions
 WHERE quiz_id = ANY($1::char(28)[])
 ORDER BY quiz_id, question_order ASC
@@ -568,6 +580,7 @@ type GetQuizQuestionsByQuizIDsRow struct {
 	ImageUrl                 *string            `json:"image_url"`
 	QuestionOrder            int32              `json:"question_order"`
 	AllowMultipleSelection   *bool              `json:"allow_multiple_selection"`
+	AnswerLabelStyle         string             `json:"answer_label_style"`
 	MinValue                 pgtype.Numeric     `json:"min_value"`
 	MaxValue                 pgtype.Numeric     `json:"max_value"`
 	StepValue                pgtype.Numeric     `json:"step_value"`
@@ -601,6 +614,7 @@ func (q *Queries) GetQuizQuestionsByQuizIDs(ctx context.Context, quizIds []strin
 			&i.ImageUrl,
 			&i.QuestionOrder,
 			&i.AllowMultipleSelection,
+			&i.AnswerLabelStyle,
 			&i.MinValue,
 			&i.MaxValue,
 			&i.StepValue,
@@ -634,21 +648,22 @@ SET
                      ELSE COALESCE($3::text, image_url) END,
     question_order = COALESCE($4::int, question_order),
     allow_multiple_selection = COALESCE($5::bool, allow_multiple_selection),
-    min_value = COALESCE($6::decimal, min_value),
-    max_value = COALESCE($7::decimal, max_value),
-    step_value = COALESCE($8::decimal, step_value),
-    timeout_seconds = COALESCE($9::int, timeout_seconds),
-    points = COALESCE($10::int, points),
-    betting_enabled = COALESCE($11::bool, betting_enabled),
-    betting_min_percentage = COALESCE($12::decimal, betting_min_percentage),
-    betting_max_percentage = COALESCE($13::decimal, betting_max_percentage),
-    betting_min_absolute = COALESCE($14::int, betting_min_absolute),
-    betting_max_absolute = COALESCE($15::int, betting_max_absolute),
-    betting_multiplier_correct = COALESCE($16::decimal, betting_multiplier_correct),
-    betting_multiplier_wrong = COALESCE($17::decimal, betting_multiplier_wrong),
+    answer_label_style = COALESCE($6::text, answer_label_style),
+    min_value = COALESCE($7::decimal, min_value),
+    max_value = COALESCE($8::decimal, max_value),
+    step_value = COALESCE($9::decimal, step_value),
+    timeout_seconds = COALESCE($10::int, timeout_seconds),
+    points = COALESCE($11::int, points),
+    betting_enabled = COALESCE($12::bool, betting_enabled),
+    betting_min_percentage = COALESCE($13::decimal, betting_min_percentage),
+    betting_max_percentage = COALESCE($14::decimal, betting_max_percentage),
+    betting_min_absolute = COALESCE($15::int, betting_min_absolute),
+    betting_max_absolute = COALESCE($16::int, betting_max_absolute),
+    betting_multiplier_correct = COALESCE($17::decimal, betting_multiplier_correct),
+    betting_multiplier_wrong = COALESCE($18::decimal, betting_multiplier_wrong),
     updated_at = now()
-WHERE id = $18::char(28)
-RETURNING id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
+WHERE id = $19::char(28)
+RETURNING id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
 `
 
 type UpdateQuizQuestionParams struct {
@@ -657,6 +672,7 @@ type UpdateQuizQuestionParams struct {
 	Imageurl                 *string        `json:"imageurl"`
 	Questionorder            *int32         `json:"questionorder"`
 	Allowmultipleselection   *bool          `json:"allowmultipleselection"`
+	Answerlabelstyle         *string        `json:"answerlabelstyle"`
 	Minvalue                 pgtype.Numeric `json:"minvalue"`
 	Maxvalue                 pgtype.Numeric `json:"maxvalue"`
 	Stepvalue                pgtype.Numeric `json:"stepvalue"`
@@ -680,6 +696,7 @@ type UpdateQuizQuestionRow struct {
 	ImageUrl                 *string            `json:"image_url"`
 	QuestionOrder            int32              `json:"question_order"`
 	AllowMultipleSelection   *bool              `json:"allow_multiple_selection"`
+	AnswerLabelStyle         string             `json:"answer_label_style"`
 	MinValue                 pgtype.Numeric     `json:"min_value"`
 	MaxValue                 pgtype.Numeric     `json:"max_value"`
 	StepValue                pgtype.Numeric     `json:"step_value"`
@@ -703,6 +720,7 @@ func (q *Queries) UpdateQuizQuestion(ctx context.Context, arg UpdateQuizQuestion
 		arg.Imageurl,
 		arg.Questionorder,
 		arg.Allowmultipleselection,
+		arg.Answerlabelstyle,
 		arg.Minvalue,
 		arg.Maxvalue,
 		arg.Stepvalue,
@@ -726,6 +744,7 @@ func (q *Queries) UpdateQuizQuestion(ctx context.Context, arg UpdateQuizQuestion
 		&i.ImageUrl,
 		&i.QuestionOrder,
 		&i.AllowMultipleSelection,
+		&i.AnswerLabelStyle,
 		&i.MinValue,
 		&i.MaxValue,
 		&i.StepValue,
