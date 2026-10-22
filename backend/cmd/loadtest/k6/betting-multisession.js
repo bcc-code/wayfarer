@@ -95,6 +95,19 @@ const pluginPings = num('PLUGIN_PINGS', 1); // project pings the plugin sends af
 const refetchMax = num('REFETCH_MAX_TIMEOUT', 60); // timeout of a refetch with no next ping
 const pingJitterMs = num('PING_JITTER_MS', 250); // per-client ping delivery delay, uniform 0..this
 const refetchFraction = num('REFETCH_FRACTION', 1);
+// REFETCH_MODE: how a client turns pings into refetches.
+//   cancel   (default, the baseline) every ping sends a refetch and cancels
+//            the one in flight, like the frontend before the R4 fix
+//   coalesce like useFirestoreRefresh after the R4 fix: one refetch in
+//            flight, pings during it queue one more, starts at least
+//            REFETCH_MIN_INTERVAL_MS apart, each after a 0..REFETCH_JITTER_MS
+//            random delay; nothing is cancelled
+const refetchMode = (__ENV.REFETCH_MODE || 'cancel').toLowerCase();
+if (!['cancel', 'coalesce'].includes(refetchMode)) {
+    throw new Error(`REFETCH_MODE must be cancel or coalesce, not ${refetchMode}`);
+}
+const refetchMinIntervalMs = num('REFETCH_MIN_INTERVAL_MS', 2000);
+const refetchJitterMs = num('REFETCH_JITTER_MS', 500);
 const refetchOn = (__ENV.REFETCH || '1') !== '0';
 const adminDoubleClickFraction = num('ADMIN_DOUBLE_CLICK_FRACTION', 0);
 const correctRate = num('CORRECT_RATE', 0.5);
@@ -277,14 +290,28 @@ function firstPingAfter(tMs) {
     return lo;
 }
 
-/**
- * The client's Firestore listener until untilEpochMs: one ChallengePage
- * refetch per ping, cancelled by the next ping. Returns the first completed
- * page for which done(data) is true (then stops early), else null.
- */
 let loggedRefetchErrors = 0; // per VU
 
+function refetchFailed(message) {
+    refetchErrors.add(1);
+    if (loggedRefetchErrors++ < 3) {
+        console.error(`refetch failed: ${message}`);
+    }
+}
+
+/**
+ * The client's Firestore listener until untilEpochMs (REFETCH_MODE). Returns
+ * the first completed page for which done(data) is true (then stops early),
+ * else null.
+ */
 function listen(t0, token, untilEpochMs, done) {
+    return refetchMode === 'coalesce'
+        ? listenCoalesced(t0, token, untilEpochMs, done)
+        : listenCancel(t0, token, untilEpochMs, done);
+}
+
+// cancel: one ChallengePage refetch per ping, cancelled by the next ping
+function listenCancel(t0, token, untilEpochMs, done) {
     let i = firstPingAfter(Date.now() - t0);
     for (;;) {
         if (i >= pings.length || t0 + pings[i] >= untilEpochMs) {
@@ -309,6 +336,56 @@ function listen(t0, token, untilEpochMs, done) {
             if (loggedRefetchErrors++ < 3) {
                 console.error(`refetch failed: ${res.error}`);
             }
+            continue;
+        }
+        refetchCompletedLatency.add(res.durationMs);
+        if (done && done(res.data)) {
+            return res.data;
+        }
+    }
+}
+
+// The coalescing client's state (one client per VU): when its last refetch
+// started, and the latest ping time (relative to the client's t0) that this
+// refetch already covers
+const coalesced = { lastStart: -Infinity, covered: null };
+
+// coalesce: mirrors createCoalescedRefresh (useFirestoreRefresh). k6 VUs are
+// blocking, so "in flight" is the request itself: pings that arrive during it
+// are later than `covered` and queue the next refetch. Pings that arrived while
+// the VU was busy elsewhere (a quiz mutation) are picked up the same way.
+function listenCoalesced(t0, token, untilEpochMs, done) {
+    if (coalesced.covered === null) {
+        coalesced.covered = Date.now() - t0; // the page was just loaded
+    }
+    for (;;) {
+        const i = firstPingAfter(coalesced.covered);
+        if (i >= pings.length || t0 + pings[i] >= untilEpochMs) {
+            sleepUntil(untilEpochMs);
+            return null;
+        }
+        const startAt = Math.max(
+            t0 + pings[i] + Math.random() * refetchJitterMs,
+            coalesced.lastStart + refetchMinIntervalMs,
+        );
+        if (startAt >= untilEpochMs) {
+            // Still due: the next listen() picks it up (covered is unchanged)
+            sleepUntil(untilEpochMs);
+            return null;
+        }
+        sleepUntil(startAt);
+        refetches.add(1);
+        refetchSendLag.add(Math.max(0, Date.now() - startAt));
+        coalesced.lastStart = Date.now();
+        coalesced.covered = coalesced.lastStart - t0;
+        const res = challengePageRefetch(baseUrl, token, challengeId, refetchMax * 1000);
+        if (res.cancelled) {
+            // Not a ping cancel: the request hit REFETCH_MAX_TIMEOUT
+            refetchFailed(`timeout after ${refetchMax}s`);
+            continue;
+        }
+        if (!res.ok) {
+            refetchFailed(res.error);
             continue;
         }
         refetchCompletedLatency.add(res.durationMs);
