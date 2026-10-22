@@ -53,7 +53,8 @@
       "correctCount": "Du hattest {count} richtige",
       "correctCountAll": "Du hattest alle richtig",
       "correctCountNone": "Du hattest keine richtigen",
-      "bettingResult": "Tipp-Ergebnis"
+      "bettingResult": "Tipp-Ergebnis",
+      "nothingToStake": "Du hast keine Punkte, die du setzen kannst."
     },
     "result": {
       "receivedNoPoints": "Du hast keine Punkte gesammelt.",
