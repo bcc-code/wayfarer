@@ -1,7 +1,7 @@
 // @vitest-environment nuxt
 import { describe, it, expect } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { QuizQuestionType } from '../../app/api/generated'
+import { QuizQuestionType, QuizAnswerLabelStyle } from '../../app/api/generated'
 import AdminQuizQuestionEditor from '../../layers/admin/app/components/admin/quiz/AdminQuizQuestionEditor.vue'
 
 const questionTypeOptions = [
@@ -321,5 +321,113 @@ describe('AdminQuizQuestionEditor', () => {
         'En gryte som symboliserer maten.',
       )
     })
+  })
+})
+
+/**
+ * The image belongs to the question, not to one question type, so it has to
+ * survive a save whichever type is being edited — and a removed one has to
+ * travel as a blank string rather than fall out of the saved question.
+ */
+describe('AdminQuizQuestionEditor image', () => {
+  const savedImage = async (question: Record<string, unknown>) => {
+    const wrapper = await mount(question)
+    await saveButton(wrapper).trigger('click')
+    const saved = wrapper.emitted('save')?.[0]?.[0] as { image?: string }
+    return saved.image
+  }
+
+  it('keeps the image on a predefined question', async () => {
+    const image = await savedImage({
+      ...predefined([
+        { answerText: 'Paulus', isCorrect: true, answerOrder: 1 },
+        { answerText: 'Peter', isCorrect: false, answerOrder: 2 },
+      ]),
+      image: 'https://cdn.example.test/q.png',
+    })
+
+    expect(image).toBe('https://cdn.example.test/q.png')
+  })
+
+  it('keeps the image on a question type that has no answers', async () => {
+    const image = await savedImage({
+      questionType: QuizQuestionType.FreeText,
+      questionText: 'Hva betyr nåde?',
+      questionOrder: 1,
+      image: 'https://cdn.example.test/q.png',
+    })
+
+    expect(image).toBe('https://cdn.example.test/q.png')
+  })
+
+  it('saves a blank image for a question without one', async () => {
+    const image = await savedImage({
+      questionType: QuizQuestionType.FreeText,
+      questionText: 'Hva betyr nåde?',
+      questionOrder: 1,
+    })
+
+    expect(image).toBe('')
+  })
+
+  it('offers an upload field for the image', async () => {
+    const wrapper = await mount({
+      questionType: QuizQuestionType.FreeText,
+      questionText: 'Hva betyr nåde?',
+      questionOrder: 1,
+    })
+
+    expect(wrapper.findComponent({ name: 'AdminFileUpload' }).exists()).toBe(
+      true,
+    )
+  })
+})
+
+/**
+ * The label follows each alternative's position, so the editor stores only
+ * the style — nothing to retype after a drag.
+ */
+describe('AdminQuizQuestionEditor answer labels', () => {
+  const twoAnswers = [
+    { answerText: 'Paulus', isCorrect: true, answerOrder: 1 },
+    { answerText: 'Peter', isCorrect: false, answerOrder: 2 },
+  ]
+
+  it('saves the chosen label style', async () => {
+    const wrapper = await mount({
+      ...predefined(twoAnswers),
+      answerLabelStyle: QuizAnswerLabelStyle.Alpha,
+    })
+    await saveButton(wrapper).trigger('click')
+
+    const saved = wrapper.emitted('save')?.[0]?.[0] as {
+      answerLabelStyle?: string
+    }
+    expect(saved.answerLabelStyle).toBe(QuizAnswerLabelStyle.Alpha)
+  })
+
+  it('saves NONE for a question that was never given a style', async () => {
+    const wrapper = await mount(predefined(twoAnswers))
+    await saveButton(wrapper).trigger('click')
+
+    const saved = wrapper.emitted('save')?.[0]?.[0] as {
+      answerLabelStyle?: string
+    }
+    expect(saved.answerLabelStyle).toBe(QuizAnswerLabelStyle.None)
+  })
+
+  // Only predefined questions have alternatives to label.
+  it('leaves the style off a question type with no alternatives', async () => {
+    const wrapper = await mount({
+      questionType: QuizQuestionType.FreeText,
+      questionText: 'Hva betyr nåde?',
+      questionOrder: 1,
+    })
+    await saveButton(wrapper).trigger('click')
+
+    const saved = wrapper.emitted('save')?.[0]?.[0] as {
+      answerLabelStyle?: string
+    }
+    expect(saved.answerLabelStyle).toBeUndefined()
   })
 })

@@ -53,7 +53,8 @@
       "correctCount": "You had {count} correct answers.",
       "correctCountAll": "You had all the right answers.",
       "correctCountNone": "You didn't have any correct ones.",
-      "bettingResult": "Betting results"
+      "bettingResult": "Betting results",
+      "nothingToStake": "You have no points to stake."
     },
     "result": {
       "receivedNoPoints": "You did not receive any points.",

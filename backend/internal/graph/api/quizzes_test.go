@@ -462,8 +462,10 @@ type mockQuestionRow struct {
 	quizID                 string
 	questionType           string
 	questionText           string
+	imageURL               *string
 	questionOrder          int32
 	allowMultipleSelection *bool
+	answerLabelStyle       string
 	timeoutSeconds         *int32
 	points                 *int32
 	bettingEnabled         bool
@@ -479,8 +481,10 @@ func (m *mockQuestionRow) GetID() string                           { return m.id
 func (m *mockQuestionRow) GetQuizID() string                       { return m.quizID }
 func (m *mockQuestionRow) GetQuestionType() string                 { return m.questionType }
 func (m *mockQuestionRow) GetQuestionText() string                 { return m.questionText }
+func (m *mockQuestionRow) GetImageURL() *string                    { return m.imageURL }
 func (m *mockQuestionRow) GetQuestionOrder() int32                 { return m.questionOrder }
 func (m *mockQuestionRow) GetAllowMultipleSelection() *bool        { return m.allowMultipleSelection }
+func (m *mockQuestionRow) GetAnswerLabelStyle() string             { return m.answerLabelStyle }
 func (m *mockQuestionRow) GetMinValue() pgtype.Numeric             { return pgtype.Numeric{} }
 func (m *mockQuestionRow) GetMaxValue() pgtype.Numeric             { return pgtype.Numeric{} }
 func (m *mockQuestionRow) GetStepValue() pgtype.Numeric            { return pgtype.Numeric{} }
@@ -652,6 +656,94 @@ func TestQuizSessionStateTransitions(t *testing.T) {
 				assert.False(t, tt.validFinish, "FINISHED should not allow any transitions")
 				assert.False(t, tt.validReopen, "FINISHED should not allow any transitions")
 			}
+		})
+	}
+}
+
+// TestConvertQuestionImageURL covers the image reaching every question type:
+// the conversion is written out once per type, so a field added to one of them
+// is easy to leave off the others.
+func TestConvertQuestionImageURL(t *testing.T) {
+	url := "https://cdn.example.test/question.jpg"
+
+	types := map[string]func(quizQuestionRow) *string{
+		"PREDEFINED": func(r quizQuestionRow) *string { return convertToPredefinedQuestion(r).ImageURL },
+		"FREE_TEXT":  func(r quizQuestionRow) *string { return convertToFreeTextQuestion(r).ImageURL },
+		"NUMBER":     func(r quizQuestionRow) *string { return convertToNumberQuestion(r).ImageURL },
+		"JSON":       func(r quizQuestionRow) *string { return convertToJsonQuestion(r).ImageURL },
+		"ORDERING":   func(r quizQuestionRow) *string { return convertToOrderingQuestion(r).ImageURL },
+	}
+
+	for questionType, imageOf := range types {
+		t.Run(questionType+" with image", func(t *testing.T) {
+			got := imageOf(&mockQuestionRow{id: "QQ001", questionType: questionType, imageURL: &url})
+			require.NotNil(t, got)
+			assert.Equal(t, url, *got)
+		})
+
+		t.Run(questionType+" without image", func(t *testing.T) {
+			assert.Nil(t, imageOf(&mockQuestionRow{id: "QQ001", questionType: questionType}))
+		})
+	}
+}
+
+func TestNormalizeImageURL(t *testing.T) {
+	tests := []struct {
+		name  string
+		input *string
+		want  *string
+	}{
+		{name: "absent stays absent", input: nil, want: nil},
+		{name: "blank is no image", input: stringPtr(""), want: nil},
+		{name: "whitespace is no image", input: stringPtr("   "), want: nil},
+		{
+			name:  "surrounding whitespace is trimmed",
+			input: stringPtr("  https://cdn.example.test/a.png "),
+			want:  stringPtr("https://cdn.example.test/a.png"),
+		},
+		{
+			name:  "a url is kept as is",
+			input: stringPtr("https://cdn.example.test/a.png"),
+			want:  stringPtr("https://cdn.example.test/a.png"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := normalizeImageURL(tt.input)
+			if tt.want == nil {
+				assert.Nil(t, got)
+				return
+			}
+			require.NotNil(t, got)
+			assert.Equal(t, *tt.want, *got)
+		})
+	}
+}
+
+// TestConvertAnswerLabelStyle covers the stored style reaching the model. An
+// unknown value must not fail the question: the alternatives simply go
+// unlabelled.
+func TestConvertAnswerLabelStyle(t *testing.T) {
+	tests := []struct {
+		stored string
+		want   model.QuizAnswerLabelStyle
+	}{
+		{stored: "NONE", want: model.QuizAnswerLabelStyleNone},
+		{stored: "NUMERIC", want: model.QuizAnswerLabelStyleNumeric},
+		{stored: "ALPHA", want: model.QuizAnswerLabelStyleAlpha},
+		{stored: "", want: model.QuizAnswerLabelStyleNone},
+		{stored: "ROMAN", want: model.QuizAnswerLabelStyleNone},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.stored, func(t *testing.T) {
+			result := convertToPredefinedQuestion(&mockQuestionRow{
+				id:               "QQ001",
+				questionType:     "PREDEFINED",
+				answerLabelStyle: tt.stored,
+			})
+			assert.Equal(t, tt.want, result.AnswerLabelStyle)
 		})
 	}
 }

@@ -32,6 +32,8 @@ const preview = computed(() => ({
   id: props.question.id ?? 'preview',
   questionText: props.question.questionText,
   allowMultipleSelection: props.question.allowMultipleSelection ?? false,
+  answerLabelStyle:
+    props.question.answerLabelStyle ?? QuizAnswerLabelStyle.None,
   predefinedAnswers: (props.question.predefinedAnswers ?? []).map(
     (answer, i) => ({
       id: answer.id ?? `answer-${i}`,
@@ -51,6 +53,14 @@ const preview = computed(() => ({
   stepValue: props.question.stepValue,
   bettingEnabled: false,
 }))
+
+/**
+ * A freshly uploaded image has no stored metadata here — the admin has only
+ * the URL — so the preview renders it without blurhash or intrinsic size.
+ */
+const previewImage = computed(() =>
+  props.question.image ? { url: props.question.image } : null,
+)
 
 // The components are typed against the query result; a draft is not one.
 const asQuestion = computed(() => preview.value as never)
@@ -75,6 +85,7 @@ const common = computed(() => ({
       :question-text="question.questionText || 'Spørsmålstekst'"
       :index="index ?? 0"
       :total="total ?? 1"
+      :image="previewImage"
     />
 
     <QuizPredefinedQuestion

@@ -84,6 +84,8 @@ describe('AdminQuizSelector', () => {
 
     const on = await mount({ minScorePercentage: 80 })
     expect(on.text()).toContain('Minste poengandel')
-    expect(on.findComponent({ name: 'UInputNumber' }).props('modelValue')).toBe(80)
+    expect(on.findComponent({ name: 'UInputNumber' }).props('modelValue')).toBe(
+      80,
+    )
   })
 })

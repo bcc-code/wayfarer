@@ -96,6 +96,17 @@ const canRemoveAnswer = computed(
   () => (localQuestion.predefinedAnswers?.length ?? 0) > 2,
 )
 
+/**
+ * The label is derived from each alternative's position when it is rendered,
+ * so dragging the list relabels it — nothing here needs to be retyped. The
+ * preview beside the form shows the result.
+ */
+const answerLabelStyleOptions = [
+  { value: QuizAnswerLabelStyle.None, label: 'Ingen' },
+  { value: QuizAnswerLabelStyle.Numeric, label: '1. 2. 3.' },
+  { value: QuizAnswerLabelStyle.Alpha, label: 'A. B. C.' },
+]
+
 const canRemoveOrderingItem = computed(
   () => (localQuestion.orderingItems?.length ?? 0) > 2,
 )
@@ -160,6 +171,8 @@ function handleSave() {
     localKey: localQuestion.localKey,
     questionType: localQuestion.questionType,
     questionText: localQuestion.questionText,
+    // `AdminFileUpload` clears to null; the save input wants a blank string.
+    image: localQuestion.image ?? '',
     questionOrder: localQuestion.questionOrder,
     timeoutSeconds: toOptionalNumber(localQuestion.timeoutSeconds),
     points: canEarnPoints.value ? localQuestion.points : undefined,
@@ -173,6 +186,8 @@ function handleSave() {
   if (localQuestion.questionType === QuizQuestionType.Predefined) {
     cleanedQuestion.allowMultipleSelection =
       localQuestion.allowMultipleSelection
+    cleanedQuestion.answerLabelStyle =
+      localQuestion.answerLabelStyle ?? QuizAnswerLabelStyle.None
     cleanedQuestion.predefinedAnswers = localQuestion.predefinedAnswers
   } else if (localQuestion.questionType === QuizQuestionType.Number) {
     cleanedQuestion.minValue = localQuestion.minValue
@@ -219,6 +234,15 @@ function handleSave() {
           />
         </AdminTranslatableFormField>
 
+        <UFormField
+          name="image"
+          label="Bilde"
+          hint="(valgfritt)"
+          help="Vises over spørsmålsteksten."
+        >
+          <AdminFileUpload v-model="localQuestion.image" />
+        </UFormField>
+
         <!-- The answers are the question, so they come before the scoring and
          betting settings rather than after them. -->
         <template
@@ -240,6 +264,18 @@ function handleSave() {
               label="Tillat flere svar"
               description="Brukeren kan velge mer enn ett alternativ."
             />
+
+            <UFormField
+              name="answerLabelStyle"
+              label="Merking av alternativer"
+              help="Merkingen følger rekkefølgen, så den oppdaterer seg når du drar om på alternativene."
+            >
+              <USelect
+                v-model="localQuestion.answerLabelStyle"
+                :items="answerLabelStyleOptions"
+                class="w-full"
+              />
+            </UFormField>
 
             <VueDraggable
               v-model="localQuestion.predefinedAnswers!"

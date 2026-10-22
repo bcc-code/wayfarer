@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"math"
+	"strings"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
@@ -126,8 +127,10 @@ type quizQuestionRow interface {
 	GetQuizID() string
 	GetQuestionType() string
 	GetQuestionText() string
+	GetImageURL() *string
 	GetQuestionOrder() int32
 	GetAllowMultipleSelection() *bool
+	GetAnswerLabelStyle() string
 	GetMinValue() pgtype.Numeric
 	GetMaxValue() pgtype.Numeric
 	GetStepValue() pgtype.Numeric
@@ -151,10 +154,12 @@ func (r createQuizQuestionRowAdapter) GetID() string           { return r.ID }
 func (r createQuizQuestionRowAdapter) GetQuizID() string       { return r.QuizID }
 func (r createQuizQuestionRowAdapter) GetQuestionType() string { return r.QuestionType }
 func (r createQuizQuestionRowAdapter) GetQuestionText() string { return r.QuestionText }
+func (r createQuizQuestionRowAdapter) GetImageURL() *string    { return r.ImageUrl }
 func (r createQuizQuestionRowAdapter) GetQuestionOrder() int32 { return r.QuestionOrder }
 func (r createQuizQuestionRowAdapter) GetAllowMultipleSelection() *bool {
 	return r.AllowMultipleSelection
 }
+func (r createQuizQuestionRowAdapter) GetAnswerLabelStyle() string  { return r.AnswerLabelStyle }
 func (r createQuizQuestionRowAdapter) GetMinValue() pgtype.Numeric  { return r.MinValue }
 func (r createQuizQuestionRowAdapter) GetMaxValue() pgtype.Numeric  { return r.MaxValue }
 func (r createQuizQuestionRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
@@ -185,10 +190,12 @@ func (r updateQuizQuestionRowAdapter) GetID() string           { return r.ID }
 func (r updateQuizQuestionRowAdapter) GetQuizID() string       { return r.QuizID }
 func (r updateQuizQuestionRowAdapter) GetQuestionType() string { return r.QuestionType }
 func (r updateQuizQuestionRowAdapter) GetQuestionText() string { return r.QuestionText }
+func (r updateQuizQuestionRowAdapter) GetImageURL() *string    { return r.ImageUrl }
 func (r updateQuizQuestionRowAdapter) GetQuestionOrder() int32 { return r.QuestionOrder }
 func (r updateQuizQuestionRowAdapter) GetAllowMultipleSelection() *bool {
 	return r.AllowMultipleSelection
 }
+func (r updateQuizQuestionRowAdapter) GetAnswerLabelStyle() string  { return r.AnswerLabelStyle }
 func (r updateQuizQuestionRowAdapter) GetMinValue() pgtype.Numeric  { return r.MinValue }
 func (r updateQuizQuestionRowAdapter) GetMaxValue() pgtype.Numeric  { return r.MaxValue }
 func (r updateQuizQuestionRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
@@ -219,10 +226,12 @@ func (r getQuizQuestionByIDRowAdapter) GetID() string           { return r.ID }
 func (r getQuizQuestionByIDRowAdapter) GetQuizID() string       { return r.QuizID }
 func (r getQuizQuestionByIDRowAdapter) GetQuestionType() string { return r.QuestionType }
 func (r getQuizQuestionByIDRowAdapter) GetQuestionText() string { return r.QuestionText }
+func (r getQuizQuestionByIDRowAdapter) GetImageURL() *string    { return r.ImageUrl }
 func (r getQuizQuestionByIDRowAdapter) GetQuestionOrder() int32 { return r.QuestionOrder }
 func (r getQuizQuestionByIDRowAdapter) GetAllowMultipleSelection() *bool {
 	return r.AllowMultipleSelection
 }
+func (r getQuizQuestionByIDRowAdapter) GetAnswerLabelStyle() string  { return r.AnswerLabelStyle }
 func (r getQuizQuestionByIDRowAdapter) GetMinValue() pgtype.Numeric  { return r.MinValue }
 func (r getQuizQuestionByIDRowAdapter) GetMaxValue() pgtype.Numeric  { return r.MaxValue }
 func (r getQuizQuestionByIDRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
@@ -313,6 +322,7 @@ func convertToPredefinedQuestion(row quizQuestionRow) *model.PredefinedQuestion 
 		ID:                       row.GetID(),
 		QuizID:                   row.GetQuizID(),
 		QuestionText:             row.GetQuestionText(),
+		ImageURL:                 row.GetImageURL(),
 		QuestionOrder:            int(row.GetQuestionOrder()),
 		TimeoutSeconds:           convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
 		Points:                   convertQuestionPoints(row.GetPoints()),
@@ -324,6 +334,7 @@ func convertToPredefinedQuestion(row quizQuestionRow) *model.PredefinedQuestion 
 		BettingMultiplierCorrect: convertBettingPercentage(row.GetBettingMultiplierCorrect()),
 		BettingMultiplierWrong:   convertBettingPercentage(row.GetBettingMultiplierWrong()),
 		AllowMultipleSelection:   allowMultiple,
+		AnswerLabelStyle:         convertAnswerLabelStyle(row.GetAnswerLabelStyle()),
 	}
 }
 
@@ -332,6 +343,7 @@ func convertToFreeTextQuestion(row quizQuestionRow) *model.FreeTextQuestion {
 		ID:                       row.GetID(),
 		QuizID:                   row.GetQuizID(),
 		QuestionText:             row.GetQuestionText(),
+		ImageURL:                 row.GetImageURL(),
 		QuestionOrder:            int(row.GetQuestionOrder()),
 		TimeoutSeconds:           convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
 		Points:                   convertQuestionPoints(row.GetPoints()),
@@ -353,6 +365,7 @@ func convertToNumberQuestion(row quizQuestionRow) *model.NumberQuestion {
 		ID:                       row.GetID(),
 		QuizID:                   row.GetQuizID(),
 		QuestionText:             row.GetQuestionText(),
+		ImageURL:                 row.GetImageURL(),
 		QuestionOrder:            int(row.GetQuestionOrder()),
 		TimeoutSeconds:           convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
 		Points:                   convertQuestionPoints(row.GetPoints()),
@@ -374,6 +387,7 @@ func convertToJsonQuestion(row quizQuestionRow) *model.JSONQuestion {
 		ID:                       row.GetID(),
 		QuizID:                   row.GetQuizID(),
 		QuestionText:             row.GetQuestionText(),
+		ImageURL:                 row.GetImageURL(),
 		QuestionOrder:            int(row.GetQuestionOrder()),
 		TimeoutSeconds:           convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
 		Points:                   convertQuestionPoints(row.GetPoints()),
@@ -392,6 +406,7 @@ func convertToOrderingQuestion(row quizQuestionRow) *model.OrderingQuestion {
 		ID:                       row.GetID(),
 		QuizID:                   row.GetQuizID(),
 		QuestionText:             row.GetQuestionText(),
+		ImageURL:                 row.GetImageURL(),
 		QuestionOrder:            int(row.GetQuestionOrder()),
 		TimeoutSeconds:           convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
 		Points:                   convertQuestionPoints(row.GetPoints()),
@@ -782,4 +797,29 @@ func quizQuestionTypeString(q model.QuizQuestion) string {
 	default:
 		return ""
 	}
+}
+
+// normalizeImageURL trims an image URL from an input, returning nil for one
+// that is absent or blank. A blank value is how a caller asks for the image to
+// be removed, so it must not be stored as an empty string.
+func normalizeImageURL(url *string) *string {
+	if url == nil {
+		return nil
+	}
+	trimmed := strings.TrimSpace(*url)
+	if trimmed == "" {
+		return nil
+	}
+	return &trimmed
+}
+
+// convertAnswerLabelStyle maps the stored label style to the enum, falling
+// back to NONE for anything unrecognised — a question whose style cannot be
+// read should show its alternatives unlabelled rather than fail to load.
+func convertAnswerLabelStyle(style string) model.QuizAnswerLabelStyle {
+	parsed := model.QuizAnswerLabelStyle(style)
+	if !parsed.IsValid() {
+		return model.QuizAnswerLabelStyleNone
+	}
+	return parsed
 }

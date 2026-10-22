@@ -38,6 +38,11 @@ func (r *freeTextQuestionResolver) Quiz(ctx context.Context, obj *model.FreeText
 	return r.ApplyTranslationToQuiz(ctx, quiz), nil
 }
 
+// ImageObject is the resolver for the imageObject field.
+func (r *freeTextQuestionResolver) ImageObject(ctx context.Context, obj *model.FreeTextQuestion) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.ImageURL)
+}
+
 // TranslationStatus is the resolver for the translationStatus field.
 func (r *freeTextQuestionResolver) TranslationStatus(ctx context.Context, obj *model.FreeTextQuestion) ([]model.TranslationFieldStatus, error) {
 	return r.quizQuestionTranslationStatus(ctx, obj.ID)
@@ -79,6 +84,11 @@ func (r *jsonQuestionResolver) Quiz(ctx context.Context, obj *model.JSONQuestion
 		return nil, err
 	}
 	return r.ApplyTranslationToQuiz(ctx, quiz), nil
+}
+
+// ImageObject is the resolver for the imageObject field.
+func (r *jsonQuestionResolver) ImageObject(ctx context.Context, obj *model.JSONQuestion) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.ImageURL)
 }
 
 // TranslationStatus is the resolver for the translationStatus field.
@@ -310,11 +320,16 @@ func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, i
 		Questiontype:  string(input.QuestionType),
 		Questiontext:  input.QuestionText,
 		Questionorder: int32(input.QuestionOrder),
+		Imageurl:      normalizeImageURL(input.Image),
 	}
 
 	// Set type-specific fields
 	if input.AllowMultipleSelection != nil {
 		params.Allowmultipleselection = input.AllowMultipleSelection
+	}
+	if input.AnswerLabelStyle != nil {
+		style := string(*input.AnswerLabelStyle)
+		params.Answerlabelstyle = &style
 	}
 	// pgtype.Numeric.Scan() requires a string representation to properly set Valid=true
 	if input.MinValue != nil {
@@ -464,12 +479,20 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 		ID: id,
 	}
 	params.Questiontext = input.QuestionText
+	if input.Image != nil {
+		params.Imageurl = normalizeImageURL(input.Image)
+		params.Clearimage = params.Imageurl == nil
+	}
 	if input.QuestionOrder != nil {
 		qo := int32(*input.QuestionOrder)
 		params.Questionorder = &qo
 	}
 	if input.AllowMultipleSelection != nil {
 		params.Allowmultipleselection = input.AllowMultipleSelection
+	}
+	if input.AnswerLabelStyle != nil {
+		style := string(*input.AnswerLabelStyle)
+		params.Answerlabelstyle = &style
 	}
 	// pgtype.Numeric.Scan() requires a string representation to properly set Valid=true
 	if input.MinValue != nil {
@@ -1975,6 +1998,11 @@ func (r *numberQuestionResolver) Quiz(ctx context.Context, obj *model.NumberQues
 	return r.ApplyTranslationToQuiz(ctx, quiz), nil
 }
 
+// ImageObject is the resolver for the imageObject field.
+func (r *numberQuestionResolver) ImageObject(ctx context.Context, obj *model.NumberQuestion) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.ImageURL)
+}
+
 // TranslationStatus is the resolver for the translationStatus field.
 func (r *numberQuestionResolver) TranslationStatus(ctx context.Context, obj *model.NumberQuestion) ([]model.TranslationFieldStatus, error) {
 	return r.quizQuestionTranslationStatus(ctx, obj.ID)
@@ -2016,6 +2044,11 @@ func (r *orderingQuestionResolver) Quiz(ctx context.Context, obj *model.Ordering
 		return nil, err
 	}
 	return r.ApplyTranslationToQuiz(ctx, quiz), nil
+}
+
+// ImageObject is the resolver for the imageObject field.
+func (r *orderingQuestionResolver) ImageObject(ctx context.Context, obj *model.OrderingQuestion) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.ImageURL)
 }
 
 // TranslationStatus is the resolver for the translationStatus field.
@@ -2107,6 +2140,11 @@ func (r *predefinedQuestionResolver) Quiz(ctx context.Context, obj *model.Predef
 		return nil, err
 	}
 	return r.ApplyTranslationToQuiz(ctx, quiz), nil
+}
+
+// ImageObject is the resolver for the imageObject field.
+func (r *predefinedQuestionResolver) ImageObject(ctx context.Context, obj *model.PredefinedQuestion) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.ImageURL)
 }
 
 // TranslationStatus is the resolver for the translationStatus field.
