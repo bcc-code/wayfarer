@@ -3,23 +3,28 @@
 **Date:** 2026-09-30
 **Question asked:** betting should attach to _all_ quiz question types, but so far only ORDERING has used it. How generic is it really — in functionality and in language?
 
+> **Frontend follow-up (2026-10-22):** a frontend-only re-review is in
+> `[[betting-frontend-genericity]]`. The frontend findings below (3–5, 8–11) are all still
+> open; that note adds the PREDEFINED result-screen gap, the ungated
+> `QuizPredefinedAnswer.isCorrect`, and the unreachable payout multipliers.
+
 **Verdict:** the **storage and configuration layers are fully generic**; the **settlement (scoring) layer and the whole user-facing flow are hard-wired to ORDERING**. A predefined/number/free-text question with `bettingEnabled = true` can be authored today, but the user can never place a bet on it, and if they somehow did, nothing would ever pay it out.
 
 ---
 
 ## Layer-by-layer
 
-| Layer                                                           | Generic?                                            | Notes                                                                                                                       |
-| --------------------------------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| DB schema (`00090_add_question_betting.sql`)                    | ✅ Yes                                              | `betting_*` on `quiz_questions`, `bet_amount` on `quiz_responses`. No question-type coupling, constraints are type-neutral. |
-| GraphQL schema (`gql/quizzes.graphqls`)                         | ✅ Yes                                              | All 5 betting fields repeated on every question type + input; `betAmount` on every response type + input.                   |
+| Layer                                                           | Generic?                                            | Notes                                                                                                                              |
+| --------------------------------------------------------------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| DB schema (`00090_add_question_betting.sql`)                    | ✅ Yes                                              | `betting_*` on `quiz_questions`, `bet_amount` on `quiz_responses`. No question-type coupling, constraints are type-neutral.        |
+| GraphQL schema (`gql/quizzes.graphqls`)                         | ✅ Yes                                              | All 5 betting fields repeated on every question type + input; `betAmount` on every response type + input.                          |
 | Bet validation (`backend/internal/graph/api/quiz_betting.go`)   | ✅ Yes                                              | `ValidateBet` is purely numeric — available points (score − open stakes), %-limits, absolute limits. Zero question-type awareness. |
-| Admin editor (`AdminQuizQuestionEditor.vue`)                    | ✅ Yes                                              | Betting block renders for _every_ `questionType`, not gated.                                                                |
-| Submit resolver (`createQuizResponse`)                          | ✅ Yes                                              | Validates the bet for all types, inside the transaction that stores the answer (after the user's bet locks).               |
-| **Update resolver (`updateQuizResponse`)**                      | ❌ **ORDERING only**                                |                                                                                                                             |
-| **Settlement / payout**                                         | ❌ **ORDERING only, and lives in a project plugin** |                                                                                                                             |
-| **User-facing flow (`QuizChallenge.vue`, question components)** | ❌ **effectively ORDERING only**                    |                                                                                                                             |
-| **Language (i18n + prop naming)**                               | ⚠️ **ORDERING-shaped**                              |                                                                                                                             |
+| Admin editor (`AdminQuizQuestionEditor.vue`)                    | ✅ Yes                                              | Betting block renders for _every_ `questionType`, not gated.                                                                       |
+| Submit resolver (`createQuizResponse`)                          | ✅ Yes                                              | Validates the bet for all types, inside the transaction that stores the answer (after the user's bet locks).                       |
+| **Update resolver (`updateQuizResponse`)**                      | ❌ **ORDERING only**                                |                                                                                                                                    |
+| **Settlement / payout**                                         | ❌ **ORDERING only, and lives in a project plugin** |                                                                                                                                    |
+| **User-facing flow (`QuizChallenge.vue`, question components)** | ❌ **effectively ORDERING only**                    |                                                                                                                                    |
+| **Language (i18n + prop naming)**                               | ⚠️ **ORDERING-shaped**                              |                                                                                                                                    |
 
 ---
 
@@ -264,6 +269,7 @@ stays with the `ladder_to_heaven` plugin unchanged. Backend only; no frontend ch
   challenge), sent from one background goroutine with at most 16 users at a time
   (`betNotifyConcurrency`) and the request context via `context.WithoutCancel`. Settlement itself runs synchronously, so the admin's finish call
   waits for it.
+
 - **Retry:** auto-submit + settlement live in `closeSessionAndSettleBets`. Settlement only runs
   after auto-submit succeeded, and calling `finishQuizSession` on a `FINISHED` session runs both
   again (no-ops once done), so a failed auto-submit or bet is retried by finishing again. Partial
