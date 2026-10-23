@@ -6,6 +6,7 @@ import (
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/services"
 )
 
 // resolveEnrollmentTarget converts an EnrollmentTargetInput to a list of user IDs
@@ -76,4 +77,55 @@ func (r *mutationResolver) resolveEnrollmentTarget(ctx context.Context, target m
 	}
 
 	return nil, fmt.Errorf("no valid target specified")
+}
+
+// bulkEnrollmentRoles is the role lookups authorizeBulkEnrollment needs.
+type bulkEnrollmentRoles interface {
+	CanManageProject(ctx context.Context, userID, projectID string) bool
+	HasRole(ctx context.Context, userID string, role services.RoleType) bool
+	LoadUserRoles(ctx context.Context, userID string) ([]*sqlc.UserRole, error)
+}
+
+// churchAdminScopeQuerier is the query authorizeBulkEnrollment needs.
+type churchAdminScopeQuerier interface {
+	GetUsersOutsideChurchAdminScope(ctx context.Context, arg sqlc.GetUsersOutsideChurchAdminScopeParams) ([]string, error)
+}
+
+// authorizeBulkEnrollment checks that callerID may enroll userIDs in a
+// challenge of projectID. Admins, project admins of the project and m2m may
+// enroll anyone. A church admin may enroll only members of the project who
+// are in a church they administer, or on a team in the project that has a
+// member from one of those churches (the kickoff enrolls the leads of such
+// teams). The request is rejected as a whole if any user is outside that.
+func authorizeBulkEnrollment(ctx context.Context, roles bulkEnrollmentRoles, q churchAdminScopeQuerier, callerID, projectID string, userIDs []string) error {
+	if roles.CanManageProject(ctx, callerID, projectID) || roles.HasRole(ctx, callerID, services.RoleM2M) {
+		return nil
+	}
+
+	userRoles, err := roles.LoadUserRoles(ctx, callerID)
+	if err != nil {
+		return fmt.Errorf("failed to load roles: %w", err)
+	}
+	var churchIDs []string
+	for _, role := range userRoles {
+		if role.Role == string(services.RoleChurchAdmin) && role.ChurchID != nil {
+			churchIDs = append(churchIDs, *role.ChurchID)
+		}
+	}
+	if len(churchIDs) == 0 {
+		return fmt.Errorf("not authorized to enroll users in this challenge")
+	}
+
+	outside, err := q.GetUsersOutsideChurchAdminScope(ctx, sqlc.GetUsersOutsideChurchAdminScopeParams{
+		Userids:   userIDs,
+		Projectid: projectID,
+		Churchids: churchIDs,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to check enrollment targets: %w", err)
+	}
+	if len(outside) > 0 {
+		return fmt.Errorf("not allowed to enroll %d user(s) outside your church in this challenge's project", len(outside))
+	}
+	return nil
 }
