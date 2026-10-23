@@ -558,6 +558,37 @@ INNER JOIN external_content ec ON cai.external_content_id = ec.id
 WHERE cai.achievement_id = ANY(@achievementids::char(28)[])
 ORDER BY cai.achievement_id, cai.sort_order;
 
+-- name: CheckContentItemInAchievement :one
+-- Check if a content item exists in a specific achievement
+SELECT EXISTS(
+    SELECT 1 FROM content_achievement_items
+    WHERE achievement_id = @achievement_id::char(28)
+      AND external_content_id = @external_content_id::char(28)
+) AS exists;
+
+-- name: GetAchievementByID :one
+-- Get a single achievement by ID with all details
+SELECT
+    a.id,
+    a.achievement_type,
+    a.project_id,
+    a.event_id,
+    a.challenge_id,
+    a.name,
+    a.description_pending,
+    a.description_completed,
+    a.notification_text,
+    a.image_pending,
+    a.image_completed,
+    a.points,
+    a.hidden,
+    a.awardable_from,
+    a.sort_order,
+    a.created_at,
+    a.updated_at
+FROM achievements a
+WHERE a.id = @id::char(28);
+
 -- name: GetContentAchievementForAward :one
 -- Get content achievement data for awarding (same fields as GetPublishedContentAchievementsByExternalContent)
 SELECT

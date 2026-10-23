@@ -52,6 +52,10 @@ OFFSET CASE WHEN @queryoffset::int IS NULL THEN 0 ELSE @queryoffset::int END;
 SELECT * FROM external_content_translations
 WHERE external_content_id = @externalcontentid;
 
+-- name: GetExternalContentTranslation :one
+SELECT * FROM external_content_translations
+WHERE external_content_id = @externalcontentid AND language_code = @languagecode::text;
+
 -- name: DeleteExternalContentByPlanID :exec
 DELETE FROM external_content WHERE plan_id = @planid::text;
 

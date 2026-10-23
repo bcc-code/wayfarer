@@ -413,6 +413,29 @@ func (q *Queries) GetExternalContentByTaskID(ctx context.Context, taskid string)
 	return &i, err
 }
 
+const GetExternalContentTranslation = `-- name: GetExternalContentTranslation :one
+SELECT external_content_id, language_code, title, created_at, updated_at FROM external_content_translations
+WHERE external_content_id = $1 AND language_code = $2::text
+`
+
+type GetExternalContentTranslationParams struct {
+	Externalcontentid string `json:"externalcontentid"`
+	Languagecode      string `json:"languagecode"`
+}
+
+func (q *Queries) GetExternalContentTranslation(ctx context.Context, arg GetExternalContentTranslationParams) (*ExternalContentTranslation, error) {
+	row := q.db.QueryRow(ctx, GetExternalContentTranslation, arg.Externalcontentid, arg.Languagecode)
+	var i ExternalContentTranslation
+	err := row.Scan(
+		&i.ExternalContentID,
+		&i.LanguageCode,
+		&i.Title,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
 const GetExternalContentTranslations = `-- name: GetExternalContentTranslations :many
 SELECT external_content_id, language_code, title, created_at, updated_at FROM external_content_translations
 WHERE external_content_id = $1
