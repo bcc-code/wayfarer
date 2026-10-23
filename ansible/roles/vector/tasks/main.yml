@@ -19,6 +19,14 @@
     (ansible_facts.packages['vector'] | default([{'version': ''}]))[0].version
     is not search('^' ~ vector_version)
 
+- name: Create Vector systemd drop-in directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/vector.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
 - name: Install Vector resource limits drop-in
   ansible.builtin.copy:
     dest: /etc/systemd/system/vector.service.d/10-wayfarer.conf
