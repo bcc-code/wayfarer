@@ -39,6 +39,13 @@ func transitionQuizSession(ctx context.Context, q quizSessionStateUpdater, id, f
 // the first time (both are no-ops once done) and returns the session. It does
 // not notify clients or dispatch quiz_session_finished; the call that made the
 // transition did that.
+//
+// A call that lost the finish race to a concurrent one runs this while the
+// winner may still be settling. Each bet is still paid once (ClaimUnsettledBets
+// locks and re-checks it), but the two runs can split a session's batches
+// between them, so a user whose bets land in both gets two result
+// notifications, each with part of their net result. This needs more than
+// betSettleBatchSize bets in the session and is accepted.
 func (r *Resolver) refinishQuizSession(ctx context.Context, span trace.Span, session *sqlc.QuizSession, quiz *model.Quiz) *model.QuizSession {
 	r.closeSessionAndSettleBets(ctx, span, session.ID, quiz)
 	r.invalidateSessionSubmissionCaches(ctx, session.ID, quiz.ProjectID)
