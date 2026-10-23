@@ -39,6 +39,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/plugins"
 	"github.com/bcc-media/wayfarer/internal/plugins/excalibur"
 	"github.com/bcc-media/wayfarer/internal/plugins/ladder_to_heaven"
+	ssfplugin "github.com/bcc-media/wayfarer/internal/plugins/ssf"
 	"github.com/bcc-media/wayfarer/internal/reuseport"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/services/bulk"
@@ -664,9 +665,14 @@ func main() {
 
 	plugins.RegisterPlugin(router, pluginDeps, apiKeyAuth,
 		ladder_to_heaven.NewPlugin(ladder_to_heaven.Config{
-			AchievementID:         cfg.Plugin.LadderToHeavenAchievementID,
 			SecretKey:             cfg.Plugin.LadderToHeavenSecretKey,
 			TeamRenameChallengeID: cfg.Plugin.LadderToHeavenTeamRenameChallengeID,
+		}),
+	)
+	plugins.RegisterPlugin(router, pluginDeps, apiKeyAuth,
+		ssfplugin.NewPlugin(ssfplugin.Config{
+			AchievementID: cfg.Plugin.SSFAchievementID,
+			SecretKey:     cfg.Plugin.SSFSecretKey,
 		}),
 	)
 	plugins.RegisterPlugin(router, pluginDeps, apiKeyAuth,

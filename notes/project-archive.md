@@ -132,7 +132,7 @@ A `user_projects` row is only written as a side effect of _doing_ something:
 the explicit `joinProject` mutation, joining a team
 (`teams.resolvers.go:55,403`), enrolling in a challenge
 (`challenges.resolvers.go:558`), earning a content achievement
-(`content_achievements.go:653`), or the ladder-to-heaven content-event webhook. Awarding a
+(`content_achievements.go:653`), or the SSF plugin's content-event webhook. Awarding a
 simple achievement does not. So holding achievements in a project is **not**
 evidence of membership in it.
 

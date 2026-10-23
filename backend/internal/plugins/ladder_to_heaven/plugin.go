@@ -7,9 +7,6 @@ import (
 
 // Config holds the configuration for the Ladder to Heaven plugin.
 type Config struct {
-	// AchievementID is the ID of the achievement to check for deadline bonus points.
-	// If empty, the content-event webhook is disabled.
-	AchievementID string
 	// SecretKey is used to verify webhook signatures.
 	SecretKey string
 	// TeamRenameChallengeID is the challenge to mark as completed when a team renames.
@@ -41,16 +38,6 @@ func (p *LadderToHeavenPlugin) Enabled() bool {
 
 // Register sets up the plugin's routes.
 func (p *LadderToHeavenPlugin) Register(router gin.IRouter, deps plugins.Dependencies, apiKeyAuth gin.HandlerFunc) error {
-	contentHandler := &contentEventHandler{
-		db:            deps.DB,
-		cache:         deps.Cache,
-		achievementID: p.config.AchievementID,
-		secretKey:     p.config.SecretKey,
-		firebase:      deps.Firebase,
-	}
-
-	router.POST("/plugins/ladder-to-heaven/content-event", contentHandler.handle)
-
 	teamRenameHandler := &teamNameChangedHandler{
 		db:          deps.DB,
 		cache:       deps.Cache,
