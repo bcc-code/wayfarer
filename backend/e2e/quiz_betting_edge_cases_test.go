@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net/http"
+	"net/http/httptest"
 	"sync"
 	"testing"
 	"time"
@@ -1110,6 +1112,41 @@ func TestQuizBettingEdgeCases(t *testing.T) {
 		}
 		assertSettled(t, r, 50)
 		assert.Equal(t, 150, score(t, p.id))
+	})
+
+	t.Run("a scheduled finish settles bets like an admin finish", func(t *testing.T) {
+		p := newPlayer(t)
+		setScore(t, p.id, 300)
+		quizID := newQuiz(t, "Scheduled finish", nil)
+		q := addPredefined(t, quizID, 0, nil)
+		orderingID, items := addOrdering(t, quizID, 1)
+		sessionID := openSession(t, quizID, p)
+		sub := start(t, p, sessionID)
+		rPredefined := submit(t, p, sub, pick(q, true, 100))
+		rOrdering := submit(t, p, sub, map[string]any{"questionId": orderingID, "submittedOrder": items, "betAmount": 50})
+		lock(t, sessionID)
+
+		_, err := dbMgr.DB.Pool.Exec(ctx,
+			`UPDATE quiz_sessions SET finish_at = now() - interval '1 minute' WHERE id = $1`, sessionID)
+		require.NoError(t, err)
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/scheduler/quiz-session-transitions", nil))
+		require.Equal(t, http.StatusOK, w.Code, w.Body.String())
+
+		var state string
+		require.NoError(t, dbMgr.DB.Pool.QueryRow(ctx,
+			`SELECT state FROM quiz_sessions WHERE id = $1`, sessionID).Scan(&state))
+		assert.Equal(t, "FINISHED", state)
+		assertSettled(t, rPredefined, 100) // correct, default 2x
+		assertSettled(t, rOrdering, 50)    // correct order, default 2x
+		assert.Equal(t, 450, score(t, p.id))
+
+		// A later admin finish of the same session pays nothing twice
+		finish(t, sessionID)
+		assertSettled(t, rPredefined, 100)
+		assertSettled(t, rOrdering, 50)
+		assert.Equal(t, 450, score(t, p.id))
 	})
 
 	t.Run("only one concurrent state transition wins", func(t *testing.T) {

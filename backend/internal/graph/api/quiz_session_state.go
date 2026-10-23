@@ -3,10 +3,13 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/otel"
 	"github.com/jackc/pgx/v5"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -50,4 +53,35 @@ func (r *Resolver) refinishQuizSession(ctx context.Context, span trace.Span, ses
 	r.closeSessionAndSettleBets(ctx, span, session.ID, quiz)
 	r.invalidateSessionSubmissionCaches(ctx, session.ID, quiz.ProjectID)
 	return convertQuizSessionToModel(session)
+}
+
+// SettleFinishedSession runs the settle step of finishing a session for a
+// session another caller has already moved to FINISHED: it waits for in-flight
+// answers, auto-submits open submissions and pays out bets, like
+// finishQuizSession does. The quiz scheduler calls it after its own
+// transition. Settlement failures are logged and traced, not returned (see
+// closeSessionAndSettleBets); an error means the session or quiz could not be
+// loaded.
+func (r *Resolver) SettleFinishedSession(ctx context.Context, sessionID string) error {
+	ctx, span := otel.StartSpan(ctx, "quiz_session.settle_finished",
+		attribute.String("session.id", sessionID),
+	)
+	defer span.End()
+
+	session, err := r.DB.Queries.GetQuizSession(ctx, sessionID)
+	if err != nil {
+		otel.RecordError(span, err)
+		return fmt.Errorf("failed to load session: %w", err)
+	}
+	quiz, err := r.Loaders.QuizByIDLoader.Load(ctx, session.QuizID)()
+	if err != nil {
+		otel.RecordError(span, err)
+		return fmt.Errorf("failed to load quiz: %w", err)
+	}
+	if quiz == nil {
+		return fmt.Errorf("quiz %s not found", session.QuizID)
+	}
+
+	r.closeSessionAndSettleBets(ctx, span, sessionID, quiz)
+	return nil
 }
