@@ -40,8 +40,14 @@ ansible-playbook site.yml -e interact_db_password=... -e backup_db_password=... 
 
 # or with vault: put vault_interact_db_password in an encrypted vars file
 ansible-vault create group_vars/interact/vault.yml   # vault_interact_db_password, vault_backup_db_password, vault_metabase_db_password
-ansible-playbook site.yml --ask-vault-pass
+ansible-playbook site.yml   # vault password is fetched from 1Password (vault-pass.sh)
 ```
+
+The vault password lives in 1Password ("Interact Ansible Vault"). `ansible.cfg`
+points `vault_password_file` at `vault-pass.sh`, which runs `op item get`, so
+you only need the [1Password CLI](https://developer.1password.com/docs/cli/)
+installed and signed in (desktop-app integration works). Set
+`OP_ANSIBLE_VAULT_ITEM` to use a different item.
 
 For the **first** tailnet join, also pass a Tailscale auth key (generate a
 pre-authorized one at <https://login.tailscale.com/admin/settings/keys>):
