@@ -7,7 +7,6 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
-	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/graph-gophers/dataloader/v7"
 )
 
@@ -21,15 +20,13 @@ type cachedLeaderboardEntry struct {
 	Image       *string
 }
 
-// cachedLeaderboardTags stores the tag assignments for a specific user viewing the leaderboard
+// cachedLeaderboardTags stores the viewer-independent tag assignments for a leaderboard
 // Maps entry ID to their tags
 type cachedLeaderboardTags map[string][]model.LeaderboardEntryTag
 
 // teamMemberLeaderboardBatchFunc batches loading team member leaderboards by team IDs
 func teamMemberLeaderboardBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context.Context, []string) []*dataloader.Result[[]model.LeaderboardEntry] {
 	return func(ctx context.Context, teamIDs []string) []*dataloader.Result[[]model.LeaderboardEntry] {
-		currentUserID, _ := middleware.GetUserID(ctx)
-
 		// Store cached entries (without tags) per team
 		cachedEntries := make(map[string][]cachedLeaderboardEntry)
 		missingTeamIDs := []string{}
@@ -78,7 +75,7 @@ func teamMemberLeaderboardBatchFunc(db *database.DB, c *cache.CacheWithRegistry)
 			}
 		}
 
-		// Build results with user-specific tags
+		// Build results with viewer-independent tags (ME is added by the resolver)
 		results := make([]*dataloader.Result[[]model.LeaderboardEntry], len(teamIDs))
 		for i, teamID := range teamIDs {
 			entries := cachedEntries[teamID]
@@ -87,8 +84,7 @@ func teamMemberLeaderboardBatchFunc(db *database.DB, c *cache.CacheWithRegistry)
 				continue
 			}
 
-			// Get or compute tags for this user (includes TEAM_LEAD tag)
-			tags := getOrComputeTags(ctx, db, c, teamID, currentUserID, entries)
+			tags := getOrComputeTags(ctx, db, c, teamID, entries)
 
 			// Convert cached entries to model with tags
 			modelEntries := make([]model.LeaderboardEntry, len(entries))
@@ -117,22 +113,17 @@ func teamMemberLeaderboardBatchFunc(db *database.DB, c *cache.CacheWithRegistry)
 	}
 }
 
-// getOrComputeTags computes tags for a specific user viewing the leaderboard.
-// TEAM_LEAD tags are cached per team (viewer-independent).
-// ME tags are computed on-the-fly (cheap ID comparison, no caching needed).
-func getOrComputeTags(ctx context.Context, db *database.DB, c *cache.CacheWithRegistry, teamID, currentUserID string, entries []cachedLeaderboardEntry) cachedLeaderboardTags {
+// getOrComputeTags computes the viewer-independent tags for a team leaderboard.
+// TEAM_LEAD tags are cached per team. The ME tag is not set here: a batch runs
+// with the context of whichever request started it, so the viewer is unknown.
+// The MemberLeaderboard resolver adds ME for its own caller.
+func getOrComputeTags(ctx context.Context, db *database.DB, c *cache.CacheWithRegistry, teamID string, entries []cachedLeaderboardEntry) cachedLeaderboardTags {
 	// Get or compute TEAM_LEAD tags (cached per team, not per user)
 	teamLeadTags := getOrComputeTeamLeadTags(ctx, db, c, teamID, entries)
 
-	// Build final tags map with ME tag computed on-the-fly
 	tags := make(cachedLeaderboardTags)
 	for _, entry := range entries {
 		entryTags := []model.LeaderboardEntryTag{}
-
-		// ME tag - compute on-the-fly (cheap ID comparison)
-		if entry.ID == currentUserID {
-			entryTags = append(entryTags, model.LeaderboardEntryTagMe)
-		}
 
 		// TEAM_LEAD tag - from cached per-team data
 		if teamLeadTags[entry.ID] {

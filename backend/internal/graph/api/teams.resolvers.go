@@ -1544,7 +1544,8 @@ func (r *teamResolver) MemberLeaderboard(ctx context.Context, obj *model.Team) (
 		return nil, fmt.Errorf("failed to load team member leaderboard: %w", err)
 	}
 
-	return entries, nil
+	viewerID, _ := middleware.GetUserID(ctx)
+	return withMeTag(entries, viewerID), nil
 }
 
 // ParentProject is the resolver for the parentProject field.
