@@ -17,7 +17,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/plugins"
-	ladder_to_heaven "github.com/bcc-media/wayfarer/internal/plugins/ladder_to_heaven"
+	"github.com/bcc-media/wayfarer/internal/plugins/teams"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/services/bulk"
 	"github.com/gin-gonic/gin"
@@ -127,7 +127,7 @@ func NewTestRouter(cfg TestServerConfig) *gin.Engine {
 		SettingsService: cfg.SettingsService,
 		JWTConfig:       jwtConfig,
 	}
-	plugins.RegisterPlugin(router, pluginDeps, nil, ladder_to_heaven.NewPlugin(ladder_to_heaven.Config{}))
+	plugins.RegisterPlugin(router, pluginDeps, nil, teams.NewPlugin(teams.Config{}))
 
 	return router
 }
