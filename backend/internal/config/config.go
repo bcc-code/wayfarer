@@ -209,9 +209,10 @@ type PhraseConfig struct {
 
 // PluginConfig holds configuration for plugins
 type PluginConfig struct {
-	LadderToHeavenAchievementID         string // Achievement ID for Ladder to Heaven plugin (empty = disabled)
 	LadderToHeavenSecretKey             string // Secret key for webhook signature verification
 	LadderToHeavenTeamRenameChallengeID string // Challenge ID to complete when team renames (empty = disabled)
+	SSFAchievementID                    string // Achievement whose content items earn SSF deadline bonus points (empty = disabled)
+	SSFSecretKey                        string // Secret key for SSF webhook signature verification
 	ExcaliburSecretKey                  string // Secret key for Excalibur JWT token signing (empty = endpoint disabled)
 	ExcaliburBaseURL                    string // Base URL for Excalibur user login (e.g., https://dev.excalibur.bcc.media)
 }
@@ -366,10 +367,11 @@ func Load() (*Config, error) {
 			ExportKey:   getEnv("TRANSLATIONS_EXPORT_KEY", ""),
 		},
 		Plugin: PluginConfig{
-			LadderToHeavenAchievementID:         getEnv("PLUGIN_LADDER_TO_HEAVEN_ACHIEVEMENT_ID", ""),
 			LadderToHeavenSecretKey:             getEnv("PLUGIN_LADDER_TO_HEAVEN_SECRET_KEY", ""),
 			LadderToHeavenTeamRenameChallengeID: getEnv("PLUGIN_LADDER_TO_HEAVEN_TEAM_RENAME_CHALLENGE_ID", ""),
 			// The old Ladder to Heaven names still work, so existing deployments keep the feature
+			SSFAchievementID:   getEnv("PLUGIN_SSF_ACHIEVEMENT_ID", getEnv("PLUGIN_LADDER_TO_HEAVEN_ACHIEVEMENT_ID", "")),
+			SSFSecretKey:       getEnv("PLUGIN_SSF_SECRET_KEY", getEnv("PLUGIN_LADDER_TO_HEAVEN_SECRET_KEY", "")),
 			ExcaliburSecretKey: getEnv("PLUGIN_EXCALIBUR_SECRET_KEY", getEnv("PLUGIN_LADDER_TO_HEAVEN_CRYPTEX_SECRET_KEY", "")),
 			ExcaliburBaseURL:   getEnv("PLUGIN_EXCALIBUR_BASE_URL", getEnv("PLUGIN_LADDER_TO_HEAVEN_EXCALIBUR_BASE_URL", "")),
 		},

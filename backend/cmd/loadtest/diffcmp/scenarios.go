@@ -311,9 +311,9 @@ func buildScenarios() []Scenario {
 
 	scenarios = append(scenarios, Scenario{
 		Name:        "W6-plugin-content-event",
-		Description: "Ladder to Heaven content-event webhook, then points re-read",
+		Description: "SSF content-event webhook, then points re-read",
 		Steps: []Step{
-			{Name: "webhook", Method: "POST", Path: "/plugins/ladder-to-heaven/content-event", Signed: true,
+			{Name: "webhook", Method: "POST", Path: "/plugins/ssf/content-event", Signed: true,
 				Body: map[string]any{
 					"event_type": "content.consumed", "timestamp": "2026-08-25T10:05:00Z", "project_id": projectID,
 					"user": map[string]any{"id": seededUserID(10004)},
