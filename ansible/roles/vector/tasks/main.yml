@@ -54,7 +54,10 @@
     owner: root
     group: root
     mode: "0644"
-    validate: vector validate --no-environment %s
+    # Full validation (incl. host checks such as journald support), the same
+    # check the unit runs in ExecStartPre, so a bad config never replaces a
+    # working one.
+    validate: vector validate %s
   notify: Restart vector
   ignore_errors: "{{ ansible_check_mode }}"
 
