@@ -59,7 +59,7 @@ describe('QuizBettingModule', () => {
     it('shows no slider when the limits leave nothing to stake', async () => {
       const wrapper = await mountBet({ availablePoints: 0 })
       expect(slider(wrapper).exists()).toBe(false)
-      expect(wrapper.text()).toContain('You have no points to stake.')
+      expect(wrapper.text()).toContain('You have no points to bet.')
     })
 
     it('shows no slider when min and max limits meet', async () => {
