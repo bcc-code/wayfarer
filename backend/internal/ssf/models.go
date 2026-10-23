@@ -183,7 +183,6 @@ type PeriodicalIssue struct {
 	PeriodicalID         int    `json:"periodical_id"`
 	Year                 int    `json:"year"`
 	Month                int    `json:"month"`
-	NoOfMonths           string `json:"no_of_months"`
 	ContentTimestamp     string `json:"content_timestamp"`
 	ISSN                 string `json:"issn"`
 	PrintVersionFileName string `json:"print_version_file_name"`

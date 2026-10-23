@@ -85,3 +85,92 @@ describe('QuizAlternative', () => {
     expect(wrapper.find('.bg-accent-negative').exists()).toBe(false)
   })
 })
+
+describe('QuizAlternative alignment', () => {
+  it('centres a bare alternative', async () => {
+    const wrapper = await mountSuspended(QuizAlternative, {
+      props: { text: 'Paulus' },
+    })
+
+    const classes = wrapper.find('button').classes()
+    expect(classes).toContain('text-center')
+    expect(classes).not.toContain('text-left')
+  })
+
+  // Two centred wrapped lines give the eye no edge to come back to.
+  it('aligns an alternative with a description to the left', async () => {
+    const wrapper = await mountSuspended(QuizAlternative, {
+      props: {
+        text: 'A. Kjøttgryten fra Egypt',
+        description:
+          'En gryte som symboliserer maten israelittene lengtet tilbake til.',
+      },
+    })
+
+    const classes = wrapper.find('button').classes()
+    expect(classes).toContain('text-left')
+    expect(classes).not.toContain('text-center')
+  })
+
+  it('still shows both the text and the description', async () => {
+    const wrapper = await mountSuspended(QuizAlternative, {
+      props: { text: 'A. Kjøttgryten', description: 'En gryte fra Egypt.' },
+    })
+
+    expect(wrapper.text()).toContain('A. Kjøttgryten')
+    expect(wrapper.text()).toContain('En gryte fra Egypt.')
+  })
+})
+
+/**
+ * The label is a column of its own, not a prefix inside the title. Glued to
+ * the front of the text it moves with each title's width and the description
+ * starts at a different x than the title it explains.
+ */
+describe('QuizAlternative label', () => {
+  const labelled = () =>
+    mountSuspended(QuizAlternative, {
+      props: {
+        text: 'Kjøttgryten fra Egypt',
+        label: 'A.',
+        description: 'En gryte som symboliserer maten israelittene lengtet.',
+      },
+    })
+
+  it('renders the label in its own element, outside the text', async () => {
+    const wrapper = await labelled()
+    const spans = wrapper.find('button').element.children
+
+    const labelEl = spans[0] as HTMLElement
+    expect(labelEl.textContent?.trim()).toBe('A.')
+    // The title is not inside the label, and the label is not inside the title.
+    expect(labelEl.textContent).not.toContain('Kjøttgryten')
+  })
+
+  it('keeps the title and its description in one block, sharing a left edge', async () => {
+    const wrapper = await labelled()
+    const spans = wrapper.find('button').element.children
+
+    const textBlock = spans[1] as HTMLElement
+    expect(textBlock.textContent).toContain('Kjøttgryten fra Egypt')
+    expect(textBlock.textContent).toContain('En gryte som symboliserer')
+    // Stacked in one column, so both start at the same x.
+    expect(textBlock.className).toContain('flex-col')
+  })
+
+  it('aligns a labelled alternative to the left even without a description', async () => {
+    const wrapper = await mountSuspended(QuizAlternative, {
+      props: { text: 'Kjøttgryten fra Egypt', label: 'A.' },
+    })
+
+    expect(wrapper.find('button').classes()).toContain('text-left')
+  })
+
+  it('renders no label element when the question is unlabelled', async () => {
+    const wrapper = await mountSuspended(QuizAlternative, {
+      props: { text: 'Kjøttgryten fra Egypt' },
+    })
+
+    expect(wrapper.find('button').element.children).toHaveLength(1)
+  })
+})

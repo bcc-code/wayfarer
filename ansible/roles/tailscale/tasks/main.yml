@@ -62,3 +62,11 @@
   when: not (tailscale_joined | default(true) | bool)
   no_log: true
   ignore_errors: "{{ ansible_check_mode }}"
+
+# Subnet routes advertised on the tailnet (e.g. the 10.12.x network hosting
+# VictoriaLogs). `tailscale set` changes the pref without re-authenticating.
+- name: Accept advertised subnet routes
+  ansible.builtin.command: tailscale set --accept-routes={{ tailscale_accept_routes | bool | lower }}
+  changed_when: false
+  when: tailscale_accept_routes is defined
+  ignore_errors: "{{ ansible_check_mode }}"

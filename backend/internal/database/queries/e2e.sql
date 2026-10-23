@@ -39,3 +39,8 @@ FROM (
 -- skips them (SKIP LOCKED) like a read that beats the apply worker
 SELECT count(*) AS locked
 FROM (SELECT id FROM leaderboard_apply_queue FOR UPDATE) q;
+
+-- name: RegenerateLeaderboards :exec
+-- Rebuilds all leaderboard tables from score_journal (the full rebuild the
+-- incremental apply must agree with)
+SELECT count(*) FROM regenerate_leaderboards();

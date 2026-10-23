@@ -98,9 +98,13 @@ export function bettingClearFlags(
 export function quizQuestionInput(question: QuizQuestionFormData) {
   return {
     questionText: question.questionText,
+    // Blank, not omitted, when there is no image: the update input reads an
+    // omitted field as "leave alone", so a removed image would survive.
+    image: question.image ?? '',
     timeoutSeconds: question.timeoutSeconds,
     points: question.points,
     allowMultipleSelection: question.allowMultipleSelection,
+    answerLabelStyle: question.answerLabelStyle,
     predefinedAnswers: question.predefinedAnswers?.map((a) => ({
       answerText: a.answerText,
       description: a.description,

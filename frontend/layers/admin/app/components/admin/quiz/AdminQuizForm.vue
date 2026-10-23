@@ -35,10 +35,14 @@ export interface QuizQuestionFormData {
   localKey?: string
   questionType: QuizQuestionType
   questionText: string
+  /** Public URL of an image shown above the question; blank means none. */
+  image?: string
   questionOrder: number
   timeoutSeconds?: number
   points?: number
   allowMultipleSelection?: boolean
+  /** How the alternatives are labelled; the label itself is derived on render. */
+  answerLabelStyle?: QuizAnswerLabelStyle
   predefinedAnswers?: QuizAnswerFormData[]
   minValue?: number
   maxValue?: number

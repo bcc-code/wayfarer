@@ -3,6 +3,8 @@ import { cva } from 'cva'
 
 const props = defineProps<{
   text: string
+  /** Derived from the answer's position; null when the question is unlabelled. */
+  label?: string | null
   description?: string | null
   highlighted?: boolean
   confirmed?: boolean
@@ -31,9 +33,30 @@ watch(
 )
 
 const classes = cva(
-  'border-2 relative text-label rounded-list p-medium flex gap-list-section-inset text-center justify-center items-center min-h-22 transition-colors',
+  'border-2 relative text-label rounded-list p-medium flex gap-list-section-inset min-h-22 transition-colors',
   {
     variants: {
+      /**
+       * A title with an explanation under it is a block of copy, and two
+       * centred wrapped lines give the eye no edge to come back to. A label
+       * needs the same edge, so the letters line up as a column rather than
+       * drifting with each title's width. A bare alternative is a few words,
+       * so it stays centred.
+       */
+      alignStart: {
+        true: 'text-left justify-start',
+        false: 'text-center justify-center',
+      },
+      /**
+       * A label sits with the title it belongs to. Against a single line
+       * that means the middle, but against a title with an explanation under
+       * it the whole row rises to the top so the label meets the title
+       * rather than the paragraph's centre.
+       */
+      withDescription: {
+        true: 'items-start',
+        false: 'items-center',
+      },
       highlighted: {
         true: '',
         false: '',
@@ -100,14 +123,31 @@ const classes = cva(
 <template>
   <button
     ref="buttonRef"
-    :class="classes({ highlighted, confirmed, wrong, correct, disabled })"
+    :class="
+      classes({
+        alignStart: !!description || !!label,
+        withDescription: !!description,
+        highlighted,
+        confirmed,
+        wrong,
+        correct,
+        disabled,
+      })
+    "
     :disabled="disabled"
   >
-    <span v-if="description" class="flex flex-col gap-1">
+    <!-- Its own column, not a prefix on the text: glued to the front of the
+         title the letters drift with each title's width instead of lining up
+         as something the eye can run down. `min-w` keeps "9." and "10."
+         in the same column. -->
+    <span v-if="label" class="min-w-[2ch] shrink-0 tabular-nums opacity-70">
+      {{ label }}
+    </span>
+    <span v-if="description" class="flex w-full flex-col gap-1">
       <span>{{ text }}</span>
       <span class="text-caption opacity-70">{{ description }}</span>
     </span>
-    <template v-else>{{ text }}</template>
+    <span v-else>{{ text }}</span>
 
     <span
       v-if="confirmed && wrong && selected"

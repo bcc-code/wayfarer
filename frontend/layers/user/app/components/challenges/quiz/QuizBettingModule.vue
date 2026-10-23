@@ -50,6 +50,13 @@ const effectiveMax = computed(() => {
   return Math.min(percentageMax, absoluteMax, props.availablePoints)
 })
 
+/**
+ * Nothing to stake: the limits leave a single reachable amount, which happens
+ * most often to someone sitting on no points at all. There is no choice to
+ * offer, so the slider gives way to a line saying why.
+ */
+const hasStake = computed(() => effectiveMax.value > effectiveMin.value)
+
 // Max bet message showing the percentage limit
 const maxBetMessage = computed(() => {
   if (props.maxPercentage) {
@@ -179,6 +186,12 @@ const correctCountLabel = computed(() => {
     >
       {{ t('quiz.betting.registeredBet') }}
       <Icon name="lucide:check" />
+    </div>
+    <div
+      v-else-if="!hasStake"
+      class="bg-background-indent text-center p-small rounded-modal text-text-muted text-caption"
+    >
+      {{ t('quiz.betting.nothingToStake') }}
     </div>
     <div v-else class="space-y-2">
       <DesignSlider
