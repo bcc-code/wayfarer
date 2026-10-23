@@ -309,6 +309,19 @@ func buildScenarios() []Scenario {
 		},
 	})
 
+	scenarios = append(scenarios, Scenario{
+		Name:        "W6-plugin-content-event",
+		Description: "Ladder to Heaven content-event webhook, then points re-read",
+		Steps: []Step{
+			{Name: "webhook", Method: "POST", Path: "/plugins/ladder-to-heaven/content-event", Signed: true,
+				Body: map[string]any{
+					"event_type": "content.consumed", "timestamp": "2026-08-25T10:05:00Z", "project_id": projectID,
+					"user": map[string]any{"id": seededUserID(10004)},
+					"data": map[string]any{"task_id": "task-diff-1", "content_progress": 1.0, "consumed_at": "2026-08-25T10:04:00Z"}}},
+			{Name: "reread-profile", User: "u10004", Query: "ProfilePage", Vars: map[string]any{"ageFilter": nil}},
+		},
+	})
+
 	// ---------------- Battery P: pinned probes ----------------
 	// Run each probe against freshly restarted services (run.sh handles
 	// restarts) so the branch cache is provably empty at step 1.

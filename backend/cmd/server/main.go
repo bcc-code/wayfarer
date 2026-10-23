@@ -664,6 +664,7 @@ func main() {
 
 	plugins.RegisterPlugin(router, pluginDeps, apiKeyAuth,
 		ladder_to_heaven.NewPlugin(ladder_to_heaven.Config{
+			AchievementID:         cfg.Plugin.LadderToHeavenAchievementID,
 			SecretKey:             cfg.Plugin.LadderToHeavenSecretKey,
 			TeamRenameChallengeID: cfg.Plugin.LadderToHeavenTeamRenameChallengeID,
 		}),
