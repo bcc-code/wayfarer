@@ -45,7 +45,7 @@
       "bettingClosed": "The betting is over",
       "yourBetIs": "You bet {bet} points",
       "results": "Result",
-      "yourPoints": "Dine poeng",
+      "yourPoints": "Your points",
       "winnings": "Winnings",
       "pointsLost": "Points lost",
       "pointsEarned": "Points earned",
@@ -54,7 +54,7 @@
       "correctCountAll": "You had all the right answers.",
       "correctCountNone": "You didn't have any correct ones.",
       "bettingResult": "Betting results",
-      "nothingToStake": "You have no points to stake."
+      "nothingToStake": "You have no points to bet."
     },
     "result": {
       "receivedNoPoints": "You did not receive any points.",
@@ -358,7 +358,7 @@
         "couldNotReopenBetting": "Could not reopen betting",
         "couldNotFinishBetting": "Could not complete betting",
         "couldNotSendUnitLeaderAccess": "Could not send code to unit leaders",
-        "couldNotGrantBettingAccess": "Could not give users access to betting"
+        "couldNotGrantBettingAccess": "Could not grant users access to betting"
       }
     },
     "statistics": {
@@ -378,6 +378,6 @@
     }
   },
   "offline": {
-    "notice": "You're offline. Information may be out of date."
+    "notice": "You are offline. The information may be outdated."
   }
 }
