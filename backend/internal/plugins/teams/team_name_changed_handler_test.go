@@ -1,4 +1,4 @@
-package ladder_to_heaven
+package teams
 
 import (
 	"bytes"
@@ -36,7 +36,7 @@ func TestTeamNameChangedHandler_FeatureDisabled(t *testing.T) {
 	}
 	body, _ := json.Marshal(payload)
 
-	req := httptest.NewRequest(http.MethodPost, "/plugins/ladder-to-heaven/team-name-changed", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/plugins/teams/team-name-changed", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -176,7 +176,7 @@ func TestTeamNameChangedRequest_ValidationErrors(t *testing.T) {
 			body, err := json.Marshal(tt.payload)
 			require.NoError(t, err)
 
-			req := httptest.NewRequest(http.MethodPost, "/plugins/ladder-to-heaven/team-name-changed", bytes.NewReader(body))
+			req := httptest.NewRequest(http.MethodPost, "/plugins/teams/team-name-changed", bytes.NewReader(body))
 			req.Header.Set("Content-Type", "application/json")
 
 			w := httptest.NewRecorder()

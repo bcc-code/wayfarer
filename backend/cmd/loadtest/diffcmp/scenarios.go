@@ -299,9 +299,9 @@ func buildScenarios() []Scenario {
 
 	scenarios = append(scenarios, Scenario{
 		Name:        "W5-plugin-team-rename",
-		Description: "Ladder to Heaven team-name-changed webhook, then team re-read",
+		Description: "Teams team-name-changed webhook, then team re-read",
 		Steps: []Step{
-			{Name: "webhook", Method: "POST", Path: "/plugins/ladder-to-heaven/team-name-changed", Signed: true,
+			{Name: "webhook", Method: "POST", Path: "/plugins/teams/team-name-changed", Signed: true,
 				Body: map[string]any{
 					"event_type": "team.name.changed", "timestamp": "2026-08-25T10:00:00Z", "project_id": projectID,
 					"data": map[string]any{"team_id": loadtestTeamID, "old_name": "Team 10", "new_name": "The Renamed Ten"}}},

@@ -1,4 +1,4 @@
-package ladder_to_heaven
+package teams
 
 import (
 	"bytes"
@@ -54,7 +54,7 @@ func (h *teamNameChangedHandler) handle(c *gin.Context) {
 
 	// Check if feature is enabled
 	if h.challengeID == "" {
-		slog.Warn("ladder_to_heaven: team rename feature disabled, PLUGIN_LADDER_TO_HEAVEN_TEAM_RENAME_CHALLENGE_ID not set")
+		slog.Warn("teams: team rename feature disabled, PLUGIN_TEAMS_RENAME_CHALLENGE_ID not set")
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "feature disabled"})
 		return
 	}
@@ -62,7 +62,7 @@ func (h *teamNameChangedHandler) handle(c *gin.Context) {
 	// Read raw body for signature verification
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		slog.Warn("ladder_to_heaven: failed to read request body", "error", err)
+		slog.Warn("teams: failed to read request body", "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read request body"})
 		return
 	}
@@ -71,7 +71,7 @@ func (h *teamNameChangedHandler) handle(c *gin.Context) {
 	if h.secretKey != "" {
 		signature := c.GetHeader("X-Webhook-Signature")
 		if !webhook.VerifySignature(body, signature, h.secretKey) {
-			slog.Warn("ladder_to_heaven: invalid webhook signature")
+			slog.Warn("teams: invalid webhook signature")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid signature"})
 			return
 		}
@@ -83,12 +83,12 @@ func (h *teamNameChangedHandler) handle(c *gin.Context) {
 	// Parse request body
 	var req teamNameChangedRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		slog.Warn("ladder_to_heaven: invalid request body", "error", err)
+		slog.Warn("teams: invalid request body", "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body", "details": err.Error()})
 		return
 	}
 
-	slog.Info("ladder_to_heaven: processing team name change",
+	slog.Info("teams: processing team name change",
 		"team_id", req.Data.TeamID,
 		"old_name", req.Data.OldName,
 		"new_name", req.Data.NewName,
@@ -102,13 +102,13 @@ func (h *teamNameChangedHandler) handle(c *gin.Context) {
 		SourceID:   req.Data.TeamID,
 	})
 	if err != nil {
-		slog.Error("ladder_to_heaven: failed to check if team already processed", "error", err, "team_id", req.Data.TeamID)
+		slog.Error("teams: failed to check if team already processed", "error", err, "team_id", req.Data.TeamID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
 
 	if alreadyProcessed {
-		slog.Info("ladder_to_heaven: team rename already processed", "team_id", req.Data.TeamID)
+		slog.Info("teams: team rename already processed", "team_id", req.Data.TeamID)
 		c.JSON(http.StatusConflict, gin.H{"error": "team rename already processed"})
 		return
 	}
@@ -116,18 +116,18 @@ func (h *teamNameChangedHandler) handle(c *gin.Context) {
 	// Get all team members
 	teamMembers, err := h.db.Queries.GetUserIDsInTeams(ctx, []string{req.Data.TeamID})
 	if err != nil {
-		slog.Error("ladder_to_heaven: failed to get team members", "error", err, "team_id", req.Data.TeamID)
+		slog.Error("teams: failed to get team members", "error", err, "team_id", req.Data.TeamID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get team members"})
 		return
 	}
 
 	if len(teamMembers) == 0 {
-		slog.Warn("ladder_to_heaven: no members in team", "team_id", req.Data.TeamID)
+		slog.Warn("teams: no members in team", "team_id", req.Data.TeamID)
 		c.JSON(http.StatusOK, gin.H{"message": "no team members to process"})
 		return
 	}
 
-	slog.Info("ladder_to_heaven: processing team members", "team_id", req.Data.TeamID, "member_count", len(teamMembers))
+	slog.Info("teams: processing team members", "team_id", req.Data.TeamID, "member_count", len(teamMembers))
 
 	// Award points to each team member and complete the challenge
 	reason := "Team renamed: " + req.Data.NewName
@@ -149,7 +149,7 @@ func (h *teamNameChangedHandler) handle(c *gin.Context) {
 			Reason:      reasonPtr,
 		})
 		if err != nil {
-			slog.Error("ladder_to_heaven: failed to create score journal entry",
+			slog.Error("teams: failed to create score journal entry",
 				"error", err, "user_id", userID, "team_id", req.Data.TeamID)
 			// Continue processing other members
 			continue
@@ -161,7 +161,7 @@ func (h *teamNameChangedHandler) handle(c *gin.Context) {
 		// Invalidate user cache
 		h.cache.InvalidateUser(userID)
 
-		slog.Debug("ladder_to_heaven: awarded team rename points",
+		slog.Debug("teams: awarded team rename points",
 			"user_id", userID,
 			"team_id", req.Data.TeamID,
 			"points", pointsTeamRename)
@@ -169,7 +169,7 @@ func (h *teamNameChangedHandler) handle(c *gin.Context) {
 
 	// If all inserts failed, return an error
 	if successfulInserts == 0 {
-		slog.Error("ladder_to_heaven: all score journal inserts failed",
+		slog.Error("teams: all score journal inserts failed",
 			"team_id", req.Data.TeamID, "member_count", len(teamMembers))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to award points to any team members"})
 		return
@@ -181,7 +181,7 @@ func (h *teamNameChangedHandler) handle(c *gin.Context) {
 		Challengeid: h.challengeID,
 	})
 	if err != nil {
-		slog.Error("ladder_to_heaven: failed to complete challenge for team members",
+		slog.Error("teams: failed to complete challenge for team members",
 			"error", err, "team_id", req.Data.TeamID, "challenge_id", h.challengeID)
 		// Don't fail - points were already awarded
 	}
@@ -196,7 +196,7 @@ func (h *teamNameChangedHandler) handle(c *gin.Context) {
 		}
 	}
 
-	slog.Info("ladder_to_heaven: team rename processed successfully",
+	slog.Info("teams: team rename processed successfully",
 		"team_id", req.Data.TeamID,
 		"members_processed", successfulInserts,
 		"points_per_member", pointsTeamRename)
