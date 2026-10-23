@@ -46,8 +46,9 @@ ansible-playbook site.yml   # vault password is fetched from 1Password (vault-pa
 The vault password lives in 1Password ("Interact Ansible Vault"). `ansible.cfg`
 points `vault_password_file` at `vault-pass.sh`, which runs `op item get`, so
 you only need the [1Password CLI](https://developer.1password.com/docs/cli/)
-installed and signed in (desktop-app integration works). Set
-`OP_ANSIBLE_VAULT_ITEM` to use a different item.
+installed and signed in to the `bcc-no.1password.eu` account (desktop-app
+integration works). Override with `OP_ANSIBLE_VAULT_ITEM`,
+`OP_ANSIBLE_VAULT_VAULT` or `OP_ANSIBLE_VAULT_ACCOUNT`.
 
 For the **first** tailnet join, also pass a Tailscale auth key (generate a
 pre-authorized one at <https://login.tailscale.com/admin/settings/keys>):
