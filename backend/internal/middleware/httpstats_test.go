@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -140,4 +141,36 @@ func TestDrainWindowResetsWindowButNotCumulative(t *testing.T) {
 	assert.Equal(t, uint64(1), second.Routes[0].Count)
 	assert.InDelta(t, 30.0, second.Routes[0].AvgMs, 0.01)
 	assert.Equal(t, uint64(2), s.Snapshot().Routes[0].Count)
+}
+
+func TestHTTPStatsAccessLogSampling(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	run := func(ratio float64) []map[string]any {
+		var buf bytes.Buffer
+		s := NewHTTPStats()
+		s.AccessLog = slog.New(slog.NewJSONHandler(&buf, nil))
+		s.AccessLogSampleRatio = ratio
+		r := gin.New()
+		r.Use(s.Middleware())
+		r.GET("/items/:id", func(c *gin.Context) { c.String(http.StatusOK, "ok") })
+		for range 20 {
+			r.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/items/42", nil))
+		}
+		var lines []map[string]any
+		dec := json.NewDecoder(&buf)
+		for dec.More() {
+			var m map[string]any
+			require.NoError(t, dec.Decode(&m))
+			lines = append(lines, m)
+		}
+		return lines
+	}
+
+	assert.Empty(t, run(0), "ratio 0 logs nothing")
+
+	lines := run(1)
+	require.Len(t, lines, 20, "ratio 1 logs every request")
+	assert.Equal(t, "request", lines[0]["msg"])
+	assert.Equal(t, "/items/:id", lines[0]["route"])
+	assert.Equal(t, float64(200), lines[0]["status"])
 }

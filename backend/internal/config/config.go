@@ -131,6 +131,18 @@ type APIKeyConfig struct {
 type LogConfig struct {
 	Level  string // debug, info, warn, error
 	Format string // json, text
+
+	// Export ships logs asynchronously to a VictoriaLogs-compatible NDJSON
+	// endpoint (VictoriaLogs /insert/jsonline or a local Vector agent).
+	// Best effort: records are dropped rather than slowing the app down.
+	ExportEnabled        bool
+	ExportURL            string
+	ExportLevel          string        // minimum exported level (default info)
+	ExportBufferSize     int           // queued records before dropping
+	ExportBatchSize      int           // records per POST
+	ExportFlushInterval  time.Duration // max wait before a partial batch is sent
+	ExportInstance       string        // e.g. blue/green; becomes the "instance" field
+	AccessLogSampleRatio float64       // fraction of requests exported as access log lines (0 = off)
 }
 
 // MembersConfig holds BCC Members API configuration
@@ -294,6 +306,15 @@ func Load() (*Config, error) {
 		Log: LogConfig{
 			Level:  getEnv("LOG_LEVEL", "info"),
 			Format: getEnv("LOG_FORMAT", "json"),
+
+			ExportEnabled:        getEnvAsBool("LOG_EXPORT_ENABLED", false),
+			ExportURL:            getEnv("LOG_EXPORT_URL", ""),
+			ExportLevel:          getEnv("LOG_EXPORT_LEVEL", "info"),
+			ExportBufferSize:     getEnvAsInt("LOG_EXPORT_BUFFER_SIZE", 10000),
+			ExportBatchSize:      getEnvAsInt("LOG_EXPORT_BATCH_SIZE", 1000),
+			ExportFlushInterval:  getEnvAsDuration("LOG_EXPORT_FLUSH_INTERVAL", 2*time.Second),
+			ExportInstance:       getEnv("LOG_EXPORT_INSTANCE", ""),
+			AccessLogSampleRatio: getEnvAsFloat("LOG_ACCESS_SAMPLE_RATIO", 0),
 		},
 		Members: MembersConfig{
 			Domain: getEnv("MEMBERS_API_DOMAIN", ""),

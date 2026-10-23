@@ -99,3 +99,18 @@ wayfarer_jobs:
   # Delete auth sessions expired or revoked more than 30 days ago.
   - name: cleanup-auth-sessions
     on_calendar: "Sun *-*-* 03:00:00 Europe/Oslo"
+
+# --- Log shipping (roles/vector) -----------------------------------------------
+# VictoriaLogs, reached over a Tailscale subnet route.
+vlogs_url: http://10.12.140.76:9428
+vector_version: "0.59.0"
+vector_app_port: 9880
+vector_syslog_port: 5514
+vector_buffer_max_bytes: 1073741824 # 1 GiB disk buffer
+vector_cpu_quota: 50%
+vector_memory_max: 512M
+# Where wayfarer@blue/green send their logs (roles/wayfarer). Empty disables
+# export (load-test boxes have no Vector).
+wayfarer_log_export_url: "http://127.0.0.1:{{ vector_app_port }}/"
+# Tailscale: accept advertised subnet routes (needed to reach vlogs_url).
+tailscale_accept_routes: true

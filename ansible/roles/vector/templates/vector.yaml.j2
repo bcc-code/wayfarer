@@ -1,0 +1,137 @@
+# Managed by Ansible (roles/vector). Ships host and app logs to VictoriaLogs.
+# Every event is normalised to: _msg, _time, level, service, host (+ any
+# extra fields). service/host/instance are the VictoriaLogs stream fields.
+data_dir: /var/lib/vector
+
+sources:
+  # wayfarer@blue/green POST gzip NDJSON here (LOG_EXPORT_URL); events are
+  # already in VictoriaLogs shape.
+  app:
+    type: http_server
+    address: "127.0.0.1:{{ vector_app_port }}"
+    decoding:
+      codec: json
+    framing:
+      method: newline_delimited
+
+  # Everything in the journal except the server colors (they export
+  # directly, with structured fields): jobs, postgres service messages,
+  # sshd, kernel, vector itself, ...
+  journal:
+    type: journald
+    current_boot_only: false
+    exclude_units:
+      - wayfarer@blue.service
+      - wayfarer@green.service
+
+  # Postgres writes jsonlog files (roles/postgres 90-tuning.conf).
+  postgres:
+    type: file
+    include:
+      - /var/log/postgresql/*.json
+    read_from: end
+
+  # Loopback syslog endpoint for anything that speaks syslog.
+  syslog_tcp:
+    type: syslog
+    mode: tcp
+    address: "127.0.0.1:{{ vector_syslog_port }}"
+  syslog_udp:
+    type: syslog
+    mode: udp
+    address: "127.0.0.1:{{ vector_syslog_port }}"
+
+transforms:
+  app_normalized:
+    type: remap
+    inputs: [app]
+    source: |
+      del(.source_type)
+      del(.path)
+      del(.timestamp)
+      if !exists(.host) { .host = get_hostname!() }
+
+  journal_normalized:
+    type: remap
+    inputs: [journal]
+    source: |
+      unit = string(._SYSTEMD_UNIT) ?? ""
+      ident = string(.SYSLOG_IDENTIFIER) ?? ""
+      svc = if unit != "" { replace(unit, r'\.service$', "") } else if ident != "" { ident } else { "journal" }
+      prio = to_int(.PRIORITY) ?? 6
+      lvl = if prio <= 3 { "error" } else if prio == 4 { "warn" } else if prio == 7 { "debug" } else { "info" }
+      . = {
+        "_msg": .message,
+        "_time": .timestamp,
+        "level": lvl,
+        "service": svc,
+        "host": .host,
+        "pid": ._PID,
+        "unit": unit,
+        "identifier": ident,
+      }
+
+  postgres_normalized:
+    type: remap
+    inputs: [postgres]
+    source: |
+      parsed, err = parse_json(.message)
+      pg = object(parsed) ?? {}
+      if err != null || pg == {} {
+        . = {"_msg": .message, "_time": now(), "level": "info", "service": "postgres", "host": get_hostname!()}
+      } else {
+        sev = upcase(string(pg.error_severity) ?? "LOG")
+        lvl = if includes(["ERROR", "FATAL", "PANIC"], sev) { "error" } else if sev == "WARNING" { "warn" } else if starts_with(sev, "DEBUG") { "debug" } else { "info" }
+        ts = parse_timestamp(string(pg.timestamp) ?? "", "%Y-%m-%d %H:%M:%S%.3f UTC", timezone: "UTC") ?? now()
+        msg = pg.message
+        pg = remove!(pg, ["message"])
+        pg = remove!(pg, ["timestamp"])
+        . = merge(pg, {
+          "_msg": msg,
+          "_time": ts,
+          "level": lvl,
+          "service": "postgres",
+          "host": get_hostname!(),
+        })
+      }
+
+  syslog_normalized:
+    type: remap
+    inputs: [syslog_tcp, syslog_udp]
+    source: |
+      sev = string(.severity) ?? "info"
+      lvl = if includes(["emerg", "alert", "crit", "err"], sev) { "error" } else if sev == "warning" { "warn" } else if sev == "debug" { "debug" } else { "info" }
+      . = {
+        "_msg": .message,
+        "_time": .timestamp,
+        "level": lvl,
+        "service": .appname || "syslog",
+        "host": .hostname || get_hostname!(),
+        "facility": .facility,
+        "procid": .procid,
+      }
+
+sinks:
+  vlogs:
+    type: http
+    inputs: [app_normalized, journal_normalized, postgres_normalized, syslog_normalized]
+    uri: "{{ vlogs_url }}/insert/jsonline?_stream_fields=host,service,instance&_msg_field=_msg&_time_field=_time"
+    method: post
+    encoding:
+      codec: json
+    framing:
+      method: newline_delimited
+    compression: gzip
+    healthcheck:
+      enabled: false
+    batch:
+      max_bytes: 4194304
+      timeout_secs: 2
+    request:
+      timeout_secs: 10
+    # Bounded disk buffer: rides out VictoriaLogs outages, then sheds the
+    # newest events instead of back-pressuring sources.
+    buffer:
+      type: disk
+      max_size: {{ vector_buffer_max_bytes }}
+      when_full: drop_newest

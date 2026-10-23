@@ -76,9 +76,20 @@ func main() {
 		appliedOverrides = config.ApplySettings(cfg, settingOverrides)
 	}
 
-	// Initialize structured logger
-	lgr := logger.New(cfg.Server.Environment, logger.ParseLevel(cfg.Log.Level))
+	// Initialize structured logger, optionally shipping to VictoriaLogs.
+	var (
+		lgr         *slog.Logger
+		logExporter *logger.Exporter
+	)
+	if cfg.Log.ExportEnabled && cfg.Log.ExportURL != "" {
+		lgr, logExporter = logger.NewWithExport(cfg.Server.Environment, logger.ParseLevel(cfg.Log.Level), logExportConfig(cfg))
+	} else {
+		lgr = logger.New(cfg.Server.Environment, logger.ParseLevel(cfg.Log.Level))
+	}
 	slog.SetDefault(lgr)
+	if logExporter != nil {
+		slog.Info("Log export enabled", "url", cfg.Log.ExportURL, "level", cfg.Log.ExportLevel)
+	}
 
 	if len(appliedOverrides) > 0 {
 		slog.Info("Configuration overridden from settings table", "keys", appliedOverrides)
@@ -463,6 +474,10 @@ func main() {
 	// staleness after admin edits.
 	apiHandler.Use(api.ResponseCache{Cache: cacheInstance, TTL: 30 * time.Second})
 	apiHandler.SetQueryCache(lru.New[*ast.QueryDocument](1000))
+	if logExporter != nil {
+		// Export-only: errored GraphQL responses go to VictoriaLogs, not stdout.
+		apiHandler.Use(api.ErrorLogger{Logger: slog.New(logExporter.Handler())})
+	}
 
 	// Add OpenTelemetry tracing for GraphQL operations
 	if cfg.OTEL.Enabled {
@@ -487,6 +502,12 @@ func main() {
 	// error/slow-request logging — the production replacement for gin's
 	// per-request access log.
 	httpStats := middleware.NewHTTPStats()
+	if logExporter != nil && cfg.Log.AccessLogSampleRatio > 0 {
+		// Export-only: sampled access lines go to VictoriaLogs, never stdout.
+		httpStats.AccessLog = slog.New(logExporter.Handler())
+		httpStats.AccessLogSampleRatio = cfg.Log.AccessLogSampleRatio
+		slog.Info("Sampled access log export enabled", "ratio", cfg.Log.AccessLogSampleRatio)
+	}
 	router.Use(httpStats.Middleware())
 	if cfg.Server.HTTPStatsFile != "" {
 		httpStats.StartDumper(ctx, cfg.Server.HTTPStatsFile, cfg.Server.HTTPStatsInterval)
@@ -526,6 +547,15 @@ func main() {
 			return
 		}
 		c.JSON(http.StatusOK, httpStats.Snapshot())
+	})
+
+	// Log exporter counters (queued/sent/dropped/failed). Loopback-only.
+	router.GET("/metrics/logexport", func(c *gin.Context) {
+		if ip := net.ParseIP(c.ClientIP()); ip == nil || !ip.IsLoopback() || logExporter == nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+			return
+		}
+		c.JSON(http.StatusOK, logExporter.Stats())
 	})
 
 	// Cache metrics endpoint
@@ -903,6 +933,14 @@ func main() {
 	}
 
 	slog.Info("Server exited")
+
+	if logExporter != nil {
+		flushCtx, flushCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer flushCancel()
+		if err := logExporter.Shutdown(flushCtx); err != nil {
+			fmt.Fprintf(os.Stderr, "log export flush incomplete: %v\n", err)
+		}
+	}
 }
 
 // graphqlHandler wraps a GraphQL handler for use with Gin

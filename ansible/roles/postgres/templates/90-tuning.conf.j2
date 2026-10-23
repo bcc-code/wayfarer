@@ -44,3 +44,18 @@ track_io_timing = on
 log_min_duration_statement = 500ms
 log_checkpoints = on
 log_lock_waits = on
+log_autovacuum_min_duration = 1s
+log_temp_files = 10MB
+
+# --- Logging (shipped to VictoriaLogs by roles/vector) ---
+# jsonlog needs the collector; changing logging_collector requires a
+# restart. One file per weekday, truncated on reuse = 7 days kept locally.
+logging_collector = on
+log_destination = 'jsonlog'
+log_directory = '/var/log/postgresql'
+log_filename = 'postgresql-%a.log'
+log_file_mode = 0640
+log_rotation_age = 1d
+log_rotation_size = 0
+log_truncate_on_rotation = on
+log_timezone = 'UTC'

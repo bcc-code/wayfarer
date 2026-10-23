@@ -145,6 +145,11 @@ func addAttrToMap(m map[string]any, groups []string, attr slog.Attr) {
 			target[attr.Key] = nested
 		}
 	default:
-		target[attr.Key] = attr.Value.Any()
+		v := attr.Value.Any()
+		// error values marshal to {} with encoding/json; keep the message.
+		if err, ok := v.(error); ok {
+			v = err.Error()
+		}
+		target[attr.Key] = v
 	}
 }

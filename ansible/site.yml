@@ -12,6 +12,7 @@
     - { role: firewall, tags: [firewall] }
     - { role: tailscale, tags: [tailscale] }
     - { role: postgres, tags: [postgres] }
+    - { role: vector, tags: [vector] }
     - { role: interact, tags: [interact] }
     - { role: backup, tags: [backup] }
     - { role: wayfarer, tags: [wayfarer] }

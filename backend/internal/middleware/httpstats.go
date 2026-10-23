@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"math/rand/v2"
 	"net/http"
 	"os"
 	"sort"
@@ -30,6 +31,12 @@ type HTTPStats struct {
 
 	// SlowThreshold above which a request is logged as slow (default 2s).
 	SlowThreshold time.Duration
+
+	// AccessLog, when set, receives one Info line for a random
+	// AccessLogSampleRatio fraction of requests. Meant to be an export-only
+	// logger, so sampled access lines never touch stdout/journald.
+	AccessLog            *slog.Logger
+	AccessLogSampleRatio float64
 }
 
 // bucketBoundsMs are cumulative-histogram upper bounds in milliseconds.
@@ -78,6 +85,14 @@ func (s *HTTPStats) Middleware() gin.HandlerFunc {
 			slog.Warn("slow request",
 				"method", c.Request.Method, "path", c.Request.URL.Path,
 				"status", status, "duration", elapsed)
+		}
+
+		if s.AccessLog != nil && rand.Float64() < s.AccessLogSampleRatio {
+			s.AccessLog.InfoContext(c.Request.Context(), "request",
+				"method", c.Request.Method, "route", route, "path", c.Request.URL.Path,
+				"status", status, "duration_ms", float64(elapsed)/float64(time.Millisecond),
+				"bytes", c.Writer.Size(), "client", c.ClientIP(),
+				"user_agent", c.Request.UserAgent())
 		}
 	}
 }
