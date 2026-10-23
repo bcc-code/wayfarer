@@ -22,6 +22,17 @@ type QuizSchedulerHandler struct {
 	FirebaseService *firebase.Service
 	WebhookService  *webhooks.Service
 	Cache           *cache.CacheWithRegistry
+	// Settler auto-submits and pays out a session the scheduler finished, the
+	// same way finishQuizSession does. If nil, finished sessions are only
+	// auto-submitted and their bets stay unpaid.
+	Settler SessionSettler
+}
+
+// SessionSettler settles a session that was just moved to FINISHED: it waits
+// for in-flight answers, auto-submits open submissions and pays out bets.
+// Implemented by api.Resolver.
+type SessionSettler interface {
+	SettleFinishedSession(ctx context.Context, sessionID string) error
 }
 
 // QuizSchedulerResponse contains the results of processing scheduled transitions
@@ -218,10 +229,17 @@ func (h *QuizSchedulerHandler) processFinishTransitions(ctx context.Context) (in
 			continue
 		}
 
-		// Auto-submit active submissions
-		err = h.DB.Queries.AutoSubmitSessionSubmissions(ctx, session.ID)
-		if err != nil {
-			// Log but don't fail - state is already FINISHED
+		// Auto-submit and pay out bets before notifying clients and webhooks,
+		// as finishQuizSession does. Failures are logged, not counted - state
+		// is already FINISHED, and finishing again from the admin retries.
+		if h.Settler != nil {
+			if err := h.Settler.SettleFinishedSession(ctx, session.ID); err != nil {
+				slog.Error("quiz_scheduler: failed to settle session",
+					"session_id", session.ID,
+					"error", err,
+				)
+			}
+		} else if err := h.DB.Queries.AutoSubmitSessionSubmissions(ctx, session.ID); err != nil {
 			slog.Error("quiz_scheduler: failed to auto-submit submissions",
 				"session_id", session.ID,
 				"error", err,
