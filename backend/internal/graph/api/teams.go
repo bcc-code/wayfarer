@@ -242,3 +242,25 @@ func buildTeamCacheKeyParams(filter *model.TeamFilter, first *int, after *string
 
 	return params
 }
+
+// withMeTag returns a copy of a team member leaderboard with the ME tag on the
+// viewer's own entry. The loader cannot set ME itself: its batches are shared
+// by concurrent requests and run with the context of whichever one came first.
+func withMeTag(entries []model.LeaderboardEntry, viewerID string) []model.LeaderboardEntry {
+	result := make([]model.LeaderboardEntry, len(entries))
+	copy(result, entries)
+	if viewerID == "" {
+		return result
+	}
+
+	for i := range result {
+		if result[i].ID != viewerID {
+			continue
+		}
+		tags := make([]model.LeaderboardEntryTag, 0, len(result[i].Tags)+1)
+		tags = append(tags, model.LeaderboardEntryTagMe)
+		result[i].Tags = append(tags, result[i].Tags...)
+	}
+
+	return result
+}

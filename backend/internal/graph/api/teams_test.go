@@ -709,3 +709,66 @@ func TestBuildTeamCacheKeyParams_Deterministic(t *testing.T) {
 		assert.Equal(t, results[0], results[i], "buildTeamCacheKeyParams should be deterministic")
 	}
 }
+
+func TestWithMeTag(t *testing.T) {
+	viewer := "US01K8XV6VK9ED2GBZSQ2VDTAT8A"
+	teamLead := "US01K8XV6VK9ED2GBZSQ2VDTAT8B"
+	other := "US01K8XV6VK9ED2GBZSQ2VDTAT8C"
+
+	entries := func() []model.LeaderboardEntry {
+		return []model.LeaderboardEntry{
+			{ID: teamLead, Tags: []model.LeaderboardEntryTag{model.LeaderboardEntryTagTeamLead}},
+			{ID: viewer, Tags: []model.LeaderboardEntryTag{}},
+			{ID: other, Tags: []model.LeaderboardEntryTag{}},
+		}
+	}
+
+	t.Run("tags only the viewer's entry", func(t *testing.T) {
+		got := withMeTag(entries(), viewer)
+
+		assert.Equal(t, []model.LeaderboardEntryTag{model.LeaderboardEntryTagTeamLead}, got[0].Tags)
+		assert.Equal(t, []model.LeaderboardEntryTag{model.LeaderboardEntryTagMe}, got[1].Tags)
+		assert.Empty(t, got[2].Tags)
+	})
+
+	t.Run("keeps existing tags after ME", func(t *testing.T) {
+		got := withMeTag(entries(), teamLead)
+
+		assert.Equal(t, []model.LeaderboardEntryTag{model.LeaderboardEntryTagMe, model.LeaderboardEntryTagTeamLead}, got[0].Tags)
+		assert.Empty(t, got[1].Tags)
+	})
+
+	t.Run("viewer not in the team gets no ME tag", func(t *testing.T) {
+		got := withMeTag(entries(), "US01K8XV6VK9ED2GBZSQ2VDTAT8Z")
+
+		for _, e := range got {
+			assert.NotContains(t, e.Tags, model.LeaderboardEntryTagMe)
+		}
+	})
+
+	t.Run("no viewer gets no ME tag", func(t *testing.T) {
+		got := withMeTag(entries(), "")
+
+		for _, e := range got {
+			assert.NotContains(t, e.Tags, model.LeaderboardEntryTagMe)
+		}
+	})
+
+	t.Run("does not modify the loader's entries", func(t *testing.T) {
+		in := entries()
+		_ = withMeTag(in, teamLead)
+
+		assert.Equal(t, []model.LeaderboardEntryTag{model.LeaderboardEntryTagTeamLead}, in[0].Tags)
+	})
+
+	t.Run("two viewers sharing one result each see only themselves", func(t *testing.T) {
+		shared := entries()
+		forViewer := withMeTag(shared, viewer)
+		forOther := withMeTag(shared, other)
+
+		assert.Contains(t, forViewer[1].Tags, model.LeaderboardEntryTagMe)
+		assert.NotContains(t, forViewer[2].Tags, model.LeaderboardEntryTagMe)
+		assert.Contains(t, forOther[2].Tags, model.LeaderboardEntryTagMe)
+		assert.NotContains(t, forOther[1].Tags, model.LeaderboardEntryTagMe)
+	})
+}
