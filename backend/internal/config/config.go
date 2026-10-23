@@ -77,12 +77,12 @@ type ServerConfig struct {
 
 // DatabaseConfig holds database connection configuration
 type DatabaseConfig struct {
-	URL             string
-	MaxOpenConns    int
-	MaxIdleConns    int
-	ConnMaxLifetime time.Duration
-	ConnMaxIdleTime time.Duration
-	LogQueries      bool // Enable query logging for debugging
+	URL                string
+	MaxOpenConns       int
+	MaxIdleConns       int
+	ConnMaxLifetime    time.Duration
+	ConnMaxIdleTime    time.Duration
+	LogQueries         bool // Enable query logging for debugging
 	LoaderBatchTimeout time.Duration
 }
 
@@ -243,6 +243,13 @@ func Load() (*Config, error) {
 	// Load .env file if it exists (ignore error if file doesn't exist)
 	_ = godotenv.Load()
 
+	// A zero or negative batch timeout gives every dataloader batch an already
+	// expired context, which fails every load that misses the cache.
+	loaderBatchTimeout, err := getEnvAsPositiveDuration("DATALOADER_BATCH_TIMEOUT", 10*time.Second)
+	if err != nil {
+		return nil, err
+	}
+
 	cfg := &Config{
 		Server: ServerConfig{
 			Host:            getEnv("SERVER_HOST", "0.0.0.0"),
@@ -275,7 +282,7 @@ func Load() (*Config, error) {
 			ConnMaxIdleTime: getEnvAsDuration("DB_CONN_MAX_IDLE_TIME", 1*time.Minute),
 			LogQueries:      getEnvAsBool("DB_LOG_QUERIES", false),
 
-			LoaderBatchTimeout: getEnvAsDuration("DATALOADER_BATCH_TIMEOUT", 10*time.Second),
+			LoaderBatchTimeout: loaderBatchTimeout,
 		},
 		JWT: JWTConfig{
 			Secret:            getEnv("JWT_SECRET", ""),
@@ -417,6 +424,24 @@ func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration {
 		return defaultValue
 	}
 	return value
+}
+
+// getEnvAsPositiveDuration is like getEnvAsDuration, but returns an error for
+// a value that does not parse or is not greater than zero instead of falling
+// back to the default.
+func getEnvAsPositiveDuration(key string, defaultValue time.Duration) (time.Duration, error) {
+	valueStr := os.Getenv(key)
+	if valueStr == "" {
+		return defaultValue, nil
+	}
+	value, err := time.ParseDuration(valueStr)
+	if err != nil {
+		return 0, fmt.Errorf("%s: invalid duration %q: %w", key, valueStr, err)
+	}
+	if value <= 0 {
+		return 0, fmt.Errorf("%s must be greater than zero, got %q", key, valueStr)
+	}
+	return value, nil
 }
 
 // isCloudRun reports whether we're running on Cloud Run, either as a service
