@@ -150,6 +150,11 @@ func (r *mutationResolver) AcceptConsent(ctx context.Context, consentID string) 
 
 	// Invalidate user cache
 	r.Cache.Delete(cache.UserKey(userID))
+	// Accepting a required consent makes the user visible to others again
+	// (consent_blocked_user_ids, migration 00116); drop the cached boards
+	if consent.IsRequired {
+		r.Cache.InvalidateLeaderboardScores()
+	}
 
 	return &model.UserConsent{
 		ID:         historyEntry.ID,
@@ -216,6 +221,10 @@ func (r *mutationResolver) RejectConsent(ctx context.Context, consentID string) 
 
 	// Invalidate user cache
 	r.Cache.Delete(cache.UserKey(userID))
+	// Rejecting a required consent hides the user from others (migration 00116)
+	if consent.IsRequired {
+		r.Cache.InvalidateLeaderboardScores()
+	}
 
 	return &model.UserConsent{
 		ID:         historyEntry.ID,
@@ -280,6 +289,9 @@ func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title 
 
 	// Invalidate latest consents cache
 	r.Cache.DeletePrefix(cache.PrefixLatestConsents)
+	// A new version can make a consent required or relax it, which changes
+	// who is hidden from other users (migration 00116)
+	r.Cache.InvalidateLeaderboardScores()
 
 	var publishedAtOut *scalars.DateTime
 	if consent.PublishedAt.Valid {
@@ -349,6 +361,9 @@ func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *
 	// Invalidate caches
 	r.Cache.Delete(cache.ConsentKey(id))
 	r.Cache.DeletePrefix(cache.PrefixLatestConsents)
+	// isRequired or publishedAt may have changed who is hidden from other
+	// users (migration 00116)
+	r.Cache.InvalidateLeaderboardScores()
 
 	var publishedAtOut *scalars.DateTime
 	if consent.PublishedAt.Valid {
@@ -427,6 +442,11 @@ func (r *mutationResolver) AdminSetUserConsent(ctx context.Context, userID strin
 
 	// Invalidate target user's cache
 	r.Cache.Delete(cache.UserKey(userID))
+	// The target user's visibility to others follows required consents
+	// (migration 00116)
+	if consent.IsRequired {
+		r.Cache.InvalidateLeaderboardScores()
+	}
 
 	// Load consent for return value
 	consentModel, err := r.LoadConsentWithTranslation(ctx, historyEntry.ConsentID)

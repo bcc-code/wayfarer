@@ -199,6 +199,14 @@ SELECT EXISTS(
 );
 
 -- name: GetTeamMemberLeaderboard :many
+WITH blocked AS MATERIALIZED (
+    -- Hidden until they accept the project's required consents (00116).
+    -- Admins still see them through Team.members, which this does not touch.
+    SELECT b.user_id
+    FROM teams tp
+    CROSS JOIN LATERAL consent_blocked_user_ids(tp.project_id) AS b(user_id)
+    WHERE tp.id = @team_id::char(28)
+)
 SELECT
     u.id AS user_id,
     u.name AS user_name,
@@ -218,6 +226,7 @@ INNER JOIN churches c ON u.church_id = c.id
 LEFT JOIN score_journal sj ON sj.user_id = u.id
     AND sj.project_id = t.project_id
 WHERE tm.team_id = @team_id::char(28)
+  AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
 GROUP BY
     u.id,
     u.name,

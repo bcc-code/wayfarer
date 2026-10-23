@@ -100,7 +100,12 @@ FROM ranked_scores
 WHERE entity_id = @userid::char(28);
 
 -- name: GetFullProjectPersonLeaderboard :many
-WITH ranked_scores AS (
+WITH blocked AS MATERIALIZED (
+    -- Hidden until they accept the project's required consents (00116).
+    -- Materialized so the set is computed once, not once per leaderboard row.
+    SELECT b.user_id FROM consent_blocked_user_ids(@projectid::char(28)) AS b(user_id)
+),
+ranked_scores AS (
     SELECT
         u.id AS entity_id,
         COALESCE(u.display_name, u.name) AS name,
@@ -114,6 +119,7 @@ WITH ranked_scores AS (
     INNER JOIN users u ON lpp.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
     WHERE lpp.project_id = @projectid::char(28)
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
       AND lpp.score >= COALESCE(@minscore::int, 1)
       AND (@maxscore::int IS NULL OR lpp.score <= @maxscore::int)
       AND (@churchid::char(28) = '' OR u.church_id = @churchid::char(28))
@@ -562,7 +568,15 @@ FROM ranked_scores
 WHERE entity_id = @userid::char(28);
 
 -- name: GetFullEventPersonLeaderboard :many
-WITH ranked_scores AS (
+WITH blocked AS MATERIALIZED (
+    -- Hidden until they accept the event's project's required consents
+    -- (00116). Materialized so the set is computed once, not once per row.
+    SELECT b.user_id
+    FROM events e
+    CROSS JOIN LATERAL consent_blocked_user_ids(e.project_id) AS b(user_id)
+    WHERE e.id = @eventid::char(28)
+),
+ranked_scores AS (
     SELECT
         u.id AS entity_id,
         COALESCE(u.display_name, u.name) AS name,
@@ -576,6 +590,7 @@ WITH ranked_scores AS (
     INNER JOIN users u ON lep.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
     WHERE lep.event_id = @eventid::char(28)
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
       AND lep.score >= COALESCE(@minscore::int, 1)
       AND (@maxscore::int IS NULL OR lep.score <= @maxscore::int)
       AND (@churchid::char(28) = '' OR u.church_id = @churchid::char(28))
