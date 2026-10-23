@@ -208,12 +208,10 @@ type PhraseConfig struct {
 
 // PluginConfig holds configuration for plugins
 type PluginConfig struct {
-	LadderToHeavenAchievementID         string // Achievement ID for Ladder to Heaven plugin (empty = disabled)
 	LadderToHeavenSecretKey             string // Secret key for webhook signature verification
 	LadderToHeavenTeamRenameChallengeID string // Challenge ID to complete when team renames (empty = disabled)
-	LadderToHeavenCryptexSecretKey      string // Secret key for Cryptex JWT token signing (empty = endpoint disabled)
-	LadderToHeavenCryptexBaseURL        string // Base URL for Cryptex admin login (e.g., https://cryptex.example.com)
-	LadderToHeavenExcaliburBaseURL      string // Base URL for Excalibur user login (e.g., https://dev.excalibur.bcc.media)
+	ExcaliburSecretKey                  string // Secret key for Excalibur JWT token signing (empty = endpoint disabled)
+	ExcaliburBaseURL                    string // Base URL for Excalibur user login (e.g., https://dev.excalibur.bcc.media)
 }
 
 // FirebaseConfig holds Firebase Admin SDK configuration
@@ -364,12 +362,11 @@ func Load() (*Config, error) {
 			ExportKey:   getEnv("TRANSLATIONS_EXPORT_KEY", ""),
 		},
 		Plugin: PluginConfig{
-			LadderToHeavenAchievementID:         getEnv("PLUGIN_LADDER_TO_HEAVEN_ACHIEVEMENT_ID", ""),
 			LadderToHeavenSecretKey:             getEnv("PLUGIN_LADDER_TO_HEAVEN_SECRET_KEY", ""),
 			LadderToHeavenTeamRenameChallengeID: getEnv("PLUGIN_LADDER_TO_HEAVEN_TEAM_RENAME_CHALLENGE_ID", ""),
-			LadderToHeavenCryptexSecretKey:      getEnv("PLUGIN_LADDER_TO_HEAVEN_CRYPTEX_SECRET_KEY", ""),
-			LadderToHeavenCryptexBaseURL:        getEnv("PLUGIN_LADDER_TO_HEAVEN_CRYPTEX_BASE_URL", ""),
-			LadderToHeavenExcaliburBaseURL:      getEnv("PLUGIN_LADDER_TO_HEAVEN_EXCALIBUR_BASE_URL", ""),
+			// The old Ladder to Heaven names still work, so existing deployments keep the feature
+			ExcaliburSecretKey: getEnv("PLUGIN_EXCALIBUR_SECRET_KEY", getEnv("PLUGIN_LADDER_TO_HEAVEN_CRYPTEX_SECRET_KEY", "")),
+			ExcaliburBaseURL:   getEnv("PLUGIN_EXCALIBUR_BASE_URL", getEnv("PLUGIN_LADDER_TO_HEAVEN_EXCALIBUR_BASE_URL", "")),
 		},
 		Firebase: FirebaseConfig{
 			ServiceAccountJSON: getEnv("FIREBASE_SERVICE_ACCOUNT", ""),

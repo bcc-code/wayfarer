@@ -20,10 +20,10 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// sessionBetQuestionTypes are the question types whose bets are settled by the
-// core when a session finishes. ORDERING bets are settled by the
-// ladder_to_heaven plugin via the quiz_session_finished webhook.
-var sessionBetQuestionTypes = []string{"PREDEFINED"}
+// sessionBetQuestionTypes are the question types whose bets are settled when a
+// session finishes. Both are graded all-or-nothing into is_correct, so their
+// bets pay out with the question's correct/wrong multipliers.
+var sessionBetQuestionTypes = []string{"PREDEFINED", "ORDERING"}
 
 // closeSessionAndSettleBets auto-submits a finished session's open submissions,
 // then pays out its bets. Settlement only runs once auto-submission succeeded,

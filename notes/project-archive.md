@@ -131,8 +131,8 @@ The two fields answer different questions:
 A `user_projects` row is only written as a side effect of _doing_ something:
 the explicit `joinProject` mutation, joining a team
 (`teams.resolvers.go:55,403`), enrolling in a challenge
-(`challenges.resolvers.go:558`), earning a content achievement
-(`content_achievements.go:653`), or the ladder-to-heaven plugin. Awarding a
+(`challenges.resolvers.go:558`), or earning a content achievement
+(`content_achievements.go:653`). Awarding a
 simple achievement does not. So holding achievements in a project is **not**
 evidence of membership in it.
 

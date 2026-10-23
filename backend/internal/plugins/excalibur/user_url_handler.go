@@ -1,4 +1,4 @@
-package ladder_to_heaven
+package excalibur
 
 import (
 	"context"
@@ -64,13 +64,13 @@ func (h *excaliburUserURLHandler) handle(c *gin.Context) {
 
 	// Check if feature is enabled
 	if h.secretKey == "" {
-		slog.Warn("excalibur_user_url: feature disabled, PLUGIN_LADDER_TO_HEAVEN_CRYPTEX_SECRET_KEY not set")
+		slog.Warn("excalibur_user_url: feature disabled, PLUGIN_EXCALIBUR_SECRET_KEY not set")
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "feature disabled"})
 		return
 	}
 
 	if h.baseURL == "" {
-		slog.Warn("excalibur_user_url: feature disabled, PLUGIN_LADDER_TO_HEAVEN_EXCALIBUR_BASE_URL not set")
+		slog.Warn("excalibur_user_url: feature disabled, PLUGIN_EXCALIBUR_BASE_URL not set")
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "feature disabled"})
 		return
 	}

@@ -37,6 +37,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/otel"
 	"github.com/bcc-media/wayfarer/internal/plugins"
+	"github.com/bcc-media/wayfarer/internal/plugins/excalibur"
 	"github.com/bcc-media/wayfarer/internal/plugins/ladder_to_heaven"
 	"github.com/bcc-media/wayfarer/internal/reuseport"
 	"github.com/bcc-media/wayfarer/internal/services"
@@ -655,8 +656,6 @@ func main() {
 	pluginDeps := plugins.Dependencies{
 		DB:              db,
 		Cache:           cacheInstance,
-		Loaders:         dataLoaders,
-		PushService:     pushService,
 		SettingsService: settingsService,
 		JWTConfig:       cfg.JWT,
 		Firebase:        firebaseService,
@@ -665,12 +664,14 @@ func main() {
 
 	plugins.RegisterPlugin(router, pluginDeps, apiKeyAuth,
 		ladder_to_heaven.NewPlugin(ladder_to_heaven.Config{
-			AchievementID:         cfg.Plugin.LadderToHeavenAchievementID,
 			SecretKey:             cfg.Plugin.LadderToHeavenSecretKey,
 			TeamRenameChallengeID: cfg.Plugin.LadderToHeavenTeamRenameChallengeID,
-			CryptexSecretKey:      cfg.Plugin.LadderToHeavenCryptexSecretKey,
-			CryptexBaseURL:        cfg.Plugin.LadderToHeavenCryptexBaseURL,
-			ExcaliburBaseURL:      cfg.Plugin.LadderToHeavenExcaliburBaseURL,
+		}),
+	)
+	plugins.RegisterPlugin(router, pluginDeps, apiKeyAuth,
+		excalibur.NewPlugin(excalibur.Config{
+			SecretKey: cfg.Plugin.ExcaliburSecretKey,
+			BaseURL:   cfg.Plugin.ExcaliburBaseURL,
 		}),
 	)
 

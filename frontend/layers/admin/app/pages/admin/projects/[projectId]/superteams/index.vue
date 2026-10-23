@@ -6,7 +6,6 @@ definePageMeta({
 
 const route = useRoute('admin-projects-projectId-superteams')
 const { canEditProject } = usePermissions()
-const { isSuperAdmin } = useAuth()
 const canEdit = computed(() => canEditProject(route.params.projectId))
 
 gql(`
@@ -46,19 +45,6 @@ const superteams = computed(
     <div class="mb-4 flex items-center justify-between gap-4">
       <h2 class="text-xl">Superlag</h2>
       <div class="flex gap-2">
-        <!-- The ladder-to-heaven distribution tool. Its own route since it is a
-             separate workflow, and superadmin-only. -->
-        <UButton
-          v-if="isSuperAdmin"
-          variant="soft"
-          icon="lucide:shuffle"
-          :to="{
-            name: 'admin-projects-projectId-superteams-distribute',
-            params: { projectId: route.params.projectId },
-          }"
-        >
-          LADD-fordeling
-        </UButton>
         <UButton
           v-if="canEdit"
           icon="lucide:plus"

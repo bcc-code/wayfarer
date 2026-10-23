@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"sync"
@@ -9,6 +10,8 @@ import (
 	"time"
 
 	"github.com/bcc-media/wayfarer/e2e/testutil"
+	"github.com/bcc-media/wayfarer/internal/database/sqlc"
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -1068,9 +1071,107 @@ func TestQuizBettingEdgeCases(t *testing.T) {
 		assertSettled(t, r, -100)
 	})
 
+	// ============================================================ concurrent finish
+
+	t.Run("concurrent finishes all succeed and pay each bet once", func(t *testing.T) {
+		p := newPlayer(t)
+		setScore(t, p.id, 100)
+		quizID := newQuiz(t, "Concurrent finish", nil)
+		q := addPredefined(t, quizID, 0, nil)
+		sessionID := openSession(t, quizID, p)
+		r := submit(t, p, start(t, p, sessionID), pick(q, true, 50))
+		lock(t, sessionID)
+
+		// An admin double-click, or an admin and the scheduler, at the same time
+		const callers = 8
+		msgs := make([]string, callers)
+		var wg sync.WaitGroup
+		startGate := make(chan struct{})
+		for i := range callers {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				<-startGate
+				resp, err := client.WithAuth(adminToken).Execute(ctx,
+					`mutation($id: ID!) { finishQuizSession(id: $id) { state } }`, map[string]any{"id": sessionID})
+				switch {
+				case err != nil:
+					msgs[i] = err.Error()
+				case resp.HasErrors():
+					msgs[i] = resp.ErrorMessage()
+				}
+			}()
+		}
+		close(startGate)
+		wg.Wait()
+
+		for _, msg := range msgs {
+			assert.Empty(t, msg)
+		}
+		assertSettled(t, r, 50)
+		assert.Equal(t, 150, score(t, p.id))
+	})
+
+	t.Run("only one concurrent state transition wins", func(t *testing.T) {
+		quizID := newQuiz(t, "Concurrent transition", nil)
+		sessionID := openSession(t, quizID)
+		lock(t, sessionID)
+
+		// The resolver and the scheduler settle and dispatch quiz_session_finished
+		// only when their transition returns a row
+		const callers = 8
+		won := make([]bool, callers)
+		errs := make([]error, callers)
+		var wg sync.WaitGroup
+		startGate := make(chan struct{})
+		for i := range callers {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				<-startGate
+				_, err := dbMgr.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
+					ID: sessionID, Fromstate: "LOCKED", State: "FINISHED",
+				})
+				if err == nil {
+					won[i] = true
+				} else if !errors.Is(err, pgx.ErrNoRows) {
+					errs[i] = err
+				}
+			}()
+		}
+		close(startGate)
+		wg.Wait()
+
+		winners := 0
+		for i := range callers {
+			require.NoError(t, errs[i])
+			if won[i] {
+				winners++
+			}
+		}
+		assert.Equal(t, 1, winners)
+	})
+
+	t.Run("state transitions are rejected from the wrong state", func(t *testing.T) {
+		quizID := newQuiz(t, "Wrong state", nil)
+		sessionID := openSession(t, quizID)
+
+		_, err := dbMgr.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
+			ID: sessionID, Fromstate: "LOCKED", State: "FINISHED",
+		})
+		require.ErrorIs(t, err, pgx.ErrNoRows)
+
+		msg := exec(t, adminToken, `mutation($id: ID!) { finishQuizSession(id: $id) { id } }`,
+			map[string]any{"id": sessionID}, nil)
+		assert.Contains(t, msg, "can only finish session from LOCKED state")
+		msg = exec(t, adminToken, `mutation($id: ID!) { openQuizSession(id: $id) { id } }`,
+			map[string]any{"id": sessionID}, nil)
+		assert.Contains(t, msg, "can only open session from DRAFT state")
+	})
+
 	// ============================================================ question types
 
-	t.Run("bets on FREE_TEXT, NUMBER and ORDERING questions are not settled by the core", func(t *testing.T) {
+	t.Run("bets on FREE_TEXT and NUMBER questions are not settled, ORDERING bets are", func(t *testing.T) {
 		p := newPlayer(t)
 		setScore(t, p.id, 300)
 		quizID := newQuiz(t, "Other types", nil)
@@ -1096,8 +1197,8 @@ func TestQuizBettingEdgeCases(t *testing.T) {
 		lockAndFinish(t, sessionID)
 		assertUnsettled(t, rText)
 		assertUnsettled(t, rNumber)
-		assertUnsettled(t, rOrdering) // left to the ladder_to_heaven plugin
-		assert.Equal(t, 300, score(t, p.id))
+		assertSettled(t, rOrdering, 100) // correct order, default 2x
+		assert.Equal(t, 400, score(t, p.id))
 	})
 
 	t.Run("updateQuizAnswer on an ORDERING bet", func(t *testing.T) {
@@ -1125,7 +1226,7 @@ func TestQuizBettingEdgeCases(t *testing.T) {
 		lock(t, sessionID)
 		assert.Contains(t, update(map[string]any{"submittedOrder": items, "betAmount": 10}), "quiz session is LOCKED")
 		finish(t, sessionID)
-		assertUnsettled(t, r)
+		assertSettled(t, r, -100) // the reversed order stood: wrong, default bet lost
 	})
 
 	// ============================================================ payouts
