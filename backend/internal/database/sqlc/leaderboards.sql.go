@@ -1249,7 +1249,15 @@ func (q *Queries) GetFullEventChurchLeaderboard(ctx context.Context, arg GetFull
 }
 
 const GetFullEventPersonLeaderboard = `-- name: GetFullEventPersonLeaderboard :many
-WITH ranked_scores AS (
+WITH blocked AS MATERIALIZED (
+    -- Hidden until they accept the event's project's required consents
+    -- (00116). Materialized so the set is computed once, not once per row.
+    SELECT b.user_id
+    FROM events e
+    CROSS JOIN LATERAL consent_blocked_user_ids(e.project_id) AS b(user_id)
+    WHERE e.id = $1::char(28)
+),
+ranked_scores AS (
     SELECT
         u.id AS entity_id,
         COALESCE(u.display_name, u.name) AS name,
@@ -1263,6 +1271,7 @@ WITH ranked_scores AS (
     INNER JOIN users u ON lep.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
     WHERE lep.event_id = $1::char(28)
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
       AND lep.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lep.score <= $3::int)
       AND ($4::char(28) = '' OR u.church_id = $4::char(28))
@@ -1560,7 +1569,12 @@ func (q *Queries) GetFullProjectChurchLeaderboard(ctx context.Context, arg GetFu
 }
 
 const GetFullProjectPersonLeaderboard = `-- name: GetFullProjectPersonLeaderboard :many
-WITH ranked_scores AS (
+WITH blocked AS MATERIALIZED (
+    -- Hidden until they accept the project's required consents (00116).
+    -- Materialized so the set is computed once, not once per leaderboard row.
+    SELECT b.user_id FROM consent_blocked_user_ids($1::char(28)) AS b(user_id)
+),
+ranked_scores AS (
     SELECT
         u.id AS entity_id,
         COALESCE(u.display_name, u.name) AS name,
@@ -1574,6 +1588,7 @@ WITH ranked_scores AS (
     INNER JOIN users u ON lpp.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
     WHERE lpp.project_id = $1::char(28)
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
       AND lpp.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lpp.score <= $3::int)
       AND ($4::char(28) = '' OR u.church_id = $4::char(28))

@@ -527,8 +527,8 @@ type QuizQuestion struct {
 	BettingMaxAbsolute       *int32             `json:"betting_max_absolute"`
 	BettingMultiplierCorrect pgtype.Numeric     `json:"betting_multiplier_correct"`
 	BettingMultiplierWrong   pgtype.Numeric     `json:"betting_multiplier_wrong"`
-	ImageUrl                 *string            `json:"image_url"`
 	AnswerLabelStyle         string             `json:"answer_label_style"`
+	ImageUrl                 *string            `json:"image_url"`
 }
 
 type QuizQuestionTranslation struct {
