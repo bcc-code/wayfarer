@@ -108,11 +108,22 @@ func NewTestRouter(cfg TestServerConfig) *gin.Engine {
 	authGroup.POST("/refresh", authHandler.Refresh)
 	authGroup.POST("/logout", authHandler.Logout)
 
+	// Quiz scheduler, without API key auth. Finished sessions are settled by
+	// the same resolver the GraphQL endpoint uses.
+	quizScheduler := &handlers.QuizSchedulerHandler{
+		DB:      cfg.DB,
+		Cache:   cfg.Cache,
+		Settler: resolver,
+	}
+	router.POST("/api/scheduler/quiz-session-transitions",
+		drainLeaderboardApplyQueue(cfg.DB),
+		quizScheduler.ProcessScheduledTransitions,
+	)
+
 	// Register plugins
 	pluginDeps := plugins.Dependencies{
 		DB:              cfg.DB,
 		Cache:           cfg.Cache,
-		Loaders:         cfg.Loaders,
 		SettingsService: cfg.SettingsService,
 		JWTConfig:       jwtConfig,
 	}

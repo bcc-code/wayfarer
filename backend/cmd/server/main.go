@@ -37,7 +37,9 @@ import (
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/otel"
 	"github.com/bcc-media/wayfarer/internal/plugins"
+	"github.com/bcc-media/wayfarer/internal/plugins/excalibur"
 	"github.com/bcc-media/wayfarer/internal/plugins/ladder_to_heaven"
+	ssfplugin "github.com/bcc-media/wayfarer/internal/plugins/ssf"
 	"github.com/bcc-media/wayfarer/internal/reuseport"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/services/bulk"
@@ -655,8 +657,6 @@ func main() {
 	pluginDeps := plugins.Dependencies{
 		DB:              db,
 		Cache:           cacheInstance,
-		Loaders:         dataLoaders,
-		PushService:     pushService,
 		SettingsService: settingsService,
 		JWTConfig:       cfg.JWT,
 		Firebase:        firebaseService,
@@ -665,12 +665,20 @@ func main() {
 
 	plugins.RegisterPlugin(router, pluginDeps, apiKeyAuth,
 		ladder_to_heaven.NewPlugin(ladder_to_heaven.Config{
-			AchievementID:         cfg.Plugin.LadderToHeavenAchievementID,
 			SecretKey:             cfg.Plugin.LadderToHeavenSecretKey,
 			TeamRenameChallengeID: cfg.Plugin.LadderToHeavenTeamRenameChallengeID,
-			CryptexSecretKey:      cfg.Plugin.LadderToHeavenCryptexSecretKey,
-			CryptexBaseURL:        cfg.Plugin.LadderToHeavenCryptexBaseURL,
-			ExcaliburBaseURL:      cfg.Plugin.LadderToHeavenExcaliburBaseURL,
+		}),
+	)
+	plugins.RegisterPlugin(router, pluginDeps, apiKeyAuth,
+		ssfplugin.NewPlugin(ssfplugin.Config{
+			AchievementID: cfg.Plugin.SSFAchievementID,
+			SecretKey:     cfg.Plugin.SSFSecretKey,
+		}),
+	)
+	plugins.RegisterPlugin(router, pluginDeps, apiKeyAuth,
+		excalibur.NewPlugin(excalibur.Config{
+			SecretKey: cfg.Plugin.ExcaliburSecretKey,
+			BaseURL:   cfg.Plugin.ExcaliburBaseURL,
 		}),
 	)
 
@@ -705,6 +713,7 @@ func main() {
 		FirebaseService: firebaseService,
 		WebhookService:  webhookService,
 		Cache:           cacheInstance,
+		Settler:         apiResolver,
 	}
 	router.POST("/api/scheduler/quiz-session-transitions", middleware.APIKeyAuth(cfg.APIKey), quizSchedulerHandler.ProcessScheduledTransitions)
 	slog.Info("Quiz scheduler endpoint registered",

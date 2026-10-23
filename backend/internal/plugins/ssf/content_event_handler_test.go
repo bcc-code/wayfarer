@@ -1,4 +1,4 @@
-package ladder_to_heaven
+package ssf
 
 import (
 	"bytes"
@@ -99,7 +99,7 @@ func TestContentEventHandler_FeatureDisabled(t *testing.T) {
 	}
 	body, _ := json.Marshal(payload)
 
-	req := httptest.NewRequest(http.MethodPost, "/plugins/ladder-to-heaven/content-event", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/plugins/ssf/content-event", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -253,7 +253,7 @@ func TestContentEventRequest_ValidationErrors(t *testing.T) {
 			body, err := json.Marshal(tt.payload)
 			require.NoError(t, err)
 
-			req := httptest.NewRequest(http.MethodPost, "/plugins/ladder-to-heaven/content-event", bytes.NewReader(body))
+			req := httptest.NewRequest(http.MethodPost, "/plugins/ssf/content-event", bytes.NewReader(body))
 			req.Header.Set("Content-Type", "application/json")
 
 			w := httptest.NewRecorder()
@@ -284,7 +284,7 @@ func TestPlugin_Disabled(t *testing.T) {
 		AchievementID: "",
 	})
 
-	assert.Equal(t, "Ladder to Heaven", plugin.Name())
+	assert.Equal(t, "SSF", plugin.Name())
 	assert.True(t, plugin.Enabled(), "Plugin should be enables")
 }
 
@@ -293,7 +293,7 @@ func TestPlugin_Enabled(t *testing.T) {
 		AchievementID: "AC01234567890123456789012345",
 	})
 
-	assert.Equal(t, "Ladder to Heaven", plugin.Name())
+	assert.Equal(t, "SSF", plugin.Name())
 	assert.True(t, plugin.Enabled(), "Plugin should be enabled when AchievementID is set")
 }
 

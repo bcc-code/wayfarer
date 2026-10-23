@@ -1,4 +1,4 @@
-package ladder_to_heaven
+package ssf
 
 import (
 	"bytes"
@@ -17,7 +17,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// contentEventHandler handles webhook requests for the Ladder to Heaven plugin.
+// contentEventHandler handles SSF content-event webhooks: completing a content
+// item of the configured achievement awards deadline bonus points.
 type contentEventHandler struct {
 	db            *database.DB
 	cache         *cache.CacheWithRegistry
@@ -66,7 +67,7 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 
 	// Check if feature is enabled
 	if h.achievementID == "" {
-		slog.Warn("ladder_to_heaven: feature disabled, PLUGIN_LADDER_TO_HEAVEN_ACHIEVEMENT_ID not set")
+		slog.Warn("ssf: feature disabled, PLUGIN_SSF_ACHIEVEMENT_ID not set")
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "feature disabled"})
 		return
 	}
@@ -74,7 +75,7 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 	// Read raw body for signature verification
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		slog.Warn("ladder_to_heaven: failed to read request body", "error", err)
+		slog.Warn("ssf: failed to read request body", "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read request body"})
 		return
 	}
@@ -83,7 +84,7 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 	if h.secretKey != "" {
 		signature := c.GetHeader("X-Webhook-Signature")
 		if !webhook.VerifySignature(body, signature, h.secretKey) {
-			slog.Warn("ladder_to_heaven: invalid webhook signature")
+			slog.Warn("ssf: invalid webhook signature")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid signature"})
 			return
 		}
@@ -95,12 +96,12 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 	// Parse request body
 	var req contentEventRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		slog.Warn("ladder_to_heaven: invalid request body", "error", err)
+		slog.Warn("ssf: invalid request body", "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body", "details": err.Error()})
 		return
 	}
 
-	slog.Info("ladder_to_heaven: processing request",
+	slog.Info("ssf: processing request",
 		"user_id", req.User.ID,
 		"task_id", req.Data.TaskID,
 		"achievement_id", h.achievementID,
@@ -109,7 +110,7 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 	// Get external content by task_id
 	content, err := h.db.Queries.GetExternalContentByTaskID(ctx, req.Data.TaskID)
 	if err != nil {
-		slog.Warn("ladder_to_heaven: external content not found",
+		slog.Warn("ssf: external content not found",
 			"task_id", req.Data.TaskID, "error", err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "external content not found", "task_id": req.Data.TaskID})
 		return
@@ -121,14 +122,14 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 		ExternalContentID: content.ID,
 	})
 	if err != nil {
-		slog.Error("ladder_to_heaven: failed to check content in achievement",
+		slog.Error("ssf: failed to check content in achievement",
 			"error", err, "content_id", content.ID, "achievement_id", h.achievementID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
 
 	if !inAchievement {
-		slog.Info("ladder_to_heaven: content not in configured achievement",
+		slog.Info("ssf: content not in configured achievement",
 			"content_id", content.ID, "achievement_id", h.achievementID)
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "content not in configured achievement"})
 		return
@@ -137,7 +138,7 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 	// Get achievement details to get project_id
 	achievement, err := h.db.Queries.GetAchievementByID(ctx, h.achievementID)
 	if err != nil {
-		slog.Error("ladder_to_heaven: failed to get achievement",
+		slog.Error("ssf: failed to get achievement",
 			"error", err, "achievement_id", h.achievementID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
@@ -149,7 +150,7 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 		Projectid: achievement.ProjectID,
 	})
 	if err != nil {
-		slog.Warn("ladder_to_heaven: failed to join user to project",
+		slog.Warn("ssf: failed to join user to project",
 			"error", err, "user_id", req.User.ID, "project_id", achievement.ProjectID)
 		// Continue anyway - score journal can still be created
 	}
@@ -157,7 +158,7 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 	// Parse consumed_at timestamp
 	consumedAt, err := time.Parse(time.RFC3339, req.Data.ConsumedAt)
 	if err != nil {
-		slog.Warn("ladder_to_heaven: invalid consumed_at timestamp",
+		slog.Warn("ssf: invalid consumed_at timestamp",
 			"consumed_at", req.Data.ConsumedAt, "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid consumed_at timestamp format"})
 		return
@@ -173,14 +174,14 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 		SourceID:   content.ID,
 	})
 	if err != nil {
-		slog.Error("ladder_to_heaven: failed to check score journal entry",
+		slog.Error("ssf: failed to check score journal entry",
 			"error", err, "user_id", req.User.ID, "content_id", content.ID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
 
 	if journalExists {
-		slog.Info("ladder_to_heaven: score journal entry already exists",
+		slog.Info("ssf: score journal entry already exists",
 			"user_id", req.User.ID, "content_id", content.ID)
 		c.JSON(http.StatusConflict, gin.H{"error": "score already awarded for this content"})
 		return
@@ -193,7 +194,7 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 	var reason *string
 	user, err := h.db.Queries.GetUserByID(ctx, req.User.ID)
 	if err != nil {
-		slog.Warn("ladder_to_heaven: failed to get user, using no title",
+		slog.Warn("ssf: failed to get user, using no title",
 			"error", err, "user_id", req.User.ID)
 	} else if user.Language != "" {
 		translation, err := h.db.Queries.GetExternalContentTranslation(ctx, sqlc.GetExternalContentTranslationParams{
@@ -227,7 +228,7 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 		Reason:     reason,
 	})
 	if err != nil {
-		slog.Error("ladder_to_heaven: failed to create score journal entry",
+		slog.Error("ssf: failed to create score journal entry",
 			"error", err, "user_id", req.User.ID, "content_id", content.ID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create score entry"})
 		return
@@ -245,7 +246,7 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 		go h.firebase.NotifyUserContent(context.Background(), req.User.ID)
 	}
 
-	slog.Info("ladder_to_heaven: awarded points",
+	slog.Info("ssf: awarded points",
 		"user_id", req.User.ID,
 		"content_id", content.ID,
 		"points", points,
