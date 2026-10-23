@@ -17,9 +17,11 @@ sources:
   # Everything in the journal except the server colors (they export
   # directly, with structured fields): jobs, postgres service messages,
   # sshd, kernel, vector itself, ...
+  # current_boot_only stays at its default (true): `false` is rejected on
+  # systemd 250-257 (Debian 13 ships 257). The checkpoint still resumes
+  # across Vector restarts; only pre-reboot history is skipped.
   journal:
     type: journald
-    current_boot_only: false
     exclude_units:
       - wayfarer@blue.service
       - wayfarer@green.service
