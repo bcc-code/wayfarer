@@ -240,13 +240,14 @@ func (r *mutationResolver) OpenQuizSession(ctx context.Context, id string) (*mod
 		return nil, fmt.Errorf("can only open session from DRAFT state")
 	}
 
-	row, err := r.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
-		ID:    id,
-		State: "OPEN",
-	})
+	row, ok, err := transitionQuizSession(ctx, r.DB.Queries, id, "DRAFT", "OPEN")
 	if err != nil {
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to open quiz session: %w", err)
+	}
+	if !ok {
+		// A concurrent call changed the state after it was checked above
+		return nil, fmt.Errorf("can only open session from DRAFT state")
 	}
 
 	// Opening makes the session visible to the bulk access check
@@ -301,13 +302,14 @@ func (r *mutationResolver) LockQuizSession(ctx context.Context, id string) (*mod
 		return nil, fmt.Errorf("can only lock session from OPEN state")
 	}
 
-	row, err := r.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
-		ID:    id,
-		State: "LOCKED",
-	})
+	row, ok, err := transitionQuizSession(ctx, r.DB.Queries, id, "OPEN", "LOCKED")
 	if err != nil {
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to lock quiz session: %w", err)
+	}
+	if !ok {
+		// A concurrent call changed the state after it was checked above
+		return nil, fmt.Errorf("can only lock session from OPEN state")
 	}
 
 	// Drop the cached session row and per-user session caches so the new
@@ -361,9 +363,7 @@ func (r *mutationResolver) FinishQuizSession(ctx context.Context, id string) (*m
 	// Already finalized - retry auto-submission and bet settlement in case they
 	// failed the first time (both are no-ops once done), then return current state
 	if session.State == "FINISHED" {
-		r.closeSessionAndSettleBets(ctx, span, id, quiz)
-		r.invalidateSessionSubmissionCaches(ctx, id, quiz.ProjectID)
-		return convertQuizSessionToModel(session), nil
+		return r.refinishQuizSession(ctx, span, session, quiz), nil
 	}
 
 	// Only allow finishing from LOCKED state
@@ -371,14 +371,24 @@ func (r *mutationResolver) FinishQuizSession(ctx context.Context, id string) (*m
 		return nil, fmt.Errorf("can only finish session from LOCKED state")
 	}
 
-	// Update state to FINISHED first to prevent duplicate processing on retry
-	row, err := r.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
-		ID:    id,
-		State: "FINISHED",
-	})
+	// Update state to FINISHED first to prevent duplicate processing on retry.
+	// Only the call that makes the transition dispatches quiz_session_finished.
+	row, ok, err := transitionQuizSession(ctx, r.DB.Queries, id, "LOCKED", "FINISHED")
 	if err != nil {
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to finish quiz session: %w", err)
+	}
+	if !ok {
+		// A concurrent finish (another admin or the scheduler) got there first
+		current, err := r.DB.Queries.GetQuizSession(ctx, id)
+		if err != nil {
+			otel.RecordError(span, err)
+			return nil, fmt.Errorf("failed to load session: %w", err)
+		}
+		if current.State != "FINISHED" {
+			return nil, fmt.Errorf("can only finish session from LOCKED state")
+		}
+		return r.refinishQuizSession(ctx, span, current, quiz), nil
 	}
 
 	// Auto-submit all active submissions, then pay out bets before notifying
@@ -483,13 +493,14 @@ func (r *mutationResolver) ReopenQuizSession(ctx context.Context, id string) (*m
 		return nil, fmt.Errorf("can only reopen session from LOCKED state")
 	}
 
-	row, err := r.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
-		ID:    id,
-		State: "OPEN",
-	})
+	row, ok, err := transitionQuizSession(ctx, r.DB.Queries, id, "LOCKED", "OPEN")
 	if err != nil {
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to reopen quiz session: %w", err)
+	}
+	if !ok {
+		// A concurrent call changed the state after it was checked above
+		return nil, fmt.Errorf("can only reopen session from LOCKED state")
 	}
 
 	// Drop the cached session row and per-user session caches so the new

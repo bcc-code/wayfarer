@@ -154,14 +154,14 @@ no key in the table takes effect at all.
 `frontend_config` is a free-form JSON blob served by `Query.frontendConfig`,
 which reads it from the database per request — so edits are live. Its keys are
 ad hoc and project-specific (`team_name_changed_challenge_id`,
-`gamenight_1_betting_quiz_id`), consumed by the my-church kickoff and gamenight
-pages as entity ids. **No migration creates this row**; where it exists it was
+`gamenight_1_betting_quiz_id`), consumed by the my-church kickoff page as entity
+ids (the gamenight pages that read the `gamenight_*` keys were removed). **No migration creates this row**; where it exists it was
 inserted by hand, and `SetSetting` cannot create it.
 
 `current_project_id` is not configuration at all: it is application data naming
 the project every end user sees, read by `Query.currentProject` /
 `myCurrentProject` / `myProjects`, the church-admin statistics resolver, the
-Firebase token warmer and the two ladder-to-heaven URL handlers. It is
+Firebase token warmer and the Excalibur user URL handler (`internal/plugins/excalibur`). It is
 deliberately absent from `SettingSpecs`.
 
 ### How a value is read

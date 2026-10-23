@@ -112,7 +112,6 @@ func NewTestRouter(cfg TestServerConfig) *gin.Engine {
 	pluginDeps := plugins.Dependencies{
 		DB:              cfg.DB,
 		Cache:           cfg.Cache,
-		Loaders:         cfg.Loaders,
 		SettingsService: cfg.SettingsService,
 		JWTConfig:       jwtConfig,
 	}

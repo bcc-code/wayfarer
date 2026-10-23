@@ -26,8 +26,8 @@ go test -v -count=1 -run 'TestValidateBet|TestNewBetCheck|TestPositiveBetAllowed
    (`LockUserBettableSubmissions`, in id order, before any other lock). Then `ValidateBet` checks the
    bet against the question limits and the user's **available points**: project score (sum of
    `score_journal`) minus their open stakes (`GetUserAvailableBetPoints`). A stake is open until it is
-   paid out; in a FINISHED session it stays open only if the core will still settle it (PREDEFINED,
-   betting on), other bets (ORDERING plugin, m2m) are released then. Percentage limits are a share of
+   paid out; in a FINISHED session it stays open only if the core will still settle it (PREDEFINED or
+   ORDERING, betting on), other bets (FREE_TEXT, NUMBER, m2m) are released then. Percentage limits are a share of
    the available points. One user's concurrent bets queue on those locks and each sees the ones
    before it (READ COMMITTED); different users never wait for each other.
 2. The bet is stored on `quiz_responses.bet_amount`. Nothing is journaled yet.

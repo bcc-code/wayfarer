@@ -149,7 +149,7 @@ func TestQuizSessionBetSettlement(t *testing.T) {
 	// Answered without a selection: never graded, so the bet is void and returned
 	ungradedQ, _, _ := addPredefined(t, 3, nil)
 
-	// ORDERING bets are left to the plugin and must not be settled by the core
+	// ORDERING is graded all-or-nothing and settled like PREDEFINED (default multipliers)
 	var ordering struct {
 		AddQuizQuestion struct {
 			ID            string `json:"id"`
@@ -343,6 +343,7 @@ func TestQuizSessionBetSettlement(t *testing.T) {
 		{name: "wrong, custom half back", responseID: loserCustom, wantNet: -50},
 		{name: "correct, default 2x", responseID: winnerDefault, wantNet: 40},
 		{name: "wrong, default bet lost", responseID: loserDefault, wantNet: -40},
+		{name: "correct ORDERING, default 2x", responseID: winnerOrdering, wantNet: 10},
 	}
 	for _, tt := range tests {
 		t.Run("settled: "+tt.name, func(t *testing.T) {
@@ -362,8 +363,8 @@ func TestQuizSessionBetSettlement(t *testing.T) {
 			id, token string
 			wantNet   int
 		}{
-			{winnerID, winnerToken, 200 + 40}, // custom 3x and default 2x won, the void bet nets 0
-			{loserID, loserToken, -50 - 40},   // custom half back and default lost
+			{winnerID, winnerToken, 200 + 40 + 10}, // custom 3x, default 2x and ORDERING 2x won, the void bet nets 0
+			{loserID, loserToken, -50 - 40},        // custom half back and default lost
 		} {
 			got := apiPoints(t, u.token)
 			assert.Equal(t, journalPoints(t, u.id), got, "myPoints matches the score journal")
@@ -380,12 +381,6 @@ func TestQuizSessionBetSettlement(t *testing.T) {
 		if assert.NotNil(t, resp.PointsEarned) {
 			assert.Zero(t, *resp.PointsEarned)
 		}
-	})
-
-	t.Run("ORDERING bet is not settled by the core", func(t *testing.T) {
-		count, _ := betJournal(t, winnerOrdering)
-		assert.Zero(t, count)
-		assert.Nil(t, getResponse(t, winnerOrdering).ScoreJournalID)
 	})
 
 	t.Run("finishing again does not pay out twice", func(t *testing.T) {
