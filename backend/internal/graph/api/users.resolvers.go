@@ -173,6 +173,9 @@ func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter, fir
 		}
 	}
 
+	// Users hidden from this caller by a required consent (migration 00116)
+	var excludeIDs []string
+
 	// M2M users bypass normal user validation and have unfiltered access
 	if !isM2M {
 		// Validate user authentication and get basic info
@@ -189,10 +192,18 @@ func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter, fir
 
 		// Apply permission-based filters
 		filter = applyPermissionFilters(filter, perms)
+
+		if perms.HideConsentBlocked {
+			excludeIDs, err = r.DB.Queries.GetConsentBlockedUserIDsInTeam(ctx, perms.TeamID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to load hidden team members: %w", err)
+			}
+		}
 	}
 
 	// Build cache key from filter and pagination parameters
 	cacheKeyParams := buildCacheKeyParams(filter, first, after, last, before)
+	addExcludeIDsToCacheKey(cacheKeyParams, excludeIDs)
 	cacheKey := cache.UsersFilterKey(cacheKeyParams)
 	countCacheKey := cache.UsersCountKey(cacheKeyParams)
 
@@ -225,6 +236,7 @@ func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter, fir
 	if err != nil {
 		return nil, err
 	}
+	params.Excludeids = excludeIDs
 
 	// Query database with cursor pagination
 	rows, err := r.DB.Queries.GetUsersFilteredCursor(ctx, params)
@@ -245,6 +257,7 @@ func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter, fir
 	// If not in cache, query database
 	if !countCached {
 		countParams := buildCountFilterParams(filter)
+		countParams.Excludeids = excludeIDs
 		totalCount, err = r.DB.Queries.CountUsersFiltered(ctx, countParams)
 		if err != nil {
 			return nil, fmt.Errorf("failed to count users: %w", err)

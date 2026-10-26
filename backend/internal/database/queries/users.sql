@@ -56,6 +56,7 @@ WHERE
         SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = @teamid::char(28)
     ))
     AND (@ids::char(28)[] IS NULL OR u.id = ANY(@ids::char(28)[]))
+    AND (@excludeids::char(28)[] IS NULL OR NOT (u.id = ANY(@excludeids::char(28)[])))
     AND (@aftercursor::char(28) = '' OR u.id > @aftercursor::char(28))
     AND (@beforecursor::char(28) = '' OR u.id < @beforecursor::char(28))
 ORDER BY
@@ -81,7 +82,8 @@ WHERE
     AND (@teamid::char(28) = '' OR EXISTS (
         SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = @teamid::char(28)
     ))
-    AND (@ids::char(28)[] IS NULL OR u.id = ANY(@ids::char(28)[]));
+    AND (@ids::char(28)[] IS NULL OR u.id = ANY(@ids::char(28)[]))
+    AND (@excludeids::char(28)[] IS NULL OR NOT (u.id = ANY(@excludeids::char(28)[])));
 
 -- name: GetUsersByTeamIDs :many
 SELECT

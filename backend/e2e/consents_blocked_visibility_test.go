@@ -108,6 +108,18 @@ func TestRequiredConsentHidesUserFromOthers(t *testing.T) {
 	require.NoError(t, dbMgr.AssignRole(ctx, adminID, testutil.RoleAdmin))
 	adminToken, err := testutil.GenerateAdminToken(adminID)
 	require.NoError(t, err)
+
+	// The church admin of the members' church, who places them into units
+	const churchAdminID = "US01TEST0000000000000BLKCHAD"
+	require.NoError(t, dbMgr.CreateTestUser(ctx, churchAdminID, "Church Admin", "MALE", adult, churchID))
+	cid := churchID
+	require.NoError(t, dbMgr.AssignRoleWithScope(ctx, churchAdminID, testutil.RoleChurchAdmin, &cid, nil, nil))
+	churchAdminToken, err := testutil.GenerateChurchAdminToken(churchAdminID)
+	require.NoError(t, err)
+
+	// The viewer leads the unit: a participant, so hidden members stay hidden
+	tid := teamID
+	require.NoError(t, dbMgr.AssignRoleWithScope(ctx, acceptedID, testutil.RoleTeamLead, nil, nil, &tid))
 	viewerToken, err := testutil.GenerateUserToken(acceptedID)
 	require.NoError(t, err)
 
@@ -229,28 +241,79 @@ func TestRequiredConsentHidesUserFromOthers(t *testing.T) {
 		assert.Equal(t, visible, adminRanks)
 	})
 
-	t.Run("admins still see every member in Team.members", func(t *testing.T) {
-		resp := client.WithAuth(adminToken).MustExecute(t, `
+	teamMembers := func(t *testing.T, token string) []string {
+		t.Helper()
+		resp := client.WithAuth(token).MustExecute(t, `
 			query ($id: ID!) {
-				team(id: $id) { members { user { id } } }
+				team(id: $id) { members { id } }
 			}
 		`, map[string]any{"id": teamID})
 		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
 		var result struct {
 			Team struct {
 				Members []struct {
-					User struct {
-						ID string `json:"id"`
-					} `json:"user"`
+					ID string `json:"id"`
 				} `json:"members"`
 			} `json:"team"`
 		}
 		require.NoError(t, resp.UnmarshalData(&result))
 		ids := make([]string, len(result.Team.Members))
 		for i, m := range result.Team.Members {
-			ids[i] = m.User.ID
+			ids[i] = m.ID
 		}
-		assert.ElementsMatch(t, []string{acceptedID, unansweredID, rejectedID, childID, teenID}, ids)
+		return ids
+	}
+
+	usersInTeam := func(t *testing.T, token string) ([]string, int) {
+		t.Helper()
+		resp := client.WithAuth(token).MustExecute(t, `
+			query ($teamId: ID!) {
+				users(filter: { teamId: $teamId }, first: 100) {
+					edges { node { id } }
+					totalCount
+				}
+			}
+		`, map[string]any{"teamId": teamID})
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+		var result struct {
+			Users struct {
+				Edges []struct {
+					Node struct {
+						ID string `json:"id"`
+					} `json:"node"`
+				} `json:"edges"`
+				TotalCount int `json:"totalCount"`
+			} `json:"users"`
+		}
+		require.NoError(t, resp.UnmarshalData(&result))
+		ids := make([]string, len(result.Users.Edges))
+		for i, e := range result.Users.Edges {
+			ids[i] = e.Node.ID
+		}
+		return ids, result.Users.TotalCount
+	}
+
+	allMembers := []string{acceptedID, unansweredID, rejectedID, childID, teenID}
+	visibleMembers := []string{acceptedID, childID}
+
+	t.Run("admins still see every member in Team.members", func(t *testing.T) {
+		assert.ElementsMatch(t, allMembers, teamMembers(t, adminToken))
+	})
+
+	t.Run("the church admin who placed them sees every member", func(t *testing.T) {
+		assert.ElementsMatch(t, allMembers, teamMembers(t, churchAdminToken))
+
+		ids, total := usersInTeam(t, churchAdminToken)
+		assert.ElementsMatch(t, allMembers, ids)
+		assert.Equal(t, len(allMembers), total)
+	})
+
+	t.Run("the unit leader does not see hidden members", func(t *testing.T) {
+		assert.ElementsMatch(t, visibleMembers, teamMembers(t, viewerToken))
+
+		ids, total := usersInTeam(t, viewerToken)
+		assert.ElementsMatch(t, visibleMembers, ids)
+		assert.Equal(t, len(visibleMembers), total, "totalCount must not count hidden members")
 	})
 
 	t.Run("a required consent of another project does not hide anyone here", func(t *testing.T) {

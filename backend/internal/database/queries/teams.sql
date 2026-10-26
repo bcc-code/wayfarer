@@ -239,6 +239,17 @@ GROUP BY
     u.avatar_url
 ORDER BY score DESC, u.name ASC;
 
+-- name: GetConsentBlockedUserIDsInTeam :many
+-- Members of the team hidden by a required consent of its project (00116)
+SELECT b.user_id::char(28) AS user_id
+FROM teams t
+CROSS JOIN LATERAL consent_blocked_user_ids(t.project_id) AS b(user_id)
+WHERE t.id = @team_id::char(28)
+  AND EXISTS (
+      SELECT 1 FROM team_members tm
+      WHERE tm.team_id = t.id AND tm.user_id = b.user_id
+  );
+
 -- name: IsUserInAnyTeamInProject :one
 SELECT EXISTS(
     SELECT 1

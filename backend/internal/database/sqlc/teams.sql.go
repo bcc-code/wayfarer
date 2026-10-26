@@ -169,6 +169,38 @@ func (q *Queries) DeleteTeam(ctx context.Context, id string) error {
 	return err
 }
 
+const GetConsentBlockedUserIDsInTeam = `-- name: GetConsentBlockedUserIDsInTeam :many
+SELECT b.user_id::char(28) AS user_id
+FROM teams t
+CROSS JOIN LATERAL consent_blocked_user_ids(t.project_id) AS b(user_id)
+WHERE t.id = $1::char(28)
+  AND EXISTS (
+      SELECT 1 FROM team_members tm
+      WHERE tm.team_id = t.id AND tm.user_id = b.user_id
+  )
+`
+
+// Members of the team hidden by a required consent of its project (00116)
+func (q *Queries) GetConsentBlockedUserIDsInTeam(ctx context.Context, teamID string) ([]string, error) {
+	rows, err := q.db.Query(ctx, GetConsentBlockedUserIDsInTeam, teamID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var user_id string
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetTeamAverageAge = `-- name: GetTeamAverageAge :one
 SELECT COALESCE(
     AVG(EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)),

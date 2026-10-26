@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
@@ -262,5 +263,18 @@ func withMeTag(entries []model.LeaderboardEntry, viewerID string) []model.Leader
 		result[i].Tags = append(tags, result[i].Tags...)
 	}
 
+	return result
+}
+
+// teamMembersWithout converts the loaded members, leaving out hiddenIDs (users
+// hidden from the caller by a required consent)
+func teamMembersWithout(members []*model.TeamMember, hiddenIDs []string) []model.TeamMember {
+	result := make([]model.TeamMember, 0, len(members))
+	for _, m := range members {
+		if slices.Contains(hiddenIDs, m.UserID) {
+			continue
+		}
+		result = append(result, *m)
+	}
 	return result
 }

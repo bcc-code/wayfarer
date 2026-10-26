@@ -3,6 +3,8 @@ package api
 import (
 	"context"
 	"fmt"
+	"slices"
+	"strings"
 
 	"github.com/graph-gophers/dataloader/v7"
 
@@ -22,6 +24,7 @@ type RoleServiceInterface interface {
 	CanManageChurch(ctx context.Context, userID, churchID string) bool
 	CanManageProject(ctx context.Context, userID, projectID string) bool
 	CanManageTeam(ctx context.Context, userID, teamID string) bool
+	CanManageTeamAsAdmin(ctx context.Context, userID, teamID string) bool
 }
 
 // authenticatedUserInfo holds information about the authenticated user
@@ -57,9 +60,10 @@ type permissionContext struct {
 	IsChurchAdmin  bool
 	IsProjectAdmin bool
 	IsTeamLead     bool
-	ChurchID       string
-	ProjectID      string
-	TeamID         string
+	HideConsentBlocked bool
+	ChurchID           string
+	ProjectID          string
+	TeamID             string
 }
 
 // checkUserPermissions determines what level of access the user has
@@ -91,6 +95,9 @@ func checkUserPermissions(
 		if filter != nil && filter.TeamID != nil {
 			perms.TeamID = *filter.TeamID
 			perms.IsTeamLead = roleService.CanManageTeam(ctx, userInfo.UserID, perms.TeamID)
+			if perms.IsTeamLead {
+				perms.HideConsentBlocked = !roleService.CanManageTeamAsAdmin(ctx, userInfo.UserID, perms.TeamID)
+			}
 		}
 	}
 
@@ -298,6 +305,18 @@ func buildCountFilterParams(filter *model.UserFilter) sqlc.CountUsersFilteredPar
 }
 
 // buildCacheKeyParams converts filter and pagination parameters to a map for cache key generation
+// addExcludeIDsToCacheKey keys results by the users hidden from the caller, so
+// a result without them is never served to someone who sees them, and
+// accepting a required consent changes the key without any invalidation
+func addExcludeIDsToCacheKey(params map[string]string, excludeIDs []string) {
+	if len(excludeIDs) == 0 {
+		return
+	}
+	sorted := slices.Clone(excludeIDs)
+	slices.Sort(sorted)
+	params["excludeids"] = strings.Join(sorted, ",")
+}
+
 func buildCacheKeyParams(filter *model.UserFilter, first *int, after *string, last *int, before *string) map[string]string {
 	params := make(map[string]string)
 

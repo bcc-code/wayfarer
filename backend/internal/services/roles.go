@@ -381,6 +381,25 @@ func (s *RoleService) CanManageTeam(ctx context.Context, userID, teamID string) 
 		return true
 	}
 
+	return s.canManageTeamAsScopedAdmin(ctx, userID, teamID)
+}
+
+// CanManageTeamAsAdmin is CanManageTeam without the team lead: superadmin,
+// admin, project admin for the team's project, or church admin for one of its
+// members (or its creator). A team lead is a participant, so a lead whose
+// access comes only from that role must not see members hidden by a required
+// consent (consent_blocked_user_ids, migration 00116).
+func (s *RoleService) CanManageTeamAsAdmin(ctx context.Context, userID, teamID string) bool {
+	if s.IsAdmin(ctx, userID) {
+		return true
+	}
+
+	return s.canManageTeamAsScopedAdmin(ctx, userID, teamID)
+}
+
+// canManageTeamAsScopedAdmin checks the project admin and church admin rules
+// shared by CanManageTeam and CanManageTeamAsAdmin.
+func (s *RoleService) canManageTeamAsScopedAdmin(ctx context.Context, userID, teamID string) bool {
 	// Get the team's project ID
 	projectID, err := s.queries.GetTeamProjectID(ctx, teamID)
 	if err != nil {

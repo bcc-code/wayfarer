@@ -1510,10 +1510,15 @@ func (r *teamResolver) Members(ctx context.Context, obj *model.Team) ([]model.Te
 		}
 	}
 
-	// Check permissions - admins, M2M, project admins, team leads, and church admins can access team members
-	allowed := isM2MFromToken ||
+	// Check permissions - admins, M2M, project admins and church admins see
+	// every member
+	seesHidden := isM2MFromToken ||
 		r.RoleService.HasRole(ctx, currentUserID, services.RoleM2M) ||
-		r.RoleService.CanManageTeam(ctx, currentUserID, obj.ID)
+		r.RoleService.CanManageTeamAsAdmin(ctx, currentUserID, obj.ID)
+
+	// Team leads can access team members too, but a lead is a participant:
+	// members hidden by a required consent are left out
+	allowed := seesHidden || r.RoleService.HasRoleInTeam(ctx, currentUserID, services.RoleTeamLead, obj.ID)
 
 	if !allowed {
 		return nil, fmt.Errorf("permission denied: you do not have access to this team's members")
@@ -1526,13 +1531,15 @@ func (r *teamResolver) Members(ctx context.Context, obj *model.Team) ([]model.Te
 		return nil, fmt.Errorf("failed to load team members: %w", err)
 	}
 
-	// Convert []*model.TeamMember to []model.TeamMember
-	result := make([]model.TeamMember, len(members))
-	for i, m := range members {
-		result[i] = *m
+	var hiddenIDs []string
+	if !seesHidden {
+		hiddenIDs, err = r.DB.Queries.GetConsentBlockedUserIDsInTeam(ctx, obj.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load hidden team members: %w", err)
+		}
 	}
 
-	return result, nil
+	return teamMembersWithout(members, hiddenIDs), nil
 }
 
 // MemberLeaderboard is the resolver for the memberLeaderboard field.
