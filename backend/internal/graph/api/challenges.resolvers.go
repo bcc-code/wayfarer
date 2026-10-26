@@ -771,6 +771,10 @@ func (r *mutationResolver) BulkEnrollUsersInChallenge(ctx context.Context, targe
 		return nil, err
 	}
 
+	if len(userIds) == 0 {
+		return []model.Challenge{}, nil // No users to enroll
+	}
+
 	// Load challenge for authorization
 	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, challengeID)
 	challenge, err := thunk()
@@ -781,10 +785,6 @@ func (r *mutationResolver) BulkEnrollUsersInChallenge(ctx context.Context, targe
 
 	if err := authorizeBulkEnrollment(ctx, r.RoleService, r.DB.Queries, adminID, projectID, userIds); err != nil {
 		return nil, err
-	}
-
-	if len(userIds) == 0 {
-		return []model.Challenge{}, nil // No users to enroll
 	}
 
 	// Bulk enroll; only users who were not enrolled yet come back
