@@ -91,13 +91,13 @@ describe('QuizBettingModule', () => {
   })
 
   describe('results mode', () => {
-    it('shows a win with a positive points value and multiplier', async () => {
+    it('shows a win with its points value and the multiplier from the API', async () => {
       const wrapper = await mountBet({
         mode: 'results',
         betAmount: 10,
-        pointsEarned: 20, // resultAmount 30 -> x3
-        correctCount: 2,
-        totalCount: 3,
+        pointsEarned: 20,
+        outcome: 'correct',
+        multiplier: 3,
       })
       expect(wrapper.text()).toContain('+20')
       expect(wrapper.text()).toContain('Points earned')
@@ -108,11 +108,27 @@ describe('QuizBettingModule', () => {
       const wrapper = await mountBet({
         mode: 'results',
         betAmount: 10,
-        pointsEarned: 5, // resultAmount 15 -> x1.5
-        correctCount: 1,
-        totalCount: 3,
+        pointsEarned: 5,
+        outcome: 'correct',
+        multiplier: 1.5,
       })
       expect(wrapper.text()).toContain('x 1.5')
+    })
+
+    /**
+     * The multiplier is the ledger's, not a reconstruction from the net
+     * points: a floored payout makes the two disagree, and the ledger wins.
+     */
+    it('shows the API multiplier even when the net points imply another', async () => {
+      const wrapper = await mountBet({
+        mode: 'results',
+        betAmount: 3,
+        pointsEarned: 4, // reconstructing would give x 2.33
+        outcome: 'correct',
+        multiplier: 2.5,
+      })
+      expect(wrapper.text()).toContain('x 2.5')
+      expect(wrapper.text()).not.toContain('2.33')
     })
 
     it('shows a loss with the negative points value', async () => {
@@ -120,23 +136,63 @@ describe('QuizBettingModule', () => {
         mode: 'results',
         betAmount: 10,
         pointsEarned: -5,
-        correctCount: 0,
-        totalCount: 3,
+        outcome: 'incorrect',
+        multiplier: 0.5,
       })
       expect(wrapper.text()).toContain('Points lost')
       expect(wrapper.text()).toContain('-5')
     })
 
-    it('hides the multiplier when there are no correct answers', async () => {
+    /**
+     * A payout curve that returns the stake nets zero points. That is a won
+     * bet, not a lost one, so the verdict decides and not the sign.
+     */
+    it('treats a break-even bet as a win', async () => {
+      const wrapper = await mountBet({
+        mode: 'results',
+        betAmount: 10,
+        pointsEarned: 0,
+        outcome: 'correct',
+        multiplier: 1,
+      })
+      expect(wrapper.text()).toContain('Points earned')
+      expect(wrapper.text()).not.toContain('Points lost')
+    })
+
+    it('reads the verdict, not the points, for a zero-payout loss', async () => {
       const wrapper = await mountBet({
         mode: 'results',
         betAmount: 10,
         pointsEarned: -10,
-        correctCount: 0,
-        totalCount: 3,
+        outcome: 'incorrect',
+        multiplier: 0,
       })
-      // correctCount 0 -> "none" label, no multiplier row
-      expect(wrapper.text()).toContain("You didn't have any correct ones.")
+      expect(wrapper.text()).toContain('You answered incorrectly.')
+      expect(wrapper.text()).toContain('Points lost')
+    })
+
+    it('omits the outcome row entirely when the question was not graded', async () => {
+      const wrapper = await mountBet({
+        mode: 'results',
+        betAmount: 10,
+        pointsEarned: 20,
+        outcome: null,
+        multiplier: null,
+      })
+      expect(wrapper.text()).not.toContain('You answered')
+      expect(wrapper.text()).not.toContain('x ')
+      expect(wrapper.text()).toContain('+20')
+    })
+
+    it('shows the outcome without a multiplier when the bet is unsettled', async () => {
+      const wrapper = await mountBet({
+        mode: 'results',
+        betAmount: 10,
+        pointsEarned: 20,
+        outcome: 'correct',
+        multiplier: null,
+      })
+      expect(wrapper.text()).toContain('You answered correctly.')
       expect(wrapper.text()).not.toContain('x ')
     })
   })

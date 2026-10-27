@@ -937,6 +937,7 @@ export type FreeTextResponse = QuizResponse & {
   journalEntry?: Maybe<ScoreJournal>;
   pointsEarned?: Maybe<Scalars['Int']['output']>;
   question: QuizQuestion;
+  settledBetMultiplier?: Maybe<Scalars['Float']['output']>;
   submission: QuizSubmission;
   textResponse: Scalars['String']['output'];
   timeSpentSeconds?: Maybe<Scalars['Int']['output']>;
@@ -1003,6 +1004,7 @@ export type JsonResponse = QuizResponse & {
   jsonResponse: Scalars['JSON']['output'];
   pointsEarned?: Maybe<Scalars['Int']['output']>;
   question: QuizQuestion;
+  settledBetMultiplier?: Maybe<Scalars['Float']['output']>;
   submission: QuizSubmission;
   timeSpentSeconds?: Maybe<Scalars['Int']['output']>;
 };
@@ -2176,6 +2178,7 @@ export type NumberResponse = QuizResponse & {
   numberResponse: Scalars['Float']['output'];
   pointsEarned?: Maybe<Scalars['Int']['output']>;
   question: QuizQuestion;
+  settledBetMultiplier?: Maybe<Scalars['Float']['output']>;
   submission: QuizSubmission;
   timeSpentSeconds?: Maybe<Scalars['Int']['output']>;
 };
@@ -2229,6 +2232,7 @@ export type OrderingResponse = QuizResponse & {
   journalEntry?: Maybe<ScoreJournal>;
   pointsEarned?: Maybe<Scalars['Int']['output']>;
   question: QuizQuestion;
+  settledBetMultiplier?: Maybe<Scalars['Float']['output']>;
   submission: QuizSubmission;
   submittedOrder: Array<Scalars['ID']['output']>;
   timeSpentSeconds?: Maybe<Scalars['Int']['output']>;
@@ -2315,6 +2319,7 @@ export type PredefinedResponse = QuizResponse & {
   question: QuizQuestion;
   selectedAnswerIds: Array<Scalars['ID']['output']>;
   selectedAnswers: Array<QuizPredefinedAnswer>;
+  settledBetMultiplier?: Maybe<Scalars['Float']['output']>;
   submission: QuizSubmission;
   timeSpentSeconds?: Maybe<Scalars['Int']['output']>;
 };
@@ -2981,6 +2986,7 @@ export type QuizResponse = {
   journalEntry?: Maybe<ScoreJournal>;
   pointsEarned?: Maybe<Scalars['Int']['output']>;
   question: QuizQuestion;
+  settledBetMultiplier?: Maybe<Scalars['Float']['output']>;
   submission: QuizSubmission;
   timeSpentSeconds?: Maybe<Scalars['Int']['output']>;
 };
@@ -4310,35 +4316,35 @@ export type SubmitQuizAnswerMutationVariables = Exact<{
 
 
 export type SubmitQuizAnswerMutation = { __typename?: 'Mutation', submitQuizAnswer:
-    | { __typename: 'FreeTextResponse', textResponse: string, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, question:
+    | { __typename: 'FreeTextResponse', textResponse: string, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, isCorrect?: boolean | null, question:
         | { __typename?: 'FreeTextQuestion', id: string }
         | { __typename?: 'JsonQuestion', id: string }
         | { __typename?: 'NumberQuestion', id: string }
         | { __typename?: 'OrderingQuestion', id: string }
         | { __typename?: 'PredefinedQuestion', id: string }
        }
-    | { __typename: 'JsonResponse', id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, question:
+    | { __typename: 'JsonResponse', id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, isCorrect?: boolean | null, question:
         | { __typename?: 'FreeTextQuestion', id: string }
         | { __typename?: 'JsonQuestion', id: string }
         | { __typename?: 'NumberQuestion', id: string }
         | { __typename?: 'OrderingQuestion', id: string }
         | { __typename?: 'PredefinedQuestion', id: string }
        }
-    | { __typename: 'NumberResponse', numberResponse: number, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, question:
+    | { __typename: 'NumberResponse', numberResponse: number, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, isCorrect?: boolean | null, question:
         | { __typename?: 'FreeTextQuestion', id: string }
         | { __typename?: 'JsonQuestion', id: string }
         | { __typename?: 'NumberQuestion', id: string }
         | { __typename?: 'OrderingQuestion', id: string }
         | { __typename?: 'PredefinedQuestion', id: string }
        }
-    | { __typename: 'OrderingResponse', isCorrect?: boolean | null, submittedOrder: Array<string>, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, question:
+    | { __typename: 'OrderingResponse', submittedOrder: Array<string>, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, isCorrect?: boolean | null, question:
         | { __typename?: 'FreeTextQuestion', id: string }
         | { __typename?: 'JsonQuestion', id: string }
         | { __typename?: 'NumberQuestion', id: string }
         | { __typename?: 'OrderingQuestion', id: string }
         | { __typename?: 'PredefinedQuestion', id: string }
        }
-    | { __typename: 'PredefinedResponse', isCorrect?: boolean | null, selectedAnswerIds: Array<string>, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, selectedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, isCorrect?: boolean | null }>, question:
+    | { __typename: 'PredefinedResponse', selectedAnswerIds: Array<string>, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, isCorrect?: boolean | null, selectedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, isCorrect?: boolean | null }>, question:
         | { __typename?: 'FreeTextQuestion', id: string }
         | { __typename?: 'JsonQuestion', id: string }
         | { __typename?: 'NumberQuestion', id: string }
@@ -4354,11 +4360,11 @@ export type UpdateQuizAnswerMutationVariables = Exact<{
 
 
 export type UpdateQuizAnswerMutation = { __typename?: 'Mutation', updateQuizAnswer:
-    | { __typename: 'FreeTextResponse', id: string, betAmount?: number | null }
-    | { __typename: 'JsonResponse', id: string, betAmount?: number | null }
-    | { __typename: 'NumberResponse', id: string, betAmount?: number | null }
-    | { __typename: 'OrderingResponse', isCorrect?: boolean | null, submittedOrder: Array<string>, id: string, betAmount?: number | null }
-    | { __typename: 'PredefinedResponse', id: string, betAmount?: number | null }
+    | { __typename: 'FreeTextResponse', id: string, betAmount?: number | null, isCorrect?: boolean | null }
+    | { __typename: 'JsonResponse', id: string, betAmount?: number | null, isCorrect?: boolean | null }
+    | { __typename: 'NumberResponse', id: string, betAmount?: number | null, isCorrect?: boolean | null }
+    | { __typename: 'OrderingResponse', submittedOrder: Array<string>, id: string, betAmount?: number | null, isCorrect?: boolean | null }
+    | { __typename: 'PredefinedResponse', id: string, betAmount?: number | null, isCorrect?: boolean | null }
    };
 
 export type FinalizeQuizMutationVariables = Exact<{
@@ -4510,35 +4516,35 @@ export type ChallengePageQuery = { __typename?: 'Query', myCurrentProject: { __t
             | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string, correctOrder?: number | null }>, image?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
             | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, answerLabelStyle: QuizAnswerLabelStyle, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, bettingEnabled: boolean, bettingMinAbsolute?: number | null, bettingMaxAbsolute?: number | null, bettingMinPercentage?: number | null, bettingMaxPercentage?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, description?: string | null, answerOrder: number, isCorrect?: boolean | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> }>, image?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
           >, responses: Array<
-            | { __typename: 'FreeTextResponse', textResponse: string, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, pointsEarned?: number | null, question:
+            | { __typename: 'FreeTextResponse', textResponse: string, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, pointsEarned?: number | null, isCorrect?: boolean | null, settledBetMultiplier?: number | null, question:
                 | { __typename?: 'FreeTextQuestion', id: string }
                 | { __typename?: 'JsonQuestion', id: string }
                 | { __typename?: 'NumberQuestion', id: string }
                 | { __typename?: 'OrderingQuestion', id: string }
                 | { __typename?: 'PredefinedQuestion', id: string }
                }
-            | { __typename: 'JsonResponse', jsonResponse: any, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, pointsEarned?: number | null, question:
+            | { __typename: 'JsonResponse', jsonResponse: any, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, pointsEarned?: number | null, isCorrect?: boolean | null, settledBetMultiplier?: number | null, question:
                 | { __typename?: 'FreeTextQuestion', id: string }
                 | { __typename?: 'JsonQuestion', id: string }
                 | { __typename?: 'NumberQuestion', id: string }
                 | { __typename?: 'OrderingQuestion', id: string }
                 | { __typename?: 'PredefinedQuestion', id: string }
                }
-            | { __typename: 'NumberResponse', numberResponse: number, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, pointsEarned?: number | null, question:
+            | { __typename: 'NumberResponse', numberResponse: number, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, pointsEarned?: number | null, isCorrect?: boolean | null, settledBetMultiplier?: number | null, question:
                 | { __typename?: 'FreeTextQuestion', id: string }
                 | { __typename?: 'JsonQuestion', id: string }
                 | { __typename?: 'NumberQuestion', id: string }
                 | { __typename?: 'OrderingQuestion', id: string }
                 | { __typename?: 'PredefinedQuestion', id: string }
                }
-            | { __typename: 'OrderingResponse', isCorrect?: boolean | null, submittedOrder: Array<string>, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, pointsEarned?: number | null, question:
+            | { __typename: 'OrderingResponse', submittedOrder: Array<string>, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, pointsEarned?: number | null, isCorrect?: boolean | null, settledBetMultiplier?: number | null, question:
                 | { __typename?: 'FreeTextQuestion', id: string }
                 | { __typename?: 'JsonQuestion', id: string }
                 | { __typename?: 'NumberQuestion', id: string }
                 | { __typename?: 'OrderingQuestion', id: string }
                 | { __typename?: 'PredefinedQuestion', id: string }
                }
-            | { __typename: 'PredefinedResponse', isCorrect?: boolean | null, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, pointsEarned?: number | null, selectedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }>, question:
+            | { __typename: 'PredefinedResponse', id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, betAmount?: number | null, pointsEarned?: number | null, isCorrect?: boolean | null, settledBetMultiplier?: number | null, selectedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }>, question:
                 | { __typename?: 'FreeTextQuestion', id: string }
                 | { __typename?: 'JsonQuestion', id: string }
                 | { __typename?: 'NumberQuestion', id: string }
@@ -6377,11 +6383,11 @@ export const SubmitQuizAnswerDocument = gql`
     answeredAt
     timeSpentSeconds
     betAmount
+    isCorrect
     question {
       id
     }
     ... on PredefinedResponse {
-      isCorrect
       selectedAnswerIds
       selectedAnswers {
         id
@@ -6390,7 +6396,6 @@ export const SubmitQuizAnswerDocument = gql`
       }
     }
     ... on OrderingResponse {
-      isCorrect
       submittedOrder
     }
     ... on NumberResponse {
@@ -6412,8 +6417,8 @@ export const UpdateQuizAnswerDocument = gql`
     __typename
     id
     betAmount
+    isCorrect
     ... on OrderingResponse {
-      isCorrect
       submittedOrder
     }
   }
@@ -6722,6 +6727,8 @@ export const ChallengePageDocument = gql`
             timeSpentSeconds
             betAmount
             pointsEarned
+            isCorrect
+            settledBetMultiplier
             question {
               id
             }
@@ -6735,7 +6742,6 @@ export const ChallengePageDocument = gql`
               numberResponse
             }
             ... on PredefinedResponse {
-              isCorrect
               selectedAnswers {
                 id
                 answerText
@@ -6744,7 +6750,6 @@ export const ChallengePageDocument = gql`
               }
             }
             ... on OrderingResponse {
-              isCorrect
               submittedOrder
             }
           }

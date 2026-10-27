@@ -140,6 +140,7 @@ const orderingResponse = (extra: Record<string, unknown> = {}) => ({
   isCorrect: true,
   betAmount: 10,
   pointsEarned: 20,
+  settledBetMultiplier: 3,
   ...extra,
 })
 function orderingSub(responses: unknown[] = [], completed = false) {
@@ -467,7 +468,7 @@ describe('QuizChallenge ordering + betting flow', () => {
     expect(button(wrapper, 'Close')).toBeTruthy()
   })
 
-  it('shows the betting results with points and correct-count when finished', async () => {
+  it('shows the betting results with the points and verdict from the API when finished', async () => {
     const wrapper = await mountQuiz(
       {
         userActiveSession: { id: 'S1', state: 'FINISHED' },
@@ -481,9 +482,47 @@ describe('QuizChallenge ordering + betting flow', () => {
     const mod = bettingModule(wrapper)
     expect(mod.props('mode')).toBe('results')
     expect(mod.props('pointsEarned')).toBe(20)
-    // Both items in correct order -> correctCount 2 of 2 (orchestrator computed).
-    expect(mod.props('correctCount')).toBe(2)
-    expect(mod.props('totalCount')).toBe(2)
+    // Verdict and payout are the backend's, not regraded in the browser.
+    expect(mod.props('outcome')).toBe('correct')
+    expect(mod.props('multiplier')).toBe(3)
+  })
+
+  it('passes an incorrect verdict straight through to the module', async () => {
+    const wrapper = await mountQuiz(
+      {
+        userActiveSession: { id: 'S1', state: 'FINISHED' },
+        userSubmissions: [
+          orderingSub([
+            orderingResponse({
+              isCorrect: false,
+              pointsEarned: -10,
+              settledBetMultiplier: 0,
+            }),
+          ]),
+        ],
+      },
+      { userScore: 100 },
+    )
+
+    const mod = bettingModule(wrapper)
+    expect(mod.props('outcome')).toBe('incorrect')
+    expect(mod.props('multiplier')).toBe(0)
+  })
+
+  it('leaves the outcome null when the backend has not graded the response', async () => {
+    const wrapper = await mountQuiz(
+      {
+        userActiveSession: { id: 'S1', state: 'FINISHED' },
+        userSubmissions: [
+          orderingSub([
+            orderingResponse({ isCorrect: null, settledBetMultiplier: null }),
+          ]),
+        ],
+      },
+      { userScore: 100 },
+    )
+
+    expect(bettingModule(wrapper).props('outcome')).toBeNull()
   })
 
   it('keeps a single finished ordering question on the question view (Game Night case)', async () => {

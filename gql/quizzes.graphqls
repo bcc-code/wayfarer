@@ -230,6 +230,8 @@ interface QuizResponse {
     journalEntry: ScoreJournal @goField(forceResolver: true)
     # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
     isCorrect: Boolean @goField(forceResolver: true)
+    # settledBetMultiplier is the payout actually applied to the bet, null until the bet is settled
+    settledBetMultiplier: Float @goField(forceResolver: true)
 }
 
 type PredefinedResponse implements QuizResponse {
@@ -245,6 +247,8 @@ type PredefinedResponse implements QuizResponse {
     selectedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
     # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
     isCorrect: Boolean @goField(forceResolver: true)
+    # settledBetMultiplier is the payout actually applied to the bet, null until the bet is settled
+    settledBetMultiplier: Float @goField(forceResolver: true)
 }
 
 type FreeTextResponse implements QuizResponse {
@@ -259,6 +263,8 @@ type FreeTextResponse implements QuizResponse {
     textResponse: String!
     # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
     isCorrect: Boolean @goField(forceResolver: true)
+    # settledBetMultiplier is the payout actually applied to the bet, null until the bet is settled
+    settledBetMultiplier: Float @goField(forceResolver: true)
 }
 
 type NumberResponse implements QuizResponse {
@@ -273,6 +279,8 @@ type NumberResponse implements QuizResponse {
     numberResponse: Float!
     # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
     isCorrect: Boolean @goField(forceResolver: true)
+    # settledBetMultiplier is the payout actually applied to the bet, null until the bet is settled
+    settledBetMultiplier: Float @goField(forceResolver: true)
 }
 
 type JsonResponse implements QuizResponse {
@@ -287,6 +295,8 @@ type JsonResponse implements QuizResponse {
     jsonResponse: JSON!
     # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
     isCorrect: Boolean @goField(forceResolver: true)
+    # settledBetMultiplier is the payout actually applied to the bet, null until the bet is settled
+    settledBetMultiplier: Float @goField(forceResolver: true)
 }
 
 type OrderingResponse implements QuizResponse {
@@ -301,6 +311,8 @@ type OrderingResponse implements QuizResponse {
     submittedOrder: [ID!]!
     # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
     isCorrect: Boolean @goField(forceResolver: true)
+    # settledBetMultiplier is the payout actually applied to the bet, null until the bet is settled
+    settledBetMultiplier: Float @goField(forceResolver: true)
 }
 
 # ==================== Quiz Input Types ====================

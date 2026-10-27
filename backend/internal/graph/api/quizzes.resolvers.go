@@ -81,6 +81,11 @@ func (r *freeTextResponseResolver) IsCorrect(ctx context.Context, obj *model.Fre
 	return r.responseVerdict(ctx, obj.SubmissionID, obj.IsCorrectValue)
 }
 
+// SettledBetMultiplier is the resolver for the settledBetMultiplier field.
+func (r *freeTextResponseResolver) SettledBetMultiplier(ctx context.Context, obj *model.FreeTextResponse) (*float64, error) {
+	return SettledBetMultiplier(obj.ScoreJournalID, obj.BetAmount, obj.PointsEarned), nil
+}
+
 // Quiz is the resolver for the quiz field.
 func (r *jsonQuestionResolver) Quiz(ctx context.Context, obj *model.JSONQuestion) (*model.Quiz, error) {
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
@@ -132,6 +137,11 @@ func (r *jsonResponseResolver) JournalEntry(ctx context.Context, obj *model.JSON
 // IsCorrect is the resolver for the isCorrect field.
 func (r *jsonResponseResolver) IsCorrect(ctx context.Context, obj *model.JSONResponse) (*bool, error) {
 	return r.responseVerdict(ctx, obj.SubmissionID, obj.IsCorrectValue)
+}
+
+// SettledBetMultiplier is the resolver for the settledBetMultiplier field.
+func (r *jsonResponseResolver) SettledBetMultiplier(ctx context.Context, obj *model.JSONResponse) (*float64, error) {
+	return SettledBetMultiplier(obj.ScoreJournalID, obj.BetAmount, obj.PointsEarned), nil
 }
 
 // CreateQuiz is the resolver for the createQuiz field.
@@ -2051,6 +2061,11 @@ func (r *numberResponseResolver) IsCorrect(ctx context.Context, obj *model.Numbe
 	return r.responseVerdict(ctx, obj.SubmissionID, obj.IsCorrectValue)
 }
 
+// SettledBetMultiplier is the resolver for the settledBetMultiplier field.
+func (r *numberResponseResolver) SettledBetMultiplier(ctx context.Context, obj *model.NumberResponse) (*float64, error) {
+	return SettledBetMultiplier(obj.ScoreJournalID, obj.BetAmount, obj.PointsEarned), nil
+}
+
 // Quiz is the resolver for the quiz field.
 func (r *orderingQuestionResolver) Quiz(ctx context.Context, obj *model.OrderingQuestion) (*model.Quiz, error) {
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
@@ -2125,6 +2140,11 @@ func (r *orderingResponseResolver) JournalEntry(ctx context.Context, obj *model.
 // It hides the correctness until the session is LOCKED or FINISHED.
 func (r *orderingResponseResolver) IsCorrect(ctx context.Context, obj *model.OrderingResponse) (*bool, error) {
 	return r.responseVerdict(ctx, obj.SubmissionID, obj.IsCorrectValue)
+}
+
+// SettledBetMultiplier is the resolver for the settledBetMultiplier field.
+func (r *orderingResponseResolver) SettledBetMultiplier(ctx context.Context, obj *model.OrderingResponse) (*float64, error) {
+	return SettledBetMultiplier(obj.ScoreJournalID, obj.BetAmount, obj.PointsEarned), nil
 }
 
 // Quiz is the resolver for the quiz field.
@@ -2225,6 +2245,11 @@ func (r *predefinedResponseResolver) SelectedAnswers(ctx context.Context, obj *m
 // IsCorrect is the resolver for the isCorrect field.
 func (r *predefinedResponseResolver) IsCorrect(ctx context.Context, obj *model.PredefinedResponse) (*bool, error) {
 	return r.responseVerdict(ctx, obj.SubmissionID, obj.IsCorrectValue)
+}
+
+// SettledBetMultiplier is the resolver for the settledBetMultiplier field.
+func (r *predefinedResponseResolver) SettledBetMultiplier(ctx context.Context, obj *model.PredefinedResponse) (*float64, error) {
+	return SettledBetMultiplier(obj.ScoreJournalID, obj.BetAmount, obj.PointsEarned), nil
 }
 
 // Quiz is the resolver for the quiz field.

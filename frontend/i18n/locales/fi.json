@@ -49,9 +49,8 @@
       "pointsLost": "Menetettyjä pisteitä",
       "pointsEarned": "Ansaittuja pisteitä",
       "resultYourBet": "Panoksesi",
-      "correctCount": "Sait {count} oikein",
-      "correctCountAll": "Sait kaikki oikein",
-      "correctCountNone": "Sinulla ei ollut yhtään oikeaa",
+      "outcomeCorrect": "Sait kaikki oikein",
+      "outcomeIncorrect": "Sinulla ei ollut yhtään oikeaa",
       "bettingResult": "Vedonlyöntitulokset"
     },
     "result": {

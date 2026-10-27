@@ -2,12 +2,12 @@
 
 **Date:** 2026-09-30
 
-> **Update 2026-10-23:** the ladder_to_heaven `quiz-finalized` handler was removed. The core now
+> **Update 2026-10-23:** the ladder*to_heaven `quiz-finalized` handler was removed. The core now
 > settles ORDERING bets like PREDEFINED ones (`sessionBetQuestionTypes` in
 > `quiz_session_betting.go`): all-or-nothing `is_correct`, the question's correct/wrong multipliers,
 > claim-once settlement. The plugin's partial position-based payout no longer exists. Parts of this
 > review that describe plugin settlement are historical.
-**Question asked:** betting should attach to _all_ quiz question types, but so far only ORDERING has used it. How generic is it really — in functionality and in language?
+> **Question asked:** betting should attach to \_all* quiz question types, but so far only ORDERING has used it. How generic is it really — in functionality and in language?
 
 > **Frontend follow-up (2026-10-22):** a frontend-only re-review is in
 > `[[betting-frontend-genericity]]`. The frontend findings below (3–5, 8–11) are all still
@@ -344,8 +344,50 @@ instead of regrading in the browser).
   OPEN and while LOCKED, revealed once FINISHED, always visible to an admin, and a response's
   verdict hidden while OPEN then revealed on LOCKED.
 
-Still open from finding 2: the frontend continues to regrade ORDERING in the browser
-(`bettingCorrectCount` / `bettingTotalCount`) and still selects no multiplier fields.
+### 2026-10-27 — the result screen reads the verdict and the payout from the API
+
+Closes findings 9 and 10 here, and findings 2, 6 and 7 in `[[betting-frontend-genericity]]`.
+The browser no longer grades anything or reconstructs the payout.
+
+- **`settledBetMultiplier: Float` on the `QuizResponse` interface** and all five implementations, backed
+  by `SettledBetMultiplier` (`graph/api/quiz_betting.go`) — winnings over stake, from the
+  response's own `score_journal_id` / `bet_amount` / `points_earned`. Null until the bet is
+  settled. It is a pure function, so it adds no queries.
+
+  Why not the question's `bettingMultiplier*` columns: since 2026-10-23 session settlement does
+  pay both PREDEFINED and ORDERING from that configured curve, but `recordBetResult` writes a
+  caller-supplied `pointsEarned` without consulting it, and payouts floor at
+  `floor(stake * multiplier / 100)`. The configured columns are the odds offered; `settledBetMultiplier`
+  is what the bet actually paid. Unit tests in `graph/api/quiz_settled_bet_multiplier_test.go`.
+
+- **`QuizBettingModule` results mode is question-type-neutral.** `correctCount` / `totalCount`
+  are replaced by `outcome: 'correct' | 'incorrect' | null` and `multiplier: number | null`.
+  A single verdict is the only correctness frame all five types share, and it is what the backend
+  settles on.
+
+- **`isWin` follows the verdict, not the sign of the points.** A curve that returns the stake pays
+  0 net; that is a won bet. Previously `pointsEarned >= 0` rendered it as a win with `+0` only by
+  accident, and any curve below 1.0x would have rendered a partial loss as a win.
+
+- **Deleted from `QuizChallenge.vue`:** `bettingCorrectCount` (which re-sorted `orderingItems` by
+  `correctOrder` and counted positional matches) and `bettingTotalCount`. `isBettingWin`, which
+  drives the result background, now also prefers the verdict. The `PredefinedResponse |
+OrderingResponse` type ladders around `response.isCorrect` are gone too, since the field sits on
+  the interface as of this morning.
+
+- **Query documents** select `isCorrect` and `settledBetMultiplier` once on the `QuizResponse` interface
+  rather than per type, in both `challenge.gql` and the two answer mutations.
+
+- **i18n:** `correctCount` / `correctCountAll` / `correctCountNone` are replaced by
+  `outcomeCorrect` / `outcomeIncorrect` in the 14 locales that carry a betting block. Grading is
+  all-or-nothing, so the reviewed `correctCountAll` / `correctCountNone` strings were carried over
+  as the new values; only `en_us` and `nb` were reworded for a single-answer question. **`ro` needs
+  a human translation** — its strings are ordering-specific ("Ai pus toate echipele pe poziția
+  corectă", _you put all the teams in the correct position_) and now sit under a generic key. The
+  other 11 carried-over locales read acceptably but are phrased for a multi-item question.
+
+Note these keys were changed locally; if the locale files are managed through Phrase, the rename
+needs pushing there too.
 
 ## Suggested order of work, if this is to be made properly generic
 
@@ -358,7 +400,7 @@ Still open from finding 2: the frontend continues to regrade ORDERING in the bro
 3. Give every question component a real `session-betting` action mode (or hoist betting out of
    the per-type action state entirely — it is question-type-independent by nature).
 4. Generalize `updateQuizResponse` beyond ORDERING.
-5. Replace `correctCount`/`totalCount` on `QuizBettingModule` with a type-neutral outcome input;
-   take the multiplier from the API rather than re-deriving it.
+5. ~~Replace `correctCount`/`totalCount` on `QuizBettingModule` with a type-neutral outcome input;
+   take the multiplier from the API rather than re-deriving it~~ (done 2026-10-27).
 6. Clean the i18n: remove the 4 unused keys, fix `yourPoints`, reword `correctCount` for
    single-answer questions.

@@ -21,6 +21,10 @@ feeds it is still ORDERING-shaped. Concretely:
   in `app/` or `layers/`. The admin cannot set them, so in practice every question runs on the
   backend defaults (2.0× / 0×) and the UI re-derives the multiplier from the net points.
 
+  > **Partly resolved 2026-10-27:** the result screen now shows the real payout, via
+  > `QuizResponse.settledBetMultiplier`. The admin still cannot *set* a curve (step 5), and the odds are
+  > still not shown before betting.
+
 See `[[betting-module-genericity-review]]` for the original full-stack review (2026-09-30) and
 `[[betting-edge-cases]]` for the rules the backend now enforces.
 
@@ -32,12 +36,12 @@ See `[[betting-module-genericity-review]]` for the original full-stack review (2
 | ----------------------------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | GraphQL fragments (`app/graphql/fragments/quiz.gql`)  | ✅ Yes                           | Betting config selected on the `QuizQuestion` interface (lines 20–25, 61–65), so every type gets it. Multipliers missing.                                                                |
 | `QuizBettingModule.vue` — betting mode                | ✅ Yes                           | Props are pure numbers (`availablePoints`, min/max %/abs). No question-type awareness.                                                                                                   |
-| `QuizBettingModule.vue` — results mode                | ❌ ORDERING-shaped               | `correctCount` / `totalCount` (lines 15–16) and the derived multiplier (line 84).                                                                                                        |
+| `QuizBettingModule.vue` — results mode                | ✅ Yes (2026-10-27)              | Takes `outcome` + `multiplier`. The derived multiplier is gone; `isWin` follows the verdict.                                                                                            |
 | `resolveFooterState` (`useQuizViewState.ts`)          | ⚠️ Mode-gated                    | Betting is only visible in `session-*` modes; `'normal'` returns `{ visible: false }` unconditionally (line 107).                                                                        |
 | `QuizOrderingQuestion.vue`                            | ✅ Full flow                     | `session-betting` + `canChangeBet: true`.                                                                                                                                                |
 | `QuizPredefinedQuestion.vue`                          | ⚠️ Partial                       | Computes `session-betting`, but `canChangeBet: false` (line 152) — one-shot bets.                                                                                                        |
 | `QuizNumberQuestion.vue` / `QuizFreeTextQuestion.vue` | ❌ No                            | `mode: props.readonly ? 'review' : 'normal'` (lines 94 / 93) — module can never show.                                                                                                    |
-| `QuizChallenge.vue` wiring                            | ❌ ORDERING-shaped               | `bettingCorrectCount` (line 338) and `bettingTotalCount` (line 360) return `null` unless both sides are `Ordering*`; `isSingleOrderingQuestion` (line 315) still gates the results view. |
+| `QuizChallenge.vue` wiring                            | ⚠️ Partly (2026-10-27)           | The client-side grading is gone — verdict and payout come from the response. `isSingleOrderingQuestion` still gates the results view (finding 1, still open).                           |
 | Admin question editor                                 | ⚠️ Generic but incomplete        | Betting block renders for every question type (no warning that 3 of 5 can't use it); no multiplier fields; strings hardcoded Norwegian.                                                  |
 | Admin session operation                               | ✅ Yes (since the sessions page) | `admin/projects/[projectId]/challenges/[challengeId]/sessions.vue` has the full lifecycle. The PC26 page is now a convenience wrapper, not the only path.                                |
 | i18n                                                  | ⚠️ Ordering-worded + dead keys   | `correctCount` reads "You had {count} correct answers"; 4 unused keys in 14 locale files.                                                                                                |
@@ -70,6 +74,8 @@ This is the single biggest blocker to the frontend being generic: betting result
 outside the one-ordering-question layout.
 
 ### 2. Correctness is computed client-side, ORDERING-only — and it leaks the answer
+
+> **Resolved 2026-10-27.**
 
 `bettingCorrectCount` (`QuizChallenge.vue:338`) re-implements grading in the browser: it sorts
 `question.orderingItems` by `correctOrder` and counts positional matches. This only exists because
@@ -139,6 +145,8 @@ Percentage limits compound it: `effectiveMax` (line 45) takes a percentage of th
 
 ### 6. Result copy and props assume "N of M positions"
 
+> **Resolved 2026-10-27.**
+
 - `quiz.betting.correctCount` = _"You had {count} correct answers."_ — for a single-answer
   PREDEFINED or NUMBER question there is one answer, not a count.
 - `correctCount` / `totalCount` are the module's only correctness inputs. A generic module wants
@@ -149,6 +157,8 @@ Percentage limits compound it: `effectiveMax` (line 45) takes a percentage of th
   accidental, not designed.
 
 ### 7. The multiplier is re-derived in the view, and the real one is unreachable
+
+> **Resolved 2026-10-27.**
 
 `QuizBettingModule.vue:84`: `multiplier = (pointsEarned + betAmount) / betAmount`. This reconstructs
 the backend's payout from net points — a second, independent implementation of the formula.
@@ -214,12 +224,12 @@ Ordered so each step is independently shippable:
 1. **Give betting results a home outside the single-ORDERING layout.** Either show the bet outcome
    on `QuizResult.vue`, or drop `isSingleOrderingQuestion` in favour of "FINISHED + any question had
    a bet". Without this, PREDEFINED betting is invisible to users. (Fixes 1.)
-2. **Take correctness and the multiplier from the API.** ~~Gate `QuizPredefinedAnswer.isCorrect` in
-   the backend the way `correctOrder` already is~~ (done 2026-10-27, which also put `isCorrect` on
-   the `QuizResponse` interface so it can be selected without a per-type inline fragment).
-   Remaining: select `isCorrect` on the response and the two multiplier fields; delete
-   `bettingCorrectCount` / `bettingTotalCount` and the derived `multiplier`; replace
-   `correctCount`/`totalCount` with an outcome prop. (Fixes 2, 6, 7.)
+2. ~~**Take correctness and the multiplier from the API.**~~ (done 2026-10-27, in two parts:
+   the `isCorrect` gate and interface hoist in the morning, then the result screen itself.)
+   `QuizBettingModule` now takes `outcome` + `multiplier`; `bettingCorrectCount` /
+   `bettingTotalCount` and the derived multiplier are gone; the payout comes from a new
+   `QuizResponse.settledBetMultiplier`. (Fixed 2, 6, 7 — see the 2026-10-27 entries in
+   `[[betting-module-genericity-review]]`.)
 3. **Hoist betting out of the per-type action state** so the slider follows the session, not the
    question component. (Fixes 3, and most of 4.)
 4. **Expose `availableBetPoints`** and feed it to `:available-points`. (Fixes 5.)

@@ -49,9 +49,8 @@
       "pointsLost": "失分",
       "pointsEarned": "得分",
       "resultYourBet": "你的投注",
-      "correctCount": "选择{count}正确",
-      "correctCountAll": "全部选择正确",
-      "correctCountNone": "全部没有选对",
+      "outcomeCorrect": "全部选择正确",
+      "outcomeIncorrect": "全部没有选对",
       "bettingResult": "投注结果"
     },
     "result": {

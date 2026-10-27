@@ -95,6 +95,7 @@ type QuizResponse interface {
 	GetBetAmount() *int
 	GetJournalEntry() *ScoreJournal
 	GetIsCorrect() *bool
+	GetSettledBetMultiplier() *float64
 }
 
 type ScoreSource interface {
@@ -959,32 +960,34 @@ func (this FreeTextQuestionResults) GetQuestion() QuizQuestion { return this.Que
 func (this FreeTextQuestionResults) GetResponseCount() int { return this.ResponseCount }
 
 type FreeTextResponse struct {
-	ID               string            `json:"id"`
-	Submission       *QuizSubmission   `json:"submission"`
-	Question         QuizQuestion      `json:"question"`
-	AnsweredAt       *scalars.DateTime `json:"answeredAt,omitempty"`
-	TimeSpentSeconds *int              `json:"timeSpentSeconds,omitempty"`
-	PointsEarned     *int              `json:"pointsEarned,omitempty"`
-	BetAmount        *int              `json:"betAmount,omitempty"`
-	JournalEntry     *ScoreJournal     `json:"journalEntry,omitempty"`
-	TextResponse     string            `json:"textResponse"`
-	IsCorrect        *bool             `json:"isCorrect,omitempty"`
-	IsCorrectValue   *bool             `json:"-"`
-	QuestionID       string            `json:"-"`
-	ScoreJournalID   *string           `json:"-"`
-	SubmissionID     string            `json:"-"`
+	ID                   string            `json:"id"`
+	Submission           *QuizSubmission   `json:"submission"`
+	Question             QuizQuestion      `json:"question"`
+	AnsweredAt           *scalars.DateTime `json:"answeredAt,omitempty"`
+	TimeSpentSeconds     *int              `json:"timeSpentSeconds,omitempty"`
+	PointsEarned         *int              `json:"pointsEarned,omitempty"`
+	BetAmount            *int              `json:"betAmount,omitempty"`
+	JournalEntry         *ScoreJournal     `json:"journalEntry,omitempty"`
+	TextResponse         string            `json:"textResponse"`
+	IsCorrect            *bool             `json:"isCorrect,omitempty"`
+	SettledBetMultiplier *float64          `json:"settledBetMultiplier,omitempty"`
+	IsCorrectValue       *bool             `json:"-"`
+	QuestionID           string            `json:"-"`
+	ScoreJournalID       *string           `json:"-"`
+	SubmissionID         string            `json:"-"`
 }
 
-func (FreeTextResponse) IsQuizResponse()                       {}
-func (this FreeTextResponse) GetID() string                    { return this.ID }
-func (this FreeTextResponse) GetSubmission() *QuizSubmission   { return this.Submission }
-func (this FreeTextResponse) GetQuestion() QuizQuestion        { return this.Question }
-func (this FreeTextResponse) GetAnsweredAt() *scalars.DateTime { return this.AnsweredAt }
-func (this FreeTextResponse) GetTimeSpentSeconds() *int        { return this.TimeSpentSeconds }
-func (this FreeTextResponse) GetPointsEarned() *int            { return this.PointsEarned }
-func (this FreeTextResponse) GetBetAmount() *int               { return this.BetAmount }
-func (this FreeTextResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
-func (this FreeTextResponse) GetIsCorrect() *bool              { return this.IsCorrect }
+func (FreeTextResponse) IsQuizResponse()                        {}
+func (this FreeTextResponse) GetID() string                     { return this.ID }
+func (this FreeTextResponse) GetSubmission() *QuizSubmission    { return this.Submission }
+func (this FreeTextResponse) GetQuestion() QuizQuestion         { return this.Question }
+func (this FreeTextResponse) GetAnsweredAt() *scalars.DateTime  { return this.AnsweredAt }
+func (this FreeTextResponse) GetTimeSpentSeconds() *int         { return this.TimeSpentSeconds }
+func (this FreeTextResponse) GetPointsEarned() *int             { return this.PointsEarned }
+func (this FreeTextResponse) GetBetAmount() *int                { return this.BetAmount }
+func (this FreeTextResponse) GetJournalEntry() *ScoreJournal    { return this.JournalEntry }
+func (this FreeTextResponse) GetIsCorrect() *bool               { return this.IsCorrect }
+func (this FreeTextResponse) GetSettledBetMultiplier() *float64 { return this.SettledBetMultiplier }
 
 type GrantQuizSessionAccessInput struct {
 	SessionID       string   `json:"sessionId"`
@@ -1063,32 +1066,34 @@ func (this JSONQuestionResults) GetQuestion() QuizQuestion { return this.Questio
 func (this JSONQuestionResults) GetResponseCount() int { return this.ResponseCount }
 
 type JSONResponse struct {
-	ID               string            `json:"id"`
-	Submission       *QuizSubmission   `json:"submission"`
-	Question         QuizQuestion      `json:"question"`
-	AnsweredAt       *scalars.DateTime `json:"answeredAt,omitempty"`
-	TimeSpentSeconds *int              `json:"timeSpentSeconds,omitempty"`
-	PointsEarned     *int              `json:"pointsEarned,omitempty"`
-	BetAmount        *int              `json:"betAmount,omitempty"`
-	JournalEntry     *ScoreJournal     `json:"journalEntry,omitempty"`
-	JSONResponse     string            `json:"jsonResponse"`
-	IsCorrect        *bool             `json:"isCorrect,omitempty"`
-	IsCorrectValue   *bool             `json:"-"`
-	QuestionID       string            `json:"-"`
-	ScoreJournalID   *string           `json:"-"`
-	SubmissionID     string            `json:"-"`
+	ID                   string            `json:"id"`
+	Submission           *QuizSubmission   `json:"submission"`
+	Question             QuizQuestion      `json:"question"`
+	AnsweredAt           *scalars.DateTime `json:"answeredAt,omitempty"`
+	TimeSpentSeconds     *int              `json:"timeSpentSeconds,omitempty"`
+	PointsEarned         *int              `json:"pointsEarned,omitempty"`
+	BetAmount            *int              `json:"betAmount,omitempty"`
+	JournalEntry         *ScoreJournal     `json:"journalEntry,omitempty"`
+	JSONResponse         string            `json:"jsonResponse"`
+	IsCorrect            *bool             `json:"isCorrect,omitempty"`
+	SettledBetMultiplier *float64          `json:"settledBetMultiplier,omitempty"`
+	IsCorrectValue       *bool             `json:"-"`
+	QuestionID           string            `json:"-"`
+	ScoreJournalID       *string           `json:"-"`
+	SubmissionID         string            `json:"-"`
 }
 
-func (JSONResponse) IsQuizResponse()                       {}
-func (this JSONResponse) GetID() string                    { return this.ID }
-func (this JSONResponse) GetSubmission() *QuizSubmission   { return this.Submission }
-func (this JSONResponse) GetQuestion() QuizQuestion        { return this.Question }
-func (this JSONResponse) GetAnsweredAt() *scalars.DateTime { return this.AnsweredAt }
-func (this JSONResponse) GetTimeSpentSeconds() *int        { return this.TimeSpentSeconds }
-func (this JSONResponse) GetPointsEarned() *int            { return this.PointsEarned }
-func (this JSONResponse) GetBetAmount() *int               { return this.BetAmount }
-func (this JSONResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
-func (this JSONResponse) GetIsCorrect() *bool              { return this.IsCorrect }
+func (JSONResponse) IsQuizResponse()                        {}
+func (this JSONResponse) GetID() string                     { return this.ID }
+func (this JSONResponse) GetSubmission() *QuizSubmission    { return this.Submission }
+func (this JSONResponse) GetQuestion() QuizQuestion         { return this.Question }
+func (this JSONResponse) GetAnsweredAt() *scalars.DateTime  { return this.AnsweredAt }
+func (this JSONResponse) GetTimeSpentSeconds() *int         { return this.TimeSpentSeconds }
+func (this JSONResponse) GetPointsEarned() *int             { return this.PointsEarned }
+func (this JSONResponse) GetBetAmount() *int                { return this.BetAmount }
+func (this JSONResponse) GetJournalEntry() *ScoreJournal    { return this.JournalEntry }
+func (this JSONResponse) GetIsCorrect() *bool               { return this.IsCorrect }
+func (this JSONResponse) GetSettledBetMultiplier() *float64 { return this.SettledBetMultiplier }
 
 type LeaderboardConfig struct {
 	ID         string                 `json:"id"`
@@ -1306,32 +1311,34 @@ func (this NumberQuestionResults) GetQuestion() QuizQuestion { return this.Quest
 func (this NumberQuestionResults) GetResponseCount() int { return this.ResponseCount }
 
 type NumberResponse struct {
-	ID               string            `json:"id"`
-	Submission       *QuizSubmission   `json:"submission"`
-	Question         QuizQuestion      `json:"question"`
-	AnsweredAt       *scalars.DateTime `json:"answeredAt,omitempty"`
-	TimeSpentSeconds *int              `json:"timeSpentSeconds,omitempty"`
-	PointsEarned     *int              `json:"pointsEarned,omitempty"`
-	BetAmount        *int              `json:"betAmount,omitempty"`
-	JournalEntry     *ScoreJournal     `json:"journalEntry,omitempty"`
-	NumberResponse   float64           `json:"numberResponse"`
-	IsCorrect        *bool             `json:"isCorrect,omitempty"`
-	IsCorrectValue   *bool             `json:"-"`
-	QuestionID       string            `json:"-"`
-	ScoreJournalID   *string           `json:"-"`
-	SubmissionID     string            `json:"-"`
+	ID                   string            `json:"id"`
+	Submission           *QuizSubmission   `json:"submission"`
+	Question             QuizQuestion      `json:"question"`
+	AnsweredAt           *scalars.DateTime `json:"answeredAt,omitempty"`
+	TimeSpentSeconds     *int              `json:"timeSpentSeconds,omitempty"`
+	PointsEarned         *int              `json:"pointsEarned,omitempty"`
+	BetAmount            *int              `json:"betAmount,omitempty"`
+	JournalEntry         *ScoreJournal     `json:"journalEntry,omitempty"`
+	NumberResponse       float64           `json:"numberResponse"`
+	IsCorrect            *bool             `json:"isCorrect,omitempty"`
+	SettledBetMultiplier *float64          `json:"settledBetMultiplier,omitempty"`
+	IsCorrectValue       *bool             `json:"-"`
+	QuestionID           string            `json:"-"`
+	ScoreJournalID       *string           `json:"-"`
+	SubmissionID         string            `json:"-"`
 }
 
-func (NumberResponse) IsQuizResponse()                       {}
-func (this NumberResponse) GetID() string                    { return this.ID }
-func (this NumberResponse) GetSubmission() *QuizSubmission   { return this.Submission }
-func (this NumberResponse) GetQuestion() QuizQuestion        { return this.Question }
-func (this NumberResponse) GetAnsweredAt() *scalars.DateTime { return this.AnsweredAt }
-func (this NumberResponse) GetTimeSpentSeconds() *int        { return this.TimeSpentSeconds }
-func (this NumberResponse) GetPointsEarned() *int            { return this.PointsEarned }
-func (this NumberResponse) GetBetAmount() *int               { return this.BetAmount }
-func (this NumberResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
-func (this NumberResponse) GetIsCorrect() *bool              { return this.IsCorrect }
+func (NumberResponse) IsQuizResponse()                        {}
+func (this NumberResponse) GetID() string                     { return this.ID }
+func (this NumberResponse) GetSubmission() *QuizSubmission    { return this.Submission }
+func (this NumberResponse) GetQuestion() QuizQuestion         { return this.Question }
+func (this NumberResponse) GetAnsweredAt() *scalars.DateTime  { return this.AnsweredAt }
+func (this NumberResponse) GetTimeSpentSeconds() *int         { return this.TimeSpentSeconds }
+func (this NumberResponse) GetPointsEarned() *int             { return this.PointsEarned }
+func (this NumberResponse) GetBetAmount() *int                { return this.BetAmount }
+func (this NumberResponse) GetJournalEntry() *ScoreJournal    { return this.JournalEntry }
+func (this NumberResponse) GetIsCorrect() *bool               { return this.IsCorrect }
+func (this NumberResponse) GetSettledBetMultiplier() *float64 { return this.SettledBetMultiplier }
 
 type OrderingItemResult struct {
 	Item                 *QuizOrderingItem `json:"item"`
@@ -1406,32 +1413,34 @@ func (this OrderingQuestionResults) GetQuestion() QuizQuestion { return this.Que
 func (this OrderingQuestionResults) GetResponseCount() int { return this.ResponseCount }
 
 type OrderingResponse struct {
-	ID               string            `json:"id"`
-	Submission       *QuizSubmission   `json:"submission"`
-	Question         QuizQuestion      `json:"question"`
-	AnsweredAt       *scalars.DateTime `json:"answeredAt,omitempty"`
-	TimeSpentSeconds *int              `json:"timeSpentSeconds,omitempty"`
-	PointsEarned     *int              `json:"pointsEarned,omitempty"`
-	BetAmount        *int              `json:"betAmount,omitempty"`
-	JournalEntry     *ScoreJournal     `json:"journalEntry,omitempty"`
-	SubmittedOrder   []string          `json:"submittedOrder"`
-	IsCorrect        *bool             `json:"isCorrect,omitempty"`
-	IsCorrectValue   *bool             `json:"-"`
-	QuestionID       string            `json:"-"`
-	ScoreJournalID   *string           `json:"-"`
-	SubmissionID     string            `json:"-"`
+	ID                   string            `json:"id"`
+	Submission           *QuizSubmission   `json:"submission"`
+	Question             QuizQuestion      `json:"question"`
+	AnsweredAt           *scalars.DateTime `json:"answeredAt,omitempty"`
+	TimeSpentSeconds     *int              `json:"timeSpentSeconds,omitempty"`
+	PointsEarned         *int              `json:"pointsEarned,omitempty"`
+	BetAmount            *int              `json:"betAmount,omitempty"`
+	JournalEntry         *ScoreJournal     `json:"journalEntry,omitempty"`
+	SubmittedOrder       []string          `json:"submittedOrder"`
+	IsCorrect            *bool             `json:"isCorrect,omitempty"`
+	SettledBetMultiplier *float64          `json:"settledBetMultiplier,omitempty"`
+	IsCorrectValue       *bool             `json:"-"`
+	QuestionID           string            `json:"-"`
+	ScoreJournalID       *string           `json:"-"`
+	SubmissionID         string            `json:"-"`
 }
 
-func (OrderingResponse) IsQuizResponse()                       {}
-func (this OrderingResponse) GetID() string                    { return this.ID }
-func (this OrderingResponse) GetSubmission() *QuizSubmission   { return this.Submission }
-func (this OrderingResponse) GetQuestion() QuizQuestion        { return this.Question }
-func (this OrderingResponse) GetAnsweredAt() *scalars.DateTime { return this.AnsweredAt }
-func (this OrderingResponse) GetTimeSpentSeconds() *int        { return this.TimeSpentSeconds }
-func (this OrderingResponse) GetPointsEarned() *int            { return this.PointsEarned }
-func (this OrderingResponse) GetBetAmount() *int               { return this.BetAmount }
-func (this OrderingResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
-func (this OrderingResponse) GetIsCorrect() *bool              { return this.IsCorrect }
+func (OrderingResponse) IsQuizResponse()                        {}
+func (this OrderingResponse) GetID() string                     { return this.ID }
+func (this OrderingResponse) GetSubmission() *QuizSubmission    { return this.Submission }
+func (this OrderingResponse) GetQuestion() QuizQuestion         { return this.Question }
+func (this OrderingResponse) GetAnsweredAt() *scalars.DateTime  { return this.AnsweredAt }
+func (this OrderingResponse) GetTimeSpentSeconds() *int         { return this.TimeSpentSeconds }
+func (this OrderingResponse) GetPointsEarned() *int             { return this.PointsEarned }
+func (this OrderingResponse) GetBetAmount() *int                { return this.BetAmount }
+func (this OrderingResponse) GetJournalEntry() *ScoreJournal    { return this.JournalEntry }
+func (this OrderingResponse) GetIsCorrect() *bool               { return this.IsCorrect }
+func (this OrderingResponse) GetSettledBetMultiplier() *float64 { return this.SettledBetMultiplier }
 
 type PageInfo struct {
 	HasNextPage     bool    `json:"hasNextPage"`
@@ -1574,33 +1583,35 @@ func (this PredefinedQuestionResults) GetQuestion() QuizQuestion { return this.Q
 func (this PredefinedQuestionResults) GetResponseCount() int { return this.ResponseCount }
 
 type PredefinedResponse struct {
-	ID                string                 `json:"id"`
-	Submission        *QuizSubmission        `json:"submission"`
-	Question          QuizQuestion           `json:"question"`
-	AnsweredAt        *scalars.DateTime      `json:"answeredAt,omitempty"`
-	TimeSpentSeconds  *int                   `json:"timeSpentSeconds,omitempty"`
-	PointsEarned      *int                   `json:"pointsEarned,omitempty"`
-	BetAmount         *int                   `json:"betAmount,omitempty"`
-	JournalEntry      *ScoreJournal          `json:"journalEntry,omitempty"`
-	SelectedAnswerIds []string               `json:"selectedAnswerIds"`
-	SelectedAnswers   []QuizPredefinedAnswer `json:"selectedAnswers"`
-	IsCorrect         *bool                  `json:"isCorrect,omitempty"`
-	IsCorrectValue    *bool                  `json:"-"`
-	QuestionID        string                 `json:"-"`
-	ScoreJournalID    *string                `json:"-"`
-	SubmissionID      string                 `json:"-"`
+	ID                   string                 `json:"id"`
+	Submission           *QuizSubmission        `json:"submission"`
+	Question             QuizQuestion           `json:"question"`
+	AnsweredAt           *scalars.DateTime      `json:"answeredAt,omitempty"`
+	TimeSpentSeconds     *int                   `json:"timeSpentSeconds,omitempty"`
+	PointsEarned         *int                   `json:"pointsEarned,omitempty"`
+	BetAmount            *int                   `json:"betAmount,omitempty"`
+	JournalEntry         *ScoreJournal          `json:"journalEntry,omitempty"`
+	SelectedAnswerIds    []string               `json:"selectedAnswerIds"`
+	SelectedAnswers      []QuizPredefinedAnswer `json:"selectedAnswers"`
+	IsCorrect            *bool                  `json:"isCorrect,omitempty"`
+	SettledBetMultiplier *float64               `json:"settledBetMultiplier,omitempty"`
+	IsCorrectValue       *bool                  `json:"-"`
+	QuestionID           string                 `json:"-"`
+	ScoreJournalID       *string                `json:"-"`
+	SubmissionID         string                 `json:"-"`
 }
 
-func (PredefinedResponse) IsQuizResponse()                       {}
-func (this PredefinedResponse) GetID() string                    { return this.ID }
-func (this PredefinedResponse) GetSubmission() *QuizSubmission   { return this.Submission }
-func (this PredefinedResponse) GetQuestion() QuizQuestion        { return this.Question }
-func (this PredefinedResponse) GetAnsweredAt() *scalars.DateTime { return this.AnsweredAt }
-func (this PredefinedResponse) GetTimeSpentSeconds() *int        { return this.TimeSpentSeconds }
-func (this PredefinedResponse) GetPointsEarned() *int            { return this.PointsEarned }
-func (this PredefinedResponse) GetBetAmount() *int               { return this.BetAmount }
-func (this PredefinedResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
-func (this PredefinedResponse) GetIsCorrect() *bool              { return this.IsCorrect }
+func (PredefinedResponse) IsQuizResponse()                        {}
+func (this PredefinedResponse) GetID() string                     { return this.ID }
+func (this PredefinedResponse) GetSubmission() *QuizSubmission    { return this.Submission }
+func (this PredefinedResponse) GetQuestion() QuizQuestion         { return this.Question }
+func (this PredefinedResponse) GetAnsweredAt() *scalars.DateTime  { return this.AnsweredAt }
+func (this PredefinedResponse) GetTimeSpentSeconds() *int         { return this.TimeSpentSeconds }
+func (this PredefinedResponse) GetPointsEarned() *int             { return this.PointsEarned }
+func (this PredefinedResponse) GetBetAmount() *int                { return this.BetAmount }
+func (this PredefinedResponse) GetJournalEntry() *ScoreJournal    { return this.JournalEntry }
+func (this PredefinedResponse) GetIsCorrect() *bool               { return this.IsCorrect }
+func (this PredefinedResponse) GetSettledBetMultiplier() *float64 { return this.SettledBetMultiplier }
 
 type Project struct {
 	ID                    string            `json:"id"`

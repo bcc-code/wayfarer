@@ -50,9 +50,8 @@
       "pointsLost": "Punkte verloren",
       "pointsEarned": "Punkte verdient",
       "resultYourBet": "Dein Einsatz",
-      "correctCount": "Du hattest {count} richtige",
-      "correctCountAll": "Du hattest alle richtig",
-      "correctCountNone": "Du hattest keine richtigen",
+      "outcomeCorrect": "Du hattest alle richtig",
+      "outcomeIncorrect": "Du hattest keine richtigen",
       "bettingResult": "Tipp-Ergebnis",
       "nothingToStake": "Du hast keine Punkte, die du setzen kannst."
     },

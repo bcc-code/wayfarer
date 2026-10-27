@@ -448,16 +448,17 @@ type ComplexityRoot struct {
 	}
 
 	FreeTextResponse struct {
-		AnsweredAt       func(childComplexity int) int
-		BetAmount        func(childComplexity int) int
-		ID               func(childComplexity int) int
-		IsCorrect        func(childComplexity int) int
-		JournalEntry     func(childComplexity int) int
-		PointsEarned     func(childComplexity int) int
-		Question         func(childComplexity int) int
-		Submission       func(childComplexity int) int
-		TextResponse     func(childComplexity int) int
-		TimeSpentSeconds func(childComplexity int) int
+		AnsweredAt           func(childComplexity int) int
+		BetAmount            func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		IsCorrect            func(childComplexity int) int
+		JournalEntry         func(childComplexity int) int
+		PointsEarned         func(childComplexity int) int
+		Question             func(childComplexity int) int
+		SettledBetMultiplier func(childComplexity int) int
+		Submission           func(childComplexity int) int
+		TextResponse         func(childComplexity int) int
+		TimeSpentSeconds     func(childComplexity int) int
 	}
 
 	Image struct {
@@ -491,16 +492,17 @@ type ComplexityRoot struct {
 	}
 
 	JsonResponse struct {
-		AnsweredAt       func(childComplexity int) int
-		BetAmount        func(childComplexity int) int
-		ID               func(childComplexity int) int
-		IsCorrect        func(childComplexity int) int
-		JSONResponse     func(childComplexity int) int
-		JournalEntry     func(childComplexity int) int
-		PointsEarned     func(childComplexity int) int
-		Question         func(childComplexity int) int
-		Submission       func(childComplexity int) int
-		TimeSpentSeconds func(childComplexity int) int
+		AnsweredAt           func(childComplexity int) int
+		BetAmount            func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		IsCorrect            func(childComplexity int) int
+		JSONResponse         func(childComplexity int) int
+		JournalEntry         func(childComplexity int) int
+		PointsEarned         func(childComplexity int) int
+		Question             func(childComplexity int) int
+		SettledBetMultiplier func(childComplexity int) int
+		Submission           func(childComplexity int) int
+		TimeSpentSeconds     func(childComplexity int) int
 	}
 
 	LeaderboardConfig struct {
@@ -788,16 +790,17 @@ type ComplexityRoot struct {
 	}
 
 	NumberResponse struct {
-		AnsweredAt       func(childComplexity int) int
-		BetAmount        func(childComplexity int) int
-		ID               func(childComplexity int) int
-		IsCorrect        func(childComplexity int) int
-		JournalEntry     func(childComplexity int) int
-		NumberResponse   func(childComplexity int) int
-		PointsEarned     func(childComplexity int) int
-		Question         func(childComplexity int) int
-		Submission       func(childComplexity int) int
-		TimeSpentSeconds func(childComplexity int) int
+		AnsweredAt           func(childComplexity int) int
+		BetAmount            func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		IsCorrect            func(childComplexity int) int
+		JournalEntry         func(childComplexity int) int
+		NumberResponse       func(childComplexity int) int
+		PointsEarned         func(childComplexity int) int
+		Question             func(childComplexity int) int
+		SettledBetMultiplier func(childComplexity int) int
+		Submission           func(childComplexity int) int
+		TimeSpentSeconds     func(childComplexity int) int
 	}
 
 	OrderingItemResult struct {
@@ -834,16 +837,17 @@ type ComplexityRoot struct {
 	}
 
 	OrderingResponse struct {
-		AnsweredAt       func(childComplexity int) int
-		BetAmount        func(childComplexity int) int
-		ID               func(childComplexity int) int
-		IsCorrect        func(childComplexity int) int
-		JournalEntry     func(childComplexity int) int
-		PointsEarned     func(childComplexity int) int
-		Question         func(childComplexity int) int
-		Submission       func(childComplexity int) int
-		SubmittedOrder   func(childComplexity int) int
-		TimeSpentSeconds func(childComplexity int) int
+		AnsweredAt           func(childComplexity int) int
+		BetAmount            func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		IsCorrect            func(childComplexity int) int
+		JournalEntry         func(childComplexity int) int
+		PointsEarned         func(childComplexity int) int
+		Question             func(childComplexity int) int
+		SettledBetMultiplier func(childComplexity int) int
+		Submission           func(childComplexity int) int
+		SubmittedOrder       func(childComplexity int) int
+		TimeSpentSeconds     func(childComplexity int) int
 	}
 
 	PageInfo struct {
@@ -911,17 +915,18 @@ type ComplexityRoot struct {
 	}
 
 	PredefinedResponse struct {
-		AnsweredAt        func(childComplexity int) int
-		BetAmount         func(childComplexity int) int
-		ID                func(childComplexity int) int
-		IsCorrect         func(childComplexity int) int
-		JournalEntry      func(childComplexity int) int
-		PointsEarned      func(childComplexity int) int
-		Question          func(childComplexity int) int
-		SelectedAnswerIds func(childComplexity int) int
-		SelectedAnswers   func(childComplexity int) int
-		Submission        func(childComplexity int) int
-		TimeSpentSeconds  func(childComplexity int) int
+		AnsweredAt           func(childComplexity int) int
+		BetAmount            func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		IsCorrect            func(childComplexity int) int
+		JournalEntry         func(childComplexity int) int
+		PointsEarned         func(childComplexity int) int
+		Question             func(childComplexity int) int
+		SelectedAnswerIds    func(childComplexity int) int
+		SelectedAnswers      func(childComplexity int) int
+		SettledBetMultiplier func(childComplexity int) int
+		Submission           func(childComplexity int) int
+		TimeSpentSeconds     func(childComplexity int) int
 	}
 
 	Project struct {
@@ -1589,6 +1594,7 @@ type FreeTextResponseResolver interface {
 	JournalEntry(ctx context.Context, obj *model.FreeTextResponse) (*model.ScoreJournal, error)
 
 	IsCorrect(ctx context.Context, obj *model.FreeTextResponse) (*bool, error)
+	SettledBetMultiplier(ctx context.Context, obj *model.FreeTextResponse) (*float64, error)
 }
 type JsonQuestionResolver interface {
 	Quiz(ctx context.Context, obj *model.JSONQuestion) (*model.Quiz, error)
@@ -1604,6 +1610,7 @@ type JsonResponseResolver interface {
 	JournalEntry(ctx context.Context, obj *model.JSONResponse) (*model.ScoreJournal, error)
 
 	IsCorrect(ctx context.Context, obj *model.JSONResponse) (*bool, error)
+	SettledBetMultiplier(ctx context.Context, obj *model.JSONResponse) (*float64, error)
 }
 type LeaderboardConfigResolver interface {
 	Project(ctx context.Context, obj *model.LeaderboardConfig) (*model.Project, error)
@@ -1775,6 +1782,7 @@ type NumberResponseResolver interface {
 	JournalEntry(ctx context.Context, obj *model.NumberResponse) (*model.ScoreJournal, error)
 
 	IsCorrect(ctx context.Context, obj *model.NumberResponse) (*bool, error)
+	SettledBetMultiplier(ctx context.Context, obj *model.NumberResponse) (*float64, error)
 }
 type OrderingQuestionResolver interface {
 	Quiz(ctx context.Context, obj *model.OrderingQuestion) (*model.Quiz, error)
@@ -1791,6 +1799,7 @@ type OrderingResponseResolver interface {
 	JournalEntry(ctx context.Context, obj *model.OrderingResponse) (*model.ScoreJournal, error)
 
 	IsCorrect(ctx context.Context, obj *model.OrderingResponse) (*bool, error)
+	SettledBetMultiplier(ctx context.Context, obj *model.OrderingResponse) (*float64, error)
 }
 type PluginChallengeResolver interface {
 	Image(ctx context.Context, obj *model.PluginChallenge) (*model.Image, error)
@@ -1819,6 +1828,7 @@ type PredefinedResponseResolver interface {
 
 	SelectedAnswers(ctx context.Context, obj *model.PredefinedResponse) ([]model.QuizPredefinedAnswer, error)
 	IsCorrect(ctx context.Context, obj *model.PredefinedResponse) (*bool, error)
+	SettledBetMultiplier(ctx context.Context, obj *model.PredefinedResponse) (*float64, error)
 }
 type ProjectResolver interface {
 	Rules(ctx context.Context, obj *model.Project) (*model.MarkdownText, error)
@@ -3608,6 +3618,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.FreeTextResponse.Question(childComplexity), true
+	case "FreeTextResponse.settledBetMultiplier":
+		if e.complexity.FreeTextResponse.SettledBetMultiplier == nil {
+			break
+		}
+
+		return e.complexity.FreeTextResponse.SettledBetMultiplier(childComplexity), true
 	case "FreeTextResponse.submission":
 		if e.complexity.FreeTextResponse.Submission == nil {
 			break
@@ -3804,6 +3820,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.JsonResponse.Question(childComplexity), true
+	case "JsonResponse.settledBetMultiplier":
+		if e.complexity.JsonResponse.SettledBetMultiplier == nil {
+			break
+		}
+
+		return e.complexity.JsonResponse.SettledBetMultiplier(childComplexity), true
 	case "JsonResponse.submission":
 		if e.complexity.JsonResponse.Submission == nil {
 			break
@@ -5948,6 +5970,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.NumberResponse.Question(childComplexity), true
+	case "NumberResponse.settledBetMultiplier":
+		if e.complexity.NumberResponse.SettledBetMultiplier == nil {
+			break
+		}
+
+		return e.complexity.NumberResponse.SettledBetMultiplier(childComplexity), true
 	case "NumberResponse.submission":
 		if e.complexity.NumberResponse.Submission == nil {
 			break
@@ -6150,6 +6178,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.OrderingResponse.Question(childComplexity), true
+	case "OrderingResponse.settledBetMultiplier":
+		if e.complexity.OrderingResponse.SettledBetMultiplier == nil {
+			break
+		}
+
+		return e.complexity.OrderingResponse.SettledBetMultiplier(childComplexity), true
 	case "OrderingResponse.submission":
 		if e.complexity.OrderingResponse.Submission == nil {
 			break
@@ -6522,6 +6556,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PredefinedResponse.SelectedAnswers(childComplexity), true
+	case "PredefinedResponse.settledBetMultiplier":
+		if e.complexity.PredefinedResponse.SettledBetMultiplier == nil {
+			break
+		}
+
+		return e.complexity.PredefinedResponse.SettledBetMultiplier(childComplexity), true
 	case "PredefinedResponse.submission":
 		if e.complexity.PredefinedResponse.Submission == nil {
 			break
@@ -11736,6 +11776,8 @@ interface QuizResponse {
     journalEntry: ScoreJournal @goField(forceResolver: true)
     # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
     isCorrect: Boolean @goField(forceResolver: true)
+    # settledBetMultiplier is the payout actually applied to the bet, null until the bet is settled
+    settledBetMultiplier: Float @goField(forceResolver: true)
 }
 
 type PredefinedResponse implements QuizResponse {
@@ -11751,6 +11793,8 @@ type PredefinedResponse implements QuizResponse {
     selectedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
     # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
     isCorrect: Boolean @goField(forceResolver: true)
+    # settledBetMultiplier is the payout actually applied to the bet, null until the bet is settled
+    settledBetMultiplier: Float @goField(forceResolver: true)
 }
 
 type FreeTextResponse implements QuizResponse {
@@ -11765,6 +11809,8 @@ type FreeTextResponse implements QuizResponse {
     textResponse: String!
     # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
     isCorrect: Boolean @goField(forceResolver: true)
+    # settledBetMultiplier is the payout actually applied to the bet, null until the bet is settled
+    settledBetMultiplier: Float @goField(forceResolver: true)
 }
 
 type NumberResponse implements QuizResponse {
@@ -11779,6 +11825,8 @@ type NumberResponse implements QuizResponse {
     numberResponse: Float!
     # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
     isCorrect: Boolean @goField(forceResolver: true)
+    # settledBetMultiplier is the payout actually applied to the bet, null until the bet is settled
+    settledBetMultiplier: Float @goField(forceResolver: true)
 }
 
 type JsonResponse implements QuizResponse {
@@ -11793,6 +11841,8 @@ type JsonResponse implements QuizResponse {
     jsonResponse: JSON!
     # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
     isCorrect: Boolean @goField(forceResolver: true)
+    # settledBetMultiplier is the payout actually applied to the bet, null until the bet is settled
+    settledBetMultiplier: Float @goField(forceResolver: true)
 }
 
 type OrderingResponse implements QuizResponse {
@@ -11807,6 +11857,8 @@ type OrderingResponse implements QuizResponse {
     submittedOrder: [ID!]!
     # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
     isCorrect: Boolean @goField(forceResolver: true)
+    # settledBetMultiplier is the payout actually applied to the bet, null until the bet is settled
+    settledBetMultiplier: Float @goField(forceResolver: true)
 }
 
 # ==================== Quiz Input Types ====================
@@ -24068,6 +24120,35 @@ func (ec *executionContext) fieldContext_FreeTextResponse_isCorrect(_ context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _FreeTextResponse_settledBetMultiplier(ctx context.Context, field graphql.CollectedField, obj *model.FreeTextResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FreeTextResponse_settledBetMultiplier,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.FreeTextResponse().SettledBetMultiplier(ctx, obj)
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FreeTextResponse_settledBetMultiplier(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FreeTextResponse",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Image_url(ctx context.Context, field graphql.CollectedField, obj *model.Image) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -25078,6 +25159,35 @@ func (ec *executionContext) fieldContext_JsonResponse_isCorrect(_ context.Contex
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JsonResponse_settledBetMultiplier(ctx context.Context, field graphql.CollectedField, obj *model.JSONResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_JsonResponse_settledBetMultiplier,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.JsonResponse().SettledBetMultiplier(ctx, obj)
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_JsonResponse_settledBetMultiplier(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JsonResponse",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
 		},
 	}
 	return fc, nil
@@ -38813,6 +38923,35 @@ func (ec *executionContext) fieldContext_NumberResponse_isCorrect(_ context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _NumberResponse_settledBetMultiplier(ctx context.Context, field graphql.CollectedField, obj *model.NumberResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberResponse_settledBetMultiplier,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.NumberResponse().SettledBetMultiplier(ctx, obj)
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberResponse_settledBetMultiplier(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberResponse",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _OrderingItemResult_item(ctx context.Context, field graphql.CollectedField, obj *model.OrderingItemResult) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -39940,6 +40079,35 @@ func (ec *executionContext) fieldContext_OrderingResponse_isCorrect(_ context.Co
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrderingResponse_settledBetMultiplier(ctx context.Context, field graphql.CollectedField, obj *model.OrderingResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingResponse_settledBetMultiplier,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.OrderingResponse().SettledBetMultiplier(ctx, obj)
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingResponse_settledBetMultiplier(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingResponse",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
 		},
 	}
 	return fc, nil
@@ -41946,6 +42114,35 @@ func (ec *executionContext) fieldContext_PredefinedResponse_isCorrect(_ context.
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PredefinedResponse_settledBetMultiplier(ctx context.Context, field graphql.CollectedField, obj *model.PredefinedResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PredefinedResponse_settledBetMultiplier,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.PredefinedResponse().SettledBetMultiplier(ctx, obj)
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_PredefinedResponse_settledBetMultiplier(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PredefinedResponse",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
 		},
 	}
 	return fc, nil
@@ -70156,6 +70353,39 @@ func (ec *executionContext) _FreeTextResponse(ctx context.Context, sel ast.Selec
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "settledBetMultiplier":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._FreeTextResponse_settledBetMultiplier(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -70587,6 +70817,39 @@ func (ec *executionContext) _JsonResponse(ctx context.Context, sel ast.Selection
 					}
 				}()
 				res = ec._JsonResponse_isCorrect(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "settledBetMultiplier":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._JsonResponse_settledBetMultiplier(ctx, field, obj)
 				return res
 			}
 
@@ -73019,6 +73282,39 @@ func (ec *executionContext) _NumberResponse(ctx context.Context, sel ast.Selecti
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "settledBetMultiplier":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NumberResponse_settledBetMultiplier(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -73505,6 +73801,39 @@ func (ec *executionContext) _OrderingResponse(ctx context.Context, sel ast.Selec
 					}
 				}()
 				res = ec._OrderingResponse_isCorrect(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "settledBetMultiplier":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._OrderingResponse_settledBetMultiplier(ctx, field, obj)
 				return res
 			}
 
@@ -74427,6 +74756,39 @@ func (ec *executionContext) _PredefinedResponse(ctx context.Context, sel ast.Sel
 					}
 				}()
 				res = ec._PredefinedResponse_isCorrect(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "settledBetMultiplier":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._PredefinedResponse_settledBetMultiplier(ctx, field, obj)
 				return res
 			}
 

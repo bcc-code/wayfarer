@@ -68,11 +68,7 @@ const completedSubmissionResults = computed<QuestionResult[]>(() => {
 
   return completedSubmission.value.responses.map((response) => ({
     questionId: response.question.id,
-    isCorrect:
-      response.__typename === 'PredefinedResponse' ||
-      response.__typename === 'OrderingResponse'
-        ? (response.isCorrect ?? null)
-        : null,
+    isCorrect: response.isCorrect ?? null,
   }))
 })
 
@@ -246,12 +242,10 @@ function initializeFromExistingResponses() {
   for (const question of questions.value) {
     const response = responses.find((r) => r.question.id === question.id)
     if (response) {
-      const isCorrect =
-        response.__typename === 'PredefinedResponse' ||
-        response.__typename === 'OrderingResponse'
-          ? (response.isCorrect ?? null)
-          : null
-      existingResults.push({ questionId: question.id, isCorrect })
+      existingResults.push({
+        questionId: question.id,
+        isCorrect: response.isCorrect ?? null,
+      })
     }
   }
 
@@ -301,6 +295,7 @@ const isBettingEnabled = computed(() => {
 // Determine if the user won or lost the bet (for background color styling)
 const isBettingWin = computed(() => {
   if (!isBettingEnabled.value) return null
+  if (bettingOutcome.value !== null) return bettingOutcome.value === 'correct'
   const pointsEarned = currentResponse.value?.pointsEarned
   if (pointsEarned === null || pointsEarned === undefined) return null
   return pointsEarned >= 0
@@ -334,33 +329,12 @@ const viewState = computed(() =>
   }),
 )
 
-// Compute correct count for ordering questions (for betting results)
-const bettingCorrectCount = computed(() => {
-  const response = currentResponse.value
-  const question = currentQuestion.value
-  if (!response || !question) return null
-  if (response.__typename !== 'OrderingResponse') return null
-  if (question.__typename !== 'OrderingQuestion') return null
-
-  const correctOrderIds = [...question.orderingItems]
-    .sort((a, b) => (a.correctOrder ?? 0) - (b.correctOrder ?? 0))
-    .map((item) => item.id)
-
-  let count = 0
-  for (
-    let i = 0;
-    i < response.submittedOrder.length && i < correctOrderIds.length;
-    i++
-  ) {
-    if (response.submittedOrder[i] === correctOrderIds[i]) count++
-  }
-  return count
-})
-
-const bettingTotalCount = computed(() => {
-  const question = currentQuestion.value
-  if (!question || question.__typename !== 'OrderingQuestion') return null
-  return question.orderingItems.length
+// The backend grades every question type and settles the bet on that verdict,
+// so the result screen reads it rather than regrading in the browser.
+const bettingOutcome = computed<'correct' | 'incorrect' | null>(() => {
+  const isCorrect = currentResponse.value?.isCorrect
+  if (isCorrect === null || isCorrect === undefined) return null
+  return isCorrect ? 'correct' : 'incorrect'
 })
 
 // Find existing ordering response for the current question
@@ -838,8 +812,8 @@ const progressResults = computed(() => {
           :points-earned="currentResponse?.pointsEarned"
           :bet-amount="currentResponse?.betAmount"
           :available-points="userScore ?? 0"
-          :correct-count="bettingCorrectCount"
-          :total-count="bettingTotalCount"
+          :outcome="bettingOutcome"
+          :multiplier="currentResponse?.settledBetMultiplier"
         />
 
         <!-- Action buttons -->

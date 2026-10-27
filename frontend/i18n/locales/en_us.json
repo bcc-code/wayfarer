@@ -50,9 +50,8 @@
       "pointsLost": "Points lost",
       "pointsEarned": "Points earned",
       "resultYourBet": "Your bet",
-      "correctCount": "You had {count} correct answers.",
-      "correctCountAll": "You had all the right answers.",
-      "correctCountNone": "You didn't have any correct ones.",
+      "outcomeCorrect": "You answered correctly.",
+      "outcomeIncorrect": "You answered incorrectly.",
       "bettingResult": "Betting results",
       "nothingToStake": "You have no points to bet."
     },
