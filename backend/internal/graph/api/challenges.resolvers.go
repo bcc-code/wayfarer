@@ -781,9 +781,14 @@ func (r *mutationResolver) BulkEnrollUsersInChallenge(ctx context.Context, targe
 	if err != nil {
 		return nil, fmt.Errorf("challenge not found: %w", err)
 	}
+	projectID := getChallengeProjectID(challenge)
 
-	// Bulk enroll
-	err = r.DB.Queries.BulkEnrollUsersInChallenge(ctx, sqlc.BulkEnrollUsersInChallengeParams{
+	if err := authorizeBulkEnrollment(ctx, r.RoleService, r.DB.Queries, adminID, projectID, userIds); err != nil {
+		return nil, err
+	}
+
+	// Bulk enroll; only users who were not enrolled yet come back
+	enrolled, err := r.DB.Queries.BulkEnrollUsersInChallenge(ctx, sqlc.BulkEnrollUsersInChallengeParams{
 		Userids:     userIds,
 		Challengeid: challengeID,
 	})
@@ -791,23 +796,23 @@ func (r *mutationResolver) BulkEnrollUsersInChallenge(ctx context.Context, targe
 		return nil, fmt.Errorf("failed to bulk enroll users: %w", err)
 	}
 
-	// Cache invalidation
-	for _, userID := range userIds {
+	// Cache invalidation and notifications for the newly enrolled users only:
+	// users already enrolled are not told again
+	for _, userID := range enrolled {
 		r.Cache.InvalidateUser(userID)
 	}
-	projectID := getChallengeProjectID(challenge)
 	eventID := getChallengeEventID(challenge)
 	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
 
 	// Notify Firestore listeners
-	for _, userID := range userIds {
+	for _, userID := range enrolled {
 		go r.FirebaseService.NotifyUserChallenges(context.Background(), userID)
 	}
 
-	// Send push notifications for each enrolled user
+	// Send push notifications for each newly enrolled user
 	if r.PushService != nil {
 		challengeInfo := getChallengePushInfo(challenge)
-		for _, userID := range userIds {
+		for _, userID := range enrolled {
 			go push.SendTranslatedChallengeEnrollmentNotification(
 				r.PushService,
 				r.Loaders,
@@ -1045,6 +1050,10 @@ func (r *mutationResolver) BulkEnrollUsersInChallengeAsync(ctx context.Context, 
 		return nil, fmt.Errorf("challenge not found: %w", err)
 	}
 	projectID := getChallengeProjectID(challenge)
+
+	if err := authorizeBulkEnrollment(ctx, r.RoleService, r.DB.Queries, userID, projectID, userIDs); err != nil {
+		return nil, err
+	}
 
 	// Create and run the bulk job
 	return r.BulkService.CreateAndRunBulkJob(

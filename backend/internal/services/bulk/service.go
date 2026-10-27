@@ -388,8 +388,8 @@ func (s *Service) EnrollUsersInChallenge(ctx context.Context, challengeID string
 		}
 		batch := userIDs[i:end]
 
-		// Bulk enroll
-		err := s.DB.Queries.BulkEnrollUsersInChallenge(ctx, sqlc.BulkEnrollUsersInChallengeParams{
+		// Bulk enroll; only users who were not enrolled yet come back
+		enrolled, err := s.DB.Queries.BulkEnrollUsersInChallenge(ctx, sqlc.BulkEnrollUsersInChallengeParams{
 			Userids:     batch,
 			Challengeid: challengeID,
 		})
@@ -406,14 +406,15 @@ func (s *Service) EnrollUsersInChallenge(ctx context.Context, challengeID string
 
 		successCount += len(batch)
 
-		// Cache invalidation
-		for _, userID := range batch {
+		// Cache invalidation and notifications for the newly enrolled users
+		// only: users already enrolled are not told again
+		for _, userID := range enrolled {
 			s.Cache.InvalidateUser(userID)
 		}
 
 		// Notify Firestore listeners
 		if s.FirebaseService != nil {
-			for _, userID := range batch {
+			for _, userID := range enrolled {
 				go s.FirebaseService.NotifyUserChallenges(context.Background(), userID)
 			}
 		}
@@ -421,7 +422,7 @@ func (s *Service) EnrollUsersInChallenge(ctx context.Context, challengeID string
 		// Send push notifications
 		if sendNotifications && s.PushService != nil {
 			challengeInfo := getChallengePushInfo(challenge)
-			for _, userID := range batch {
+			for _, userID := range enrolled {
 				go push.SendTranslatedChallengeEnrollmentNotification(
 					s.PushService,
 					s.Loaders,
