@@ -7,34 +7,11 @@ import {
   type DocumentSnapshot,
 } from 'firebase/firestore'
 import { useClientHandle } from '@urql/vue'
-
-const NOTIFICATION_QUERY_MAP = {
-  achievements: ['ProfilePageDocument'],
-  challenges: [
-    'ActiveChallengesPageDocument',
-    'ChallengePageDocument',
-    'CurrentProjectDocument',
-  ],
-  content: ['ProfilePageDocument'],
-  quizzes: ['ActiveChallengesPageDocument', 'ChallengePageDocument'],
-  projects: ['ProfilePageDocument', 'CurrentProjectDocument'],
-} as const
-
-const ADMIN_NOTIFICATION_QUERY_MAP = {
-  feedback: ['AdminFeedbackPageDocument'],
-} as const
-
-const PROJECT_NOTIFICATION_QUERY_MAP = {
-  quiz_sessions: ['ActiveChallengesPageDocument', 'ChallengePageDocument'],
-  challenges: [
-    'ActiveChallengesPageDocument',
-    'ChallengePageDocument',
-    'CurrentProjectDocument',
-  ],
-  // Fired on the outgoing project when an admin switches which project is
-  // current, so clients still subscribed to it refetch and re-theme.
-  current_project: ['CurrentProjectDocument'],
-} as const
+import {
+  NOTIFICATION_QUERY_MAP,
+  ADMIN_NOTIFICATION_QUERY_MAP,
+  PROJECT_NOTIFICATION_QUERY_MAP,
+} from '~/utils/firestoreNotifications'
 
 type NotificationCategory = keyof typeof NOTIFICATION_QUERY_MAP
 type AdminNotificationCategory = keyof typeof ADMIN_NOTIFICATION_QUERY_MAP
