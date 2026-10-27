@@ -136,6 +136,12 @@ func (r *mutationResolver) AcceptConsent(ctx context.Context, consentID string) 
 		}, nil
 	}
 
+	// A required consent decides whether the user counts anywhere (00116)
+	applyBlockChanges := func() {}
+	if consent.IsRequired {
+		applyBlockChanges = r.trackConsentBlockChanges(ctx, r.blockedProjectsOfUser(userID))
+	}
+
 	// Create new user consent history entry
 	occurredAt := pgtype.Timestamptz{Time: time.Now(), Valid: true}
 	historyEntry, err := r.DB.Queries.CreateUserConsentHistory(ctx, sqlc.CreateUserConsentHistoryParams{
@@ -160,6 +166,7 @@ func (r *mutationResolver) AcceptConsent(ctx context.Context, consentID string) 
 	if consent.IsRequired {
 		r.Cache.InvalidateLeaderboardScores()
 	}
+	applyBlockChanges()
 
 	return &model.UserConsent{
 		ID:         historyEntry.ID,
@@ -212,6 +219,12 @@ func (r *mutationResolver) RejectConsent(ctx context.Context, consentID string) 
 		}, nil
 	}
 
+	// A required consent decides whether the user counts anywhere (00116)
+	applyBlockChanges := func() {}
+	if consent.IsRequired {
+		applyBlockChanges = r.trackConsentBlockChanges(ctx, r.blockedProjectsOfUser(userID))
+	}
+
 	// Create new user consent history entry
 	occurredAt := pgtype.Timestamptz{Time: time.Now(), Valid: true}
 	historyEntry, err := r.DB.Queries.CreateUserConsentHistory(ctx, sqlc.CreateUserConsentHistoryParams{
@@ -235,6 +248,7 @@ func (r *mutationResolver) RejectConsent(ctx context.Context, consentID string) 
 	if consent.IsRequired {
 		r.Cache.InvalidateLeaderboardScores()
 	}
+	applyBlockChanges()
 
 	return &model.UserConsent{
 		ID:         historyEntry.ID,
@@ -278,6 +292,10 @@ func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title 
 		shortTextStr = *shortText
 	}
 
+	// A new version can make the key required or relax it, which changes who
+	// counts anywhere in its projects (00116)
+	applyBlockChanges := r.trackConsentBlockChanges(ctx, r.blockedUsersInConsentScope(consentProjectID))
+
 	// Create consent
 	consent, err := r.DB.Queries.CreateConsent(ctx, sqlc.CreateConsentParams{
 		ID:          ulid.NewConsentID(),
@@ -302,6 +320,7 @@ func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title 
 	// A new version can make a consent required or relax it, which changes
 	// who is hidden from other users (migration 00116)
 	r.Cache.InvalidateLeaderboardScores()
+	applyBlockChanges()
 
 	var publishedAtOut *scalars.DateTime
 	if consent.PublishedAt.Valid {
@@ -354,6 +373,14 @@ func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *
 		publishedAtPG = pgtype.Timestamptz{Time: publishedAt.Time, Valid: true}
 	}
 
+	// isRequired or publishedAt may change who counts anywhere in the consent's
+	// projects (00116)
+	existing, err := r.DB.Queries.GetConsentByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("consent not found: %w", err)
+	}
+	applyBlockChanges := r.trackConsentBlockChanges(ctx, r.blockedUsersInConsentScope(existing.ProjectID))
+
 	consent, err := r.DB.Queries.UpdateConsent(ctx, sqlc.UpdateConsentParams{
 		ID:          id,
 		Title:       titleStr,
@@ -374,6 +401,7 @@ func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *
 	// isRequired or publishedAt may have changed who is hidden from other
 	// users (migration 00116)
 	r.Cache.InvalidateLeaderboardScores()
+	applyBlockChanges()
 
 	var publishedAtOut *scalars.DateTime
 	if consent.PublishedAt.Valid {
@@ -438,6 +466,12 @@ func (r *mutationResolver) AdminSetUserConsent(ctx context.Context, userID strin
 		actionStr = "REJECTED"
 	}
 
+	// A required consent decides whether the user counts anywhere (00116)
+	applyBlockChanges := func() {}
+	if consent.IsRequired {
+		applyBlockChanges = r.trackConsentBlockChanges(ctx, r.blockedProjectsOfUser(userID))
+	}
+
 	// Create history entry with admin's user ID as source
 	source := adminUserID
 	historyEntry, err := r.DB.Queries.CreateUserConsentHistory(ctx, sqlc.CreateUserConsentHistoryParams{
@@ -462,6 +496,7 @@ func (r *mutationResolver) AdminSetUserConsent(ctx context.Context, userID strin
 	if consent.IsRequired {
 		r.Cache.InvalidateLeaderboardScores()
 	}
+	applyBlockChanges()
 
 	// Load consent for return value
 	consentModel, err := r.LoadConsentWithTranslation(ctx, historyEntry.ConsentID)

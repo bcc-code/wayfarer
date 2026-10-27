@@ -1,6 +1,10 @@
 # Required (blocking) consents
 
-**Status:** Phase 1 (the column) done — everything else not started
+**Status:** Phase 1 (column) and Phase 3 (client-side gate) done. Phase 2b
+step 1 (hide from other users) implemented 2026-10-23 on
+`feat/consents-required-backend` — migration `00116` **written, not yet run**.
+Averages, push/bulk and the reject guard are still open; see "Phase 2b
+re-survey" and "Step 1".
 **Started:** 2026-10-14
 **Branch:** feature/required-consents
 
@@ -243,6 +247,12 @@ middleware never runs on that path.
 
 #### 2b — The participation filter
 
+> **Superseded 2026-10-22** — the mechanics below assume leaderboards are
+> computed at read time from a `project_users` CTE. They are not: see
+> [Phase 2b re-survey](#phase-2b-re-survey-2026-10-22) further down. The surface
+> list and the under-13 / admin-exempt constraints still hold; the "one view,
+> anti-join everywhere" plan does not.
+
 Per decision #7 a blocked user is not a participant, so they must disappear
 from every read that answers "who is in this project / unit". Today **nothing
 is consent-aware**; all of these start from `user_projects` or `team_members`:
@@ -293,6 +303,410 @@ as a view, **measure against the existing loadtests**, and only if it regresses
 fall back to a denormalised `user_projects.consent_blocked` flag maintained on
 accept / reject / consent publish. Do not start with the denormalised column —
 it must be swept on every publish of a required consent, and it will drift.
+
+#### Phase 2b re-survey (2026-10-22)
+
+Information gathering only — no implementation decided. Requirement restated
+by Jan on 2026-10-22, matching decisions #7, #9, #10:
+
+1. A user who has not accepted the required consents must not "exist" for other
+   users.
+2. Not visible in leaderboards or in their unit; their points must not count
+   toward averages.
+3. Admins must still see them, so they can place them into units.
+
+##### Finding A — leaderboards are pre-aggregated; the old 2b targets dead code
+
+- Every board is served from 8 stored tables,
+  `leaderboard_{project,event}_{persons,teams,superteams,churches}`, through
+  the `GetFull*` queries only (`services/leaderboard.go:347`, `:386`, …),
+  paginated in Go, `totalCount = len(entries)`.
+- `Get{Project,Event}*Leaderboard`, `Count*Leaderboard`, `FindMy*Position` —
+  including the `project_users` CTE the old plan targets
+  (`leaderboards.sql:4`, `:154`) — have **no callers**. They are still listed in
+  `LeaderboardQuerier` (`services/leaderboard.go:27-69`).
+- Team / superteam / church `score` is a **stored average**:
+  `calculate_average_score(total_points, member_count)` = `ROUND(total/count)`
+  (`00080:37`). Both `total_points` and `member_count` are maintained on write:
+  - `score_journal` INSERT → `leaderboard_apply_queue` → worker
+    (`services/leaderboard_apply.go`, 200 ms tick) → `apply_score_journal_delta`
+    (`00101:24`). It fans out to person, current church, each team in the
+    project, and each superteam once. Each step recounts `member_count` live.
+  - Membership triggers (`00081`: `team_members` :16, `user_projects` :222,
+    `user_events` :307) move a user's whole `SUM(score_journal)` in or out.
+  - Church change, superteam reassignment and the `leaderboard_excluded`
+    toggle trigger nothing.
+- `member_count` is defined differently per board:
+  - project team = `COUNT(*) team_members` (no `user_projects` check);
+  - superteam = distinct members across its teams;
+  - project church = users of that church in `user_projects`;
+  - event boards additionally require `user_events`.
+- `Team.memberLeaderboard` (the unit view) is separate: a live
+  `SUM(score_journal)` over `team_members` (`teams.sql:201`), cached per team
+  for 15 min.
+
+**Consequence — decisions #8 and #9 now conflict.** #9 (points do not count in
+unit / superteam / church averages) cannot be done with a read-time filter. Both
+the numerator *and* the `member_count` denominator must drop the user, otherwise
+a 0-point "member" still drags the average down. #8 ("filter at read time,
+accepting restores instantly") assumed aggregates are computed on read. Options,
+all of which touch the write side (**not chosen**):
+
+- **(a) Blocked = non-member on write.** The triggers, `apply_score_journal_delta`
+  and the `member_count` recounts treat a blocked user as absent. Accept, reject,
+  and publishing a new required consent then have to move that user's points in
+  or out (like a team join or leave). Publishing a required consent sweeps
+  every affected user. `regenerate_leaderboards()` (`00113:12`) must apply the
+  same rule, or rebuild ≠ incremental.
+- **(b) Recompute aggregates on read** for team / superteam / church. This
+  gives up the stored-table design and its loadtest gains.
+- **(c) Denormalised blocked flag** (e.g. on `user_projects`) that the triggers
+  read. Same sweep problem as (a), plus drift risk.
+
+The **persons board** can still be filtered on read. Its
+`leaderboard_consent` check (`leaderboards.sql:132-147`, `:594-609`) is the
+precedent and the natural place, since it already sits in the only live query.
+
+##### Finding B — admin and user read the same fields and the same caches
+
+- The admin UI reuses the user-facing fields:
+  - `AdminTeamPage` (`admin/projects/[projectId]/teams/[teamId].vue`) reads
+    `team(id){ members, memberLeaderboard }`;
+  - `MyChurchUnitsPage` (`admin/my-church/units.vue`) reads
+    `myCurrentProject.myChurchTeams{ members }` plus `users(filter)`.
+- The full-board cache key `leaderboard:full:{ctx}:{id}:{entity}:{filtersHash}`
+  (`cache/keys.go:1136`), the per-team member-leaderboard cache, and the 30 s
+  `ResponseCache` (`graph/api/response_cache.go:76-80`) are not keyed by who is
+  asking.
+
+So a filter in a shared resolver either hides blocked users from admins too,
+or leaks them to users through the cache. It needs separate admin fields, or
+cache keys that include the role.
+
+- Accept and reject only clear `cache.UserKey` (`consents.resolvers.go:151`,
+  `:217`, `:428`). They do not clear board or member-leaderboard caches.
+
+##### Finding C — surfaces where one user sees another (non-admin)
+
+| Surface                                                          | Where                                                                                | Gate today                                                         |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| Persons boards (+ `me`, `nearestChurchRivals`, configured boards) | `GetFull{Project,Event}PersonLeaderboard`                                            | any user; `leaderboard_consent` unless team/superteam-filtered      |
+| Team / superteam / church boards                                 | stored aggregates (Finding A)                                                        | any user                                                           |
+| Unit view                                                        | `Team.memberLeaderboard` `teams.resolvers.go:1539` → `teams.sql:201`                 | **none** — any user, any team; no consent filter                    |
+| Unit roster                                                      | `Team.members` `teams.resolvers.go:1496`                                             | `CanManageTeam` (admin, project_admin, church_admin, **team_lead**) |
+| Team stats                                                       | `Team.averageAge` (`teams.sql:276`); `teams(filter)` `minMembers`/`maxMembers`        | none — reveals member counts and ages                              |
+| Superteam roster                                                 | `SuperTeam.members` `teams.resolvers.go:1328`                                        | m2m, admin, project_admin                                          |
+| User lookup                                                      | `user(id)`, `users(filter)`                                                          | `CanAccessUser` / role-gated                                       |
+| Quiz session creator                                             | `QuizSession.createdBy` `quiz_sessions.resolvers.go:879`                             | none                                                               |
+| Counts                                                           | `completionCount`, `awardedUserCount`, `activityTrend.activeUsers`, `QuizSession.submissionCount` | none, but only used by admin pages                     |
+
+Audiences (another user is not the viewer here, but per decision #6 a blocked
+user must not be reached):
+
+- **Push** — `resolveTargetUserIDs` (`services/push/service.go:354`): `userIds`,
+  `teamIds`, `projectIds`, `eventIds`, `allUsers`. Plus automatic per-user pushes
+  for achievement, challenge enrolment and bet result
+  (`services/push/translated_notifications.go` callers).
+- **Bulk** — `ResolveEnrollmentTarget` (`services/bulk/service.go:265`):
+  `userIds`, `churchInProject`, `teamIds`, `superTeamIds`, `allProjectMembers`.
+  Also `GrantQuizSessionAccess`, `ProcessBulkAwardAchievement` and team score
+  adjustments.
+- **Webhooks / plugin** — `quiz_session_finished` sends every participant's
+  user id, members id and score. The Ladder to Heaven `team-name-changed`
+  handler awards points to every team member (`GetUserIDsInTeams`).
+
+Not checked: `JoinTeam` response (`teams.resolvers.go:26`) and
+`resolveBulkAwardTarget`.
+
+##### Open questions for Jan (decide before implementing)
+
+1. **Aggregates**: option (a), (b) or (c) above? Or relax #9 so blocked users'
+   points still count, which would allow a pure read-time filter.
+2. **Who counts as "admin"** for decision #10? Placing users into units happens
+   in `admin/my-church/units.vue`, which church admins use. `Team.members` is
+   also visible to `team_lead`, an ordinary participant. Do church_admin,
+   project_admin and team_lead see blocked users?
+3. **What exactly hides a user**: #2 (latest action on the required key is not
+   `ACCEPTED`), keeping the under-13 LOCAL exemption (#3)? Any predicate added
+   to SQL must reproduce `buildConsentStatus` exactly, or minors vanish.
+4. **Other exceptions** to "mandatory"? For example, imported members who have
+   never logged in — they have never answered anything, so at camp start whole
+   units would look empty to their teammates. Remote consents are already
+   excluded (#4).
+5. **Relation to `leaderboard_consent`**: keep both? It already hides
+   non-consenting users from persons boards, but not when the board is filtered
+   by team or superteam (including `myTeam`), and not from aggregates.
+6. **Direct `userIds` push / bulk targets** chosen by an admin: filter or not?
+   The old note recommended yes.
+
+##### Side findings — not in scope, for separate issues
+
+- `Query.scoreJournal(projectId, userId)` has no authorization at all. There is
+  no `@requireRole` and no check in `graph/api/score_journal.go`, so any
+  logged-in user can read any user's point history. The frontend does not
+  call it.
+- `Team.memberLeaderboard` is ungated (any user, any team), and
+  `GetTeamMemberLeaderboard` selects `email` and `birthdate`. They are not
+  exposed through `LeaderboardEntry`, but they are loaded and cached.
+- The leaderboard filters `gender`, `country` and `churchCategory` go into the
+  cache key but are never passed to SQL, so they are silently ignored.
+- Possible double count. Membership triggers move the full
+  `SUM(score_journal)`, including deltas still in `leaderboard_apply_queue`,
+  which the worker then applies again. Found by reading the code only; no test
+  covers it.
+- The Ladder to Heaven distribution sum (`super_teams.sql:99`) joins
+  `user_roles`, so a team with several leads would have its sum multiplied.
+  Not verified.
+
+#### Requirement clarified 2026-10-23
+
+Jan's use case:
+
+1. A local church admin creates units.
+2. The admin adds person X to unit Y.
+3. X has not accepted the consent to join the project.
+4. X is still visible to admins: as a member of unit Y, of the church, etc.
+5. X is not visible to any other user: not in a leaderboard, not in the unit,
+   **not even to the unit leader**.
+6. X's points and data are not calculated at all — not in the unit's average
+   score, average age, and so on.
+
+This settles three open questions:
+
+- **#1 (aggregates):** do not relax #9.
+- **#2 (who is "admin"):** admin, superadmin, project_admin and church_admin
+  see X. A team_lead does **not**. Today `Team.members` is gated by
+  `CanManageTeam`, which admits team leads, so it has to filter blocked users
+  for a viewer who is only a team lead.
+- **Calculated numbers:** X counts in nothing, for admins too. Admins see X
+  *listed*, but averages, ages and counts exclude X everywhere, so there is no
+  need for admin-only numbers or role-aware caches.
+
+What it covers beyond step 1:
+
+- Stored team / superteam / church scores (project and event): both
+  `total_points` and `member_count`.
+- `GetTeamAverageAge` (`teams.sql:285`): the `Team.averageAge` field, and the
+  automatic `leaderboard_excluded` rule (average age ≥ 36), which is only
+  recomputed on member add/remove (`teams.resolvers.go:487`, `:581`). If
+  blocked users are excluded from the age, accept/reject must recompute it.
+- `teams(filter)` `minMembers`/`maxMembers` member counts (`teams.sql:10`,
+  `:35`).
+- External: Ladder to Heaven superteam distribution (team totals and member
+  counts) and the `quiz_session_finished` webhook (every participant's score).
+
+#### Step 1 — hide from other users ✅ implemented 2026-10-23
+
+Scope agreed with Jan on 2026-10-23: only hide. A user who has not accepted
+the project's required consents is missing from the person leaderboards and
+the unit view.
+
+Deliberately **not** in step 1:
+
+- Their points still count in team, superteam and church averages
+  (Finding A).
+- Push and bulk audiences are not filtered.
+- There is no reject guard.
+
+On the admin team page a blocked member is still listed via `Team.members`,
+but shows **0 points and no rank**. Jan accepted this for step 1, to be
+improved later.
+
+**The rule lives in one SQL function:** `consent_blocked_user_ids(project_id)`
+in migration `00116_add_consent_blocked_user_ids.sql`. Jan chose this on
+2026-10-23 over inline copies, because later steps (averages in the triggers,
+push/bulk audiences, real points for admins) need the same rule. It mirrors
+`buildConsentStatus` and the frontend's `blockingConsentIds`:
+
+- latest published version per key, global or the project's own; `is_required`
+  is tested *after* picking the latest version;
+- local only;
+- the user's latest action for the key is missing or `REJECTED`;
+- under-13 users (by year difference) are exempt.
+
+`users.birthdate` is `NOT NULL` (`00006`), so there is no missing-birthdate
+case. Candidates come from `user_projects`: both team-join paths
+(`JoinTeam`, `AddTeamMembers`) enroll the user in the project.
+
+**Where the function is used**, each time as a `MATERIALIZED` CTE `blocked`
+that the query anti-joins:
+
+- `GetFullProjectPersonLeaderboard` and `GetFullEventPersonLeaderboard`
+  (`leaderboards.sql`). These are the only live person-board queries, so
+  `me`, `nearestChurchRivals`, configured boards and `totalCount` follow
+  automatically. The unused `FindMy*` / `Get*` / `Count*` variants are
+  untouched.
+- `GetTeamMemberLeaderboard` (`teams.sql`), which backs `Team.memberLeaderboard`.
+
+The filter sits in `WHERE`, so `DENSE_RANK` / `RANK` stay contiguous. The CTE
+is materialized because, on test data, the inlined function produced a
+nested-loop anti-join that would re-run the set per row.
+
+**sqlc gotchas:**
+
+- sqlc does not know a function's `RETURNS TABLE` columns. Alias them in the
+  query: `consent_blocked_user_ids(...) AS b(user_id)`.
+- `make generate | tail` hides a failure; use `set -o pipefail`.
+
+**Cache invalidation** (`consents.resolvers.go`) uses
+`InvalidateLeaderboardScores()`:
+
+- on `acceptConsent`, `rejectConsent` and `adminSetUserConsent` when the
+  consent is required;
+- always on `createConsent` and `updateConsent`.
+
+Known gaps:
+
+- Accepting an *older, non-required* version of a key whose latest version is
+  required unblocks the user without invalidating, so it is stale until the
+  TTL expires (5 min boards, 15 min unit).
+- A future `published_at` takes effect with no write. The TTL covers it.
+- **Invalidation burst.** `InvalidateLeaderboardScores()` also clears the
+  whole 30 s GraphQL response cache, and it now runs on every accept of a
+  required consent, with no throttle. The worst case is when a required
+  consent is first published and everyone accepts at once, before camp, when
+  no scores are flowing. A naive "once per second" guard would drop
+  invalidations and leave a user who just accepted hidden. A proper fix needs
+  a trailing flush. Not done.
+- **Per-instance cache.** The cache is in-memory, with no cross-instance
+  broadcast. "Visible straight away" holds on the instance that handled the
+  accept. Other instances catch up on TTL or on their own next invalidation.
+
+**Deploy order:** migrations are run by `cmd/migrate`, not at server startup.
+Apply `00116` **before** deploying this code: every person leaderboard and the
+unit view call `consent_blocked_user_ids` and error without it. The same
+applies to the shared dev database. Re-check that `00116` is still free on
+every branch right before merging.
+
+**Tests:** `backend/e2e/consents_blocked_visibility_test.go` checks:
+
+- accepted, never-answered, rejected-after-accepting, under-13 and turns-13
+  users;
+- project and event boards and the unit view, with contiguous ranks and
+  `totalCount`;
+- admins still see everyone in `Team.members`;
+- another project's required consent, a required remote consent, and a
+  required v1 relaxed by v2 do not hide anyone;
+- accepting shows the user straight away with warm caches. This fails if the
+  accept invalidation is removed (checked).
+
+**Not done:**
+
+- Loadtest against the `notes/loadtest-*.md` baselines.
+- Running `00116` on a real database (needs approval).
+
+#### Step 1b — hidden from unit leaders ✅ implemented 2026-10-26
+
+Use-case step 5: a unit leader must not see X either. The app already hid X
+from leaders, because `StandingsUnit.vue` and the lead picker read
+`memberLeaderboard`, which step 1 filters. Two API paths still exposed X to a
+lead:
+
+- `Team.members`, gated by `CanManageTeam`, which admits team leads.
+- `users(filter: { teamId })`, where `checkUserPermissions` lets a lead list
+  their own team.
+
+Jan chose approach A (2026-10-26): filter those two for a viewer whose access
+comes only from being the team lead, instead of removing team leads from the
+gates (B).
+
+- `RoleService.CanManageTeamAsAdmin` is `CanManageTeam` without the team-lead
+  clause: admin, superadmin, the team's project admin, or the church admin of
+  a member's (or the creator's) church. `CanManageTeam`'s call order is
+  unchanged, so its mock-based tests still hold.
+- `Team.members`: `seesHidden` = m2m or `CanManageTeamAsAdmin`. Otherwise
+  access requires `HasRoleInTeam(team_lead)`, and
+  `GetConsentBlockedUserIDsInTeam` (`teams.sql`) is filtered out in Go
+  (`teamMembersFor`, `teams.go`; was `teamMembersWithout` before step 2). The
+  members loader cache stays shared.
+- `users()`: `permissionContext.HideConsentBlocked` is set when a lead is not
+  `CanManageTeamAsAdmin`. The hidden IDs go into
+  `GetUsersFilteredCursor`/`CountUsersFiltered` as `@excludeids`, and into the
+  cache key (`addExcludeIDsToCacheKey`), so an accept changes the key with no
+  invalidation and a lead's result is never served to an admin.
+- Tests:
+  - `users_test.go`: `HideConsentBlocked` for a plain lead versus an admin lead.
+  - `roles_test.go`: `CanManageTeamAsAdmin` is false for a team lead only, and
+    must not even check the lead role; it is true for the church admin of a
+    member's church.
+  - e2e: church admin sees all members in both places; the lead sees only the
+    visible ones, with a matching `totalCount`. Verified to fail with the old
+    checks.
+
+#### Step 2 — group boards computed from person totals ✅ implemented 2026-10-26
+
+Approach (a) (agreed 2026-10-23: blocked users as non-members in every
+writer of the stored group totals, plus full rebuilds) was dropped on
+2026-10-26 for computing the group boards on read. The stored totals have five
+writers, each with its own copy of the member rules, and drift already
+(`notes/leaderboard-regenerate.md`). Separate refactor PR
+(`refactor/group-leaderboards-from-persons`), no consent logic: the six group
+`GetFull*` queries average the stored person totals on read, with exactly the
+rebuild's member rules. Performance (EXPLAIN on `gendata.sql`, k6 ramp) still
+to be measured before merging.
+
+#### Step 3 — counts nowhere (use-case step 6) ✅ implemented 2026-10-26
+
+Branch `feat/consents-exclude-from-averages`, stacked on step 2. A blocked user
+counts nowhere, for admins too:
+
+- Group boards (`leaderboards.sql`): one `MATERIALIZED` blocked CTE per board
+  (event boards: the event's project). Blocked users count neither in the
+  points nor in the member count, nor for a team's `churchId` filter.
+- `GetTeamAverageAge` (`teams.sql`): `Team.averageAge` and the automatic
+  `leaderboard_excluded` rule (≥ 36, `leaderboardExcludedMinAverageAge`,
+  `teams.go`) leave blocked members out.
+- `teams`/`superteams` `minMembers`/`maxMembers` (`teams.sql`,
+  `super_teams.sql`): the member count leaves blocked users out. The blocked
+  set is a `MATERIALIZED` CTE computed once per query, and only when a member
+  filter is set (a one-time filter; otherwise it is never executed).
+- Small sets check blocked status per member: `NOT EXISTS (SELECT 1 FROM
+  consent_blocked_user_ids(project) b WHERE b.user_id = … OFFSET 0)`. Postgres
+  inlines the function; `OFFSET 0` keeps the check a per-member subplan
+  (index lookups), because as an anti-join the planner may compute the whole
+  project's set instead. Used by `GetTeamAverageAge`,
+  `GetConsentBlockedUserIDsInTeam` (rewritten to this form) and
+  `GetConsentBlockedProjectsOfUsers`.
+- Measured in a throwaway container (2026-10-26, generic plans as pgx uses
+  them; 8k users, 800 teams): per-member check about 0.1–0.4 ms; `teams()`
+  without a member filter 4.4 ms, with one 25 ms. A first version (a
+  per-team `LATERAL` count gated in its `ON`) took 13 s: the gate did not
+  skip it, and the planner turned the per-member check into a whole-project
+  anti-join per team. Correlated `consent_blocked_user_ids` checks must keep
+  `OFFSET 0`.
+- `TeamMember.countsTowardScores: Boolean!` (new): false for a blocked
+  member, whom only admins see. The admin unit card (`AdminUnitCard.vue`)
+  still computes average age, the 36+ badge and the member count in the
+  browser from the listed members, X included; it should use this field.
+  Agreed as a separate frontend PR.
+- The age rule after consent changes: accept, reject, `adminSetUserConsent`
+  (required consents only), `createConsent` and `updateConsent` snapshot the
+  blocked (project, user) pairs before and after
+  (`GetConsentBlockedProjectsOfUsers`, `GetConsentBlockedUsersInProjects`,
+  `consents.sql`). Only the teams of users whose status changed are
+  re-checked (`applyConsentBlockChanges`, `consents.go`), because the rule
+  overwrites a hand-set `leaderboard_excluded`, which a project-wide sweep
+  would reset everywhere. The duplicated rule in add/remove team members is
+  now one helper (`refreshTeamLeaderboardExclusion`, `teams.go`), unchanged in
+  behaviour.
+- Tests: `e2e/consents_excluded_from_counts_test.go`, all through GraphQL:
+  blocked, accept, reject, a relaxing new version, re-requiring it, admin
+  accept; a hand-excluded control team must keep its flag. Each rule was
+  broken on purpose and a subtest failed. Unit tests for `teamMembersFor`,
+  `consentBlockChanges`, `teamsOfChangedUsers`.
+
+Expected behaviour (not a gap):
+
+- A consent whose `published_at` is in the future starts blocking when it
+  is published, and a user turning 13 becomes subject to it, with no
+  mutation. Boards, averages and counts follow at once (they read live). The
+  stored `leaderboard_excluded` flag, as before, is recomputed only on its
+  triggers (membership changes, and now consent changes).
+
+Still open from the use case: the Ladder to Heaven distribution and the
+`quiz_session_finished` webhook (they send data out; needs a product
+decision), push/bulk audiences, the API reject guard, and the admin unit card
+(above).
 
 ### Phase 3 — user frontend ✅ done 2026-10-15 (client-side gate only)
 

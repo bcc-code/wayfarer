@@ -157,6 +157,12 @@ func TestGroupLeaderboardsMatchStoredTables(t *testing.T) {
 	require.NoError(t, dbMgr.DrainLeaderboardApplyQueue(ctx))
 	require.NoError(t, q.RegenerateLeaderboards(ctx))
 
+	// The stored tables count users blocked by a required consent; the boards
+	// do not. The comparison holds only while nobody is blocked.
+	blocked, err := q.GetConsentBlockedUsersInProjects(ctx, []string{projectID})
+	require.NoError(t, err)
+	require.Empty(t, blocked, "the fixture has no blocked users")
+
 	// The default filter (no min/max score) is what the service passes when
 	// the client sets none
 	filters := []struct {

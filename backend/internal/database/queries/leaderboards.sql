@@ -281,8 +281,14 @@ INNER JOIN user_team ut ON rs.entity_id = ut.team_id;
 -- name: GetFullProjectTeamLeaderboard :many
 -- Group boards average the stored person totals on read, with the member
 -- rules of regenerate_leaderboards() (see notes/leaderboard-regenerate.md).
+-- Users who have not accepted a required consent (00116) count nowhere: not in
+-- the points, the member count or the church filter.
 -- Team: all members' points over all members; listed once a member has scored.
-WITH team_scores AS (
+WITH blocked AS MATERIALIZED (
+    -- Materialized so the set is computed once, not once per member row
+    SELECT b.user_id FROM consent_blocked_user_ids(@projectid::char(28)) AS b(user_id)
+),
+team_scores AS (
     SELECT
         t.id AS team_id,
         t.name,
@@ -294,6 +300,7 @@ WITH team_scores AS (
         ON lpp.project_id = t.project_id AND lpp.user_id = tm.user_id
     WHERE t.project_id = @projectid::char(28)
       AND t.leaderboard_excluded = false
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = tm.user_id)
     GROUP BY t.id, t.name
     HAVING COUNT(lpp.user_id) > 0
 ),
@@ -313,6 +320,7 @@ ranked_scores AS (
           SELECT 1 FROM team_members tm
           INNER JOIN users u ON tm.user_id = u.id
           WHERE tm.team_id = ts.team_id AND u.church_id = @churchid::char(28)
+            AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
       ))
 )
 SELECT entity_id, name, image, score, rank, last_score_at
@@ -402,13 +410,18 @@ FROM ranked_scores rs
 INNER JOIN user_superteam ust ON rs.entity_id = ust.super_team_id;
 
 -- name: GetFullProjectSuperTeamLeaderboard :many
--- SuperTeam: each member of its teams once, however many of them they are in
-WITH superteam_members AS (
+-- SuperTeam: each member of its teams once, however many of them they are in;
+-- without users blocked by a required consent (00116)
+WITH blocked AS MATERIALIZED (
+    SELECT b.user_id FROM consent_blocked_user_ids(@projectid::char(28)) AS b(user_id)
+),
+superteam_members AS (
     SELECT DISTINCT t.super_team_id, tm.user_id
     FROM teams t
     INNER JOIN team_members tm ON tm.team_id = t.id
     WHERE t.project_id = @projectid::char(28)
       AND t.super_team_id IS NOT NULL
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = tm.user_id)
 ),
 superteam_scores AS (
     SELECT
@@ -512,8 +525,12 @@ INNER JOIN user_church uc ON rs.entity_id = uc.church_id;
 
 -- name: GetFullProjectChurchLeaderboard :many
 -- Church: points of every user of the church who scored in the project, over
--- the church's users enrolled in the project
-WITH church_points AS (
+-- the church's users enrolled in the project; neither counts users blocked by
+-- a required consent (00116)
+WITH blocked AS MATERIALIZED (
+    SELECT b.user_id FROM consent_blocked_user_ids(@projectid::char(28)) AS b(user_id)
+),
+church_points AS (
     SELECT
         u.church_id,
         SUM(lpp.score)::bigint AS total_points,
@@ -521,6 +538,7 @@ WITH church_points AS (
     FROM leaderboard_project_persons lpp
     INNER JOIN users u ON u.id = lpp.user_id
     WHERE lpp.project_id = @projectid::char(28)
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
     GROUP BY u.church_id
 ),
 church_members AS (
@@ -528,6 +546,7 @@ church_members AS (
     FROM user_projects up
     INNER JOIN users u ON u.id = up.user_id
     WHERE up.project_id = @projectid::char(28)
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
     GROUP BY u.church_id
 ),
 church_scores AS (
@@ -813,8 +832,15 @@ INNER JOIN user_team ut ON rs.entity_id = ut.team_id;
 
 -- name: GetFullEventTeamLeaderboard :many
 -- Team (event): all members' event points over the members enrolled in the
--- event; teams of the event's project
-WITH team_scores AS (
+-- event; teams of the event's project; without users blocked by a required
+-- consent of that project (00116)
+WITH blocked AS MATERIALIZED (
+    SELECT b.user_id
+    FROM events ep
+    CROSS JOIN LATERAL consent_blocked_user_ids(ep.project_id) AS b(user_id)
+    WHERE ep.id = @eventid::char(28)
+),
+team_scores AS (
     SELECT
         t.id AS team_id,
         t.name,
@@ -829,6 +855,7 @@ WITH team_scores AS (
         ON ue.event_id = e.id AND ue.user_id = tm.user_id
     WHERE e.id = @eventid::char(28)
       AND t.leaderboard_excluded = false
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = tm.user_id)
     GROUP BY t.id, t.name
     HAVING COUNT(lep.user_id) > 0
 ),
@@ -848,6 +875,7 @@ ranked_scores AS (
           SELECT 1 FROM team_members tm
           INNER JOIN users u ON tm.user_id = u.id
           WHERE tm.team_id = ts.team_id AND u.church_id = @churchid::char(28)
+            AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
       ))
 )
 SELECT entity_id, name, image, score, rank, last_score_at
@@ -945,14 +973,22 @@ INNER JOIN user_superteam ust ON rs.entity_id = ust.super_team_id;
 
 -- name: GetFullEventSuperTeamLeaderboard :many
 -- SuperTeam (event): each member of its teams once; all members' event points
--- over the members enrolled in the event
-WITH superteam_members AS (
+-- over the members enrolled in the event; without users blocked by a required
+-- consent of the event's project (00116)
+WITH blocked AS MATERIALIZED (
+    SELECT b.user_id
+    FROM events ep
+    CROSS JOIN LATERAL consent_blocked_user_ids(ep.project_id) AS b(user_id)
+    WHERE ep.id = @eventid::char(28)
+),
+superteam_members AS (
     SELECT DISTINCT t.super_team_id, tm.user_id
     FROM events e
     INNER JOIN teams t ON t.project_id = e.project_id
     INNER JOIN team_members tm ON tm.team_id = t.id
     WHERE e.id = @eventid::char(28)
       AND t.super_team_id IS NOT NULL
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = tm.user_id)
 ),
 superteam_scores AS (
     SELECT
@@ -1061,8 +1097,15 @@ INNER JOIN user_church uc ON rs.entity_id = uc.church_id;
 
 -- name: GetFullEventChurchLeaderboard :many
 -- Church (event): points of every user of the church who scored in the event,
--- over the church's users enrolled in the event
-WITH church_points AS (
+-- over the church's users enrolled in the event; neither counts users blocked
+-- by a required consent of the event's project (00116)
+WITH blocked AS MATERIALIZED (
+    SELECT b.user_id
+    FROM events ep
+    CROSS JOIN LATERAL consent_blocked_user_ids(ep.project_id) AS b(user_id)
+    WHERE ep.id = @eventid::char(28)
+),
+church_points AS (
     SELECT
         u.church_id,
         SUM(lep.score)::bigint AS total_points,
@@ -1070,6 +1113,7 @@ WITH church_points AS (
     FROM leaderboard_event_persons lep
     INNER JOIN users u ON u.id = lep.user_id
     WHERE lep.event_id = @eventid::char(28)
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
     GROUP BY u.church_id
 ),
 church_members AS (
@@ -1077,6 +1121,7 @@ church_members AS (
     FROM user_events ue
     INNER JOIN users u ON u.id = ue.user_id
     WHERE ue.event_id = @eventid::char(28)
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
     GROUP BY u.church_id
 ),
 church_scores AS (

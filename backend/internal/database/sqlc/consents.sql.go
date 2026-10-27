@@ -218,6 +218,79 @@ func (q *Queries) GetAllLatestPublishedConsents(ctx context.Context) ([]*GetAllL
 	return items, nil
 }
 
+const GetConsentBlockedProjectsOfUsers = `-- name: GetConsentBlockedProjectsOfUsers :many
+
+SELECT up.project_id::char(28) AS project_id, up.user_id::char(28) AS user_id
+FROM user_projects up
+WHERE up.user_id = ANY($1::char(28)[])
+  AND EXISTS (
+      SELECT 1 FROM consent_blocked_user_ids(up.project_id) b WHERE b.user_id = up.user_id OFFSET 0
+  )
+`
+
+type GetConsentBlockedProjectsOfUsersRow struct {
+	ProjectID string `json:"project_id"`
+	UserID    string `json:"user_id"`
+}
+
+// Blocked users (00116): who a required consent keeps out of every count.
+// Compared before and after a consent change, to find the users it moved.
+// The projects in which each of the given users is blocked, checked per user.
+// OFFSET 0 keeps the check a per-user subplan: as a join, the planner may
+// compute whole projects' blocked sets instead.
+func (q *Queries) GetConsentBlockedProjectsOfUsers(ctx context.Context, userIds []string) ([]*GetConsentBlockedProjectsOfUsersRow, error) {
+	rows, err := q.db.Query(ctx, GetConsentBlockedProjectsOfUsers, userIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetConsentBlockedProjectsOfUsersRow{}
+	for rows.Next() {
+		var i GetConsentBlockedProjectsOfUsersRow
+		if err := rows.Scan(&i.ProjectID, &i.UserID); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetConsentBlockedUsersInProjects = `-- name: GetConsentBlockedUsersInProjects :many
+SELECT p.id::char(28) AS project_id, b.user_id::char(28) AS user_id
+FROM projects p
+CROSS JOIN LATERAL consent_blocked_user_ids(p.id) AS b(user_id)
+WHERE $1::char(28)[] IS NULL OR p.id = ANY($1::char(28)[])
+`
+
+type GetConsentBlockedUsersInProjectsRow struct {
+	ProjectID string `json:"project_id"`
+	UserID    string `json:"user_id"`
+}
+
+// Every blocked user of the given projects, or of all projects when none are given
+func (q *Queries) GetConsentBlockedUsersInProjects(ctx context.Context, projectIds []string) ([]*GetConsentBlockedUsersInProjectsRow, error) {
+	rows, err := q.db.Query(ctx, GetConsentBlockedUsersInProjects, projectIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetConsentBlockedUsersInProjectsRow{}
+	for rows.Next() {
+		var i GetConsentBlockedUsersInProjectsRow
+		if err := rows.Scan(&i.ProjectID, &i.UserID); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetConsentByID = `-- name: GetConsentByID :one
 
 SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at

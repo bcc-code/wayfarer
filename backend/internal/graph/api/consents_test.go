@@ -5,6 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 )
 
 func TestConsentProjectForNewVersion(t *testing.T) {
@@ -68,4 +70,46 @@ func TestLatestConsentVersionError(t *testing.T) {
 	t.Run("refuses when no version is published", func(t *testing.T) {
 		assert.Error(t, latestConsentVersionError(v1, ""))
 	})
+}
+
+
+func TestConsentBlockChanges(t *testing.T) {
+	stays := projectUser{ProjectID: "PR1", UserID: "US1"}
+	unblocked := projectUser{ProjectID: "PR1", UserID: "US2"}
+	blocked := projectUser{ProjectID: "PR1", UserID: "US3"}
+	otherProject := projectUser{ProjectID: "PR2", UserID: "US1"}
+
+	t.Run("returns users blocked or unblocked by the change", func(t *testing.T) {
+		got := consentBlockChanges(
+			[]projectUser{stays, unblocked},
+			[]projectUser{stays, blocked},
+		)
+
+		assert.Equal(t, map[projectUser]bool{unblocked: true, blocked: true}, got)
+	})
+
+	t.Run("tells projects of the same user apart", func(t *testing.T) {
+		got := consentBlockChanges([]projectUser{stays}, []projectUser{stays, otherProject})
+
+		assert.Equal(t, map[projectUser]bool{otherProject: true}, got)
+	})
+
+	t.Run("returns nothing when nobody changed", func(t *testing.T) {
+		assert.Empty(t, consentBlockChanges([]projectUser{stays}, []projectUser{stays}))
+		assert.Empty(t, consentBlockChanges(nil, nil))
+	})
+}
+
+func TestTeamsOfChangedUsers(t *testing.T) {
+	changed := map[projectUser]bool{{ProjectID: "PR1", UserID: "US1"}: true}
+	memberships := []*sqlc.GetTeamsByUserIDsRow{
+		{ID: "TM1", ProjectID: "PR1", UserID: "US1"},
+		{ID: "TM2", ProjectID: "PR1", UserID: "US1"}, // a second team in the project
+		{ID: "TM3", ProjectID: "PR2", UserID: "US1"}, // unchanged in this project
+		{ID: "TM4", ProjectID: "PR1", UserID: "US2"}, // another user
+	}
+
+	got := teamsOfChangedUsers(memberships, changed)
+
+	assert.Equal(t, map[string]string{"TM1": "PR1", "TM2": "PR1"}, got)
 }

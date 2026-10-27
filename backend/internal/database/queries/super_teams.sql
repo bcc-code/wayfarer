@@ -4,6 +4,15 @@ FROM super_teams
 WHERE id = ANY(@ids::char(28)[]);
 
 -- name: GetSuperTeamsFilteredCursor :many
+WITH blocked AS MATERIALIZED (
+    -- Users blocked by a required consent (00116), once per query. Computed
+    -- only when filtering by member count: otherwise it stays empty.
+    SELECT p.id AS project_id, b.user_id
+    FROM projects p
+    CROSS JOIN LATERAL consent_blocked_user_ids(p.id) AS b(user_id)
+    WHERE (@minmembers::int > 0 OR @maxmembers::int > 0)
+      AND (@projectid::char(28) = '' OR p.id = @projectid::char(28))
+)
 SELECT st.id, st.project_id, st.name, st.description, st.image_url, st.color, st.created_at, st.updated_at
 FROM super_teams st
 LEFT JOIN (
@@ -12,12 +21,16 @@ LEFT JOIN (
     WHERE super_team_id IS NOT NULL
     GROUP BY super_team_id
 ) t ON st.id = t.super_team_id
+-- Members counted toward scores: without users blocked by a required consent
 LEFT JOIN (
-    SELECT t.super_team_id, COUNT(DISTINCT tm.user_id) as member_count
-    FROM teams t
-    INNER JOIN team_members tm ON t.id = tm.team_id
-    WHERE t.super_team_id IS NOT NULL
-    GROUP BY t.super_team_id
+    SELECT mt.super_team_id, COUNT(DISTINCT tm.user_id) AS member_count
+    FROM teams mt
+    INNER JOIN team_members tm ON mt.id = tm.team_id
+    WHERE mt.super_team_id IS NOT NULL
+      AND NOT EXISTS (
+          SELECT 1 FROM blocked b WHERE b.project_id = mt.project_id AND b.user_id = tm.user_id
+      )
+    GROUP BY mt.super_team_id
 ) m ON st.id = m.super_team_id
 WHERE
     (@ids::char(28)[] IS NULL OR st.id = ANY(@ids::char(28)[]))
@@ -34,6 +47,15 @@ ORDER BY
 LIMIT CASE WHEN @querylimit::int IS NULL THEN NULL ELSE @querylimit::int END;
 
 -- name: CountSuperTeamsFiltered :one
+WITH blocked AS MATERIALIZED (
+    -- Users blocked by a required consent (00116), once per query. Computed
+    -- only when filtering by member count: otherwise it stays empty.
+    SELECT p.id AS project_id, b.user_id
+    FROM projects p
+    CROSS JOIN LATERAL consent_blocked_user_ids(p.id) AS b(user_id)
+    WHERE (@minmembers::int > 0 OR @maxmembers::int > 0)
+      AND (@projectid::char(28) = '' OR p.id = @projectid::char(28))
+)
 SELECT COUNT(DISTINCT st.id)
 FROM super_teams st
 LEFT JOIN (
@@ -42,12 +64,16 @@ LEFT JOIN (
     WHERE super_team_id IS NOT NULL
     GROUP BY super_team_id
 ) t ON st.id = t.super_team_id
+-- Members counted toward scores: without users blocked by a required consent
 LEFT JOIN (
-    SELECT t.super_team_id, COUNT(DISTINCT tm.user_id) as member_count
-    FROM teams t
-    INNER JOIN team_members tm ON t.id = tm.team_id
-    WHERE t.super_team_id IS NOT NULL
-    GROUP BY t.super_team_id
+    SELECT mt.super_team_id, COUNT(DISTINCT tm.user_id) AS member_count
+    FROM teams mt
+    INNER JOIN team_members tm ON mt.id = tm.team_id
+    WHERE mt.super_team_id IS NOT NULL
+      AND NOT EXISTS (
+          SELECT 1 FROM blocked b WHERE b.project_id = mt.project_id AND b.user_id = tm.user_id
+      )
+    GROUP BY mt.super_team_id
 ) m ON st.id = m.super_team_id
 WHERE
     (@ids::char(28)[] IS NULL OR st.id = ANY(@ids::char(28)[]))

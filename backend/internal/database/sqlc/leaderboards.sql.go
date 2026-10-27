@@ -1187,7 +1187,13 @@ func (q *Queries) GetEventTeamLeaderboard(ctx context.Context, arg GetEventTeamL
 }
 
 const GetFullEventChurchLeaderboard = `-- name: GetFullEventChurchLeaderboard :many
-WITH church_points AS (
+WITH blocked AS MATERIALIZED (
+    SELECT b.user_id
+    FROM events ep
+    CROSS JOIN LATERAL consent_blocked_user_ids(ep.project_id) AS b(user_id)
+    WHERE ep.id = $1::char(28)
+),
+church_points AS (
     SELECT
         u.church_id,
         SUM(lep.score)::bigint AS total_points,
@@ -1195,6 +1201,7 @@ WITH church_points AS (
     FROM leaderboard_event_persons lep
     INNER JOIN users u ON u.id = lep.user_id
     WHERE lep.event_id = $1::char(28)
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
     GROUP BY u.church_id
 ),
 church_members AS (
@@ -1202,6 +1209,7 @@ church_members AS (
     FROM user_events ue
     INNER JOIN users u ON u.id = ue.user_id
     WHERE ue.event_id = $1::char(28)
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
     GROUP BY u.church_id
 ),
 church_scores AS (
@@ -1247,7 +1255,8 @@ type GetFullEventChurchLeaderboardRow struct {
 }
 
 // Church (event): points of every user of the church who scored in the event,
-// over the church's users enrolled in the event
+// over the church's users enrolled in the event; neither counts users blocked
+// by a required consent of the event's project (00116)
 func (q *Queries) GetFullEventChurchLeaderboard(ctx context.Context, arg GetFullEventChurchLeaderboardParams) ([]*GetFullEventChurchLeaderboardRow, error) {
 	rows, err := q.db.Query(ctx, GetFullEventChurchLeaderboard, arg.Eventid, arg.Minscore, arg.Maxscore)
 	if err != nil {
@@ -1407,13 +1416,20 @@ func (q *Queries) GetFullEventPersonLeaderboard(ctx context.Context, arg GetFull
 }
 
 const GetFullEventSuperTeamLeaderboard = `-- name: GetFullEventSuperTeamLeaderboard :many
-WITH superteam_members AS (
+WITH blocked AS MATERIALIZED (
+    SELECT b.user_id
+    FROM events ep
+    CROSS JOIN LATERAL consent_blocked_user_ids(ep.project_id) AS b(user_id)
+    WHERE ep.id = $1::char(28)
+),
+superteam_members AS (
     SELECT DISTINCT t.super_team_id, tm.user_id
     FROM events e
     INNER JOIN teams t ON t.project_id = e.project_id
     INNER JOIN team_members tm ON tm.team_id = t.id
     WHERE e.id = $1::char(28)
       AND t.super_team_id IS NOT NULL
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = tm.user_id)
 ),
 superteam_scores AS (
     SELECT
@@ -1463,7 +1479,8 @@ type GetFullEventSuperTeamLeaderboardRow struct {
 }
 
 // SuperTeam (event): each member of its teams once; all members' event points
-// over the members enrolled in the event
+// over the members enrolled in the event; without users blocked by a required
+// consent of the event's project (00116)
 func (q *Queries) GetFullEventSuperTeamLeaderboard(ctx context.Context, arg GetFullEventSuperTeamLeaderboardParams) ([]*GetFullEventSuperTeamLeaderboardRow, error) {
 	rows, err := q.db.Query(ctx, GetFullEventSuperTeamLeaderboard, arg.Eventid, arg.Minscore, arg.Maxscore)
 	if err != nil {
@@ -1492,7 +1509,13 @@ func (q *Queries) GetFullEventSuperTeamLeaderboard(ctx context.Context, arg GetF
 }
 
 const GetFullEventTeamLeaderboard = `-- name: GetFullEventTeamLeaderboard :many
-WITH team_scores AS (
+WITH blocked AS MATERIALIZED (
+    SELECT b.user_id
+    FROM events ep
+    CROSS JOIN LATERAL consent_blocked_user_ids(ep.project_id) AS b(user_id)
+    WHERE ep.id = $1::char(28)
+),
+team_scores AS (
     SELECT
         t.id AS team_id,
         t.name,
@@ -1507,6 +1530,7 @@ WITH team_scores AS (
         ON ue.event_id = e.id AND ue.user_id = tm.user_id
     WHERE e.id = $1::char(28)
       AND t.leaderboard_excluded = false
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = tm.user_id)
     GROUP BY t.id, t.name
     HAVING COUNT(lep.user_id) > 0
 ),
@@ -1526,6 +1550,7 @@ ranked_scores AS (
           SELECT 1 FROM team_members tm
           INNER JOIN users u ON tm.user_id = u.id
           WHERE tm.team_id = ts.team_id AND u.church_id = $4::char(28)
+            AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
       ))
 )
 SELECT entity_id, name, image, score, rank, last_score_at
@@ -1550,7 +1575,8 @@ type GetFullEventTeamLeaderboardRow struct {
 }
 
 // Team (event): all members' event points over the members enrolled in the
-// event; teams of the event's project
+// event; teams of the event's project; without users blocked by a required
+// consent of that project (00116)
 func (q *Queries) GetFullEventTeamLeaderboard(ctx context.Context, arg GetFullEventTeamLeaderboardParams) ([]*GetFullEventTeamLeaderboardRow, error) {
 	rows, err := q.db.Query(ctx, GetFullEventTeamLeaderboard,
 		arg.Eventid,
@@ -1584,7 +1610,10 @@ func (q *Queries) GetFullEventTeamLeaderboard(ctx context.Context, arg GetFullEv
 }
 
 const GetFullProjectChurchLeaderboard = `-- name: GetFullProjectChurchLeaderboard :many
-WITH church_points AS (
+WITH blocked AS MATERIALIZED (
+    SELECT b.user_id FROM consent_blocked_user_ids($1::char(28)) AS b(user_id)
+),
+church_points AS (
     SELECT
         u.church_id,
         SUM(lpp.score)::bigint AS total_points,
@@ -1592,6 +1621,7 @@ WITH church_points AS (
     FROM leaderboard_project_persons lpp
     INNER JOIN users u ON u.id = lpp.user_id
     WHERE lpp.project_id = $1::char(28)
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
     GROUP BY u.church_id
 ),
 church_members AS (
@@ -1599,6 +1629,7 @@ church_members AS (
     FROM user_projects up
     INNER JOIN users u ON u.id = up.user_id
     WHERE up.project_id = $1::char(28)
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
     GROUP BY u.church_id
 ),
 church_scores AS (
@@ -1644,7 +1675,8 @@ type GetFullProjectChurchLeaderboardRow struct {
 }
 
 // Church: points of every user of the church who scored in the project, over
-// the church's users enrolled in the project
+// the church's users enrolled in the project; neither counts users blocked by
+// a required consent (00116)
 func (q *Queries) GetFullProjectChurchLeaderboard(ctx context.Context, arg GetFullProjectChurchLeaderboardParams) ([]*GetFullProjectChurchLeaderboardRow, error) {
 	rows, err := q.db.Query(ctx, GetFullProjectChurchLeaderboard, arg.Projectid, arg.Minscore, arg.Maxscore)
 	if err != nil {
@@ -1801,12 +1833,16 @@ func (q *Queries) GetFullProjectPersonLeaderboard(ctx context.Context, arg GetFu
 }
 
 const GetFullProjectSuperTeamLeaderboard = `-- name: GetFullProjectSuperTeamLeaderboard :many
-WITH superteam_members AS (
+WITH blocked AS MATERIALIZED (
+    SELECT b.user_id FROM consent_blocked_user_ids($1::char(28)) AS b(user_id)
+),
+superteam_members AS (
     SELECT DISTINCT t.super_team_id, tm.user_id
     FROM teams t
     INNER JOIN team_members tm ON tm.team_id = t.id
     WHERE t.project_id = $1::char(28)
       AND t.super_team_id IS NOT NULL
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = tm.user_id)
 ),
 superteam_scores AS (
     SELECT
@@ -1854,7 +1890,8 @@ type GetFullProjectSuperTeamLeaderboardRow struct {
 	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
-// SuperTeam: each member of its teams once, however many of them they are in
+// SuperTeam: each member of its teams once, however many of them they are in;
+// without users blocked by a required consent (00116)
 func (q *Queries) GetFullProjectSuperTeamLeaderboard(ctx context.Context, arg GetFullProjectSuperTeamLeaderboardParams) ([]*GetFullProjectSuperTeamLeaderboardRow, error) {
 	rows, err := q.db.Query(ctx, GetFullProjectSuperTeamLeaderboard, arg.Projectid, arg.Minscore, arg.Maxscore)
 	if err != nil {
@@ -1883,7 +1920,11 @@ func (q *Queries) GetFullProjectSuperTeamLeaderboard(ctx context.Context, arg Ge
 }
 
 const GetFullProjectTeamLeaderboard = `-- name: GetFullProjectTeamLeaderboard :many
-WITH team_scores AS (
+WITH blocked AS MATERIALIZED (
+    -- Materialized so the set is computed once, not once per member row
+    SELECT b.user_id FROM consent_blocked_user_ids($1::char(28)) AS b(user_id)
+),
+team_scores AS (
     SELECT
         t.id AS team_id,
         t.name,
@@ -1895,6 +1936,7 @@ WITH team_scores AS (
         ON lpp.project_id = t.project_id AND lpp.user_id = tm.user_id
     WHERE t.project_id = $1::char(28)
       AND t.leaderboard_excluded = false
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = tm.user_id)
     GROUP BY t.id, t.name
     HAVING COUNT(lpp.user_id) > 0
 ),
@@ -1914,6 +1956,7 @@ ranked_scores AS (
           SELECT 1 FROM team_members tm
           INNER JOIN users u ON tm.user_id = u.id
           WHERE tm.team_id = ts.team_id AND u.church_id = $4::char(28)
+            AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
       ))
 )
 SELECT entity_id, name, image, score, rank, last_score_at
@@ -1939,6 +1982,8 @@ type GetFullProjectTeamLeaderboardRow struct {
 
 // Group boards average the stored person totals on read, with the member
 // rules of regenerate_leaderboards() (see notes/leaderboard-regenerate.md).
+// Users who have not accepted a required consent (00116) count nowhere: not in
+// the points, the member count or the church filter.
 // Team: all members' points over all members; listed once a member has scored.
 func (q *Queries) GetFullProjectTeamLeaderboard(ctx context.Context, arg GetFullProjectTeamLeaderboardParams) ([]*GetFullProjectTeamLeaderboardRow, error) {
 	rows, err := q.db.Query(ctx, GetFullProjectTeamLeaderboard,

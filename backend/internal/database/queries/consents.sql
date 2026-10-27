@@ -160,3 +160,24 @@ ON CONFLICT (consent_id, language_code) DO UPDATE SET
     body = EXCLUDED.body,
     updated_at = now()
 RETURNING consent_id, language_code, title, short_text, body, created_at, updated_at;
+
+-- Blocked users (00116): who a required consent keeps out of every count.
+-- Compared before and after a consent change, to find the users it moved.
+
+-- name: GetConsentBlockedProjectsOfUsers :many
+-- The projects in which each of the given users is blocked, checked per user.
+-- OFFSET 0 keeps the check a per-user subplan: as a join, the planner may
+-- compute whole projects' blocked sets instead.
+SELECT up.project_id::char(28) AS project_id, up.user_id::char(28) AS user_id
+FROM user_projects up
+WHERE up.user_id = ANY(@user_ids::char(28)[])
+  AND EXISTS (
+      SELECT 1 FROM consent_blocked_user_ids(up.project_id) b WHERE b.user_id = up.user_id OFFSET 0
+  );
+
+-- name: GetConsentBlockedUsersInProjects :many
+-- Every blocked user of the given projects, or of all projects when none are given
+SELECT p.id::char(28) AS project_id, b.user_id::char(28) AS user_id
+FROM projects p
+CROSS JOIN LATERAL consent_blocked_user_ids(p.id) AS b(user_id)
+WHERE @project_ids::char(28)[] IS NULL OR p.id = ANY(@project_ids::char(28)[]);

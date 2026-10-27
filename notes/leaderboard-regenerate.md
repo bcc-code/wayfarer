@@ -54,6 +54,10 @@ exactly:
 | Event superteam | members of its teams, each once | those in `user_events` |
 | Event church | every user of the church with an event person row | church users in `user_events` |
 
+Users blocked by a required consent (`consent_blocked_user_ids`, 00116) count
+nowhere on these boards, in the points or the count; the stored tables and the
+rebuild still count them (`notes/required-consents.md`, step 3).
+
 `score = calculate_average_score(total, count)`, `last_score_at` is the members'
 latest, and a group is listed only once one of its counted users has a person
 row (the rebuild's inner join; matters because the default filter passes
