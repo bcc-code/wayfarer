@@ -1,0 +1,88 @@
+---
+# Vector ships host logs to VictoriaLogs: journald (jobs, sshd, kernel, any
+# unit except the wayfarer server colors, which export directly through the
+# local http_server source), Postgres jsonlog files, and a loopback syslog
+# endpoint. Durability lives here, not in the app: a bounded disk buffer
+# absorbs VictoriaLogs outages and drops the newest events when full, so
+# Vector never back-pressures its sources. The unit is niced and capped so
+# it is the first thing to lose CPU/memory under load.
+
+- name: Gather installed package facts
+  ansible.builtin.package_facts:
+
+- name: Install Vector {{ vector_version }}
+  ansible.builtin.apt:
+    deb: "https://packages.timber.io/vector/{{ vector_version }}/vector_{{ vector_version }}-1_{{ 'arm64' if ansible_facts['architecture'] == 'aarch64' else 'amd64' }}.deb"
+    state: present
+  # apt's deb= is not idempotent against the installed version; skip when it matches.
+  when: >-
+    (ansible_facts.packages['vector'] | default([{'version': ''}]))[0].version
+    is not search('^' ~ vector_version)
+
+- name: Create Vector systemd drop-in directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/vector.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install Vector resource limits drop-in
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/vector.service.d/10-wayfarer.conf
+    content: |
+      # Managed by Ansible (roles/vector). Log shipping must never compete
+      # with wayfarer or Postgres: lowest CPU/IO priority, hard caps.
+      [Service]
+      SupplementaryGroups=systemd-journal adm postgres
+      Nice=10
+      IOSchedulingClass=best-effort
+      IOSchedulingPriority=7
+      CPUQuota={{ vector_cpu_quota }}
+      MemoryMax={{ vector_memory_max }}
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd (vector)
+    - Restart vector
+
+- name: Deploy Vector configuration
+  ansible.builtin.template:
+    src: vector.yaml.j2
+    dest: /etc/vector/vector.yaml
+    owner: root
+    group: root
+    mode: "0644"
+    # Full validation (incl. host checks such as journald support), the same
+    # check the unit runs in ExecStartPre, so a bad config never replaces a
+    # working one.
+    validate: vector validate %s
+  notify: Restart vector
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Ensure Vector is enabled and running
+  ansible.builtin.systemd:
+    name: vector
+    enabled: true
+    state: started
+  ignore_errors: "{{ ansible_check_mode }}"
+
+# Reachability is over the Tailscale subnet route (roles/tailscale accepts
+# routes). Warn instead of failing: Vector buffers until VictoriaLogs is up.
+- name: Check VictoriaLogs reachability
+  ansible.builtin.uri:
+    url: "{{ vlogs_url }}/health"
+    timeout: 5
+  register: vlogs_health
+  failed_when: false
+  changed_when: false
+  check_mode: false
+
+- name: Warn when VictoriaLogs is unreachable
+  ansible.builtin.debug:
+    msg: >-
+      VictoriaLogs at {{ vlogs_url }} is not reachable from this host
+      ({{ vlogs_health.msg | default('no response') }}). Vector will buffer
+      to disk (up to {{ vector_buffer_max_bytes }} bytes) and drop beyond that.
+  when: vlogs_health.status | default(0) != 200

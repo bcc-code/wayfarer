@@ -51,6 +51,32 @@ describe('QuizBettingModule', () => {
       expect(slider(wrapper).props('max')).toBe(30)
     })
 
+    /**
+     * The slider placed its thumb from `(value - min) / (max - min)`, so
+     * bounds that met produced `calc(NaN% - 32px)` and threw the thumb off
+     * the track. Someone with no points has no amount to choose.
+     */
+    it('shows no slider when the limits leave nothing to stake', async () => {
+      const wrapper = await mountBet({ availablePoints: 0 })
+      expect(slider(wrapper).exists()).toBe(false)
+      expect(wrapper.text()).toContain('You have no points to bet.')
+    })
+
+    it('shows no slider when min and max limits meet', async () => {
+      const wrapper = await mountBet({
+        availablePoints: 100,
+        minAbsolute: 50,
+        maxAbsolute: 50,
+      })
+      expect(slider(wrapper).exists()).toBe(false)
+    })
+
+    it('still offers the slider for a one-point stake', async () => {
+      const wrapper = await mountBet({ availablePoints: 1 })
+      expect(slider(wrapper).exists()).toBe(true)
+      expect(slider(wrapper).props('max')).toBe(1)
+    })
+
     it('shows the registered-bet message instead of the slider when locked', async () => {
       const wrapper = await mountBet({ mode: 'locked' })
       expect(wrapper.text()).toContain('The bet has been registered')

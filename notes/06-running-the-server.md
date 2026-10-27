@@ -21,7 +21,7 @@ export SERVER_HOST="0.0.0.0"          # Default: 0.0.0.0
 export SERVER_PORT="8080"              # Default: 8080
 export ENVIRONMENT="development"       # Default: development (use "production" to disable playgrounds)
 export LOG_LEVEL="info"                # Default: info (options: debug, info, warn, error)
-export LOG_FORMAT="json"               # Default: json (options: json, text)
+export LOG_EXPORT_ENABLED="false"      # Ship logs to VictoriaLogs (see notes/16-log-shipping.md)
 ```
 
 ## Running Migrations
@@ -195,19 +195,21 @@ mutation AwardAchievement {
 
 ## Logs
 
-The server uses structured logging (slog) with two formats:
+The server uses structured logging (slog). The format follows `ENVIRONMENT`
+(`LOG_FORMAT` is read but ignored):
 
-**JSON Format** (default, production-friendly):
+**`ENVIRONMENT=production`** — one JSON object per line, GCP-shaped:
 ```json
-{"time":"2025-10-31T14:30:00Z","level":"INFO","msg":"Starting server","address":"0.0.0.0:8080"}
+{"severity":"INFO","message":"Starting server","time":"2025-10-31T14:30:00.000000Z","address":"0.0.0.0:8080"}
 ```
 
-**Text Format** (development-friendly):
+**Anything else** — colored, human-readable:
 ```
-time=2025-10-31T14:30:00.000Z level=INFO msg="Starting server" address=0.0.0.0:8080
+[14:30:00] INFO Starting server (address=0.0.0.0:8080)
 ```
 
-Set `LOG_FORMAT=text` for easier reading during development.
+With `LOG_EXPORT_ENABLED=true` every record is also shipped, asynchronously
+and best-effort, to VictoriaLogs — see `notes/16-log-shipping.md`.
 
 ## Graceful Shutdown
 

@@ -170,11 +170,12 @@ defineExpose({ actionState, handlers })
 <template>
   <div class="text-center p-default flex flex-col gap-default grow">
     <template
-      v-for="alternative in question.predefinedAnswers"
+      v-for="(alternative, index) in question.predefinedAnswers"
       :key="alternative.id"
     >
       <QuizAlternative
         :text="alternative.answerText"
+        :label="quizAnswerLabel(index, question.answerLabelStyle)"
         :description="alternative.description"
         :highlighted="selectedAnswer === alternative.id"
         :confirmed="isAnswerConfirmed"

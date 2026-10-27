@@ -13,12 +13,24 @@ const props = defineProps<{
 
 const modelValue = defineModel<number>({ default: 0 })
 
+const sliderMin = props.min ?? 0
+const sliderMax = props.max ?? 100
+
+/**
+ * The thumb is placed at `(value - min) / (max - min)`, so bounds that meet
+ * leave the machine dividing by zero and writing `calc(NaN% - 32px)` into the
+ * thumb's offset — the thumb then lands beside the track rather than on it.
+ * A single reachable value is not something to drag, so the range is widened
+ * just enough to keep the arithmetic finite and the control is held still.
+ */
+const hasRange = sliderMax > sliderMin
+
 const service = useMachine(slider.machine, {
   id: useId(),
-  disabled: props.disabled,
+  disabled: props.disabled || !hasRange,
   defaultValue: [modelValue.value],
-  min: props.min,
-  max: props.max,
+  min: sliderMin,
+  max: hasRange ? sliderMax : sliderMin + 1,
   step: props.step,
   onValueChange({ value }) {
     const v = value[0]
@@ -44,11 +56,9 @@ const dotCount = computed(() => {
 })
 
 const activeDotIndex = computed(() => {
-  const min = props.min ?? 0
-  const max = props.max ?? 100
-  const value = api.value.value[0] ?? min
-  const percent = (value - min) / (max - min)
-  if (dotCount.value === 0) return -1
+  if (dotCount.value === 0 || !hasRange) return -1
+  const value = api.value.value[0] ?? sliderMin
+  const percent = (value - sliderMin) / (sliderMax - sliderMin)
   return Math.round(percent * (dotCount.value - 1))
 })
 

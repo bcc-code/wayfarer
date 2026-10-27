@@ -53,7 +53,8 @@
       "correctCount": "Du hattest {count} richtige",
       "correctCountAll": "Du hattest alle richtig",
       "correctCountNone": "Du hattest keine richtigen",
-      "bettingResult": "Tipp-Ergebnis"
+      "bettingResult": "Tipp-Ergebnis",
+      "nothingToStake": "Du hast keine Punkte, die du setzen kannst."
     },
     "result": {
       "receivedNoPoints": "Du hast keine Punkte gesammelt.",
@@ -136,7 +137,9 @@
     "goToConsent": "Zum Einverständnis",
     "continue": "Weiter",
     "changeDescription": "Wenn du deine Einwilligung ändern willst, schreibe an {email}",
-    "changeConsent": "Zustimmung ändern"
+    "changeConsent": "Zustimmung ändern",
+    "required": "Erforderlich",
+    "requiredTitle": "Bevor du fortfährst"
   },
   "achievement": {
     "title": "Auszeichnung",
@@ -355,7 +358,7 @@
         "couldNotReopenBetting": "Tippspiel konnte nicht wieder geöffnet werden",
         "couldNotFinishBetting": "Tippspiel konnte nicht abgeschlossen werden",
         "couldNotSendUnitLeaderAccess": "Code konnte nicht an die Unit-Leiter verschickt werden",
-        "couldNotGrantBettingAccess": "Benutzer konnten keinen Zugang zum Tippspiel erhalten"
+        "couldNotGrantBettingAccess": "Den Benutzern konnte kein Zugriff auf das Tippspiel gewährt werden"
       }
     },
     "statistics": {

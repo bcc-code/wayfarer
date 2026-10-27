@@ -62,6 +62,7 @@ type QuizQuestion interface {
 	GetID() string
 	GetQuiz() *Quiz
 	GetQuestionText() string
+	GetImageObject() *Image
 	GetQuestionOrder() int
 	GetTimeoutSeconds() *int
 	GetPoints() *int
@@ -573,6 +574,7 @@ type CreateQuizInput struct {
 type CreateQuizQuestionInput struct {
 	QuestionType             QuizQuestionType              `json:"questionType"`
 	QuestionText             string                        `json:"questionText"`
+	Image                    *string                       `json:"image,omitempty"`
 	QuestionOrder            int                           `json:"questionOrder"`
 	TimeoutSeconds           *int                          `json:"timeoutSeconds,omitempty"`
 	Points                   *int                          `json:"points,omitempty"`
@@ -584,6 +586,7 @@ type CreateQuizQuestionInput struct {
 	BettingMultiplierCorrect *float64                      `json:"bettingMultiplierCorrect,omitempty"`
 	BettingMultiplierWrong   *float64                      `json:"bettingMultiplierWrong,omitempty"`
 	AllowMultipleSelection   *bool                         `json:"allowMultipleSelection,omitempty"`
+	AnswerLabelStyle         *QuizAnswerLabelStyle         `json:"answerLabelStyle,omitempty"`
 	PredefinedAnswers        []CreatePredefinedAnswerInput `json:"predefinedAnswers,omitempty"`
 	MinValue                 *float64                      `json:"minValue,omitempty"`
 	MaxValue                 *float64                      `json:"maxValue,omitempty"`
@@ -893,6 +896,7 @@ type FreeTextQuestion struct {
 	ID                       string                   `json:"id"`
 	Quiz                     *Quiz                    `json:"quiz"`
 	QuestionText             string                   `json:"questionText"`
+	ImageObject              *Image                   `json:"imageObject,omitempty"`
 	QuestionOrder            int                      `json:"questionOrder"`
 	TimeoutSeconds           *int                     `json:"timeoutSeconds,omitempty"`
 	Points                   *int                     `json:"points,omitempty"`
@@ -904,6 +908,7 @@ type FreeTextQuestion struct {
 	BettingMultiplierCorrect *float64                 `json:"bettingMultiplierCorrect,omitempty"`
 	BettingMultiplierWrong   *float64                 `json:"bettingMultiplierWrong,omitempty"`
 	TranslationStatus        []TranslationFieldStatus `json:"translationStatus"`
+	ImageURL                 *string                  `json:"-"`
 	QuizID                   string                   `json:"-"`
 }
 
@@ -911,6 +916,7 @@ func (FreeTextQuestion) IsQuizQuestion()                        {}
 func (this FreeTextQuestion) GetID() string                     { return this.ID }
 func (this FreeTextQuestion) GetQuiz() *Quiz                    { return this.Quiz }
 func (this FreeTextQuestion) GetQuestionText() string           { return this.QuestionText }
+func (this FreeTextQuestion) GetImageObject() *Image            { return this.ImageObject }
 func (this FreeTextQuestion) GetQuestionOrder() int             { return this.QuestionOrder }
 func (this FreeTextQuestion) GetTimeoutSeconds() *int           { return this.TimeoutSeconds }
 func (this FreeTextQuestion) GetPoints() *int                   { return this.Points }
@@ -998,6 +1004,7 @@ type JSONQuestion struct {
 	ID                       string                   `json:"id"`
 	Quiz                     *Quiz                    `json:"quiz"`
 	QuestionText             string                   `json:"questionText"`
+	ImageObject              *Image                   `json:"imageObject,omitempty"`
 	QuestionOrder            int                      `json:"questionOrder"`
 	TimeoutSeconds           *int                     `json:"timeoutSeconds,omitempty"`
 	Points                   *int                     `json:"points,omitempty"`
@@ -1009,6 +1016,7 @@ type JSONQuestion struct {
 	BettingMultiplierCorrect *float64                 `json:"bettingMultiplierCorrect,omitempty"`
 	BettingMultiplierWrong   *float64                 `json:"bettingMultiplierWrong,omitempty"`
 	TranslationStatus        []TranslationFieldStatus `json:"translationStatus"`
+	ImageURL                 *string                  `json:"-"`
 	QuizID                   string                   `json:"-"`
 }
 
@@ -1016,6 +1024,7 @@ func (JSONQuestion) IsQuizQuestion()                            {}
 func (this JSONQuestion) GetID() string                         { return this.ID }
 func (this JSONQuestion) GetQuiz() *Quiz                        { return this.Quiz }
 func (this JSONQuestion) GetQuestionText() string               { return this.QuestionText }
+func (this JSONQuestion) GetImageObject() *Image                { return this.ImageObject }
 func (this JSONQuestion) GetQuestionOrder() int                 { return this.QuestionOrder }
 func (this JSONQuestion) GetTimeoutSeconds() *int               { return this.TimeoutSeconds }
 func (this JSONQuestion) GetPoints() *int                       { return this.Points }
@@ -1226,6 +1235,7 @@ type NumberQuestion struct {
 	ID                       string                   `json:"id"`
 	Quiz                     *Quiz                    `json:"quiz"`
 	QuestionText             string                   `json:"questionText"`
+	ImageObject              *Image                   `json:"imageObject,omitempty"`
 	QuestionOrder            int                      `json:"questionOrder"`
 	TimeoutSeconds           *int                     `json:"timeoutSeconds,omitempty"`
 	Points                   *int                     `json:"points,omitempty"`
@@ -1240,6 +1250,7 @@ type NumberQuestion struct {
 	MinValue                 *float64                 `json:"minValue,omitempty"`
 	MaxValue                 *float64                 `json:"maxValue,omitempty"`
 	StepValue                *float64                 `json:"stepValue,omitempty"`
+	ImageURL                 *string                  `json:"-"`
 	QuizID                   string                   `json:"-"`
 }
 
@@ -1247,6 +1258,7 @@ func (NumberQuestion) IsQuizQuestion()                        {}
 func (this NumberQuestion) GetID() string                     { return this.ID }
 func (this NumberQuestion) GetQuiz() *Quiz                    { return this.Quiz }
 func (this NumberQuestion) GetQuestionText() string           { return this.QuestionText }
+func (this NumberQuestion) GetImageObject() *Image            { return this.ImageObject }
 func (this NumberQuestion) GetQuestionOrder() int             { return this.QuestionOrder }
 func (this NumberQuestion) GetTimeoutSeconds() *int           { return this.TimeoutSeconds }
 func (this NumberQuestion) GetPoints() *int                   { return this.Points }
@@ -1324,6 +1336,7 @@ type OrderingQuestion struct {
 	ID                       string                   `json:"id"`
 	Quiz                     *Quiz                    `json:"quiz"`
 	QuestionText             string                   `json:"questionText"`
+	ImageObject              *Image                   `json:"imageObject,omitempty"`
 	QuestionOrder            int                      `json:"questionOrder"`
 	TimeoutSeconds           *int                     `json:"timeoutSeconds,omitempty"`
 	Points                   *int                     `json:"points,omitempty"`
@@ -1336,6 +1349,7 @@ type OrderingQuestion struct {
 	BettingMultiplierWrong   *float64                 `json:"bettingMultiplierWrong,omitempty"`
 	TranslationStatus        []TranslationFieldStatus `json:"translationStatus"`
 	OrderingItems            []QuizOrderingItem       `json:"orderingItems"`
+	ImageURL                 *string                  `json:"-"`
 	QuizID                   string                   `json:"-"`
 }
 
@@ -1343,6 +1357,7 @@ func (OrderingQuestion) IsQuizQuestion()                        {}
 func (this OrderingQuestion) GetID() string                     { return this.ID }
 func (this OrderingQuestion) GetQuiz() *Quiz                    { return this.Quiz }
 func (this OrderingQuestion) GetQuestionText() string           { return this.QuestionText }
+func (this OrderingQuestion) GetImageObject() *Image            { return this.ImageObject }
 func (this OrderingQuestion) GetQuestionOrder() int             { return this.QuestionOrder }
 func (this OrderingQuestion) GetTimeoutSeconds() *int           { return this.TimeoutSeconds }
 func (this OrderingQuestion) GetPoints() *int                   { return this.Points }
@@ -1486,6 +1501,7 @@ type PredefinedQuestion struct {
 	ID                       string                   `json:"id"`
 	Quiz                     *Quiz                    `json:"quiz"`
 	QuestionText             string                   `json:"questionText"`
+	ImageObject              *Image                   `json:"imageObject,omitempty"`
 	QuestionOrder            int                      `json:"questionOrder"`
 	TimeoutSeconds           *int                     `json:"timeoutSeconds,omitempty"`
 	Points                   *int                     `json:"points,omitempty"`
@@ -1498,7 +1514,9 @@ type PredefinedQuestion struct {
 	BettingMultiplierWrong   *float64                 `json:"bettingMultiplierWrong,omitempty"`
 	TranslationStatus        []TranslationFieldStatus `json:"translationStatus"`
 	AllowMultipleSelection   bool                     `json:"allowMultipleSelection"`
+	AnswerLabelStyle         QuizAnswerLabelStyle     `json:"answerLabelStyle"`
 	PredefinedAnswers        []QuizPredefinedAnswer   `json:"predefinedAnswers"`
+	ImageURL                 *string                  `json:"-"`
 	QuizID                   string                   `json:"-"`
 }
 
@@ -1506,6 +1524,7 @@ func (PredefinedQuestion) IsQuizQuestion()                        {}
 func (this PredefinedQuestion) GetID() string                     { return this.ID }
 func (this PredefinedQuestion) GetQuiz() *Quiz                    { return this.Quiz }
 func (this PredefinedQuestion) GetQuestionText() string           { return this.QuestionText }
+func (this PredefinedQuestion) GetImageObject() *Image            { return this.ImageObject }
 func (this PredefinedQuestion) GetQuestionOrder() int             { return this.QuestionOrder }
 func (this PredefinedQuestion) GetTimeoutSeconds() *int           { return this.TimeoutSeconds }
 func (this PredefinedQuestion) GetPoints() *int                   { return this.Points }
@@ -2435,6 +2454,7 @@ type UpdateQuizInput struct {
 
 type UpdateQuizQuestionInput struct {
 	QuestionText             *string                       `json:"questionText,omitempty"`
+	Image                    *string                       `json:"image,omitempty"`
 	QuestionOrder            *int                          `json:"questionOrder,omitempty"`
 	TimeoutSeconds           *int                          `json:"timeoutSeconds,omitempty"`
 	Points                   *int                          `json:"points,omitempty"`
@@ -2448,6 +2468,7 @@ type UpdateQuizQuestionInput struct {
 	ClearBettingMinAbsolute  *bool                         `json:"clearBettingMinAbsolute,omitempty"`
 	ClearBettingMaxAbsolute  *bool                         `json:"clearBettingMaxAbsolute,omitempty"`
 	AllowMultipleSelection   *bool                         `json:"allowMultipleSelection,omitempty"`
+	AnswerLabelStyle         *QuizAnswerLabelStyle         `json:"answerLabelStyle,omitempty"`
 	PredefinedAnswers        []CreatePredefinedAnswerInput `json:"predefinedAnswers,omitempty"`
 	MinValue                 *float64                      `json:"minValue,omitempty"`
 	MaxValue                 *float64                      `json:"maxValue,omitempty"`
@@ -3500,6 +3521,63 @@ func (e *QuizAccessSourceType) UnmarshalJSON(b []byte) error {
 }
 
 func (e QuizAccessSourceType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type QuizAnswerLabelStyle string
+
+const (
+	QuizAnswerLabelStyleNone    QuizAnswerLabelStyle = "NONE"
+	QuizAnswerLabelStyleNumeric QuizAnswerLabelStyle = "NUMERIC"
+	QuizAnswerLabelStyleAlpha   QuizAnswerLabelStyle = "ALPHA"
+)
+
+var AllQuizAnswerLabelStyle = []QuizAnswerLabelStyle{
+	QuizAnswerLabelStyleNone,
+	QuizAnswerLabelStyleNumeric,
+	QuizAnswerLabelStyleAlpha,
+}
+
+func (e QuizAnswerLabelStyle) IsValid() bool {
+	switch e {
+	case QuizAnswerLabelStyleNone, QuizAnswerLabelStyleNumeric, QuizAnswerLabelStyleAlpha:
+		return true
+	}
+	return false
+}
+
+func (e QuizAnswerLabelStyle) String() string {
+	return string(e)
+}
+
+func (e *QuizAnswerLabelStyle) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = QuizAnswerLabelStyle(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid QuizAnswerLabelStyle", str)
+	}
+	return nil
+}
+
+func (e QuizAnswerLabelStyle) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *QuizAnswerLabelStyle) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e QuizAnswerLabelStyle) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

@@ -53,7 +53,8 @@
       "correctCount": "Du hadde {count} riktige",
       "correctCountAll": "Du hadde alle riktige",
       "correctCountNone": "Du hadde ingen riktige",
-      "bettingResult": "Tipping resultat"
+      "bettingResult": "Tipping resultat",
+      "nothingToStake": "Du har ingen poeng å satse."
     },
     "result": {
       "receivedNoPoints": "Du samlet ingen poeng.",

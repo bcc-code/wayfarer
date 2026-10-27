@@ -1,0 +1,10 @@
+---
+- name: Reload systemd (vector)
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart vector
+  ansible.builtin.systemd:
+    name: vector
+    state: restarted
+  ignore_errors: "{{ ansible_check_mode }}"

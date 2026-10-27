@@ -134,21 +134,15 @@ defineExpose({ actionState, handlers, currentQuestionIndex })
 
 <template>
   <div>
-    <div
-      class="flex flex-col items-center justify-center py-6 px-default gap-1 text-center"
-    >
-      <p v-if="questions.length > 1" class="text-caption text-text-muted">
-        {{
-          $t('quiz.questionNumber', {
-            current: currentQuestionIndex + 1,
-            total: questions.length,
-          })
-        }}
-      </p>
-      <h1 class="text-heading text-text-default text-balance text-center">
-        {{ currentQuestion?.questionText }}
-      </h1>
-    </div>
+    <!-- The shared heading, not a copy of it: review shows the same question,
+         image included, and the two drifted apart before. -->
+    <QuizQuestionHeading
+      v-if="currentQuestion"
+      :question-text="currentQuestion.questionText"
+      :index="currentQuestionIndex"
+      :total="questions.length"
+      :image="currentQuestion.imageObject"
+    />
     <QuizPredefinedQuestion
       v-if="
         currentQuestion && currentQuestion.__typename === 'PredefinedQuestion'

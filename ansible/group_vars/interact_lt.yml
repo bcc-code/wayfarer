@@ -13,3 +13,7 @@ postgres_tls_domain: "{{ loadtest_domain }}"
 postgres_require_tailscale: false
 postgres_external_clients: []
 postgres_listen_addresses: 127.0.0.1,::1
+
+# No Vector on load-test boxes (no tailnet to reach VictoriaLogs).
+wayfarer_log_export_url: ""
+tailscale_accept_routes: false

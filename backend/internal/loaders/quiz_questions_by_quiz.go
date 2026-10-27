@@ -90,8 +90,10 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 					question = &model.PredefinedQuestion{
 						ID:                       row.ID,
 						QuestionText:             row.QuestionText,
+						ImageURL:                 row.ImageUrl,
 						QuestionOrder:            int(row.QuestionOrder),
 						AllowMultipleSelection:   allowMultiple,
+						AnswerLabelStyle:         answerLabelStyle(row.AnswerLabelStyle),
 						QuizID:                   row.QuizID,
 						Points:                   points,
 						TimeoutSeconds:           timeoutSeconds,
@@ -107,6 +109,7 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 					question = &model.FreeTextQuestion{
 						ID:                       row.ID,
 						QuestionText:             row.QuestionText,
+						ImageURL:                 row.ImageUrl,
 						QuestionOrder:            int(row.QuestionOrder),
 						QuizID:                   row.QuizID,
 						Points:                   points,
@@ -126,6 +129,7 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 					question = &model.NumberQuestion{
 						ID:                       row.ID,
 						QuestionText:             row.QuestionText,
+						ImageURL:                 row.ImageUrl,
 						QuestionOrder:            int(row.QuestionOrder),
 						MinValue:                 minValue,
 						MaxValue:                 maxValue,
@@ -145,6 +149,7 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 					question = &model.JSONQuestion{
 						ID:                       row.ID,
 						QuestionText:             row.QuestionText,
+						ImageURL:                 row.ImageUrl,
 						QuestionOrder:            int(row.QuestionOrder),
 						QuizID:                   row.QuizID,
 						Points:                   points,
@@ -161,6 +166,7 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 					question = &model.OrderingQuestion{
 						ID:                       row.ID,
 						QuestionText:             row.QuestionText,
+						ImageURL:                 row.ImageUrl,
 						QuestionOrder:            int(row.QuestionOrder),
 						QuizID:                   row.QuizID,
 						Points:                   points,
@@ -178,6 +184,7 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 					question = &model.FreeTextQuestion{
 						ID:                       row.ID,
 						QuestionText:             row.QuestionText,
+						ImageURL:                 row.ImageUrl,
 						QuestionOrder:            int(row.QuestionOrder),
 						QuizID:                   row.QuizID,
 						Points:                   points,
@@ -225,4 +232,15 @@ func numericToFloat(n pgtype.Numeric) *float64 {
 		return nil
 	}
 	return &val.Float64
+}
+
+// answerLabelStyle maps the stored label style to the enum, falling back to
+// NONE for anything unrecognised — a question whose style cannot be read
+// should show its alternatives unlabelled rather than fail to load.
+func answerLabelStyle(style string) model.QuizAnswerLabelStyle {
+	parsed := model.QuizAnswerLabelStyle(style)
+	if !parsed.IsValid() {
+		return model.QuizAnswerLabelStyleNone
+	}
+	return parsed
 }

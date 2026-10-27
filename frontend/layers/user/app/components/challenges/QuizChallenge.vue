@@ -623,6 +623,7 @@ const progressResults = computed(() => {
           :question-text="currentQuestion.questionText"
           :index="currentQuestionIndex"
           :total="questions.length"
+          :image="currentQuestion.imageObject"
         />
         <QuizPredefinedQuestion
           v-if="currentQuestion.__typename === 'PredefinedQuestion'"

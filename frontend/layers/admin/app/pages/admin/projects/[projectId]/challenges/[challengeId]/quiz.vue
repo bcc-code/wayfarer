@@ -130,6 +130,7 @@ const quizData = computed<QuizFormData | undefined>(() => {
       id: q.id,
       questionType: getQuestionType(q.__typename ?? 'PredefinedQuestion'),
       questionText: q.questionText,
+      image: q.imageObject?.url ?? undefined,
       questionOrder: q.questionOrder,
       timeoutSeconds: q.timeoutSeconds ?? undefined,
       points: q.points ?? undefined,
@@ -137,6 +138,8 @@ const quizData = computed<QuizFormData | undefined>(() => {
         q.__typename === 'PredefinedQuestion'
           ? q.allowMultipleSelection
           : undefined,
+      answerLabelStyle:
+        q.__typename === 'PredefinedQuestion' ? q.answerLabelStyle : undefined,
       predefinedAnswers:
         q.__typename === 'PredefinedQuestion'
           ? q.predefinedAnswers.map((a) => ({

@@ -1,9 +1,11 @@
 package ssf
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestItem_ExtractContentData_MediaEpisode(t *testing.T) {
@@ -203,4 +205,27 @@ func TestIntToString(t *testing.T) {
 	assert.Equal(t, "1", intToString(1))
 	assert.Equal(t, "42", intToString(42))
 	assert.Equal(t, "12345", intToString(12345))
+}
+
+func TestPlanChapter_Unmarshal_NoOfMonthsAnyType(t *testing.T) {
+	for name, noOfMonths := range map[string]string{
+		"number": `1`,
+		"string": `"1"`,
+		"null":   `null`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			body := `[{"plan_chapter_id":"ch-1","items":[{"content_type":"periodical_article",` +
+				`"periodical_article":{"section_id":5,"parent":{"year":2024,"month":3,"no_of_months":` + noOfMonths + `}}}]}]`
+
+			var chapters []PlanChapter
+			require.NoError(t, json.Unmarshal([]byte(body), &chapters))
+
+			require.Len(t, chapters, 1)
+			require.Len(t, chapters[0].Items, 1)
+			parent := chapters[0].Items[0].PeriodicalArticle.Parent
+			require.NotNil(t, parent)
+			assert.Equal(t, 2024, parent.Year)
+			assert.Equal(t, 3, parent.Month)
+		})
+	}
 }

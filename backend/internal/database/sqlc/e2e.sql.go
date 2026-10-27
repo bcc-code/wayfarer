@@ -41,6 +41,17 @@ func (q *Queries) LockLeaderboardApplyQueue(ctx context.Context) (int64, error) 
 	return locked, err
 }
 
+const RegenerateLeaderboards = `-- name: RegenerateLeaderboards :exec
+SELECT count(*) FROM regenerate_leaderboards()
+`
+
+// Rebuilds all leaderboard tables from score_journal (the full rebuild the
+// incremental apply must agree with)
+func (q *Queries) RegenerateLeaderboards(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, RegenerateLeaderboards)
+	return err
+}
+
 const SnapshotLeaderboardRows = `-- name: SnapshotLeaderboardRows :many
 
 SELECT t.table_name, t.row_json

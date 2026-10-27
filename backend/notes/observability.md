@@ -374,6 +374,7 @@ if err != nil {
 
 ## Related Documentation
 
+- [Log Shipping](../../notes/16-log-shipping.md) - Export to VictoriaLogs (app, Postgres, journald, syslog); app records logged with a context (`slog.InfoContext` etc.) carry `trace_id`/`span_id`
 - [Profiling Guide](./profiling.md) - CPU and memory profiling with pprof
 - [Database Optimization](../internal/database/README.md) - Query optimization tips
 - [Cache Strategy](../internal/cache/README.md) - Caching best practices
