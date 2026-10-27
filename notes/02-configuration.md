@@ -31,7 +31,7 @@ type Config struct {
 
 - `DATABASE_URL` - PostgreSQL connection string (required)
 - `DB_MAX_OPEN_CONNS` - Max open connections (default: 25)
-- `DATALOADER_BATCH_TIMEOUT` - Upper bound for one dataloader batch (default: 10s). Batches no longer end when the request that started them is cancelled, so this bounds a stuck query instead
+- `DATALOADER_BATCH_TIMEOUT` - Upper bound for one dataloader batch (default: 10s). Batches no longer end when the request that started them is cancelled, so this bounds a stuck query instead. Must be a positive Go duration such as `5s`; the server refuses to start on `0`, a negative value or one that doesn't parse
 - `DB_MAX_IDLE_CONNS` - Max idle connections (default: 5)
 - `DB_CONN_MAX_LIFETIME` - Connection max lifetime (default: 5m)
 - `DB_CONN_MAX_IDLE_TIME` - Connection max idle time (default: 5m)
