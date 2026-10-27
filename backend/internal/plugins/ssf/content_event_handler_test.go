@@ -2,6 +2,9 @@ package ssf
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -248,6 +251,7 @@ func TestContentEventRequest_ValidationErrors(t *testing.T) {
 				db:            nil,
 				cache:         cacheInstance,
 				achievementID: "AC01234567890123456789012345",
+				secretKey:     testSecret,
 			}
 
 			body, err := json.Marshal(tt.payload)
@@ -255,6 +259,7 @@ func TestContentEventRequest_ValidationErrors(t *testing.T) {
 
 			req := httptest.NewRequest(http.MethodPost, "/plugins/ssf/content-event", bytes.NewReader(body))
 			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("X-Webhook-Signature", signBody(body))
 
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)
@@ -319,4 +324,96 @@ func TestPlugin_Register(t *testing.T) {
 	)
 
 	assert.NoError(t, err, "Plugin registration should succeed")
+}
+
+const testSecret = "test-secret"
+
+// signBody signs body the way the webhook dispatcher does.
+func signBody(body []byte) string {
+	mac := hmac.New(sha256.New, []byte(testSecret))
+	mac.Write(body)
+	return "sha256=" + hex.EncodeToString(mac.Sum(nil))
+}
+
+func TestContentEventHandler_Authentication(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	cacheInstance, _ := cache.NewCacheWithRegistry(cache.DefaultConfig())
+
+	payload := func(eventType string) []byte {
+		body, err := json.Marshal(map[string]any{
+			"event_type": "%s",
+			"timestamp":  time.Now().Format(time.RFC3339),
+			"project_id": "PR01234567890123456789012345",
+			"user":       map[string]any{"id": "US01234567890123456789012345"},
+			"data":       map[string]any{"task_id": "task-123", "consumed_at": time.Now().Format(time.RFC3339)},
+		})
+		require.NoError(t, err)
+		return body
+	}
+
+	tests := []struct {
+		name           string
+		secretKey      string
+		body           []byte
+		signature      func(body []byte) string
+		expectedStatus int
+		expectedError  string
+	}{
+		{
+			name:           "no secret configured rejects even a signed request",
+			secretKey:      "",
+			body:           payload("external_content_event"),
+			signature:      signBody,
+			expectedStatus: http.StatusServiceUnavailable,
+			expectedError:  "webhook secret not configured",
+		},
+		{
+			name:           "missing signature",
+			secretKey:      testSecret,
+			body:           payload("external_content_event"),
+			signature:      func([]byte) string { return "" },
+			expectedStatus: http.StatusUnauthorized,
+			expectedError:  "invalid signature",
+		},
+		{
+			name:           "signature with the wrong secret",
+			secretKey:      "another-secret",
+			body:           payload("external_content_event"),
+			signature:      signBody,
+			expectedStatus: http.StatusUnauthorized,
+			expectedError:  "invalid signature",
+		},
+		{
+			name:           "signed request for another event type",
+			secretKey:      testSecret,
+			body:           payload("points_awarded"),
+			signature:      signBody,
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  "unexpected event_type",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			secretKey := tt.secretKey
+			handler := &contentEventHandler{cache: cacheInstance, achievementID: "AC01234567890123456789012345", secretKey: secretKey}
+
+			req := httptest.NewRequest(http.MethodPost, "/plugins/ssf/content-event", bytes.NewReader(tt.body))
+			req.Header.Set("Content-Type", "application/json")
+			if sig := tt.signature(tt.body); sig != "" {
+				req.Header.Set("X-Webhook-Signature", sig)
+			}
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = req
+
+			handler.handle(c)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			var response map[string]any
+			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &response))
+			assert.Equal(t, tt.expectedError, response["error"])
+		})
+	}
 }

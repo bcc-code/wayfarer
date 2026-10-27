@@ -3,6 +3,7 @@ package teams
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -12,9 +13,11 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/firebase"
+	"github.com/bcc-media/wayfarer/internal/services/webhooks"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/bcc-media/wayfarer/internal/webhook"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 )
 
 // teamNameChangedHandler handles webhook requests for team name changes.
@@ -59,6 +62,13 @@ func (h *teamNameChangedHandler) handle(c *gin.Context) {
 		return
 	}
 
+	// The route is public, so without a secret anyone could call it
+	if h.secretKey == "" {
+		slog.Error("teams: webhook secret not configured, rejecting request", "env", "PLUGIN_TEAMS_SECRET_KEY")
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "webhook secret not configured"})
+		return
+	}
+
 	// Read raw body for signature verification
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
@@ -67,14 +77,11 @@ func (h *teamNameChangedHandler) handle(c *gin.Context) {
 		return
 	}
 
-	// Verify webhook signature if secret key is configured
-	if h.secretKey != "" {
-		signature := c.GetHeader("X-Webhook-Signature")
-		if !webhook.VerifySignature(body, signature, h.secretKey) {
-			slog.Warn("teams: invalid webhook signature")
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid signature"})
-			return
-		}
+	signature := c.GetHeader("X-Webhook-Signature")
+	if !webhook.VerifySignature(body, signature, h.secretKey) {
+		slog.Warn("teams: invalid webhook signature")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid signature"})
+		return
 	}
 
 	// Restore body for JSON binding
@@ -88,11 +95,36 @@ func (h *teamNameChangedHandler) handle(c *gin.Context) {
 		return
 	}
 
+	if req.EventType != string(webhooks.EventTypeTeamNameChanged) {
+		slog.Warn("teams: unexpected event type", "event_type", req.EventType)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unexpected event_type"})
+		return
+	}
+
+	// Take the project from the team, not from the payload
+	projectID, err := h.db.Queries.GetTeamProjectID(ctx, req.Data.TeamID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Warn("teams: team not found", "team_id", req.Data.TeamID)
+		c.JSON(http.StatusNotFound, gin.H{"error": "team not found"})
+		return
+	}
+	if err != nil {
+		slog.Error("teams: failed to get team project", "error", err, "team_id", req.Data.TeamID)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
+	if projectID != req.ProjectID {
+		slog.Warn("teams: project_id does not match the team's project",
+			"team_id", req.Data.TeamID, "project_id", req.ProjectID, "team_project_id", projectID)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "project_id does not match the team's project"})
+		return
+	}
+
 	slog.Info("teams: processing team name change",
 		"team_id", req.Data.TeamID,
 		"old_name", req.Data.OldName,
 		"new_name", req.Data.NewName,
-		"project_id", req.ProjectID,
+		"project_id", projectID,
 		"challenge_id", h.challengeID,
 	)
 
@@ -140,7 +172,7 @@ func (h *teamNameChangedHandler) handle(c *gin.Context) {
 
 		_, err := h.db.Queries.CreateScoreJournalEntry(ctx, sqlc.CreateScoreJournalEntryParams{
 			ID:          journalID,
-			ProjectID:   req.ProjectID,
+			ProjectID:   projectID,
 			UserID:      userID,
 			ChallengeID: &h.challengeID,
 			Points:      pointsTeamRename,
@@ -187,7 +219,7 @@ func (h *teamNameChangedHandler) handle(c *gin.Context) {
 	}
 
 	// Invalidate project cache
-	h.cache.InvalidateProject(req.ProjectID)
+	h.cache.InvalidateProject(projectID)
 
 	// Notify frontend via Firestore so real-time listeners trigger a refetch
 	if h.firebase != nil {
