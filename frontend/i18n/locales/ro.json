@@ -53,7 +53,8 @@
       "correctCount": "Ai pus {count} echipe pe poziția corectă",
       "correctCountAll": "Ai pus toate echipele pe poziția corectă",
       "correctCountNone": "Nu ai pus nicio echipă pe poziția corectă",
-      "bettingResult": "Rezultatul pariului tău"
+      "bettingResult": "Rezultatul pariului tău",
+      "nothingToStake": "Nu ai puncte de pariat."
     },
     "result": {
       "receivedNoPoints": "Nu ai obținut niciun punct.",
@@ -136,12 +137,18 @@
     "goToConsent": "Mergi la consimțământ",
     "continue": "Mai departe",
     "changeDescription": "Pentru a modifica consimțământul tău, contactează-ne la {email}",
-    "changeConsent": "Modifică consimțământ"
+    "changeConsent": "Modifică consimțământ",
+    "required": "Obligatoriu",
+    "requiredTitle": "Înainte de a continua"
   },
   "achievement": {
     "title": "Premiu",
     "unlocked": "Realizat!",
     "progress": "{completed} din {total} completat"
+  },
+  "archive": {
+    "title": "Proiecte anterioare",
+    "empty": "Nu ai încă niciun proiect anterior."
   },
   "feedback": {
     "title": "Dă-ne feedback",
@@ -351,7 +358,7 @@
         "couldNotReopenBetting": "Nu s-a putut redeschide parierea",
         "couldNotFinishBetting": "Nu s-a putut finaliza parierea",
         "couldNotSendUnitLeaderAccess": "Nu s-a putut trimite codul către liderii de unități",
-        "couldNotGrantBettingAccess": "Nu s-a putut acorda utilizatorilor acces la pariere"
+        "couldNotGrantBettingAccess": "Nu s-a putut oferi utilizatorilor acces la pariuri"
       }
     },
     "statistics": {
@@ -369,5 +376,8 @@
       "peopleInAUnit": "Persoane dintr-o unitate",
       "lastUpdated": "Ultima actualizare"
     }
+  },
+  "offline": {
+    "notice": "Ești deconectat. Informațiile pot fi învechite."
   }
 }
