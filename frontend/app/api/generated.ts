@@ -933,6 +933,7 @@ export type FreeTextResponse = QuizResponse & {
   answeredAt?: Maybe<Scalars['DateTime']['output']>;
   betAmount?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
+  isCorrect?: Maybe<Scalars['Boolean']['output']>;
   journalEntry?: Maybe<ScoreJournal>;
   pointsEarned?: Maybe<Scalars['Int']['output']>;
   question: QuizQuestion;
@@ -997,6 +998,7 @@ export type JsonResponse = QuizResponse & {
   answeredAt?: Maybe<Scalars['DateTime']['output']>;
   betAmount?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
+  isCorrect?: Maybe<Scalars['Boolean']['output']>;
   journalEntry?: Maybe<ScoreJournal>;
   jsonResponse: Scalars['JSON']['output'];
   pointsEarned?: Maybe<Scalars['Int']['output']>;
@@ -2169,6 +2171,7 @@ export type NumberResponse = QuizResponse & {
   answeredAt?: Maybe<Scalars['DateTime']['output']>;
   betAmount?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
+  isCorrect?: Maybe<Scalars['Boolean']['output']>;
   journalEntry?: Maybe<ScoreJournal>;
   numberResponse: Scalars['Float']['output'];
   pointsEarned?: Maybe<Scalars['Int']['output']>;
@@ -2974,6 +2977,7 @@ export type QuizResponse = {
   answeredAt?: Maybe<Scalars['DateTime']['output']>;
   betAmount?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
+  isCorrect?: Maybe<Scalars['Boolean']['output']>;
   journalEntry?: Maybe<ScoreJournal>;
   pointsEarned?: Maybe<Scalars['Int']['output']>;
   question: QuizQuestion;

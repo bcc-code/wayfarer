@@ -12,7 +12,8 @@
 > **Frontend follow-up (2026-10-22):** a frontend-only re-review is in
 > `[[betting-frontend-genericity]]`. The frontend findings below (3–5, 8–11) are all still
 > open; that note adds the PREDEFINED result-screen gap, the ungated
-> `QuizPredefinedAnswer.isCorrect`, and the unreachable payout multipliers.
+> `QuizPredefinedAnswer.isCorrect` (**gated 2026-10-27**, see Progress), and the unreachable
+> payout multipliers.
 
 **Verdict:** the **storage and configuration layers are fully generic**; the **settlement (scoring) layer and the whole user-facing flow are hard-wired to ORDERING**. A predefined/number/free-text question with `bettingEnabled = true` can be authored today, but the user can never place a bet on it, and if they somehow did, nothing would ever pay it out.
 
@@ -305,6 +306,47 @@ Known gaps:
   `updateQuizQuestion` (the query uses COALESCE).
 - Frontend not updated: `pnpm codegen`, admin editor fields, `QuizBettingModule` result copy.
 
+### 2026-10-27 — `isCorrect` hoisted to the `QuizResponse` interface, and both answer-reveal fields gated
+
+Backend only; frontend got `pnpm codegen` but no document or component changes. This is the
+prerequisite for step 2 of `[[betting-frontend-genericity]]` (take correctness from the API
+instead of regrading in the browser).
+
+- **Schema** — `isCorrect: Boolean` now sits on the `QuizResponse` **interface** and on all five
+  implementations, every one a `forceResolver`. `FreeTextResponse`, `NumberResponse` and
+  `JsonResponse` gained the field; `quizgrading` does not grade those types, so it is always
+  `null` there today, but a client can now select the verdict once on the interface rather than
+  through a `... on XxxResponse` ladder per type.
+- **One gate for response verdicts** — `Resolver.responseVerdict`
+  (`graph/api/quiz_answer_visibility.go`) hides a response's stored `is_correct` while the
+  submission's session is OPEN. This was previously implemented only on `OrderingResponse`;
+  `PredefinedResponse.isCorrect` was a plain model field with no gate at all, so a user could see
+  whether their own answer was right while they could still change it — and, on a betting
+  question, while the bet was still live. All five types now share the one helper.
+- **One gate for question answers** — `Resolver.canRevealQuestionAnswers` (same file) backs both
+  `QuizPredefinedAnswer.isCorrect` and `QuizOrderingItem.correctOrder`. `isCorrect` was previously
+  returned unconditionally (finding 2 in `[[betting-frontend-genericity]]`): the player-facing
+  `PredefinedAnswerFields` fragment selects it, so a user in an OPEN session was handed the correct
+  answer in the payload. It is now hidden until the most recent accessible session is FINISHED.
+  No user-facing component read it, so nothing in the UI changed.
+- **Admin bypass is explicit now.** The gate returns true for anyone passing
+  `RoleService.CanManageProject`, so the admin question editor keeps its values. `correctOrder`
+  previously only worked for admins by accident — an admin with no `quiz_session_access` rows fell
+  into the "no sessions, so nothing to gate on" branch; an admin who was also a participant in an
+  OPEN session would have been hidden the correct order.
+- **`QuizSubmissionByIDLoader`** (`internal/loaders/quiz_submission_by_id.go`, over the previously
+  unused `GetQuizSubmissionsByIDs`) — the verdict gate needs the submission's session for every
+  response, and it now applies to all five types rather than just ORDERING. The loader plus the
+  existing `QuizSessionByIDLoader` keep that at two queries per request instead of two per
+  response. Submissions are not cached in the loader; session state comes from the session
+  loader's own short TTL.
+- **Tests:** `e2e/quiz_answer_visibility_test.go` — answer `isCorrect` hidden from a player while
+  OPEN and while LOCKED, revealed once FINISHED, always visible to an admin, and a response's
+  verdict hidden while OPEN then revealed on LOCKED.
+
+Still open from finding 2: the frontend continues to regrade ORDERING in the browser
+(`bettingCorrectCount` / `bettingTotalCount`) and still selects no multiplier fields.
+
 ## Suggested order of work, if this is to be made properly generic
 
 1. Extract settlement out of `ladder_to_heaven` into a shared service; define a per-question-type
@@ -312,6 +354,7 @@ Known gaps:
    Reconcile with `recordBetResult` so there is one journal shape.
 2. ~~Fix `ValidateBet`'s zero-bet handling to match its documented contract~~ (done 2026-10-09);
    delete or wire up `ExtractBetConfigFromQuestion`.
+   ~~Gate `QuizPredefinedAnswer.isCorrect`~~ (done 2026-10-27).
 3. Give every question component a real `session-betting` action mode (or hoist betting out of
    the per-type action state entirely — it is question-type-independent by nature).
 4. Generalize `updateQuizResponse` beyond ORDERING.

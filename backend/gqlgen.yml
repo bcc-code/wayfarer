@@ -521,6 +521,8 @@ models:
         resolver: true
       question:
         resolver: true
+      isCorrect:
+        resolver: true
       selectedAnswers:
         resolver: true
       journalEntry:
@@ -530,6 +532,8 @@ models:
         type: string
       QuestionID:
         type: string
+      IsCorrectValue:
+        type: "*bool"
       ScoreJournalID:
         type: "*string"
 
@@ -539,6 +543,8 @@ models:
         resolver: true
       question:
         resolver: true
+      isCorrect:
+        resolver: true
       journalEntry:
         resolver: true
     extraFields:
@@ -546,6 +552,8 @@ models:
         type: string
       QuestionID:
         type: string
+      IsCorrectValue:
+        type: "*bool"
       ScoreJournalID:
         type: "*string"
 
@@ -555,6 +563,8 @@ models:
         resolver: true
       question:
         resolver: true
+      isCorrect:
+        resolver: true
       journalEntry:
         resolver: true
     extraFields:
@@ -562,6 +572,8 @@ models:
         type: string
       QuestionID:
         type: string
+      IsCorrectValue:
+        type: "*bool"
       ScoreJournalID:
         type: "*string"
 
@@ -571,6 +583,8 @@ models:
         resolver: true
       question:
         resolver: true
+      isCorrect:
+        resolver: true
       journalEntry:
         resolver: true
     extraFields:
@@ -578,6 +592,8 @@ models:
         type: string
       QuestionID:
         type: string
+      IsCorrectValue:
+        type: "*bool"
       ScoreJournalID:
         type: "*string"
 

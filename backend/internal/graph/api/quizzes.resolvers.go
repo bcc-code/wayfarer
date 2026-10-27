@@ -76,6 +76,11 @@ func (r *freeTextResponseResolver) JournalEntry(ctx context.Context, obj *model.
 	return thunk()
 }
 
+// IsCorrect is the resolver for the isCorrect field.
+func (r *freeTextResponseResolver) IsCorrect(ctx context.Context, obj *model.FreeTextResponse) (*bool, error) {
+	return r.responseVerdict(ctx, obj.SubmissionID, obj.IsCorrectValue)
+}
+
 // Quiz is the resolver for the quiz field.
 func (r *jsonQuestionResolver) Quiz(ctx context.Context, obj *model.JSONQuestion) (*model.Quiz, error) {
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
@@ -122,6 +127,11 @@ func (r *jsonResponseResolver) JournalEntry(ctx context.Context, obj *model.JSON
 	}
 	thunk := r.Loaders.ScoreJournalByIDLoader.Load(ctx, *obj.ScoreJournalID)
 	return thunk()
+}
+
+// IsCorrect is the resolver for the isCorrect field.
+func (r *jsonResponseResolver) IsCorrect(ctx context.Context, obj *model.JSONResponse) (*bool, error) {
+	return r.responseVerdict(ctx, obj.SubmissionID, obj.IsCorrectValue)
 }
 
 // CreateQuiz is the resolver for the createQuiz field.
@@ -2036,6 +2046,11 @@ func (r *numberResponseResolver) JournalEntry(ctx context.Context, obj *model.Nu
 	return thunk()
 }
 
+// IsCorrect is the resolver for the isCorrect field.
+func (r *numberResponseResolver) IsCorrect(ctx context.Context, obj *model.NumberResponse) (*bool, error) {
+	return r.responseVerdict(ctx, obj.SubmissionID, obj.IsCorrectValue)
+}
+
 // Quiz is the resolver for the quiz field.
 func (r *orderingQuestionResolver) Quiz(ctx context.Context, obj *model.OrderingQuestion) (*model.Quiz, error) {
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
@@ -2109,27 +2124,7 @@ func (r *orderingResponseResolver) JournalEntry(ctx context.Context, obj *model.
 // IsCorrect is the resolver for the isCorrect field on OrderingResponse.
 // It hides the correctness until the session is LOCKED or FINISHED.
 func (r *orderingResponseResolver) IsCorrect(ctx context.Context, obj *model.OrderingResponse) (*bool, error) {
-	// Load submission to get session ID
-	submission, err := r.DB.Queries.GetQuizSubmissionByID(ctx, obj.SubmissionID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load submission: %w", err)
-	}
-
-	// If there's a session, check its state
-	if submission.SessionID != nil && *submission.SessionID != "" {
-		session, err := r.DB.Queries.GetQuizSession(ctx, *submission.SessionID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load session: %w", err)
-		}
-
-		// Hide isCorrect when session is OPEN
-		if session.State == string(model.QuizSessionStateOpen) {
-			return nil, nil
-		}
-	}
-
-	// Return actual isCorrect value for LOCKED/FINISHED sessions or non-session quizzes
-	return obj.IsCorrectValue, nil
+	return r.responseVerdict(ctx, obj.SubmissionID, obj.IsCorrectValue)
 }
 
 // Quiz is the resolver for the quiz field.
@@ -2225,6 +2220,11 @@ func (r *predefinedResponseResolver) SelectedAnswers(ctx context.Context, obj *m
 	}
 
 	return result, nil
+}
+
+// IsCorrect is the resolver for the isCorrect field.
+func (r *predefinedResponseResolver) IsCorrect(ctx context.Context, obj *model.PredefinedResponse) (*bool, error) {
+	return r.responseVerdict(ctx, obj.SubmissionID, obj.IsCorrectValue)
 }
 
 // Quiz is the resolver for the quiz field.
@@ -2735,42 +2735,14 @@ func (r *quizOrderingItemResolver) Question(ctx context.Context, obj *model.Quiz
 // CorrectOrder is the resolver for the correctOrder field on QuizOrderingItem.
 // It hides the correct order until the session is FINISHED to prevent cheating.
 func (r *quizOrderingItemResolver) CorrectOrder(ctx context.Context, obj *model.QuizOrderingItem) (*int, error) {
-	// Get the current user
-	userID, ok := middleware.GetUserID(ctx)
-	if !ok || userID == "" {
-		// No user context, hide the correct order
+	allowed, err := r.canRevealQuestionAnswers(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, err
+	}
+	if !allowed {
 		return nil, nil
 	}
-
-	// Get the question to find the quiz ID
-	question, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load question: %w", err)
-	}
-
-	// Get user's accessible sessions for this quiz
-	sessions, err := r.DB.Queries.GetUserAccessibleSessions(ctx, sqlc.GetUserAccessibleSessionsParams{
-		Userid: userID,
-		Quizid: question.QuizID,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to load user sessions: %w", err)
-	}
-
-	// If no sessions, this is a legacy quiz without sessions - show the correct order
-	if len(sessions) == 0 {
-		return &obj.CorrectOrderValue, nil
-	}
-
-	// Only reveal correct order when session is FINISHED (not LOCKED)
-	// Sessions are ordered by created_at DESC, so the first one is the most recent
-	mostRecentSession := sessions[0]
-	if mostRecentSession.State == string(model.QuizSessionStateFinished) {
-		return &obj.CorrectOrderValue, nil
-	}
-
-	// Session is OPEN, DRAFT, or LOCKED - hide the correct order
-	return nil, nil
+	return &obj.CorrectOrderValue, nil
 }
 
 // Question is the resolver for the question field on QuizPredefinedAnswer.
@@ -2784,7 +2756,15 @@ func (r *quizPredefinedAnswerResolver) Question(ctx context.Context, obj *model.
 }
 
 // IsCorrect is the resolver for the isCorrect field on QuizPredefinedAnswer.
+// It hides which answers are correct until the session is FINISHED to prevent cheating.
 func (r *quizPredefinedAnswerResolver) IsCorrect(ctx context.Context, obj *model.QuizPredefinedAnswer) (*bool, error) {
+	allowed, err := r.canRevealQuestionAnswers(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, err
+	}
+	if !allowed {
+		return nil, nil
+	}
 	return &obj.IsCorrectValue, nil
 }
 

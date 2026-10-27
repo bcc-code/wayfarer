@@ -451,6 +451,7 @@ type ComplexityRoot struct {
 		AnsweredAt       func(childComplexity int) int
 		BetAmount        func(childComplexity int) int
 		ID               func(childComplexity int) int
+		IsCorrect        func(childComplexity int) int
 		JournalEntry     func(childComplexity int) int
 		PointsEarned     func(childComplexity int) int
 		Question         func(childComplexity int) int
@@ -493,6 +494,7 @@ type ComplexityRoot struct {
 		AnsweredAt       func(childComplexity int) int
 		BetAmount        func(childComplexity int) int
 		ID               func(childComplexity int) int
+		IsCorrect        func(childComplexity int) int
 		JSONResponse     func(childComplexity int) int
 		JournalEntry     func(childComplexity int) int
 		PointsEarned     func(childComplexity int) int
@@ -789,6 +791,7 @@ type ComplexityRoot struct {
 		AnsweredAt       func(childComplexity int) int
 		BetAmount        func(childComplexity int) int
 		ID               func(childComplexity int) int
+		IsCorrect        func(childComplexity int) int
 		JournalEntry     func(childComplexity int) int
 		NumberResponse   func(childComplexity int) int
 		PointsEarned     func(childComplexity int) int
@@ -1584,6 +1587,8 @@ type FreeTextResponseResolver interface {
 	Question(ctx context.Context, obj *model.FreeTextResponse) (model.QuizQuestion, error)
 
 	JournalEntry(ctx context.Context, obj *model.FreeTextResponse) (*model.ScoreJournal, error)
+
+	IsCorrect(ctx context.Context, obj *model.FreeTextResponse) (*bool, error)
 }
 type JsonQuestionResolver interface {
 	Quiz(ctx context.Context, obj *model.JSONQuestion) (*model.Quiz, error)
@@ -1597,6 +1602,8 @@ type JsonResponseResolver interface {
 	Question(ctx context.Context, obj *model.JSONResponse) (model.QuizQuestion, error)
 
 	JournalEntry(ctx context.Context, obj *model.JSONResponse) (*model.ScoreJournal, error)
+
+	IsCorrect(ctx context.Context, obj *model.JSONResponse) (*bool, error)
 }
 type LeaderboardConfigResolver interface {
 	Project(ctx context.Context, obj *model.LeaderboardConfig) (*model.Project, error)
@@ -1766,6 +1773,8 @@ type NumberResponseResolver interface {
 	Question(ctx context.Context, obj *model.NumberResponse) (model.QuizQuestion, error)
 
 	JournalEntry(ctx context.Context, obj *model.NumberResponse) (*model.ScoreJournal, error)
+
+	IsCorrect(ctx context.Context, obj *model.NumberResponse) (*bool, error)
 }
 type OrderingQuestionResolver interface {
 	Quiz(ctx context.Context, obj *model.OrderingQuestion) (*model.Quiz, error)
@@ -1809,6 +1818,7 @@ type PredefinedResponseResolver interface {
 	JournalEntry(ctx context.Context, obj *model.PredefinedResponse) (*model.ScoreJournal, error)
 
 	SelectedAnswers(ctx context.Context, obj *model.PredefinedResponse) ([]model.QuizPredefinedAnswer, error)
+	IsCorrect(ctx context.Context, obj *model.PredefinedResponse) (*bool, error)
 }
 type ProjectResolver interface {
 	Rules(ctx context.Context, obj *model.Project) (*model.MarkdownText, error)
@@ -3574,6 +3584,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.FreeTextResponse.ID(childComplexity), true
+	case "FreeTextResponse.isCorrect":
+		if e.complexity.FreeTextResponse.IsCorrect == nil {
+			break
+		}
+
+		return e.complexity.FreeTextResponse.IsCorrect(childComplexity), true
 	case "FreeTextResponse.journalEntry":
 		if e.complexity.FreeTextResponse.JournalEntry == nil {
 			break
@@ -3758,6 +3774,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.JsonResponse.ID(childComplexity), true
+	case "JsonResponse.isCorrect":
+		if e.complexity.JsonResponse.IsCorrect == nil {
+			break
+		}
+
+		return e.complexity.JsonResponse.IsCorrect(childComplexity), true
 	case "JsonResponse.jsonResponse":
 		if e.complexity.JsonResponse.JSONResponse == nil {
 			break
@@ -5896,6 +5918,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.NumberResponse.ID(childComplexity), true
+	case "NumberResponse.isCorrect":
+		if e.complexity.NumberResponse.IsCorrect == nil {
+			break
+		}
+
+		return e.complexity.NumberResponse.IsCorrect(childComplexity), true
 	case "NumberResponse.journalEntry":
 		if e.complexity.NumberResponse.JournalEntry == nil {
 			break
@@ -11667,6 +11695,7 @@ type QuizPredefinedAnswer {
     # Optional explanation shown with the answer; null when there is none.
     description: String
     answerOrder: Int!
+    # isCorrect is conditionally exposed - hidden from non-admins until the session is FINISHED to prevent cheating
     isCorrect: Boolean @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
@@ -11705,6 +11734,8 @@ interface QuizResponse {
     pointsEarned: Int
     betAmount: Int
     journalEntry: ScoreJournal @goField(forceResolver: true)
+    # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
+    isCorrect: Boolean @goField(forceResolver: true)
 }
 
 type PredefinedResponse implements QuizResponse {
@@ -11718,7 +11749,8 @@ type PredefinedResponse implements QuizResponse {
     journalEntry: ScoreJournal @goField(forceResolver: true)
     selectedAnswerIds: [ID!]!
     selectedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
-    isCorrect: Boolean
+    # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
+    isCorrect: Boolean @goField(forceResolver: true)
 }
 
 type FreeTextResponse implements QuizResponse {
@@ -11731,6 +11763,8 @@ type FreeTextResponse implements QuizResponse {
     betAmount: Int
     journalEntry: ScoreJournal @goField(forceResolver: true)
     textResponse: String!
+    # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
+    isCorrect: Boolean @goField(forceResolver: true)
 }
 
 type NumberResponse implements QuizResponse {
@@ -11743,6 +11777,8 @@ type NumberResponse implements QuizResponse {
     betAmount: Int
     journalEntry: ScoreJournal @goField(forceResolver: true)
     numberResponse: Float!
+    # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
+    isCorrect: Boolean @goField(forceResolver: true)
 }
 
 type JsonResponse implements QuizResponse {
@@ -11755,6 +11791,8 @@ type JsonResponse implements QuizResponse {
     betAmount: Int
     journalEntry: ScoreJournal @goField(forceResolver: true)
     jsonResponse: JSON!
+    # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
+    isCorrect: Boolean @goField(forceResolver: true)
 }
 
 type OrderingResponse implements QuizResponse {
@@ -11767,6 +11805,7 @@ type OrderingResponse implements QuizResponse {
     betAmount: Int
     journalEntry: ScoreJournal @goField(forceResolver: true)
     submittedOrder: [ID!]!
+    # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
     isCorrect: Boolean @goField(forceResolver: true)
 }
 
@@ -24000,6 +24039,35 @@ func (ec *executionContext) fieldContext_FreeTextResponse_textResponse(_ context
 	return fc, nil
 }
 
+func (ec *executionContext) _FreeTextResponse_isCorrect(ctx context.Context, field graphql.CollectedField, obj *model.FreeTextResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FreeTextResponse_isCorrect,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.FreeTextResponse().IsCorrect(ctx, obj)
+		},
+		nil,
+		ec.marshalOBoolean2ᚖbool,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FreeTextResponse_isCorrect(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FreeTextResponse",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Image_url(ctx context.Context, field graphql.CollectedField, obj *model.Image) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -24981,6 +25049,35 @@ func (ec *executionContext) fieldContext_JsonResponse_jsonResponse(_ context.Con
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type JSON does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JsonResponse_isCorrect(ctx context.Context, field graphql.CollectedField, obj *model.JSONResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_JsonResponse_isCorrect,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.JsonResponse().IsCorrect(ctx, obj)
+		},
+		nil,
+		ec.marshalOBoolean2ᚖbool,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_JsonResponse_isCorrect(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JsonResponse",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -38687,6 +38784,35 @@ func (ec *executionContext) fieldContext_NumberResponse_numberResponse(_ context
 	return fc, nil
 }
 
+func (ec *executionContext) _NumberResponse_isCorrect(ctx context.Context, field graphql.CollectedField, obj *model.NumberResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberResponse_isCorrect,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.NumberResponse().IsCorrect(ctx, obj)
+		},
+		nil,
+		ec.marshalOBoolean2ᚖbool,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberResponse_isCorrect(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberResponse",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _OrderingItemResult_item(ctx context.Context, field graphql.CollectedField, obj *model.OrderingItemResult) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -41803,7 +41929,7 @@ func (ec *executionContext) _PredefinedResponse_isCorrect(ctx context.Context, f
 		field,
 		ec.fieldContext_PredefinedResponse_isCorrect,
 		func(ctx context.Context) (any, error) {
-			return obj.IsCorrect, nil
+			return ec.resolvers.PredefinedResponse().IsCorrect(ctx, obj)
 		},
 		nil,
 		ec.marshalOBoolean2ᚖbool,
@@ -41816,8 +41942,8 @@ func (ec *executionContext) fieldContext_PredefinedResponse_isCorrect(_ context.
 	fc = &graphql.FieldContext{
 		Object:     "PredefinedResponse",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
 		},
@@ -69997,6 +70123,39 @@ func (ec *executionContext) _FreeTextResponse(ctx context.Context, sel ast.Selec
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "isCorrect":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._FreeTextResponse_isCorrect(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -70418,6 +70577,39 @@ func (ec *executionContext) _JsonResponse(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "isCorrect":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._JsonResponse_isCorrect(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -72794,6 +72986,39 @@ func (ec *executionContext) _NumberResponse(ctx context.Context, sel ast.Selecti
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "isCorrect":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NumberResponse_isCorrect(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -74193,7 +74418,38 @@ func (ec *executionContext) _PredefinedResponse(ctx context.Context, sel ast.Sel
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "isCorrect":
-			out.Values[i] = ec._PredefinedResponse_isCorrect(ctx, field, obj)
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._PredefinedResponse_isCorrect(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

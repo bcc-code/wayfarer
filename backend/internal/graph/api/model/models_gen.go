@@ -94,6 +94,7 @@ type QuizResponse interface {
 	GetPointsEarned() *int
 	GetBetAmount() *int
 	GetJournalEntry() *ScoreJournal
+	GetIsCorrect() *bool
 }
 
 type ScoreSource interface {
@@ -967,6 +968,8 @@ type FreeTextResponse struct {
 	BetAmount        *int              `json:"betAmount,omitempty"`
 	JournalEntry     *ScoreJournal     `json:"journalEntry,omitempty"`
 	TextResponse     string            `json:"textResponse"`
+	IsCorrect        *bool             `json:"isCorrect,omitempty"`
+	IsCorrectValue   *bool             `json:"-"`
 	QuestionID       string            `json:"-"`
 	ScoreJournalID   *string           `json:"-"`
 	SubmissionID     string            `json:"-"`
@@ -981,6 +984,7 @@ func (this FreeTextResponse) GetTimeSpentSeconds() *int        { return this.Tim
 func (this FreeTextResponse) GetPointsEarned() *int            { return this.PointsEarned }
 func (this FreeTextResponse) GetBetAmount() *int               { return this.BetAmount }
 func (this FreeTextResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
+func (this FreeTextResponse) GetIsCorrect() *bool              { return this.IsCorrect }
 
 type GrantQuizSessionAccessInput struct {
 	SessionID       string   `json:"sessionId"`
@@ -1068,6 +1072,8 @@ type JSONResponse struct {
 	BetAmount        *int              `json:"betAmount,omitempty"`
 	JournalEntry     *ScoreJournal     `json:"journalEntry,omitempty"`
 	JSONResponse     string            `json:"jsonResponse"`
+	IsCorrect        *bool             `json:"isCorrect,omitempty"`
+	IsCorrectValue   *bool             `json:"-"`
 	QuestionID       string            `json:"-"`
 	ScoreJournalID   *string           `json:"-"`
 	SubmissionID     string            `json:"-"`
@@ -1082,6 +1088,7 @@ func (this JSONResponse) GetTimeSpentSeconds() *int        { return this.TimeSpe
 func (this JSONResponse) GetPointsEarned() *int            { return this.PointsEarned }
 func (this JSONResponse) GetBetAmount() *int               { return this.BetAmount }
 func (this JSONResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
+func (this JSONResponse) GetIsCorrect() *bool              { return this.IsCorrect }
 
 type LeaderboardConfig struct {
 	ID         string                 `json:"id"`
@@ -1308,6 +1315,8 @@ type NumberResponse struct {
 	BetAmount        *int              `json:"betAmount,omitempty"`
 	JournalEntry     *ScoreJournal     `json:"journalEntry,omitempty"`
 	NumberResponse   float64           `json:"numberResponse"`
+	IsCorrect        *bool             `json:"isCorrect,omitempty"`
+	IsCorrectValue   *bool             `json:"-"`
 	QuestionID       string            `json:"-"`
 	ScoreJournalID   *string           `json:"-"`
 	SubmissionID     string            `json:"-"`
@@ -1322,6 +1331,7 @@ func (this NumberResponse) GetTimeSpentSeconds() *int        { return this.TimeS
 func (this NumberResponse) GetPointsEarned() *int            { return this.PointsEarned }
 func (this NumberResponse) GetBetAmount() *int               { return this.BetAmount }
 func (this NumberResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
+func (this NumberResponse) GetIsCorrect() *bool              { return this.IsCorrect }
 
 type OrderingItemResult struct {
 	Item                 *QuizOrderingItem `json:"item"`
@@ -1421,6 +1431,7 @@ func (this OrderingResponse) GetTimeSpentSeconds() *int        { return this.Tim
 func (this OrderingResponse) GetPointsEarned() *int            { return this.PointsEarned }
 func (this OrderingResponse) GetBetAmount() *int               { return this.BetAmount }
 func (this OrderingResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
+func (this OrderingResponse) GetIsCorrect() *bool              { return this.IsCorrect }
 
 type PageInfo struct {
 	HasNextPage     bool    `json:"hasNextPage"`
@@ -1574,6 +1585,7 @@ type PredefinedResponse struct {
 	SelectedAnswerIds []string               `json:"selectedAnswerIds"`
 	SelectedAnswers   []QuizPredefinedAnswer `json:"selectedAnswers"`
 	IsCorrect         *bool                  `json:"isCorrect,omitempty"`
+	IsCorrectValue    *bool                  `json:"-"`
 	QuestionID        string                 `json:"-"`
 	ScoreJournalID    *string                `json:"-"`
 	SubmissionID      string                 `json:"-"`
@@ -1588,6 +1600,7 @@ func (this PredefinedResponse) GetTimeSpentSeconds() *int        { return this.T
 func (this PredefinedResponse) GetPointsEarned() *int            { return this.PointsEarned }
 func (this PredefinedResponse) GetBetAmount() *int               { return this.BetAmount }
 func (this PredefinedResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
+func (this PredefinedResponse) GetIsCorrect() *bool              { return this.IsCorrect }
 
 type Project struct {
 	ID                    string            `json:"id"`

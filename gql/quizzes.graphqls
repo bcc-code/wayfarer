@@ -189,6 +189,7 @@ type QuizPredefinedAnswer {
     # Optional explanation shown with the answer; null when there is none.
     description: String
     answerOrder: Int!
+    # isCorrect is conditionally exposed - hidden from non-admins until the session is FINISHED to prevent cheating
     isCorrect: Boolean @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
@@ -227,6 +228,8 @@ interface QuizResponse {
     pointsEarned: Int
     betAmount: Int
     journalEntry: ScoreJournal @goField(forceResolver: true)
+    # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
+    isCorrect: Boolean @goField(forceResolver: true)
 }
 
 type PredefinedResponse implements QuizResponse {
@@ -240,7 +243,8 @@ type PredefinedResponse implements QuizResponse {
     journalEntry: ScoreJournal @goField(forceResolver: true)
     selectedAnswerIds: [ID!]!
     selectedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
-    isCorrect: Boolean
+    # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
+    isCorrect: Boolean @goField(forceResolver: true)
 }
 
 type FreeTextResponse implements QuizResponse {
@@ -253,6 +257,8 @@ type FreeTextResponse implements QuizResponse {
     betAmount: Int
     journalEntry: ScoreJournal @goField(forceResolver: true)
     textResponse: String!
+    # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
+    isCorrect: Boolean @goField(forceResolver: true)
 }
 
 type NumberResponse implements QuizResponse {
@@ -265,6 +271,8 @@ type NumberResponse implements QuizResponse {
     betAmount: Int
     journalEntry: ScoreJournal @goField(forceResolver: true)
     numberResponse: Float!
+    # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
+    isCorrect: Boolean @goField(forceResolver: true)
 }
 
 type JsonResponse implements QuizResponse {
@@ -277,6 +285,8 @@ type JsonResponse implements QuizResponse {
     betAmount: Int
     journalEntry: ScoreJournal @goField(forceResolver: true)
     jsonResponse: JSON!
+    # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
+    isCorrect: Boolean @goField(forceResolver: true)
 }
 
 type OrderingResponse implements QuizResponse {
@@ -289,6 +299,7 @@ type OrderingResponse implements QuizResponse {
     betAmount: Int
     journalEntry: ScoreJournal @goField(forceResolver: true)
     submittedOrder: [ID!]!
+    # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
     isCorrect: Boolean @goField(forceResolver: true)
 }
 

@@ -588,7 +588,7 @@ func convertToPredefinedResponse(row *sqlc.QuizResponse, answeredAt *scalars.Dat
 		SubmissionID:      row.SubmissionID,
 		QuestionID:        row.QuestionID,
 		SelectedAnswerIds: selectedAnswerIDs,
-		IsCorrect:         row.IsCorrect,
+		IsCorrectValue:    row.IsCorrect,
 		AnsweredAt:        answeredAt,
 		TimeSpentSeconds:  timeSpentSeconds,
 		PointsEarned:      pointsEarned,
@@ -611,6 +611,7 @@ func convertToFreeTextResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateT
 		TimeSpentSeconds: timeSpentSeconds,
 		PointsEarned:     pointsEarned,
 		BetAmount:        betAmount,
+		IsCorrectValue:   row.IsCorrect,
 		ScoreJournalID:   row.ScoreJournalID,
 	}
 }
@@ -630,6 +631,7 @@ func convertToNumberResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTim
 		TimeSpentSeconds: timeSpentSeconds,
 		PointsEarned:     pointsEarned,
 		BetAmount:        betAmount,
+		IsCorrectValue:   row.IsCorrect,
 		ScoreJournalID:   row.ScoreJournalID,
 	}
 }
@@ -648,6 +650,7 @@ func convertToJsonResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime,
 		TimeSpentSeconds: timeSpentSeconds,
 		PointsEarned:     pointsEarned,
 		BetAmount:        betAmount,
+		IsCorrectValue:   row.IsCorrect,
 		ScoreJournalID:   row.ScoreJournalID,
 	}
 }
@@ -662,7 +665,7 @@ func convertToOrderingResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateT
 		SubmissionID:     row.SubmissionID,
 		QuestionID:       row.QuestionID,
 		SubmittedOrder:   submittedOrder,
-		IsCorrectValue:   row.IsCorrect, // Store actual value for resolver
+		IsCorrectValue:   row.IsCorrect,
 		AnsweredAt:       answeredAt,
 		TimeSpentSeconds: timeSpentSeconds,
 		PointsEarned:     pointsEarned,

@@ -95,6 +95,10 @@ Two problems:
   what created the requirement, and the gap only becomes exploitable once betting moves to
   PREDEFINED.
 
+  > **Resolved 2026-10-27:** `QuizPredefinedAnswer.isCorrect` is now gated, and `isCorrect` was
+  > hoisted onto the `QuizResponse` interface. See the 2026-10-27 entry in
+  > `[[betting-module-genericity-review]]`.
+
 ### 3. The betting module can never render for NUMBER and FREE_TEXT
 
 `resolveFooterState` makes `bettingModule` visible only in `session-betting`, `session-locked` and
@@ -210,10 +214,12 @@ Ordered so each step is independently shippable:
 1. **Give betting results a home outside the single-ORDERING layout.** Either show the bet outcome
    on `QuizResult.vue`, or drop `isSingleOrderingQuestion` in favour of "FINISHED + any question had
    a bet". Without this, PREDEFINED betting is invisible to users. (Fixes 1.)
-2. **Take correctness and the multiplier from the API.** Select `isCorrect` on the response (already
-   stored) and the two multiplier fields; delete `bettingCorrectCount` / `bettingTotalCount` and the
-   derived `multiplier`. Replace `correctCount`/`totalCount` with an outcome prop. (Fixes 2, 6, 7.)
-   Then gate `QuizPredefinedAnswer.isCorrect` in the backend the way `correctOrder` already is.
+2. **Take correctness and the multiplier from the API.** ~~Gate `QuizPredefinedAnswer.isCorrect` in
+   the backend the way `correctOrder` already is~~ (done 2026-10-27, which also put `isCorrect` on
+   the `QuizResponse` interface so it can be selected without a per-type inline fragment).
+   Remaining: select `isCorrect` on the response and the two multiplier fields; delete
+   `bettingCorrectCount` / `bettingTotalCount` and the derived `multiplier`; replace
+   `correctCount`/`totalCount` with an outcome prop. (Fixes 2, 6, 7.)
 3. **Hoist betting out of the per-type action state** so the slider follows the session, not the
    question component. (Fixes 3, and most of 4.)
 4. **Expose `availableBetPoints`** and feed it to `:available-points`. (Fixes 5.)
