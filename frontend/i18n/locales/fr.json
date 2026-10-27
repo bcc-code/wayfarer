@@ -53,7 +53,8 @@
       "correctCount": "Tu avais {count} bonnes réponses",
       "correctCountAll": "Tu avais toutes les bonnes réponses.",
       "correctCountNone": "Tu n'avais aucune bonne réponse",
-      "bettingResult": "Résultat des paris"
+      "bettingResult": "Résultat des paris",
+      "nothingToStake": "Vous n'avez aucun point à parier."
     },
     "result": {
       "receivedNoPoints": "Tu n’as marqué aucun point.",
@@ -136,7 +137,9 @@
     "goToConsent": "Aller au consentement",
     "continue": "Continuer",
     "changeDescription": "Pour modifier ton consentement, contacte-nous à l’adresse suivante {email}",
-    "changeConsent": "Modifier le consentement"
+    "changeConsent": "Modifier le consentement",
+    "required": "Requis",
+    "requiredTitle": "Avant de continuer"
   },
   "achievement": {
     "title": "Badge",
