@@ -83,6 +83,7 @@ type DatabaseConfig struct {
 	ConnMaxLifetime time.Duration
 	ConnMaxIdleTime time.Duration
 	LogQueries      bool // Enable query logging for debugging
+	LoaderBatchTimeout time.Duration
 }
 
 // JWTConfig holds JWT authentication configuration
@@ -285,6 +286,8 @@ func Load() (*Config, error) {
 			ConnMaxLifetime: getEnvAsDuration("DB_CONN_MAX_LIFETIME", 10*time.Minute),
 			ConnMaxIdleTime: getEnvAsDuration("DB_CONN_MAX_IDLE_TIME", 1*time.Minute),
 			LogQueries:      getEnvAsBool("DB_LOG_QUERIES", false),
+
+			LoaderBatchTimeout: getEnvAsDuration("DATALOADER_BATCH_TIMEOUT", 10*time.Second),
 		},
 		JWT: JWTConfig{
 			Secret:            getEnv("JWT_SECRET", ""),
