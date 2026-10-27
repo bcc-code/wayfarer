@@ -12,6 +12,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/firebase"
+	"github.com/bcc-media/wayfarer/internal/services/webhooks"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/bcc-media/wayfarer/internal/webhook"
 	"github.com/gin-gonic/gin"
@@ -72,6 +73,13 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 		return
 	}
 
+	// The route is public, so without a secret anyone could call it
+	if h.secretKey == "" {
+		slog.Error("ssf: webhook secret not configured, rejecting request", "env", "PLUGIN_SSF_SECRET_KEY")
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "webhook secret not configured"})
+		return
+	}
+
 	// Read raw body for signature verification
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
@@ -80,14 +88,11 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 		return
 	}
 
-	// Verify webhook signature if secret key is configured
-	if h.secretKey != "" {
-		signature := c.GetHeader("X-Webhook-Signature")
-		if !webhook.VerifySignature(body, signature, h.secretKey) {
-			slog.Warn("ssf: invalid webhook signature")
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid signature"})
-			return
-		}
+	signature := c.GetHeader("X-Webhook-Signature")
+	if !webhook.VerifySignature(body, signature, h.secretKey) {
+		slog.Warn("ssf: invalid webhook signature")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid signature"})
+		return
 	}
 
 	// Restore body for JSON binding
@@ -98,6 +103,12 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Warn("ssf: invalid request body", "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body", "details": err.Error()})
+		return
+	}
+
+	if req.EventType != string(webhooks.EventTypeExternalContent) {
+		slog.Warn("ssf: unexpected event type", "event_type", req.EventType)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unexpected event_type"})
 		return
 	}
 
