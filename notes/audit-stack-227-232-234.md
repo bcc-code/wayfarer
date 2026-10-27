@@ -1,12 +1,12 @@
 # Audit: PR #227 → #232 → #234
 
 **Scope:** the stack originally audited at `origin/main...410f6d16`, plus adjacent code it depends on.
-**Date:** 2026-10-22, re-verified 2026-10-27 against `origin/main` `5d901c02`. Resolved findings have been removed, and paths and line numbers match that tree.
+**Date:** 2026-10-22, re-verified 2026-10-27 against `origin/main` `5d901c02`. Resolved findings have been removed, and paths and line numbers match that tree. A2 and A3 were fixed afterwards (#252, #253) and removed on 2026-10-27.
 
 **Open:**
 
 - **The stack itself:** 2 medium (M1, M2), 3 low (L3, L4, L5), 2 nits (N2, N3).
-- **Adjacent code:** 2 high (A2, A3), 7 medium (A6–A12), 11 low (A13–A23), 4 nits.
+- **Adjacent code:** 7 medium (A6–A12), 11 low (A13–A23), 3 nits. A14 has a fix in review (#255).
 
 ## Findings
 
@@ -40,13 +40,6 @@ Paths are relative to `backend/` unless they start with `frontend/`.
 - ✔ means the claim was checked against the code for this audit.
 - "rep." means it was found by a read-only sub-review and has not been re-checked line by line. Confirm it before acting.
 
-### High
-
-| ID | Verified | Where | Finding | Fix |
-|----|----------|-------|---------|-----|
-| A2 | ✔ (sync); rep. (async) | `internal/graph/api/challenges.resolvers.go:762-830`, `:1025-1058`; `internal/graph/api/challenges_helpers.go:12`; `gql/challenges.graphqls:253,262` | **`bulkEnrollUsersInChallenge` / `...Async` has no resource authorization (IDOR).**<br>• `church_admin` is allowed in `@requireRole`. The challenge is loaded "for authorization", but nothing is checked.<br>• `resolveEnrollmentTarget` accepts arbitrary `userIds`, any `churchInProject`, any teams, or `allProjectMembers` of any project.<br>• Any church admin can enroll anyone in any project's challenge, and every target gets a push notification (push spam). | Require `CanManageProject(challenge.project)`. For a church admin, allow only `churchInProject` with their own church and the challenge's project. Notify only users who were actually inserted. |
-| A3 | ✔ (empty secret); rep. (payload trust) | `internal/plugins/ssf/content_event_handler.go:83-91`, `internal/plugins/teams/team_name_changed_handler.go:70-78,143,190`, `internal/config/config.go:377,381` | **The plugin receivers fail open.**<br>• The ssf and teams receivers skip signature verification when their secret is empty. Both secrets fall back to `PLUGIN_LADDER_TO_HEAVEN_SECRET_KEY`, which defaults to `""`, and both routes are public.<br>• ssf derives the project from the DB.<br>• teams still trusts the payload's `project_id` for score journal rows and `InvalidateProject`.<br>• Neither receiver checks `event_type`.<br>• Excalibur fails closed. **Check the prod env.** | Fail closed: don't register the route, or return 401, when the secret is empty. In teams, derive the project from the team. |
-
 ### Medium
 
 | ID | Verified | Where | Finding | Fix |
@@ -64,7 +57,7 @@ Paths are relative to `backend/` unless they start with `frontend/`.
 | ID | Verified | Where | Finding | Fix |
 |----|----------|-------|---------|-----|
 | A13 | rep. | `internal/graph/api/response_cache.go:215-218` | **An in-flight request can write a stale response back into the cache after invalidation.** There is no generation check, so a stale entry can live for 30s during open→lock→finish bursts. | Capture the generation before `next(ctx)` and skip `Set` if it moved. |
-| A14 | ✔ | `frontend/layers/user/app/pages/challenges/index.vue:36` | **The Completed tab never updates live.** It listens for `CompletedChallengesPageDocument`, which no map in `useFirestoreSync.ts:11-37` dispatches. | Add it to the challenges and quizzes maps, or remove the listener. |
+| A14 | ✔ | `frontend/layers/user/app/pages/challenges/index.vue:36` | **The Completed tab never updates live.** It listens for `CompletedChallengesPageDocument`, which no map in `useFirestoreSync.ts:11-37` dispatches. | Fix in review: #255 dispatches it wherever `ActiveChallengesPageDocument` is dispatched, and adds a test that every listened-for document is dispatched. |
 | A15 | rep. | `frontend/app/composables/useFirestoreSync.ts:142-144,176-178,211-213` | **A listener that errors is never resubscribed.** Its key stays in `listeners`, so later subscribe calls skip it. | Delete the key in the error callback and resubscribe. |
 | A16 | rep. | `internal/graph/api/achievements.resolvers.go:763,1319,1325,1710,1759`, `internal/graph/api/challenges.resolvers.go:804,811,871,1011`, `internal/graph/api/quizzes.resolvers.go:1949`, `internal/services/bulk/service.go:417,425,494,565,678,1058,1110`, `internal/plugins/teams/team_name_changed_handler.go:195` | **Firestore and push notifications start one goroutine per user, unbounded.** Bet-result notifications are already capped at 16 (`quiz_session_betting.go:301`); every site listed here is unbounded. | Route all fan-out through one bounded worker, like `services/push` (`pushSendConcurrency`). |
 | A17 | rep. | `cmd/server/main.go:624` (only `/auth` limited), `/graphql` at `:755`; `internal/plugins/ssf/content_event_handler.go:76`, `internal/plugins/teams/team_name_changed_handler.go:63` | **No request body size limits.** `/graphql` and the public plugin routes read bodies of any size, and the plugin handlers `io.ReadAll` before the signature check. `userIds` lists are uncapped. | Use `http.MaxBytesReader` on those routes and cap list sizes. |
@@ -77,7 +70,6 @@ Paths are relative to `backend/` unless they start with `frontend/`.
 
 ### Nits
 
-- **Open:** `NotifyProjectEvents` writes `projects/{id}/notifications/events`, which no client subscribes to (`internal/graph/api/events.resolvers.go:164,234`).
+- `NotifyProjectEvents` writes `projects/{id}/notifications/events`, which no client subscribes to (`internal/graph/api/events.resolvers.go:164,234`).
 - The admin feedback page discards its `subscribeAdmin` cleanup, so the listener lives until logout (`frontend/layers/admin/app/pages/admin/feedback/index.vue:11-20`).
-- **Open:** `firebaseToken.expiresIn` always reports 3600 for cached tokens. Tokens are cached for 30 min (`schema.resolvers.go:89-93`) or 55 min (`services/firebase_token_warmer.go:21,269-272`).
-- Plugin receivers return `err.Error()` details on bind failure (`internal/plugins/ssf/content_event_handler.go:100`, `internal/plugins/teams/team_name_changed_handler.go:87`). This happens after the signature check, so callers are unauthenticated only when no secret is set (A3).
+- `firebaseToken.expiresIn` always reports 3600 for cached tokens. Tokens are cached for 30 min (`schema.resolvers.go:89-93`) or 55 min (`services/firebase_token_warmer.go:21,269-272`).
