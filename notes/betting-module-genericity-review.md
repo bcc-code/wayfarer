@@ -1,6 +1,12 @@
 # Betting Module — Genericity & Reusability Review
 
 **Date:** 2026-09-30
+
+> **Update 2026-10-23:** the ladder_to_heaven `quiz-finalized` handler was removed. The core now
+> settles ORDERING bets like PREDEFINED ones (`sessionBetQuestionTypes` in
+> `quiz_session_betting.go`): all-or-nothing `is_correct`, the question's correct/wrong multipliers,
+> claim-once settlement. The plugin's partial position-based payout no longer exists. Parts of this
+> review that describe plugin settlement are historical.
 **Question asked:** betting should attach to _all_ quiz question types, but so far only ORDERING has used it. How generic is it really — in functionality and in language?
 
 **Verdict:** the **storage and configuration layers are fully generic**; the **settlement (scoring) layer and the whole user-facing flow are hard-wired to ORDERING**. A predefined/number/free-text question with `bettingEnabled = true` can be authored today, but the user can never place a bet on it, and if they somehow did, nothing would ever pay it out.

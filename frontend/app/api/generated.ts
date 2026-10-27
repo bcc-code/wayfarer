@@ -4918,11 +4918,6 @@ export type ChurchAdminsPageQueryVariables = Exact<{
 
 export type ChurchAdminsPageQuery = { __typename?: 'Query', usersWithRole: Array<{ __typename?: 'User', id: string, name: string, email: string }>, users: { __typename?: 'UserConnection', edges: Array<{ __typename?: 'UserEdge', node: { __typename?: 'User', id: string, name: string, email: string } }> } };
 
-export type AdminGameNightPageQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type AdminGameNightPageQuery = { __typename?: 'Query', frontendConfig: any, myCurrentProject: { __typename?: 'Project', myChurchTeams: Array<{ __typename?: 'Team', members: Array<{ __typename?: 'TeamMember', id: string, isTeamLead: boolean }> }> } };
-
 export type AdminKickOffPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -5196,13 +5191,6 @@ export type AdminSuperTeamDetailPageQueryVariables = Exact<{
 
 
 export type AdminSuperTeamDetailPageQuery = { __typename?: 'Query', superteam: { __typename?: 'SuperTeam', id: string, name: string, description: string, color?: string | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, teams: Array<{ __typename?: 'Team', id: string, name: string, description: string }> }, teams: { __typename?: 'TeamConnection', edges: Array<{ __typename?: 'TeamEdge', node: { __typename?: 'Team', id: string, name: string, superTeam?: { __typename?: 'SuperTeam', id: string } | null } }> } };
-
-export type SuperteamsPageEventsQueryVariables = Exact<{
-  projectId: Scalars['ID']['input'];
-}>;
-
-
-export type SuperteamsPageEventsQuery = { __typename?: 'Query', events: { __typename?: 'EventConnection', edges: Array<{ __typename?: 'EventEdge', node: { __typename?: 'Event', id: string, name: string, startDate: any } }> } };
 
 export type AdminProjectSuperteamsQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
@@ -7843,23 +7831,6 @@ export const ChurchAdminsPageDocument = gql`
 export function useChurchAdminsPageQuery(options?: Omit<Urql.UseQueryArgs<never, ChurchAdminsPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<ChurchAdminsPageQuery, ChurchAdminsPageQueryVariables | undefined>({ query: ChurchAdminsPageDocument, variables: undefined, ...options });
 };
-export const AdminGameNightPageDocument = gql`
-    query AdminGameNightPage {
-  frontendConfig
-  myCurrentProject {
-    myChurchTeams {
-      members {
-        id
-        isTeamLead
-      }
-    }
-  }
-}
-    `;
-
-export function useAdminGameNightPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminGameNightPageQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<AdminGameNightPageQuery, AdminGameNightPageQueryVariables | undefined>({ query: AdminGameNightPageDocument, variables: undefined, ...options });
-};
 export const AdminKickOffPageDocument = gql`
     query AdminKickOffPage {
   frontendConfig
@@ -8616,23 +8587,6 @@ export const AdminSuperTeamDetailPageDocument = gql`
 
 export function useAdminSuperTeamDetailPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminSuperTeamDetailPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminSuperTeamDetailPageQuery, AdminSuperTeamDetailPageQueryVariables | undefined>({ query: AdminSuperTeamDetailPageDocument, variables: undefined, ...options });
-};
-export const SuperteamsPageEventsDocument = gql`
-    query SuperteamsPageEvents($projectId: ID!) {
-  events(first: 100, filter: {projectId: $projectId}) {
-    edges {
-      node {
-        id
-        name
-        startDate
-      }
-    }
-  }
-}
-    `;
-
-export function useSuperteamsPageEventsQuery(options?: Omit<Urql.UseQueryArgs<never, SuperteamsPageEventsQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<SuperteamsPageEventsQuery, SuperteamsPageEventsQueryVariables | undefined>({ query: SuperteamsPageEventsDocument, variables: undefined, ...options });
 };
 export const AdminProjectSuperteamsDocument = gql`
     query AdminProjectSuperteams($projectId: ID!) {

@@ -37,7 +37,9 @@ import (
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/otel"
 	"github.com/bcc-media/wayfarer/internal/plugins"
-	"github.com/bcc-media/wayfarer/internal/plugins/ladder_to_heaven"
+	"github.com/bcc-media/wayfarer/internal/plugins/excalibur"
+	ssfplugin "github.com/bcc-media/wayfarer/internal/plugins/ssf"
+	"github.com/bcc-media/wayfarer/internal/plugins/teams"
 	"github.com/bcc-media/wayfarer/internal/reuseport"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/services/bulk"
@@ -656,8 +658,6 @@ func main() {
 	pluginDeps := plugins.Dependencies{
 		DB:              db,
 		Cache:           cacheInstance,
-		Loaders:         dataLoaders,
-		PushService:     pushService,
 		SettingsService: settingsService,
 		JWTConfig:       cfg.JWT,
 		Firebase:        firebaseService,
@@ -665,13 +665,21 @@ func main() {
 	apiKeyAuth := middleware.APIKeyAuth(cfg.APIKey)
 
 	plugins.RegisterPlugin(router, pluginDeps, apiKeyAuth,
-		ladder_to_heaven.NewPlugin(ladder_to_heaven.Config{
-			AchievementID:         cfg.Plugin.LadderToHeavenAchievementID,
-			SecretKey:             cfg.Plugin.LadderToHeavenSecretKey,
-			TeamRenameChallengeID: cfg.Plugin.LadderToHeavenTeamRenameChallengeID,
-			CryptexSecretKey:      cfg.Plugin.LadderToHeavenCryptexSecretKey,
-			CryptexBaseURL:        cfg.Plugin.LadderToHeavenCryptexBaseURL,
-			ExcaliburBaseURL:      cfg.Plugin.LadderToHeavenExcaliburBaseURL,
+		teams.NewPlugin(teams.Config{
+			SecretKey:         cfg.Plugin.TeamsSecretKey,
+			RenameChallengeID: cfg.Plugin.TeamsRenameChallengeID,
+		}),
+	)
+	plugins.RegisterPlugin(router, pluginDeps, apiKeyAuth,
+		ssfplugin.NewPlugin(ssfplugin.Config{
+			AchievementID: cfg.Plugin.SSFAchievementID,
+			SecretKey:     cfg.Plugin.SSFSecretKey,
+		}),
+	)
+	plugins.RegisterPlugin(router, pluginDeps, apiKeyAuth,
+		excalibur.NewPlugin(excalibur.Config{
+			SecretKey: cfg.Plugin.ExcaliburSecretKey,
+			BaseURL:   cfg.Plugin.ExcaliburBaseURL,
 		}),
 	)
 
@@ -706,6 +714,7 @@ func main() {
 		FirebaseService: firebaseService,
 		WebhookService:  webhookService,
 		Cache:           cacheInstance,
+		Settler:         apiResolver,
 	}
 	router.POST("/api/scheduler/quiz-session-transitions", middleware.APIKeyAuth(cfg.APIKey), quizSchedulerHandler.ProcessScheduledTransitions)
 	slog.Info("Quiz scheduler endpoint registered",

@@ -299,9 +299,9 @@ func buildScenarios() []Scenario {
 
 	scenarios = append(scenarios, Scenario{
 		Name:        "W5-plugin-team-rename",
-		Description: "Ladder to Heaven team-name-changed webhook, then team re-read",
+		Description: "Teams team-name-changed webhook, then team re-read",
 		Steps: []Step{
-			{Name: "webhook", Method: "POST", Path: "/plugins/ladder-to-heaven/team-name-changed", Signed: true,
+			{Name: "webhook", Method: "POST", Path: "/plugins/teams/team-name-changed", Signed: true,
 				Body: map[string]any{
 					"event_type": "team.name.changed", "timestamp": "2026-08-25T10:00:00Z", "project_id": projectID,
 					"data": map[string]any{"team_id": loadtestTeamID, "old_name": "Team 10", "new_name": "The Renamed Ten"}}},
@@ -311,39 +311,14 @@ func buildScenarios() []Scenario {
 
 	scenarios = append(scenarios, Scenario{
 		Name:        "W6-plugin-content-event",
-		Description: "Ladder to Heaven content-event webhook, then points re-read",
+		Description: "SSF content-event webhook, then points re-read",
 		Steps: []Step{
-			{Name: "webhook", Method: "POST", Path: "/plugins/ladder-to-heaven/content-event", Signed: true,
+			{Name: "webhook", Method: "POST", Path: "/plugins/ssf/content-event", Signed: true,
 				Body: map[string]any{
 					"event_type": "content.consumed", "timestamp": "2026-08-25T10:05:00Z", "project_id": projectID,
 					"user": map[string]any{"id": seededUserID(10004)},
 					"data": map[string]any{"task_id": "task-diff-1", "content_progress": 1.0, "consumed_at": "2026-08-25T10:04:00Z"}}},
 			{Name: "reread-profile", User: "u10004", Query: "ProfilePage", Vars: map[string]any{"ageFilter": nil}},
-		},
-	})
-
-	scenarios = append(scenarios, Scenario{
-		Name:        "W7-plugin-superteam-preview",
-		Description: "Superteam distribution preview (read-only, deterministic over identical data)",
-		Steps: []Step{
-			{Name: "preview", User: "admin", Method: "GET", Path: "/plugins/ladder-to-heaven/preview-superteams?project_id=PR00000000000000000000000001"},
-		},
-	})
-
-	scenarios = append(scenarios, Scenario{
-		Name:        "W8-plugin-quiz-finalized",
-		Description: "Ladder to Heaven quiz-finalized webhook (betting settlement path)",
-		Steps: []Step{
-			{Name: "webhook", Method: "POST", Path: "/plugins/ladder-to-heaven/quiz-finalized", Signed: true,
-				Body: map[string]any{
-					"event_type": "quiz.finalized", "timestamp": "2026-08-25T10:10:00Z", "project_id": projectID,
-					"data": map[string]any{
-						"session_id": loadtestSessID, "session_name": "Load Test Free-Text Session",
-						"quiz_id": loadtestQuizID, "quiz_name": "Load Test Free-Text Quiz",
-						"challenge_id": loadtestChalID, "finished_at": "2026-08-25T10:09:00Z",
-						"results": []any{map[string]any{
-							"user_id": seededUserID(10002), "completed": true,
-							"score": 3, "max_score": 4, "score_percentage": 75.0, "auto_submitted": false}}}}},
 		},
 	})
 

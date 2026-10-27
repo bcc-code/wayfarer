@@ -1,4 +1,4 @@
-package ladder_to_heaven
+package excalibur
 
 import (
 	"context"
@@ -21,6 +21,9 @@ import (
 const (
 	testExcaliburSecretKey = "test-secret-key-for-excalibur-token"
 	testExcaliburBaseURL   = "https://dev.excalibur.bcc.media"
+	testUserID             = "US01ARZ3NDEKTSV4RRFFQ69G5FAV"
+	testChurchID           = "CH01ARZ3NDEKTSV4RRFFQ69G5FAV"
+	testProjectID          = "PR01ARZ3NDEKTSV4RRFFQ69G5FAV"
 )
 
 func TestExcaliburUserURLHandler_MissingPathParameter(t *testing.T) {
@@ -34,7 +37,7 @@ func TestExcaliburUserURLHandler_MissingPathParameter(t *testing.T) {
 		jwtConfig:       config.JWTConfig{Issuer: "wayfarer"},
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/plugins/ladder-to-heaven/excalibur-user-url", nil)
+	req := httptest.NewRequest(http.MethodGet, "/plugins/excalibur/user-url", nil)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = req
@@ -59,7 +62,7 @@ func TestExcaliburUserURLHandler_FeatureDisabled_MissingSecretKey(t *testing.T) 
 		jwtConfig:       config.JWTConfig{Issuer: "wayfarer"},
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/plugins/ladder-to-heaven/excalibur-user-url?path=/callback", nil)
+	req := httptest.NewRequest(http.MethodGet, "/plugins/excalibur/user-url?path=/callback", nil)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = req
@@ -84,7 +87,7 @@ func TestExcaliburUserURLHandler_FeatureDisabled_MissingBaseURL(t *testing.T) {
 		jwtConfig:       config.JWTConfig{Issuer: "wayfarer"},
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/plugins/ladder-to-heaven/excalibur-user-url?path=/callback", nil)
+	req := httptest.NewRequest(http.MethodGet, "/plugins/excalibur/user-url?path=/callback", nil)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = req
@@ -109,7 +112,7 @@ func TestExcaliburUserURLHandler_NotAuthenticated(t *testing.T) {
 		jwtConfig:       config.JWTConfig{Issuer: "wayfarer"},
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/plugins/ladder-to-heaven/excalibur-user-url?path=/callback", nil)
+	req := httptest.NewRequest(http.MethodGet, "/plugins/excalibur/user-url?path=/callback", nil)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = req
@@ -162,7 +165,7 @@ func TestExcaliburUserURLHandler_Success(t *testing.T) {
 		testSettings:    mockSettings,
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/plugins/ladder-to-heaven/excalibur-user-url?path=/callback", nil)
+	req := httptest.NewRequest(http.MethodGet, "/plugins/excalibur/user-url?path=/callback", nil)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = req

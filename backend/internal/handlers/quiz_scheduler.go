@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/firebase"
 	"github.com/bcc-media/wayfarer/internal/services/webhooks"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 )
 
 // QuizSchedulerHandler handles scheduled quiz session state transitions
@@ -20,6 +22,17 @@ type QuizSchedulerHandler struct {
 	FirebaseService *firebase.Service
 	WebhookService  *webhooks.Service
 	Cache           *cache.CacheWithRegistry
+	// Settler auto-submits and pays out a session the scheduler finished, the
+	// same way finishQuizSession does. If nil, finished sessions are only
+	// auto-submitted and their bets stay unpaid.
+	Settler SessionSettler
+}
+
+// SessionSettler settles a session that was just moved to FINISHED: it waits
+// for in-flight answers, auto-submits open submissions and pays out bets.
+// Implemented by api.Resolver.
+type SessionSettler interface {
+	SettleFinishedSession(ctx context.Context, sessionID string) error
 }
 
 // QuizSchedulerResponse contains the results of processing scheduled transitions
@@ -73,19 +86,25 @@ func (h *QuizSchedulerHandler) processOpenTransitions(ctx context.Context) (int,
 	}
 
 	opened := 0
-	errors := 0
+	failed := 0
 
 	for _, session := range sessions {
 		_, err := h.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
-			ID:    session.ID,
-			State: "OPEN",
+			ID:        session.ID,
+			Fromstate: "DRAFT",
+			State:     "OPEN",
 		})
+		if errors.Is(err, pgx.ErrNoRows) {
+			// Moved by a concurrent call (an admin or another scheduler run),
+			// which handles the transition
+			continue
+		}
 		if err != nil {
 			slog.Error("quiz_scheduler: failed to open session",
 				"session_id", session.ID,
 				"error", err,
 			)
-			errors++
+			failed++
 			continue
 		}
 
@@ -115,7 +134,7 @@ func (h *QuizSchedulerHandler) processOpenTransitions(ctx context.Context) (int,
 		opened++
 	}
 
-	return opened, errors
+	return opened, failed
 }
 
 // processLockTransitions locks sessions that have reached their lock_at time
@@ -127,19 +146,25 @@ func (h *QuizSchedulerHandler) processLockTransitions(ctx context.Context) (int,
 	}
 
 	locked := 0
-	errors := 0
+	failed := 0
 
 	for _, session := range sessions {
 		_, err := h.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
-			ID:    session.ID,
-			State: "LOCKED",
+			ID:        session.ID,
+			Fromstate: "OPEN",
+			State:     "LOCKED",
 		})
+		if errors.Is(err, pgx.ErrNoRows) {
+			// Moved by a concurrent call (an admin or another scheduler run),
+			// which handles the transition
+			continue
+		}
 		if err != nil {
 			slog.Error("quiz_scheduler: failed to lock session",
 				"session_id", session.ID,
 				"error", err,
 			)
-			errors++
+			failed++
 			continue
 		}
 
@@ -169,7 +194,7 @@ func (h *QuizSchedulerHandler) processLockTransitions(ctx context.Context) (int,
 		locked++
 	}
 
-	return locked, errors
+	return locked, failed
 }
 
 // processFinishTransitions finishes sessions that have reached their finish_at time
@@ -181,27 +206,40 @@ func (h *QuizSchedulerHandler) processFinishTransitions(ctx context.Context) (in
 	}
 
 	finished := 0
-	errors := 0
+	failed := 0
 
 	for _, session := range sessions {
 		// Update state to FINISHED first to prevent duplicate processing on retry
 		_, err := h.DB.Queries.UpdateQuizSessionState(ctx, sqlc.UpdateQuizSessionStateParams{
-			ID:    session.ID,
-			State: "FINISHED",
+			ID:        session.ID,
+			Fromstate: "LOCKED",
+			State:     "FINISHED",
 		})
+		if errors.Is(err, pgx.ErrNoRows) {
+			// Moved by a concurrent call (an admin or another scheduler run),
+			// which handles the transition
+			continue
+		}
 		if err != nil {
 			slog.Error("quiz_scheduler: failed to finish session",
 				"session_id", session.ID,
 				"error", err,
 			)
-			errors++
+			failed++
 			continue
 		}
 
-		// Auto-submit active submissions
-		err = h.DB.Queries.AutoSubmitSessionSubmissions(ctx, session.ID)
-		if err != nil {
-			// Log but don't fail - state is already FINISHED
+		// Auto-submit and pay out bets before notifying clients and webhooks,
+		// as finishQuizSession does. Failures are logged, not counted - state
+		// is already FINISHED, and finishing again from the admin retries.
+		if h.Settler != nil {
+			if err := h.Settler.SettleFinishedSession(ctx, session.ID); err != nil {
+				slog.Error("quiz_scheduler: failed to settle session",
+					"session_id", session.ID,
+					"error", err,
+				)
+			}
+		} else if err := h.DB.Queries.AutoSubmitSessionSubmissions(ctx, session.ID); err != nil {
 			slog.Error("quiz_scheduler: failed to auto-submit submissions",
 				"session_id", session.ID,
 				"error", err,
@@ -240,7 +278,7 @@ func (h *QuizSchedulerHandler) processFinishTransitions(ctx context.Context) (in
 				"quiz_id", session.QuizID,
 				"error", err,
 			)
-			errors++
+			failed++
 			continue
 		}
 
@@ -266,7 +304,7 @@ func (h *QuizSchedulerHandler) processFinishTransitions(ctx context.Context) (in
 		finished++
 	}
 
-	return finished, errors
+	return finished, failed
 }
 
 // dispatchFinishedWebhook builds and dispatches the webhook for a finished session
