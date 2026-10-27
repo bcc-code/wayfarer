@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
+	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/services"
 )
 
@@ -20,10 +21,6 @@ type mockBulkEnrollmentRoles struct {
 
 func (m *mockBulkEnrollmentRoles) CanManageProject(ctx context.Context, userID, projectID string) bool {
 	return m.Called(ctx, userID, projectID).Bool(0)
-}
-
-func (m *mockBulkEnrollmentRoles) HasRole(ctx context.Context, userID string, role services.RoleType) bool {
-	return m.Called(ctx, userID, role).Bool(0)
 }
 
 func (m *mockBulkEnrollmentRoles) LoadUserRoles(ctx context.Context, userID string) ([]*sqlc.UserRole, error) {
@@ -66,13 +63,13 @@ func TestAuthorizeBulkEnrollment(t *testing.T) {
 		q.AssertNotCalled(t, "GetUsersOutsideChurchAdminScope", mock.Anything, mock.Anything)
 	})
 
-	t.Run("m2m may enroll anyone without a scope check", func(t *testing.T) {
+	t.Run("an m2m token may enroll anyone without a role lookup", func(t *testing.T) {
 		roles := &mockBulkEnrollmentRoles{}
 		q := &mockChurchAdminScopeQuerier{}
-		roles.On("CanManageProject", ctx, callerID, projectID).Return(false)
-		roles.On("HasRole", ctx, callerID, services.RoleM2M).Return(true)
+		m2mCtx := context.WithValue(ctx, middleware.UserRolesKey, []string{"m2m"})
 
-		require.NoError(t, authorizeBulkEnrollment(ctx, roles, q, callerID, projectID, userIDs))
+		require.NoError(t, authorizeBulkEnrollment(m2mCtx, roles, q, "M2M_SERVICE", projectID, userIDs))
+		roles.AssertNotCalled(t, "CanManageProject", mock.Anything, mock.Anything, mock.Anything)
 		q.AssertNotCalled(t, "GetUsersOutsideChurchAdminScope", mock.Anything, mock.Anything)
 	})
 
@@ -80,7 +77,6 @@ func TestAuthorizeBulkEnrollment(t *testing.T) {
 		roles := &mockBulkEnrollmentRoles{}
 		q := &mockChurchAdminScopeQuerier{}
 		roles.On("CanManageProject", ctx, callerID, projectID).Return(false)
-		roles.On("HasRole", ctx, callerID, services.RoleM2M).Return(false)
 		roles.On("LoadUserRoles", ctx, callerID).Return(churchAdmin, nil)
 		q.On("GetUsersOutsideChurchAdminScope", ctx, scopeParams).Return([]string{}, nil)
 
@@ -92,7 +88,6 @@ func TestAuthorizeBulkEnrollment(t *testing.T) {
 		roles := &mockBulkEnrollmentRoles{}
 		q := &mockChurchAdminScopeQuerier{}
 		roles.On("CanManageProject", ctx, callerID, projectID).Return(false)
-		roles.On("HasRole", ctx, callerID, services.RoleM2M).Return(false)
 		roles.On("LoadUserRoles", ctx, callerID).Return(churchAdmin, nil)
 		q.On("GetUsersOutsideChurchAdminScope", ctx, scopeParams).Return([]string{userIDs[1]}, nil)
 
@@ -105,7 +100,6 @@ func TestAuthorizeBulkEnrollment(t *testing.T) {
 		roles := &mockBulkEnrollmentRoles{}
 		q := &mockChurchAdminScopeQuerier{}
 		roles.On("CanManageProject", ctx, callerID, projectID).Return(false)
-		roles.On("HasRole", ctx, callerID, services.RoleM2M).Return(false)
 		roles.On("LoadUserRoles", ctx, callerID).Return([]*sqlc.UserRole{{Role: "TEAM_LEAD"}}, nil)
 
 		err := authorizeBulkEnrollment(ctx, roles, q, callerID, projectID, userIDs)
@@ -118,7 +112,6 @@ func TestAuthorizeBulkEnrollment(t *testing.T) {
 		roles := &mockBulkEnrollmentRoles{}
 		q := &mockChurchAdminScopeQuerier{}
 		roles.On("CanManageProject", ctx, callerID, projectID).Return(false)
-		roles.On("HasRole", ctx, callerID, services.RoleM2M).Return(false)
 		roles.On("LoadUserRoles", ctx, callerID).Return(churchAdmin, nil)
 		dbErr := errors.New("connection reset")
 		q.On("GetUsersOutsideChurchAdminScope", ctx, scopeParams).Return(nil, dbErr)

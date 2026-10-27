@@ -143,6 +143,15 @@ func TestBulkEnrollAuthorization(t *testing.T) {
 		assert.True(t, enrolled(otherProject))
 	})
 
+	t.Run("m2m may enroll anyone", func(t *testing.T) {
+		m2mToken, err := testutil.GenerateM2MToken()
+		require.NoError(t, err)
+		exec(`DELETE FROM user_challenge_enrollments WHERE user_id = $1 AND challenge_id = $2`, otherMember, challengeID)
+
+		assert.Empty(t, enroll(m2mToken, map[string]any{"userIds": []string{otherMember}}))
+		assert.True(t, enrolled(otherMember))
+	})
+
 	t.Run("bulk enroll returns only newly enrolled users", func(t *testing.T) {
 		users := []string{teamMate, ownMember} // ownMember is already enrolled
 		first, err := dbMgr.DB.Queries.BulkEnrollUsersInChallenge(ctx, sqlc.BulkEnrollUsersInChallengeParams{

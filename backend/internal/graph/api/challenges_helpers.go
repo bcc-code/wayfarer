@@ -3,9 +3,11 @@ package api
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/services"
 )
 
@@ -82,7 +84,6 @@ func (r *mutationResolver) resolveEnrollmentTarget(ctx context.Context, target m
 // bulkEnrollmentRoles is the role lookups authorizeBulkEnrollment needs.
 type bulkEnrollmentRoles interface {
 	CanManageProject(ctx context.Context, userID, projectID string) bool
-	HasRole(ctx context.Context, userID string, role services.RoleType) bool
 	LoadUserRoles(ctx context.Context, userID string) ([]*sqlc.UserRole, error)
 }
 
@@ -98,7 +99,12 @@ type churchAdminScopeQuerier interface {
 // member from one of those churches (the kickoff enrolls the leads of such
 // teams). The request is rejected as a whole if any user is outside that.
 func authorizeBulkEnrollment(ctx context.Context, roles bulkEnrollmentRoles, q churchAdminScopeQuerier, callerID, projectID string, userIDs []string) error {
-	if roles.CanManageProject(ctx, callerID, projectID) || roles.HasRole(ctx, callerID, services.RoleM2M) {
+	// m2m comes from the token, as in @requireRole: M2M callers have no
+	// user_roles row to look up.
+	if slices.Contains(middleware.GetUserRoles(ctx), "m2m") {
+		return nil
+	}
+	if roles.CanManageProject(ctx, callerID, projectID) {
 		return nil
 	}
 
