@@ -1266,6 +1266,95 @@ func TestQuizBettingEdgeCases(t *testing.T) {
 		assertSettled(t, r, -100) // the reversed order stood: wrong, default bet lost
 	})
 
+	t.Run("updateQuizAnswer on a PREDEFINED bet", func(t *testing.T) {
+		p := newPlayer(t)
+		setScore(t, p.id, 100)
+		quizID := newQuiz(t, "Update predefined bet", nil)
+		q := addPredefined(t, quizID, 0, nil)
+		sessionID := openSession(t, quizID, p)
+		sub := start(t, p, sessionID)
+		r := submit(t, p, sub, map[string]any{"questionId": q.ID, "selectedAnswerIds": []string{q.Wrong}, "betAmount": 60})
+
+		update := func(input map[string]any) string {
+			return exec(t, p.token, `mutation($id: ID!, $input: UpdateQuizAnswerInput!) {
+				updateQuizAnswer(responseId: $id, input: $input) { id }
+			}`, map[string]any{"id": r, "input": input}, nil)
+		}
+
+		assert.False(t, *response(t, r).IsCorrect)
+
+		// Switching to the right answer regrades it and replaces the bet
+		assert.Empty(t, update(map[string]any{"selectedAnswerIds": []string{q.Right}, "betAmount": 100}))
+		assert.True(t, *response(t, r).IsCorrect)
+		assert.Equal(t, int32(100), *response(t, r).BetAmount)
+
+		// Changing only the bet leaves the stored answer in place
+		assert.Empty(t, update(map[string]any{"betAmount": 40}))
+		assert.True(t, *response(t, r).IsCorrect)
+		assert.Equal(t, int32(40), *response(t, r).BetAmount)
+
+		// And back to wrong, so the regrade is not one-way
+		assert.Empty(t, update(map[string]any{"selectedAnswerIds": []string{q.Wrong}}))
+		assert.False(t, *response(t, r).IsCorrect)
+
+		assert.Contains(t, update(map[string]any{"betAmount": 101}), "exceeds available points (100)")
+		assert.Contains(t, update(map[string]any{"submittedOrder": []string{"X"}}), "cannot set a ORDERING answer on a PREDEFINED question")
+
+		lock(t, sessionID)
+		assert.Contains(t, update(map[string]any{"selectedAnswerIds": []string{q.Right}}), "quiz session is LOCKED")
+		finish(t, sessionID)
+		assertSettled(t, r, -40) // the wrong answer stood: bet lost
+	})
+
+	t.Run("updateQuizAnswer on FREE_TEXT and NUMBER answers", func(t *testing.T) {
+		p := newPlayer(t)
+		setScore(t, p.id, 200)
+		quizID := newQuiz(t, "Update other types", nil)
+		freeTextID := addQuestion(t, quizID, map[string]any{
+			"questionType": "FREE_TEXT", "questionText": "Why?", "questionOrder": 0, "bettingEnabled": true,
+		})
+		numberID := addQuestion(t, quizID, map[string]any{
+			"questionType": "NUMBER", "questionText": "How many?", "questionOrder": 1, "bettingEnabled": true,
+			"minValue": 0, "maxValue": 100, "stepValue": 1,
+		})
+		sessionID := openSession(t, quizID, p)
+		sub := start(t, p, sessionID)
+		rText := submit(t, p, sub, map[string]any{"questionId": freeTextID, "textResponse": "first", "betAmount": 50})
+		rNumber := submit(t, p, sub, map[string]any{"questionId": numberID, "numberResponse": 10.0, "betAmount": 50})
+
+		update := func(id string, input map[string]any) string {
+			return exec(t, p.token, `mutation($id: ID!, $input: UpdateQuizAnswerInput!) {
+				updateQuizAnswer(responseId: $id, input: $input) {
+					... on FreeTextResponse { textResponse }
+					... on NumberResponse { numberResponse }
+				}
+			}`, map[string]any{"id": id, "input": input}, nil)
+		}
+
+		assert.Empty(t, update(rText, map[string]any{"textResponse": "second", "betAmount": 70}))
+		assert.Empty(t, update(rNumber, map[string]any{"numberResponse": 99.0}))
+
+		// Ungraded types stay ungraded however often the answer changes
+		assert.Nil(t, response(t, rText).IsCorrect)
+		assert.Nil(t, response(t, rNumber).IsCorrect)
+		assert.Equal(t, int32(70), *response(t, rText).BetAmount)
+	})
+
+	t.Run("updateQuizAnswer rejects an update with neither answer nor bet", func(t *testing.T) {
+		p := newPlayer(t)
+		setScore(t, p.id, 100)
+		quizID := newQuiz(t, "Empty update", nil)
+		q := addPredefined(t, quizID, 0, nil)
+		sessionID := openSession(t, quizID, p)
+		sub := start(t, p, sessionID)
+		r := submit(t, p, sub, map[string]any{"questionId": q.ID, "selectedAnswerIds": []string{q.Right}, "betAmount": 10})
+
+		msg := exec(t, p.token, `mutation($id: ID!, $input: UpdateQuizAnswerInput!) {
+			updateQuizAnswer(responseId: $id, input: $input) { id }
+		}`, map[string]any{"id": r, "input": map[string]any{}}, nil)
+		assert.Contains(t, msg, "no answer or bet given to update")
+	})
+
 	// ============================================================ payouts
 
 	t.Run("multiplier edge values", func(t *testing.T) {

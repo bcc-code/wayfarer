@@ -11981,7 +11981,14 @@ input SubmitQuizAnswerInput {
 }
 
 input UpdateQuizAnswerInput {
-    submittedOrder: [ID!]  # For ordering questions
+    # The answer fields mirror SubmitQuizAnswerInput; supply the one matching
+    # the question's type. Omit them all to change only the bet.
+    selectedAnswerIds: [ID!]
+    textResponse: String
+    numberResponse: Float
+    jsonResponse: JSON
+    submittedOrder: [ID!]
+
     betAmount: Int
 }
 
@@ -65673,13 +65680,41 @@ func (ec *executionContext) unmarshalInputUpdateQuizAnswerInput(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"submittedOrder", "betAmount"}
+	fieldsInOrder := [...]string{"selectedAnswerIds", "textResponse", "numberResponse", "jsonResponse", "submittedOrder", "betAmount"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "selectedAnswerIds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("selectedAnswerIds"))
+			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SelectedAnswerIds = data
+		case "textResponse":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("textResponse"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TextResponse = data
+		case "numberResponse":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("numberResponse"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NumberResponse = data
+		case "jsonResponse":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("jsonResponse"))
+			data, err := ec.unmarshalOJSON2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.JSONResponse = data
 		case "submittedOrder":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("submittedOrder"))
 			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)

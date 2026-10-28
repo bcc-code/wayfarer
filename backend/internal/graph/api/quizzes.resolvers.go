@@ -1194,30 +1194,36 @@ func (r *mutationResolver) UpdateQuizAnswer(ctx context.Context, responseID stri
 		params.Betamount = &betAmount
 	}
 
-	// Only handle ORDERING questions for now
-	if question.QuestionType == "ORDERING" && input.SubmittedOrder != nil {
-		// Store submitted order as JSON
-		orderJSON, _ := json.Marshal(input.SubmittedOrder)
-		params.Jsonresponse = orderJSON
+	// Apply the answer field matching the question's type, if one was given.
+	// A request carrying only a bet leaves the stored answer untouched.
+	answerChanged, err := applyAnswerUpdate(&params, question.QuestionType, input)
+	if err != nil {
+		otel.RecordError(span, err)
+		return nil, err
+	}
 
-		// Calculate correctness (all or nothing)
+	if answerChanged {
 		params.Iscorrect, err = gradeQuizResponse(ctx, r.Loaders, question.QuestionType, existingResponse.QuestionID, quizgrading.Response{
-			SubmittedOrder: input.SubmittedOrder,
+			SelectedAnswerIDs: input.SelectedAnswerIds,
+			SubmittedOrder:    input.SubmittedOrder,
 		})
 		if err != nil {
 			otel.RecordError(span, err)
 			return nil, fmt.Errorf("failed to grade answer: %w", err)
 		}
 
-		// Calculate points_earned for correct answers
-		if *params.Iscorrect && question.Points != nil {
-			params.Pointsearned = question.Points
-		} else {
-			zero := int32(0)
-			params.Pointsearned = &zero
+		// Always written, so changing a correct answer to a wrong one clears
+		// the points the old answer earned. UpdateQuizResponse coalesces, so a
+		// nil here would keep them.
+		points := int32(0)
+		if params.Iscorrect != nil && *params.Iscorrect && question.Points != nil {
+			points = *question.Points
 		}
-	} else {
-		return nil, fmt.Errorf("update not supported for this question type")
+		params.Pointsearned = &points
+	}
+
+	if !answerChanged && input.BetAmount == nil {
+		return nil, fmt.Errorf("no answer or bet given to update")
 	}
 
 	// Update the response under the submission lock

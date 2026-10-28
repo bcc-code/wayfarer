@@ -389,6 +389,56 @@ OrderingResponse` type ladders around `response.isCorrect` are gone too, since t
 Note these keys were changed locally; if the locale files are managed through Phrase, the rename
 needs pushing there too.
 
+### 2026-10-27 — one betting flow for every question type, and a home for the result
+
+Closes findings 1, 3 and 4 in `[[betting-frontend-genericity]]` and finding 3 here. The rule is
+now uniform: **while the session is OPEN the answer and the bet can both be changed as often as
+the user likes; locking the session freezes them.**
+
+**Backend — `updateQuizAnswer` works for every type.** It used to end in
+`return nil, fmt.Errorf("update not supported for this question type")` for anything but ORDERING.
+`UpdateQuizAnswerInput` now carries the same answer fields as `SubmitQuizAnswerInput`, and
+`applyAnswerUpdate` (`graph/api/quiz_answers.go`) applies the one matching the question's type.
+
+- An answer field belonging to another type is rejected rather than ignored — it means the caller
+  and the question disagree about what is being answered.
+- An update with neither an answer nor a bet is rejected.
+- `points_earned` is always rewritten when the answer changes, so switching from a correct answer
+  to a wrong one clears the points. `UpdateQuizResponse` coalesces every column, so leaving it nil
+  would keep the old value.
+- Regrading runs through the same `gradeQuizResponse` as submit, so an answer revised to wrong
+  settles as wrong.
+
+**Frontend — `useQuizSessionAnswer`** (`layers/user/app/composables/`) holds the session half of
+answering: the action mode, `isBetSaved` / `isEditing` / `savedResponseId`, and a `saveAnswer`
+that submits the first time and updates thereafter. Question components supply only their own
+answer shape via `buildAnswer`. PREDEFINED now uses it, with `canChangeBet: true`.
+
+Two divergences that made ORDERING and PREDEFINED behave differently are gone:
+
+- `isAnswerConfirmed` was a `ref` initialised per type — `props.readonly ?? false` for ORDERING but
+  `props.readonly || Boolean(props.existingResponse)` for PREDEFINED. So a PREDEFINED answer came
+  back from a reload already "confirmed", which hid the betting module and blocked any change. It
+  is now derived from the action mode, and inside a session an answer is never confirmed until the
+  session locks.
+- `resolveFooterState`'s `session-locked` branch hid the betting module behind
+  `!actionState.isAnswerLocked`. A locked session freezes the bet, so the module is a read-only
+  summary and always shown.
+
+**`hasSettledBet` replaces `isSingleOrderingQuestion`.** `resolveQuizViewState` showed the inline
+question view on FINISHED only for a single ORDERING question — the PC26 special case — so every
+other type's bet was paid out and never shown. It now shows it whenever a response carries a bet
+with a `settledBetMultiplier`, which is what the result screen needs to render.
+
+Still open: NUMBER and FREE_TEXT keep `mode: props.readonly ? 'review' : 'normal'` and have not
+been moved onto the composable, so betting stays inert for them (the backend does not settle their
+bets either — they are not graded). JSON remains a stub.
+
+Tests: `applyAnswerUpdate` unit tests; e2e `updateQuizAnswer` on PREDEFINED (regrade both ways,
+bet-only update, cross-type rejection, rejected once LOCKED, settles on the final answer), on
+FREE_TEXT/NUMBER, and the empty-update rejection; component tests for the OPEN-session flow on
+PREDEFINED; `useQuizViewState` tests migrated to `hasSettledBet`.
+
 ## Suggested order of work, if this is to be made properly generic
 
 1. Extract settlement out of `ladder_to_heaven` into a shared service; define a per-question-type
@@ -397,9 +447,10 @@ needs pushing there too.
 2. ~~Fix `ValidateBet`'s zero-bet handling to match its documented contract~~ (done 2026-10-09);
    delete or wire up `ExtractBetConfigFromQuestion`.
    ~~Gate `QuizPredefinedAnswer.isCorrect`~~ (done 2026-10-27).
-3. Give every question component a real `session-betting` action mode (or hoist betting out of
-   the per-type action state entirely — it is question-type-independent by nature).
-4. Generalize `updateQuizResponse` beyond ORDERING.
+3. ~~Give every question component a real `session-betting` action mode (or hoist betting out of
+   the per-type action state entirely)~~ (done 2026-10-27 for PREDEFINED and ORDERING via
+   `useQuizSessionAnswer`; NUMBER and FREE_TEXT still to move).
+4. ~~Generalize `updateQuizResponse` beyond ORDERING~~ (done 2026-10-27).
 5. ~~Replace `correctCount`/`totalCount` on `QuizBettingModule` with a type-neutral outcome input;
    take the multiplier from the API rather than re-deriving it~~ (done 2026-10-27).
 6. Clean the i18n: remove the 4 unused keys, fix `yourPoints`, reword `correctCount` for

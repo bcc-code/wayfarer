@@ -2455,8 +2455,12 @@ type UpdateQuizAchievementInput struct {
 }
 
 type UpdateQuizAnswerInput struct {
-	SubmittedOrder []string `json:"submittedOrder,omitempty"`
-	BetAmount      *int     `json:"betAmount,omitempty"`
+	SelectedAnswerIds []string `json:"selectedAnswerIds,omitempty"`
+	TextResponse      *string  `json:"textResponse,omitempty"`
+	NumberResponse    *float64 `json:"numberResponse,omitempty"`
+	JSONResponse      *string  `json:"jsonResponse,omitempty"`
+	SubmittedOrder    []string `json:"submittedOrder,omitempty"`
+	BetAmount         *int     `json:"betAmount,omitempty"`
 }
 
 type UpdateQuizInput struct {

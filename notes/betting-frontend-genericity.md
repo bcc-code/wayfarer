@@ -52,6 +52,8 @@ See `[[betting-module-genericity-review]]` for the original full-stack review (2
 
 ### 1. `QuizChallenge.vue:315` still routes results on "single ORDERING question"
 
+> **Resolved 2026-10-27.**
+
 ```ts
 // Special case for PC26 Game Night betting
 const isSingleOrderingQuestion = computed(
@@ -122,6 +124,8 @@ betting out of `QuizActionState` (or giving every component the same three sessi
 this whole class of bug.
 
 ### 4. PREDEFINED bets are one-shot
+
+> **Resolved 2026-10-27.**
 
 `QuizPredefinedQuestion.vue:152` pins `canChangeBet: false` while `QuizOrderingQuestion.vue:301`
 sets `true`. There is no product reason recorded for the difference; it reads as "ORDERING was the
@@ -221,9 +225,9 @@ Worth stating plainly, since most of the above is negative:
 
 Ordered so each step is independently shippable:
 
-1. **Give betting results a home outside the single-ORDERING layout.** Either show the bet outcome
-   on `QuizResult.vue`, or drop `isSingleOrderingQuestion` in favour of "FINISHED + any question had
-   a bet". Without this, PREDEFINED betting is invisible to users. (Fixes 1.)
+1. ~~**Give betting results a home outside the single-ORDERING layout.**~~ (done 2026-10-27:
+   `isSingleOrderingQuestion` is replaced by `hasSettledBet` — FINISHED shows the inline question
+   view whenever a response carries a settled bet.) (Fixed 1.)
 2. ~~**Take correctness and the multiplier from the API.**~~ (done 2026-10-27, in two parts:
    the `isCorrect` gate and interface hoist in the morning, then the result screen itself.)
    `QuizBettingModule` now takes `outcome` + `multiplier`; `bettingCorrectCount` /
@@ -231,7 +235,9 @@ Ordered so each step is independently shippable:
    `QuizResponse.settledBetMultiplier`. (Fixed 2, 6, 7 — see the 2026-10-27 entries in
    `[[betting-module-genericity-review]]`.)
 3. **Hoist betting out of the per-type action state** so the slider follows the session, not the
-   question component. (Fixes 3, and most of 4.)
+   question component. ~~(Fixes 3, and most of 4.)~~ Done 2026-10-27 for PREDEFINED and ORDERING
+   via `useQuizSessionAnswer`; NUMBER and FREE_TEXT still sit on `mode: 'normal'`, so finding 3
+   stands for those two.
 4. **Expose `availableBetPoints`** and feed it to `:available-points`. (Fixes 5.)
 5. **Admin:** multiplier fields, a hint (or a disable) for types that can't bet, honour the
    `clear*` flags backend-side. (Fixes 9.)

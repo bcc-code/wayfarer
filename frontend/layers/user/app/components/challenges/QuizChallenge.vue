@@ -307,10 +307,17 @@ const sessionState = computed(() => {
 })
 
 // Special case for PC26 Game Night betting
-const isSingleOrderingQuestion = computed(() => {
-  return (
-    questions.value.length === 1 &&
-    questions.value[0]?.__typename === 'OrderingQuestion'
+/**
+ * A bet that has been settled needs the inline question view to show its
+ * result; the score screen says nothing about betting. Replaces the old
+ * "single ORDERING question" special case, which left every other question
+ * type's bet paid out but never shown.
+ */
+const hasSettledBet = computed(() => {
+  const submission = activeSubmission.value ?? completedSubmission.value
+  if (!submission || !('responses' in submission)) return false
+  return submission.responses.some(
+    (r) => (r.betAmount ?? 0) > 0 && r.settledBetMultiplier !== null,
   )
 })
 
@@ -322,7 +329,7 @@ const viewState = computed(() =>
     hasCompletedSubmission: completedSubmission.value !== undefined,
     canStartQuiz: canStartQuiz.value,
     sessionState: sessionState.value,
-    isSingleOrderingQuestion: isSingleOrderingQuestion.value,
+    hasSettledBet: hasSettledBet.value,
     hasCurrentQuestion: currentQuestion.value !== undefined,
     isNotSubmitted: isNotSubmitted.value,
     isQuizUnavailable: isQuizUnavailable.value,

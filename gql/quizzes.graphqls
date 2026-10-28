@@ -435,7 +435,14 @@ input SubmitQuizAnswerInput {
 }
 
 input UpdateQuizAnswerInput {
-    submittedOrder: [ID!]  # For ordering questions
+    # The answer fields mirror SubmitQuizAnswerInput; supply the one matching
+    # the question's type. Omit them all to change only the bet.
+    selectedAnswerIds: [ID!]
+    textResponse: String
+    numberResponse: Float
+    jsonResponse: JSON
+    submittedOrder: [ID!]
+
     betAmount: Int
 }
 
