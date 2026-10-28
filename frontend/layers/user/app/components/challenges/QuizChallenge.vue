@@ -307,12 +307,8 @@ const sessionState = computed(() => {
 })
 
 // Special case for PC26 Game Night betting
-/**
- * A bet that has been settled needs the inline question view to show its
- * result; the score screen says nothing about betting. Replaces the old
- * "single ORDERING question" special case, which left every other question
- * type's bet paid out but never shown.
- */
+// The score screen says nothing about betting, so a settled bet needs the
+// inline question view to show its result.
 const hasSettledBet = computed(() => {
   const submission = activeSubmission.value ?? completedSubmission.value
   if (!submission || !('responses' in submission)) return false
@@ -336,8 +332,16 @@ const viewState = computed(() =>
   }),
 )
 
-// The backend grades every question type and settles the bet on that verdict,
-// so the result screen reads it rather than regrading in the browser.
+// Replacing a bet releases the old stake, so it must not count against itself.
+const availableBetPoints = computed(() => {
+  const available = props.challenge.quiz.userAvailableBetPoints
+  if (available === null || available === undefined)
+    return userScoreFallback.value
+  return available + (currentResponse.value?.betAmount ?? 0)
+})
+
+const userScoreFallback = computed(() => props.userScore ?? 0)
+
 const bettingOutcome = computed<'correct' | 'incorrect' | null>(() => {
   const isCorrect = currentResponse.value?.isCorrect
   if (isCorrect === null || isCorrect === undefined) return null
@@ -788,7 +792,7 @@ const progressResults = computed(() => {
             footerState.bettingModule.mode === 'betting'
           "
           v-model="currentBetAmount"
-          :available-points="userScore ?? 0"
+          :available-points="availableBetPoints"
           :min-percentage="currentQuestion?.bettingMinPercentage"
           :max-percentage="currentQuestion?.bettingMaxPercentage"
           :min-absolute="currentQuestion?.bettingMinAbsolute"
@@ -802,7 +806,7 @@ const progressResults = computed(() => {
             footerState.bettingModule.mode === 'locked'
           "
           v-model="currentBetAmount"
-          :available-points="userScore ?? 0"
+          :available-points="availableBetPoints"
           :min-percentage="currentQuestion?.bettingMinPercentage"
           :max-percentage="currentQuestion?.bettingMaxPercentage"
           :min-absolute="currentQuestion?.bettingMinAbsolute"
@@ -818,7 +822,7 @@ const progressResults = computed(() => {
           mode="results"
           :points-earned="currentResponse?.pointsEarned"
           :bet-amount="currentResponse?.betAmount"
-          :available-points="userScore ?? 0"
+          :available-points="availableBetPoints"
           :outcome="bettingOutcome"
           :multiplier="currentResponse?.settledBetMultiplier"
         />

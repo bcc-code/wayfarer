@@ -32,6 +32,7 @@ query ChallengePage($challengeId: ID!) {
         completionPoints
         endTime
         userCanStart
+        userAvailableBetPoints
         userActiveSubmission {
           id
         }

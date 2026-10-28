@@ -1429,6 +1429,68 @@ func TestQuizBettingEdgeCases(t *testing.T) {
 		assert.Contains(t, msg, "bettingMultiplierCorrect")
 	})
 
+	t.Run("userAvailableBetPoints matches what the bet validation enforces", func(t *testing.T) {
+		p := newPlayer(t)
+		setScore(t, p.id, 100)
+		quizID := newQuiz(t, "Available points", nil)
+		q1 := addPredefined(t, quizID, 0, nil)
+		q2 := addPredefined(t, quizID, 1, nil)
+		sessionID := openSession(t, quizID, p)
+		sub := start(t, p, sessionID)
+
+		available := func() *int {
+			var res struct {
+				Quiz struct {
+					UserAvailableBetPoints *int `json:"userAvailableBetPoints"`
+				} `json:"quiz"`
+			}
+			exec(t, p.token, `query($id: ID!) { quiz(id: $id) { userAvailableBetPoints } }`,
+				map[string]any{"id": quizID}, &res)
+			return res.Quiz.UserAvailableBetPoints
+		}
+
+		require.NotNil(t, available())
+		assert.Equal(t, 100, *available(), "the whole score is available before any bet")
+
+		submit(t, p, sub, map[string]any{"questionId": q1.ID, "selectedAnswerIds": []string{q1.Right}, "betAmount": 60})
+		assert.Equal(t, 40, *available(), "an open stake is no longer available")
+
+		msg := exec(t, p.token, `mutation($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
+			submitQuizAnswer(submissionId: $submissionId, input: $input) { id }
+		}`, map[string]any{"submissionId": sub, "input": map[string]any{
+			"questionId": q2.ID, "selectedAnswerIds": []string{q2.Right}, "betAmount": 41,
+		}}, nil)
+		assert.Contains(t, msg, "exceeds available points (40)")
+
+		submit(t, p, sub, map[string]any{"questionId": q2.ID, "selectedAnswerIds": []string{q2.Right}, "betAmount": 40})
+		assert.Equal(t, 0, *available())
+
+		lockAndFinish(t, sessionID)
+		assert.Equal(t, score(t, p.id), *available())
+	})
+
+	t.Run("userAvailableBetPoints is per viewer, not per quiz", func(t *testing.T) {
+		p := newPlayer(t)
+		setScore(t, p.id, 250)
+		quizID := newQuiz(t, "Available points per viewer", nil)
+
+		read := func(token string) *int {
+			var res struct {
+				Quiz struct {
+					UserAvailableBetPoints *int `json:"userAvailableBetPoints"`
+				} `json:"quiz"`
+			}
+			exec(t, token, `query($id: ID!) { quiz(id: $id) { userAvailableBetPoints } }`,
+				map[string]any{"id": quizID}, &res)
+			return res.Quiz.UserAvailableBetPoints
+		}
+
+		require.NotNil(t, read(p.token))
+		assert.Equal(t, 250, *read(p.token))
+		require.NotNil(t, read(adminToken))
+		assert.NotEqual(t, 250, *read(adminToken))
+	})
+
 	// ============================================================ payouts
 
 	t.Run("multiplier edge values", func(t *testing.T) {

@@ -1056,26 +1056,27 @@ type ComplexityRoot struct {
 	}
 
 	Quiz struct {
-		AllowRetakes         func(childComplexity int) int
-		Challenge            func(childComplexity int) int
-		CompletionPoints     func(childComplexity int) int
-		Description          func(childComplexity int) int
-		EndTime              func(childComplexity int) int
-		ID                   func(childComplexity int) int
-		Image                func(childComplexity int) int
-		Name                 func(childComplexity int) int
-		Project              func(childComplexity int) int
-		Questions            func(childComplexity int) int
-		RandomizeQuestions   func(childComplexity int) int
-		RevealCorrectAnswers func(childComplexity int) int
-		Sessions             func(childComplexity int, state *model.QuizSessionState) int
-		TimeoutSeconds       func(childComplexity int) int
-		TranslationStatus    func(childComplexity int) int
-		UserActiveSession    func(childComplexity int) int
-		UserActiveSubmission func(childComplexity int) int
-		UserCanStart         func(childComplexity int) int
-		UserSessions         func(childComplexity int) int
-		UserSubmissions      func(childComplexity int) int
+		AllowRetakes           func(childComplexity int) int
+		Challenge              func(childComplexity int) int
+		CompletionPoints       func(childComplexity int) int
+		Description            func(childComplexity int) int
+		EndTime                func(childComplexity int) int
+		ID                     func(childComplexity int) int
+		Image                  func(childComplexity int) int
+		Name                   func(childComplexity int) int
+		Project                func(childComplexity int) int
+		Questions              func(childComplexity int) int
+		RandomizeQuestions     func(childComplexity int) int
+		RevealCorrectAnswers   func(childComplexity int) int
+		Sessions               func(childComplexity int, state *model.QuizSessionState) int
+		TimeoutSeconds         func(childComplexity int) int
+		TranslationStatus      func(childComplexity int) int
+		UserActiveSession      func(childComplexity int) int
+		UserActiveSubmission   func(childComplexity int) int
+		UserAvailableBetPoints func(childComplexity int) int
+		UserCanStart           func(childComplexity int) int
+		UserSessions           func(childComplexity int) int
+		UserSubmissions        func(childComplexity int) int
 	}
 
 	QuizAchievement struct {
@@ -1930,6 +1931,7 @@ type QuizResolver interface {
 	UserSubmissions(ctx context.Context, obj *model.Quiz) ([]model.QuizSubmission, error)
 	UserCanStart(ctx context.Context, obj *model.Quiz) (bool, error)
 	UserActiveSubmission(ctx context.Context, obj *model.Quiz) (*model.QuizSubmission, error)
+	UserAvailableBetPoints(ctx context.Context, obj *model.Quiz) (*int, error)
 	Sessions(ctx context.Context, obj *model.Quiz, state *model.QuizSessionState) ([]model.QuizSession, error)
 	UserSessions(ctx context.Context, obj *model.Quiz) ([]model.QuizSession, error)
 	UserActiveSession(ctx context.Context, obj *model.Quiz) (*model.QuizSession, error)
@@ -7559,6 +7561,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Quiz.UserActiveSubmission(childComplexity), true
+	case "Quiz.userAvailableBetPoints":
+		if e.complexity.Quiz.UserAvailableBetPoints == nil {
+			break
+		}
+
+		return e.complexity.Quiz.UserAvailableBetPoints(childComplexity), true
 	case "Quiz.userCanStart":
 		if e.complexity.Quiz.UserCanStart == nil {
 			break
@@ -11589,6 +11597,9 @@ type Quiz {
     userSubmissions: [QuizSubmission!]! @goField(forceResolver: true)
     userCanStart: Boolean! @goField(forceResolver: true)
     userActiveSubmission: QuizSubmission @goField(forceResolver: true)
+
+    # Score minus the stakes the signed-in user has open. Null without a user.
+    userAvailableBetPoints: Int @goField(forceResolver: true)
 
     # Session-based access (new)
     sessions(state: QuizSessionState): [QuizSession!]! @goField(forceResolver: true)
@@ -23224,6 +23235,8 @@ func (ec *executionContext) fieldContext_FreeTextQuestion_quiz(_ context.Context
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -24363,6 +24376,8 @@ func (ec *executionContext) fieldContext_JsonQuestion_quiz(_ context.Context, fi
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -34395,6 +34410,8 @@ func (ec *executionContext) fieldContext_Mutation_createQuiz(ctx context.Context
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -34496,6 +34513,8 @@ func (ec *executionContext) fieldContext_Mutation_updateQuiz(ctx context.Context
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -37880,6 +37899,8 @@ func (ec *executionContext) fieldContext_NumberQuestion_quiz(_ context.Context, 
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -39176,6 +39197,8 @@ func (ec *executionContext) fieldContext_OrderingQuestion_quiz(_ context.Context
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -41102,6 +41125,8 @@ func (ec *executionContext) fieldContext_PredefinedQuestion_quiz(_ context.Conte
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -45747,6 +45772,8 @@ func (ec *executionContext) fieldContext_Query_quiz(ctx context.Context, field g
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -48246,6 +48273,35 @@ func (ec *executionContext) fieldContext_Quiz_userActiveSubmission(_ context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _Quiz_userAvailableBetPoints(ctx context.Context, field graphql.CollectedField, obj *model.Quiz) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Quiz_userAvailableBetPoints,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Quiz().UserAvailableBetPoints(ctx, obj)
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Quiz_userAvailableBetPoints(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Quiz",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Quiz_sessions(ctx context.Context, field graphql.CollectedField, obj *model.Quiz) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -49138,6 +49194,8 @@ func (ec *executionContext) fieldContext_QuizAchievement_quiz(_ context.Context,
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -49916,6 +49974,8 @@ func (ec *executionContext) fieldContext_QuizChallenge_quiz(_ context.Context, f
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -50119,6 +50179,8 @@ func (ec *executionContext) fieldContext_QuizEdge_node(_ context.Context, field 
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -50515,6 +50577,8 @@ func (ec *executionContext) fieldContext_QuizResults_quiz(_ context.Context, fie
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -50818,6 +50882,8 @@ func (ec *executionContext) fieldContext_QuizSession_quiz(_ context.Context, fie
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -51317,6 +51383,8 @@ func (ec *executionContext) fieldContext_QuizSubmission_quiz(_ context.Context, 
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -77572,6 +77640,39 @@ func (ec *executionContext) _Quiz(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._Quiz_userActiveSubmission(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "userAvailableBetPoints":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Quiz_userAvailableBetPoints(ctx, field, obj)
 				return res
 			}
 

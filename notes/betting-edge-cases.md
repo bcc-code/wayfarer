@@ -72,8 +72,9 @@ Voiding a bet (question deleted, submission reset while OPEN, no answer given) i
 
 ## Open / follow-ups
 
-- The client doesn't know about open stakes: expose the available points (e.g. `availableBetPoints`)
-  so the bet maximum in the UI matches the server.
+- ~~The client doesn't know about open stakes: expose the available points (e.g. `availableBetPoints`)
+  so the bet maximum in the UI matches the server.~~ Done 2026-10-28 as `Quiz.userAvailableBetPoints`;
+  see the entry in `[[betting-module-genericity-review]]`.
 - Refund reason is translated for `en` and `nb`; other languages fall back to the default (`nb`).
 - Small window: an admin edit checks open bets, then commits; a bet placed in between isn't seen. Rare
   (admin edits during live betting), not locked on purpose.

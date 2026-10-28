@@ -472,6 +472,33 @@ Still open: the user is not shown the odds *before* betting (the remaining half 
 the configured curve is selected by the admin fragment only, and no player-facing query or
 component reads it.
 
+### 2026-10-28 — the slider is bounded by what the server will accept
+
+Closes finding 5 in `[[betting-frontend-genericity]]` and the open follow-up in
+`[[betting-edge-cases]]` (R1).
+
+The slider's maximum was `myCurrentProject.myPoints` — the raw project score — while `ValidateBet`
+enforces score minus open stakes. With one betting question per session the two never diverged.
+They do now: a multi-question betting quiz is configurable from the admin editor, and bets can be
+revised while the session is OPEN, so a user with an open stake was offered a range the server
+would reject, and only found out on submit. Percentage limits compounded it, taking a percentage
+of the wrong base.
+
+- **`Quiz.userAvailableBetPoints: Int`** exposes the figure `availableBetPoints` already computed
+  for validation (`graph/api/quiz_betting.go`), so there is one definition of which stakes count
+  as open. Null without a signed-in user. Resolved per quiz, not per question — the challenge page
+  loads one quiz, so it costs one query and needs no loader. It reads outside a transaction: it is
+  an indication for the UI, and the authoritative check still runs under the user's submission
+  locks on submit.
+- **The frontend adds back the stake already placed on the current question.** Replacing a bet
+  releases the old one, so it must not compete with itself. Inside an OPEN session a stored bet is
+  always still open and the slider only exists there, which is what makes that one line safe.
+  Missing field falls back to the raw score — the previous behaviour, only ever too generous.
+
+Tests: e2e asserting the field tracks stakes as they are placed, that the number it reports is
+exactly the cap the next bet is rejected against, that settling releases it, and that it is per
+viewer; component tests for the ceiling, the add-back and the fallback.
+
 ## Suggested order of work, if this is to be made properly generic
 
 1. Extract settlement out of `ladder_to_heaven` into a shared service; define a per-question-type

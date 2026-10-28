@@ -135,6 +135,8 @@ one that got built". The backend allows updating the answer and the bet while th
 
 ### 5. The slider's maximum doesn't match the server's
 
+> **Resolved 2026-10-28:** `Quiz.userAvailableBetPoints`.
+
 `challenges/[challengeId].vue:78` passes `:user-score="data.myCurrentProject?.myPoints ?? 0"`, and
 that value goes straight into `:available-points` (`QuizChallenge.vue:810`, `:824`, `:840`). The
 backend validates against **score − open stakes** (`GetUserAvailableBetPoints`, R1).
@@ -242,7 +244,8 @@ Ordered so each step is independently shippable:
    question component. ~~(Fixes 3, and most of 4.)~~ Done 2026-10-27 for PREDEFINED and ORDERING
    via `useQuizSessionAnswer`; NUMBER and FREE_TEXT still sit on `mode: 'normal'`, so finding 3
    stands for those two.
-4. **Expose `availableBetPoints`** and feed it to `:available-points`. (Fixes 5.)
+4. ~~**Expose `availableBetPoints`** and feed it to `:available-points`~~ (done 2026-10-28,
+   as `Quiz.userAvailableBetPoints`). (Fixed 5.)
 5. **Admin:** ~~multiplier fields~~, ~~honour the `clear*` flags backend-side~~ (both done
    2026-10-28). Remaining: a hint (or a disable) for types that can't bet. (Fixes 9.)
 6. **i18n cleanup:** drop the 4 dead keys from 14 files, fix `yourPoints`, reword `correctCount`.

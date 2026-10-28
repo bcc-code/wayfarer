@@ -44,6 +44,9 @@ type Quiz {
     userCanStart: Boolean! @goField(forceResolver: true)
     userActiveSubmission: QuizSubmission @goField(forceResolver: true)
 
+    # Score minus the stakes the signed-in user has open. Null without a user.
+    userAvailableBetPoints: Int @goField(forceResolver: true)
+
     # Session-based access (new)
     sessions(state: QuizSessionState): [QuizSession!]! @goField(forceResolver: true)
     userSessions: [QuizSession!]! @goField(forceResolver: true)

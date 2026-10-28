@@ -1696,29 +1696,30 @@ type Query struct {
 }
 
 type Quiz struct {
-	ID                   string                   `json:"id"`
-	Name                 string                   `json:"name"`
-	Description          string                   `json:"description"`
-	Image                *Image                   `json:"image,omitempty"`
-	Project              *Project                 `json:"project"`
-	Challenge            Challenge                `json:"challenge"`
-	TimeoutSeconds       *int                     `json:"timeoutSeconds,omitempty"`
-	RandomizeQuestions   bool                     `json:"randomizeQuestions"`
-	RevealCorrectAnswers bool                     `json:"revealCorrectAnswers"`
-	AllowRetakes         bool                     `json:"allowRetakes"`
-	CompletionPoints     int                      `json:"completionPoints"`
-	Questions            []QuizQuestion           `json:"questions"`
-	EndTime              *scalars.DateTime        `json:"endTime,omitempty"`
-	UserSubmissions      []QuizSubmission         `json:"userSubmissions"`
-	UserCanStart         bool                     `json:"userCanStart"`
-	UserActiveSubmission *QuizSubmission          `json:"userActiveSubmission,omitempty"`
-	Sessions             []QuizSession            `json:"sessions"`
-	UserSessions         []QuizSession            `json:"userSessions"`
-	UserActiveSession    *QuizSession             `json:"userActiveSession,omitempty"`
-	TranslationStatus    []TranslationFieldStatus `json:"translationStatus"`
-	ChallengeID          string                   `json:"-"`
-	ImageURL             *string                  `json:"-"`
-	ProjectID            string                   `json:"-"`
+	ID                     string                   `json:"id"`
+	Name                   string                   `json:"name"`
+	Description            string                   `json:"description"`
+	Image                  *Image                   `json:"image,omitempty"`
+	Project                *Project                 `json:"project"`
+	Challenge              Challenge                `json:"challenge"`
+	TimeoutSeconds         *int                     `json:"timeoutSeconds,omitempty"`
+	RandomizeQuestions     bool                     `json:"randomizeQuestions"`
+	RevealCorrectAnswers   bool                     `json:"revealCorrectAnswers"`
+	AllowRetakes           bool                     `json:"allowRetakes"`
+	CompletionPoints       int                      `json:"completionPoints"`
+	Questions              []QuizQuestion           `json:"questions"`
+	EndTime                *scalars.DateTime        `json:"endTime,omitempty"`
+	UserSubmissions        []QuizSubmission         `json:"userSubmissions"`
+	UserCanStart           bool                     `json:"userCanStart"`
+	UserActiveSubmission   *QuizSubmission          `json:"userActiveSubmission,omitempty"`
+	UserAvailableBetPoints *int                     `json:"userAvailableBetPoints,omitempty"`
+	Sessions               []QuizSession            `json:"sessions"`
+	UserSessions           []QuizSession            `json:"userSessions"`
+	UserActiveSession      *QuizSession             `json:"userActiveSession,omitempty"`
+	TranslationStatus      []TranslationFieldStatus `json:"translationStatus"`
+	ChallengeID            string                   `json:"-"`
+	ImageURL               *string                  `json:"-"`
+	ProjectID              string                   `json:"-"`
 }
 
 type QuizAchievement struct {

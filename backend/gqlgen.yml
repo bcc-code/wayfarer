@@ -377,6 +377,8 @@ models:
         resolver: true
       userActiveSubmission:
         resolver: true
+      userAvailableBetPoints:
+        resolver: true
     extraFields:
       ProjectID:
         type: string

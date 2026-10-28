@@ -2718,6 +2718,21 @@ func (r *quizResolver) UserActiveSubmission(ctx context.Context, obj *model.Quiz
 	return nil, nil
 }
 
+// UserAvailableBetPoints is the resolver for the userAvailableBetPoints field.
+func (r *quizResolver) UserAvailableBetPoints(ctx context.Context, obj *model.Quiz) (*int, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, nil
+	}
+
+	// Indicative only; the enforced check runs under the submission locks on submit.
+	available, err := availableBetPoints(ctx, r.DB.Queries, userID, obj.ProjectID, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &available, nil
+}
+
 // Sessions is the resolver for the sessions field.
 func (r *quizResolver) Sessions(ctx context.Context, obj *model.Quiz, state *model.QuizSessionState) ([]model.QuizSession, error) {
 	stateFilter := ""

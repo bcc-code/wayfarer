@@ -415,6 +415,40 @@ describe('QuizChallenge ordering + betting flow', () => {
     expect(button(wrapper, 'Lock answer')).toBeUndefined()
   })
 
+  describe('the slider ceiling', () => {
+    const openOrdering = (quiz: Record<string, unknown> = {}) => ({
+      userActiveSession: { id: 'S1', state: 'OPEN' },
+      userSubmissions: [orderingSub()],
+      ...quiz,
+    })
+
+    it('uses the server figure rather than the raw score', async () => {
+      const wrapper = await mountQuiz(
+        openOrdering({ userAvailableBetPoints: 40 }),
+        { userScore: 100 },
+      )
+
+      expect(bettingModule(wrapper).props('availablePoints')).toBe(40)
+    })
+
+    it('adds back the stake already placed on this question', async () => {
+      const wrapper = await mountQuiz(
+        openOrdering({
+          userAvailableBetPoints: 40,
+          userSubmissions: [orderingSub([orderingResponse({ betAmount: 60 })])],
+        }),
+        { userScore: 100 },
+      )
+
+      expect(bettingModule(wrapper).props('availablePoints')).toBe(100)
+    })
+
+    it('falls back to the raw score when the field is absent', async () => {
+      const wrapper = await mountQuiz(openOrdering(), { userScore: 100 })
+      expect(bettingModule(wrapper).props('availablePoints')).toBe(100)
+    })
+  })
+
   it('saves a bet and switches to the change-answer state', async () => {
     submitAnswer.mockResolvedValue({
       data: { submitQuizAnswer: { id: 'R1' } },
