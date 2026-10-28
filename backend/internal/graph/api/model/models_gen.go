@@ -358,6 +358,7 @@ type Consent struct {
 	PublishedAt       *scalars.DateTime         `json:"publishedAt,omitempty"`
 	ManagementType    ConsentManagementType     `json:"managementType"`
 	ManagedBy         *string                   `json:"managedBy,omitempty"`
+	ArchivedAt        *scalars.DateTime         `json:"archivedAt,omitempty"`
 	IsRequired        bool                      `json:"isRequired"`
 	Project           *Project                  `json:"project,omitempty"`
 	UserHistory       []UserConsentHistoryEntry `json:"userHistory"`
@@ -2342,16 +2343,15 @@ type TeamFilter struct {
 }
 
 type TeamMember struct {
-	ID         string  `json:"id"`
-	Name       string  `json:"name"`
-	Church     *Church `json:"church"`
-	IsTeamLead bool    `json:"isTeamLead"`
-	JoinedAt   string  `json:"joinedAt"`
-	User       *User   `json:"user"`
-	// False while the member has not accepted a required consent of the project: they are listed to admins, but their points, age and membership count nowhere (unit averages, average age, member counts).
-	CountsTowardScores bool   `json:"countsTowardScores"`
-	ChurchID           string `json:"-"`
-	UserID             string `json:"-"`
+	ID                 string  `json:"id"`
+	Name               string  `json:"name"`
+	Church             *Church `json:"church"`
+	IsTeamLead         bool    `json:"isTeamLead"`
+	JoinedAt           string  `json:"joinedAt"`
+	User               *User   `json:"user"`
+	CountsTowardScores bool    `json:"countsTowardScores"`
+	ChurchID           string  `json:"-"`
+	UserID             string  `json:"-"`
 }
 
 type TranslationFieldStatus struct {

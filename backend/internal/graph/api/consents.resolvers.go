@@ -111,6 +111,11 @@ func (r *mutationResolver) AcceptConsent(ctx context.Context, consentID string) 
 		return nil, fmt.Errorf("consent is not published yet")
 	}
 
+	// A late answer to a retired consent is a stale client.
+	if consent.ArchivedAt.Valid {
+		return nil, fmt.Errorf("consent is archived")
+	}
+
 	// Block if consent is remote (must be accepted externally)
 	if consent.IsRemote {
 		return nil, fmt.Errorf("cannot accept remote consent locally, must be accepted via external system")
@@ -185,6 +190,11 @@ func (r *mutationResolver) RejectConsent(ctx context.Context, consentID string) 
 
 	if !consent.PublishedAt.Valid || consent.PublishedAt.Time.After(time.Now()) {
 		return nil, fmt.Errorf("consent is not published yet")
+	}
+
+	// A late answer to a retired consent is a stale client.
+	if consent.ArchivedAt.Valid {
+		return nil, fmt.Errorf("consent is archived")
 	}
 
 	// Block if consent is remote (must be rejected externally)
@@ -303,13 +313,19 @@ func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title 
 	}
 
 	// Invalidate latest consents cache
-	r.Cache.DeletePrefix(cache.PrefixLatestConsents)
+	r.Cache.InvalidateConsents()
 	r.applyConsentBlockChanges(ctx, blockedBefore, r.blockedUsersInConsentScope(ctx, consentProjectID))
 
 	var publishedAtOut *scalars.DateTime
 	if consent.PublishedAt.Valid {
 		dt := scalars.DateTime{Time: consent.PublishedAt.Time}
 		publishedAtOut = &dt
+	}
+
+	var archivedAtOut *scalars.DateTime
+	if consent.ArchivedAt.Valid {
+		dt := scalars.DateTime{Time: consent.ArchivedAt.Time}
+		archivedAtOut = &dt
 	}
 
 	managementType := model.ConsentManagementTypeLocal
@@ -326,6 +342,7 @@ func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title 
 		BodyMarkdown:   consent.Body,
 		URL:            consent.Url,
 		PublishedAt:    publishedAtOut,
+		ArchivedAt:     archivedAtOut,
 		ManagementType: managementType,
 		ManagedBy:      consent.ManagedBy,
 		ProjectID:      consent.ProjectID,
@@ -381,13 +398,19 @@ func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *
 
 	// Invalidate caches
 	r.Cache.Delete(cache.ConsentKey(id))
-	r.Cache.DeletePrefix(cache.PrefixLatestConsents)
+	r.Cache.InvalidateConsents()
 	r.applyConsentBlockChanges(ctx, blockedBefore, r.blockedUsersInConsentScope(ctx, existing.ProjectID))
 
 	var publishedAtOut *scalars.DateTime
 	if consent.PublishedAt.Valid {
 		dt := scalars.DateTime{Time: consent.PublishedAt.Time}
 		publishedAtOut = &dt
+	}
+
+	var archivedAtOut *scalars.DateTime
+	if consent.ArchivedAt.Valid {
+		dt := scalars.DateTime{Time: consent.ArchivedAt.Time}
+		archivedAtOut = &dt
 	}
 
 	managementType := model.ConsentManagementTypeLocal
@@ -404,11 +427,46 @@ func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *
 		BodyMarkdown:   consent.Body,
 		URL:            consent.Url,
 		PublishedAt:    publishedAtOut,
+		ArchivedAt:     archivedAtOut,
 		ManagementType: managementType,
 		ManagedBy:      consent.ManagedBy,
 		ProjectID:      consent.ProjectID,
 		IsRequired:     consent.IsRequired,
 	}, nil
+}
+
+// ArchiveConsent is the resolver for the archiveConsent field.
+func (r *mutationResolver) ArchiveConsent(ctx context.Context, id string) (*model.Consent, error) {
+	existing, err := r.DB.Queries.GetConsentByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("consent not found: %w", err)
+	}
+
+	if existing.ArchivedAt.Valid {
+		return nil, fmt.Errorf("consent %q is already archived", existing.Key)
+	}
+
+	if _, err := r.DB.Queries.ArchiveConsent(ctx, id); err != nil {
+		return nil, fmt.Errorf("failed to archive consent: %w", err)
+	}
+
+	// Before the reload below, which reads through the same cache.
+	r.Cache.Delete(cache.ConsentKey(id))
+	r.Cache.InvalidateConsents()
+
+	return r.LoadConsentWithTranslation(ctx, id)
+}
+
+// UnarchiveConsent is the resolver for the unarchiveConsent field.
+func (r *mutationResolver) UnarchiveConsent(ctx context.Context, id string) (*model.Consent, error) {
+	if _, err := r.DB.Queries.UnarchiveConsent(ctx, id); err != nil {
+		return nil, fmt.Errorf("failed to unarchive consent: %w", err)
+	}
+
+	r.Cache.Delete(cache.ConsentKey(id))
+	r.Cache.InvalidateConsents()
+
+	return r.LoadConsentWithTranslation(ctx, id)
 }
 
 // AdminSetUserConsent is the resolver for the adminSetUserConsent field.
@@ -504,6 +562,12 @@ func (r *queryResolver) Consents(ctx context.Context) ([]model.Consent, error) {
 			publishedAt = &dt
 		}
 
+		var archivedAt *scalars.DateTime
+		if row.ArchivedAt.Valid {
+			dt := scalars.DateTime{Time: row.ArchivedAt.Time}
+			archivedAt = &dt
+		}
+
 		managementType := model.ConsentManagementTypeLocal
 		if row.IsRemote {
 			managementType = model.ConsentManagementTypeRemote
@@ -518,6 +582,7 @@ func (r *queryResolver) Consents(ctx context.Context) ([]model.Consent, error) {
 			BodyMarkdown:   row.Body,
 			URL:            row.Url,
 			PublishedAt:    publishedAt,
+			ArchivedAt:     archivedAt,
 			ManagementType: managementType,
 			ManagedBy:      row.ManagedBy,
 			ProjectID:      row.ProjectID,
@@ -525,6 +590,35 @@ func (r *queryResolver) Consents(ctx context.Context) ([]model.Consent, error) {
 		}
 
 		// Apply translation
+		consents[i] = *r.ApplyTranslationToConsent(ctx, &consent)
+	}
+
+	return consents, nil
+}
+
+// AdminConsents is the resolver for the adminConsents field.
+func (r *queryResolver) AdminConsents(ctx context.Context, projectID *string, includeArchived *bool) ([]model.Consent, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Drafts are unpublished text; @requireRole is kept to mutations here.
+	if !r.RoleService.IsAdmin(ctx, userID) {
+		return nil, fmt.Errorf("unauthorized to list consents")
+	}
+
+	rows, err := r.DB.Queries.GetAdminConsents(ctx, sqlc.GetAdminConsentsParams{
+		ProjectID:       projectID,
+		IncludeArchived: includeArchived != nil && *includeArchived,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get consents: %w", err)
+	}
+
+	consents := make([]model.Consent, len(rows))
+	for i, row := range rows {
+		consent := consentFromAdminRow(row)
 		consents[i] = *r.ApplyTranslationToConsent(ctx, &consent)
 	}
 
@@ -565,6 +659,12 @@ func (r *queryResolver) PendingConsents(ctx context.Context) ([]model.Consent, e
 			publishedAt = &dt
 		}
 
+		var archivedAt *scalars.DateTime
+		if row.ArchivedAt.Valid {
+			dt := scalars.DateTime{Time: row.ArchivedAt.Time}
+			archivedAt = &dt
+		}
+
 		managementType := model.ConsentManagementTypeLocal
 		if row.IsRemote {
 			managementType = model.ConsentManagementTypeRemote
@@ -579,6 +679,7 @@ func (r *queryResolver) PendingConsents(ctx context.Context) ([]model.Consent, e
 			BodyMarkdown:   row.Body,
 			URL:            row.Url,
 			PublishedAt:    publishedAt,
+			ArchivedAt:     archivedAt,
 			ManagementType: managementType,
 			ManagedBy:      row.ManagedBy,
 			ProjectID:      row.ProjectID,

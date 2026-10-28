@@ -18,6 +18,7 @@ gql(`
       }
       url
       publishedAt
+      archivedAt
       managementType
       managedBy
       isRequired
@@ -51,13 +52,14 @@ const {
 // above it is derived from the route.
 useAdminPage(() => data.value?.consent.title)
 
-const managementTypeLabels: Record<string, string> = {
-  LOCAL: 'Lokal',
-  REMOTE: 'Ekstern',
-}
-
 const { executeMutation: updateConsent } = useUpdateConsentMutation()
+const { executeMutation: archiveConsent } = useArchiveConsentMutation()
+const { executeMutation: unarchiveConsent } = useUnarchiveConsentMutation()
+const { confirm } = useConfirm()
 const toast = useToast()
+const { canManageConsents } = usePermissions()
+
+const isArchived = computed(() => !!data.value?.consent.archivedAt)
 
 // Edit mode state
 const isEditing = ref(false)
@@ -140,10 +142,51 @@ async function publishConsent() {
 
   refetch({ requestPolicy: 'network-only' })
 }
+
+async function handleArchive() {
+  if (!data.value) return
+
+  const confirmed = await confirm({
+    title: `Arkivere "${data.value.consent.title}"?`,
+    description: CONSENT_ARCHIVE_DESCRIPTION,
+    confirmLabel: 'Arkiver',
+    icon: 'lucide:archive',
+    color: 'primary',
+  })
+  if (!confirmed) return
+
+  const result = await archiveConsent({ id: route.params.consentId })
+
+  if (result.error) {
+    toast.add({
+      title: 'Kunne ikke arkivere samtykke',
+      description: result.error.message,
+      color: 'error',
+    })
+    return
+  }
+
+  toast.add({ title: 'Samtykke arkivert', color: 'success' })
+  refetch({ requestPolicy: 'network-only' })
+}
+
+async function handleUnarchive() {
+  const result = await unarchiveConsent({ id: route.params.consentId })
+
+  if (result.error) {
+    toast.add({
+      title: 'Kunne ikke gjenopprette samtykke',
+      description: result.error.message,
+      color: 'error',
+    })
+    return
+  }
+
+  toast.add({ title: 'Samtykke gjenopprettet', color: 'success' })
+  refetch({ requestPolicy: 'network-only' })
+}
 </script>
 
-<!-- Capped tighter than the data pages: this one is mostly prose, and the
-     body preview at full panel width is unreadable. -->
 <template>
   <div class="max-w-4xl">
     <AdminQueryState :fetching :error>
@@ -152,20 +195,17 @@ async function publishConsent() {
           <div class="flex flex-wrap items-center gap-3">
             <h1 class="text-3xl font-bold">{{ data.consent.title }}</h1>
             <UBadge variant="soft">v{{ data.consent.version }}</UBadge>
-            <UBadge
-              v-if="!data.consent.publishedAt"
-              variant="soft"
-              color="warning"
-            >
-              Utkast
-            </UBadge>
+            <AdminConsentStatusBadge
+              :consent="data.consent"
+              :show-date="false"
+            />
             <UBadge v-if="data.consent.isRequired" variant="soft" color="error">
               Påkrevd
             </UBadge>
           </div>
           <div class="flex shrink-0 gap-2">
             <UButton
-              v-if="!data.consent.publishedAt"
+              v-if="!data.consent.publishedAt && !isArchived"
               icon="lucide:send"
               variant="soft"
               color="success"
@@ -174,13 +214,32 @@ async function publishConsent() {
               Publiser
             </UButton>
             <UButton
-              v-if="!isEditing"
+              v-if="!isEditing && !isArchived"
               icon="lucide:pencil"
               variant="soft"
               @click="startEditing"
             >
               Rediger
             </UButton>
+            <template v-if="canManageConsents">
+              <UButton
+                v-if="isArchived"
+                icon="lucide:archive-restore"
+                variant="soft"
+                @click="handleUnarchive"
+              >
+                Gjenopprett
+              </UButton>
+              <UButton
+                v-else
+                icon="lucide:archive"
+                variant="soft"
+                color="neutral"
+                @click="handleArchive"
+              >
+                Arkiver
+              </UButton>
+            </template>
           </div>
         </div>
 
@@ -300,6 +359,10 @@ async function publishConsent() {
               </dd>
               <dd v-else>Alle prosjekter</dd>
             </div>
+            <div v-if="data.consent.archivedAt" class="flex gap-6 py-2">
+              <dt class="text-muted w-32 shrink-0">Arkivert</dt>
+              <dd>{{ formatDateTime(data.consent.archivedAt) }}</dd>
+            </div>
             <div class="flex gap-6 py-2">
               <dt class="text-muted w-32 shrink-0">Påkrevd</dt>
               <dd>{{ data.consent.isRequired ? 'Ja' : 'Nei' }}</dd>
@@ -307,10 +370,7 @@ async function publishConsent() {
             <div class="flex gap-6 py-2">
               <dt class="text-muted w-32 shrink-0">Type</dt>
               <dd>
-                {{
-                  managementTypeLabels[data.consent.managementType] ??
-                  data.consent.managementType
-                }}
+                {{ consentManagementTypeLabel(data.consent.managementType) }}
               </dd>
             </div>
             <div v-if="data.consent.managedBy" class="flex gap-6 py-2">

@@ -2,11 +2,13 @@ package api
 
 import (
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"time"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
+	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestConsentProjectForNewVersion(t *testing.T) {
@@ -145,5 +147,78 @@ func TestConsentBlockChangesBetween(t *testing.T) {
 
 		assert.False(t, beforeKnown)
 		assert.False(t, afterKnown)
+	})
+}
+
+func TestConsentFromAdminRow(t *testing.T) {
+	published := time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC)
+	projectID := "PR01ARZ3NDEKTSV4RRFFQ69G5FA"
+	url := "https://example.com/personvern"
+	managedBy := "members"
+
+	t.Run("maps a published local consent", func(t *testing.T) {
+		got := consentFromAdminRow(&sqlc.GetAdminConsentsRow{
+			ID:          "CN01ARZ3NDEKTSV4RRFFQ69G5FA",
+			Key:         "privacy_policy",
+			Version:     2,
+			Title:       "Personvern",
+			ShortText:   "Kort",
+			Body:        "# Personvern",
+			Url:         &url,
+			PublishedAt: pgtype.Timestamptz{Time: published, Valid: true},
+			ProjectID:   &projectID,
+			IsRequired:  true,
+		})
+
+		assert.Equal(t, "CN01ARZ3NDEKTSV4RRFFQ69G5FA", got.ID)
+		assert.Equal(t, "privacy_policy", got.Key)
+		assert.Equal(t, 2, got.Version)
+		assert.Equal(t, "# Personvern", got.BodyMarkdown)
+		assert.Equal(t, model.ConsentManagementTypeLocal, got.ManagementType)
+		require.NotNil(t, got.PublishedAt)
+		assert.Equal(t, published, got.PublishedAt.Time)
+		require.NotNil(t, got.ProjectID)
+		assert.Equal(t, projectID, *got.ProjectID)
+		assert.True(t, got.IsRequired)
+	})
+
+	t.Run("leaves publishedAt nil for a draft", func(t *testing.T) {
+		got := consentFromAdminRow(&sqlc.GetAdminConsentsRow{
+			ID:          "CN01ARZ3NDEKTSV4RRFFQ69G5FB",
+			Key:         "photo_consent",
+			Version:     1,
+			PublishedAt: pgtype.Timestamptz{},
+		})
+
+		assert.Nil(t, got.PublishedAt, "a draft has no publication date to show")
+		assert.Nil(t, got.ArchivedAt, "nor an archive date")
+		assert.Nil(t, got.ProjectID)
+	})
+
+	t.Run("carries the archive date of a retired consent", func(t *testing.T) {
+		archived := time.Date(2026, 9, 1, 8, 0, 0, 0, time.UTC)
+		got := consentFromAdminRow(&sqlc.GetAdminConsentsRow{
+			ID:          "CN01ARZ3NDEKTSV4RRFFQ69G5FD",
+			Key:         "old_terms",
+			Version:     1,
+			PublishedAt: pgtype.Timestamptz{Time: published, Valid: true},
+			ArchivedAt:  pgtype.Timestamptz{Time: archived, Valid: true},
+		})
+
+		require.NotNil(t, got.ArchivedAt)
+		assert.Equal(t, archived, got.ArchivedAt.Time)
+	})
+
+	t.Run("marks a remotely managed consent", func(t *testing.T) {
+		got := consentFromAdminRow(&sqlc.GetAdminConsentsRow{
+			ID:        "CN01ARZ3NDEKTSV4RRFFQ69G5FC",
+			Key:       "members_terms",
+			IsRemote:  true,
+			ManagedBy: &managedBy,
+		})
+
+		assert.Equal(t, model.ConsentManagementTypeRemote, got.ManagementType)
+		require.NotNil(t, got.ManagedBy)
+		assert.Equal(t, managedBy, *got.ManagedBy)
 	})
 }

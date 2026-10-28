@@ -11,6 +11,7 @@ type Consent {
     publishedAt: DateTime
     managementType: ConsentManagementType!
     managedBy: String
+    archivedAt: DateTime
     # Must be accepted to take part in the project; cannot be rejected
     isRequired: Boolean!
     project: Project @goField(forceResolver: true)
@@ -44,8 +45,12 @@ type ConsentStatus {
 # ==================== Consent Queries ====================
 
 extend type Query {
-    # Get all latest published consents
+    # Live consents only, one version per key. Admin surfaces want adminConsents.
     consents: [Consent!]!
+
+    # Live consents plus drafts and scheduled versions. Admin-only, authorised
+    # in the resolver, not by @requireRole. `projectId` adds the global consents.
+    adminConsents(projectId: ID, includeArchived: Boolean): [Consent!]!
 
     # Get a specific consent by ID
     consent(id: ID!): Consent!
@@ -88,6 +93,12 @@ extend type Mutation {
         managedBy: String
         isRequired: Boolean
     ): Consent! @requireRole(roles: ["admin", "superadmin"])
+
+    # Retire a consent: users stop being asked for it, and a required one stops
+    # blocking participation. There is no delete — the history outlives it.
+    archiveConsent(id: ID!): Consent! @requireRole(roles: ["admin", "superadmin"])
+
+    unarchiveConsent(id: ID!): Consent! @requireRole(roles: ["admin", "superadmin"])
 
     # Manually set a user's consent action (admin action)
     # Only works for local consents. The admin's user ID is recorded in the source field.

@@ -604,6 +604,23 @@ func (m *TestDBManager) CreateTestProjectConsent(ctx context.Context, key string
 	return consentID, nil
 }
 
+// CreateTestConsentVersion creates one consent row with an explicit version,
+// scope and publication time: nil publishedAt is a draft, a future one is
+// scheduled.
+func (m *TestDBManager) CreateTestConsentVersion(ctx context.Context, key string, version int, projectID *string, publishedAt *time.Time) (string, error) {
+	consentID := ulid.NewConsentID()
+	query := `
+		INSERT INTO consents (id, key, version, title, short_text, body, published_at, is_remote, project_id)
+		VALUES ($1, $2, $3, $4, 'Short text for consent', 'Body of the consent document', $5, false, $6)
+	`
+	title := fmt.Sprintf("Test Consent: %s v%d", key, version)
+	_, err := m.DB.Pool.Exec(ctx, query, consentID, key, version, title, publishedAt, projectID)
+	if err != nil {
+		return "", fmt.Errorf("failed to create test consent %s v%d: %w", key, version, err)
+	}
+	return consentID, nil
+}
+
 // GetUserConsentHistoryCount returns the count of consent history entries for a user and consent key
 func (m *TestDBManager) GetUserConsentHistoryCount(ctx context.Context, userID, consentKey string) (int, error) {
 	var count int
