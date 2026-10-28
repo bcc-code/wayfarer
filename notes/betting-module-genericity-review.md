@@ -439,6 +439,39 @@ bet-only update, cross-type rejection, rejected once LOCKED, settles on the fina
 FREE_TEXT/NUMBER, and the empty-update rejection; component tests for the OPEN-session flow on
 PREDEFINED; `useQuizViewState` tests migrated to `hasSettledBet`.
 
+### 2026-10-28 — the payout curve is configurable from the admin editor
+
+Closes finding 9 in `[[betting-frontend-genericity]]` and the `clear*` gap noted on 2026-10-07.
+Until now the multipliers existed on both question mutations but were reachable only by calling
+the API by hand.
+
+- **Editor** — `AdminQuizQuestionEditor.vue` gains an "Uttelling" block inside the betting box:
+  two number inputs (0.25 steps, 2 decimals) for the correct and wrong payouts, with the defaults
+  (2x / 0x) spelled out so an empty field reads as deliberate rather than missing. Wired through
+  `QuizQuestionFormData`, the quiz page's load mapping, and `quizQuestionInput`.
+- **Client-side validation** mirrors `ValidateBettingMultipliers`: 0-100, at most 2 decimals, and
+  wrong not above correct — compared against the *defaults* when a field is left empty, so an
+  unset correct multiplier still caps the wrong one at 2. The admin sees the message before the
+  backend rejects the save.
+- **`clear*` flags now work.** `UpdateQuizQuestion` COALESCEd every betting column, so emptying a
+  field kept its old value. All six betting nullables now take a clear flag
+  (`CASE WHEN @clearX THEN NULL ELSE COALESCE(...) END`), matching the existing `clearimage`
+  pattern. `clearBettingMinAbsolute` / `clearBettingMaxAbsolute` were already in the schema and
+  already sent by the admin UI — they had no backend reference at all. Percentages and the two
+  multipliers are new. `bettingClearFlags` now derives all six from one list.
+- **Clearing counts as a payout change.** `payoutChanged` gained the two clear flags: falling back
+  to the default is as much a change of the terms a bet was placed under as setting a number, so
+  the existing "no payout change while bets are open" guard covers it. The validated post-update
+  state also resets cleared fields, so a cleared value is checked as its default, not its old one.
+
+Tests: `TestPayoutChanged` cases for clearing; e2e for clearing every betting field back to
+default and for the open-bets refusal; unit tests for `bettingClearFlags` across all six fields
+and for the multiplier validation rules.
+
+Still open: the user is not shown the odds *before* betting (the remaining half of finding 7) —
+the configured curve is selected by the admin fragment only, and no player-facing query or
+component reads it.
+
 ## Suggested order of work, if this is to be made properly generic
 
 1. Extract settlement out of `ladder_to_heaven` into a shared service; define a per-question-type

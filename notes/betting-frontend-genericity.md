@@ -188,6 +188,10 @@ multiplier yields exactly 1.0×; a configurable curve would.
 
 ### 9. Admin editor gaps
 
+> **Mostly resolved 2026-10-28:** multiplier fields added and the `clear*` flags honoured.
+> Still no warning that NUMBER / FREE_TEXT / JSON cannot use betting, and admin strings stay
+> hardcoded Norwegian.
+
 `AdminQuizQuestionEditor.vue:514–580` renders the betting block for every question type with no
 indication that NUMBER / FREE_TEXT / JSON can't use it. No multiplier fields (7). Labels are
 hardcoded Norwegian (`"Aktiver betting"`, `"Min %"`, `"Maks poeng"`) — consistent with the rest of
@@ -239,7 +243,7 @@ Ordered so each step is independently shippable:
    via `useQuizSessionAnswer`; NUMBER and FREE_TEXT still sit on `mode: 'normal'`, so finding 3
    stands for those two.
 4. **Expose `availableBetPoints`** and feed it to `:available-points`. (Fixes 5.)
-5. **Admin:** multiplier fields, a hint (or a disable) for types that can't bet, honour the
-   `clear*` flags backend-side. (Fixes 9.)
+5. **Admin:** ~~multiplier fields~~, ~~honour the `clear*` flags backend-side~~ (both done
+   2026-10-28). Remaining: a hint (or a disable) for types that can't bet. (Fixes 9.)
 6. **i18n cleanup:** drop the 4 dead keys from 14 files, fix `yourPoints`, reword `correctCount`.
    (Fixes 8.)

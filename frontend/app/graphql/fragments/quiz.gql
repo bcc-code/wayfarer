@@ -24,6 +24,8 @@ fragment QuizQuestionFields on QuizQuestion {
   bettingMaxPercentage
   bettingMinAbsolute
   bettingMaxAbsolute
+  bettingMultiplierCorrect
+  bettingMultiplierWrong
   translationStatus {
     ...TranslationStatus
   }

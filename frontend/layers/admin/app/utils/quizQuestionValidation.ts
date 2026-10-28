@@ -9,7 +9,17 @@ interface ValidatableQuestion {
   maxValue?: number
   points?: number
   bettingEnabled?: boolean
+  bettingMultiplierCorrect?: number
+  bettingMultiplierWrong?: number
 }
+
+// Mirrors betting.DefaultMultiplierCorrect / DefaultMultiplierWrong.
+const DEFAULT_MULTIPLIER_CORRECT = 2
+const DEFAULT_MULTIPLIER_WRONG = 0
+const MAX_MULTIPLIER = 100
+
+const multiplier = (value: number | undefined, fallback: number) =>
+  value === undefined || Number.isNaN(value) ? fallback : value
 
 /**
  * Why a question cannot be saved yet, or undefined when it can. Returned as a
@@ -55,6 +65,28 @@ export function validateQuizQuestion(
   // backend rejects the combination
   if (question.bettingEnabled && (question.points ?? 0) > 0) {
     return 'Et spørsmål med innsats kan ikke også gi poeng. Fjern poengene eller slå av innsats.'
+  }
+
+  if (question.bettingEnabled) {
+    const correct = multiplier(
+      question.bettingMultiplierCorrect,
+      DEFAULT_MULTIPLIER_CORRECT,
+    )
+    const wrong = multiplier(
+      question.bettingMultiplierWrong,
+      DEFAULT_MULTIPLIER_WRONG,
+    )
+    for (const value of [correct, wrong]) {
+      if (value < 0 || value > MAX_MULTIPLIER) {
+        return `Multiplikator må være mellom 0 og ${MAX_MULTIPLIER}.`
+      }
+      if (Math.round(value * 100) !== value * 100) {
+        return 'Multiplikator kan ha høyst to desimaler.'
+      }
+    }
+    if (wrong > correct) {
+      return 'Multiplikator ved feil svar kan ikke være høyere enn ved riktig svar.'
+    }
   }
 
   return undefined

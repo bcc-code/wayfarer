@@ -551,6 +551,19 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 		maxAbs := int32(*input.BettingMaxAbsolute)
 		params.Bettingmaxabsolute = &maxAbs
 	}
+	if input.BettingMultiplierCorrect != nil {
+		_ = params.Bettingmultipliercorrect.Scan(fmt.Sprintf("%f", *input.BettingMultiplierCorrect))
+	}
+	if input.BettingMultiplierWrong != nil {
+		_ = params.Bettingmultiplierwrong.Scan(fmt.Sprintf("%f", *input.BettingMultiplierWrong))
+	}
+	params.Clearbettingminpercentage = clearFlag(input.ClearBettingMinPercentage)
+	params.Clearbettingmaxpercentage = clearFlag(input.ClearBettingMaxPercentage)
+	params.Clearbettingminabsolute = clearFlag(input.ClearBettingMinAbsolute)
+	params.Clearbettingmaxabsolute = clearFlag(input.ClearBettingMaxAbsolute)
+	params.Clearbettingmultipliercorrect = clearFlag(input.ClearBettingMultiplierCorrect)
+	params.Clearbettingmultiplierwrong = clearFlag(input.ClearBettingMultiplierWrong)
+
 	// Validate the settings the question will have after this update
 	next := storedBettingSettings(question)
 	if input.Points != nil {
@@ -577,6 +590,25 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 	if input.BettingMultiplierWrong != nil {
 		next.MultiplierWrong = input.BettingMultiplierWrong
 	}
+	// A cleared field falls back to its default, so validate that, not the old value
+	if params.Clearbettingminpercentage {
+		next.MinPercentage = nil
+	}
+	if params.Clearbettingmaxpercentage {
+		next.MaxPercentage = nil
+	}
+	if params.Clearbettingminabsolute {
+		next.MinAbsolute = nil
+	}
+	if params.Clearbettingmaxabsolute {
+		next.MaxAbsolute = nil
+	}
+	if params.Clearbettingmultipliercorrect {
+		next.MultiplierCorrect = nil
+	}
+	if params.Clearbettingmultiplierwrong {
+		next.MultiplierWrong = nil
+	}
 	changesPointsOrBetting := input.Points != nil || input.BettingEnabled != nil
 	if err := ValidateQuestionBetting(next, changesPointsOrBetting); err != nil {
 		return nil, err
@@ -586,7 +618,8 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 	// off and no other payout while the question has open bets
 	turnsBettingOff := question.BettingEnabled && input.BettingEnabled != nil && !*input.BettingEnabled
 	changesPayout, err := payoutChanged(question.BettingMultiplierCorrect, question.BettingMultiplierWrong,
-		input.BettingMultiplierCorrect, input.BettingMultiplierWrong)
+		input.BettingMultiplierCorrect, input.BettingMultiplierWrong,
+		params.Clearbettingmultipliercorrect, params.Clearbettingmultiplierwrong)
 	if err != nil {
 		return nil, err
 	}

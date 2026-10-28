@@ -178,6 +178,8 @@ const quizData = computed<QuizFormData | undefined>(() => {
       bettingMaxPercentage: q.bettingMaxPercentage ?? undefined,
       bettingMinAbsolute: q.bettingMinAbsolute ?? undefined,
       bettingMaxAbsolute: q.bettingMaxAbsolute ?? undefined,
+      bettingMultiplierCorrect: q.bettingMultiplierCorrect ?? undefined,
+      bettingMultiplierWrong: q.bettingMultiplierWrong ?? undefined,
       translationStatus: q.translationStatus,
     })),
   }

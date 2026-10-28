@@ -1355,6 +1355,80 @@ func TestQuizBettingEdgeCases(t *testing.T) {
 		assert.Contains(t, msg, "no answer or bet given to update")
 	})
 
+	t.Run("clearing a betting field resets it to the default", func(t *testing.T) {
+		quizID := newQuiz(t, "Clear betting fields", nil)
+		q := addPredefined(t, quizID, 0, map[string]any{
+			"bettingMinAbsolute":       10,
+			"bettingMaxAbsolute":       80,
+			"bettingMinPercentage":     5.0,
+			"bettingMaxPercentage":     50.0,
+			"bettingMultiplierCorrect": 2.5,
+			"bettingMultiplierWrong":   0.5,
+		})
+
+		type cfg struct {
+			BettingMinAbsolute       *int     `json:"bettingMinAbsolute"`
+			BettingMaxAbsolute       *int     `json:"bettingMaxAbsolute"`
+			BettingMinPercentage     *float64 `json:"bettingMinPercentage"`
+			BettingMaxPercentage     *float64 `json:"bettingMaxPercentage"`
+			BettingMultiplierCorrect *float64 `json:"bettingMultiplierCorrect"`
+			BettingMultiplierWrong   *float64 `json:"bettingMultiplierWrong"`
+		}
+		update := func(input map[string]any) cfg {
+			var res struct {
+				UpdateQuizQuestion cfg `json:"updateQuizQuestion"`
+			}
+			admin(t, `mutation($id: ID!, $input: UpdateQuizQuestionInput!) {
+				updateQuizQuestion(id: $id, input: $input) {
+					... on PredefinedQuestion {
+						bettingMinAbsolute bettingMaxAbsolute
+						bettingMinPercentage bettingMaxPercentage
+						bettingMultiplierCorrect bettingMultiplierWrong
+					}
+				}
+			}`, map[string]any{"id": q.ID, "input": input}, &res)
+			return res.UpdateQuizQuestion
+		}
+
+		// An omitted field is left alone, as before
+		after := update(map[string]any{"questionText": "Still here?"})
+		require.NotNil(t, after.BettingMultiplierCorrect)
+		assert.InDelta(t, 2.5, *after.BettingMultiplierCorrect, 0.001)
+		require.NotNil(t, after.BettingMinAbsolute)
+		assert.Equal(t, 10, *after.BettingMinAbsolute)
+
+		// An explicit clear nulls it, so the question falls back to the defaults
+		after = update(map[string]any{
+			"clearBettingMinAbsolute":       true,
+			"clearBettingMaxAbsolute":       true,
+			"clearBettingMinPercentage":     true,
+			"clearBettingMaxPercentage":     true,
+			"clearBettingMultiplierCorrect": true,
+			"clearBettingMultiplierWrong":   true,
+		})
+		assert.Nil(t, after.BettingMinAbsolute)
+		assert.Nil(t, after.BettingMaxAbsolute)
+		assert.Nil(t, after.BettingMinPercentage)
+		assert.Nil(t, after.BettingMaxPercentage)
+		assert.Nil(t, after.BettingMultiplierCorrect)
+		assert.Nil(t, after.BettingMultiplierWrong)
+	})
+
+	t.Run("clearing a multiplier is refused while bets are open", func(t *testing.T) {
+		p := newPlayer(t)
+		setScore(t, p.id, 100)
+		quizID := newQuiz(t, "Clear with open bets", nil)
+		q := addPredefined(t, quizID, 0, map[string]any{"bettingMultiplierCorrect": 3.0})
+		sessionID := openSession(t, quizID, p)
+		sub := start(t, p, sessionID)
+		submit(t, p, sub, map[string]any{"questionId": q.ID, "selectedAnswerIds": []string{q.Right}, "betAmount": 50})
+
+		msg := exec(t, adminToken, `mutation($id: ID!, $input: UpdateQuizQuestionInput!) {
+			updateQuizQuestion(id: $id, input: $input) { ... on PredefinedQuestion { id } }
+		}`, map[string]any{"id": q.ID, "input": map[string]any{"clearBettingMultiplierCorrect": true}}, nil)
+		assert.Contains(t, msg, "bettingMultiplierCorrect")
+	})
+
 	// ============================================================ payouts
 
 	t.Run("multiplier edge values", func(t *testing.T) {

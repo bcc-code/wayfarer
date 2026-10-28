@@ -65,6 +65,7 @@ func TestPayoutChanged(t *testing.T) {
 		name                     string
 		storedCorrect, storedWrg pgtype.Numeric
 		newCorrect, newWrong     *float64
+		clearCorrect, clearWrong bool
 		want                     bool
 	}{
 		{name: "nothing new", storedCorrect: unset, storedWrg: unset},
@@ -73,10 +74,16 @@ func TestPayoutChanged(t *testing.T) {
 		{name: "correct from default to 5", storedCorrect: unset, storedWrg: unset, newCorrect: f(5), want: true},
 		{name: "wrong changed", storedCorrect: num("3"), storedWrg: num("0.5"), newWrong: f(0.25), want: true},
 		{name: "stored back to default value", storedCorrect: num("3"), storedWrg: unset, newCorrect: f(2), want: true},
+		// Clearing falls back to the default, which changes the terms as much
+		// as setting a number does.
+		{name: "cleared from a custom value", storedCorrect: num("3"), storedWrg: unset, clearCorrect: true, want: true},
+		{name: "cleared wrong from a custom value", storedCorrect: unset, storedWrg: num("0.5"), clearWrong: true, want: true},
+		{name: "cleared when it was already the default", storedCorrect: num("2"), storedWrg: num("0"), clearCorrect: true, clearWrong: true},
+		{name: "cleared when nothing was stored", storedCorrect: unset, storedWrg: unset, clearCorrect: true, clearWrong: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := payoutChanged(tt.storedCorrect, tt.storedWrg, tt.newCorrect, tt.newWrong)
+			got, err := payoutChanged(tt.storedCorrect, tt.storedWrg, tt.newCorrect, tt.newWrong, tt.clearCorrect, tt.clearWrong)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})

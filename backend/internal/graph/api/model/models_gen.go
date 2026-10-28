@@ -2476,27 +2476,31 @@ type UpdateQuizInput struct {
 }
 
 type UpdateQuizQuestionInput struct {
-	QuestionText             *string                       `json:"questionText,omitempty"`
-	ImageURL                 *string                       `json:"imageUrl,omitempty"`
-	QuestionOrder            *int                          `json:"questionOrder,omitempty"`
-	TimeoutSeconds           *int                          `json:"timeoutSeconds,omitempty"`
-	Points                   *int                          `json:"points,omitempty"`
-	BettingEnabled           *bool                         `json:"bettingEnabled,omitempty"`
-	BettingMinPercentage     *float64                      `json:"bettingMinPercentage,omitempty"`
-	BettingMaxPercentage     *float64                      `json:"bettingMaxPercentage,omitempty"`
-	BettingMinAbsolute       *int                          `json:"bettingMinAbsolute,omitempty"`
-	BettingMaxAbsolute       *int                          `json:"bettingMaxAbsolute,omitempty"`
-	BettingMultiplierCorrect *float64                      `json:"bettingMultiplierCorrect,omitempty"`
-	BettingMultiplierWrong   *float64                      `json:"bettingMultiplierWrong,omitempty"`
-	ClearBettingMinAbsolute  *bool                         `json:"clearBettingMinAbsolute,omitempty"`
-	ClearBettingMaxAbsolute  *bool                         `json:"clearBettingMaxAbsolute,omitempty"`
-	AllowMultipleSelection   *bool                         `json:"allowMultipleSelection,omitempty"`
-	AnswerLabelStyle         *QuizAnswerLabelStyle         `json:"answerLabelStyle,omitempty"`
-	PredefinedAnswers        []CreatePredefinedAnswerInput `json:"predefinedAnswers,omitempty"`
-	MinValue                 *float64                      `json:"minValue,omitempty"`
-	MaxValue                 *float64                      `json:"maxValue,omitempty"`
-	StepValue                *float64                      `json:"stepValue,omitempty"`
-	OrderingItems            []CreateOrderingItemInput     `json:"orderingItems,omitempty"`
+	QuestionText                  *string                       `json:"questionText,omitempty"`
+	ImageURL                      *string                       `json:"imageUrl,omitempty"`
+	QuestionOrder                 *int                          `json:"questionOrder,omitempty"`
+	TimeoutSeconds                *int                          `json:"timeoutSeconds,omitempty"`
+	Points                        *int                          `json:"points,omitempty"`
+	BettingEnabled                *bool                         `json:"bettingEnabled,omitempty"`
+	BettingMinPercentage          *float64                      `json:"bettingMinPercentage,omitempty"`
+	BettingMaxPercentage          *float64                      `json:"bettingMaxPercentage,omitempty"`
+	BettingMinAbsolute            *int                          `json:"bettingMinAbsolute,omitempty"`
+	BettingMaxAbsolute            *int                          `json:"bettingMaxAbsolute,omitempty"`
+	BettingMultiplierCorrect      *float64                      `json:"bettingMultiplierCorrect,omitempty"`
+	BettingMultiplierWrong        *float64                      `json:"bettingMultiplierWrong,omitempty"`
+	ClearBettingMinPercentage     *bool                         `json:"clearBettingMinPercentage,omitempty"`
+	ClearBettingMaxPercentage     *bool                         `json:"clearBettingMaxPercentage,omitempty"`
+	ClearBettingMinAbsolute       *bool                         `json:"clearBettingMinAbsolute,omitempty"`
+	ClearBettingMaxAbsolute       *bool                         `json:"clearBettingMaxAbsolute,omitempty"`
+	ClearBettingMultiplierCorrect *bool                         `json:"clearBettingMultiplierCorrect,omitempty"`
+	ClearBettingMultiplierWrong   *bool                         `json:"clearBettingMultiplierWrong,omitempty"`
+	AllowMultipleSelection        *bool                         `json:"allowMultipleSelection,omitempty"`
+	AnswerLabelStyle              *QuizAnswerLabelStyle         `json:"answerLabelStyle,omitempty"`
+	PredefinedAnswers             []CreatePredefinedAnswerInput `json:"predefinedAnswers,omitempty"`
+	MinValue                      *float64                      `json:"minValue,omitempty"`
+	MaxValue                      *float64                      `json:"maxValue,omitempty"`
+	StepValue                     *float64                      `json:"stepValue,omitempty"`
+	OrderingItems                 []CreateOrderingItemInput     `json:"orderingItems,omitempty"`
 }
 
 type UpdateQuizSessionInput struct {

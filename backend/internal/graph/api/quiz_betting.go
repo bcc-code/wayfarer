@@ -283,3 +283,8 @@ func SettledBetMultiplier(scoreJournalID *string, betAmount, pointsEarned *int) 
 	multiplier := float64(winnings) / float64(*betAmount)
 	return &multiplier
 }
+
+// clearFlag reads an optional "clear this field" flag from an update input.
+func clearFlag(v *bool) bool {
+	return v != nil && *v
+}

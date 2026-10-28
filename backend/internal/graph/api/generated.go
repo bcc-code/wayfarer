@@ -11953,8 +11953,14 @@ input UpdateQuizQuestionInput {
     bettingMultiplierCorrect: Float
     bettingMultiplierWrong: Float
     # Set to true to clear betting absolute values (set them to null)
+    # Emptying a betting field needs an explicit flag: an omitted value means
+    # "leave alone", so a cleared field would otherwise keep its old number.
+    clearBettingMinPercentage: Boolean
+    clearBettingMaxPercentage: Boolean
     clearBettingMinAbsolute: Boolean
     clearBettingMaxAbsolute: Boolean
+    clearBettingMultiplierCorrect: Boolean
+    clearBettingMultiplierWrong: Boolean
 
     allowMultipleSelection: Boolean
     answerLabelStyle: QuizAnswerLabelStyle
@@ -65825,7 +65831,7 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"questionText", "imageUrl", "questionOrder", "timeoutSeconds", "points", "bettingEnabled", "bettingMinPercentage", "bettingMaxPercentage", "bettingMinAbsolute", "bettingMaxAbsolute", "bettingMultiplierCorrect", "bettingMultiplierWrong", "clearBettingMinAbsolute", "clearBettingMaxAbsolute", "allowMultipleSelection", "answerLabelStyle", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
+	fieldsInOrder := [...]string{"questionText", "imageUrl", "questionOrder", "timeoutSeconds", "points", "bettingEnabled", "bettingMinPercentage", "bettingMaxPercentage", "bettingMinAbsolute", "bettingMaxAbsolute", "bettingMultiplierCorrect", "bettingMultiplierWrong", "clearBettingMinPercentage", "clearBettingMaxPercentage", "clearBettingMinAbsolute", "clearBettingMaxAbsolute", "clearBettingMultiplierCorrect", "clearBettingMultiplierWrong", "allowMultipleSelection", "answerLabelStyle", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -65916,6 +65922,20 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 				return it, err
 			}
 			it.BettingMultiplierWrong = data
+		case "clearBettingMinPercentage":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearBettingMinPercentage"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClearBettingMinPercentage = data
+		case "clearBettingMaxPercentage":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearBettingMaxPercentage"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClearBettingMaxPercentage = data
 		case "clearBettingMinAbsolute":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearBettingMinAbsolute"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -65930,6 +65950,20 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 				return it, err
 			}
 			it.ClearBettingMaxAbsolute = data
+		case "clearBettingMultiplierCorrect":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearBettingMultiplierCorrect"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClearBettingMultiplierCorrect = data
+		case "clearBettingMultiplierWrong":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearBettingMultiplierWrong"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClearBettingMultiplierWrong = data
 		case "allowMultipleSelection":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowMultipleSelection"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
