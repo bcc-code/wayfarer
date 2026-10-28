@@ -702,6 +702,15 @@ Expected behaviour (not a gap):
   mutation. Boards, averages and counts follow at once (they read live). The
   stored `leaderboard_excluded` flag, as before, is recomputed only on its
   triggers (membership changes, and now consent changes).
+- Publishing a required consent changes the status of every project member,
+  so the age rule re-runs for every unit of the project (seen in the manual
+  test, 2026-10-27). Two effects, both accepted by Jan (2026-10-28):
+  - A hand-set `leaderboard_excluded` on a unit under 36 is reset to false;
+    admins must set it again. Membership changes already did this.
+  - A 36+ unit that never went through the rule (`joinTeam` does not run it;
+    neither does seeding) is excluded from then on. This applies the rule as
+    intended. In the 2026-10-27 production copy no unit was excluded by hand,
+    but the generated projects held 140–1,136 such 36+ units each.
 
 Still open from the use case: the Ladder to Heaven distribution and the
 `quiz_session_finished` webhook (they send data out; needs a product
