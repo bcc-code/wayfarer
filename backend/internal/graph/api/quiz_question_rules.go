@@ -98,8 +98,7 @@ func payoutChanged(storedCorrect, storedWrong pgtype.Numeric, newCorrect, newWro
 		return false, err
 	}
 	nextCorrect, nextWrong := oldCorrect, oldWrong
-	// Clearing falls back to the default multiplier, which is as much a change
-	// of the terms a bet was placed under as setting a new number is.
+	// Clearing falls back to the default, which changes the terms too.
 	if clearCorrect {
 		nextCorrect = nil
 	}

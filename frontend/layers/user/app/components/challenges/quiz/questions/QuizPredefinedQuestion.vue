@@ -64,11 +64,7 @@ const {
   isSessionFinished,
 } = session
 
-/**
- * Whether the answer is settled enough to reveal correctness against. Inside a
- * session it stays open to revision until the session locks, so a saved answer
- * is not "confirmed" the way it is in a one-shot quiz.
- */
+// Inside a session an answer stays revisable until the session locks.
 const isAnswerConfirmed = computed(() => {
   if (props.readonly) return true
   if (actionMode.value === 'session-betting') return false
@@ -77,7 +73,6 @@ const isAnswerConfirmed = computed(() => {
 })
 const lockedOutsideSession = ref(Boolean(props.existingResponse))
 
-/** Whether the answer can still be edited right now. */
 const isAnswerLocked = computed(() => {
   if (props.readonly) return true
   if (actionMode.value === 'session-betting')

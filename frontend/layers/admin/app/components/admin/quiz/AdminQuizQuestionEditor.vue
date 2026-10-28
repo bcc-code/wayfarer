@@ -25,8 +25,7 @@ const emit = defineEmits<{
 let keySeq = 0
 const nextKey = () => `a${++keySeq}`
 
-// Mirrors betting.DefaultMultiplierCorrect / DefaultMultiplierWrong, applied
-// server-side whenever the question leaves a multiplier unset.
+// Mirrors betting.DefaultMultiplierCorrect / DefaultMultiplierWrong.
 const DEFAULT_MULTIPLIER_CORRECT = 2
 const DEFAULT_MULTIPLIER_WRONG = 0
 

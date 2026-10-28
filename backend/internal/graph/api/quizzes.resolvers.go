@@ -590,7 +590,7 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 	if input.BettingMultiplierWrong != nil {
 		next.MultiplierWrong = input.BettingMultiplierWrong
 	}
-	// A cleared field falls back to its default, so validate that, not the old value
+	// Validate a cleared field as its default, not its old value.
 	if params.Clearbettingminpercentage {
 		next.MinPercentage = nil
 	}
@@ -1227,8 +1227,6 @@ func (r *mutationResolver) UpdateQuizAnswer(ctx context.Context, responseID stri
 		params.Betamount = &betAmount
 	}
 
-	// Apply the answer field matching the question's type, if one was given.
-	// A request carrying only a bet leaves the stored answer untouched.
 	answerChanged, err := applyAnswerUpdate(&params, question.QuestionType, input)
 	if err != nil {
 		otel.RecordError(span, err)
@@ -1245,9 +1243,8 @@ func (r *mutationResolver) UpdateQuizAnswer(ctx context.Context, responseID stri
 			return nil, fmt.Errorf("failed to grade answer: %w", err)
 		}
 
-		// Always written, so changing a correct answer to a wrong one clears
-		// the points the old answer earned. UpdateQuizResponse coalesces, so a
-		// nil here would keep them.
+		// Always written: UpdateQuizResponse coalesces, so a nil would keep the
+		// points a previously-correct answer earned.
 		points := int32(0)
 		if params.Iscorrect != nil && *params.Iscorrect && question.Points != nil {
 			points = *question.Points
@@ -2835,7 +2832,6 @@ func (r *quizPredefinedAnswerResolver) Question(ctx context.Context, obj *model.
 }
 
 // IsCorrect is the resolver for the isCorrect field on QuizPredefinedAnswer.
-// It hides which answers are correct until the session is FINISHED to prevent cheating.
 func (r *quizPredefinedAnswerResolver) IsCorrect(ctx context.Context, obj *model.QuizPredefinedAnswer) (*bool, error) {
 	allowed, err := r.canRevealQuestionAnswers(ctx, obj.QuestionID)
 	if err != nil {

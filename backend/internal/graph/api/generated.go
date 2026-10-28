@@ -11802,9 +11802,7 @@ type PredefinedResponse implements QuizResponse {
     journalEntry: ScoreJournal @goField(forceResolver: true)
     selectedAnswerIds: [ID!]!
     selectedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
-    # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
     isCorrect: Boolean @goField(forceResolver: true)
-    # settledBetMultiplier is the payout actually applied to the bet, null until the bet is settled
     settledBetMultiplier: Float @goField(forceResolver: true)
 }
 
@@ -11818,9 +11816,7 @@ type FreeTextResponse implements QuizResponse {
     betAmount: Int
     journalEntry: ScoreJournal @goField(forceResolver: true)
     textResponse: String!
-    # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
     isCorrect: Boolean @goField(forceResolver: true)
-    # settledBetMultiplier is the payout actually applied to the bet, null until the bet is settled
     settledBetMultiplier: Float @goField(forceResolver: true)
 }
 
@@ -11834,9 +11830,7 @@ type NumberResponse implements QuizResponse {
     betAmount: Int
     journalEntry: ScoreJournal @goField(forceResolver: true)
     numberResponse: Float!
-    # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
     isCorrect: Boolean @goField(forceResolver: true)
-    # settledBetMultiplier is the payout actually applied to the bet, null until the bet is settled
     settledBetMultiplier: Float @goField(forceResolver: true)
 }
 
@@ -11850,9 +11844,7 @@ type JsonResponse implements QuizResponse {
     betAmount: Int
     journalEntry: ScoreJournal @goField(forceResolver: true)
     jsonResponse: JSON!
-    # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
     isCorrect: Boolean @goField(forceResolver: true)
-    # settledBetMultiplier is the payout actually applied to the bet, null until the bet is settled
     settledBetMultiplier: Float @goField(forceResolver: true)
 }
 
@@ -11866,9 +11858,7 @@ type OrderingResponse implements QuizResponse {
     betAmount: Int
     journalEntry: ScoreJournal @goField(forceResolver: true)
     submittedOrder: [ID!]!
-    # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
     isCorrect: Boolean @goField(forceResolver: true)
-    # settledBetMultiplier is the payout actually applied to the bet, null until the bet is settled
     settledBetMultiplier: Float @goField(forceResolver: true)
 }
 

@@ -256,19 +256,9 @@ func multiplierToFixed(field string, v *float64) (*int64, error) {
 	return &fixed, nil
 }
 
-// SettledBetMultiplier returns the payout actually applied to a settled bet,
-// as winnings over stake.
-//
-// It is the one place that turns a settled bet back into a multiplier, so the
-// number shown to a user always matches the ledger — whatever computed it.
-// Session settlement pays PREDEFINED and ORDERING bets from the question's
-// configured curve, but recordBetResult writes a caller-supplied pointsEarned
-// without consulting it, and payouts floor at floor(stake * multiplier / 100).
-// So the question's betting_multiplier_* columns describe the odds offered,
-// not necessarily what a given bet actually paid.
-//
-// Returns nil when there is no settled bet to describe: no stake, or no journal
-// entry written for it yet.
+// SettledBetMultiplier returns what a settled bet actually paid, as winnings
+// over stake. The question's configured multipliers are the odds offered, which
+// recordBetResult ignores and flooring can round away. Nil until settled.
 func SettledBetMultiplier(scoreJournalID *string, betAmount, pointsEarned *int) *float64 {
 	if scoreJournalID == nil || *scoreJournalID == "" {
 		return nil
@@ -277,8 +267,7 @@ func SettledBetMultiplier(scoreJournalID *string, betAmount, pointsEarned *int) 
 		return nil
 	}
 
-	// points_earned holds the net bet result on a settled bet, so the winnings
-	// are the stake back plus that net.
+	// points_earned is the net result, so winnings are the stake back plus that.
 	winnings := *pointsEarned + *betAmount
 	multiplier := float64(winnings) / float64(*betAmount)
 	return &multiplier

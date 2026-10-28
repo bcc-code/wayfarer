@@ -12,13 +12,8 @@ const props = withDefaults(
     mode?: 'betting' | 'locked' | 'results'
     pointsEarned?: number | null
     betAmount?: number | null
-    /**
-     * How the question was graded. Question-type-neutral on purpose: a single
-     * verdict is the only correctness frame every type shares, and it is what
-     * the backend settles the bet on.
-     */
+    /** How the question was graded; the only frame every question type shares. */
     outcome?: 'correct' | 'incorrect' | null
-    /** The payout the ledger actually applied, from the API. */
     multiplier?: number | null
   }>(),
   {
@@ -76,10 +71,7 @@ const remainingAvailablePoints = computed(() => {
 })
 
 // Results mode computations
-/**
- * The verdict decides win or loss, not the sign of the points: a payout curve
- * that returns the stake pays 0 net, which is a won bet rather than a lost one.
- */
+// A curve that returns the stake pays 0 net, which is a win, not a loss.
 const isWin = computed(() => {
   if (props.outcome !== null) return props.outcome === 'correct'
   if (props.pointsEarned === null || props.pointsEarned === undefined)

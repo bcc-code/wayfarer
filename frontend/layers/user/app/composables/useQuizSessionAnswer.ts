@@ -1,10 +1,7 @@
 import type { QuizSessionState } from '~/api/generated'
 import type { QuizActionMode } from '../components/challenges/quiz/types'
 
-/**
- * The parts of an answer that differ per question type, as the shape the
- * submit/update mutations expect (`selectedAnswerIds`, `submittedOrder`, …).
- */
+/** The type-specific answer fields, shaped as the mutations expect them. */
 export type QuizAnswerInput = Record<string, unknown>
 
 export interface QuizSessionAnswerOptions {
@@ -12,22 +9,15 @@ export interface QuizSessionAnswerOptions {
   questionId: () => string
   sessionState: () => QuizSessionState | undefined
   readonly: () => boolean | undefined
-  /** The response this question already has, if the user answered it before. */
   existingResponseId: () => string | undefined
-  /** The type-specific answer fields to send. */
   buildAnswer: () => QuizAnswerInput
   betAmount: () => number | undefined
   onSaved?: (responseId: string) => void
 }
 
 /**
- * The session half of answering a question: which action mode the footer is in,
- * and saving or revising the answer and its bet.
- *
- * Every question type shares this, so a bet behaves the same whatever is being
- * bet on. The rule the modes encode: while the session is OPEN the answer and
- * the bet can both be changed as often as the user likes; locking the session
- * freezes them.
+ * Shared by every question type so a bet behaves the same whatever is bet on:
+ * while the session is OPEN the answer and bet stay editable, LOCKED freezes them.
  */
 export function useQuizSessionAnswer(options: QuizSessionAnswerOptions) {
   const { executeMutation: submitAnswer } = useSubmitQuizAnswerMutation()

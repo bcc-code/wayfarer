@@ -177,12 +177,8 @@ func (r *Resolver) updateQuizResponseLocked(ctx context.Context, submissionID st
 }
 
 // applyAnswerUpdate writes the answer field matching questionType onto params
-// and reports whether the answer changed.
-//
-// It mirrors the type switch in SubmitQuizAnswer, so an answer can be revised
-// exactly as it could be given. Supplying a field belonging to another question
-// type is rejected rather than silently dropped: it means the caller and the
-// question disagree about what is being answered.
+// and reports whether the answer changed. A field belonging to another type is
+// rejected rather than silently dropped.
 func applyAnswerUpdate(params *sqlc.UpdateQuizResponseParams, questionType string, input model.UpdateQuizAnswerInput) (bool, error) {
 	given := map[string]bool{
 		"PREDEFINED": input.SelectedAnswerIds != nil,
