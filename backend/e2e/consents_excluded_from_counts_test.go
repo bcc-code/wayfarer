@@ -301,4 +301,25 @@ func TestRequiredConsentExcludesUserFromCounts(t *testing.T) {
 		counted(t)
 		controlUntouched(t)
 	})
+
+	// Actions are recorded per key and blocking follows the latest version, so an
+	// action on an older optional version blocks or unblocks the user too
+	t.Run("rejecting an older optional version leaves them out", func(t *testing.T) {
+		require.NotEmpty(t, relaxedID)
+		execute(t, adminToken, `mutation ($id: ID!) { updateConsent(id: $id, isRequired: false) { id } }`,
+			map[string]any{"id": consentID}, nil)
+		counted(t) // v2 is still required and accepted
+
+		execute(t, blockedToken, `mutation ($id: ID!) { rejectConsent(consentId: $id) { id } }`,
+			map[string]any{"id": consentID}, nil)
+		excluded(t)
+		controlUntouched(t)
+	})
+
+	t.Run("accepting an older optional version counts them", func(t *testing.T) {
+		execute(t, blockedToken, `mutation ($id: ID!) { acceptConsent(consentId: $id) { id } }`,
+			map[string]any{"id": consentID}, nil)
+		counted(t)
+		controlUntouched(t)
+	})
 }

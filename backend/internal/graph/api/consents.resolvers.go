@@ -136,11 +136,9 @@ func (r *mutationResolver) AcceptConsent(ctx context.Context, consentID string) 
 		}, nil
 	}
 
-	// A required consent decides whether the user counts anywhere (00116)
-	applyBlockChanges := func() {}
-	if consent.IsRequired {
-		applyBlockChanges = r.trackConsentBlockChanges(ctx, r.blockedProjectsOfUser(userID))
-	}
+	// Whether the user counts anywhere follows the key's latest version, which
+	// may be required even when this one is not (00116)
+	blockedBefore := r.blockedProjectsOfUser(ctx, userID)
 
 	// Create new user consent history entry
 	occurredAt := pgtype.Timestamptz{Time: time.Now(), Valid: true}
@@ -161,12 +159,7 @@ func (r *mutationResolver) AcceptConsent(ctx context.Context, consentID string) 
 
 	// Invalidate user cache
 	r.Cache.Delete(cache.UserKey(userID))
-	// Accepting a required consent makes the user visible to others again
-	// (consent_blocked_user_ids, migration 00116); drop the cached boards
-	if consent.IsRequired {
-		r.Cache.InvalidateLeaderboardScores()
-	}
-	applyBlockChanges()
+	r.applyConsentBlockChanges(ctx, blockedBefore, r.blockedProjectsOfUser(ctx, userID))
 
 	return &model.UserConsent{
 		ID:         historyEntry.ID,
@@ -219,11 +212,9 @@ func (r *mutationResolver) RejectConsent(ctx context.Context, consentID string) 
 		}, nil
 	}
 
-	// A required consent decides whether the user counts anywhere (00116)
-	applyBlockChanges := func() {}
-	if consent.IsRequired {
-		applyBlockChanges = r.trackConsentBlockChanges(ctx, r.blockedProjectsOfUser(userID))
-	}
+	// Whether the user counts anywhere follows the key's latest version, which
+	// may be required even when this one is not (00116)
+	blockedBefore := r.blockedProjectsOfUser(ctx, userID)
 
 	// Create new user consent history entry
 	occurredAt := pgtype.Timestamptz{Time: time.Now(), Valid: true}
@@ -244,11 +235,7 @@ func (r *mutationResolver) RejectConsent(ctx context.Context, consentID string) 
 
 	// Invalidate user cache
 	r.Cache.Delete(cache.UserKey(userID))
-	// Rejecting a required consent hides the user from others (migration 00116)
-	if consent.IsRequired {
-		r.Cache.InvalidateLeaderboardScores()
-	}
-	applyBlockChanges()
+	r.applyConsentBlockChanges(ctx, blockedBefore, r.blockedProjectsOfUser(ctx, userID))
 
 	return &model.UserConsent{
 		ID:         historyEntry.ID,
@@ -294,7 +281,7 @@ func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title 
 
 	// A new version can make the key required or relax it, which changes who
 	// counts anywhere in its projects (00116)
-	applyBlockChanges := r.trackConsentBlockChanges(ctx, r.blockedUsersInConsentScope(consentProjectID))
+	blockedBefore := r.blockedUsersInConsentScope(ctx, consentProjectID)
 
 	// Create consent
 	consent, err := r.DB.Queries.CreateConsent(ctx, sqlc.CreateConsentParams{
@@ -317,10 +304,7 @@ func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title 
 
 	// Invalidate latest consents cache
 	r.Cache.DeletePrefix(cache.PrefixLatestConsents)
-	// A new version can make a consent required or relax it, which changes
-	// who is hidden from other users (migration 00116)
-	r.Cache.InvalidateLeaderboardScores()
-	applyBlockChanges()
+	r.applyConsentBlockChanges(ctx, blockedBefore, r.blockedUsersInConsentScope(ctx, consentProjectID))
 
 	var publishedAtOut *scalars.DateTime
 	if consent.PublishedAt.Valid {
@@ -379,7 +363,7 @@ func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *
 	if err != nil {
 		return nil, fmt.Errorf("consent not found: %w", err)
 	}
-	applyBlockChanges := r.trackConsentBlockChanges(ctx, r.blockedUsersInConsentScope(existing.ProjectID))
+	blockedBefore := r.blockedUsersInConsentScope(ctx, existing.ProjectID)
 
 	consent, err := r.DB.Queries.UpdateConsent(ctx, sqlc.UpdateConsentParams{
 		ID:          id,
@@ -398,10 +382,7 @@ func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *
 	// Invalidate caches
 	r.Cache.Delete(cache.ConsentKey(id))
 	r.Cache.DeletePrefix(cache.PrefixLatestConsents)
-	// isRequired or publishedAt may have changed who is hidden from other
-	// users (migration 00116)
-	r.Cache.InvalidateLeaderboardScores()
-	applyBlockChanges()
+	r.applyConsentBlockChanges(ctx, blockedBefore, r.blockedUsersInConsentScope(ctx, existing.ProjectID))
 
 	var publishedAtOut *scalars.DateTime
 	if consent.PublishedAt.Valid {
@@ -466,11 +447,9 @@ func (r *mutationResolver) AdminSetUserConsent(ctx context.Context, userID strin
 		actionStr = "REJECTED"
 	}
 
-	// A required consent decides whether the user counts anywhere (00116)
-	applyBlockChanges := func() {}
-	if consent.IsRequired {
-		applyBlockChanges = r.trackConsentBlockChanges(ctx, r.blockedProjectsOfUser(userID))
-	}
+	// Whether the user counts anywhere follows the key's latest version, which
+	// may be required even when this one is not (00116)
+	blockedBefore := r.blockedProjectsOfUser(ctx, userID)
 
 	// Create history entry with admin's user ID as source
 	source := adminUserID
@@ -491,12 +470,7 @@ func (r *mutationResolver) AdminSetUserConsent(ctx context.Context, userID strin
 
 	// Invalidate target user's cache
 	r.Cache.Delete(cache.UserKey(userID))
-	// The target user's visibility to others follows required consents
-	// (migration 00116)
-	if consent.IsRequired {
-		r.Cache.InvalidateLeaderboardScores()
-	}
-	applyBlockChanges()
+	r.applyConsentBlockChanges(ctx, blockedBefore, r.blockedProjectsOfUser(ctx, userID))
 
 	// Load consent for return value
 	consentModel, err := r.LoadConsentWithTranslation(ctx, historyEntry.ConsentID)

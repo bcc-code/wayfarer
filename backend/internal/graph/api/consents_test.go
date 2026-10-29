@@ -113,3 +113,38 @@ func TestTeamsOfChangedUsers(t *testing.T) {
 
 	assert.Equal(t, map[string]string{"TM1": "PR1", "TM2": "PR1"}, got)
 }
+
+func TestConsentBlockChangesBetween(t *testing.T) {
+	stays := projectUser{ProjectID: "PR1", UserID: "US1"}
+	unblocked := projectUser{ProjectID: "PR1", UserID: "US2"}
+
+	t.Run("returns the change when both listings are known", func(t *testing.T) {
+		got, known := consentBlockChangesBetween(
+			blockedSet{Users: []projectUser{stays, unblocked}, Known: true},
+			blockedSet{Users: []projectUser{stays}, Known: true},
+		)
+
+		assert.True(t, known)
+		assert.Equal(t, map[projectUser]bool{unblocked: true}, got)
+	})
+
+	t.Run("an empty listing is known, not failed", func(t *testing.T) {
+		got, known := consentBlockChangesBetween(
+			blockedSet{Known: true},
+			blockedSet{Users: []projectUser{stays}, Known: true},
+		)
+
+		assert.True(t, known)
+		assert.Equal(t, map[projectUser]bool{stays: true}, got)
+	})
+
+	t.Run("is unknown when either listing failed", func(t *testing.T) {
+		known := blockedSet{Users: []projectUser{stays}, Known: true}
+
+		_, beforeKnown := consentBlockChangesBetween(blockedSet{}, known)
+		_, afterKnown := consentBlockChangesBetween(known, blockedSet{})
+
+		assert.False(t, beforeKnown)
+		assert.False(t, afterKnown)
+	})
+}

@@ -54,70 +54,79 @@ func teamsOfChangedUsers(memberships []*sqlc.GetTeamsByUserIDsRow, changed map[p
 	return teams
 }
 
-// blockedSnapshot lists the users blocked by a required consent within some scope
-type blockedSnapshot func(ctx context.Context) ([]projectUser, error)
-
-// blockedProjectsOfUser snapshots the projects in which the user is blocked
-func (r *Resolver) blockedProjectsOfUser(userID string) blockedSnapshot {
-	return func(ctx context.Context) ([]projectUser, error) {
-		rows, err := r.DB.Queries.GetConsentBlockedProjectsOfUsers(ctx, []string{userID})
-		if err != nil {
-			return nil, err
-		}
-		blocked := make([]projectUser, len(rows))
-		for i, row := range rows {
-			blocked[i] = projectUser{ProjectID: row.ProjectID, UserID: row.UserID}
-		}
-		return blocked, nil
-	}
+// blockedSet is who a required consent blocks (00116) within some scope, as
+// listed before or after a consent change. Known is false when listing them
+// failed: that is logged rather than failing the consent change.
+type blockedSet struct {
+	Users []projectUser
+	Known bool
 }
 
-// blockedUsersInConsentScope snapshots the blocked users of the consent's
-// project, or of every project for a global consent
-func (r *Resolver) blockedUsersInConsentScope(projectID *string) blockedSnapshot {
-	return func(ctx context.Context) ([]projectUser, error) {
-		var projectIDs []string // nil: all projects
-		if projectID != nil {
-			projectIDs = []string{*projectID}
-		}
-		rows, err := r.DB.Queries.GetConsentBlockedUsersInProjects(ctx, projectIDs)
-		if err != nil {
-			return nil, err
-		}
-		blocked := make([]projectUser, len(rows))
-		for i, row := range rows {
-			blocked[i] = projectUser{ProjectID: row.ProjectID, UserID: row.UserID}
-		}
-		return blocked, nil
+// blockedProjectsOfUser lists the projects in which the user is blocked
+func (r *Resolver) blockedProjectsOfUser(ctx context.Context, userID string) blockedSet {
+	rows, err := r.DB.Queries.GetConsentBlockedProjectsOfUsers(ctx, []string{userID})
+	if err != nil {
+		slog.Error("failed to list consent-blocked projects of user", "userID", userID, "error", err)
+		return blockedSet{}
 	}
+	blocked := make([]projectUser, len(rows))
+	for i, row := range rows {
+		blocked[i] = projectUser{ProjectID: row.ProjectID, UserID: row.UserID}
+	}
+	return blockedSet{Users: blocked, Known: true}
 }
 
-// trackConsentBlockChanges snapshots who is blocked before a consent change,
-// and returns the function to call after it, which applies what the change
-// did. A failed snapshot is logged rather than failing the consent change.
-func (r *Resolver) trackConsentBlockChanges(ctx context.Context, snapshot blockedSnapshot) func() {
-	before, err := snapshot(ctx)
+// blockedUsersInConsentScope lists the blocked users of the consent's project,
+// or of every project for a global consent
+func (r *Resolver) blockedUsersInConsentScope(ctx context.Context, projectID *string) blockedSet {
+	var projectIDs []string // nil: all projects
+	if projectID != nil {
+		projectIDs = []string{*projectID}
+	}
+	rows, err := r.DB.Queries.GetConsentBlockedUsersInProjects(ctx, projectIDs)
 	if err != nil {
 		slog.Error("failed to list consent-blocked users", "error", err)
-		return func() {}
+		return blockedSet{}
 	}
-	return func() {
-		after, err := snapshot(ctx)
-		if err != nil {
-			slog.Error("failed to list consent-blocked users", "error", err)
-			return
-		}
-		r.applyConsentBlockChanges(ctx, consentBlockChanges(before, after))
+	blocked := make([]projectUser, len(rows))
+	for i, row := range rows {
+		blocked[i] = projectUser{ProjectID: row.ProjectID, UserID: row.UserID}
 	}
+	return blockedSet{Users: blocked, Known: true}
 }
 
-// applyConsentBlockChanges re-applies the average-age exclusion to the teams of
-// users a consent change blocked or unblocked, and drops the cached member
-// counts. Other teams keep their flag, which an admin may have set by hand.
-func (r *Resolver) applyConsentBlockChanges(ctx context.Context, changed map[projectUser]bool) {
+// consentBlockChangesBetween returns who a consent change blocked or
+// unblocked, and false when a listing failed and that is unknown
+func consentBlockChangesBetween(before, after blockedSet) (map[projectUser]bool, bool) {
+	if !before.Known || !after.Known {
+		return nil, false
+	}
+	return consentBlockChanges(before.Users, after.Users), true
+}
+
+// applyConsentBlockChanges applies what a consent change did to who counts,
+// from who was blocked before and after it. It runs for every consent change,
+// not only for a required version: actions are recorded per key and blocking
+// follows the key's latest version, so accepting an older optional version can
+// unblock the user too.
+func (r *Resolver) applyConsentBlockChanges(ctx context.Context, before, after blockedSet) {
+	changed, known := consentBlockChangesBetween(before, after)
+	if !known {
+		// Who moved is unknown; at least don't serve boards counting them wrongly
+		r.Cache.InvalidateLeaderboardScores()
+		return
+	}
 	if len(changed) == 0 {
 		return
 	}
+	r.Cache.InvalidateLeaderboardScores()
+	r.refreshTeamsOfBlockChanges(ctx, changed)
+}
+
+// refreshTeamsOfBlockChanges re-applies the average-age exclusion to the teams
+// of users a consent change blocked or unblocked, and drops the cached member
+// counts. Other teams keep their flag, which an admin may have set by hand.
+func (r *Resolver) refreshTeamsOfBlockChanges(ctx context.Context, changed map[projectUser]bool) {
 
 	userIDs := make([]string, 0, len(changed))
 	seen := make(map[string]bool, len(changed))

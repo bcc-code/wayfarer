@@ -674,26 +674,36 @@ counts nowhere, for admins too:
   skip it, and the planner turned the per-member check into a whole-project
   anti-join per team. Correlated `consent_blocked_user_ids` checks must keep
   `OFFSET 0`.
+- `Team.members` loads the blocked IDs through `ConsentBlockedIDsByTeamLoader`
+  (`GetConsentBlockedUserIDsInTeams`, batched, not cached): the consent
+  function runs once per distinct project in the batch, not once per team.
+  A team lead gets the `CanManageTeamAsAdmin` check only when the team has
+  blocked members (review t_ba45, 2026-10-29).
 - `TeamMember.countsTowardScores: Boolean!` (new): false for a blocked
   member, whom only admins see. The admin unit card (`AdminUnitCard.vue`)
   still computes average age, the 36+ badge and the member count in the
   browser from the listed members, X included; it should use this field.
   Agreed as a separate frontend PR.
-- The age rule after consent changes: accept, reject, `adminSetUserConsent`
-  (required consents only), `createConsent` and `updateConsent` snapshot the
-  blocked (project, user) pairs before and after
-  (`GetConsentBlockedProjectsOfUsers`, `GetConsentBlockedUsersInProjects`,
-  `consents.sql`). Only the teams of users whose status changed are
-  re-checked (`applyConsentBlockChanges`, `consents.go`), because the rule
+- The age rule after consent changes: accept, reject, `adminSetUserConsent`,
+  `createConsent` and `updateConsent` list the blocked (project, user) pairs
+  before and after (`GetConsentBlockedProjectsOfUsers`,
+  `GetConsentBlockedUsersInProjects`, `consents.sql`). The user actions do this
+  for every version, not only a required one: actions are recorded per key and
+  blocking follows the latest version, so accepting an older optional version
+  unblocks the user too (review t_9e69, 2026-10-29). The cached boards are
+  dropped only when someone changed (or a listing failed). Only the teams of
+  users whose status changed are re-checked (`applyConsentBlockChanges`,
+  `consents.go`), because the rule
   overwrites a hand-set `leaderboard_excluded`, which a project-wide sweep
   would reset everywhere. The duplicated rule in add/remove team members is
   now one helper (`refreshTeamLeaderboardExclusion`, `teams.go`), unchanged in
   behaviour.
 - Tests: `e2e/consents_excluded_from_counts_test.go`, all through GraphQL:
   blocked, accept, reject, a relaxing new version, re-requiring it, admin
-  accept; a hand-excluded control team must keep its flag. Each rule was
+  accept, rejecting and accepting an older optional version; a hand-excluded control team must keep its flag. Each rule was
   broken on purpose and a subtest failed. Unit tests for `teamMembersFor`,
-  `consentBlockChanges`, `teamsOfChangedUsers`.
+  `consentBlockChanges`, `consentBlockChangesBetween`, `teamsOfChangedUsers`,
+  `mapConsentBlockedIDsByTeam`.
 
 Expected behaviour (not a gap):
 
