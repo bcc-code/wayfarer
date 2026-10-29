@@ -49,6 +49,11 @@ export function resolveQuizViewState(input: QuizViewStateInput): QuizViewState {
   if (input.quizCompleted && input.hasFinalResult) return 'just-completed'
 
   if (input.hasCompletedSubmission && !input.canStartQuiz) {
+    // LOCKED: the user sees their locked answer while waiting for the verdict.
+    // FINISHED with a settled bet: the payout lives in the question view's
+    // betting module, so the results screen would hide it.
+    // Known gap: in a multi-question quiz this lands on the last question and the
+    // session-results footer has no Previous/Next, so earlier bets are unreachable.
     const shouldShowQuestionView =
       input.sessionState === 'LOCKED' ||
       (input.sessionState === 'FINISHED' && input.hasSettledBet)
