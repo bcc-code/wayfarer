@@ -80,7 +80,8 @@ export function validateQuizQuestion(
       if (value < 0 || value > MAX_MULTIPLIER) {
         return `Multiplikator må være mellom 0 og ${MAX_MULTIPLIER}.`
       }
-      if (Math.round(value * 100) !== value * 100) {
+      // Same tolerance as betting.MultiplierFromFloat: absorbs float error (1.1 * 100)
+      if (Math.abs(value * 100 - Math.round(value * 100)) > 1e-6) {
         return 'Multiplikator kan ha høyst to desimaler.'
       }
     }

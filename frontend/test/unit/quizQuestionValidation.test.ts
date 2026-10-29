@@ -154,6 +154,15 @@ describe('validateQuizQuestion', () => {
       ).toBeUndefined()
     })
 
+    it.each([1.1, 2.3, 1.13])(
+      'accepts the valid decimal multiplier %s despite floating-point rounding',
+      (value) => {
+        expect(
+          validateQuizQuestion(betting({ bettingMultiplierCorrect: value })),
+        ).toBeUndefined()
+      },
+    )
+
     it('rejects a wrong-answer payout above the correct one', () => {
       expect(
         validateQuizQuestion(
