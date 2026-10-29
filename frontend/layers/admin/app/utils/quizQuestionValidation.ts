@@ -13,10 +13,10 @@ interface ValidatableQuestion {
   bettingMultiplierWrong?: number
 }
 
-// Mirrors betting.DefaultMultiplierCorrect / DefaultMultiplierWrong.
-const DEFAULT_MULTIPLIER_CORRECT = 2
-const DEFAULT_MULTIPLIER_WRONG = 0
-const MAX_MULTIPLIER = 100
+// Mirrors betting.DefaultMultiplierCorrect / DefaultMultiplierWrong / MaxMultiplier.
+export const DEFAULT_MULTIPLIER_CORRECT = 2
+export const DEFAULT_MULTIPLIER_WRONG = 0
+export const MAX_MULTIPLIER = 100
 
 const multiplier = (value: number | undefined, fallback: number) =>
   value === undefined || Number.isNaN(value) ? fallback : value

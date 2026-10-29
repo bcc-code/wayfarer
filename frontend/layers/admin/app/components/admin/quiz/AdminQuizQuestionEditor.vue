@@ -4,7 +4,12 @@ import type {
   QuizAnswerFormData,
   QuizQuestionFormData,
 } from './AdminQuizForm.vue'
-import { validateQuizQuestion } from '../../../utils/quizQuestionValidation'
+import {
+  DEFAULT_MULTIPLIER_CORRECT,
+  DEFAULT_MULTIPLIER_WRONG,
+  MAX_MULTIPLIER,
+  validateQuizQuestion,
+} from '../../../utils/quizQuestionValidation'
 
 const props = defineProps<{
   question: QuizQuestionFormData
@@ -24,10 +29,6 @@ const emit = defineEmits<{
 
 let keySeq = 0
 const nextKey = () => `a${++keySeq}`
-
-// Mirrors betting.DefaultMultiplierCorrect / DefaultMultiplierWrong.
-const DEFAULT_MULTIPLIER_CORRECT = 2
-const DEFAULT_MULTIPLIER_WRONG = 0
 
 const localQuestion = reactive<QuizQuestionFormData>({
   ...props.question,
@@ -601,7 +602,7 @@ function handleSave() {
                     <UInputNumber
                       v-model="localQuestion.bettingMultiplierCorrect"
                       :min="0"
-                      :max="100"
+                      :max="MAX_MULTIPLIER"
                       :step="0.25"
                       :format-options="{ maximumFractionDigits: 2 }"
                       size="xl"
@@ -616,7 +617,7 @@ function handleSave() {
                     <UInputNumber
                       v-model="localQuestion.bettingMultiplierWrong"
                       :min="0"
-                      :max="100"
+                      :max="MAX_MULTIPLIER"
                       :step="0.25"
                       :format-options="{ maximumFractionDigits: 2 }"
                       size="xl"
