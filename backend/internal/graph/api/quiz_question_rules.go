@@ -98,13 +98,6 @@ func payoutChanged(storedCorrect, storedWrong pgtype.Numeric, newCorrect, newWro
 		return false, err
 	}
 	nextCorrect, nextWrong := oldCorrect, oldWrong
-	// Clearing falls back to the default, which changes the terms too.
-	if clearCorrect {
-		nextCorrect = nil
-	}
-	if clearWrong {
-		nextWrong = nil
-	}
 	if newCorrect != nil {
 		if nextCorrect, err = multiplierToFixed("bettingMultiplierCorrect", newCorrect); err != nil {
 			return false, err
@@ -114,6 +107,14 @@ func payoutChanged(storedCorrect, storedWrong pgtype.Numeric, newCorrect, newWro
 		if nextWrong, err = multiplierToFixed("bettingMultiplierWrong", newWrong); err != nil {
 			return false, err
 		}
+	}
+	// Clearing falls back to the default, which changes the terms too. It wins
+	// over a supplied value, as in the UpdateQuizQuestion CASE.
+	if clearCorrect {
+		nextCorrect = nil
+	}
+	if clearWrong {
+		nextWrong = nil
 	}
 	for _, correct := range []bool{true, false} {
 		if betting.Multiplier(correct, oldCorrect, oldWrong) != betting.Multiplier(correct, nextCorrect, nextWrong) {

@@ -80,6 +80,10 @@ func TestPayoutChanged(t *testing.T) {
 		{name: "cleared wrong from a custom value", storedCorrect: unset, storedWrg: num("0.5"), clearWrong: true, want: true},
 		{name: "cleared when it was already the default", storedCorrect: num("2"), storedWrg: num("0"), clearCorrect: true, clearWrong: true},
 		{name: "cleared when nothing was stored", storedCorrect: unset, storedWrg: unset, clearCorrect: true, clearWrong: true},
+		// SQL gives clear flags precedence even when the same request also
+		// supplies a value. The open-bet guard must compare that same payout.
+		{name: "clear correct overrides supplied stored value", storedCorrect: num("3"), storedWrg: unset, newCorrect: f(3), clearCorrect: true, want: true},
+		{name: "clear wrong overrides supplied stored value", storedCorrect: unset, storedWrg: num("0.5"), newWrong: f(0.5), clearWrong: true, want: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
