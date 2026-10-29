@@ -99,6 +99,8 @@ models:
         type: string
       EventID:
         type: "*string"
+      ImageURL:
+        type: "*string"
 
   QuizChallenge:
     fields:
@@ -117,6 +119,8 @@ models:
         type: string
       EventID:
         type: "*string"
+      ImageURL:
+        type: "*string"
 
   ExternalChallenge:
     fields:
@@ -133,6 +137,8 @@ models:
         type: string
       EventID:
         type: "*string"
+      ImageURL:
+        type: "*string"
 
   PluginChallenge:
     fields:
@@ -148,6 +154,18 @@ models:
       ProjectID:
         type: string
       EventID:
+        type: "*string"
+      ImageURL:
+        type: "*string"
+
+  User:
+    extraFields:
+      ImageURL:
+        type: "*string"
+
+  LeaderboardEntry:
+    extraFields:
+      ImageURL:
         type: "*string"
 
   Event:
@@ -364,6 +382,8 @@ models:
         type: string
       ChallengeID:
         type: string
+      ImageURL:
+        type: "*string"
 
   # QuizQuestion implementations
   PredefinedQuestion:

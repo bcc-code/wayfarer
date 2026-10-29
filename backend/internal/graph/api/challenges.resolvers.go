@@ -21,9 +21,9 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-// ImageObject is the resolver for the imageObject field.
-func (r *externalChallengeResolver) ImageObject(ctx context.Context, obj *model.ExternalChallenge) (*model.Image, error) {
-	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+// Image is the resolver for the image field.
+func (r *externalChallengeResolver) Image(ctx context.Context, obj *model.ExternalChallenge) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.ImageURL)
 }
 
 // Project is the resolver for the project field.
@@ -89,7 +89,7 @@ func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string
 		Challengetype: string(input.Type),
 		Name:          input.Name,
 		Description:   "", // Will be set below
-		Imageurl:      input.Image,
+		Imageurl:      input.ImageURL,
 		Buttontext:    buttonText,
 	}
 
@@ -190,7 +190,7 @@ func (r *mutationResolver) UpdateChallenge(ctx context.Context, id string, input
 		desc := string(*input.Description)
 		params.Description = &desc
 	}
-	params.Imageurl = input.Image
+	params.Imageurl = input.ImageURL
 	params.Eventid = input.EventID
 	params.Buttontext = input.ButtonText
 	params.Notificationtext = input.NotificationText
@@ -1194,9 +1194,9 @@ func (r *mutationResolver) BulkPublishChallengesAsync(ctx context.Context, ids [
 	)
 }
 
-// ImageObject is the resolver for the imageObject field.
-func (r *pluginChallengeResolver) ImageObject(ctx context.Context, obj *model.PluginChallenge) (*model.Image, error) {
-	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+// Image is the resolver for the image field.
+func (r *pluginChallengeResolver) Image(ctx context.Context, obj *model.PluginChallenge) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.ImageURL)
 }
 
 // Project is the resolver for the project field.
@@ -1358,9 +1358,9 @@ func (r *queryResolver) Challenges(ctx context.Context, filter *model.ChallengeF
 	return connection, nil
 }
 
-// ImageObject is the resolver for the imageObject field.
-func (r *quizChallengeResolver) ImageObject(ctx context.Context, obj *model.QuizChallenge) (*model.Image, error) {
-	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+// Image is the resolver for the image field.
+func (r *quizChallengeResolver) Image(ctx context.Context, obj *model.QuizChallenge) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.ImageURL)
 }
 
 // Project is the resolver for the project field.
@@ -1404,9 +1404,9 @@ func (r *quizChallengeResolver) Quiz(ctx context.Context, obj *model.QuizChallen
 	return r.ApplyTranslationToQuiz(ctx, quiz), nil
 }
 
-// ImageObject is the resolver for the imageObject field.
-func (r *simpleChallengeResolver) ImageObject(ctx context.Context, obj *model.SimpleChallenge) (*model.Image, error) {
-	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+// Image is the resolver for the image field.
+func (r *simpleChallengeResolver) Image(ctx context.Context, obj *model.SimpleChallenge) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.ImageURL)
 }
 
 // Project is the resolver for the project field.

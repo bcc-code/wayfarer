@@ -15,23 +15,26 @@ image is not copy.
 
 ## GraphQL
 
-Read side: `imageObject: Image` on the `QuizQuestion` interface and on all five
+Read side: `image: Image` on the `QuizQuestion` interface and on all five
 implementations (`PredefinedQuestion`, `FreeTextQuestion`, `NumberQuestion`,
 `JsonQuestion`, `OrderingQuestion`). It is a force-resolver field backed by the
 `ImageURL` extra field on each model (see `gqlgen.yml`), resolved through
 `resolveImageByURL` so the metadata loader fills in width/height/blurhash.
 
-There is deliberately no raw `image: String` output field — `Quiz.image` and
-`Challenge.image` only still exist because they predate `imageObject`, and both
-are deprecated. Admins read the current URL as `imageObject { url }`.
+This is the same shape as every other image in the API: outputs are
+`image: Image`, inputs take the URL as `imageUrl: String`. There is no raw URL
+output field; admins read the current URL as `image { url }`. (Until the
+rename, the object field was called `imageObject` and sat next to a deprecated
+`image: String` on `Quiz`, `Challenge`, `User` and `LeaderboardEntry`; both
+are gone.)
 
-Write side: `image: String` on `CreateQuizQuestionInput` and
+Write side: `imageUrl: String` on `CreateQuizQuestionInput` and
 `UpdateQuizQuestionInput`.
 
 **Clearing:** an empty string clears the image. `UpdateQuizQuestion`'s SQL is
 `COALESCE(narg, column)` throughout, so a null means "leave alone" and could
 never remove a value. Rather than add another `clearX` boolean, the resolver
-treats a blank (or whitespace-only) `image` as an explicit clear and the query
+treats a blank (or whitespace-only) `imageUrl` as an explicit clear and the query
 takes a separate `clearimage` flag:
 
 ```sql
@@ -55,12 +58,12 @@ becomes a model. There are two, and they do not share code:
   the same switch for the batch loader.
 
 Plus `internal/database/queries/quiz_questions.sql` (every SELECT list,
-`RETURNING`, the INSERT and the UPDATE) and the five `ImageObject` resolvers in
+`RETURNING`, the INSERT and the UPDATE) and the five `Image` resolvers in
 `quizzes.resolvers.go`.
 
 ## Frontend touch points
 
-- `app/graphql/fragments/quiz.gql` — `imageObject { ...ImageFields }` on both
+- `app/graphql/fragments/quiz.gql` — `image { ...ImageFields }` on both
   `QuizQuestionFields` (admin) and `QuizQuestionUserFields` (participant).
 - `AdminQuizForm.vue` — `image?: string` on `QuizQuestionFormData`.
 - `AdminQuizQuestionEditor.vue` — an `AdminFileUpload` field; carried through
@@ -69,9 +72,11 @@ Plus `internal/database/queries/quiz_questions.sql` (every SELECT list,
   `QuizQuestionHeading` the participant sees, so the image appears there too.
 - `QuizQuestionHeading.vue` — renders the image above the question with
   `DesignImage` (blurhash placeholder, intrinsic aspect ratio).
-- `quizSave.ts` (`quizQuestionInput`) — sends `image`, normalising undefined to
-  `''` so removing an image in the editor actually clears it.
-- `challenges/[challengeId]/quiz.vue` — maps `imageObject.url` back into the
+- `quizSave.ts` (`quizQuestionInput`) — sends the form's `image` as
+  `imageUrl`, normalising undefined to `''` so removing an image in the editor
+  actually clears it. The form state keeps the name `image`; only the GraphQL
+  input is `imageUrl`.
+- `challenges/[challengeId]/quiz.vue` — maps `image.url` back into the
   form state.
 
 ---

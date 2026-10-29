@@ -28,7 +28,7 @@ type SuperTeam {
     id: ID!
     name: String!
     description: String!
-    imageObject: Image @goField(forceResolver: true)
+    image: Image @goField(forceResolver: true)
     color: String
     members(first: Int, after: String, last: Int, before: String): UserConnection! @goField(forceResolver: true)
     parentProject: Project! @goField(forceResolver: true)

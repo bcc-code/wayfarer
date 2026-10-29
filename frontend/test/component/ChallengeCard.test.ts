@@ -22,7 +22,7 @@ function makeChallenge(overrides: Partial<Challenge> = {}): Challenge {
     id: 'CL01ARZ3NDEKTSV4RRFFQ69G5FAV',
     name: 'Read the intro',
     description: '<p>Do the thing</p>',
-    imageObject: null,
+    image: null,
     buttonText: 'Start',
     userCompletedAt: null,
     ...overrides,

@@ -102,7 +102,7 @@ func teamMemberLeaderboardBatchFunc(db *database.DB, c *cache.CacheWithRegistry)
 					Score:       entry.Score,
 					Rank:        &rank,
 					Tags:        entryTags,
-					Image:       entry.Image,
+					ImageURL:    entry.Image,
 				}
 			}
 

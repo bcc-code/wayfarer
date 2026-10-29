@@ -45,7 +45,7 @@ query ProfilePage($ageFilter: LeaderboardFilter) {
     leaderboard(entityType: PERSONS, filter: $ageFilter) {
       me { rank }
     }
-    myTeam { superTeam { id, name, color, imageObject { ... } } }
+    myTeam { superTeam { id, name, color, image { ... } } }
   }
 }
 ```

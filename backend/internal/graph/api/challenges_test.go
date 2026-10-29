@@ -521,6 +521,46 @@ func TestBuildChallengeCacheKeyParams(t *testing.T) {
 	}
 }
 
+// TestConvertRowToChallengeImageURL covers the image URL reaching every
+// challenge type. The `image` field resolves from ImageURL, and the conversion
+// is written out once per type, so a type that drops it serves a null image.
+func TestConvertRowToChallengeImageURL(t *testing.T) {
+	url := "https://cdn.example.test/challenge.jpg"
+
+	imageURLOf := func(c model.Challenge) *string {
+		switch v := c.(type) {
+		case *model.SimpleChallenge:
+			return v.ImageURL
+		case *model.QuizChallenge:
+			return v.ImageURL
+		case *model.ExternalChallenge:
+			return v.ImageURL
+		case *model.PluginChallenge:
+			return v.ImageURL
+		}
+		t.Fatalf("unexpected challenge type %T", c)
+		return nil
+	}
+
+	for _, challengeType := range []string{ChallengeTypeSimple, ChallengeTypeQuiz, ChallengeTypeExternal, ChallengeTypePlugin} {
+		t.Run(challengeType+" with image", func(t *testing.T) {
+			c := convertRowToChallenge(&sqlc.Challenge{ID: "CL001", ChallengeType: challengeType, ImageUrl: &url})
+
+			got := imageURLOf(c)
+			require.NotNil(t, got)
+			assert.Equal(t, url, *got)
+			assert.Equal(t, url, getChallengePushInfo(c).Image)
+		})
+
+		t.Run(challengeType+" without image", func(t *testing.T) {
+			c := convertRowToChallenge(&sqlc.Challenge{ID: "CL001", ChallengeType: challengeType})
+
+			assert.Nil(t, imageURLOf(c))
+			assert.Empty(t, getChallengePushInfo(c).Image)
+		})
+	}
+}
+
 // NOTE: Unit tests for challenge mutation resolvers would require a proper mocking infrastructure
 // for the Resolver type and its dependencies. The codebase currently only has unit tests for
 // helper functions. The mutation resolvers should be tested through integration tests or

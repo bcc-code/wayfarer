@@ -34,14 +34,14 @@ describe('AdminChallengeCardPreview', () => {
       props: { challenge: { ...draft, image: '/kart.png' } },
     })
     expect(
-      withImage.findComponent(ChallengeCard).props('challenge').imageObject,
+      withImage.findComponent(ChallengeCard).props('challenge').image,
     ).toEqual({ url: '/kart.png' })
 
     const without = await mountSuspended(AdminChallengeCardPreview, {
       props: { challenge: draft },
     })
     expect(
-      without.findComponent(ChallengeCard).props('challenge').imageObject,
+      without.findComponent(ChallengeCard).props('challenge').image,
     ).toBeNull()
   })
 

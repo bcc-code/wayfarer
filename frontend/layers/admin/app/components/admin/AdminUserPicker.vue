@@ -20,7 +20,9 @@ gql(`
         node {
           id
           name
-          image
+          image {
+            url
+          }
           church {
             id
             name
@@ -39,7 +41,9 @@ gql(`
         node {
           id
           name
-          image
+          image {
+            url
+          }
           church {
             id
             name
@@ -53,7 +57,7 @@ gql(`
 type PickerUser = {
   id: string
   name: string
-  image?: string | null
+  image?: { url: string } | null
   church: { name: string }
 }
 
@@ -122,7 +126,7 @@ function onSelect(user: PickerUser | undefined) {
   >
     <template #item="{ item }">
       <div class="flex min-w-0 items-center gap-2">
-        <UAvatar :src="item.image ?? undefined" :alt="item.name" size="2xs" />
+        <UAvatar :src="item.image?.url" :alt="item.name" size="2xs" />
         <span class="truncate">{{ item.name }}</span>
         <span class="text-dimmed truncate text-xs">{{ item.church.name }}</span>
       </div>

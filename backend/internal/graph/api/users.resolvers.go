@@ -305,7 +305,7 @@ func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter, fir
 			Birthdate:         birthdateStr,
 			ChurchID:          row.ChurchID,
 			ChurchLockedUntil: churchLockedUntil,
-			Image:             row.AvatarUrl,
+			ImageURL:          row.AvatarUrl,
 			CreatedAt:         scalars.DateTime{Time: row.CreatedAt.Time},
 		}
 	}
@@ -358,9 +358,9 @@ func (r *userResolver) Age(ctx context.Context, obj *model.User) (*int, error) {
 	return &age, nil
 }
 
-// ImageObject is the resolver for the imageObject field.
-func (r *userResolver) ImageObject(ctx context.Context, obj *model.User) (*model.Image, error) {
-	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+// Image is the resolver for the image field.
+func (r *userResolver) Image(ctx context.Context, obj *model.User) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.ImageURL)
 }
 
 // Projects is the resolver for the projects field.

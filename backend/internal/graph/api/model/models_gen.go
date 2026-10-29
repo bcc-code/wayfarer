@@ -39,8 +39,7 @@ type Challenge interface {
 	GetID() string
 	GetName() string
 	GetDescription() scalars.HTML
-	GetImage() *string
-	GetImageObject() *Image
+	GetImage() *Image
 	GetProject() *Project
 	GetEvent() *Event
 	GetButtonText() *string
@@ -62,7 +61,7 @@ type QuizQuestion interface {
 	GetID() string
 	GetQuiz() *Quiz
 	GetQuestionText() string
-	GetImageObject() *Image
+	GetImage() *Image
 	GetQuestionOrder() int
 	GetTimeoutSeconds() *int
 	GetPoints() *int
@@ -448,7 +447,7 @@ type CreateChallengeInput struct {
 	Type                        ChallengeType     `json:"type"`
 	Name                        string            `json:"name"`
 	Description                 *scalars.HTML     `json:"description,omitempty"`
-	Image                       *string           `json:"image,omitempty"`
+	ImageURL                    *string           `json:"imageUrl,omitempty"`
 	ButtonText                  *string           `json:"buttonText,omitempty"`
 	NotificationText            *string           `json:"notificationText,omitempty"`
 	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
@@ -560,7 +559,7 @@ type CreateQuizAchievementInput struct {
 type CreateQuizInput struct {
 	Name                 string            `json:"name"`
 	Description          string            `json:"description"`
-	Image                *string           `json:"image,omitempty"`
+	ImageURL             *string           `json:"imageUrl,omitempty"`
 	ProjectID            string            `json:"projectId"`
 	ChallengeID          string            `json:"challengeId"`
 	TimeoutSeconds       *int              `json:"timeoutSeconds,omitempty"`
@@ -574,7 +573,7 @@ type CreateQuizInput struct {
 type CreateQuizQuestionInput struct {
 	QuestionType             QuizQuestionType              `json:"questionType"`
 	QuestionText             string                        `json:"questionText"`
-	Image                    *string                       `json:"image,omitempty"`
+	ImageURL                 *string                       `json:"imageUrl,omitempty"`
 	QuestionOrder            int                           `json:"questionOrder"`
 	TimeoutSeconds           *int                          `json:"timeoutSeconds,omitempty"`
 	Points                   *int                          `json:"points,omitempty"`
@@ -745,8 +744,7 @@ type ExternalChallenge struct {
 	ID                          string                   `json:"id"`
 	Name                        string                   `json:"name"`
 	Description                 scalars.HTML             `json:"description"`
-	Image                       *string                  `json:"image,omitempty"`
-	ImageObject                 *Image                   `json:"imageObject,omitempty"`
+	Image                       *Image                   `json:"image,omitempty"`
 	Project                     *Project                 `json:"project"`
 	Event                       *Event                   `json:"event,omitempty"`
 	ButtonText                  string                   `json:"buttonText"`
@@ -763,6 +761,7 @@ type ExternalChallenge struct {
 	TranslationStatus           []TranslationFieldStatus `json:"translationStatus"`
 	URL                         string                   `json:"url"`
 	EventID                     *string                  `json:"-"`
+	ImageURL                    *string                  `json:"-"`
 	ProjectID                   string                   `json:"-"`
 }
 
@@ -770,8 +769,7 @@ func (ExternalChallenge) IsChallenge()                           {}
 func (this ExternalChallenge) GetID() string                     { return this.ID }
 func (this ExternalChallenge) GetName() string                   { return this.Name }
 func (this ExternalChallenge) GetDescription() scalars.HTML      { return this.Description }
-func (this ExternalChallenge) GetImage() *string                 { return this.Image }
-func (this ExternalChallenge) GetImageObject() *Image            { return this.ImageObject }
+func (this ExternalChallenge) GetImage() *Image                  { return this.Image }
 func (this ExternalChallenge) GetProject() *Project              { return this.Project }
 func (this ExternalChallenge) GetEvent() *Event                  { return this.Event }
 func (this ExternalChallenge) GetButtonText() *string            { return &this.ButtonText }
@@ -896,7 +894,7 @@ type FreeTextQuestion struct {
 	ID                       string                   `json:"id"`
 	Quiz                     *Quiz                    `json:"quiz"`
 	QuestionText             string                   `json:"questionText"`
-	ImageObject              *Image                   `json:"imageObject,omitempty"`
+	Image                    *Image                   `json:"image,omitempty"`
 	QuestionOrder            int                      `json:"questionOrder"`
 	TimeoutSeconds           *int                     `json:"timeoutSeconds,omitempty"`
 	Points                   *int                     `json:"points,omitempty"`
@@ -916,7 +914,7 @@ func (FreeTextQuestion) IsQuizQuestion()                        {}
 func (this FreeTextQuestion) GetID() string                     { return this.ID }
 func (this FreeTextQuestion) GetQuiz() *Quiz                    { return this.Quiz }
 func (this FreeTextQuestion) GetQuestionText() string           { return this.QuestionText }
-func (this FreeTextQuestion) GetImageObject() *Image            { return this.ImageObject }
+func (this FreeTextQuestion) GetImage() *Image                  { return this.Image }
 func (this FreeTextQuestion) GetQuestionOrder() int             { return this.QuestionOrder }
 func (this FreeTextQuestion) GetTimeoutSeconds() *int           { return this.TimeoutSeconds }
 func (this FreeTextQuestion) GetPoints() *int                   { return this.Points }
@@ -1004,7 +1002,7 @@ type JSONQuestion struct {
 	ID                       string                   `json:"id"`
 	Quiz                     *Quiz                    `json:"quiz"`
 	QuestionText             string                   `json:"questionText"`
-	ImageObject              *Image                   `json:"imageObject,omitempty"`
+	Image                    *Image                   `json:"image,omitempty"`
 	QuestionOrder            int                      `json:"questionOrder"`
 	TimeoutSeconds           *int                     `json:"timeoutSeconds,omitempty"`
 	Points                   *int                     `json:"points,omitempty"`
@@ -1024,7 +1022,7 @@ func (JSONQuestion) IsQuizQuestion()                            {}
 func (this JSONQuestion) GetID() string                         { return this.ID }
 func (this JSONQuestion) GetQuiz() *Quiz                        { return this.Quiz }
 func (this JSONQuestion) GetQuestionText() string               { return this.QuestionText }
-func (this JSONQuestion) GetImageObject() *Image                { return this.ImageObject }
+func (this JSONQuestion) GetImage() *Image                      { return this.Image }
 func (this JSONQuestion) GetQuestionOrder() int                 { return this.QuestionOrder }
 func (this JSONQuestion) GetTimeoutSeconds() *int               { return this.TimeoutSeconds }
 func (this JSONQuestion) GetPoints() *int                       { return this.Points }
@@ -1150,9 +1148,9 @@ type LeaderboardEntry struct {
 	Score       int                   `json:"score"`
 	Rank        *int                  `json:"rank,omitempty"`
 	Tags        []LeaderboardEntryTag `json:"tags"`
-	Image       *string               `json:"image,omitempty"`
-	ImageObject *Image                `json:"imageObject,omitempty"`
+	Image       *Image                `json:"image,omitempty"`
 	LastScoreAt *scalars.DateTime     `json:"lastScoreAt,omitempty"`
+	ImageURL    *string               `json:"-"`
 }
 
 type LeaderboardFilter struct {
@@ -1235,7 +1233,7 @@ type NumberQuestion struct {
 	ID                       string                   `json:"id"`
 	Quiz                     *Quiz                    `json:"quiz"`
 	QuestionText             string                   `json:"questionText"`
-	ImageObject              *Image                   `json:"imageObject,omitempty"`
+	Image                    *Image                   `json:"image,omitempty"`
 	QuestionOrder            int                      `json:"questionOrder"`
 	TimeoutSeconds           *int                     `json:"timeoutSeconds,omitempty"`
 	Points                   *int                     `json:"points,omitempty"`
@@ -1258,7 +1256,7 @@ func (NumberQuestion) IsQuizQuestion()                        {}
 func (this NumberQuestion) GetID() string                     { return this.ID }
 func (this NumberQuestion) GetQuiz() *Quiz                    { return this.Quiz }
 func (this NumberQuestion) GetQuestionText() string           { return this.QuestionText }
-func (this NumberQuestion) GetImageObject() *Image            { return this.ImageObject }
+func (this NumberQuestion) GetImage() *Image                  { return this.Image }
 func (this NumberQuestion) GetQuestionOrder() int             { return this.QuestionOrder }
 func (this NumberQuestion) GetTimeoutSeconds() *int           { return this.TimeoutSeconds }
 func (this NumberQuestion) GetPoints() *int                   { return this.Points }
@@ -1336,7 +1334,7 @@ type OrderingQuestion struct {
 	ID                       string                   `json:"id"`
 	Quiz                     *Quiz                    `json:"quiz"`
 	QuestionText             string                   `json:"questionText"`
-	ImageObject              *Image                   `json:"imageObject,omitempty"`
+	Image                    *Image                   `json:"image,omitempty"`
 	QuestionOrder            int                      `json:"questionOrder"`
 	TimeoutSeconds           *int                     `json:"timeoutSeconds,omitempty"`
 	Points                   *int                     `json:"points,omitempty"`
@@ -1357,7 +1355,7 @@ func (OrderingQuestion) IsQuizQuestion()                        {}
 func (this OrderingQuestion) GetID() string                     { return this.ID }
 func (this OrderingQuestion) GetQuiz() *Quiz                    { return this.Quiz }
 func (this OrderingQuestion) GetQuestionText() string           { return this.QuestionText }
-func (this OrderingQuestion) GetImageObject() *Image            { return this.ImageObject }
+func (this OrderingQuestion) GetImage() *Image                  { return this.Image }
 func (this OrderingQuestion) GetQuestionOrder() int             { return this.QuestionOrder }
 func (this OrderingQuestion) GetTimeoutSeconds() *int           { return this.TimeoutSeconds }
 func (this OrderingQuestion) GetPoints() *int                   { return this.Points }
@@ -1435,8 +1433,7 @@ type PluginChallenge struct {
 	ID                          string                   `json:"id"`
 	Name                        string                   `json:"name"`
 	Description                 scalars.HTML             `json:"description"`
-	Image                       *string                  `json:"image,omitempty"`
-	ImageObject                 *Image                   `json:"imageObject,omitempty"`
+	Image                       *Image                   `json:"image,omitempty"`
 	Project                     *Project                 `json:"project"`
 	Event                       *Event                   `json:"event,omitempty"`
 	ButtonText                  *string                  `json:"buttonText,omitempty"`
@@ -1453,6 +1450,7 @@ type PluginChallenge struct {
 	TranslationStatus           []TranslationFieldStatus `json:"translationStatus"`
 	PluginChallengeID           string                   `json:"pluginChallengeId"`
 	EventID                     *string                  `json:"-"`
+	ImageURL                    *string                  `json:"-"`
 	ProjectID                   string                   `json:"-"`
 }
 
@@ -1460,8 +1458,7 @@ func (PluginChallenge) IsChallenge()                           {}
 func (this PluginChallenge) GetID() string                     { return this.ID }
 func (this PluginChallenge) GetName() string                   { return this.Name }
 func (this PluginChallenge) GetDescription() scalars.HTML      { return this.Description }
-func (this PluginChallenge) GetImage() *string                 { return this.Image }
-func (this PluginChallenge) GetImageObject() *Image            { return this.ImageObject }
+func (this PluginChallenge) GetImage() *Image                  { return this.Image }
 func (this PluginChallenge) GetProject() *Project              { return this.Project }
 func (this PluginChallenge) GetEvent() *Event                  { return this.Event }
 func (this PluginChallenge) GetButtonText() *string            { return this.ButtonText }
@@ -1501,7 +1498,7 @@ type PredefinedQuestion struct {
 	ID                       string                   `json:"id"`
 	Quiz                     *Quiz                    `json:"quiz"`
 	QuestionText             string                   `json:"questionText"`
-	ImageObject              *Image                   `json:"imageObject,omitempty"`
+	Image                    *Image                   `json:"image,omitempty"`
 	QuestionOrder            int                      `json:"questionOrder"`
 	TimeoutSeconds           *int                     `json:"timeoutSeconds,omitempty"`
 	Points                   *int                     `json:"points,omitempty"`
@@ -1524,7 +1521,7 @@ func (PredefinedQuestion) IsQuizQuestion()                        {}
 func (this PredefinedQuestion) GetID() string                     { return this.ID }
 func (this PredefinedQuestion) GetQuiz() *Quiz                    { return this.Quiz }
 func (this PredefinedQuestion) GetQuestionText() string           { return this.QuestionText }
-func (this PredefinedQuestion) GetImageObject() *Image            { return this.ImageObject }
+func (this PredefinedQuestion) GetImage() *Image                  { return this.Image }
 func (this PredefinedQuestion) GetQuestionOrder() int             { return this.QuestionOrder }
 func (this PredefinedQuestion) GetTimeoutSeconds() *int           { return this.TimeoutSeconds }
 func (this PredefinedQuestion) GetPoints() *int                   { return this.Points }
@@ -1678,8 +1675,7 @@ type Quiz struct {
 	ID                   string                   `json:"id"`
 	Name                 string                   `json:"name"`
 	Description          string                   `json:"description"`
-	Image                *string                  `json:"image,omitempty"`
-	ImageObject          *Image                   `json:"imageObject,omitempty"`
+	Image                *Image                   `json:"image,omitempty"`
 	Project              *Project                 `json:"project"`
 	Challenge            Challenge                `json:"challenge"`
 	TimeoutSeconds       *int                     `json:"timeoutSeconds,omitempty"`
@@ -1697,6 +1693,7 @@ type Quiz struct {
 	UserActiveSession    *QuizSession             `json:"userActiveSession,omitempty"`
 	TranslationStatus    []TranslationFieldStatus `json:"translationStatus"`
 	ChallengeID          string                   `json:"-"`
+	ImageURL             *string                  `json:"-"`
 	ProjectID            string                   `json:"-"`
 }
 
@@ -1765,8 +1762,7 @@ type QuizChallenge struct {
 	ID                          string                   `json:"id"`
 	Name                        string                   `json:"name"`
 	Description                 scalars.HTML             `json:"description"`
-	Image                       *string                  `json:"image,omitempty"`
-	ImageObject                 *Image                   `json:"imageObject,omitempty"`
+	Image                       *Image                   `json:"image,omitempty"`
 	Project                     *Project                 `json:"project"`
 	Event                       *Event                   `json:"event,omitempty"`
 	ButtonText                  string                   `json:"buttonText"`
@@ -1783,6 +1779,7 @@ type QuizChallenge struct {
 	TranslationStatus           []TranslationFieldStatus `json:"translationStatus"`
 	Quiz                        *Quiz                    `json:"quiz"`
 	EventID                     *string                  `json:"-"`
+	ImageURL                    *string                  `json:"-"`
 	ProjectID                   string                   `json:"-"`
 }
 
@@ -1790,8 +1787,7 @@ func (QuizChallenge) IsChallenge()                           {}
 func (this QuizChallenge) GetID() string                     { return this.ID }
 func (this QuizChallenge) GetName() string                   { return this.Name }
 func (this QuizChallenge) GetDescription() scalars.HTML      { return this.Description }
-func (this QuizChallenge) GetImage() *string                 { return this.Image }
-func (this QuizChallenge) GetImageObject() *Image            { return this.ImageObject }
+func (this QuizChallenge) GetImage() *Image                  { return this.Image }
 func (this QuizChallenge) GetProject() *Project              { return this.Project }
 func (this QuizChallenge) GetEvent() *Event                  { return this.Event }
 func (this QuizChallenge) GetButtonText() *string            { return &this.ButtonText }
@@ -2106,8 +2102,7 @@ type SimpleChallenge struct {
 	ID                          string                   `json:"id"`
 	Name                        string                   `json:"name"`
 	Description                 scalars.HTML             `json:"description"`
-	Image                       *string                  `json:"image,omitempty"`
-	ImageObject                 *Image                   `json:"imageObject,omitempty"`
+	Image                       *Image                   `json:"image,omitempty"`
 	Project                     *Project                 `json:"project"`
 	Event                       *Event                   `json:"event,omitempty"`
 	ButtonText                  string                   `json:"buttonText"`
@@ -2124,6 +2119,7 @@ type SimpleChallenge struct {
 	TranslationStatus           []TranslationFieldStatus `json:"translationStatus"`
 	AllowSelfCompletion         bool                     `json:"allowSelfCompletion"`
 	EventID                     *string                  `json:"-"`
+	ImageURL                    *string                  `json:"-"`
 	ProjectID                   string                   `json:"-"`
 }
 
@@ -2131,8 +2127,7 @@ func (SimpleChallenge) IsChallenge()                           {}
 func (this SimpleChallenge) GetID() string                     { return this.ID }
 func (this SimpleChallenge) GetName() string                   { return this.Name }
 func (this SimpleChallenge) GetDescription() scalars.HTML      { return this.Description }
-func (this SimpleChallenge) GetImage() *string                 { return this.Image }
-func (this SimpleChallenge) GetImageObject() *Image            { return this.ImageObject }
+func (this SimpleChallenge) GetImage() *Image                  { return this.Image }
 func (this SimpleChallenge) GetProject() *Project              { return this.Project }
 func (this SimpleChallenge) GetEvent() *Event                  { return this.Event }
 func (this SimpleChallenge) GetButtonText() *string            { return &this.ButtonText }
@@ -2247,7 +2242,7 @@ type SuperTeam struct {
 	ID            string          `json:"id"`
 	Name          string          `json:"name"`
 	Description   string          `json:"description"`
-	ImageObject   *Image          `json:"imageObject,omitempty"`
+	Image         *Image          `json:"image,omitempty"`
 	Color         *string         `json:"color,omitempty"`
 	Members       *UserConnection `json:"members"`
 	ParentProject *Project        `json:"parentProject"`
@@ -2354,7 +2349,7 @@ type UpdateAchievementInput struct {
 type UpdateChallengeInput struct {
 	Name                        *string           `json:"name,omitempty"`
 	Description                 *scalars.HTML     `json:"description,omitempty"`
-	Image                       *string           `json:"image,omitempty"`
+	ImageURL                    *string           `json:"imageUrl,omitempty"`
 	EventID                     *string           `json:"eventId,omitempty"`
 	ButtonText                  *string           `json:"buttonText,omitempty"`
 	NotificationText            *string           `json:"notificationText,omitempty"`
@@ -2443,7 +2438,7 @@ type UpdateQuizAnswerInput struct {
 type UpdateQuizInput struct {
 	Name                 *string           `json:"name,omitempty"`
 	Description          *string           `json:"description,omitempty"`
-	Image                *string           `json:"image,omitempty"`
+	ImageURL             *string           `json:"imageUrl,omitempty"`
 	TimeoutSeconds       *int              `json:"timeoutSeconds,omitempty"`
 	RandomizeQuestions   *bool             `json:"randomizeQuestions,omitempty"`
 	RevealCorrectAnswers *bool             `json:"revealCorrectAnswers,omitempty"`
@@ -2454,7 +2449,7 @@ type UpdateQuizInput struct {
 
 type UpdateQuizQuestionInput struct {
 	QuestionText             *string                       `json:"questionText,omitempty"`
-	Image                    *string                       `json:"image,omitempty"`
+	ImageURL                 *string                       `json:"imageUrl,omitempty"`
 	QuestionOrder            *int                          `json:"questionOrder,omitempty"`
 	TimeoutSeconds           *int                          `json:"timeoutSeconds,omitempty"`
 	Points                   *int                          `json:"points,omitempty"`
@@ -2532,8 +2527,7 @@ type User struct {
 	Age               *int              `json:"age,omitempty"`
 	Email             string            `json:"email"`
 	Name              string            `json:"name"`
-	Image             *string           `json:"image,omitempty"`
-	ImageObject       *Image            `json:"imageObject,omitempty"`
+	Image             *Image            `json:"image,omitempty"`
 	Projects          []Project         `json:"projects"`
 	Events            []Event           `json:"events"`
 	Teams             []Team            `json:"teams"`
@@ -2546,6 +2540,7 @@ type User struct {
 	// Point totals per project, most recently active first. `points(projectId:)`
 	// takes one project at a time, and the set is not known up front.
 	PointsByProject []UserProjectPoints `json:"pointsByProject"`
+	ImageURL        *string             `json:"-"`
 }
 
 type UserConnection struct {

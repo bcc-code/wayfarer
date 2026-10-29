@@ -33,7 +33,9 @@ gql(`
           id
           name
           description
-          image
+          image {
+            url
+          }
           timeoutSeconds
           randomizeQuestions
           revealCorrectAnswers
@@ -120,7 +122,7 @@ const quizData = computed<QuizFormData | undefined>(() => {
     id: c.quiz.id,
     name: c.quiz.name,
     description: c.quiz.description,
-    image: c.quiz.image ?? undefined,
+    image: c.quiz.image?.url ?? undefined,
     timeoutSeconds: c.quiz.timeoutSeconds ?? undefined,
     randomizeQuestions: c.quiz.randomizeQuestions,
     revealCorrectAnswers: c.quiz.revealCorrectAnswers,
@@ -130,7 +132,7 @@ const quizData = computed<QuizFormData | undefined>(() => {
       id: q.id,
       questionType: getQuestionType(q.__typename ?? 'PredefinedQuestion'),
       questionText: q.questionText,
-      image: q.imageObject?.url ?? undefined,
+      image: q.image?.url ?? undefined,
       questionOrder: q.questionOrder,
       timeoutSeconds: q.timeoutSeconds ?? undefined,
       points: q.points ?? undefined,
@@ -190,7 +192,7 @@ async function saveQuizSettings(form: QuizFormData) {
   const input = {
     name: form.name,
     description: form.description,
-    image: form.image,
+    imageUrl: form.image,
     timeoutSeconds: form.timeoutSeconds,
     randomizeQuestions: form.randomizeQuestions,
     revealCorrectAnswers: form.revealCorrectAnswers,
