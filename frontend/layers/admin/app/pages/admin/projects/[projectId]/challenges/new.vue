@@ -46,6 +46,7 @@ async function handleSubmit(formData: ChallengeFormData) {
     type,
     allowSelfCompletion,
     url,
+    image,
     publishedAt,
     endTime,
     visibleAt,
@@ -57,6 +58,7 @@ async function handleSubmit(formData: ChallengeFormData) {
   // Only include type-specific fields
   const input = {
     ...rest,
+    imageUrl: image,
     type,
     // The API reads a bare `YYYY-MM-DDTHH:mm` as UTC, so every timestamp goes
     // through toISOString or it lands an offset off.

@@ -22,7 +22,9 @@ gql(`
         joinedAt
         user {
           id
-          image
+          image {
+            url
+          }
         }
         church {
           id
@@ -428,7 +430,7 @@ async function handleToggleLeaderboardExclusion(excluded: boolean) {
               class="flex items-center gap-3 py-2"
             >
               <UAvatar
-                :src="member.user.image ?? undefined"
+                :src="member.user.image?.url"
                 :alt="member.name"
                 size="sm"
               />

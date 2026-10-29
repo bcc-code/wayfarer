@@ -38,8 +38,8 @@ func (r *freeTextQuestionResolver) Quiz(ctx context.Context, obj *model.FreeText
 	return r.ApplyTranslationToQuiz(ctx, quiz), nil
 }
 
-// ImageObject is the resolver for the imageObject field.
-func (r *freeTextQuestionResolver) ImageObject(ctx context.Context, obj *model.FreeTextQuestion) (*model.Image, error) {
+// Image is the resolver for the image field.
+func (r *freeTextQuestionResolver) Image(ctx context.Context, obj *model.FreeTextQuestion) (*model.Image, error) {
 	return resolveImageByURL(ctx, r.Loaders, obj.ImageURL)
 }
 
@@ -86,8 +86,8 @@ func (r *jsonQuestionResolver) Quiz(ctx context.Context, obj *model.JSONQuestion
 	return r.ApplyTranslationToQuiz(ctx, quiz), nil
 }
 
-// ImageObject is the resolver for the imageObject field.
-func (r *jsonQuestionResolver) ImageObject(ctx context.Context, obj *model.JSONQuestion) (*model.Image, error) {
+// Image is the resolver for the image field.
+func (r *jsonQuestionResolver) Image(ctx context.Context, obj *model.JSONQuestion) (*model.Image, error) {
 	return resolveImageByURL(ctx, r.Loaders, obj.ImageURL)
 }
 
@@ -155,7 +155,7 @@ func (r *mutationResolver) CreateQuiz(ctx context.Context, input model.CreateQui
 	}
 
 	// Set optional fields
-	params.Imageurl = input.Image
+	params.Imageurl = input.ImageURL
 	params.Challengeid = input.ChallengeID
 
 	if input.TimeoutSeconds != nil {
@@ -207,7 +207,7 @@ func (r *mutationResolver) UpdateQuiz(ctx context.Context, id string, input mode
 	// Set optional update fields
 	params.Name = input.Name
 	params.Description = input.Description
-	params.Imageurl = input.Image
+	params.Imageurl = input.ImageURL
 
 	if input.TimeoutSeconds != nil {
 		ts := int32(*input.TimeoutSeconds)
@@ -320,7 +320,7 @@ func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, i
 		Questiontype:  string(input.QuestionType),
 		Questiontext:  input.QuestionText,
 		Questionorder: int32(input.QuestionOrder),
-		Imageurl:      normalizeImageURL(input.Image),
+		Imageurl:      normalizeImageURL(input.ImageURL),
 	}
 
 	// Set type-specific fields
@@ -479,8 +479,8 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 		ID: id,
 	}
 	params.Questiontext = input.QuestionText
-	if input.Image != nil {
-		params.Imageurl = normalizeImageURL(input.Image)
+	if input.ImageURL != nil {
+		params.Imageurl = normalizeImageURL(input.ImageURL)
 		params.Clearimage = params.Imageurl == nil
 	}
 	if input.QuestionOrder != nil {
@@ -1998,8 +1998,8 @@ func (r *numberQuestionResolver) Quiz(ctx context.Context, obj *model.NumberQues
 	return r.ApplyTranslationToQuiz(ctx, quiz), nil
 }
 
-// ImageObject is the resolver for the imageObject field.
-func (r *numberQuestionResolver) ImageObject(ctx context.Context, obj *model.NumberQuestion) (*model.Image, error) {
+// Image is the resolver for the image field.
+func (r *numberQuestionResolver) Image(ctx context.Context, obj *model.NumberQuestion) (*model.Image, error) {
 	return resolveImageByURL(ctx, r.Loaders, obj.ImageURL)
 }
 
@@ -2046,8 +2046,8 @@ func (r *orderingQuestionResolver) Quiz(ctx context.Context, obj *model.Ordering
 	return r.ApplyTranslationToQuiz(ctx, quiz), nil
 }
 
-// ImageObject is the resolver for the imageObject field.
-func (r *orderingQuestionResolver) ImageObject(ctx context.Context, obj *model.OrderingQuestion) (*model.Image, error) {
+// Image is the resolver for the image field.
+func (r *orderingQuestionResolver) Image(ctx context.Context, obj *model.OrderingQuestion) (*model.Image, error) {
 	return resolveImageByURL(ctx, r.Loaders, obj.ImageURL)
 }
 
@@ -2142,8 +2142,8 @@ func (r *predefinedQuestionResolver) Quiz(ctx context.Context, obj *model.Predef
 	return r.ApplyTranslationToQuiz(ctx, quiz), nil
 }
 
-// ImageObject is the resolver for the imageObject field.
-func (r *predefinedQuestionResolver) ImageObject(ctx context.Context, obj *model.PredefinedQuestion) (*model.Image, error) {
+// Image is the resolver for the image field.
+func (r *predefinedQuestionResolver) Image(ctx context.Context, obj *model.PredefinedQuestion) (*model.Image, error) {
 	return resolveImageByURL(ctx, r.Loaders, obj.ImageURL)
 }
 
@@ -2505,9 +2505,9 @@ func (r *queryResolver) QuizSubmissions(ctx context.Context, quizID string, user
 	}, nil
 }
 
-// ImageObject is the resolver for the imageObject field.
-func (r *quizResolver) ImageObject(ctx context.Context, obj *model.Quiz) (*model.Image, error) {
-	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+// Image is the resolver for the image field.
+func (r *quizResolver) Image(ctx context.Context, obj *model.Quiz) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.ImageURL)
 }
 
 // Project is the resolver for the project field on Quiz.

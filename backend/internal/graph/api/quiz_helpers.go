@@ -97,7 +97,7 @@ func convertQuizRowToQuiz(row quizRow) *model.Quiz {
 		ID:                   row.GetID(),
 		Name:                 row.GetName(),
 		Description:          row.GetDescription(),
-		Image:                row.GetImageUrl(),
+		ImageURL:             row.GetImageUrl(),
 		ProjectID:            row.GetProjectID(),
 		ChallengeID:          row.GetChallengeID(),
 		TimeoutSeconds:       timeoutSeconds,

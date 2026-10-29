@@ -17,7 +17,7 @@ gql(`
           name
           description
           color
-          imageObject {
+          image {
             ...ImageFields
           }
           teams {
@@ -65,7 +65,7 @@ const superteams = computed(
       :loading="fetching"
       :columns="[
         { accessorKey: 'color', header: 'Farge' },
-        { accessorKey: 'imageObject', header: 'Bilde' },
+        { accessorKey: 'image', header: 'Bilde' },
         { accessorKey: 'name', header: 'Navn' },
         { accessorKey: 'teams', header: 'Lag' },
         { id: 'actions' },
@@ -78,10 +78,10 @@ const superteams = computed(
           :style="{ backgroundColor: row.original.color }"
         />
       </template>
-      <template #imageObject-cell="{ row }">
+      <template #image-cell="{ row }">
         <img
-          v-if="row.original.imageObject?.url"
-          :src="row.original.imageObject.url"
+          v-if="row.original.image?.url"
+          :src="row.original.image.url"
           height="32"
           width="32"
           class="bg-muted size-8 rounded"

@@ -3,7 +3,7 @@ fragment ChallengeFields on Challenge {
   id
   name
   description
-  imageObject {
+  image {
     ...ImageFields
   }
   buttonText

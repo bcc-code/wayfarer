@@ -40,9 +40,7 @@ const preview = computed(
       name: props.challenge.name ?? '',
       description: props.challenge.description ?? '',
       buttonText: props.challenge.buttonText ?? '',
-      imageObject: props.challenge.image
-        ? { url: props.challenge.image }
-        : null,
+      image: props.challenge.image ? { url: props.challenge.image } : null,
       url: props.challenge.url ?? '',
       userCompletedAt: null,
       quiz: { userSubmissions: [] },

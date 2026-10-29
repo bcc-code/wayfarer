@@ -1319,8 +1319,8 @@ func (r *queryResolver) Superteams(ctx context.Context, filter *model.SuperTeamF
 	return connection, nil
 }
 
-// ImageObject is the resolver for the imageObject field.
-func (r *superTeamResolver) ImageObject(ctx context.Context, obj *model.SuperTeam) (*model.Image, error) {
+// Image is the resolver for the image field.
+func (r *superTeamResolver) Image(ctx context.Context, obj *model.SuperTeam) (*model.Image, error) {
 	return resolveImageByURL(ctx, r.Loaders, obj.ImageUrl)
 }
 
@@ -1444,7 +1444,7 @@ func (r *superTeamResolver) Members(ctx context.Context, obj *model.SuperTeam, f
 			Birthdate:         birthdateStr,
 			ChurchID:          row.ChurchID,
 			ChurchLockedUntil: churchLockedUntil,
-			Image:             row.AvatarUrl,
+			ImageURL:          row.AvatarUrl,
 		}
 	}
 

@@ -100,7 +100,7 @@ export function quizQuestionInput(question: QuizQuestionFormData) {
     questionText: question.questionText,
     // Blank, not omitted, when there is no image: the update input reads an
     // omitted field as "leave alone", so a removed image would survive.
-    image: question.image ?? '',
+    imageUrl: question.image ?? '',
     timeoutSeconds: question.timeoutSeconds,
     points: question.points,
     allowMultipleSelection: question.allowMultipleSelection,

@@ -22,7 +22,9 @@ gql(`
 			email
 			membersId
 			age
-			image
+			image {
+				url
+			}
 			language
 			churchLockedUntil
 			points(projectId: $projectId)

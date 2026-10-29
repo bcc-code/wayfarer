@@ -84,7 +84,7 @@ func userByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context
 					Birthdate:         birthdateStr,
 					Email:             row.Email,
 					Name:              displayName,
-					Image:             row.AvatarUrl,
+					ImageURL:          row.AvatarUrl,
 					ConsentStatus:     consentStatus,
 					Language:          row.Language,
 					CreatedAt:         scalars.DateTime{Time: row.CreatedAt.Time},

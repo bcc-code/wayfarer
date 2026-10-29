@@ -141,7 +141,7 @@ defineExpose({ actionState, handlers, currentQuestionIndex })
       :question-text="currentQuestion.questionText"
       :index="currentQuestionIndex"
       :total="questions.length"
-      :image="currentQuestion.imageObject"
+      :image="currentQuestion.image"
     />
     <QuizPredefinedQuestion
       v-if="

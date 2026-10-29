@@ -37,9 +37,9 @@ func (r *leaderboardConnectionResolver) NearestChurchRivals(ctx context.Context,
 	return resolveNearestChurchRivals(ctx, r.LeaderboardService, obj, first)
 }
 
-// ImageObject is the resolver for the imageObject field.
-func (r *leaderboardEntryResolver) ImageObject(ctx context.Context, obj *model.LeaderboardEntry) (*model.Image, error) {
-	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+// Image is the resolver for the image field.
+func (r *leaderboardEntryResolver) Image(ctx context.Context, obj *model.LeaderboardEntry) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.ImageURL)
 }
 
 // HTML is the resolver for the html field.

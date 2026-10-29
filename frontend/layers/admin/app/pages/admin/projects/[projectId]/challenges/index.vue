@@ -47,7 +47,7 @@ gql(`
           name
           description
           completionCount
-          imageObject {
+          image {
             ...ImageFields
           }
         }
@@ -175,7 +175,7 @@ function challengeType(typename?: string) {
         :data="challenges"
         :loading="fetching"
         :columns="[
-          { accessorKey: 'imageObject' },
+          { accessorKey: 'image' },
           { accessorKey: 'name' },
           { accessorKey: 'description' },
           { accessorKey: 'type', header: 'Type' },
@@ -183,10 +183,10 @@ function challengeType(typename?: string) {
           { id: 'actions' },
         ]"
       >
-        <template #imageObject-cell="{ row }">
+        <template #image-cell="{ row }">
           <img
-            v-if="row.original.imageObject?.url"
-            :src="row.original.imageObject.url"
+            v-if="row.original.image?.url"
+            :src="row.original.image.url"
             height="32"
             width="32"
             class="bg-muted size-8 rounded"

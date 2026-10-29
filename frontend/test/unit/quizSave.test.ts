@@ -175,12 +175,12 @@ describe('quizQuestionInput image', () => {
       image: 'https://cdn.example.test/q.png',
     })
 
-    expect(input.image).toBe('https://cdn.example.test/q.png')
+    expect(input.imageUrl).toBe('https://cdn.example.test/q.png')
   })
 
   // An omitted field means "leave alone" to updateQuizQuestion, so removing
   // an image in the editor has to travel as a blank string to clear it.
   it('sends a blank string rather than nothing when there is no image', () => {
-    expect(quizQuestionInput(base).image).toBe('')
+    expect(quizQuestionInput(base).imageUrl).toBe('')
   })
 })

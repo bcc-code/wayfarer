@@ -7,7 +7,9 @@ gql(`
       id
       name
       email
-      image
+      image {
+        url
+      }
       membersId
       language
       church {
