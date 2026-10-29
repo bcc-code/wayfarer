@@ -364,4 +364,35 @@ func TestRequiredConsentHidesUserFromOthers(t *testing.T) {
 		unitRanks, _ = unit(t, viewerToken)
 		assert.Equal(t, want, unitRanks)
 	})
+
+	// Answers are per version (00117): a user has not consented to a version
+	// they have not seen
+	var participationV2 string
+	t.Run("a new version hides users who accepted the previous one", func(t *testing.T) {
+		participationV2 = insertConsent(t, "participation", 2, &pid, true, false)
+		testCache.InvalidateLeaderboardScores()
+
+		ranks, total := projectBoard(t)
+		assert.Equal(t, map[string]int{childID: 1}, ranks)
+		assert.Equal(t, 1, total)
+	})
+
+	t.Run("answering the previous version is refused", func(t *testing.T) {
+		resp := client.WithAuth(viewerToken).MustExecute(t, `
+			mutation ($id: ID!) { acceptConsent(consentId: $id) { id } }
+		`, map[string]any{"id": participation})
+		require.True(t, resp.HasErrors())
+		assert.Contains(t, resp.ErrorMessage(), "latest version")
+	})
+
+	t.Run("accepting the new version shows them again", func(t *testing.T) {
+		require.NotEmpty(t, participationV2)
+		resp := client.WithAuth(viewerToken).MustExecute(t, `
+			mutation ($id: ID!) { acceptConsent(consentId: $id) { id } }
+		`, map[string]any{"id": participationV2})
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		ranks, _ := projectBoard(t)
+		assert.Equal(t, map[string]int{acceptedID: 1, childID: 2}, ranks)
+	})
 }

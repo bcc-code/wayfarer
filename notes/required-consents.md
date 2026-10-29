@@ -40,9 +40,10 @@ only gating is a soft redirect from the front page during onboarding.
 | `is_remote` / `managed_by` | Accepted in an external system (SSF), not in-app          |
 | `project_id` (nullable)    | NULL = applies to every project (`00107`)                 |
 
-`user_consent_history` is append-only, keyed by `consent_key` (not consent id)
-so a version bump keeps the user's answer. `action` is `ACCEPTED` | `REJECTED`,
-constrained by `check_action`.
+`user_consent_history` is append-only and stores both `consent_key` and
+`consent_id`. `action` is `ACCEPTED` | `REJECTED`, constrained by
+`check_action`. Answers count **per version** (`consent_id`), since 00117: see
+design decision 11.
 
 ### Where "pending" is computed — two independent paths
 
@@ -147,6 +148,7 @@ Not in scope now. Captured so the analysis is not redone:
 | 8   | Does membership data get removed?                                 | **No.** The `user_projects` / `team_members` rows stay — a blocked user can still be _placed_ in a unit by an admin, they just do not show. Filtering at read time means accepting restores them instantly, with no re-join and no lost team assignment.                                                                                  |
 | 9   | Do a blocked user's points still count toward their unit's total? | **No — confirmed 2026-10-15.** Their score is excluded from the unit aggregate, and from the super-team and church aggregates. This is the _opposite_ of the rule for consent 2 (parked), deliberately — see below.                                                                                                                       |
 | 10  | Invisible to whom?                                                | **To other users, not to admins.** Confirmed 2026-10-15: a blocked user "should basically not exist in the project for other users, until they accept". Admin surfaces keep showing them — the admin user list, `AdminUserConsents.vue`, unit management — or a blocked user becomes impossible to support.                               |
+| 11  | Does an answer carry over to a new version?                       | **No — decided 2026-10-29.** A user has not consented to a version they have not seen. Only an answer to the latest published version counts, for every consent (required or not, local or remote): a new version is pending for everyone, also for users who rejected the previous one. `acceptConsent`, `rejectConsent` and `adminSetUserConsent` refuse any but the latest version. Editing a version in place (`updateConsent`, no bump) does not ask again; that is the way to fix typos. Implemented in 00117 (`consent_blocked_user_ids`), `GetCurrentUserConsentStatusesByUsers` / `buildConsentStatus`, `GetMissingConsentsForUserWithRejections`, and the `leaderboard_consent` check of the person boards. Until then answers were matched per key, so a version bump kept them. |
 
 ## Plan
 

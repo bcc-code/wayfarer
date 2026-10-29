@@ -370,11 +370,11 @@ func (q *Queries) GetConsentsByIDs(ctx context.Context, ids []string) ([]*GetCon
 }
 
 const GetCurrentUserConsentStatusesByUsers = `-- name: GetCurrentUserConsentStatusesByUsers :many
-SELECT DISTINCT ON (user_id, consent_key)
+SELECT DISTINCT ON (user_id, consent_id)
     id, user_id, consent_id, consent_key, action, occurred_at, source
 FROM user_consent_history
 WHERE user_id = ANY($1::char(28)[])
-ORDER BY user_id, consent_key, occurred_at DESC
+ORDER BY user_id, consent_id, occurred_at DESC
 `
 
 type GetCurrentUserConsentStatusesByUsersRow struct {
@@ -387,7 +387,8 @@ type GetCurrentUserConsentStatusesByUsersRow struct {
 	Source     *string            `json:"source"`
 }
 
-// Gets the latest action for each consent key for multiple users
+// Gets the latest action on each consent version for multiple users. Answers
+// are per version (00117): an answer to an old version is not one to the new.
 func (q *Queries) GetCurrentUserConsentStatusesByUsers(ctx context.Context, userIds []string) ([]*GetCurrentUserConsentStatusesByUsersRow, error) {
 	rows, err := q.db.Query(ctx, GetCurrentUserConsentStatusesByUsers, userIds)
 	if err != nil {
@@ -630,6 +631,7 @@ WHERE NOT EXISTS (
     SELECT 1 FROM user_consent_history uch
     WHERE uch.user_id = $2::char(28)
     AND uch.consent_key = c.key
+    AND uch.consent_id = c.id
 )
 `
 
@@ -655,7 +657,8 @@ type GetMissingConsentsForUserWithRejectionsRow struct {
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
-// Gets consents that user has never acted upon (no history)
+// Gets the latest consents that the user has never acted upon (no history for
+// that version; answers are per version, 00117)
 func (q *Queries) GetMissingConsentsForUserWithRejections(ctx context.Context, arg GetMissingConsentsForUserWithRejectionsParams) ([]*GetMissingConsentsForUserWithRejectionsRow, error) {
 	rows, err := q.db.Query(ctx, GetMissingConsentsForUserWithRejections, arg.ProjectID, arg.UserID)
 	if err != nil {

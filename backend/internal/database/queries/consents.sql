@@ -82,12 +82,13 @@ ORDER BY occurred_at DESC
 LIMIT 1;
 
 -- name: GetCurrentUserConsentStatusesByUsers :many
--- Gets the latest action for each consent key for multiple users
-SELECT DISTINCT ON (user_id, consent_key)
+-- Gets the latest action on each consent version for multiple users. Answers
+-- are per version (00117): an answer to an old version is not one to the new.
+SELECT DISTINCT ON (user_id, consent_id)
     id, user_id, consent_id, consent_key, action, occurred_at, source
 FROM user_consent_history
 WHERE user_id = ANY(@user_ids::char(28)[])
-ORDER BY user_id, consent_key, occurred_at DESC;
+ORDER BY user_id, consent_id, occurred_at DESC;
 
 -- name: GetUserConsentHistoryByUserAndKey :many
 SELECT id, user_id, consent_id, consent_key, action, occurred_at,
@@ -120,7 +121,8 @@ WHERE user_id = ANY(@user_ids::char(28)[])
 ORDER BY user_id, occurred_at DESC;
 
 -- name: GetMissingConsentsForUserWithRejections :many
--- Gets consents that user has never acted upon (no history)
+-- Gets the latest consents that the user has never acted upon (no history for
+-- that version; answers are per version, 00117)
 SELECT c.id, c.key, c.version, c.title, c.short_text, c.body, c.url, c.published_at,
        c.is_remote, c.managed_by, c.project_id, c.is_required, c.created_at, c.updated_at
 FROM (
@@ -135,6 +137,7 @@ WHERE NOT EXISTS (
     SELECT 1 FROM user_consent_history uch
     WHERE uch.user_id = @user_id::char(28)
     AND uch.consent_key = c.key
+    AND uch.consent_id = c.id
 );
 
 -- Translation queries

@@ -51,3 +51,27 @@ func (r *Resolver) resolveConsentProject(ctx context.Context, key string, reques
 
 	return consentProjectForNewVersion(key, previous.ProjectID, requested)
 }
+
+// latestConsentVersionError refuses an answer to any but the latest published
+// version of a consent (latestID; empty when none is published). Answers are
+// per version (00117): an answer to an old version would not count, and the
+// user has not seen the latest one.
+func latestConsentVersionError(consentID, latestID string) error {
+	if latestID == "" || latestID != consentID {
+		return fmt.Errorf("only the latest version of a consent can be answered")
+	}
+	return nil
+}
+
+// requireLatestConsentVersion applies latestConsentVersionError to the latest
+// published version of the consent's key
+func (r *Resolver) requireLatestConsentVersion(ctx context.Context, consentID, key string) error {
+	latest, err := r.DB.Queries.GetLatestPublishedConsentByKey(ctx, key)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return latestConsentVersionError(consentID, "")
+	}
+	if err != nil {
+		return fmt.Errorf("failed to load the latest consent version: %w", err)
+	}
+	return latestConsentVersionError(consentID, latest.ID)
+}

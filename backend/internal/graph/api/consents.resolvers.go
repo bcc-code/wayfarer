@@ -116,13 +116,18 @@ func (r *mutationResolver) AcceptConsent(ctx context.Context, consentID string) 
 		return nil, fmt.Errorf("cannot accept remote consent locally, must be accepted via external system")
 	}
 
+	// Answers are per version (00117): only the latest can be answered
+	if err := r.requireLatestConsentVersion(ctx, consent.ID, consent.Key); err != nil {
+		return nil, err
+	}
+
 	// Check if user already has an action on this consent
 	existing, err := r.DB.Queries.GetLatestUserConsentActionByKey(ctx, sqlc.GetLatestUserConsentActionByKeyParams{
 		UserID:     userID,
 		ConsentKey: consent.Key,
 	})
-	if err == nil && existing.Action == "ACCEPTED" {
-		// User already accepted this consent
+	if err == nil && existing.ConsentID == consentID && existing.Action == "ACCEPTED" {
+		// User already accepted this version
 		return &model.UserConsent{
 			ID:         existing.ID,
 			ConsentID:  existing.ConsentID,
@@ -187,13 +192,18 @@ func (r *mutationResolver) RejectConsent(ctx context.Context, consentID string) 
 		return nil, fmt.Errorf("cannot reject remote consent locally, must be managed via external system")
 	}
 
+	// Answers are per version (00117): only the latest can be answered
+	if err := r.requireLatestConsentVersion(ctx, consent.ID, consent.Key); err != nil {
+		return nil, err
+	}
+
 	// Check if user already rejected this consent
 	existing, err := r.DB.Queries.GetLatestUserConsentActionByKey(ctx, sqlc.GetLatestUserConsentActionByKeyParams{
 		UserID:     userID,
 		ConsentKey: consent.Key,
 	})
-	if err == nil && existing.Action == "REJECTED" {
-		// User already rejected this consent
+	if err == nil && existing.ConsentID == consentID && existing.Action == "REJECTED" {
+		// User already rejected this version
 		return &model.UserConsent{
 			ID:         existing.ID,
 			ConsentID:  existing.ConsentID,
@@ -415,6 +425,11 @@ func (r *mutationResolver) AdminSetUserConsent(ctx context.Context, userID strin
 	// Block remote consents - must be managed externally
 	if consent.IsRemote {
 		return nil, fmt.Errorf("cannot set consent for remote-managed consents")
+	}
+
+	// Answers are per version (00117): only the latest can be answered
+	if err := r.requireLatestConsentVersion(ctx, consent.ID, consent.Key); err != nil {
+		return nil, err
 	}
 
 	// Convert action enum to string

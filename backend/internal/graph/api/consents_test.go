@@ -52,3 +52,20 @@ func TestConsentProjectForNewVersion(t *testing.T) {
 		assert.Contains(t, err.Error(), "all projects")
 	})
 }
+
+func TestLatestConsentVersionError(t *testing.T) {
+	v1 := "CN01ARZ3NDEKTSV4RRFFQ69G5FV1"
+	v2 := "CN01ARZ3NDEKTSV4RRFFQ69G5FV2"
+
+	t.Run("allows the latest version", func(t *testing.T) {
+		assert.NoError(t, latestConsentVersionError(v2, v2))
+	})
+
+	t.Run("refuses an older version", func(t *testing.T) {
+		assert.Error(t, latestConsentVersionError(v1, v2))
+	})
+
+	t.Run("refuses when no version is published", func(t *testing.T) {
+		assert.Error(t, latestConsentVersionError(v1, ""))
+	})
+}

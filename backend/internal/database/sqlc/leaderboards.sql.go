@@ -1287,19 +1287,29 @@ ranked_scores AS (
           INNER JOIN teams t ON tm.team_id = t.id
           WHERE tm.user_id = u.id AND t.super_team_id = $8::char(28)
       ))
-      -- Consent filter: skip if team-filtered, otherwise require leaderboard_consent
+      -- Consent filter: skip if team-filtered, otherwise require the latest
+      -- published version of leaderboard_consent to be accepted (answers are per
+      -- version, 00117)
       AND (
           $7::char(28) != '' OR $8::char(28) != ''
           OR EXISTS (
               SELECT 1 FROM user_consent_history uch
               WHERE uch.user_id = u.id
                 AND uch.consent_key = 'leaderboard_consent'
+                AND uch.consent_id = (
+                    SELECT c.id FROM consents c
+                    WHERE c.key = 'leaderboard_consent'
+                      AND c.published_at IS NOT NULL AND c.published_at <= now()
+                    ORDER BY c.version DESC
+                    LIMIT 1
+                )
                 AND uch.action = 'ACCEPTED'
                 AND uch.occurred_at = (
                     SELECT MAX(uch2.occurred_at)
                     FROM user_consent_history uch2
                     WHERE uch2.user_id = u.id
                       AND uch2.consent_key = 'leaderboard_consent'
+                      AND uch2.consent_id = uch.consent_id
                 )
           )
       )
@@ -1604,19 +1614,29 @@ ranked_scores AS (
           INNER JOIN teams t ON tm.team_id = t.id
           WHERE tm.user_id = u.id AND t.super_team_id = $8::char(28)
       ))
-      -- Consent filter: skip if team-filtered, otherwise require leaderboard_consent
+      -- Consent filter: skip if team-filtered, otherwise require the latest
+      -- published version of leaderboard_consent to be accepted (answers are per
+      -- version, 00117)
       AND (
           $7::char(28) != '' OR $8::char(28) != ''
           OR EXISTS (
               SELECT 1 FROM user_consent_history uch
               WHERE uch.user_id = u.id
                 AND uch.consent_key = 'leaderboard_consent'
+                AND uch.consent_id = (
+                    SELECT c.id FROM consents c
+                    WHERE c.key = 'leaderboard_consent'
+                      AND c.published_at IS NOT NULL AND c.published_at <= now()
+                    ORDER BY c.version DESC
+                    LIMIT 1
+                )
                 AND uch.action = 'ACCEPTED'
                 AND uch.occurred_at = (
                     SELECT MAX(uch2.occurred_at)
                     FROM user_consent_history uch2
                     WHERE uch2.user_id = u.id
                       AND uch2.consent_key = 'leaderboard_consent'
+                      AND uch2.consent_id = uch.consent_id
                 )
           )
       )
