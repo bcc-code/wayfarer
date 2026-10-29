@@ -250,6 +250,23 @@ WHERE t.id = @team_id::char(28)
       WHERE tm.team_id = t.id AND tm.user_id = b.user_id
   );
 
+-- name: GetConsentBlockedUserIDsInTeams :many
+-- GetConsentBlockedUserIDsInTeam for several teams at once; the consent
+-- function runs once per distinct project, not once per team
+WITH team_projects AS MATERIALIZED (
+    SELECT t.id, t.project_id FROM teams t
+    WHERE t.id = ANY(@team_ids::char(28)[])
+),
+blocked AS MATERIALIZED (
+    SELECT p.project_id, b.user_id
+    FROM (SELECT DISTINCT project_id FROM team_projects) p
+    CROSS JOIN LATERAL consent_blocked_user_ids(p.project_id) AS b(user_id)
+)
+SELECT tp.id::char(28) AS team_id, b.user_id::char(28) AS user_id
+FROM team_projects tp
+INNER JOIN blocked b ON b.project_id = tp.project_id
+INNER JOIN team_members tm ON tm.team_id = tp.id AND tm.user_id = b.user_id;
+
 -- name: IsUserInAnyTeamInProject :one
 SELECT EXISTS(
     SELECT 1

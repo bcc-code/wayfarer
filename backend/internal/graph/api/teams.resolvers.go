@@ -1511,17 +1511,17 @@ func (r *teamResolver) Members(ctx context.Context, obj *model.Team) ([]model.Te
 	}
 
 	// Check permissions - admins, M2M, project admins and church admins see
-	// every member
-	seesHidden := isM2MFromToken ||
-		r.RoleService.HasRole(ctx, currentUserID, services.RoleM2M) ||
-		r.RoleService.CanManageTeamAsAdmin(ctx, currentUserID, obj.ID)
-
-	// Team leads can access team members too, but a lead is a participant:
-	// members hidden by a required consent are left out
-	allowed := seesHidden || r.RoleService.HasRoleInTeam(ctx, currentUserID, services.RoleTeamLead, obj.ID)
-
-	if !allowed {
-		return nil, fmt.Errorf("permission denied: you do not have access to this team's members")
+	// every member. Team leads can access team members too, but a lead is a
+	// participant: members hidden by a required consent are left out.
+	// The lead check is cheap, so it comes before CanManageTeamAsAdmin, which
+	// a lead only needs when the team has hidden members.
+	seesHidden := isM2MFromToken || r.RoleService.HasRole(ctx, currentUserID, services.RoleM2M)
+	isLead := !seesHidden && r.RoleService.HasRoleInTeam(ctx, currentUserID, services.RoleTeamLead, obj.ID)
+	if !seesHidden && !isLead {
+		if !r.RoleService.CanManageTeamAsAdmin(ctx, currentUserID, obj.ID) {
+			return nil, fmt.Errorf("permission denied: you do not have access to this team's members")
+		}
+		seesHidden = true
 	}
 
 	// Use dataloader to fetch team members
@@ -1533,9 +1533,13 @@ func (r *teamResolver) Members(ctx context.Context, obj *model.Team) ([]model.Te
 
 	var hiddenIDs []string
 	if !seesHidden {
-		hiddenIDs, err = r.DB.Queries.GetConsentBlockedUserIDsInTeam(ctx, obj.ID)
+		hiddenIDs, err = r.Loaders.ConsentBlockedIDsByTeamLoader.Load(ctx, obj.ID)()
 		if err != nil {
 			return nil, fmt.Errorf("failed to load hidden team members: %w", err)
+		}
+		// A lead who is also an admin sees them after all
+		if len(hiddenIDs) > 0 && r.RoleService.CanManageTeamAsAdmin(ctx, currentUserID, obj.ID) {
+			hiddenIDs = nil
 		}
 	}
 

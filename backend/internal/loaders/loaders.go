@@ -59,6 +59,7 @@ type Loaders struct {
 	QuizSessionByIDLoader                    *dataloader.Loader[string, *sqlc.QuizSession]
 	QuizSubmissionByIDLoader                 *dataloader.Loader[string, *sqlc.GetQuizSubmissionsByIDsRow]
 	UserIDsByTeamLoader                      *dataloader.Loader[string, []string]
+	ConsentBlockedIDsByTeamLoader            *dataloader.Loader[string, []string]
 	UserIDsBySuperTeamLoader                 *dataloader.Loader[string, []string]
 	UserIDsByChurchInProjectLoader           *dataloader.Loader[ChurchProjectKey, []string]
 	UserIDsInProjectLoader                   *dataloader.Loader[string, []string]
@@ -172,6 +173,7 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		QuizSessionByIDLoader:                    newBatchedLoader(quizSessionByIDBatchFunc(db, cache)),
 		QuizSubmissionByIDLoader:                 newBatchedLoader(quizSubmissionByIDBatchFunc(db, cache)),
 		UserIDsByTeamLoader:                      newBatchedLoader(userIDsByTeamBatchFunc(db, cache)),
+		ConsentBlockedIDsByTeamLoader:            newBatchedLoader(consentBlockedIDsByTeamBatchFunc(db)),
 		UserIDsBySuperTeamLoader:                 newBatchedLoader(userIDsBySuperTeamBatchFunc(db, cache)),
 		UserIDsByChurchInProjectLoader:           newBatchedLoader(userIDsByChurchInProjectBatchFunc(db, cache)),
 		UserIDsInProjectLoader:                   newBatchedLoader(userIDsInProjectBatchFunc(db, cache)),

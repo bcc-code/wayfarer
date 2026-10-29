@@ -201,6 +201,49 @@ func (q *Queries) GetConsentBlockedUserIDsInTeam(ctx context.Context, teamID str
 	return items, nil
 }
 
+const GetConsentBlockedUserIDsInTeams = `-- name: GetConsentBlockedUserIDsInTeams :many
+WITH team_projects AS MATERIALIZED (
+    SELECT t.id, t.project_id FROM teams t
+    WHERE t.id = ANY($1::char(28)[])
+),
+blocked AS MATERIALIZED (
+    SELECT p.project_id, b.user_id
+    FROM (SELECT DISTINCT project_id FROM team_projects) p
+    CROSS JOIN LATERAL consent_blocked_user_ids(p.project_id) AS b(user_id)
+)
+SELECT tp.id::char(28) AS team_id, b.user_id::char(28) AS user_id
+FROM team_projects tp
+INNER JOIN blocked b ON b.project_id = tp.project_id
+INNER JOIN team_members tm ON tm.team_id = tp.id AND tm.user_id = b.user_id
+`
+
+type GetConsentBlockedUserIDsInTeamsRow struct {
+	TeamID string `json:"team_id"`
+	UserID string `json:"user_id"`
+}
+
+// GetConsentBlockedUserIDsInTeam for several teams at once; the consent
+// function runs once per distinct project, not once per team
+func (q *Queries) GetConsentBlockedUserIDsInTeams(ctx context.Context, teamIds []string) ([]*GetConsentBlockedUserIDsInTeamsRow, error) {
+	rows, err := q.db.Query(ctx, GetConsentBlockedUserIDsInTeams, teamIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetConsentBlockedUserIDsInTeamsRow{}
+	for rows.Next() {
+		var i GetConsentBlockedUserIDsInTeamsRow
+		if err := rows.Scan(&i.TeamID, &i.UserID); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetTeamAverageAge = `-- name: GetTeamAverageAge :one
 SELECT COALESCE(
     AVG(EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)),
