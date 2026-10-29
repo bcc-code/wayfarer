@@ -72,7 +72,6 @@ func TestLatestConsentVersionError(t *testing.T) {
 	})
 }
 
-
 func TestConsentBlockChanges(t *testing.T) {
 	stays := projectUser{ProjectID: "PR1", UserID: "US1"}
 	unblocked := projectUser{ProjectID: "PR1", UserID: "US2"}

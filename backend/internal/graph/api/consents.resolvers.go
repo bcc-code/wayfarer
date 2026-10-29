@@ -136,8 +136,8 @@ func (r *mutationResolver) AcceptConsent(ctx context.Context, consentID string) 
 		}, nil
 	}
 
-	// Whether the user counts anywhere follows the key's latest version, which
-	// may be required even when this one is not (00116)
+	// An answer to a required version decides whether the user counts anywhere
+	// (00116); compared before and after rather than trusting isRequired
 	blockedBefore := r.blockedProjectsOfUser(ctx, userID)
 
 	// Create new user consent history entry
@@ -212,8 +212,8 @@ func (r *mutationResolver) RejectConsent(ctx context.Context, consentID string) 
 		}, nil
 	}
 
-	// Whether the user counts anywhere follows the key's latest version, which
-	// may be required even when this one is not (00116)
+	// An answer to a required version decides whether the user counts anywhere
+	// (00116); compared before and after rather than trusting isRequired
 	blockedBefore := r.blockedProjectsOfUser(ctx, userID)
 
 	// Create new user consent history entry
@@ -447,8 +447,8 @@ func (r *mutationResolver) AdminSetUserConsent(ctx context.Context, userID strin
 		actionStr = "REJECTED"
 	}
 
-	// Whether the user counts anywhere follows the key's latest version, which
-	// may be required even when this one is not (00116)
+	// An answer to a required version decides whether the user counts anywhere
+	// (00116); compared before and after rather than trusting isRequired
 	blockedBefore := r.blockedProjectsOfUser(ctx, userID)
 
 	// Create history entry with admin's user ID as source

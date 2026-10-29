@@ -687,11 +687,11 @@ counts nowhere, for admins too:
 - The age rule after consent changes: accept, reject, `adminSetUserConsent`,
   `createConsent` and `updateConsent` list the blocked (project, user) pairs
   before and after (`GetConsentBlockedProjectsOfUsers`,
-  `GetConsentBlockedUsersInProjects`, `consents.sql`). The user actions do this
-  for every version, not only a required one: actions are recorded per key and
-  blocking follows the latest version, so accepting an older optional version
-  unblocks the user too (review t_9e69, 2026-10-29). The cached boards are
-  dropped only when someone changed (or a listing failed). Only the teams of
+  `GetConsentBlockedUsersInProjects`, `consents.sql`). The user actions compare
+  for every consent rather than trusting `isRequired` (review t_9e69,
+  2026-10-29; since 00117 only the latest version can be answered, which
+  closes that case at the source too). The cached boards are dropped only when
+  someone changed (or a listing failed). Only the teams of
   users whose status changed are re-checked (`applyConsentBlockChanges`,
   `consents.go`), because the rule
   overwrites a hand-set `leaderboard_excluded`, which a project-wide sweep
@@ -700,7 +700,8 @@ counts nowhere, for admins too:
   behaviour.
 - Tests: `e2e/consents_excluded_from_counts_test.go`, all through GraphQL:
   blocked, accept, reject, a relaxing new version, re-requiring it, admin
-  accept, rejecting and accepting an older optional version; a hand-excluded control team must keep its flag. Each rule was
+  accept, a new required version leaving them out until they accept it; a
+  hand-excluded control team must keep its flag. Each rule was
   broken on purpose and a subtest failed. Unit tests for `teamMembersFor`,
   `consentBlockChanges`, `consentBlockChangesBetween`, `teamsOfChangedUsers`,
   `mapConsentBlockedIDsByTeam`.

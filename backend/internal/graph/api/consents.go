@@ -105,10 +105,9 @@ func consentBlockChangesBetween(before, after blockedSet) (map[projectUser]bool,
 }
 
 // applyConsentBlockChanges applies what a consent change did to who counts,
-// from who was blocked before and after it. It runs for every consent change,
-// not only for a required version: actions are recorded per key and blocking
-// follows the key's latest version, so accepting an older optional version can
-// unblock the user too.
+// from who was blocked before and after it. It runs for every consent change
+// and compares rather than trusting isRequired, so it only acts on who
+// actually moved.
 func (r *Resolver) applyConsentBlockChanges(ctx context.Context, before, after blockedSet) {
 	changed, known := consentBlockChangesBetween(before, after)
 	if !known {

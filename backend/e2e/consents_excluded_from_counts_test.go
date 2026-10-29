@@ -302,23 +302,42 @@ func TestRequiredConsentExcludesUserFromCounts(t *testing.T) {
 		controlUntouched(t)
 	})
 
-	// Actions are recorded per key and blocking follows the latest version, so an
-	// action on an older optional version blocks or unblocks the user too
-	t.Run("rejecting an older optional version leaves them out", func(t *testing.T) {
-		require.NotEmpty(t, relaxedID)
-		execute(t, adminToken, `mutation ($id: ID!) { updateConsent(id: $id, isRequired: false) { id } }`,
-			map[string]any{"id": consentID}, nil)
-		counted(t) // v2 is still required and accepted
-
-		execute(t, blockedToken, `mutation ($id: ID!) { rejectConsent(consentId: $id) { id } }`,
-			map[string]any{"id": consentID}, nil)
+	// Answers are per version (00117): a new required version leaves out users
+	// who accepted the previous one, until they accept it
+	var v3ID string
+	t.Run("a new required version leaves them out until they accept it", func(t *testing.T) {
+		var result struct {
+			CreateConsent struct {
+				ID string `json:"id"`
+			} `json:"createConsent"`
+		}
+		execute(t, adminToken, `
+			mutation ($key: String!, $publishedAt: DateTime) {
+				createConsent(key: $key, title: "T", body: "B", publishedAt: $publishedAt, isRequired: true) { id }
+			}
+		`, map[string]any{
+			"key":         consentKey,
+			"publishedAt": time.Now().Add(-time.Minute).UTC().Format(time.RFC3339),
+		}, &result)
+		v3ID = result.CreateConsent.ID
+		require.NotEmpty(t, v3ID)
 		excluded(t)
 		controlUntouched(t)
 	})
 
-	t.Run("accepting an older optional version counts them", func(t *testing.T) {
+	t.Run("answering an older version is refused", func(t *testing.T) {
+		resp := client.WithAuth(blockedToken).MustExecute(t,
+			`mutation ($id: ID!) { acceptConsent(consentId: $id) { id } }`,
+			map[string]any{"id": relaxedID})
+		require.True(t, resp.HasErrors())
+		assert.Contains(t, resp.ErrorMessage(), "latest version")
+		excluded(t)
+	})
+
+	t.Run("accepting the new version counts them", func(t *testing.T) {
+		require.NotEmpty(t, v3ID)
 		execute(t, blockedToken, `mutation ($id: ID!) { acceptConsent(consentId: $id) { id } }`,
-			map[string]any{"id": consentID}, nil)
+			map[string]any{"id": v3ID}, nil)
 		counted(t)
 		controlUntouched(t)
 	})
