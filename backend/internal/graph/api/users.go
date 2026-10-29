@@ -56,10 +56,10 @@ func validateUserAccess(ctx context.Context, userLoader UserLoaderInterface) (*a
 
 // permissionContext holds information about what the user has permission to access
 type permissionContext struct {
-	IsAdmin        bool
-	IsChurchAdmin  bool
-	IsProjectAdmin bool
-	IsTeamLead     bool
+	IsAdmin            bool
+	IsChurchAdmin      bool
+	IsProjectAdmin     bool
+	IsTeamLead         bool
 	HideConsentBlocked bool
 	ChurchID           string
 	ProjectID          string
@@ -304,7 +304,6 @@ func buildCountFilterParams(filter *model.UserFilter) sqlc.CountUsersFilteredPar
 	return params
 }
 
-// buildCacheKeyParams converts filter and pagination parameters to a map for cache key generation
 // addExcludeIDsToCacheKey keys results by the users hidden from the caller, so
 // a result without them is never served to someone who sees them, and
 // accepting a required consent changes the key without any invalidation
@@ -317,6 +316,7 @@ func addExcludeIDsToCacheKey(params map[string]string, excludeIDs []string) {
 	params["excludeids"] = strings.Join(sorted, ",")
 }
 
+// buildCacheKeyParams converts filter and pagination parameters to a map for cache key generation
 func buildCacheKeyParams(filter *model.UserFilter, first *int, after *string, last *int, before *string) map[string]string {
 	params := make(map[string]string)
 
