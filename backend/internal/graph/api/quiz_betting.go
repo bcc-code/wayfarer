@@ -255,3 +255,25 @@ func multiplierToFixed(field string, v *float64) (*int64, error) {
 	}
 	return &fixed, nil
 }
+
+// SettledBetMultiplier returns what a settled bet actually paid, as winnings
+// over stake. The question's configured multipliers are the odds offered, which
+// recordBetResult ignores and flooring can round away. Nil until settled.
+func SettledBetMultiplier(scoreJournalID *string, betAmount, pointsEarned *int) *float64 {
+	if scoreJournalID == nil || *scoreJournalID == "" {
+		return nil
+	}
+	if betAmount == nil || *betAmount <= 0 || pointsEarned == nil {
+		return nil
+	}
+
+	// points_earned is the net result, so winnings are the stake back plus that.
+	winnings := *pointsEarned + *betAmount
+	multiplier := float64(winnings) / float64(*betAmount)
+	return &multiplier
+}
+
+// clearFlag reads an optional "clear this field" flag from an update input.
+func clearFlag(v *bool) bool {
+	return v != nil && *v
+}

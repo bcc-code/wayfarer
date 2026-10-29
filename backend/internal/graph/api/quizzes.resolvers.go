@@ -76,6 +76,16 @@ func (r *freeTextResponseResolver) JournalEntry(ctx context.Context, obj *model.
 	return thunk()
 }
 
+// IsCorrect is the resolver for the isCorrect field.
+func (r *freeTextResponseResolver) IsCorrect(ctx context.Context, obj *model.FreeTextResponse) (*bool, error) {
+	return r.responseVerdict(ctx, obj.SubmissionID, obj.IsCorrectValue)
+}
+
+// SettledBetMultiplier is the resolver for the settledBetMultiplier field.
+func (r *freeTextResponseResolver) SettledBetMultiplier(ctx context.Context, obj *model.FreeTextResponse) (*float64, error) {
+	return SettledBetMultiplier(obj.ScoreJournalID, obj.BetAmount, obj.PointsEarned), nil
+}
+
 // Quiz is the resolver for the quiz field.
 func (r *jsonQuestionResolver) Quiz(ctx context.Context, obj *model.JSONQuestion) (*model.Quiz, error) {
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
@@ -122,6 +132,16 @@ func (r *jsonResponseResolver) JournalEntry(ctx context.Context, obj *model.JSON
 	}
 	thunk := r.Loaders.ScoreJournalByIDLoader.Load(ctx, *obj.ScoreJournalID)
 	return thunk()
+}
+
+// IsCorrect is the resolver for the isCorrect field.
+func (r *jsonResponseResolver) IsCorrect(ctx context.Context, obj *model.JSONResponse) (*bool, error) {
+	return r.responseVerdict(ctx, obj.SubmissionID, obj.IsCorrectValue)
+}
+
+// SettledBetMultiplier is the resolver for the settledBetMultiplier field.
+func (r *jsonResponseResolver) SettledBetMultiplier(ctx context.Context, obj *model.JSONResponse) (*float64, error) {
+	return SettledBetMultiplier(obj.ScoreJournalID, obj.BetAmount, obj.PointsEarned), nil
 }
 
 // CreateQuiz is the resolver for the createQuiz field.
@@ -531,6 +551,19 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 		maxAbs := int32(*input.BettingMaxAbsolute)
 		params.Bettingmaxabsolute = &maxAbs
 	}
+	if input.BettingMultiplierCorrect != nil {
+		_ = params.Bettingmultipliercorrect.Scan(fmt.Sprintf("%f", *input.BettingMultiplierCorrect))
+	}
+	if input.BettingMultiplierWrong != nil {
+		_ = params.Bettingmultiplierwrong.Scan(fmt.Sprintf("%f", *input.BettingMultiplierWrong))
+	}
+	params.Clearbettingminpercentage = clearFlag(input.ClearBettingMinPercentage)
+	params.Clearbettingmaxpercentage = clearFlag(input.ClearBettingMaxPercentage)
+	params.Clearbettingminabsolute = clearFlag(input.ClearBettingMinAbsolute)
+	params.Clearbettingmaxabsolute = clearFlag(input.ClearBettingMaxAbsolute)
+	params.Clearbettingmultipliercorrect = clearFlag(input.ClearBettingMultiplierCorrect)
+	params.Clearbettingmultiplierwrong = clearFlag(input.ClearBettingMultiplierWrong)
+
 	// Validate the settings the question will have after this update
 	next := storedBettingSettings(question)
 	if input.Points != nil {
@@ -557,6 +590,25 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 	if input.BettingMultiplierWrong != nil {
 		next.MultiplierWrong = input.BettingMultiplierWrong
 	}
+	// Validate a cleared field as its default, not its old value.
+	if params.Clearbettingminpercentage {
+		next.MinPercentage = nil
+	}
+	if params.Clearbettingmaxpercentage {
+		next.MaxPercentage = nil
+	}
+	if params.Clearbettingminabsolute {
+		next.MinAbsolute = nil
+	}
+	if params.Clearbettingmaxabsolute {
+		next.MaxAbsolute = nil
+	}
+	if params.Clearbettingmultipliercorrect {
+		next.MultiplierCorrect = nil
+	}
+	if params.Clearbettingmultiplierwrong {
+		next.MultiplierWrong = nil
+	}
 	changesPointsOrBetting := input.Points != nil || input.BettingEnabled != nil
 	if err := ValidateQuestionBetting(next, changesPointsOrBetting); err != nil {
 		return nil, err
@@ -566,7 +618,8 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 	// off and no other payout while the question has open bets
 	turnsBettingOff := question.BettingEnabled && input.BettingEnabled != nil && !*input.BettingEnabled
 	changesPayout, err := payoutChanged(question.BettingMultiplierCorrect, question.BettingMultiplierWrong,
-		input.BettingMultiplierCorrect, input.BettingMultiplierWrong)
+		input.BettingMultiplierCorrect, input.BettingMultiplierWrong,
+		params.Clearbettingmultipliercorrect, params.Clearbettingmultiplierwrong)
 	if err != nil {
 		return nil, err
 	}
@@ -1174,30 +1227,33 @@ func (r *mutationResolver) UpdateQuizAnswer(ctx context.Context, responseID stri
 		params.Betamount = &betAmount
 	}
 
-	// Only handle ORDERING questions for now
-	if question.QuestionType == "ORDERING" && input.SubmittedOrder != nil {
-		// Store submitted order as JSON
-		orderJSON, _ := json.Marshal(input.SubmittedOrder)
-		params.Jsonresponse = orderJSON
+	answerChanged, err := applyAnswerUpdate(&params, question.QuestionType, input)
+	if err != nil {
+		otel.RecordError(span, err)
+		return nil, err
+	}
 
-		// Calculate correctness (all or nothing)
+	if answerChanged {
 		params.Iscorrect, err = gradeQuizResponse(ctx, r.Loaders, question.QuestionType, existingResponse.QuestionID, quizgrading.Response{
-			SubmittedOrder: input.SubmittedOrder,
+			SelectedAnswerIDs: input.SelectedAnswerIds,
+			SubmittedOrder:    input.SubmittedOrder,
 		})
 		if err != nil {
 			otel.RecordError(span, err)
 			return nil, fmt.Errorf("failed to grade answer: %w", err)
 		}
 
-		// Calculate points_earned for correct answers
-		if *params.Iscorrect && question.Points != nil {
-			params.Pointsearned = question.Points
-		} else {
-			zero := int32(0)
-			params.Pointsearned = &zero
+		// Always written: UpdateQuizResponse coalesces, so a nil would keep the
+		// points a previously-correct answer earned.
+		points := int32(0)
+		if params.Iscorrect != nil && *params.Iscorrect && question.Points != nil {
+			points = *question.Points
 		}
-	} else {
-		return nil, fmt.Errorf("update not supported for this question type")
+		params.Pointsearned = &points
+	}
+
+	if !answerChanged && input.BetAmount == nil {
+		return nil, fmt.Errorf("no answer or bet given to update")
 	}
 
 	// Update the response under the submission lock
@@ -2036,6 +2092,16 @@ func (r *numberResponseResolver) JournalEntry(ctx context.Context, obj *model.Nu
 	return thunk()
 }
 
+// IsCorrect is the resolver for the isCorrect field.
+func (r *numberResponseResolver) IsCorrect(ctx context.Context, obj *model.NumberResponse) (*bool, error) {
+	return r.responseVerdict(ctx, obj.SubmissionID, obj.IsCorrectValue)
+}
+
+// SettledBetMultiplier is the resolver for the settledBetMultiplier field.
+func (r *numberResponseResolver) SettledBetMultiplier(ctx context.Context, obj *model.NumberResponse) (*float64, error) {
+	return SettledBetMultiplier(obj.ScoreJournalID, obj.BetAmount, obj.PointsEarned), nil
+}
+
 // Quiz is the resolver for the quiz field.
 func (r *orderingQuestionResolver) Quiz(ctx context.Context, obj *model.OrderingQuestion) (*model.Quiz, error) {
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
@@ -2109,27 +2175,12 @@ func (r *orderingResponseResolver) JournalEntry(ctx context.Context, obj *model.
 // IsCorrect is the resolver for the isCorrect field on OrderingResponse.
 // It hides the correctness until the session is LOCKED or FINISHED.
 func (r *orderingResponseResolver) IsCorrect(ctx context.Context, obj *model.OrderingResponse) (*bool, error) {
-	// Load submission to get session ID
-	submission, err := r.DB.Queries.GetQuizSubmissionByID(ctx, obj.SubmissionID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load submission: %w", err)
-	}
+	return r.responseVerdict(ctx, obj.SubmissionID, obj.IsCorrectValue)
+}
 
-	// If there's a session, check its state
-	if submission.SessionID != nil && *submission.SessionID != "" {
-		session, err := r.DB.Queries.GetQuizSession(ctx, *submission.SessionID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load session: %w", err)
-		}
-
-		// Hide isCorrect when session is OPEN
-		if session.State == string(model.QuizSessionStateOpen) {
-			return nil, nil
-		}
-	}
-
-	// Return actual isCorrect value for LOCKED/FINISHED sessions or non-session quizzes
-	return obj.IsCorrectValue, nil
+// SettledBetMultiplier is the resolver for the settledBetMultiplier field.
+func (r *orderingResponseResolver) SettledBetMultiplier(ctx context.Context, obj *model.OrderingResponse) (*float64, error) {
+	return SettledBetMultiplier(obj.ScoreJournalID, obj.BetAmount, obj.PointsEarned), nil
 }
 
 // Quiz is the resolver for the quiz field.
@@ -2225,6 +2276,16 @@ func (r *predefinedResponseResolver) SelectedAnswers(ctx context.Context, obj *m
 	}
 
 	return result, nil
+}
+
+// IsCorrect is the resolver for the isCorrect field.
+func (r *predefinedResponseResolver) IsCorrect(ctx context.Context, obj *model.PredefinedResponse) (*bool, error) {
+	return r.responseVerdict(ctx, obj.SubmissionID, obj.IsCorrectValue)
+}
+
+// SettledBetMultiplier is the resolver for the settledBetMultiplier field.
+func (r *predefinedResponseResolver) SettledBetMultiplier(ctx context.Context, obj *model.PredefinedResponse) (*float64, error) {
+	return SettledBetMultiplier(obj.ScoreJournalID, obj.BetAmount, obj.PointsEarned), nil
 }
 
 // Quiz is the resolver for the quiz field.
@@ -2654,6 +2715,21 @@ func (r *quizResolver) UserActiveSubmission(ctx context.Context, obj *model.Quiz
 	return nil, nil
 }
 
+// UserAvailableBetPoints is the resolver for the userAvailableBetPoints field.
+func (r *quizResolver) UserAvailableBetPoints(ctx context.Context, obj *model.Quiz) (*int, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, nil
+	}
+
+	// Indicative only; the enforced check runs under the submission locks on submit.
+	available, err := availableBetPoints(ctx, r.DB.Queries, userID, obj.ProjectID, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &available, nil
+}
+
 // Sessions is the resolver for the sessions field.
 func (r *quizResolver) Sessions(ctx context.Context, obj *model.Quiz, state *model.QuizSessionState) ([]model.QuizSession, error) {
 	stateFilter := ""
@@ -2735,42 +2811,14 @@ func (r *quizOrderingItemResolver) Question(ctx context.Context, obj *model.Quiz
 // CorrectOrder is the resolver for the correctOrder field on QuizOrderingItem.
 // It hides the correct order until the session is FINISHED to prevent cheating.
 func (r *quizOrderingItemResolver) CorrectOrder(ctx context.Context, obj *model.QuizOrderingItem) (*int, error) {
-	// Get the current user
-	userID, ok := middleware.GetUserID(ctx)
-	if !ok || userID == "" {
-		// No user context, hide the correct order
+	allowed, err := r.canRevealQuestionAnswers(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, err
+	}
+	if !allowed {
 		return nil, nil
 	}
-
-	// Get the question to find the quiz ID
-	question, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load question: %w", err)
-	}
-
-	// Get user's accessible sessions for this quiz
-	sessions, err := r.DB.Queries.GetUserAccessibleSessions(ctx, sqlc.GetUserAccessibleSessionsParams{
-		Userid: userID,
-		Quizid: question.QuizID,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to load user sessions: %w", err)
-	}
-
-	// If no sessions, this is a legacy quiz without sessions - show the correct order
-	if len(sessions) == 0 {
-		return &obj.CorrectOrderValue, nil
-	}
-
-	// Only reveal correct order when session is FINISHED (not LOCKED)
-	// Sessions are ordered by created_at DESC, so the first one is the most recent
-	mostRecentSession := sessions[0]
-	if mostRecentSession.State == string(model.QuizSessionStateFinished) {
-		return &obj.CorrectOrderValue, nil
-	}
-
-	// Session is OPEN, DRAFT, or LOCKED - hide the correct order
-	return nil, nil
+	return &obj.CorrectOrderValue, nil
 }
 
 // Question is the resolver for the question field on QuizPredefinedAnswer.
@@ -2785,6 +2833,13 @@ func (r *quizPredefinedAnswerResolver) Question(ctx context.Context, obj *model.
 
 // IsCorrect is the resolver for the isCorrect field on QuizPredefinedAnswer.
 func (r *quizPredefinedAnswerResolver) IsCorrect(ctx context.Context, obj *model.QuizPredefinedAnswer) (*bool, error) {
+	allowed, err := r.canRevealQuestionAnswers(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, err
+	}
+	if !allowed {
+		return nil, nil
+	}
 	return &obj.IsCorrectValue, nil
 }
 

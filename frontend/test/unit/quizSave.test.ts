@@ -81,7 +81,7 @@ describe('bettingClearFlags', () => {
         { bettingMinAbsolute: 10, bettingMaxAbsolute: 100 },
         { bettingMaxAbsolute: 100 },
       ),
-    ).toEqual({
+    ).toMatchObject({
       clearBettingMinAbsolute: true,
       clearBettingMaxAbsolute: undefined,
     })
@@ -89,9 +89,42 @@ describe('bettingClearFlags', () => {
 
   it('flags nothing when the value was never set', () => {
     expect(bettingClearFlags(undefined, {})).toEqual({
+      clearBettingMinPercentage: undefined,
+      clearBettingMaxPercentage: undefined,
       clearBettingMinAbsolute: undefined,
       clearBettingMaxAbsolute: undefined,
+      clearBettingMultiplierCorrect: undefined,
+      clearBettingMultiplierWrong: undefined,
     })
+  })
+
+  // Clearing is the only way back to the default payout, since the update
+  // input reads an omitted multiplier as "leave alone".
+  it('flags a cleared multiplier so it falls back to the default', () => {
+    const flags = bettingClearFlags(
+      { bettingMultiplierCorrect: 2.5, bettingMultiplierWrong: 0.5 },
+      { bettingMultiplierWrong: 0.5 },
+    )
+    expect(flags.clearBettingMultiplierCorrect).toBe(true)
+    expect(flags.clearBettingMultiplierWrong).toBeUndefined()
+  })
+
+  it('flags cleared percentages too', () => {
+    const flags = bettingClearFlags(
+      { bettingMinPercentage: 5, bettingMaxPercentage: 50 },
+      {},
+    )
+    expect(flags.clearBettingMinPercentage).toBe(true)
+    expect(flags.clearBettingMaxPercentage).toBe(true)
+  })
+
+  it('flags nothing when a multiplier is set to zero', () => {
+    expect(
+      bettingClearFlags(
+        { bettingMultiplierWrong: 0.5 },
+        { bettingMultiplierWrong: 0 },
+      ).clearBettingMultiplierWrong,
+    ).toBeUndefined()
   })
 
   // A number input that has been emptied reads back as NaN, not undefined.

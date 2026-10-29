@@ -6,7 +6,7 @@ import type {
   QuizActionState,
   QuizActionHandlers,
 } from '../types'
-import { QuizSessionState } from '~/api/generated'
+import type { QuizSessionState } from '~/api/generated'
 
 const props = defineProps<{
   question: PredefinedQuestionData
@@ -43,21 +43,62 @@ const selectedAnswer = ref<string | undefined>(
   props.existingResponse?.selectedAnswers[0]?.id ??
     props.preSelectedAnswerIds?.[0],
 )
-const isAnswerConfirmed = ref(props.readonly || Boolean(props.existingResponse))
 
-const isSessionLocked = computed(
-  () => props.sessionState === QuizSessionState.Locked,
-)
-const isSessionFinished = computed(
-  () => props.sessionState === QuizSessionState.Finished,
-)
-const isSubmitting = ref(false)
+const session = useQuizSessionAnswer({
+  submissionId: () => props.submissionId,
+  questionId: () => props.question.id,
+  sessionState: () => props.sessionState,
+  readonly: () => props.readonly,
+  existingResponseId: () => props.existingResponse?.id,
+  buildAnswer: () => ({
+    selectedAnswerIds: selectedAnswer.value ? [selectedAnswer.value] : [],
+  }),
+  betAmount: () => props.betAmount ?? undefined,
+})
+const {
+  actionMode,
+  isBetSaved,
+  isEditing,
+  isSubmitting,
+  isSessionLocked,
+  isSessionFinished,
+} = session
+
+// Inside a session an answer stays revisable until the session locks.
+const isAnswerConfirmed = computed(() => {
+  if (props.readonly) return true
+  if (actionMode.value === 'session-betting') return false
+  if (actionMode.value === 'normal') return lockedOutsideSession.value
+  return true
+})
+const lockedOutsideSession = ref(Boolean(props.existingResponse))
+
+const isAnswerLocked = computed(() => {
+  if (props.readonly) return true
+  if (actionMode.value === 'session-betting')
+    return isBetSaved.value && !isEditing.value
+  return isAnswerConfirmed.value
+})
+
 const submittedResult = ref<{ isCorrect: boolean | null } | null>(
   props.existingResponse
     ? { isCorrect: props.existingResponse.isCorrect ?? null }
     : null,
 )
 
+async function handleSaveAnswer() {
+  if (!selectedAnswer.value) return
+  await session.saveAnswer()
+  track(AnalyticsEvent.QuizAnswerSubmitted, {
+    question_id: props.question.id,
+    is_correct: null, // Hidden while the session is OPEN
+    current_question: props.currentIndex + 1,
+    total_questions: props.totalQuestions,
+    action: session.savedResponseId.value ? 'update_bet' : 'save_bet',
+  })
+}
+
+// Legacy behavior for non-session quizzes
 async function handleLockAnswer() {
   if (!selectedAnswer.value || isSubmitting.value) return
 
@@ -74,13 +115,10 @@ async function handleLockAnswer() {
 
   if (result.data?.submitQuizAnswer) {
     const response = result.data.submitQuizAnswer
-    const isCorrect =
-      response.__typename === 'PredefinedResponse'
-        ? (response.isCorrect ?? null)
-        : null
+    const isCorrect = response.isCorrect ?? null
 
     submittedResult.value = { isCorrect }
-    isAnswerConfirmed.value = true
+    lockedOutsideSession.value = true
 
     track(AnalyticsEvent.QuizAnswerSubmitted, {
       question_id: props.question.id,
@@ -130,36 +168,30 @@ function shouldShowWrong(alternative: {
   )
 }
 
-const isSessionBettingMode = computed(
-  () => props.sessionState === QuizSessionState.Open,
-)
-
-const actionMode = computed(() => {
-  if (props.readonly) return 'review' as const
-  if (isSessionFinished.value) return 'session-results' as const
-  if (isSessionLocked.value) return 'session-locked' as const
-  if (isSessionBettingMode.value) return 'session-betting' as const
-  return 'normal' as const
-})
-
 // Action state for parent component
 const actionState = computed<QuizActionState>(() => ({
   mode: actionMode.value,
   canSubmit: selectedAnswer.value !== undefined,
   isSubmitting: isSubmitting.value,
   isAnswerLocked: isAnswerConfirmed.value,
-  isBetSaved: isAnswerConfirmed.value,
-  canChangeBet: false,
-  isEditing: false,
+  isBetSaved: isBetSaved.value,
+  canChangeBet: true,
+  isEditing: isEditing.value,
   showPreviousButton: props.showPreviousButton ?? false,
   isLastQuestion: props.isLastQuestion ?? false,
 }))
 
 // Handlers for parent component
 const handlers: QuizActionHandlers = {
-  submit: handleLockAnswer,
+  submit: async () => {
+    if (actionMode.value === 'session-betting') {
+      await handleSaveAnswer()
+    } else {
+      await handleLockAnswer()
+    }
+  },
   continue: handleContinue,
-  changeBet: () => {},
+  changeBet: session.changeAnswer,
   previous: handlePrevious,
   next: handleNext,
 }
@@ -182,7 +214,7 @@ defineExpose({ actionState, handlers })
         :correct="shouldShowCorrect(alternative)"
         :wrong="shouldShowWrong(alternative)"
         :selected="selectedAnswer === alternative.id"
-        :disabled="isAnswerConfirmed || isSessionLocked || isSessionFinished"
+        :disabled="isAnswerLocked || isSessionLocked || isSessionFinished"
         @click="
           !isAnswerConfirmed &&
           !isSessionLocked &&

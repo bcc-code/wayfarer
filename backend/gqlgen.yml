@@ -377,6 +377,8 @@ models:
         resolver: true
       userActiveSubmission:
         resolver: true
+      userAvailableBetPoints:
+        resolver: true
     extraFields:
       ProjectID:
         type: string
@@ -521,6 +523,10 @@ models:
         resolver: true
       question:
         resolver: true
+      isCorrect:
+        resolver: true
+      settledBetMultiplier:
+        resolver: true
       selectedAnswers:
         resolver: true
       journalEntry:
@@ -530,6 +536,8 @@ models:
         type: string
       QuestionID:
         type: string
+      IsCorrectValue:
+        type: "*bool"
       ScoreJournalID:
         type: "*string"
 
@@ -539,6 +547,10 @@ models:
         resolver: true
       question:
         resolver: true
+      isCorrect:
+        resolver: true
+      settledBetMultiplier:
+        resolver: true
       journalEntry:
         resolver: true
     extraFields:
@@ -546,6 +558,8 @@ models:
         type: string
       QuestionID:
         type: string
+      IsCorrectValue:
+        type: "*bool"
       ScoreJournalID:
         type: "*string"
 
@@ -555,6 +569,10 @@ models:
         resolver: true
       question:
         resolver: true
+      isCorrect:
+        resolver: true
+      settledBetMultiplier:
+        resolver: true
       journalEntry:
         resolver: true
     extraFields:
@@ -562,6 +580,8 @@ models:
         type: string
       QuestionID:
         type: string
+      IsCorrectValue:
+        type: "*bool"
       ScoreJournalID:
         type: "*string"
 
@@ -571,6 +591,10 @@ models:
         resolver: true
       question:
         resolver: true
+      isCorrect:
+        resolver: true
+      settledBetMultiplier:
+        resolver: true
       journalEntry:
         resolver: true
     extraFields:
@@ -578,6 +602,8 @@ models:
         type: string
       QuestionID:
         type: string
+      IsCorrectValue:
+        type: "*bool"
       ScoreJournalID:
         type: "*string"
 
@@ -588,6 +614,8 @@ models:
       question:
         resolver: true
       isCorrect:
+        resolver: true
+      settledBetMultiplier:
         resolver: true
       journalEntry:
         resolver: true

@@ -12,8 +12,9 @@ const props = withDefaults(
     mode?: 'betting' | 'locked' | 'results'
     pointsEarned?: number | null
     betAmount?: number | null
-    correctCount?: number | null
-    totalCount?: number | null
+    /** How the question was graded; the only frame every question type shares. */
+    outcome?: 'correct' | 'incorrect' | null
+    multiplier?: number | null
   }>(),
   {
     minPercentage: null,
@@ -24,8 +25,8 @@ const props = withDefaults(
     mode: 'betting',
     pointsEarned: null,
     betAmount: null,
-    correctCount: null,
-    totalCount: null,
+    outcome: null,
+    multiplier: null,
   },
 )
 
@@ -70,7 +71,9 @@ const remainingAvailablePoints = computed(() => {
 })
 
 // Results mode computations
+// A curve that returns the stake pays 0 net, which is a win, not a loss.
 const isWin = computed(() => {
+  if (props.outcome !== null) return props.outcome === 'correct'
   if (props.pointsEarned === null || props.pointsEarned === undefined)
     return null
   return props.pointsEarned >= 0
@@ -81,22 +84,17 @@ const resultAmount = computed(() => {
   return props.pointsEarned + (props.betAmount ?? 0)
 })
 
-const multiplier = computed(() => {
-  if (!props.betAmount || props.betAmount === 0) return 0
-  return resultAmount.value / props.betAmount
-})
-
 const formattedMultiplier = computed(() => {
-  const m = multiplier.value
+  const m = props.multiplier
+  if (m === null || m === undefined) return null
   return `x ${Number.isInteger(m) ? m : parseFloat(m.toFixed(2))}`
 })
 
-const correctCountLabel = computed(() => {
-  if (props.correctCount === null || props.totalCount === null) return null
-  if (props.correctCount === 0) return t('quiz.betting.correctCountNone')
-  if (props.correctCount === props.totalCount)
-    return t('quiz.betting.correctCountAll')
-  return t('quiz.betting.correctCount', { count: props.correctCount })
+const outcomeLabel = computed(() => {
+  if (props.outcome === null) return null
+  return props.outcome === 'correct'
+    ? t('quiz.betting.outcomeCorrect')
+    : t('quiz.betting.outcomeIncorrect')
 })
 </script>
 
@@ -119,21 +117,16 @@ const correctCountLabel = computed(() => {
       </span>
     </div>
     <div
-      v-if="correctCountLabel !== null"
+      v-if="outcomeLabel !== null"
       class="flex justify-between items-center py-3 border-b border-on-accent/20"
     >
-      <span class="text-body">{{ correctCountLabel }}</span>
-      <span
-        v-if="correctCount !== null && correctCount > 0"
-        class="text-label tabular-nums"
-      >
+      <span class="text-body">{{ outcomeLabel }}</span>
+      <span v-if="formattedMultiplier !== null" class="text-label tabular-nums">
         {{ formattedMultiplier }}
       </span>
     </div>
     <div
-      v-if="
-        correctCountLabel !== null && correctCount !== null && correctCount > 0
-      "
+      v-if="outcomeLabel !== null && isWin"
       class="flex justify-between items-center py-3 border-b border-on-accent/20"
     >
       <span class="text-body">{{ t('quiz.betting.bettingResult') }}</span>

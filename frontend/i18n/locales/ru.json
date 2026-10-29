@@ -49,9 +49,8 @@
       "pointsLost": "Баллов потеряно",
       "pointsEarned": "Баллов заработано",
       "resultYourBet": "Твой вклад",
-      "correctCount": "Ты угадал {count} ",
-      "correctCountAll": "Ты угадал все",
-      "correctCountNone": "Ты ни одного не угадал",
+      "outcomeCorrect": "Ты угадал все",
+      "outcomeIncorrect": "Ты ни одного не угадал",
       "bettingResult": "Результаты ставок"
     },
     "result": {

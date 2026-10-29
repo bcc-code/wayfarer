@@ -1266,6 +1266,231 @@ func TestQuizBettingEdgeCases(t *testing.T) {
 		assertSettled(t, r, -100) // the reversed order stood: wrong, default bet lost
 	})
 
+	t.Run("updateQuizAnswer on a PREDEFINED bet", func(t *testing.T) {
+		p := newPlayer(t)
+		setScore(t, p.id, 100)
+		quizID := newQuiz(t, "Update predefined bet", nil)
+		q := addPredefined(t, quizID, 0, nil)
+		sessionID := openSession(t, quizID, p)
+		sub := start(t, p, sessionID)
+		r := submit(t, p, sub, map[string]any{"questionId": q.ID, "selectedAnswerIds": []string{q.Wrong}, "betAmount": 60})
+
+		update := func(input map[string]any) string {
+			return exec(t, p.token, `mutation($id: ID!, $input: UpdateQuizAnswerInput!) {
+				updateQuizAnswer(responseId: $id, input: $input) { id }
+			}`, map[string]any{"id": r, "input": input}, nil)
+		}
+
+		assert.False(t, *response(t, r).IsCorrect)
+
+		// Switching to the right answer regrades it and replaces the bet
+		assert.Empty(t, update(map[string]any{"selectedAnswerIds": []string{q.Right}, "betAmount": 100}))
+		assert.True(t, *response(t, r).IsCorrect)
+		assert.Equal(t, int32(100), *response(t, r).BetAmount)
+
+		// Changing only the bet leaves the stored answer in place
+		assert.Empty(t, update(map[string]any{"betAmount": 40}))
+		assert.True(t, *response(t, r).IsCorrect)
+		assert.Equal(t, int32(40), *response(t, r).BetAmount)
+
+		// And back to wrong, so the regrade is not one-way
+		assert.Empty(t, update(map[string]any{"selectedAnswerIds": []string{q.Wrong}}))
+		assert.False(t, *response(t, r).IsCorrect)
+
+		assert.Contains(t, update(map[string]any{"betAmount": 101}), "exceeds available points (100)")
+		assert.Contains(t, update(map[string]any{"submittedOrder": []string{"X"}}), "cannot set a ORDERING answer on a PREDEFINED question")
+
+		lock(t, sessionID)
+		assert.Contains(t, update(map[string]any{"selectedAnswerIds": []string{q.Right}}), "quiz session is LOCKED")
+		finish(t, sessionID)
+		assertSettled(t, r, -40) // the wrong answer stood: bet lost
+	})
+
+	t.Run("updateQuizAnswer on FREE_TEXT and NUMBER answers", func(t *testing.T) {
+		p := newPlayer(t)
+		setScore(t, p.id, 200)
+		quizID := newQuiz(t, "Update other types", nil)
+		freeTextID := addQuestion(t, quizID, map[string]any{
+			"questionType": "FREE_TEXT", "questionText": "Why?", "questionOrder": 0, "bettingEnabled": true,
+		})
+		numberID := addQuestion(t, quizID, map[string]any{
+			"questionType": "NUMBER", "questionText": "How many?", "questionOrder": 1, "bettingEnabled": true,
+			"minValue": 0, "maxValue": 100, "stepValue": 1,
+		})
+		sessionID := openSession(t, quizID, p)
+		sub := start(t, p, sessionID)
+		rText := submit(t, p, sub, map[string]any{"questionId": freeTextID, "textResponse": "first", "betAmount": 50})
+		rNumber := submit(t, p, sub, map[string]any{"questionId": numberID, "numberResponse": 10.0, "betAmount": 50})
+
+		update := func(id string, input map[string]any) string {
+			return exec(t, p.token, `mutation($id: ID!, $input: UpdateQuizAnswerInput!) {
+				updateQuizAnswer(responseId: $id, input: $input) {
+					... on FreeTextResponse { textResponse }
+					... on NumberResponse { numberResponse }
+				}
+			}`, map[string]any{"id": id, "input": input}, nil)
+		}
+
+		assert.Empty(t, update(rText, map[string]any{"textResponse": "second", "betAmount": 70}))
+		assert.Empty(t, update(rNumber, map[string]any{"numberResponse": 99.0}))
+
+		// Ungraded types stay ungraded however often the answer changes
+		assert.Nil(t, response(t, rText).IsCorrect)
+		assert.Nil(t, response(t, rNumber).IsCorrect)
+		assert.Equal(t, int32(70), *response(t, rText).BetAmount)
+	})
+
+	t.Run("updateQuizAnswer rejects an update with neither answer nor bet", func(t *testing.T) {
+		p := newPlayer(t)
+		setScore(t, p.id, 100)
+		quizID := newQuiz(t, "Empty update", nil)
+		q := addPredefined(t, quizID, 0, nil)
+		sessionID := openSession(t, quizID, p)
+		sub := start(t, p, sessionID)
+		r := submit(t, p, sub, map[string]any{"questionId": q.ID, "selectedAnswerIds": []string{q.Right}, "betAmount": 10})
+
+		msg := exec(t, p.token, `mutation($id: ID!, $input: UpdateQuizAnswerInput!) {
+			updateQuizAnswer(responseId: $id, input: $input) { id }
+		}`, map[string]any{"id": r, "input": map[string]any{}}, nil)
+		assert.Contains(t, msg, "no answer or bet given to update")
+	})
+
+	t.Run("clearing a betting field resets it to the default", func(t *testing.T) {
+		quizID := newQuiz(t, "Clear betting fields", nil)
+		q := addPredefined(t, quizID, 0, map[string]any{
+			"bettingMinAbsolute":       10,
+			"bettingMaxAbsolute":       80,
+			"bettingMinPercentage":     5.0,
+			"bettingMaxPercentage":     50.0,
+			"bettingMultiplierCorrect": 2.5,
+			"bettingMultiplierWrong":   0.5,
+		})
+
+		type cfg struct {
+			BettingMinAbsolute       *int     `json:"bettingMinAbsolute"`
+			BettingMaxAbsolute       *int     `json:"bettingMaxAbsolute"`
+			BettingMinPercentage     *float64 `json:"bettingMinPercentage"`
+			BettingMaxPercentage     *float64 `json:"bettingMaxPercentage"`
+			BettingMultiplierCorrect *float64 `json:"bettingMultiplierCorrect"`
+			BettingMultiplierWrong   *float64 `json:"bettingMultiplierWrong"`
+		}
+		update := func(input map[string]any) cfg {
+			var res struct {
+				UpdateQuizQuestion cfg `json:"updateQuizQuestion"`
+			}
+			admin(t, `mutation($id: ID!, $input: UpdateQuizQuestionInput!) {
+				updateQuizQuestion(id: $id, input: $input) {
+					... on PredefinedQuestion {
+						bettingMinAbsolute bettingMaxAbsolute
+						bettingMinPercentage bettingMaxPercentage
+						bettingMultiplierCorrect bettingMultiplierWrong
+					}
+				}
+			}`, map[string]any{"id": q.ID, "input": input}, &res)
+			return res.UpdateQuizQuestion
+		}
+
+		// An omitted field is left alone, as before
+		after := update(map[string]any{"questionText": "Still here?"})
+		require.NotNil(t, after.BettingMultiplierCorrect)
+		assert.InDelta(t, 2.5, *after.BettingMultiplierCorrect, 0.001)
+		require.NotNil(t, after.BettingMinAbsolute)
+		assert.Equal(t, 10, *after.BettingMinAbsolute)
+
+		// An explicit clear nulls it, so the question falls back to the defaults
+		after = update(map[string]any{
+			"clearBettingMinAbsolute":       true,
+			"clearBettingMaxAbsolute":       true,
+			"clearBettingMinPercentage":     true,
+			"clearBettingMaxPercentage":     true,
+			"clearBettingMultiplierCorrect": true,
+			"clearBettingMultiplierWrong":   true,
+		})
+		assert.Nil(t, after.BettingMinAbsolute)
+		assert.Nil(t, after.BettingMaxAbsolute)
+		assert.Nil(t, after.BettingMinPercentage)
+		assert.Nil(t, after.BettingMaxPercentage)
+		assert.Nil(t, after.BettingMultiplierCorrect)
+		assert.Nil(t, after.BettingMultiplierWrong)
+	})
+
+	t.Run("clearing a multiplier is refused while bets are open", func(t *testing.T) {
+		p := newPlayer(t)
+		setScore(t, p.id, 100)
+		quizID := newQuiz(t, "Clear with open bets", nil)
+		q := addPredefined(t, quizID, 0, map[string]any{"bettingMultiplierCorrect": 3.0})
+		sessionID := openSession(t, quizID, p)
+		sub := start(t, p, sessionID)
+		submit(t, p, sub, map[string]any{"questionId": q.ID, "selectedAnswerIds": []string{q.Right}, "betAmount": 50})
+
+		msg := exec(t, adminToken, `mutation($id: ID!, $input: UpdateQuizQuestionInput!) {
+			updateQuizQuestion(id: $id, input: $input) { ... on PredefinedQuestion { id } }
+		}`, map[string]any{"id": q.ID, "input": map[string]any{"clearBettingMultiplierCorrect": true}}, nil)
+		assert.Contains(t, msg, "bettingMultiplierCorrect")
+	})
+
+	t.Run("userAvailableBetPoints matches what the bet validation enforces", func(t *testing.T) {
+		p := newPlayer(t)
+		setScore(t, p.id, 100)
+		quizID := newQuiz(t, "Available points", nil)
+		q1 := addPredefined(t, quizID, 0, nil)
+		q2 := addPredefined(t, quizID, 1, nil)
+		sessionID := openSession(t, quizID, p)
+		sub := start(t, p, sessionID)
+
+		available := func() *int {
+			var res struct {
+				Quiz struct {
+					UserAvailableBetPoints *int `json:"userAvailableBetPoints"`
+				} `json:"quiz"`
+			}
+			exec(t, p.token, `query($id: ID!) { quiz(id: $id) { userAvailableBetPoints } }`,
+				map[string]any{"id": quizID}, &res)
+			return res.Quiz.UserAvailableBetPoints
+		}
+
+		require.NotNil(t, available())
+		assert.Equal(t, 100, *available(), "the whole score is available before any bet")
+
+		submit(t, p, sub, map[string]any{"questionId": q1.ID, "selectedAnswerIds": []string{q1.Right}, "betAmount": 60})
+		assert.Equal(t, 40, *available(), "an open stake is no longer available")
+
+		msg := exec(t, p.token, `mutation($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
+			submitQuizAnswer(submissionId: $submissionId, input: $input) { id }
+		}`, map[string]any{"submissionId": sub, "input": map[string]any{
+			"questionId": q2.ID, "selectedAnswerIds": []string{q2.Right}, "betAmount": 41,
+		}}, nil)
+		assert.Contains(t, msg, "exceeds available points (40)")
+
+		submit(t, p, sub, map[string]any{"questionId": q2.ID, "selectedAnswerIds": []string{q2.Right}, "betAmount": 40})
+		assert.Equal(t, 0, *available())
+
+		lockAndFinish(t, sessionID)
+		assert.Equal(t, score(t, p.id), *available())
+	})
+
+	t.Run("userAvailableBetPoints is per viewer, not per quiz", func(t *testing.T) {
+		p := newPlayer(t)
+		setScore(t, p.id, 250)
+		quizID := newQuiz(t, "Available points per viewer", nil)
+
+		read := func(token string) *int {
+			var res struct {
+				Quiz struct {
+					UserAvailableBetPoints *int `json:"userAvailableBetPoints"`
+				} `json:"quiz"`
+			}
+			exec(t, token, `query($id: ID!) { quiz(id: $id) { userAvailableBetPoints } }`,
+				map[string]any{"id": quizID}, &res)
+			return res.Quiz.UserAvailableBetPoints
+		}
+
+		require.NotNil(t, read(p.token))
+		assert.Equal(t, 250, *read(p.token))
+		require.NotNil(t, read(adminToken))
+		assert.NotEqual(t, 250, *read(adminToken))
+	})
+
 	// ============================================================ payouts
 
 	t.Run("multiplier edge values", func(t *testing.T) {

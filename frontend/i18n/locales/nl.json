@@ -50,9 +50,8 @@
       "pointsLost": "Punten verloren",
       "pointsEarned": "Punten behaald",
       "resultYourBet": "Je inzet",
-      "correctCount": "Je had {count} goed",
-      "correctCountAll": "Je had alle antwoorden goed",
-      "correctCountNone": "Je had niks goed ",
+      "outcomeCorrect": "Je had alle antwoorden goed",
+      "outcomeIncorrect": "Je had niks goed ",
       "bettingResult": "Voorspelling resultaat"
     },
     "result": {

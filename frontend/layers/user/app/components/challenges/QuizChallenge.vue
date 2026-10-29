@@ -68,11 +68,7 @@ const completedSubmissionResults = computed<QuestionResult[]>(() => {
 
   return completedSubmission.value.responses.map((response) => ({
     questionId: response.question.id,
-    isCorrect:
-      response.__typename === 'PredefinedResponse' ||
-      response.__typename === 'OrderingResponse'
-        ? (response.isCorrect ?? null)
-        : null,
+    isCorrect: response.isCorrect ?? null,
   }))
 })
 
@@ -246,12 +242,10 @@ function initializeFromExistingResponses() {
   for (const question of questions.value) {
     const response = responses.find((r) => r.question.id === question.id)
     if (response) {
-      const isCorrect =
-        response.__typename === 'PredefinedResponse' ||
-        response.__typename === 'OrderingResponse'
-          ? (response.isCorrect ?? null)
-          : null
-      existingResults.push({ questionId: question.id, isCorrect })
+      existingResults.push({
+        questionId: question.id,
+        isCorrect: response.isCorrect ?? null,
+      })
     }
   }
 
@@ -301,6 +295,7 @@ const isBettingEnabled = computed(() => {
 // Determine if the user won or lost the bet (for background color styling)
 const isBettingWin = computed(() => {
   if (!isBettingEnabled.value) return null
+  if (bettingOutcome.value !== null) return bettingOutcome.value === 'correct'
   const pointsEarned = currentResponse.value?.pointsEarned
   if (pointsEarned === null || pointsEarned === undefined) return null
   return pointsEarned >= 0
@@ -312,10 +307,13 @@ const sessionState = computed(() => {
 })
 
 // Special case for PC26 Game Night betting
-const isSingleOrderingQuestion = computed(() => {
-  return (
-    questions.value.length === 1 &&
-    questions.value[0]?.__typename === 'OrderingQuestion'
+// The score screen says nothing about betting, so a settled bet needs the
+// inline question view to show its result.
+const hasSettledBet = computed(() => {
+  const submission = activeSubmission.value ?? completedSubmission.value
+  if (!submission || !('responses' in submission)) return false
+  return submission.responses.some(
+    (r) => (r.betAmount ?? 0) > 0 && r.settledBetMultiplier !== null,
   )
 })
 
@@ -327,40 +325,27 @@ const viewState = computed(() =>
     hasCompletedSubmission: completedSubmission.value !== undefined,
     canStartQuiz: canStartQuiz.value,
     sessionState: sessionState.value,
-    isSingleOrderingQuestion: isSingleOrderingQuestion.value,
+    hasSettledBet: hasSettledBet.value,
     hasCurrentQuestion: currentQuestion.value !== undefined,
     isNotSubmitted: isNotSubmitted.value,
     isQuizUnavailable: isQuizUnavailable.value,
   }),
 )
 
-// Compute correct count for ordering questions (for betting results)
-const bettingCorrectCount = computed(() => {
-  const response = currentResponse.value
-  const question = currentQuestion.value
-  if (!response || !question) return null
-  if (response.__typename !== 'OrderingResponse') return null
-  if (question.__typename !== 'OrderingQuestion') return null
-
-  const correctOrderIds = [...question.orderingItems]
-    .sort((a, b) => (a.correctOrder ?? 0) - (b.correctOrder ?? 0))
-    .map((item) => item.id)
-
-  let count = 0
-  for (
-    let i = 0;
-    i < response.submittedOrder.length && i < correctOrderIds.length;
-    i++
-  ) {
-    if (response.submittedOrder[i] === correctOrderIds[i]) count++
-  }
-  return count
+// Replacing a bet releases the old stake, so it must not count against itself.
+const availableBetPoints = computed(() => {
+  const available = props.challenge.quiz.userAvailableBetPoints
+  if (available === null || available === undefined)
+    return userScoreFallback.value
+  return available + (currentResponse.value?.betAmount ?? 0)
 })
 
-const bettingTotalCount = computed(() => {
-  const question = currentQuestion.value
-  if (!question || question.__typename !== 'OrderingQuestion') return null
-  return question.orderingItems.length
+const userScoreFallback = computed(() => props.userScore ?? 0)
+
+const bettingOutcome = computed<'correct' | 'incorrect' | null>(() => {
+  const isCorrect = currentResponse.value?.isCorrect
+  if (isCorrect === null || isCorrect === undefined) return null
+  return isCorrect ? 'correct' : 'incorrect'
 })
 
 // Find existing ordering response for the current question
@@ -807,7 +792,7 @@ const progressResults = computed(() => {
             footerState.bettingModule.mode === 'betting'
           "
           v-model="currentBetAmount"
-          :available-points="userScore ?? 0"
+          :available-points="availableBetPoints"
           :min-percentage="currentQuestion?.bettingMinPercentage"
           :max-percentage="currentQuestion?.bettingMaxPercentage"
           :min-absolute="currentQuestion?.bettingMinAbsolute"
@@ -821,7 +806,7 @@ const progressResults = computed(() => {
             footerState.bettingModule.mode === 'locked'
           "
           v-model="currentBetAmount"
-          :available-points="userScore ?? 0"
+          :available-points="availableBetPoints"
           :min-percentage="currentQuestion?.bettingMinPercentage"
           :max-percentage="currentQuestion?.bettingMaxPercentage"
           :min-absolute="currentQuestion?.bettingMinAbsolute"
@@ -837,9 +822,9 @@ const progressResults = computed(() => {
           mode="results"
           :points-earned="currentResponse?.pointsEarned"
           :bet-amount="currentResponse?.betAmount"
-          :available-points="userScore ?? 0"
-          :correct-count="bettingCorrectCount"
-          :total-count="bettingTotalCount"
+          :available-points="availableBetPoints"
+          :outcome="bettingOutcome"
+          :multiplier="currentResponse?.settledBetMultiplier"
         />
 
         <!-- Action buttons -->

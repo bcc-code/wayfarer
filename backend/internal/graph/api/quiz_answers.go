@@ -2,8 +2,10 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
@@ -172,4 +174,49 @@ func (r *Resolver) updateQuizResponseLocked(ctx context.Context, submissionID st
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 	return updated, nil
+}
+
+// applyAnswerUpdate writes the answer field matching questionType onto params
+// and reports whether the answer changed. A field belonging to another type is
+// rejected rather than silently dropped.
+func applyAnswerUpdate(params *sqlc.UpdateQuizResponseParams, questionType string, input model.UpdateQuizAnswerInput) (bool, error) {
+	given := map[string]bool{
+		"PREDEFINED": input.SelectedAnswerIds != nil,
+		"FREE_TEXT":  input.TextResponse != nil,
+		"NUMBER":     input.NumberResponse != nil,
+		"JSON":       input.JSONResponse != nil,
+		"ORDERING":   input.SubmittedOrder != nil,
+	}
+	for t, present := range given {
+		if present && t != questionType {
+			return false, fmt.Errorf("cannot set a %s answer on a %s question", t, questionType)
+		}
+	}
+	if !given[questionType] {
+		return false, nil
+	}
+
+	switch questionType {
+	case "PREDEFINED":
+		selectedJSON, err := json.Marshal(input.SelectedAnswerIds)
+		if err != nil {
+			return false, fmt.Errorf("failed to encode selected answers: %w", err)
+		}
+		params.Selectedanswerids = selectedJSON
+	case "FREE_TEXT":
+		params.Textresponse = input.TextResponse
+	case "NUMBER":
+		if err := params.Numberresponse.Scan(strconv.FormatFloat(*input.NumberResponse, 'f', -1, 64)); err != nil {
+			return false, fmt.Errorf("invalid number response: %w", err)
+		}
+	case "JSON":
+		params.Jsonresponse = []byte(*input.JSONResponse)
+	case "ORDERING":
+		orderJSON, err := json.Marshal(input.SubmittedOrder)
+		if err != nil {
+			return false, fmt.Errorf("failed to encode submitted order: %w", err)
+		}
+		params.Jsonresponse = orderJSON
+	}
+	return true, nil
 }

@@ -86,7 +86,7 @@ func quizResponsesBySubmissionBatchFunc(db *database.DB, c *cache.CacheWithRegis
 						SubmissionID:      row.SubmissionID,
 						QuestionID:        row.QuestionID,
 						SelectedAnswerIds: selectedAnswerIDs,
-						IsCorrect:         row.IsCorrect,
+						IsCorrectValue:    row.IsCorrect,
 						AnsweredAt:        answeredAt,
 						TimeSpentSeconds:  timeSpentSeconds,
 						PointsEarned:      pointsEarned,
@@ -107,6 +107,7 @@ func quizResponsesBySubmissionBatchFunc(db *database.DB, c *cache.CacheWithRegis
 						TimeSpentSeconds: timeSpentSeconds,
 						PointsEarned:     pointsEarned,
 						BetAmount:        betAmount,
+						IsCorrectValue:   row.IsCorrect,
 						ScoreJournalID:   row.ScoreJournalID,
 					}
 				case "NUMBER":
@@ -124,6 +125,7 @@ func quizResponsesBySubmissionBatchFunc(db *database.DB, c *cache.CacheWithRegis
 						TimeSpentSeconds: timeSpentSeconds,
 						PointsEarned:     pointsEarned,
 						BetAmount:        betAmount,
+						IsCorrectValue:   row.IsCorrect,
 						ScoreJournalID:   row.ScoreJournalID,
 					}
 				case "JSON":
@@ -140,6 +142,7 @@ func quizResponsesBySubmissionBatchFunc(db *database.DB, c *cache.CacheWithRegis
 						TimeSpentSeconds: timeSpentSeconds,
 						PointsEarned:     pointsEarned,
 						BetAmount:        betAmount,
+						IsCorrectValue:   row.IsCorrect,
 						ScoreJournalID:   row.ScoreJournalID,
 					}
 				case "ORDERING":
@@ -152,7 +155,7 @@ func quizResponsesBySubmissionBatchFunc(db *database.DB, c *cache.CacheWithRegis
 						SubmissionID:     row.SubmissionID,
 						QuestionID:       row.QuestionID,
 						SubmittedOrder:   submittedOrder,
-						IsCorrectValue:   row.IsCorrect, // Store actual value for resolver
+						IsCorrectValue:   row.IsCorrect,
 						AnsweredAt:       answeredAt,
 						TimeSpentSeconds: timeSpentSeconds,
 						PointsEarned:     pointsEarned,
@@ -174,6 +177,7 @@ func quizResponsesBySubmissionBatchFunc(db *database.DB, c *cache.CacheWithRegis
 						TimeSpentSeconds: timeSpentSeconds,
 						PointsEarned:     pointsEarned,
 						BetAmount:        betAmount,
+						IsCorrectValue:   row.IsCorrect,
 						ScoreJournalID:   row.ScoreJournalID,
 					}
 				}

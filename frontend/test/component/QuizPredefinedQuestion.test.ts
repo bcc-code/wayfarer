@@ -9,15 +9,18 @@ import type {
 } from '../../layers/user/app/components/challenges/quiz/types'
 import { QuizSessionState } from '~/api/generated'
 
-const { analyticsMock, submitMock } = vi.hoisted(() => ({
+const { analyticsMock, submitMock, updateMock } = vi.hoisted(() => ({
   analyticsMock: vi.fn(),
   submitMock: vi.fn(),
+  updateMock: vi.fn(),
 }))
 mockNuxtImport('useAnalytics', () => analyticsMock)
 mockNuxtImport('useSubmitQuizAnswerMutation', () => submitMock)
+mockNuxtImport('useUpdateQuizAnswerMutation', () => updateMock)
 
 const track = vi.fn()
 const submitAnswer = vi.fn()
+const updateAnswer = vi.fn()
 
 type Props = InstanceType<typeof QuizPredefinedQuestion>['$props']
 
@@ -41,6 +44,7 @@ function resolveSubmitAs(isCorrect: boolean | null) {
 function mountQ(props: Partial<Props> = {}) {
   analyticsMock.mockReturnValue({ track })
   submitMock.mockReturnValue({ executeMutation: submitAnswer })
+  updateMock.mockReturnValue({ executeMutation: updateAnswer })
   return mountSuspended(QuizPredefinedQuestion, {
     props: {
       question: QUESTION,
@@ -64,6 +68,11 @@ describe('QuizPredefinedQuestion', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     resolveSubmitAs(true)
+    updateAnswer.mockResolvedValue({
+      data: {
+        updateQuizAnswer: { __typename: 'PredefinedResponse', id: 'R1' },
+      },
+    })
   })
 
   it('renders every alternative', async () => {
@@ -216,5 +225,121 @@ describe('QuizPredefinedQuestion', () => {
     expect(state(wrapper).isAnswerLocked).toBe(true)
     // Alternatives are disabled once locked.
     expect(alt(wrapper, 'Yes').attributes('disabled')).toBeDefined()
+  })
+
+  describe('inside an OPEN session', () => {
+    const openProps = {
+      sessionState: QuizSessionState.Open,
+      betAmount: 25,
+    } as Partial<Props>
+
+    it('does not treat a resumed answer as locked, so it can still be changed', async () => {
+      const wrapper = await mountQ({
+        ...openProps,
+        existingResponse: {
+          id: 'R1',
+          selectedAnswers: [{ id: 'a1' }],
+        } as never,
+      })
+
+      expect(state(wrapper).mode).toBe('session-betting')
+      // Saved, but revisable — the whole point of an OPEN session.
+      expect(state(wrapper).isBetSaved).toBe(true)
+      expect(state(wrapper).canChangeBet).toBe(true)
+      expect(state(wrapper).isAnswerLocked).toBe(false)
+    })
+
+    it('updates the existing response instead of submitting a second one', async () => {
+      const wrapper = await mountQ({
+        ...openProps,
+        existingResponse: {
+          id: 'R1',
+          selectedAnswers: [{ id: 'a1' }],
+        } as never,
+      })
+
+      handlers(wrapper).changeBet()
+      await flushPromises()
+      await alt(wrapper, 'No').trigger('click')
+      await handlers(wrapper).submit()
+      await flushPromises()
+
+      expect(submitAnswer).not.toHaveBeenCalled()
+      expect(updateAnswer).toHaveBeenCalledWith({
+        responseId: 'R1',
+        input: { selectedAnswerIds: ['a2'], betAmount: 25 },
+      })
+    })
+
+    it('submits the first time, then updates on every later change', async () => {
+      submitAnswer.mockResolvedValue({
+        data: {
+          submitQuizAnswer: { __typename: 'PredefinedResponse', id: 'R9' },
+        },
+      })
+      const wrapper = await mountQ(openProps)
+
+      await alt(wrapper, 'Yes').trigger('click')
+      await handlers(wrapper).submit()
+      await flushPromises()
+      expect(submitAnswer).toHaveBeenCalledTimes(1)
+
+      handlers(wrapper).changeBet()
+      await flushPromises()
+      await alt(wrapper, 'No').trigger('click')
+      await handlers(wrapper).submit()
+      await flushPromises()
+
+      expect(submitAnswer).toHaveBeenCalledTimes(1)
+      expect(updateAnswer).toHaveBeenCalledWith({
+        responseId: 'R9',
+        input: { selectedAnswerIds: ['a2'], betAmount: 25 },
+      })
+    })
+
+    it('re-locks the alternatives after saving until the user asks to change', async () => {
+      const wrapper = await mountQ({
+        ...openProps,
+        existingResponse: {
+          id: 'R1',
+          selectedAnswers: [{ id: 'a1' }],
+        } as never,
+      })
+
+      expect(alt(wrapper, 'Yes').attributes('disabled')).toBeDefined()
+      handlers(wrapper).changeBet()
+      await flushPromises()
+      expect(alt(wrapper, 'Yes').attributes('disabled')).toBeUndefined()
+    })
+
+    it('never reveals correctness while the session is still open', async () => {
+      const wrapper = await mountQ({
+        ...openProps,
+        existingResponse: {
+          id: 'R1',
+          selectedAnswers: [{ id: 'a1' }],
+          isCorrect: true,
+        } as never,
+      })
+
+      expect(wrapper.html()).not.toContain('correct')
+      expect(state(wrapper).isAnswerLocked).toBe(false)
+    })
+  })
+
+  describe('once the session is LOCKED', () => {
+    it('freezes the answer', async () => {
+      const wrapper = await mountQ({
+        sessionState: QuizSessionState.Locked,
+        existingResponse: {
+          id: 'R1',
+          selectedAnswers: [{ id: 'a1' }],
+        } as never,
+      })
+
+      expect(state(wrapper).mode).toBe('session-locked')
+      expect(state(wrapper).isAnswerLocked).toBe(true)
+      expect(alt(wrapper, 'Yes').attributes('disabled')).toBeDefined()
+    })
   })
 })

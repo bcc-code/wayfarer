@@ -2,12 +2,18 @@
 
 **Date:** 2026-09-30
 
-> **Update 2026-10-23:** the ladder_to_heaven `quiz-finalized` handler was removed. The core now
+> **Update 2026-10-23:** the ladder*to_heaven `quiz-finalized` handler was removed. The core now
 > settles ORDERING bets like PREDEFINED ones (`sessionBetQuestionTypes` in
 > `quiz_session_betting.go`): all-or-nothing `is_correct`, the question's correct/wrong multipliers,
 > claim-once settlement. The plugin's partial position-based payout no longer exists. Parts of this
 > review that describe plugin settlement are historical.
-**Question asked:** betting should attach to _all_ quiz question types, but so far only ORDERING has used it. How generic is it really — in functionality and in language?
+> **Question asked:** betting should attach to \_all* quiz question types, but so far only ORDERING has used it. How generic is it really — in functionality and in language?
+
+> **Frontend follow-up (2026-10-22):** a frontend-only re-review is in
+> `[[betting-frontend-genericity]]`. The frontend findings below (3–5, 8–11) are all still
+> open; that note adds the PREDEFINED result-screen gap, the ungated
+> `QuizPredefinedAnswer.isCorrect` (**gated 2026-10-27**, see Progress), and the unreachable
+> payout multipliers.
 
 **Verdict:** the **storage and configuration layers are fully generic**; the **settlement (scoring) layer and the whole user-facing flow are hard-wired to ORDERING**. A predefined/number/free-text question with `bettingEnabled = true` can be authored today, but the user can never place a bet on it, and if they somehow did, nothing would ever pay it out.
 
@@ -15,17 +21,17 @@
 
 ## Layer-by-layer
 
-| Layer                                                           | Generic?                                            | Notes                                                                                                                       |
-| --------------------------------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| DB schema (`00090_add_question_betting.sql`)                    | ✅ Yes                                              | `betting_*` on `quiz_questions`, `bet_amount` on `quiz_responses`. No question-type coupling, constraints are type-neutral. |
-| GraphQL schema (`gql/quizzes.graphqls`)                         | ✅ Yes                                              | All 5 betting fields repeated on every question type + input; `betAmount` on every response type + input.                   |
+| Layer                                                           | Generic?                                            | Notes                                                                                                                              |
+| --------------------------------------------------------------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| DB schema (`00090_add_question_betting.sql`)                    | ✅ Yes                                              | `betting_*` on `quiz_questions`, `bet_amount` on `quiz_responses`. No question-type coupling, constraints are type-neutral.        |
+| GraphQL schema (`gql/quizzes.graphqls`)                         | ✅ Yes                                              | All 5 betting fields repeated on every question type + input; `betAmount` on every response type + input.                          |
 | Bet validation (`backend/internal/graph/api/quiz_betting.go`)   | ✅ Yes                                              | `ValidateBet` is purely numeric — available points (score − open stakes), %-limits, absolute limits. Zero question-type awareness. |
-| Admin editor (`AdminQuizQuestionEditor.vue`)                    | ✅ Yes                                              | Betting block renders for _every_ `questionType`, not gated.                                                                |
-| Submit resolver (`createQuizResponse`)                          | ✅ Yes                                              | Validates the bet for all types, inside the transaction that stores the answer (after the user's bet locks).               |
-| **Update resolver (`updateQuizResponse`)**                      | ❌ **ORDERING only**                                |                                                                                                                             |
-| **Settlement / payout**                                         | ❌ **ORDERING only, and lives in a project plugin** |                                                                                                                             |
-| **User-facing flow (`QuizChallenge.vue`, question components)** | ❌ **effectively ORDERING only**                    |                                                                                                                             |
-| **Language (i18n + prop naming)**                               | ⚠️ **ORDERING-shaped**                              |                                                                                                                             |
+| Admin editor (`AdminQuizQuestionEditor.vue`)                    | ✅ Yes                                              | Betting block renders for _every_ `questionType`, not gated.                                                                       |
+| Submit resolver (`createQuizResponse`)                          | ✅ Yes                                              | Validates the bet for all types, inside the transaction that stores the answer (after the user's bet locks).                       |
+| **Update resolver (`updateQuizResponse`)**                      | ❌ **ORDERING only**                                |                                                                                                                                    |
+| **Settlement / payout**                                         | ❌ **ORDERING only, and lives in a project plugin** |                                                                                                                                    |
+| **User-facing flow (`QuizChallenge.vue`, question components)** | ❌ **effectively ORDERING only**                    |                                                                                                                                    |
+| **Language (i18n + prop naming)**                               | ⚠️ **ORDERING-shaped**                              |                                                                                                                                    |
 
 ---
 
@@ -270,6 +276,7 @@ stays with the `ladder_to_heaven` plugin unchanged. Backend only; no frontend ch
   challenge), sent from one background goroutine with at most 16 users at a time
   (`betNotifyConcurrency`) and the request context via `context.WithoutCancel`. Settlement itself runs synchronously, so the admin's finish call
   waits for it.
+
 - **Retry:** auto-submit + settlement live in `closeSessionAndSettleBets`. Settlement only runs
   after auto-submit succeeded, and calling `finishQuizSession` on a `FINISHED` session runs both
   again (no-ops once done), so a failed auto-submit or bet is retried by finishing again. Partial
@@ -299,6 +306,199 @@ Known gaps:
   `updateQuizQuestion` (the query uses COALESCE).
 - Frontend not updated: `pnpm codegen`, admin editor fields, `QuizBettingModule` result copy.
 
+### 2026-10-27 — `isCorrect` hoisted to the `QuizResponse` interface, and both answer-reveal fields gated
+
+Backend only; frontend got `pnpm codegen` but no document or component changes. This is the
+prerequisite for step 2 of `[[betting-frontend-genericity]]` (take correctness from the API
+instead of regrading in the browser).
+
+- **Schema** — `isCorrect: Boolean` now sits on the `QuizResponse` **interface** and on all five
+  implementations, every one a `forceResolver`. `FreeTextResponse`, `NumberResponse` and
+  `JsonResponse` gained the field; `quizgrading` does not grade those types, so it is always
+  `null` there today, but a client can now select the verdict once on the interface rather than
+  through a `... on XxxResponse` ladder per type.
+- **One gate for response verdicts** — `Resolver.responseVerdict`
+  (`graph/api/quiz_answer_visibility.go`) hides a response's stored `is_correct` while the
+  submission's session is OPEN. This was previously implemented only on `OrderingResponse`;
+  `PredefinedResponse.isCorrect` was a plain model field with no gate at all, so a user could see
+  whether their own answer was right while they could still change it — and, on a betting
+  question, while the bet was still live. All five types now share the one helper.
+- **One gate for question answers** — `Resolver.canRevealQuestionAnswers` (same file) backs both
+  `QuizPredefinedAnswer.isCorrect` and `QuizOrderingItem.correctOrder`. `isCorrect` was previously
+  returned unconditionally (finding 2 in `[[betting-frontend-genericity]]`): the player-facing
+  `PredefinedAnswerFields` fragment selects it, so a user in an OPEN session was handed the correct
+  answer in the payload. It is now hidden until the most recent accessible session is FINISHED.
+  No user-facing component read it, so nothing in the UI changed.
+- **Admin bypass is explicit now.** The gate returns true for anyone passing
+  `RoleService.CanManageProject`, so the admin question editor keeps its values. `correctOrder`
+  previously only worked for admins by accident — an admin with no `quiz_session_access` rows fell
+  into the "no sessions, so nothing to gate on" branch; an admin who was also a participant in an
+  OPEN session would have been hidden the correct order.
+- **`QuizSubmissionByIDLoader`** (`internal/loaders/quiz_submission_by_id.go`, over the previously
+  unused `GetQuizSubmissionsByIDs`) — the verdict gate needs the submission's session for every
+  response, and it now applies to all five types rather than just ORDERING. The loader plus the
+  existing `QuizSessionByIDLoader` keep that at two queries per request instead of two per
+  response. Submissions are not cached in the loader; session state comes from the session
+  loader's own short TTL.
+- **Tests:** `e2e/quiz_answer_visibility_test.go` — answer `isCorrect` hidden from a player while
+  OPEN and while LOCKED, revealed once FINISHED, always visible to an admin, and a response's
+  verdict hidden while OPEN then revealed on LOCKED.
+
+### 2026-10-27 — the result screen reads the verdict and the payout from the API
+
+Closes findings 9 and 10 here, and findings 2, 6 and 7 in `[[betting-frontend-genericity]]`.
+The browser no longer grades anything or reconstructs the payout.
+
+- **`settledBetMultiplier: Float` on the `QuizResponse` interface** and all five implementations, backed
+  by `SettledBetMultiplier` (`graph/api/quiz_betting.go`) — winnings over stake, from the
+  response's own `score_journal_id` / `bet_amount` / `points_earned`. Null until the bet is
+  settled. It is a pure function, so it adds no queries.
+
+  Why not the question's `bettingMultiplier*` columns: since 2026-10-23 session settlement does
+  pay both PREDEFINED and ORDERING from that configured curve, but `recordBetResult` writes a
+  caller-supplied `pointsEarned` without consulting it, and payouts floor at
+  `floor(stake * multiplier / 100)`. The configured columns are the odds offered; `settledBetMultiplier`
+  is what the bet actually paid. Unit tests in `graph/api/quiz_settled_bet_multiplier_test.go`.
+
+- **`QuizBettingModule` results mode is question-type-neutral.** `correctCount` / `totalCount`
+  are replaced by `outcome: 'correct' | 'incorrect' | null` and `multiplier: number | null`.
+  A single verdict is the only correctness frame all five types share, and it is what the backend
+  settles on.
+
+- **`isWin` follows the verdict, not the sign of the points.** A curve that returns the stake pays
+  0 net; that is a won bet. Previously `pointsEarned >= 0` rendered it as a win with `+0` only by
+  accident, and any curve below 1.0x would have rendered a partial loss as a win.
+
+- **Deleted from `QuizChallenge.vue`:** `bettingCorrectCount` (which re-sorted `orderingItems` by
+  `correctOrder` and counted positional matches) and `bettingTotalCount`. `isBettingWin`, which
+  drives the result background, now also prefers the verdict. The `PredefinedResponse |
+OrderingResponse` type ladders around `response.isCorrect` are gone too, since the field sits on
+  the interface as of this morning.
+
+- **Query documents** select `isCorrect` and `settledBetMultiplier` once on the `QuizResponse` interface
+  rather than per type, in both `challenge.gql` and the two answer mutations.
+
+- **i18n:** `correctCount` / `correctCountAll` / `correctCountNone` are replaced by
+  `outcomeCorrect` / `outcomeIncorrect` in the 14 locales that carry a betting block. Grading is
+  all-or-nothing, so the reviewed `correctCountAll` / `correctCountNone` strings were carried over
+  as the new values; only `en_us` and `nb` were reworded for a single-answer question. **`ro` needs
+  a human translation** — its strings are ordering-specific ("Ai pus toate echipele pe poziția
+  corectă", _you put all the teams in the correct position_) and now sit under a generic key. The
+  other 11 carried-over locales read acceptably but are phrased for a multi-item question.
+
+Note these keys were changed locally; if the locale files are managed through Phrase, the rename
+needs pushing there too.
+
+### 2026-10-27 — one betting flow for every question type, and a home for the result
+
+Closes findings 1, 3 and 4 in `[[betting-frontend-genericity]]` and finding 3 here. The rule is
+now uniform: **while the session is OPEN the answer and the bet can both be changed as often as
+the user likes; locking the session freezes them.**
+
+**Backend — `updateQuizAnswer` works for every type.** It used to end in
+`return nil, fmt.Errorf("update not supported for this question type")` for anything but ORDERING.
+`UpdateQuizAnswerInput` now carries the same answer fields as `SubmitQuizAnswerInput`, and
+`applyAnswerUpdate` (`graph/api/quiz_answers.go`) applies the one matching the question's type.
+
+- An answer field belonging to another type is rejected rather than ignored — it means the caller
+  and the question disagree about what is being answered.
+- An update with neither an answer nor a bet is rejected.
+- `points_earned` is always rewritten when the answer changes, so switching from a correct answer
+  to a wrong one clears the points. `UpdateQuizResponse` coalesces every column, so leaving it nil
+  would keep the old value.
+- Regrading runs through the same `gradeQuizResponse` as submit, so an answer revised to wrong
+  settles as wrong.
+
+**Frontend — `useQuizSessionAnswer`** (`layers/user/app/composables/`) holds the session half of
+answering: the action mode, `isBetSaved` / `isEditing` / `savedResponseId`, and a `saveAnswer`
+that submits the first time and updates thereafter. Question components supply only their own
+answer shape via `buildAnswer`. PREDEFINED now uses it, with `canChangeBet: true`.
+
+Two divergences that made ORDERING and PREDEFINED behave differently are gone:
+
+- `isAnswerConfirmed` was a `ref` initialised per type — `props.readonly ?? false` for ORDERING but
+  `props.readonly || Boolean(props.existingResponse)` for PREDEFINED. So a PREDEFINED answer came
+  back from a reload already "confirmed", which hid the betting module and blocked any change. It
+  is now derived from the action mode, and inside a session an answer is never confirmed until the
+  session locks.
+- `resolveFooterState`'s `session-locked` branch hid the betting module behind
+  `!actionState.isAnswerLocked`. A locked session freezes the bet, so the module is a read-only
+  summary and always shown.
+
+**`hasSettledBet` replaces `isSingleOrderingQuestion`.** `resolveQuizViewState` showed the inline
+question view on FINISHED only for a single ORDERING question — the PC26 special case — so every
+other type's bet was paid out and never shown. It now shows it whenever a response carries a bet
+with a `settledBetMultiplier`, which is what the result screen needs to render.
+
+Still open: NUMBER and FREE_TEXT keep `mode: props.readonly ? 'review' : 'normal'` and have not
+been moved onto the composable, so betting stays inert for them (the backend does not settle their
+bets either — they are not graded). JSON remains a stub.
+
+Tests: `applyAnswerUpdate` unit tests; e2e `updateQuizAnswer` on PREDEFINED (regrade both ways,
+bet-only update, cross-type rejection, rejected once LOCKED, settles on the final answer), on
+FREE_TEXT/NUMBER, and the empty-update rejection; component tests for the OPEN-session flow on
+PREDEFINED; `useQuizViewState` tests migrated to `hasSettledBet`.
+
+### 2026-10-28 — the payout curve is configurable from the admin editor
+
+Closes finding 9 in `[[betting-frontend-genericity]]` and the `clear*` gap noted on 2026-10-07.
+Until now the multipliers existed on both question mutations but were reachable only by calling
+the API by hand.
+
+- **Editor** — `AdminQuizQuestionEditor.vue` gains an "Uttelling" block inside the betting box:
+  two number inputs (0.25 steps, 2 decimals) for the correct and wrong payouts, with the defaults
+  (2x / 0x) spelled out so an empty field reads as deliberate rather than missing. Wired through
+  `QuizQuestionFormData`, the quiz page's load mapping, and `quizQuestionInput`.
+- **Client-side validation** mirrors `ValidateBettingMultipliers`: 0-100, at most 2 decimals, and
+  wrong not above correct — compared against the *defaults* when a field is left empty, so an
+  unset correct multiplier still caps the wrong one at 2. The admin sees the message before the
+  backend rejects the save.
+- **`clear*` flags now work.** `UpdateQuizQuestion` COALESCEd every betting column, so emptying a
+  field kept its old value. All six betting nullables now take a clear flag
+  (`CASE WHEN @clearX THEN NULL ELSE COALESCE(...) END`), matching the existing `clearimage`
+  pattern. `clearBettingMinAbsolute` / `clearBettingMaxAbsolute` were already in the schema and
+  already sent by the admin UI — they had no backend reference at all. Percentages and the two
+  multipliers are new. `bettingClearFlags` now derives all six from one list.
+- **Clearing counts as a payout change.** `payoutChanged` gained the two clear flags: falling back
+  to the default is as much a change of the terms a bet was placed under as setting a number, so
+  the existing "no payout change while bets are open" guard covers it. The validated post-update
+  state also resets cleared fields, so a cleared value is checked as its default, not its old one.
+
+Tests: `TestPayoutChanged` cases for clearing; e2e for clearing every betting field back to
+default and for the open-bets refusal; unit tests for `bettingClearFlags` across all six fields
+and for the multiplier validation rules.
+
+Still open: the user is not shown the odds *before* betting (the remaining half of finding 7) —
+the configured curve is selected by the admin fragment only, and no player-facing query or
+component reads it.
+
+### 2026-10-28 — the slider is bounded by what the server will accept
+
+Closes finding 5 in `[[betting-frontend-genericity]]` and the open follow-up in
+`[[betting-edge-cases]]` (R1).
+
+The slider's maximum was `myCurrentProject.myPoints` — the raw project score — while `ValidateBet`
+enforces score minus open stakes. With one betting question per session the two never diverged.
+They do now: a multi-question betting quiz is configurable from the admin editor, and bets can be
+revised while the session is OPEN, so a user with an open stake was offered a range the server
+would reject, and only found out on submit. Percentage limits compounded it, taking a percentage
+of the wrong base.
+
+- **`Quiz.userAvailableBetPoints: Int`** exposes the figure `availableBetPoints` already computed
+  for validation (`graph/api/quiz_betting.go`), so there is one definition of which stakes count
+  as open. Null without a signed-in user. Resolved per quiz, not per question — the challenge page
+  loads one quiz, so it costs one query and needs no loader. It reads outside a transaction: it is
+  an indication for the UI, and the authoritative check still runs under the user's submission
+  locks on submit.
+- **The frontend adds back the stake already placed on the current question.** Replacing a bet
+  releases the old one, so it must not compete with itself. Inside an OPEN session a stored bet is
+  always still open and the slider only exists there, which is what makes that one line safe.
+  Missing field falls back to the raw score — the previous behaviour, only ever too generous.
+
+Tests: e2e asserting the field tracks stakes as they are placed, that the number it reports is
+exactly the cap the next bet is rejected against, that settling releases it, and that it is per
+viewer; component tests for the ceiling, the add-back and the fallback.
+
 ## Suggested order of work, if this is to be made properly generic
 
 1. Extract settlement out of `ladder_to_heaven` into a shared service; define a per-question-type
@@ -306,10 +506,12 @@ Known gaps:
    Reconcile with `recordBetResult` so there is one journal shape.
 2. ~~Fix `ValidateBet`'s zero-bet handling to match its documented contract~~ (done 2026-10-09);
    delete or wire up `ExtractBetConfigFromQuestion`.
-3. Give every question component a real `session-betting` action mode (or hoist betting out of
-   the per-type action state entirely — it is question-type-independent by nature).
-4. Generalize `updateQuizResponse` beyond ORDERING.
-5. Replace `correctCount`/`totalCount` on `QuizBettingModule` with a type-neutral outcome input;
-   take the multiplier from the API rather than re-deriving it.
+   ~~Gate `QuizPredefinedAnswer.isCorrect`~~ (done 2026-10-27).
+3. ~~Give every question component a real `session-betting` action mode (or hoist betting out of
+   the per-type action state entirely)~~ (done 2026-10-27 for PREDEFINED and ORDERING via
+   `useQuizSessionAnswer`; NUMBER and FREE_TEXT still to move).
+4. ~~Generalize `updateQuizResponse` beyond ORDERING~~ (done 2026-10-27).
+5. ~~Replace `correctCount`/`totalCount` on `QuizBettingModule` with a type-neutral outcome input;
+   take the multiplier from the API rather than re-deriving it~~ (done 2026-10-27).
 6. Clean the i18n: remove the 4 unused keys, fix `yourPoints`, reword `correctCount` for
    single-answer questions.

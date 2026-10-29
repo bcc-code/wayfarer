@@ -66,28 +66,37 @@ export function orderedQuestionIds<T extends PlannableQuestion>(
 const hasValue = (value: number | null | undefined) =>
   value !== null && value !== undefined && !Number.isNaN(value)
 
+/** The betting fields that can be emptied back to their default. */
+const CLEARABLE_BETTING_FIELDS = [
+  'bettingMinPercentage',
+  'bettingMaxPercentage',
+  'bettingMinAbsolute',
+  'bettingMaxAbsolute',
+  'bettingMultiplierCorrect',
+  'bettingMultiplierWrong',
+] as const
+
+type ClearableBettingField = (typeof CLEARABLE_BETTING_FIELDS)[number]
+type BettingFields = Partial<Record<ClearableBettingField, number>>
+
 /**
- * Betting absolutes need an explicit clear flag: the update input treats an
+ * Betting fields need an explicit clear flag: the update input treats an
  * omitted value as "leave alone", so emptying the field would otherwise keep
  * the old number.
  */
 export function bettingClearFlags(
-  original:
-    { bettingMinAbsolute?: number; bettingMaxAbsolute?: number } | undefined,
-  updated: { bettingMinAbsolute?: number; bettingMaxAbsolute?: number },
+  original: BettingFields | undefined,
+  updated: BettingFields,
 ) {
-  return {
-    clearBettingMinAbsolute:
-      hasValue(original?.bettingMinAbsolute) &&
-      !hasValue(updated.bettingMinAbsolute)
+  const flags: Record<string, true | undefined> = {}
+  for (const field of CLEARABLE_BETTING_FIELDS) {
+    const key = `clear${field.charAt(0).toUpperCase()}${field.slice(1)}`
+    flags[key] =
+      hasValue(original?.[field]) && !hasValue(updated[field])
         ? true
-        : undefined,
-    clearBettingMaxAbsolute:
-      hasValue(original?.bettingMaxAbsolute) &&
-      !hasValue(updated.bettingMaxAbsolute)
-        ? true
-        : undefined,
+        : undefined
   }
+  return flags
 }
 
 /**
@@ -123,5 +132,7 @@ export function quizQuestionInput(question: QuizQuestionFormData) {
     bettingMaxPercentage: question.bettingMaxPercentage,
     bettingMinAbsolute: question.bettingMinAbsolute,
     bettingMaxAbsolute: question.bettingMaxAbsolute,
+    bettingMultiplierCorrect: question.bettingMultiplierCorrect,
+    bettingMultiplierWrong: question.bettingMultiplierWrong,
   }
 }
