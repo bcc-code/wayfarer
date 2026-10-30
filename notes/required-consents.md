@@ -520,6 +520,11 @@ push/bulk audiences, real points for admins) need the same rule. It mirrors
 
 - latest published version per key, global or the project's own; `is_required`
   is tested *after* picking the latest version;
+- not archived (since 00118): an archived latest version stops the key
+  blocking, tested after the `DISTINCT ON` too, so archiving v2 does not make
+  v1 block again. `buildConsentStatus` and `blockingConsentIds` get this from
+  `GetLatestPublishedConsentsForProject`, which already leaves archived keys out
+  (see `admin-consents.md`);
 - local only;
 - the user's latest action for the key is missing or `REJECTED`;
 - under-13 users (by year difference) are exempt.
@@ -685,7 +690,7 @@ counts nowhere, for admins too:
   browser from the listed members, X included; it should use this field.
   Agreed as a separate frontend PR.
 - The age rule after consent changes: accept, reject, `adminSetUserConsent`,
-  `createConsent` and `updateConsent` list the blocked (project, user) pairs
+  `createConsent`, `updateConsent`, `archiveConsent` and `unarchiveConsent` list the blocked (project, user) pairs
   before and after (`GetConsentBlockedProjectsOfUsers`,
   `GetConsentBlockedUsersInProjects`, `consents.sql`). The user actions compare
   for every consent rather than trusting `isRequired` (review t_9e69,

@@ -1,6 +1,6 @@
 # Admin consent management
 
-**Status:** done (migration 00116 not yet run on dev)
+**Status:** done (migration 00118 not yet run on dev)
 **Changed:** 2026-10-28
 
 ## What the admin pages list
@@ -40,7 +40,7 @@ scheduled, badged apart) and **Arkiverte** (behind the switch).
 
 ## Archiving, never deleting
 
-`consents.archived_at` (migration 00116) retires a consent.
+`consents.archived_at` (migration 00118) retires a consent.
 `Mutation.archiveConsent(id)` / `unarchiveConsent(id)`, admin/superadmin.
 
 There is deliberately **no delete**. `user_consent_history.consent_id` is
@@ -51,7 +51,11 @@ consent out of circulation and leaves every row of that record in place.
 What archiving changes:
 
 - it drops out of `pendingConsents` and `me { consentStatus }`, so nobody is
-  asked for it again, and a **required** consent stops blocking participation;
+  asked for it again, and a **required** consent stops blocking participation.
+  00118 also redefines `consent_blocked_user_ids` to skip archived keys, and
+  both mutations run `applyConsentBlockChanges`, so the boards and unit views
+  show the unblocked users straight away (and hide them again on unarchive;
+  `e2e/consents_blocked_visibility_test.go`);
 - `acceptConsent` / `rejectConsent` refuse it (a late answer is a stale client);
 - it leaves the default admin listing, and appears under "Arkiverte".
 
@@ -94,7 +98,7 @@ the cache TTL to reach users. Covered by
 
 | Piece                 | File                                                                                                        |
 | --------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Migration             | `backend/internal/database/migrations/00116_add_consent_archived_at.sql`                                    |
+| Migration             | `backend/internal/database/migrations/00118_add_consent_archived_at.sql`                                    |
 | SQL                   | `backend/internal/database/queries/consents.sql` (`GetAdminConsents`, `ArchiveConsent`, `UnarchiveConsent`) |
 | Schema                | `gql/consents.graphqls`                                                                                     |
 | Resolvers             | `backend/internal/graph/api/consents.resolvers.go`, helpers in `consents.go`                                |

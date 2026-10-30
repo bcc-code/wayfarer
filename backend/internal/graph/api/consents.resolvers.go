@@ -446,6 +446,9 @@ func (r *mutationResolver) ArchiveConsent(ctx context.Context, id string) (*mode
 		return nil, fmt.Errorf("consent %q is already archived", existing.Key)
 	}
 
+	// Archiving a required consent unblocks the users it was holding back
+	blockedBefore := r.blockedUsersInConsentScope(ctx, existing.ProjectID)
+
 	if _, err := r.DB.Queries.ArchiveConsent(ctx, id); err != nil {
 		return nil, fmt.Errorf("failed to archive consent: %w", err)
 	}
@@ -453,18 +456,28 @@ func (r *mutationResolver) ArchiveConsent(ctx context.Context, id string) (*mode
 	// Before the reload below, which reads through the same cache.
 	r.Cache.Delete(cache.ConsentKey(id))
 	r.Cache.InvalidateConsents()
+	r.applyConsentBlockChanges(ctx, blockedBefore, r.blockedUsersInConsentScope(ctx, existing.ProjectID))
 
 	return r.LoadConsentWithTranslation(ctx, id)
 }
 
 // UnarchiveConsent is the resolver for the unarchiveConsent field.
 func (r *mutationResolver) UnarchiveConsent(ctx context.Context, id string) (*model.Consent, error) {
+	existing, err := r.DB.Queries.GetConsentByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("consent not found: %w", err)
+	}
+
+	// Unarchiving a required consent blocks again whoever has not accepted it
+	blockedBefore := r.blockedUsersInConsentScope(ctx, existing.ProjectID)
+
 	if _, err := r.DB.Queries.UnarchiveConsent(ctx, id); err != nil {
 		return nil, fmt.Errorf("failed to unarchive consent: %w", err)
 	}
 
 	r.Cache.Delete(cache.ConsentKey(id))
 	r.Cache.InvalidateConsents()
+	r.applyConsentBlockChanges(ctx, blockedBefore, r.blockedUsersInConsentScope(ctx, existing.ProjectID))
 
 	return r.LoadConsentWithTranslation(ctx, id)
 }
