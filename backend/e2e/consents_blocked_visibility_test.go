@@ -395,4 +395,48 @@ func TestRequiredConsentHidesUserFromOthers(t *testing.T) {
 		ranks, _ := projectBoard(t)
 		assert.Equal(t, map[string]int{acceptedID: 1, childID: 2}, ranks)
 	})
+
+	// Archiving goes through the mutations with no manual cache invalidation:
+	// the resolvers have to refresh the boards themselves
+	setArchived := func(t *testing.T, mutation, consentID string) {
+		t.Helper()
+		resp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation ($id: ID!) { `+mutation+`(id: $id) { id } }
+		`, map[string]any{"id": consentID})
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+	}
+
+	t.Run("archiving a required consent shows everyone it was hiding", func(t *testing.T) {
+		require.NotEmpty(t, participationV2)
+		// Warm the caches with the users hidden
+		ranks, _ := projectBoard(t)
+		require.NotContains(t, ranks, unansweredID)
+		unitRanks, _ := unit(t, viewerToken)
+		require.NotContains(t, unitRanks, unansweredID)
+
+		setArchived(t, "archiveConsent", participationV2)
+
+		// Archiving v2 must not make v1 the blocking version again: the
+		// rejected user would stay hidden
+		want := map[string]int{acceptedID: 1, unansweredID: 2, rejectedID: 3, teenID: 4, childID: 5}
+		ranks, total := projectBoard(t)
+		assert.Equal(t, want, ranks)
+		assert.Equal(t, 5, total)
+
+		unitRanks, _ = unit(t, viewerToken)
+		assert.Equal(t, want, unitRanks)
+	})
+
+	t.Run("unarchiving hides them again", func(t *testing.T) {
+		require.NotEmpty(t, participationV2)
+		setArchived(t, "unarchiveConsent", participationV2)
+
+		want := map[string]int{acceptedID: 1, childID: 2}
+		ranks, total := projectBoard(t)
+		assert.Equal(t, want, ranks)
+		assert.Equal(t, 2, total)
+
+		unitRanks, _ := unit(t, viewerToken)
+		assert.Equal(t, want, unitRanks)
+	})
 }

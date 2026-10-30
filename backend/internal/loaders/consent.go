@@ -49,6 +49,12 @@ func consentByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(cont
 					publishedAt = &dt
 				}
 
+				var archivedAt *scalars.DateTime
+				if row.ArchivedAt.Valid {
+					dt := scalars.DateTime{Time: row.ArchivedAt.Time}
+					archivedAt = &dt
+				}
+
 				managementType := model.ConsentManagementTypeLocal
 				if row.IsRemote {
 					managementType = model.ConsentManagementTypeRemote
@@ -63,6 +69,7 @@ func consentByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(cont
 					BodyMarkdown:   row.Body,
 					URL:            row.Url,
 					PublishedAt:    publishedAt,
+					ArchivedAt:     archivedAt,
 					ManagementType: managementType,
 					ManagedBy:      row.ManagedBy,
 					ProjectID:      row.ProjectID,

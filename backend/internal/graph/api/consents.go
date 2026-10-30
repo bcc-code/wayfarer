@@ -10,6 +10,8 @@ import (
 
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
+	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 )
 
 // projectUser is a user within one project
@@ -217,4 +219,41 @@ func (r *Resolver) requireLatestConsentVersion(ctx context.Context, consentID, k
 		return fmt.Errorf("failed to load the latest consent version: %w", err)
 	}
 	return latestConsentVersionError(consentID, latest.ID)
+}
+
+// consentFromAdminRow converts a listing row into the GraphQL model.
+// Translations are applied by the caller.
+func consentFromAdminRow(row *sqlc.GetAdminConsentsRow) model.Consent {
+	var publishedAt *scalars.DateTime
+	if row.PublishedAt.Valid {
+		dt := scalars.DateTime{Time: row.PublishedAt.Time}
+		publishedAt = &dt
+	}
+
+	var archivedAt *scalars.DateTime
+	if row.ArchivedAt.Valid {
+		dt := scalars.DateTime{Time: row.ArchivedAt.Time}
+		archivedAt = &dt
+	}
+
+	managementType := model.ConsentManagementTypeLocal
+	if row.IsRemote {
+		managementType = model.ConsentManagementTypeRemote
+	}
+
+	return model.Consent{
+		ID:             row.ID,
+		Key:            row.Key,
+		Version:        int(row.Version),
+		Title:          row.Title,
+		ShortText:      row.ShortText,
+		BodyMarkdown:   row.Body,
+		URL:            row.Url,
+		PublishedAt:    publishedAt,
+		ArchivedAt:     archivedAt,
+		ManagementType: managementType,
+		ManagedBy:      row.ManagedBy,
+		ProjectID:      row.ProjectID,
+		IsRequired:     row.IsRequired,
+	}
 }

@@ -42,9 +42,10 @@ mockNuxtImport('useAdminProjectSectionCountsQuery', () => () => ({
 
 mockNuxtImport('useAuthReady', () => () => ({ isAuthReady: ref(true) }))
 
-// Only the three members PROJECT_NAV's `can` predicates actually read.
+// Only the four members PROJECT_NAV's `can` predicates actually read.
 const canAccessTeams = ref(true)
 const canAccessScores = ref(true)
+const canAccessConsents = ref(true)
 const canEditProject = ref(true)
 
 mockNuxtImport(
@@ -53,6 +54,7 @@ mockNuxtImport(
     ({
       canAccessTeams,
       canAccessScores,
+      canAccessConsents,
       canEditProject: () => canEditProject.value,
     }) as unknown as Permissions,
 )
@@ -74,6 +76,7 @@ describe('AdminProjectSection', () => {
     fetching.value = false
     canAccessTeams.value = true
     canAccessScores.value = true
+    canAccessConsents.value = true
     canEditProject.value = true
     vi.useFakeTimers()
     // Noon, per the repo convention — midnight lands on timezone boundaries.
@@ -121,6 +124,7 @@ describe('AdminProjectSection', () => {
   it('omits shortcuts the user has no permission for', async () => {
     canAccessTeams.value = false
     canAccessScores.value = false
+    canAccessConsents.value = false
     canEditProject.value = false
 
     const wrapper = await mountSuspended(AdminProjectSection, {
@@ -133,6 +137,7 @@ describe('AdminProjectSection', () => {
     expect(nav).toContain('Utfordringer')
     expect(nav).not.toContain('Lag')
     expect(nav).not.toContain('Poeng')
+    expect(nav).not.toContain('Samtykker')
     expect(nav).not.toContain('Innstillinger')
   })
 

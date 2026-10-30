@@ -357,6 +357,7 @@ export type ColorsInput = {
 
 export type Consent = {
   __typename?: 'Consent';
+  archivedAt?: Maybe<Scalars['DateTime']['output']>;
   body: MarkdownText;
   id: Scalars['ID']['output'];
   isRequired: Scalars['Boolean']['output'];
@@ -1202,6 +1203,7 @@ export type Mutation = {
   addQuizQuestion: QuizQuestion;
   addTeamMembers: Team;
   adminSetUserConsent: UserConsentHistoryEntry;
+  archiveConsent: Consent;
   archiveProject: Scalars['Boolean']['output'];
   assignChallengeToEvent: Challenge;
   assignRole: UserRole;
@@ -1316,6 +1318,7 @@ export type Mutation = {
   submitQuizAnswer: QuizResponse;
   syncUser: SyncUserResult;
   testWebhook: WebhookLog;
+  unarchiveConsent: Consent;
   uncompleteChallenge: Scalars['Boolean']['output'];
   unenrollFromChallenge: Scalars['Boolean']['output'];
   unenrollUserFromChallenge: Scalars['Boolean']['output'];
@@ -1367,6 +1370,11 @@ export type MutationAdminSetUserConsentArgs = {
   action: ConsentAction;
   consentId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
+};
+
+
+export type MutationArchiveConsentArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -1963,6 +1971,11 @@ export type MutationTestWebhookArgs = {
 };
 
 
+export type MutationUnarchiveConsentArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationUncompleteChallengeArgs = {
   challengeId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
@@ -2442,6 +2455,7 @@ export type Query = {
   achievement: Achievement;
   achievements: AchievementConnection;
   adminCheckAchievementProgress: AdminAchievementProgress;
+  adminConsents: Array<Consent>;
   adminDashboardStats: AdminDashboardStats;
   adminExternalContentEvents: Array<AdminExternalContentEvent>;
   adminScoreJournal: ScoreJournalConnection;
@@ -2526,6 +2540,12 @@ export type QueryAchievementsArgs = {
 export type QueryAdminCheckAchievementProgressArgs = {
   achievementId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
+};
+
+
+export type QueryAdminConsentsArgs = {
+  includeArchived?: InputMaybe<Scalars['Boolean']['input']>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 
@@ -3415,7 +3435,6 @@ export type TeamFilter = {
 export type TeamMember = {
   __typename?: 'TeamMember';
   church: Church;
-  /** False while the member has not accepted a required consent of the project: they are listed to admins, but their points, age and membership count nowhere (unit averages, average age, member counts). */
   countsTowardScores: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   isTeamLead: Scalars['Boolean']['output'];
@@ -4082,6 +4101,20 @@ export type UpdateConsentMutationVariables = Exact<{
 
 
 export type UpdateConsentMutation = { __typename?: 'Mutation', updateConsent: { __typename?: 'Consent', id: string, key: string, version: number, title: string } };
+
+export type ArchiveConsentMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type ArchiveConsentMutation = { __typename?: 'Mutation', archiveConsent: { __typename?: 'Consent', id: string, archivedAt?: any | null } };
+
+export type UnarchiveConsentMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type UnarchiveConsentMutation = { __typename?: 'Mutation', unarchiveConsent: { __typename?: 'Consent', id: string, archivedAt?: any | null } };
 
 export type DeleteEventMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -4808,12 +4841,14 @@ export type AdminConsentPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminConsentPageQuery = { __typename?: 'Query', consent: { __typename?: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, publishedAt?: any | null, managementType: ConsentManagementType, managedBy?: string | null, isRequired: boolean, body: { __typename?: 'MarkdownText', markdown: string, html: string }, project?: { __typename?: 'Project', id: string, name: string } | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> } };
+export type AdminConsentPageQuery = { __typename?: 'Query', consent: { __typename?: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, publishedAt?: any | null, archivedAt?: any | null, managementType: ConsentManagementType, managedBy?: string | null, isRequired: boolean, body: { __typename?: 'MarkdownText', markdown: string, html: string }, project?: { __typename?: 'Project', id: string, name: string } | null, translationStatus: Array<{ __typename?: 'TranslationFieldStatus', languageCode: string, fields: Array<string> }> } };
 
-export type AdminConsentsPageQueryVariables = Exact<{ [key: string]: never; }>;
+export type AdminConsentsPageQueryVariables = Exact<{
+  includeArchived?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
 
 
-export type AdminConsentsPageQuery = { __typename?: 'Query', consents: Array<{ __typename?: 'Consent', id: string, key: string, version: number, title: string, shortText: string, publishedAt?: any | null, managementType: ConsentManagementType, managedBy?: string | null }> };
+export type AdminConsentsPageQuery = { __typename?: 'Query', adminConsents: Array<{ __typename?: 'Consent', id: string, key: string, version: number, title: string, publishedAt?: any | null, archivedAt?: any | null, managementType: ConsentManagementType, isRequired: boolean, project?: { __typename?: 'Project', id: string, name: string } | null }> };
 
 export type AdminNewConsentProjectsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -5113,6 +5148,14 @@ export type AdminProjectChallengeNewPageQueryVariables = Exact<{
 
 
 export type AdminProjectChallengeNewPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } };
+
+export type AdminProjectConsentsPageQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+  includeArchived?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+
+export type AdminProjectConsentsPageQuery = { __typename?: 'Query', adminConsents: Array<{ __typename?: 'Consent', id: string, key: string, version: number, title: string, publishedAt?: any | null, archivedAt?: any | null, managementType: ConsentManagementType, isRequired: boolean, project?: { __typename?: 'Project', id: string, name: string } | null }> };
 
 export type AdminProjectEditPageQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
@@ -5973,6 +6016,30 @@ export const UpdateConsentDocument = gql`
 
 export function useUpdateConsentMutation() {
   return Urql.useMutation<UpdateConsentMutation, UpdateConsentMutationVariables>(UpdateConsentDocument);
+};
+export const ArchiveConsentDocument = gql`
+    mutation ArchiveConsent($id: ID!) {
+  archiveConsent(id: $id) {
+    id
+    archivedAt
+  }
+}
+    `;
+
+export function useArchiveConsentMutation() {
+  return Urql.useMutation<ArchiveConsentMutation, ArchiveConsentMutationVariables>(ArchiveConsentDocument);
+};
+export const UnarchiveConsentDocument = gql`
+    mutation UnarchiveConsent($id: ID!) {
+  unarchiveConsent(id: $id) {
+    id
+    archivedAt
+  }
+}
+    `;
+
+export function useUnarchiveConsentMutation() {
+  return Urql.useMutation<UnarchiveConsentMutation, UnarchiveConsentMutationVariables>(UnarchiveConsentDocument);
 };
 export const DeleteEventDocument = gql`
     mutation DeleteEvent($id: ID!) {
@@ -7479,6 +7546,7 @@ export const AdminConsentPageDocument = gql`
     }
     url
     publishedAt
+    archivedAt
     managementType
     managedBy
     isRequired
@@ -7497,16 +7565,20 @@ export function useAdminConsentPageQuery(options?: Omit<Urql.UseQueryArgs<never,
   return Urql.useQuery<AdminConsentPageQuery, AdminConsentPageQueryVariables | undefined>({ query: AdminConsentPageDocument, variables: undefined, ...options });
 };
 export const AdminConsentsPageDocument = gql`
-    query AdminConsentsPage {
-  consents {
+    query AdminConsentsPage($includeArchived: Boolean) {
+  adminConsents(includeArchived: $includeArchived) {
     id
     key
     version
     title
-    shortText
     publishedAt
+    archivedAt
     managementType
-    managedBy
+    isRequired
+    project {
+      id
+      name
+    }
   }
 }
     `;
@@ -8348,6 +8420,28 @@ export const AdminProjectChallengeNewPageDocument = gql`
 
 export function useAdminProjectChallengeNewPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectChallengeNewPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectChallengeNewPageQuery, AdminProjectChallengeNewPageQueryVariables | undefined>({ query: AdminProjectChallengeNewPageDocument, variables: undefined, ...options });
+};
+export const AdminProjectConsentsPageDocument = gql`
+    query AdminProjectConsentsPage($projectId: ID!, $includeArchived: Boolean) {
+  adminConsents(projectId: $projectId, includeArchived: $includeArchived) {
+    id
+    key
+    version
+    title
+    publishedAt
+    archivedAt
+    managementType
+    isRequired
+    project {
+      id
+      name
+    }
+  }
+}
+    `;
+
+export function useAdminProjectConsentsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectConsentsPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectConsentsPageQuery, AdminProjectConsentsPageQueryVariables | undefined>({ query: AdminProjectConsentsPageDocument, variables: undefined, ...options });
 };
 export const AdminProjectEditPageDocument = gql`
     query AdminProjectEditPage($projectId: ID!) {

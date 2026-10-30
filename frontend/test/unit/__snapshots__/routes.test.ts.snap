@@ -31,6 +31,7 @@ exports[`route manifest > matches the committed snapshot 1`] = `
   "admin-projects-projectId-challenges-challengeId-results  /admin/projects/:projectId()/challenges/:challengeId()/results  layers/admin/app/pages/admin/projects/[projectId]/challenges/[challengeId]/results.vue",
   "admin-projects-projectId-challenges-challengeId-sessions  /admin/projects/:projectId()/challenges/:challengeId()/sessions  layers/admin/app/pages/admin/projects/[projectId]/challenges/[challengeId]/sessions.vue",
   "admin-projects-projectId-challenges-new  /admin/projects/:projectId()/challenges/new  layers/admin/app/pages/admin/projects/[projectId]/challenges/new.vue",
+  "admin-projects-projectId-consents  /admin/projects/:projectId()/consents  layers/admin/app/pages/admin/projects/[projectId]/consents/index.vue",
   "admin-projects-projectId-edit  /admin/projects/:projectId()/edit  layers/admin/app/pages/admin/projects/[projectId]/edit.vue",
   "admin-projects-projectId-events  /admin/projects/:projectId()/events  layers/admin/app/pages/admin/projects/[projectId]/events/index.vue",
   "admin-projects-projectId-events-eventId  /admin/projects/:projectId()/events/:eventId()  layers/admin/app/pages/admin/projects/[projectId]/events/[eventId].vue",

@@ -141,6 +141,8 @@ type Consent struct {
 	ProjectID *string `json:"project_id"`
 	// Consent must be accepted to take part in the project; cannot be rejected
 	IsRequired bool `json:"is_required"`
+	// When the consent was retired; NULL means active. A key is live only while its latest published version is not archived
+	ArchivedAt pgtype.Timestamptz `json:"archived_at"`
 }
 
 type ConsentTranslation struct {
