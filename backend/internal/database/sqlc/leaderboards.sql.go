@@ -1187,19 +1187,52 @@ func (q *Queries) GetEventTeamLeaderboard(ctx context.Context, arg GetEventTeamL
 }
 
 const GetFullEventChurchLeaderboard = `-- name: GetFullEventChurchLeaderboard :many
-WITH ranked_scores AS (
+WITH blocked AS MATERIALIZED (
+    SELECT b.user_id
+    FROM events ep
+    CROSS JOIN LATERAL consent_blocked_user_ids(ep.project_id) AS b(user_id)
+    WHERE ep.id = $1::char(28)
+),
+church_points AS (
     SELECT
-        c.id AS entity_id,
+        u.church_id,
+        SUM(lep.score)::bigint AS total_points,
+        MAX(lep.last_score_at)::timestamptz AS last_score_at
+    FROM leaderboard_event_persons lep
+    INNER JOIN users u ON u.id = lep.user_id
+    WHERE lep.event_id = $1::char(28)
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
+    GROUP BY u.church_id
+),
+church_members AS (
+    SELECT u.church_id, COUNT(DISTINCT u.id)::int AS member_count
+    FROM user_events ue
+    INNER JOIN users u ON u.id = ue.user_id
+    WHERE ue.event_id = $1::char(28)
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
+    GROUP BY u.church_id
+),
+church_scores AS (
+    SELECT
+        c.id AS church_id,
         c.name,
+        calculate_average_score(cp.total_points, COALESCE(cm.member_count, 0))::bigint AS score,
+        cp.last_score_at
+    FROM church_points cp
+    INNER JOIN churches c ON c.id = cp.church_id
+    LEFT JOIN church_members cm ON cm.church_id = cp.church_id
+),
+ranked_scores AS (
+    SELECT
+        cs.church_id AS entity_id,
+        cs.name,
         NULL::text AS image,
-        lec.score,
-        lec.last_score_at,
-        DENSE_RANK() OVER (ORDER BY lec.score DESC) AS rank
-    FROM leaderboard_event_churches lec
-    INNER JOIN churches c ON lec.church_id = c.id
-    WHERE lec.event_id = $1::char(28)
-      AND lec.score >= COALESCE($2::int, 1)
-      AND ($3::int IS NULL OR lec.score <= $3::int)
+        cs.score,
+        cs.last_score_at,
+        DENSE_RANK() OVER (ORDER BY cs.score DESC) AS rank
+    FROM church_scores cs
+    WHERE cs.score >= COALESCE($2::int, 1)
+      AND ($3::int IS NULL OR cs.score <= $3::int)
 )
 SELECT entity_id, name, image, score, rank, last_score_at
 FROM ranked_scores
@@ -1221,6 +1254,9 @@ type GetFullEventChurchLeaderboardRow struct {
 	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
+// Church (event): points of every user of the church who scored in the event,
+// over the church's users enrolled in the event; neither counts users blocked
+// by a required consent of the event's project (00116)
 func (q *Queries) GetFullEventChurchLeaderboard(ctx context.Context, arg GetFullEventChurchLeaderboardParams) ([]*GetFullEventChurchLeaderboardRow, error) {
 	rows, err := q.db.Query(ctx, GetFullEventChurchLeaderboard, arg.Eventid, arg.Minscore, arg.Maxscore)
 	if err != nil {
@@ -1249,7 +1285,15 @@ func (q *Queries) GetFullEventChurchLeaderboard(ctx context.Context, arg GetFull
 }
 
 const GetFullEventPersonLeaderboard = `-- name: GetFullEventPersonLeaderboard :many
-WITH ranked_scores AS (
+WITH blocked AS MATERIALIZED (
+    -- Hidden until they accept the event's project's required consents
+    -- (00116). Materialized so the set is computed once, not once per row.
+    SELECT b.user_id
+    FROM events e
+    CROSS JOIN LATERAL consent_blocked_user_ids(e.project_id) AS b(user_id)
+    WHERE e.id = $1::char(28)
+),
+ranked_scores AS (
     SELECT
         u.id AS entity_id,
         COALESCE(u.display_name, u.name) AS name,
@@ -1263,6 +1307,7 @@ WITH ranked_scores AS (
     INNER JOIN users u ON lep.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
     WHERE lep.event_id = $1::char(28)
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
       AND lep.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lep.score <= $3::int)
       AND ($4::char(28) = '' OR u.church_id = $4::char(28))
@@ -1278,19 +1323,29 @@ WITH ranked_scores AS (
           INNER JOIN teams t ON tm.team_id = t.id
           WHERE tm.user_id = u.id AND t.super_team_id = $8::char(28)
       ))
-      -- Consent filter: skip if team-filtered, otherwise require leaderboard_consent
+      -- Consent filter: skip if team-filtered, otherwise require the latest
+      -- published version of leaderboard_consent to be accepted (answers are per
+      -- version, 00117)
       AND (
           $7::char(28) != '' OR $8::char(28) != ''
           OR EXISTS (
               SELECT 1 FROM user_consent_history uch
               WHERE uch.user_id = u.id
                 AND uch.consent_key = 'leaderboard_consent'
+                AND uch.consent_id = (
+                    SELECT c.id FROM consents c
+                    WHERE c.key = 'leaderboard_consent'
+                      AND c.published_at IS NOT NULL AND c.published_at <= now()
+                    ORDER BY c.version DESC
+                    LIMIT 1
+                )
                 AND uch.action = 'ACCEPTED'
                 AND uch.occurred_at = (
                     SELECT MAX(uch2.occurred_at)
                     FROM user_consent_history uch2
                     WHERE uch2.user_id = u.id
                       AND uch2.consent_key = 'leaderboard_consent'
+                      AND uch2.consent_id = uch.consent_id
                 )
           )
       )
@@ -1361,19 +1416,47 @@ func (q *Queries) GetFullEventPersonLeaderboard(ctx context.Context, arg GetFull
 }
 
 const GetFullEventSuperTeamLeaderboard = `-- name: GetFullEventSuperTeamLeaderboard :many
-WITH ranked_scores AS (
+WITH blocked AS MATERIALIZED (
+    SELECT b.user_id
+    FROM events ep
+    CROSS JOIN LATERAL consent_blocked_user_ids(ep.project_id) AS b(user_id)
+    WHERE ep.id = $1::char(28)
+),
+superteam_members AS (
+    SELECT DISTINCT t.super_team_id, tm.user_id
+    FROM events e
+    INNER JOIN teams t ON t.project_id = e.project_id
+    INNER JOIN team_members tm ON tm.team_id = t.id
+    WHERE e.id = $1::char(28)
+      AND t.super_team_id IS NOT NULL
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = tm.user_id)
+),
+superteam_scores AS (
     SELECT
-        st.id AS entity_id,
+        st.id AS super_team_id,
         st.name,
+        calculate_average_score(COALESCE(SUM(lep.score), 0)::bigint, COUNT(ue.user_id)::int)::bigint AS score,
+        MAX(lep.last_score_at)::timestamptz AS last_score_at
+    FROM super_teams st
+    INNER JOIN superteam_members stm ON stm.super_team_id = st.id
+    LEFT JOIN leaderboard_event_persons lep
+        ON lep.event_id = $1::char(28) AND lep.user_id = stm.user_id
+    LEFT JOIN user_events ue
+        ON ue.event_id = $1::char(28) AND ue.user_id = stm.user_id
+    GROUP BY st.id, st.name
+    HAVING COUNT(lep.user_id) > 0
+),
+ranked_scores AS (
+    SELECT
+        ss.super_team_id AS entity_id,
+        ss.name,
         NULL::text AS image,
-        lest.score,
-        lest.last_score_at,
-        DENSE_RANK() OVER (ORDER BY lest.score DESC) AS rank
-    FROM leaderboard_event_superteams lest
-    INNER JOIN super_teams st ON lest.super_team_id = st.id
-    WHERE lest.event_id = $1::char(28)
-      AND lest.score >= COALESCE($2::int, 1)
-      AND ($3::int IS NULL OR lest.score <= $3::int)
+        ss.score,
+        ss.last_score_at,
+        DENSE_RANK() OVER (ORDER BY ss.score DESC) AS rank
+    FROM superteam_scores ss
+    WHERE ss.score >= COALESCE($2::int, 1)
+      AND ($3::int IS NULL OR ss.score <= $3::int)
 )
 SELECT entity_id, name, image, score, rank, last_score_at
 FROM ranked_scores
@@ -1395,6 +1478,9 @@ type GetFullEventSuperTeamLeaderboardRow struct {
 	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
+// SuperTeam (event): each member of its teams once; all members' event points
+// over the members enrolled in the event; without users blocked by a required
+// consent of the event's project (00116)
 func (q *Queries) GetFullEventSuperTeamLeaderboard(ctx context.Context, arg GetFullEventSuperTeamLeaderboardParams) ([]*GetFullEventSuperTeamLeaderboardRow, error) {
 	rows, err := q.db.Query(ctx, GetFullEventSuperTeamLeaderboard, arg.Eventid, arg.Minscore, arg.Maxscore)
 	if err != nil {
@@ -1423,25 +1509,48 @@ func (q *Queries) GetFullEventSuperTeamLeaderboard(ctx context.Context, arg GetF
 }
 
 const GetFullEventTeamLeaderboard = `-- name: GetFullEventTeamLeaderboard :many
-WITH ranked_scores AS (
+WITH blocked AS MATERIALIZED (
+    SELECT b.user_id
+    FROM events ep
+    CROSS JOIN LATERAL consent_blocked_user_ids(ep.project_id) AS b(user_id)
+    WHERE ep.id = $1::char(28)
+),
+team_scores AS (
     SELECT
-        t.id AS entity_id,
+        t.id AS team_id,
         t.name,
-        NULL::text AS image,
-        let.score,
-        let.last_score_at,
-        DENSE_RANK() OVER (ORDER BY let.score DESC) AS rank
-    FROM leaderboard_event_teams let
-    INNER JOIN teams t ON let.team_id = t.id
-    WHERE let.event_id = $1::char(28)
+        calculate_average_score(COALESCE(SUM(lep.score), 0)::bigint, COUNT(ue.user_id)::int)::bigint AS score,
+        MAX(lep.last_score_at)::timestamptz AS last_score_at
+    FROM events e
+    INNER JOIN teams t ON t.project_id = e.project_id
+    INNER JOIN team_members tm ON tm.team_id = t.id
+    LEFT JOIN leaderboard_event_persons lep
+        ON lep.event_id = e.id AND lep.user_id = tm.user_id
+    LEFT JOIN user_events ue
+        ON ue.event_id = e.id AND ue.user_id = tm.user_id
+    WHERE e.id = $1::char(28)
       AND t.leaderboard_excluded = false
-      AND let.score >= COALESCE($2::int, 1)
-      AND ($3::int IS NULL OR let.score <= $3::int)
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = tm.user_id)
+    GROUP BY t.id, t.name
+    HAVING COUNT(lep.user_id) > 0
+),
+ranked_scores AS (
+    SELECT
+        ts.team_id AS entity_id,
+        ts.name,
+        NULL::text AS image,
+        ts.score,
+        ts.last_score_at,
+        DENSE_RANK() OVER (ORDER BY ts.score DESC) AS rank
+    FROM team_scores ts
+    WHERE ts.score >= COALESCE($2::int, 1)
+      AND ($3::int IS NULL OR ts.score <= $3::int)
       -- Church filter: team has ANY member from specified church
       AND ($4::char(28) = '' OR EXISTS (
           SELECT 1 FROM team_members tm
           INNER JOIN users u ON tm.user_id = u.id
-          WHERE tm.team_id = t.id AND u.church_id = $4::char(28)
+          WHERE tm.team_id = ts.team_id AND u.church_id = $4::char(28)
+            AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
       ))
 )
 SELECT entity_id, name, image, score, rank, last_score_at
@@ -1465,6 +1574,9 @@ type GetFullEventTeamLeaderboardRow struct {
 	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
+// Team (event): all members' event points over the members enrolled in the
+// event; teams of the event's project; without users blocked by a required
+// consent of that project (00116)
 func (q *Queries) GetFullEventTeamLeaderboard(ctx context.Context, arg GetFullEventTeamLeaderboardParams) ([]*GetFullEventTeamLeaderboardRow, error) {
 	rows, err := q.db.Query(ctx, GetFullEventTeamLeaderboard,
 		arg.Eventid,
@@ -1498,19 +1610,49 @@ func (q *Queries) GetFullEventTeamLeaderboard(ctx context.Context, arg GetFullEv
 }
 
 const GetFullProjectChurchLeaderboard = `-- name: GetFullProjectChurchLeaderboard :many
-WITH ranked_scores AS (
+WITH blocked AS MATERIALIZED (
+    SELECT b.user_id FROM consent_blocked_user_ids($1::char(28)) AS b(user_id)
+),
+church_points AS (
     SELECT
-        c.id AS entity_id,
+        u.church_id,
+        SUM(lpp.score)::bigint AS total_points,
+        MAX(lpp.last_score_at)::timestamptz AS last_score_at
+    FROM leaderboard_project_persons lpp
+    INNER JOIN users u ON u.id = lpp.user_id
+    WHERE lpp.project_id = $1::char(28)
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
+    GROUP BY u.church_id
+),
+church_members AS (
+    SELECT u.church_id, COUNT(DISTINCT u.id)::int AS member_count
+    FROM user_projects up
+    INNER JOIN users u ON u.id = up.user_id
+    WHERE up.project_id = $1::char(28)
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
+    GROUP BY u.church_id
+),
+church_scores AS (
+    SELECT
+        c.id AS church_id,
         c.name,
+        calculate_average_score(cp.total_points, COALESCE(cm.member_count, 0))::bigint AS score,
+        cp.last_score_at
+    FROM church_points cp
+    INNER JOIN churches c ON c.id = cp.church_id
+    LEFT JOIN church_members cm ON cm.church_id = cp.church_id
+),
+ranked_scores AS (
+    SELECT
+        cs.church_id AS entity_id,
+        cs.name,
         NULL::text AS image,
-        lpc.score,
-        lpc.last_score_at,
-        DENSE_RANK() OVER (ORDER BY lpc.score DESC) AS rank
-    FROM leaderboard_project_churches lpc
-    INNER JOIN churches c ON lpc.church_id = c.id
-    WHERE lpc.project_id = $1::char(28)
-      AND lpc.score >= COALESCE($2::int, 1)
-      AND ($3::int IS NULL OR lpc.score <= $3::int)
+        cs.score,
+        cs.last_score_at,
+        DENSE_RANK() OVER (ORDER BY cs.score DESC) AS rank
+    FROM church_scores cs
+    WHERE cs.score >= COALESCE($2::int, 1)
+      AND ($3::int IS NULL OR cs.score <= $3::int)
 )
 SELECT entity_id, name, image, score, rank, last_score_at
 FROM ranked_scores
@@ -1532,6 +1674,9 @@ type GetFullProjectChurchLeaderboardRow struct {
 	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
+// Church: points of every user of the church who scored in the project, over
+// the church's users enrolled in the project; neither counts users blocked by
+// a required consent (00116)
 func (q *Queries) GetFullProjectChurchLeaderboard(ctx context.Context, arg GetFullProjectChurchLeaderboardParams) ([]*GetFullProjectChurchLeaderboardRow, error) {
 	rows, err := q.db.Query(ctx, GetFullProjectChurchLeaderboard, arg.Projectid, arg.Minscore, arg.Maxscore)
 	if err != nil {
@@ -1560,7 +1705,12 @@ func (q *Queries) GetFullProjectChurchLeaderboard(ctx context.Context, arg GetFu
 }
 
 const GetFullProjectPersonLeaderboard = `-- name: GetFullProjectPersonLeaderboard :many
-WITH ranked_scores AS (
+WITH blocked AS MATERIALIZED (
+    -- Hidden until they accept the project's required consents (00116).
+    -- Materialized so the set is computed once, not once per leaderboard row.
+    SELECT b.user_id FROM consent_blocked_user_ids($1::char(28)) AS b(user_id)
+),
+ranked_scores AS (
     SELECT
         u.id AS entity_id,
         COALESCE(u.display_name, u.name) AS name,
@@ -1574,6 +1724,7 @@ WITH ranked_scores AS (
     INNER JOIN users u ON lpp.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
     WHERE lpp.project_id = $1::char(28)
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
       AND lpp.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lpp.score <= $3::int)
       AND ($4::char(28) = '' OR u.church_id = $4::char(28))
@@ -1589,19 +1740,29 @@ WITH ranked_scores AS (
           INNER JOIN teams t ON tm.team_id = t.id
           WHERE tm.user_id = u.id AND t.super_team_id = $8::char(28)
       ))
-      -- Consent filter: skip if team-filtered, otherwise require leaderboard_consent
+      -- Consent filter: skip if team-filtered, otherwise require the latest
+      -- published version of leaderboard_consent to be accepted (answers are per
+      -- version, 00117)
       AND (
           $7::char(28) != '' OR $8::char(28) != ''
           OR EXISTS (
               SELECT 1 FROM user_consent_history uch
               WHERE uch.user_id = u.id
                 AND uch.consent_key = 'leaderboard_consent'
+                AND uch.consent_id = (
+                    SELECT c.id FROM consents c
+                    WHERE c.key = 'leaderboard_consent'
+                      AND c.published_at IS NOT NULL AND c.published_at <= now()
+                    ORDER BY c.version DESC
+                    LIMIT 1
+                )
                 AND uch.action = 'ACCEPTED'
                 AND uch.occurred_at = (
                     SELECT MAX(uch2.occurred_at)
                     FROM user_consent_history uch2
                     WHERE uch2.user_id = u.id
                       AND uch2.consent_key = 'leaderboard_consent'
+                      AND uch2.consent_id = uch.consent_id
                 )
           )
       )
@@ -1672,19 +1833,42 @@ func (q *Queries) GetFullProjectPersonLeaderboard(ctx context.Context, arg GetFu
 }
 
 const GetFullProjectSuperTeamLeaderboard = `-- name: GetFullProjectSuperTeamLeaderboard :many
-WITH ranked_scores AS (
+WITH blocked AS MATERIALIZED (
+    SELECT b.user_id FROM consent_blocked_user_ids($1::char(28)) AS b(user_id)
+),
+superteam_members AS (
+    SELECT DISTINCT t.super_team_id, tm.user_id
+    FROM teams t
+    INNER JOIN team_members tm ON tm.team_id = t.id
+    WHERE t.project_id = $1::char(28)
+      AND t.super_team_id IS NOT NULL
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = tm.user_id)
+),
+superteam_scores AS (
     SELECT
-        st.id AS entity_id,
+        st.id AS super_team_id,
         st.name,
+        calculate_average_score(COALESCE(SUM(lpp.score), 0)::bigint, COUNT(*)::int)::bigint AS score,
+        MAX(lpp.last_score_at)::timestamptz AS last_score_at
+    FROM super_teams st
+    INNER JOIN superteam_members stm ON stm.super_team_id = st.id
+    LEFT JOIN leaderboard_project_persons lpp
+        ON lpp.project_id = st.project_id AND lpp.user_id = stm.user_id
+    WHERE st.project_id = $1::char(28)
+    GROUP BY st.id, st.name
+    HAVING COUNT(lpp.user_id) > 0
+),
+ranked_scores AS (
+    SELECT
+        ss.super_team_id AS entity_id,
+        ss.name,
         NULL::text AS image,
-        lpst.score,
-        lpst.last_score_at,
-        DENSE_RANK() OVER (ORDER BY lpst.score DESC) AS rank
-    FROM leaderboard_project_superteams lpst
-    INNER JOIN super_teams st ON lpst.super_team_id = st.id
-    WHERE lpst.project_id = $1::char(28)
-      AND lpst.score >= COALESCE($2::int, 1)
-      AND ($3::int IS NULL OR lpst.score <= $3::int)
+        ss.score,
+        ss.last_score_at,
+        DENSE_RANK() OVER (ORDER BY ss.score DESC) AS rank
+    FROM superteam_scores ss
+    WHERE ss.score >= COALESCE($2::int, 1)
+      AND ($3::int IS NULL OR ss.score <= $3::int)
 )
 SELECT entity_id, name, image, score, rank, last_score_at
 FROM ranked_scores
@@ -1706,6 +1890,8 @@ type GetFullProjectSuperTeamLeaderboardRow struct {
 	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
+// SuperTeam: each member of its teams once, however many of them they are in;
+// without users blocked by a required consent (00116)
 func (q *Queries) GetFullProjectSuperTeamLeaderboard(ctx context.Context, arg GetFullProjectSuperTeamLeaderboardParams) ([]*GetFullProjectSuperTeamLeaderboardRow, error) {
 	rows, err := q.db.Query(ctx, GetFullProjectSuperTeamLeaderboard, arg.Projectid, arg.Minscore, arg.Maxscore)
 	if err != nil {
@@ -1734,25 +1920,43 @@ func (q *Queries) GetFullProjectSuperTeamLeaderboard(ctx context.Context, arg Ge
 }
 
 const GetFullProjectTeamLeaderboard = `-- name: GetFullProjectTeamLeaderboard :many
-WITH ranked_scores AS (
+WITH blocked AS MATERIALIZED (
+    -- Materialized so the set is computed once, not once per member row
+    SELECT b.user_id FROM consent_blocked_user_ids($1::char(28)) AS b(user_id)
+),
+team_scores AS (
     SELECT
-        t.id AS entity_id,
+        t.id AS team_id,
         t.name,
-        NULL::text AS image,
-        lpt.score,
-        lpt.last_score_at,
-        DENSE_RANK() OVER (ORDER BY lpt.score DESC) AS rank
-    FROM leaderboard_project_teams lpt
-    INNER JOIN teams t ON lpt.team_id = t.id
-    WHERE lpt.project_id = $1::char(28)
+        calculate_average_score(COALESCE(SUM(lpp.score), 0)::bigint, COUNT(*)::int)::bigint AS score,
+        MAX(lpp.last_score_at)::timestamptz AS last_score_at
+    FROM teams t
+    INNER JOIN team_members tm ON tm.team_id = t.id
+    LEFT JOIN leaderboard_project_persons lpp
+        ON lpp.project_id = t.project_id AND lpp.user_id = tm.user_id
+    WHERE t.project_id = $1::char(28)
       AND t.leaderboard_excluded = false
-      AND lpt.score >= COALESCE($2::int, 1)
-      AND ($3::int IS NULL OR lpt.score <= $3::int)
+      AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = tm.user_id)
+    GROUP BY t.id, t.name
+    HAVING COUNT(lpp.user_id) > 0
+),
+ranked_scores AS (
+    SELECT
+        ts.team_id AS entity_id,
+        ts.name,
+        NULL::text AS image,
+        ts.score,
+        ts.last_score_at,
+        DENSE_RANK() OVER (ORDER BY ts.score DESC) AS rank
+    FROM team_scores ts
+    WHERE ts.score >= COALESCE($2::int, 1)
+      AND ($3::int IS NULL OR ts.score <= $3::int)
       -- Church filter: team has ANY member from specified church
       AND ($4::char(28) = '' OR EXISTS (
           SELECT 1 FROM team_members tm
           INNER JOIN users u ON tm.user_id = u.id
-          WHERE tm.team_id = t.id AND u.church_id = $4::char(28)
+          WHERE tm.team_id = ts.team_id AND u.church_id = $4::char(28)
+            AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
       ))
 )
 SELECT entity_id, name, image, score, rank, last_score_at
@@ -1776,6 +1980,11 @@ type GetFullProjectTeamLeaderboardRow struct {
 	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
+// Group boards average the stored person totals on read, with the member
+// rules of regenerate_leaderboards() (see notes/leaderboard-regenerate.md).
+// Users who have not accepted a required consent (00116) count nowhere: not in
+// the points, the member count or the church filter.
+// Team: all members' points over all members; listed once a member has scored.
 func (q *Queries) GetFullProjectTeamLeaderboard(ctx context.Context, arg GetFullProjectTeamLeaderboardParams) ([]*GetFullProjectTeamLeaderboardRow, error) {
 	rows, err := q.db.Query(ctx, GetFullProjectTeamLeaderboard,
 		arg.Projectid,

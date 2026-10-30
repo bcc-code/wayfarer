@@ -5,6 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 )
 
 func TestConsentProjectForNewVersion(t *testing.T) {
@@ -50,5 +52,98 @@ func TestConsentProjectForNewVersion(t *testing.T) {
 		require.Error(t, err)
 		assert.Nil(t, got)
 		assert.Contains(t, err.Error(), "all projects")
+	})
+}
+
+func TestLatestConsentVersionError(t *testing.T) {
+	v1 := "CN01ARZ3NDEKTSV4RRFFQ69G5FV1"
+	v2 := "CN01ARZ3NDEKTSV4RRFFQ69G5FV2"
+
+	t.Run("allows the latest version", func(t *testing.T) {
+		assert.NoError(t, latestConsentVersionError(v2, v2))
+	})
+
+	t.Run("refuses an older version", func(t *testing.T) {
+		assert.Error(t, latestConsentVersionError(v1, v2))
+	})
+
+	t.Run("refuses when no version is published", func(t *testing.T) {
+		assert.Error(t, latestConsentVersionError(v1, ""))
+	})
+}
+
+func TestConsentBlockChanges(t *testing.T) {
+	stays := projectUser{ProjectID: "PR1", UserID: "US1"}
+	unblocked := projectUser{ProjectID: "PR1", UserID: "US2"}
+	blocked := projectUser{ProjectID: "PR1", UserID: "US3"}
+	otherProject := projectUser{ProjectID: "PR2", UserID: "US1"}
+
+	t.Run("returns users blocked or unblocked by the change", func(t *testing.T) {
+		got := consentBlockChanges(
+			[]projectUser{stays, unblocked},
+			[]projectUser{stays, blocked},
+		)
+
+		assert.Equal(t, map[projectUser]bool{unblocked: true, blocked: true}, got)
+	})
+
+	t.Run("tells projects of the same user apart", func(t *testing.T) {
+		got := consentBlockChanges([]projectUser{stays}, []projectUser{stays, otherProject})
+
+		assert.Equal(t, map[projectUser]bool{otherProject: true}, got)
+	})
+
+	t.Run("returns nothing when nobody changed", func(t *testing.T) {
+		assert.Empty(t, consentBlockChanges([]projectUser{stays}, []projectUser{stays}))
+		assert.Empty(t, consentBlockChanges(nil, nil))
+	})
+}
+
+func TestTeamsOfChangedUsers(t *testing.T) {
+	changed := map[projectUser]bool{{ProjectID: "PR1", UserID: "US1"}: true}
+	memberships := []*sqlc.GetTeamsByUserIDsRow{
+		{ID: "TM1", ProjectID: "PR1", UserID: "US1"},
+		{ID: "TM2", ProjectID: "PR1", UserID: "US1"}, // a second team in the project
+		{ID: "TM3", ProjectID: "PR2", UserID: "US1"}, // unchanged in this project
+		{ID: "TM4", ProjectID: "PR1", UserID: "US2"}, // another user
+	}
+
+	got := teamsOfChangedUsers(memberships, changed)
+
+	assert.Equal(t, map[string]string{"TM1": "PR1", "TM2": "PR1"}, got)
+}
+
+func TestConsentBlockChangesBetween(t *testing.T) {
+	stays := projectUser{ProjectID: "PR1", UserID: "US1"}
+	unblocked := projectUser{ProjectID: "PR1", UserID: "US2"}
+
+	t.Run("returns the change when both listings are known", func(t *testing.T) {
+		got, known := consentBlockChangesBetween(
+			blockedSet{Users: []projectUser{stays, unblocked}, Known: true},
+			blockedSet{Users: []projectUser{stays}, Known: true},
+		)
+
+		assert.True(t, known)
+		assert.Equal(t, map[projectUser]bool{unblocked: true}, got)
+	})
+
+	t.Run("an empty listing is known, not failed", func(t *testing.T) {
+		got, known := consentBlockChangesBetween(
+			blockedSet{Known: true},
+			blockedSet{Users: []projectUser{stays}, Known: true},
+		)
+
+		assert.True(t, known)
+		assert.Equal(t, map[projectUser]bool{stays: true}, got)
+	})
+
+	t.Run("is unknown when either listing failed", func(t *testing.T) {
+		known := blockedSet{Users: []projectUser{stays}, Known: true}
+
+		_, beforeKnown := consentBlockChangesBetween(blockedSet{}, known)
+		_, afterKnown := consentBlockChangesBetween(known, blockedSet{})
+
+		assert.False(t, beforeKnown)
+		assert.False(t, afterKnown)
 	})
 }

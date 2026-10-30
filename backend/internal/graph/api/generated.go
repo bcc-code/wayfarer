@@ -1394,12 +1394,13 @@ type ComplexityRoot struct {
 	}
 
 	TeamMember struct {
-		Church     func(childComplexity int) int
-		ID         func(childComplexity int) int
-		IsTeamLead func(childComplexity int) int
-		JoinedAt   func(childComplexity int) int
-		Name       func(childComplexity int) int
-		User       func(childComplexity int) int
+		Church             func(childComplexity int) int
+		CountsTowardScores func(childComplexity int) int
+		ID                 func(childComplexity int) int
+		IsTeamLead         func(childComplexity int) int
+		JoinedAt           func(childComplexity int) int
+		Name               func(childComplexity int) int
+		User               func(childComplexity int) int
 	}
 
 	TranslationFieldStatus struct {
@@ -9005,6 +9006,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.TeamMember.Church(childComplexity), true
+	case "TeamMember.countsTowardScores":
+		if e.complexity.TeamMember.CountsTowardScores == nil {
+			break
+		}
+
+		return e.complexity.TeamMember.CountsTowardScores(childComplexity), true
 	case "TeamMember.id":
 		if e.complexity.TeamMember.ID == nil {
 			break
@@ -10279,6 +10286,8 @@ type TeamMember {
     isTeamLead: Boolean!
     joinedAt: String!
     user: User! @goField(forceResolver: true)
+    "False while the member has not accepted a required consent of the project: they are listed to admins, but their points, age and membership count nowhere (unit averages, average age, member counts)."
+    countsTowardScores: Boolean!
 }
 
 type SuperTeam {
@@ -56439,6 +56448,8 @@ func (ec *executionContext) fieldContext_Team_members(_ context.Context, field g
 				return ec.fieldContext_TeamMember_joinedAt(ctx, field)
 			case "user":
 				return ec.fieldContext_TeamMember_user(ctx, field)
+			case "countsTowardScores":
+				return ec.fieldContext_TeamMember_countsTowardScores(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type TeamMember", field.Name)
 		},
@@ -57031,6 +57042,35 @@ func (ec *executionContext) fieldContext_TeamMember_user(_ context.Context, fiel
 				return ec.fieldContext_User_pointsByProject(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TeamMember_countsTowardScores(ctx context.Context, field graphql.CollectedField, obj *model.TeamMember) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TeamMember_countsTowardScores,
+		func(ctx context.Context) (any, error) {
+			return obj.CountsTowardScores, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TeamMember_countsTowardScores(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TeamMember",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -82492,6 +82532,11 @@ func (ec *executionContext) _TeamMember(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "countsTowardScores":
+			out.Values[i] = ec._TeamMember_countsTowardScores(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

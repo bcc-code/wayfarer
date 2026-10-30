@@ -772,3 +772,33 @@ func TestWithMeTag(t *testing.T) {
 		assert.NotContains(t, forOther[1].Tags, model.LeaderboardEntryTagMe)
 	})
 }
+
+func TestTeamMembersFor(t *testing.T) {
+	loaded := []*model.TeamMember{
+		{ID: "US1", UserID: "US1", Name: "Counted"},
+		{ID: "US2", UserID: "US2", Name: "Blocked"},
+	}
+	blockedIDs := []string{"US2"}
+
+	t.Run("shows blocked members, not counting, to callers who may see them", func(t *testing.T) {
+		got := teamMembersFor(loaded, blockedIDs, true)
+
+		require.Len(t, got, 2)
+		assert.True(t, got[0].CountsTowardScores)
+		assert.False(t, got[1].CountsTowardScores)
+	})
+
+	t.Run("leaves blocked members out for other callers", func(t *testing.T) {
+		got := teamMembersFor(loaded, blockedIDs, false)
+
+		require.Len(t, got, 1)
+		assert.Equal(t, "US1", got[0].UserID)
+		assert.True(t, got[0].CountsTowardScores)
+	})
+
+	t.Run("does not modify the loaded members, which the cache shares", func(t *testing.T) {
+		teamMembersFor(loaded, nil, true)
+
+		assert.False(t, loaded[0].CountsTowardScores)
+	})
+}

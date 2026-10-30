@@ -3,6 +3,8 @@ package api
 import (
 	"context"
 	"fmt"
+	"slices"
+	"strings"
 
 	"github.com/graph-gophers/dataloader/v7"
 
@@ -22,6 +24,7 @@ type RoleServiceInterface interface {
 	CanManageChurch(ctx context.Context, userID, churchID string) bool
 	CanManageProject(ctx context.Context, userID, projectID string) bool
 	CanManageTeam(ctx context.Context, userID, teamID string) bool
+	CanManageTeamAsAdmin(ctx context.Context, userID, teamID string) bool
 }
 
 // authenticatedUserInfo holds information about the authenticated user
@@ -53,13 +56,14 @@ func validateUserAccess(ctx context.Context, userLoader UserLoaderInterface) (*a
 
 // permissionContext holds information about what the user has permission to access
 type permissionContext struct {
-	IsAdmin        bool
-	IsChurchAdmin  bool
-	IsProjectAdmin bool
-	IsTeamLead     bool
-	ChurchID       string
-	ProjectID      string
-	TeamID         string
+	IsAdmin            bool
+	IsChurchAdmin      bool
+	IsProjectAdmin     bool
+	IsTeamLead         bool
+	HideConsentBlocked bool
+	ChurchID           string
+	ProjectID          string
+	TeamID             string
 }
 
 // checkUserPermissions determines what level of access the user has
@@ -91,6 +95,9 @@ func checkUserPermissions(
 		if filter != nil && filter.TeamID != nil {
 			perms.TeamID = *filter.TeamID
 			perms.IsTeamLead = roleService.CanManageTeam(ctx, userInfo.UserID, perms.TeamID)
+			if perms.IsTeamLead {
+				perms.HideConsentBlocked = !roleService.CanManageTeamAsAdmin(ctx, userInfo.UserID, perms.TeamID)
+			}
 		}
 	}
 
@@ -295,6 +302,18 @@ func buildCountFilterParams(filter *model.UserFilter) sqlc.CountUsersFilteredPar
 	}
 
 	return params
+}
+
+// addExcludeIDsToCacheKey keys results by the users hidden from the caller, so
+// a result without them is never served to someone who sees them, and
+// accepting a required consent changes the key without any invalidation
+func addExcludeIDsToCacheKey(params map[string]string, excludeIDs []string) {
+	if len(excludeIDs) == 0 {
+		return
+	}
+	sorted := slices.Clone(excludeIDs)
+	slices.Sort(sorted)
+	params["excludeids"] = strings.Join(sorted, ",")
 }
 
 // buildCacheKeyParams converts filter and pagination parameters to a map for cache key generation

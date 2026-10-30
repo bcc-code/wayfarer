@@ -116,13 +116,18 @@ func (r *mutationResolver) AcceptConsent(ctx context.Context, consentID string) 
 		return nil, fmt.Errorf("cannot accept remote consent locally, must be accepted via external system")
 	}
 
+	// Answers are per version (00117): only the latest can be answered
+	if err := r.requireLatestConsentVersion(ctx, consent.ID, consent.Key); err != nil {
+		return nil, err
+	}
+
 	// Check if user already has an action on this consent
 	existing, err := r.DB.Queries.GetLatestUserConsentActionByKey(ctx, sqlc.GetLatestUserConsentActionByKeyParams{
 		UserID:     userID,
 		ConsentKey: consent.Key,
 	})
-	if err == nil && existing.Action == "ACCEPTED" {
-		// User already accepted this consent
+	if err == nil && existing.ConsentID == consentID && existing.Action == "ACCEPTED" {
+		// User already accepted this version
 		return &model.UserConsent{
 			ID:         existing.ID,
 			ConsentID:  existing.ConsentID,
@@ -130,6 +135,10 @@ func (r *mutationResolver) AcceptConsent(ctx context.Context, consentID string) 
 			ActionDate: scalars.DateTime{Time: existing.OccurredAt.Time},
 		}, nil
 	}
+
+	// An answer to a required version decides whether the user counts anywhere
+	// (00116); compared before and after rather than trusting isRequired
+	blockedBefore := r.blockedProjectsOfUser(ctx, userID)
 
 	// Create new user consent history entry
 	occurredAt := pgtype.Timestamptz{Time: time.Now(), Valid: true}
@@ -150,6 +159,7 @@ func (r *mutationResolver) AcceptConsent(ctx context.Context, consentID string) 
 
 	// Invalidate user cache
 	r.Cache.Delete(cache.UserKey(userID))
+	r.applyConsentBlockChanges(ctx, blockedBefore, r.blockedProjectsOfUser(ctx, userID))
 
 	return &model.UserConsent{
 		ID:         historyEntry.ID,
@@ -182,13 +192,18 @@ func (r *mutationResolver) RejectConsent(ctx context.Context, consentID string) 
 		return nil, fmt.Errorf("cannot reject remote consent locally, must be managed via external system")
 	}
 
+	// Answers are per version (00117): only the latest can be answered
+	if err := r.requireLatestConsentVersion(ctx, consent.ID, consent.Key); err != nil {
+		return nil, err
+	}
+
 	// Check if user already rejected this consent
 	existing, err := r.DB.Queries.GetLatestUserConsentActionByKey(ctx, sqlc.GetLatestUserConsentActionByKeyParams{
 		UserID:     userID,
 		ConsentKey: consent.Key,
 	})
-	if err == nil && existing.Action == "REJECTED" {
-		// User already rejected this consent
+	if err == nil && existing.ConsentID == consentID && existing.Action == "REJECTED" {
+		// User already rejected this version
 		return &model.UserConsent{
 			ID:         existing.ID,
 			ConsentID:  existing.ConsentID,
@@ -196,6 +211,10 @@ func (r *mutationResolver) RejectConsent(ctx context.Context, consentID string) 
 			ActionDate: scalars.DateTime{Time: existing.OccurredAt.Time},
 		}, nil
 	}
+
+	// An answer to a required version decides whether the user counts anywhere
+	// (00116); compared before and after rather than trusting isRequired
+	blockedBefore := r.blockedProjectsOfUser(ctx, userID)
 
 	// Create new user consent history entry
 	occurredAt := pgtype.Timestamptz{Time: time.Now(), Valid: true}
@@ -216,6 +235,7 @@ func (r *mutationResolver) RejectConsent(ctx context.Context, consentID string) 
 
 	// Invalidate user cache
 	r.Cache.Delete(cache.UserKey(userID))
+	r.applyConsentBlockChanges(ctx, blockedBefore, r.blockedProjectsOfUser(ctx, userID))
 
 	return &model.UserConsent{
 		ID:         historyEntry.ID,
@@ -259,6 +279,10 @@ func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title 
 		shortTextStr = *shortText
 	}
 
+	// A new version can make the key required or relax it, which changes who
+	// counts anywhere in its projects (00116)
+	blockedBefore := r.blockedUsersInConsentScope(ctx, consentProjectID)
+
 	// Create consent
 	consent, err := r.DB.Queries.CreateConsent(ctx, sqlc.CreateConsentParams{
 		ID:          ulid.NewConsentID(),
@@ -280,6 +304,7 @@ func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title 
 
 	// Invalidate latest consents cache
 	r.Cache.DeletePrefix(cache.PrefixLatestConsents)
+	r.applyConsentBlockChanges(ctx, blockedBefore, r.blockedUsersInConsentScope(ctx, consentProjectID))
 
 	var publishedAtOut *scalars.DateTime
 	if consent.PublishedAt.Valid {
@@ -332,6 +357,14 @@ func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *
 		publishedAtPG = pgtype.Timestamptz{Time: publishedAt.Time, Valid: true}
 	}
 
+	// isRequired or publishedAt may change who counts anywhere in the consent's
+	// projects (00116)
+	existing, err := r.DB.Queries.GetConsentByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("consent not found: %w", err)
+	}
+	blockedBefore := r.blockedUsersInConsentScope(ctx, existing.ProjectID)
+
 	consent, err := r.DB.Queries.UpdateConsent(ctx, sqlc.UpdateConsentParams{
 		ID:          id,
 		Title:       titleStr,
@@ -349,6 +382,7 @@ func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *
 	// Invalidate caches
 	r.Cache.Delete(cache.ConsentKey(id))
 	r.Cache.DeletePrefix(cache.PrefixLatestConsents)
+	r.applyConsentBlockChanges(ctx, blockedBefore, r.blockedUsersInConsentScope(ctx, existing.ProjectID))
 
 	var publishedAtOut *scalars.DateTime
 	if consent.PublishedAt.Valid {
@@ -402,11 +436,20 @@ func (r *mutationResolver) AdminSetUserConsent(ctx context.Context, userID strin
 		return nil, fmt.Errorf("cannot set consent for remote-managed consents")
 	}
 
+	// Answers are per version (00117): only the latest can be answered
+	if err := r.requireLatestConsentVersion(ctx, consent.ID, consent.Key); err != nil {
+		return nil, err
+	}
+
 	// Convert action enum to string
 	actionStr := "ACCEPTED"
 	if action == model.ConsentActionRejected {
 		actionStr = "REJECTED"
 	}
+
+	// An answer to a required version decides whether the user counts anywhere
+	// (00116); compared before and after rather than trusting isRequired
+	blockedBefore := r.blockedProjectsOfUser(ctx, userID)
 
 	// Create history entry with admin's user ID as source
 	source := adminUserID
@@ -427,6 +470,7 @@ func (r *mutationResolver) AdminSetUserConsent(ctx context.Context, userID strin
 
 	// Invalidate target user's cache
 	r.Cache.Delete(cache.UserKey(userID))
+	r.applyConsentBlockChanges(ctx, blockedBefore, r.blockedProjectsOfUser(ctx, userID))
 
 	// Load consent for return value
 	consentModel, err := r.LoadConsentWithTranslation(ctx, historyEntry.ConsentID)

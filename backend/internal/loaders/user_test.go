@@ -133,12 +133,12 @@ func TestBuildConsentStatus_FiltersAcceptedAndRejectedLocalConsentsForUsersUnder
 	// User has accepted local consent and rejected remote consent
 	userConsentsMap := map[string]map[string]*model.UserConsent{
 		userID: {
-			localConsent.Key: {
+			localConsent.ID: {
 				ID:        "UC01ARZ3NDEKTSV4RRFFQ69G5FAV",
 				ConsentID: localConsent.ID,
 				Action:    model.ConsentActionAccepted,
 			},
-			remoteConsent.Key: {
+			remoteConsent.ID: {
 				ID:        "UC02ARZ3NDEKTSV4RRFFQ69G5FAV",
 				ConsentID: remoteConsent.ID,
 				Action:    model.ConsentActionRejected,
@@ -165,5 +165,46 @@ func TestBuildConsentStatus_FiltersAcceptedAndRejectedLocalConsentsForUsersUnder
 		assert.Empty(t, status.PendingConsents)
 		assert.Len(t, status.AcceptedConsents, 1)
 		assert.Len(t, status.RejectedConsents, 1)
+	})
+}
+
+func TestBuildConsentStatus_AnswersArePerVersion(t *testing.T) {
+	userID := "US01ARZ3NDEKTSV4RRFFQ69G5FAV"
+	v1ID := "CN01ARZ3NDEKTSV4RRFFQ69G5FV1"
+	v2 := &model.Consent{
+		ID:             "CN01ARZ3NDEKTSV4RRFFQ69G5FV2",
+		Key:            "participation",
+		Version:        2,
+		ManagementType: model.ConsentManagementTypeLocal,
+	}
+	latestConsents := map[string]*model.Consent{v2.ID: v2}
+	adult := time.Now().AddDate(-25, 0, 0)
+
+	answered := func(consentID string, action model.ConsentAction) map[string]map[string]*model.UserConsent {
+		return map[string]map[string]*model.UserConsent{
+			userID: {consentID: {ID: "UC1", ConsentID: consentID, Action: action}},
+		}
+	}
+
+	t.Run("accepting the previous version leaves the new one pending", func(t *testing.T) {
+		status := buildConsentStatus(userID, adult, latestConsents, answered(v1ID, model.ConsentActionAccepted))
+
+		assert.Len(t, status.PendingConsents, 1)
+		assert.Equal(t, v2.ID, status.PendingConsents[0].ID)
+		assert.Empty(t, status.AcceptedConsents)
+	})
+
+	t.Run("rejecting the previous version leaves the new one pending", func(t *testing.T) {
+		status := buildConsentStatus(userID, adult, latestConsents, answered(v1ID, model.ConsentActionRejected))
+
+		assert.Len(t, status.PendingConsents, 1)
+		assert.Empty(t, status.RejectedConsents)
+	})
+
+	t.Run("an answer to the latest version counts", func(t *testing.T) {
+		status := buildConsentStatus(userID, adult, latestConsents, answered(v2.ID, model.ConsentActionAccepted))
+
+		assert.Empty(t, status.PendingConsents)
+		assert.Len(t, status.AcceptedConsents, 1)
 	})
 }

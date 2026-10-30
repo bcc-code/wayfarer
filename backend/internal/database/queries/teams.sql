@@ -4,12 +4,26 @@ FROM teams
 WHERE id = ANY(@ids::char(28)[]);
 
 -- name: GetTeamsFilteredCursor :many
+WITH blocked AS MATERIALIZED (
+    -- Users blocked by a required consent (00116), once per query. Computed
+    -- only when filtering by member count: otherwise it stays empty.
+    SELECT p.id AS project_id, b.user_id
+    FROM projects p
+    CROSS JOIN LATERAL consent_blocked_user_ids(p.id) AS b(user_id)
+    WHERE (@minmembers::int > 0 OR @maxmembers::int > 0)
+      AND (@projectid::char(28) = '' OR p.id = @projectid::char(28))
+)
 SELECT t.id, t.project_id, t.name, t.description, t.join_code, t.super_team_id, t.leaderboard_excluded, t.created_at, t.updated_at
 FROM teams t
+-- Members counted toward scores: without users blocked by a required consent
 LEFT JOIN (
-    SELECT team_id, COUNT(*) as member_count
-    FROM team_members
-    GROUP BY team_id
+    SELECT tm.team_id, COUNT(*) AS member_count
+    FROM team_members tm
+    INNER JOIN teams mt ON mt.id = tm.team_id
+    WHERE NOT EXISTS (
+        SELECT 1 FROM blocked b WHERE b.project_id = mt.project_id AND b.user_id = tm.user_id
+    )
+    GROUP BY tm.team_id
 ) tm ON t.id = tm.team_id
 LEFT JOIN user_roles ur ON ur.team_id = t.id AND ur.role = 'TEAM_LEAD'
 LEFT JOIN users lead_user ON ur.user_id = lead_user.id
@@ -29,12 +43,26 @@ ORDER BY
 LIMIT CASE WHEN @querylimit::int IS NULL THEN NULL ELSE @querylimit::int END;
 
 -- name: CountTeamsFiltered :one
+WITH blocked AS MATERIALIZED (
+    -- Users blocked by a required consent (00116), once per query. Computed
+    -- only when filtering by member count: otherwise it stays empty.
+    SELECT p.id AS project_id, b.user_id
+    FROM projects p
+    CROSS JOIN LATERAL consent_blocked_user_ids(p.id) AS b(user_id)
+    WHERE (@minmembers::int > 0 OR @maxmembers::int > 0)
+      AND (@projectid::char(28) = '' OR p.id = @projectid::char(28))
+)
 SELECT COUNT(DISTINCT t.id)
 FROM teams t
+-- Members counted toward scores: without users blocked by a required consent
 LEFT JOIN (
-    SELECT team_id, COUNT(*) as member_count
-    FROM team_members
-    GROUP BY team_id
+    SELECT tm.team_id, COUNT(*) AS member_count
+    FROM team_members tm
+    INNER JOIN teams mt ON mt.id = tm.team_id
+    WHERE NOT EXISTS (
+        SELECT 1 FROM blocked b WHERE b.project_id = mt.project_id AND b.user_id = tm.user_id
+    )
+    GROUP BY tm.team_id
 ) tm ON t.id = tm.team_id
 LEFT JOIN user_roles ur ON ur.team_id = t.id AND ur.role = 'TEAM_LEAD'
 LEFT JOIN users lead_user ON ur.user_id = lead_user.id
@@ -199,6 +227,14 @@ SELECT EXISTS(
 );
 
 -- name: GetTeamMemberLeaderboard :many
+WITH blocked AS MATERIALIZED (
+    -- Hidden until they accept the project's required consents (00116).
+    -- Admins still see them through Team.members, which this does not touch.
+    SELECT b.user_id
+    FROM teams tp
+    CROSS JOIN LATERAL consent_blocked_user_ids(tp.project_id) AS b(user_id)
+    WHERE tp.id = @team_id::char(28)
+)
 SELECT
     u.id AS user_id,
     u.name AS user_name,
@@ -218,6 +254,7 @@ INNER JOIN churches c ON u.church_id = c.id
 LEFT JOIN score_journal sj ON sj.user_id = u.id
     AND sj.project_id = t.project_id
 WHERE tm.team_id = @team_id::char(28)
+  AND NOT EXISTS (SELECT 1 FROM blocked b WHERE b.user_id = u.id)
 GROUP BY
     u.id,
     u.name,
@@ -229,6 +266,34 @@ GROUP BY
     u.email,
     u.avatar_url
 ORDER BY score DESC, u.name ASC;
+
+-- name: GetConsentBlockedUserIDsInTeam :many
+-- Members of the team hidden by a required consent of its project (00116),
+-- checked per member (OFFSET 0: see GetTeamAverageAge)
+SELECT tm.user_id::char(28) AS user_id
+FROM team_members tm
+INNER JOIN teams t ON t.id = tm.team_id
+WHERE tm.team_id = @team_id::char(28)
+  AND EXISTS (
+      SELECT 1 FROM consent_blocked_user_ids(t.project_id) b WHERE b.user_id = tm.user_id OFFSET 0
+  );
+
+-- name: GetConsentBlockedUserIDsInTeams :many
+-- GetConsentBlockedUserIDsInTeam for several teams at once; the consent
+-- function runs once per distinct project, not once per team
+WITH team_projects AS MATERIALIZED (
+    SELECT t.id, t.project_id FROM teams t
+    WHERE t.id = ANY(@team_ids::char(28)[])
+),
+blocked AS MATERIALIZED (
+    SELECT p.project_id, b.user_id
+    FROM (SELECT DISTINCT project_id FROM team_projects) p
+    CROSS JOIN LATERAL consent_blocked_user_ids(p.project_id) AS b(user_id)
+)
+SELECT tp.id::char(28) AS team_id, b.user_id::char(28) AS user_id
+FROM team_projects tp
+INNER JOIN blocked b ON b.project_id = tp.project_id
+INNER JOIN team_members tm ON tm.team_id = tp.id AND tm.user_id = b.user_id;
 
 -- name: IsUserInAnyTeamInProject :one
 SELECT EXISTS(
@@ -274,14 +339,21 @@ JOIN teams t ON t.id = tm.team_id
 WHERE t.super_team_id = ANY(@superteamids::char(28)[]);
 
 -- name: GetTeamAverageAge :one
+-- Without members blocked by a required consent (00116), checked per member.
+-- OFFSET 0 keeps the check a per-member subplan: as a join, the planner may
+-- compute the whole project's blocked set instead.
 SELECT COALESCE(
     AVG(EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)),
     0
 )::float AS average_age
 FROM team_members tm
+INNER JOIN teams t ON t.id = tm.team_id
 INNER JOIN users u ON tm.user_id = u.id
 WHERE tm.team_id = @teamid::char(28)
-  AND u.birthdate IS NOT NULL;
+  AND u.birthdate IS NOT NULL
+  AND NOT EXISTS (
+      SELECT 1 FROM consent_blocked_user_ids(t.project_id) b WHERE b.user_id = u.id OFFSET 0
+  );
 
 -- name: UpdateTeamLeaderboardExcluded :one
 UPDATE teams

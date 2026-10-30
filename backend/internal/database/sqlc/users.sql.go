@@ -45,18 +45,20 @@ WHERE
         SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = $8::char(28)
     ))
     AND ($9::char(28)[] IS NULL OR u.id = ANY($9::char(28)[]))
+    AND ($10::char(28)[] IS NULL OR NOT (u.id = ANY($10::char(28)[])))
 `
 
 type CountUsersFilteredParams struct {
-	Query     string   `json:"query"`
-	Churchid  string   `json:"churchid"`
-	Gender    string   `json:"gender"`
-	Minage    int32    `json:"minage"`
-	Maxage    int32    `json:"maxage"`
-	Projectid string   `json:"projectid"`
-	Eventid   string   `json:"eventid"`
-	Teamid    string   `json:"teamid"`
-	Ids       []string `json:"ids"`
+	Query      string   `json:"query"`
+	Churchid   string   `json:"churchid"`
+	Gender     string   `json:"gender"`
+	Minage     int32    `json:"minage"`
+	Maxage     int32    `json:"maxage"`
+	Projectid  string   `json:"projectid"`
+	Eventid    string   `json:"eventid"`
+	Teamid     string   `json:"teamid"`
+	Ids        []string `json:"ids"`
+	Excludeids []string `json:"excludeids"`
 }
 
 func (q *Queries) CountUsersFiltered(ctx context.Context, arg CountUsersFilteredParams) (int64, error) {
@@ -70,6 +72,7 @@ func (q *Queries) CountUsersFiltered(ctx context.Context, arg CountUsersFiltered
 		arg.Eventid,
 		arg.Teamid,
 		arg.Ids,
+		arg.Excludeids,
 	)
 	var count int64
 	err := row.Scan(&count)
@@ -798,12 +801,13 @@ WHERE
         SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = $8::char(28)
     ))
     AND ($9::char(28)[] IS NULL OR u.id = ANY($9::char(28)[]))
-    AND ($10::char(28) = '' OR u.id > $10::char(28))
-    AND ($11::char(28) = '' OR u.id < $11::char(28))
+    AND ($10::char(28)[] IS NULL OR NOT (u.id = ANY($10::char(28)[])))
+    AND ($11::char(28) = '' OR u.id > $11::char(28))
+    AND ($12::char(28) = '' OR u.id < $12::char(28))
 ORDER BY
-    CASE WHEN $12::bool = true THEN u.id END DESC,
-    CASE WHEN $12::bool = false OR $12::bool IS NULL THEN u.id END ASC
-LIMIT CASE WHEN $13::int IS NULL THEN NULL ELSE $13::int END
+    CASE WHEN $13::bool = true THEN u.id END DESC,
+    CASE WHEN $13::bool = false OR $13::bool IS NULL THEN u.id END ASC
+LIMIT CASE WHEN $14::int IS NULL THEN NULL ELSE $14::int END
 `
 
 type GetUsersFilteredCursorParams struct {
@@ -816,6 +820,7 @@ type GetUsersFilteredCursorParams struct {
 	Eventid      string   `json:"eventid"`
 	Teamid       string   `json:"teamid"`
 	Ids          []string `json:"ids"`
+	Excludeids   []string `json:"excludeids"`
 	Aftercursor  string   `json:"aftercursor"`
 	Beforecursor string   `json:"beforecursor"`
 	Isbackward   bool     `json:"isbackward"`
@@ -852,6 +857,7 @@ func (q *Queries) GetUsersFilteredCursor(ctx context.Context, arg GetUsersFilter
 		arg.Eventid,
 		arg.Teamid,
 		arg.Ids,
+		arg.Excludeids,
 		arg.Aftercursor,
 		arg.Beforecursor,
 		arg.Isbackward,

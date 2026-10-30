@@ -2348,8 +2348,10 @@ type TeamMember struct {
 	IsTeamLead bool    `json:"isTeamLead"`
 	JoinedAt   string  `json:"joinedAt"`
 	User       *User   `json:"user"`
-	ChurchID   string  `json:"-"`
-	UserID     string  `json:"-"`
+	// False while the member has not accepted a required consent of the project: they are listed to admins, but their points, age and membership count nowhere (unit averages, average age, member counts).
+	CountsTowardScores bool   `json:"countsTowardScores"`
+	ChurchID           string `json:"-"`
+	UserID             string `json:"-"`
 }
 
 type TranslationFieldStatus struct {

@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
@@ -263,4 +264,43 @@ func withMeTag(entries []model.LeaderboardEntry, viewerID string) []model.Leader
 	}
 
 	return result
+}
+
+// teamMembersFor converts the loaded members for the caller. Members blocked by
+// a required consent (blockedIDs) count toward no score, and are left out
+// unless the caller may see them (admins may)
+func teamMembersFor(members []*model.TeamMember, blockedIDs []string, showBlocked bool) []model.TeamMember {
+	result := make([]model.TeamMember, 0, len(members))
+	for _, m := range members {
+		blocked := slices.Contains(blockedIDs, m.UserID)
+		if blocked && !showBlocked {
+			continue
+		}
+		// A copy: the loaded members are shared through the cache
+		member := *m
+		member.CountsTowardScores = !blocked
+		result = append(result, member)
+	}
+	return result
+}
+
+// leaderboardExcludedMinAverageAge is the average member age from which a
+// team is left off the leaderboards automatically
+const leaderboardExcludedMinAverageAge = 36.0
+
+// refreshTeamLeaderboardExclusion re-applies the average-age rule to the
+// team's leaderboard_excluded flag, after the members it counts have changed
+func (r *Resolver) refreshTeamLeaderboardExclusion(ctx context.Context, teamID, projectID string) {
+	avgAge, err := r.DB.Queries.GetTeamAverageAge(ctx, teamID)
+	if err != nil {
+		return
+	}
+	_, _ = r.DB.Queries.UpdateTeamLeaderboardExcluded(ctx, sqlc.UpdateTeamLeaderboardExcludedParams{
+		ID:                  teamID,
+		Leaderboardexcluded: avgAge >= leaderboardExcludedMinAverageAge,
+	})
+	// Invalidate caches after updating exclusion status
+	r.Cache.InvalidateTeam(teamID)
+	r.Cache.Delete(cache.TeamsByProjectKey(projectID))
+	r.Cache.DeletePrefix(cache.PrefixLeaderboard)
 }

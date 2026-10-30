@@ -402,7 +402,7 @@ func (m *TestDBManager) EnsureLeaderboardConsent(ctx context.Context) (string, e
 	// Check if consent exists
 	var consentID string
 	err := m.DB.Pool.QueryRow(ctx, `
-		SELECT id FROM consents WHERE key = 'leaderboard_consent' LIMIT 1
+		SELECT id FROM consents WHERE key = 'leaderboard_consent' ORDER BY version DESC LIMIT 1
 	`).Scan(&consentID)
 
 	if err == nil {

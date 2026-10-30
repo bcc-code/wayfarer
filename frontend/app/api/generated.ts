@@ -3415,6 +3415,8 @@ export type TeamFilter = {
 export type TeamMember = {
   __typename?: 'TeamMember';
   church: Church;
+  /** False while the member has not accepted a required consent of the project: they are listed to admins, but their points, age and membership count nowhere (unit averages, average age, member counts). */
+  countsTowardScores: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   isTeamLead: Scalars['Boolean']['output'];
   joinedAt: Scalars['String']['output'];

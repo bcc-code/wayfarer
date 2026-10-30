@@ -36,7 +36,57 @@ The existing `TestLeaderboardMultiTeamWithSuperTeam` rebuild subtest passed
 despite bug 1: it read through the leaderboard cache filled before the rebuild.
 It now also checks the table directly.
 
+## Group boards computed from person totals (2026-10-26)
+
+The team, superteam and church boards no longer read the stored group tables.
+The six `GetFull{Project,Event}{Team,SuperTeam,Church}Leaderboard` queries
+(`queries/leaderboards.sql`) average the stored person totals
+(`leaderboard_{project,event}_persons`) on read, behind the existing
+full-board cache. They reproduce the member rules of `regenerate_leaderboards()`
+exactly:
+
+| Board | Points (sum of person totals) | Member count |
+|---|---|---|
+| Project team | all `team_members` | all `team_members` |
+| Project superteam | members of its teams, each once | same |
+| Project church | every user of the church with a person row | church users in `user_projects` |
+| Event team | all members (teams of the event's project) | members in `user_events` |
+| Event superteam | members of its teams, each once | those in `user_events` |
+| Event church | every user of the church with an event person row | church users in `user_events` |
+
+Users blocked by a required consent (`consent_blocked_user_ids`, 00116) count
+nowhere on these boards, in the points or the count; the stored tables and the
+rebuild still count them (`notes/required-consents.md`, step 3).
+
+`score = calculate_average_score(total, count)`, `last_score_at` is the members'
+latest, and a group is listed only once one of its counted users has a person
+row (the rebuild's inner join; matters because the default filter passes
+`minScore = MinInt32`).
+
+`TestGroupLeaderboardsMatchStoredTables`
+(`backend/e2e/leaderboard_group_boards_test.go`) holds the new queries to the
+old stored-table reads, kept verbatim as `Stored*Leaderboard` in
+`queries/e2e.sql`, after a rebuild, under five filter sets.
+
+Consequences:
+
+- Moving a team to another superteam (`AssignTeamToSuperTeam`,
+  `ClearTeamsFromSuperTeam`, the Ladder to Heaven distribution) and a user's
+  church change (members sync) now show on the boards. No trigger handled
+  either, so the stored totals kept the points in the old group
+  (`TestGroupLeaderboardsFollowSuperTeamAndChurchChanges`). Neither clears the
+  leaderboard cache, so they show once the 5-minute full-board cache expires.
+- The incremental differences below still corrupt the stored group tables,
+  but no board reads those any more. The stored group tables, their writers
+  (`update_{team,superteam,church}_leaderboard`, the group part of
+  `apply_score_journal_delta`, the three 00081 membership triggers, the group
+  part of the rebuild) and the unused group `Get*`/`FindMy*`/`Count*` queries
+  are to be removed in a follow-up.
+
 ## Known remaining differences (not fixed)
+
+These are differences in the stored group tables. Since 2026-10-26 no board
+reads them (see above).
 
 - **Event points without event participation.** `apply_score_journal_delta`
   and the rebuild add a member's event points to their event team, superteam and

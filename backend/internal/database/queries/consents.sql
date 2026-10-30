@@ -82,12 +82,13 @@ ORDER BY occurred_at DESC
 LIMIT 1;
 
 -- name: GetCurrentUserConsentStatusesByUsers :many
--- Gets the latest action for each consent key for multiple users
-SELECT DISTINCT ON (user_id, consent_key)
+-- Gets the latest action on each consent version for multiple users. Answers
+-- are per version (00117): an answer to an old version is not one to the new.
+SELECT DISTINCT ON (user_id, consent_id)
     id, user_id, consent_id, consent_key, action, occurred_at, source
 FROM user_consent_history
 WHERE user_id = ANY(@user_ids::char(28)[])
-ORDER BY user_id, consent_key, occurred_at DESC;
+ORDER BY user_id, consent_id, occurred_at DESC;
 
 -- name: GetUserConsentHistoryByUserAndKey :many
 SELECT id, user_id, consent_id, consent_key, action, occurred_at,
@@ -120,7 +121,8 @@ WHERE user_id = ANY(@user_ids::char(28)[])
 ORDER BY user_id, occurred_at DESC;
 
 -- name: GetMissingConsentsForUserWithRejections :many
--- Gets consents that user has never acted upon (no history)
+-- Gets the latest consents that the user has never acted upon (no history for
+-- that version; answers are per version, 00117)
 SELECT c.id, c.key, c.version, c.title, c.short_text, c.body, c.url, c.published_at,
        c.is_remote, c.managed_by, c.project_id, c.is_required, c.created_at, c.updated_at
 FROM (
@@ -135,6 +137,7 @@ WHERE NOT EXISTS (
     SELECT 1 FROM user_consent_history uch
     WHERE uch.user_id = @user_id::char(28)
     AND uch.consent_key = c.key
+    AND uch.consent_id = c.id
 );
 
 -- Translation queries
@@ -157,3 +160,24 @@ ON CONFLICT (consent_id, language_code) DO UPDATE SET
     body = EXCLUDED.body,
     updated_at = now()
 RETURNING consent_id, language_code, title, short_text, body, created_at, updated_at;
+
+-- Blocked users (00116): who a required consent keeps out of every count.
+-- Compared before and after a consent change, to find the users it moved.
+
+-- name: GetConsentBlockedProjectsOfUsers :many
+-- The projects in which each of the given users is blocked, checked per user.
+-- OFFSET 0 keeps the check a per-user subplan: as a join, the planner may
+-- compute whole projects' blocked sets instead.
+SELECT up.project_id::char(28) AS project_id, up.user_id::char(28) AS user_id
+FROM user_projects up
+WHERE up.user_id = ANY(@user_ids::char(28)[])
+  AND EXISTS (
+      SELECT 1 FROM consent_blocked_user_ids(up.project_id) b WHERE b.user_id = up.user_id OFFSET 0
+  );
+
+-- name: GetConsentBlockedUsersInProjects :many
+-- Every blocked user of the given projects, or of all projects when none are given
+SELECT p.id::char(28) AS project_id, b.user_id::char(28) AS user_id
+FROM projects p
+CROSS JOIN LATERAL consent_blocked_user_ids(p.id) AS b(user_id)
+WHERE @project_ids::char(28)[] IS NULL OR p.id = ANY(@project_ids::char(28)[]);

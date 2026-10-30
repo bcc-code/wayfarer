@@ -484,18 +484,7 @@ func (r *mutationResolver) AddTeamMembers(ctx context.Context, teamID string, us
 	r.Cache.DeletePrefix(cache.PrefixUsersCount)
 
 	// Recalculate leaderboard exclusion based on average age
-	avgAge, err := r.DB.Queries.GetTeamAverageAge(ctx, teamID)
-	if err == nil {
-		shouldExclude := avgAge >= 36.0
-		_, _ = r.DB.Queries.UpdateTeamLeaderboardExcluded(ctx, sqlc.UpdateTeamLeaderboardExcludedParams{
-			ID:                  teamID,
-			Leaderboardexcluded: shouldExclude,
-		})
-		// Invalidate caches after updating exclusion status
-		r.Cache.InvalidateTeam(teamID)
-		r.Cache.Delete(cache.TeamsByProjectKey(team.ProjectID))
-		r.Cache.DeletePrefix(cache.PrefixLeaderboard)
-	}
+	r.refreshTeamLeaderboardExclusion(ctx, teamID, team.ProjectID)
 
 	// Reload team to get updated leaderboard_excluded status
 	updatedTeam, err := r.DB.Queries.GetTeamsByIDs(ctx, []string{teamID})
@@ -578,18 +567,7 @@ func (r *mutationResolver) RemoveTeamMembers(ctx context.Context, teamID string,
 	r.Cache.DeletePrefix(cache.PrefixUsersCount)
 
 	// Recalculate leaderboard exclusion based on average age
-	avgAge, err := r.DB.Queries.GetTeamAverageAge(ctx, teamID)
-	if err == nil {
-		shouldExclude := avgAge >= 36.0
-		_, _ = r.DB.Queries.UpdateTeamLeaderboardExcluded(ctx, sqlc.UpdateTeamLeaderboardExcludedParams{
-			ID:                  teamID,
-			Leaderboardexcluded: shouldExclude,
-		})
-		// Invalidate caches after updating exclusion status
-		r.Cache.InvalidateTeam(teamID)
-		r.Cache.Delete(cache.TeamsByProjectKey(team.ProjectID))
-		r.Cache.DeletePrefix(cache.PrefixLeaderboard)
-	}
+	r.refreshTeamLeaderboardExclusion(ctx, teamID, team.ProjectID)
 
 	// Reload team to get updated leaderboard_excluded status
 	updatedTeam, err := r.DB.Queries.GetTeamsByIDs(ctx, []string{teamID})
@@ -1510,13 +1488,18 @@ func (r *teamResolver) Members(ctx context.Context, obj *model.Team) ([]model.Te
 		}
 	}
 
-	// Check permissions - admins, M2M, project admins, team leads, and church admins can access team members
-	allowed := isM2MFromToken ||
-		r.RoleService.HasRole(ctx, currentUserID, services.RoleM2M) ||
-		r.RoleService.CanManageTeam(ctx, currentUserID, obj.ID)
-
-	if !allowed {
-		return nil, fmt.Errorf("permission denied: you do not have access to this team's members")
+	// Check permissions - admins, M2M, project admins and church admins see
+	// every member. Team leads can access team members too, but a lead is a
+	// participant: members hidden by a required consent are left out.
+	// The lead check is cheap, so it comes before CanManageTeamAsAdmin, which
+	// a lead only needs when the team has hidden members.
+	seesHidden := isM2MFromToken || r.RoleService.HasRole(ctx, currentUserID, services.RoleM2M)
+	isLead := !seesHidden && r.RoleService.HasRoleInTeam(ctx, currentUserID, services.RoleTeamLead, obj.ID)
+	if !seesHidden && !isLead {
+		if !r.RoleService.CanManageTeamAsAdmin(ctx, currentUserID, obj.ID) {
+			return nil, fmt.Errorf("permission denied: you do not have access to this team's members")
+		}
+		seesHidden = true
 	}
 
 	// Use dataloader to fetch team members
@@ -1526,13 +1509,17 @@ func (r *teamResolver) Members(ctx context.Context, obj *model.Team) ([]model.Te
 		return nil, fmt.Errorf("failed to load team members: %w", err)
 	}
 
-	// Convert []*model.TeamMember to []model.TeamMember
-	result := make([]model.TeamMember, len(members))
-	for i, m := range members {
-		result[i] = *m
+	// Admins see blocked members too, marked as not counting toward scores
+	blockedIDs, err := r.Loaders.ConsentBlockedIDsByTeamLoader.Load(ctx, obj.ID)()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load hidden team members: %w", err)
+	}
+	// A lead who is also an admin sees them after all
+	if !seesHidden && len(blockedIDs) > 0 {
+		seesHidden = r.RoleService.CanManageTeamAsAdmin(ctx, currentUserID, obj.ID)
 	}
 
-	return result, nil
+	return teamMembersFor(members, blockedIDs, seesHidden), nil
 }
 
 // MemberLeaderboard is the resolver for the memberLeaderboard field.
