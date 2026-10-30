@@ -50,8 +50,8 @@
       "pointsLost": "Puncte pierdute",
       "pointsEarned": "Puncte câștigate",
       "resultYourBet": "Rezultatul pariului tău",
-      "outcomeCorrect": "Ai pus toate echipele pe poziția corectă",
-      "outcomeIncorrect": "Nu ai pus nicio echipă pe poziția corectă",
+      "outcomeCorrect": "Ai răspuns corect",
+      "outcomeIncorrect": "Ai răspuns greșit",
       "bettingResult": "Rezultatul pariului tău",
       "nothingToStake": "Nu ai puncte de pariat."
     },
