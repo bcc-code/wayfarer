@@ -702,7 +702,18 @@ counts nowhere, for admins too:
   blocked, accept, reject, a relaxing new version, re-requiring it, admin
   accept, a new required version leaving them out until they accept it; a
   hand-excluded control team must keep its flag. Each rule was
-  broken on purpose and a subtest failed. Unit tests for `teamMembersFor`,
+  broken on purpose and a subtest failed. Since answers are per version, the
+  other members accept every new version too; publishing a new required
+  version resets the control team's flag (accepted, see below), which the
+  test asserts. `TestRequiredConsentCountsEdgeCases` (2026-10-30): under-13
+  members stay counted; another project's required consent changes nothing; a
+  unit leader gets the admin's average age, without the blocked member; the
+  team board's `churchId` filter ignores a blocked member; removing a member
+  re-runs the age rule without the blocked user. Gotchas for these tests:
+  `updateConsent` stores `publishedAt` as given, so omitting it unpublishes
+  the version; and consents inserted in SQL are backdated a minute, because
+  accept/reject check `published_at` against the server's clock, not the
+  database's (the Docker VM ran ~2 s ahead, which made them flaky). Unit tests for `teamMembersFor`,
   `consentBlockChanges`, `consentBlockChangesBetween`, `teamsOfChangedUsers`,
   `mapConsentBlockedIDsByTeam`.
 

@@ -73,7 +73,7 @@ func TestRequiredConsentHidesUserFromOthers(t *testing.T) {
 		id := ulid.NewConsentID()
 		_, err := dbMgr.DB.Pool.Exec(ctx, `
 			INSERT INTO consents (id, key, version, title, short_text, body, published_at, is_remote, project_id, is_required)
-			VALUES ($1, $2, $3, 'T', 'S', 'B', now(), $4, $5, $6)
+			VALUES ($1, $2, $3, 'T', 'S', 'B', now() - interval '1 minute', $4, $5, $6)
 		`, id, key, version, isRemote, projectID, isRequired)
 		require.NoError(t, err)
 		return id
