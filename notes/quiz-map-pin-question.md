@@ -66,6 +66,13 @@ and update. On update it replaces all map columns at once (omitted = leave
 alone), so switching modes clears the other mode's columns. Fields that belong
 to the other mode are rejected, not ignored.
 
+`quizgrading.MapPinColumns` converts between the config and the eight columns,
+for the resolvers and the questions dataloader alike. The loaded config rides
+along on `MapPinQuestion` (a gqlgen extra field), so the gated fields need no
+second query. A `map_polygon` that can't be decoded is logged and the question
+still loads without its polygon; `MapPinScore` rejects that config, so it can't
+award points.
+
 ## Scoring
 
 The pure functions live in `internal/services/quizgrading/mappin.go`.
@@ -174,8 +181,15 @@ lets that team tell the others where the answer is.
 
 Nothing regrades existing responses. To keep `points_earned` consistent, a
 `MAP_PIN` question that already has responses rejects changes to `mapPin` and
-`points`. To change it after a test run, clear the test answers first
-(`deleteQuizSession` / `resetQuizSessionSubmission`).
+`points`. Resending the stored values is not a change (compared after
+normalizing, so a closing vertex doesn't count), so an admin form that saves the
+whole question can still fix the question text.
+
+To change the scoring after a test run, delete the question and add a new one,
+as for replacing the answers of a PREDEFINED question; deleting it cascades to
+its responses. `deleteQuizSession` only works on DRAFT sessions, which have no
+answers, and `resetQuizSessionSubmission` only resets the caller's own
+submission while the session is OPEN.
 
 The map image is not locked (a same-size colour fix is fine), but swapping it
 for a different resolution invalidates the geometry — see the coordinates

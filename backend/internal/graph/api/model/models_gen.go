@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
+	"github.com/bcc-media/wayfarer/internal/services/quizgrading"
 )
 
 type Achievement interface {
@@ -594,6 +595,7 @@ type CreateQuizQuestionInput struct {
 	MaxValue                 *float64                      `json:"maxValue,omitempty"`
 	StepValue                *float64                      `json:"stepValue,omitempty"`
 	OrderingItems            []CreateOrderingItemInput     `json:"orderingItems,omitempty"`
+	MapPin                   *MapPinConfigInput            `json:"mapPin,omitempty"`
 }
 
 type CreateQuizSessionInput struct {
@@ -1197,6 +1199,82 @@ type LeaderboardFilterView struct {
 	AgeRange       *AgeRange       `json:"ageRange,omitempty"`
 	TeamID         *string         `json:"teamId,omitempty"`
 	SuperTeamID    *string         `json:"superTeamId,omitempty"`
+}
+
+type MapPinConfigInput struct {
+	ScoringMode      MapPinScoringMode `json:"scoringMode"`
+	MapWidth         int               `json:"mapWidth"`
+	MapHeight        int               `json:"mapHeight"`
+	Target           *MapPointInput    `json:"target,omitempty"`
+	FullPointsRadius *float64          `json:"fullPointsRadius,omitempty"`
+	ZeroPointsRadius *float64          `json:"zeroPointsRadius,omitempty"`
+	Polygon          []MapPointInput   `json:"polygon,omitempty"`
+}
+
+type MapPinQuestion struct {
+	ID                       string                   `json:"id"`
+	Quiz                     *Quiz                    `json:"quiz"`
+	QuestionText             string                   `json:"questionText"`
+	Image                    *Image                   `json:"image,omitempty"`
+	QuestionOrder            int                      `json:"questionOrder"`
+	TimeoutSeconds           *int                     `json:"timeoutSeconds,omitempty"`
+	Points                   *int                     `json:"points,omitempty"`
+	BettingEnabled           bool                     `json:"bettingEnabled"`
+	BettingMinPercentage     *float64                 `json:"bettingMinPercentage,omitempty"`
+	BettingMaxPercentage     *float64                 `json:"bettingMaxPercentage,omitempty"`
+	BettingMinAbsolute       *int                     `json:"bettingMinAbsolute,omitempty"`
+	BettingMaxAbsolute       *int                     `json:"bettingMaxAbsolute,omitempty"`
+	BettingMultiplierCorrect *float64                 `json:"bettingMultiplierCorrect,omitempty"`
+	BettingMultiplierWrong   *float64                 `json:"bettingMultiplierWrong,omitempty"`
+	TranslationStatus        []TranslationFieldStatus `json:"translationStatus"`
+	ScoringMode              MapPinScoringMode        `json:"scoringMode"`
+	MapWidth                 int                      `json:"mapWidth"`
+	MapHeight                int                      `json:"mapHeight"`
+	FullPointsRadius         *float64                 `json:"fullPointsRadius,omitempty"`
+	ZeroPointsRadius         *float64                 `json:"zeroPointsRadius,omitempty"`
+	CorrectPosition          *MapPoint                `json:"correctPosition,omitempty"`
+	CorrectArea              []MapPoint               `json:"correctArea,omitempty"`
+	ImageURL                 *string                  `json:"-"`
+	MapPin                   quizgrading.MapPinConfig `json:"-"`
+	QuizID                   string                   `json:"-"`
+}
+
+func (MapPinQuestion) IsQuizQuestion()                        {}
+func (this MapPinQuestion) GetID() string                     { return this.ID }
+func (this MapPinQuestion) GetQuiz() *Quiz                    { return this.Quiz }
+func (this MapPinQuestion) GetQuestionText() string           { return this.QuestionText }
+func (this MapPinQuestion) GetImage() *Image                  { return this.Image }
+func (this MapPinQuestion) GetQuestionOrder() int             { return this.QuestionOrder }
+func (this MapPinQuestion) GetTimeoutSeconds() *int           { return this.TimeoutSeconds }
+func (this MapPinQuestion) GetPoints() *int                   { return this.Points }
+func (this MapPinQuestion) GetBettingEnabled() bool           { return this.BettingEnabled }
+func (this MapPinQuestion) GetBettingMinPercentage() *float64 { return this.BettingMinPercentage }
+func (this MapPinQuestion) GetBettingMaxPercentage() *float64 { return this.BettingMaxPercentage }
+func (this MapPinQuestion) GetBettingMinAbsolute() *int       { return this.BettingMinAbsolute }
+func (this MapPinQuestion) GetBettingMaxAbsolute() *int       { return this.BettingMaxAbsolute }
+func (this MapPinQuestion) GetBettingMultiplierCorrect() *float64 {
+	return this.BettingMultiplierCorrect
+}
+func (this MapPinQuestion) GetBettingMultiplierWrong() *float64 { return this.BettingMultiplierWrong }
+func (this MapPinQuestion) GetTranslationStatus() []TranslationFieldStatus {
+	if this.TranslationStatus == nil {
+		return nil
+	}
+	interfaceSlice := make([]TranslationFieldStatus, 0, len(this.TranslationStatus))
+	for _, concrete := range this.TranslationStatus {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
+
+type MapPoint struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+}
+
+type MapPointInput struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
 }
 
 type MissingContentProgressPreview struct {
@@ -2504,6 +2582,7 @@ type UpdateQuizQuestionInput struct {
 	MaxValue                      *float64                      `json:"maxValue,omitempty"`
 	StepValue                     *float64                      `json:"stepValue,omitempty"`
 	OrderingItems                 []CreateOrderingItemInput     `json:"orderingItems,omitempty"`
+	MapPin                        *MapPinConfigInput            `json:"mapPin,omitempty"`
 }
 
 type UpdateQuizSessionInput struct {
@@ -3438,6 +3517,61 @@ func (e LeaderboardLimitMode) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+type MapPinScoringMode string
+
+const (
+	MapPinScoringModePointRadius MapPinScoringMode = "POINT_RADIUS"
+	MapPinScoringModePolygon     MapPinScoringMode = "POLYGON"
+)
+
+var AllMapPinScoringMode = []MapPinScoringMode{
+	MapPinScoringModePointRadius,
+	MapPinScoringModePolygon,
+}
+
+func (e MapPinScoringMode) IsValid() bool {
+	switch e {
+	case MapPinScoringModePointRadius, MapPinScoringModePolygon:
+		return true
+	}
+	return false
+}
+
+func (e MapPinScoringMode) String() string {
+	return string(e)
+}
+
+func (e *MapPinScoringMode) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = MapPinScoringMode(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid MapPinScoringMode", str)
+	}
+	return nil
+}
+
+func (e MapPinScoringMode) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *MapPinScoringMode) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e MapPinScoringMode) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
 type NotificationType string
 
 const (
@@ -3621,6 +3755,7 @@ const (
 	QuizQuestionTypeNumber     QuizQuestionType = "NUMBER"
 	QuizQuestionTypeJSON       QuizQuestionType = "JSON"
 	QuizQuestionTypeOrdering   QuizQuestionType = "ORDERING"
+	QuizQuestionTypeMapPin     QuizQuestionType = "MAP_PIN"
 )
 
 var AllQuizQuestionType = []QuizQuestionType{
@@ -3629,11 +3764,12 @@ var AllQuizQuestionType = []QuizQuestionType{
 	QuizQuestionTypeNumber,
 	QuizQuestionTypeJSON,
 	QuizQuestionTypeOrdering,
+	QuizQuestionTypeMapPin,
 }
 
 func (e QuizQuestionType) IsValid() bool {
 	switch e {
-	case QuizQuestionTypePredefined, QuizQuestionTypeFreeText, QuizQuestionTypeNumber, QuizQuestionTypeJSON, QuizQuestionTypeOrdering:
+	case QuizQuestionTypePredefined, QuizQuestionTypeFreeText, QuizQuestionTypeNumber, QuizQuestionTypeJSON, QuizQuestionTypeOrdering, QuizQuestionTypeMapPin:
 		return true
 	}
 	return false

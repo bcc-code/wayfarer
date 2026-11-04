@@ -23,7 +23,26 @@ func (r *Resolver) canRevealQuestionAnswers(ctx context.Context, questionID stri
 		return false, fmt.Errorf("failed to load question: %w", err)
 	}
 
-	quiz, err := r.Loaders.QuizByIDLoader.Load(ctx, question.QuizID)()
+	return r.canRevealQuizAnswers(ctx, userID, question.QuizID, true)
+}
+
+// canRevealMapPinGeometry reports whether the current user may see a MAP_PIN
+// question's correct position or area. As canRevealQuestionAnswers, except a
+// user with no accessible session may not: teams play one after another, and a
+// team whose session doesn't exist yet must not read the answer.
+func (r *Resolver) canRevealMapPinGeometry(ctx context.Context, quizID string) (bool, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return false, nil
+	}
+	return r.canRevealQuizAnswers(ctx, userID, quizID, false)
+}
+
+// canRevealQuizAnswers reports whether userID may see a quiz's correct answers:
+// a project manager always, anyone else once their most recent accessible
+// session is FINISHED. withoutSession is the answer when they have none.
+func (r *Resolver) canRevealQuizAnswers(ctx context.Context, userID, quizID string, withoutSession bool) (bool, error) {
+	quiz, err := r.Loaders.QuizByIDLoader.Load(ctx, quizID)()
 	if err != nil {
 		return false, fmt.Errorf("failed to load quiz: %w", err)
 	}
@@ -33,13 +52,13 @@ func (r *Resolver) canRevealQuestionAnswers(ctx context.Context, questionID stri
 
 	sessions, err := r.DB.Queries.GetUserAccessibleSessions(ctx, sqlc.GetUserAccessibleSessionsParams{
 		Userid: userID,
-		Quizid: question.QuizID,
+		Quizid: quizID,
 	})
 	if err != nil {
 		return false, fmt.Errorf("failed to load user sessions: %w", err)
 	}
 	if len(sessions) == 0 {
-		return true, nil
+		return withoutSession, nil
 	}
 
 	// Ordered by created_at DESC.

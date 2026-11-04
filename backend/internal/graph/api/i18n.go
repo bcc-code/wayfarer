@@ -355,6 +355,10 @@ func applyQuizQuestionTranslation(question model.QuizQuestion, trans *loaders.Tr
 		translated := *q
 		translated.QuestionText = applyStringTranslation(trans.QuestionText, q.QuestionText)
 		return &translated
+	case *model.MapPinQuestion:
+		translated := *q
+		translated.QuestionText = applyStringTranslation(trans.QuestionText, q.QuestionText)
+		return &translated
 	default:
 		return question
 	}
