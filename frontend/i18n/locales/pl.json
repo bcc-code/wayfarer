@@ -50,10 +50,10 @@
       "pointsLost": "Punkty stracone",
       "pointsEarned": "Punkty zdobyte",
       "resultYourBet": "Postawione punkty",
-      "correctCount": "Liczba dobrych odpowiedzi: {count}",
-      "correctCountAll": "Wszystkie odpowiedzi poprawne",
-      "correctCountNone": "Żadna odpowiedź nie była poprawna",
-      "bettingResult": "Wynik obstawiania"
+      "outcomeCorrect": "Prawidłowa odpowiedź",
+      "outcomeIncorrect": "Zła odpowiedź",
+      "bettingResult": "Wynik obstawiania",
+      "nothingToStake": "Nie masz żadnych punktów do obstawienia."
     },
     "result": {
       "receivedNoPoints": "Nie zdobyłeś żadnych punktów.",
@@ -136,12 +136,18 @@
     "goToConsent": "Przejdź do zgody",
     "continue": "Przejdź dalej",
     "changeDescription": "Aby zmienić swoją zgodę, skontaktuj się z nami pod adresem {email}",
-    "changeConsent": "Zmiana zgody"
+    "changeConsent": "Zmiana zgody",
+    "required": "Wymagane",
+    "requiredTitle": "Zanim przejdziesz dalej"
   },
   "achievement": {
     "title": "Osiągnięcie",
     "unlocked": "Osiągnięte!",
-    "progress": "Ukończono {completed} z {total}"
+    "progress": "{completed} z{total} wykonane"
+  },
+  "archive": {
+    "title": "Poprzednie projekty",
+    "empty": "Nie masz jeszcze żadnych wcześniejszych projektów."
   },
   "feedback": {
     "title": "Podziel się z nami swoją opinią",
@@ -351,7 +357,7 @@
         "couldNotReopenBetting": "Nie można ponownie otworzyć obstawiania",
         "couldNotFinishBetting": "Nie można zakończyć obstawiania",
         "couldNotSendUnitLeaderAccess": "Nie można było wysłać kodu do liderów unitów",
-        "couldNotGrantBettingAccess": "Nie można było przyznać użytkownikom dostępu do obstawiania"
+        "couldNotGrantBettingAccess": "Nie udało się udzielić użytkownikom dostępu do zakładów"
       }
     },
     "statistics": {
@@ -369,5 +375,8 @@
       "peopleInAUnit": "Osoby w unicie",
       "lastUpdated": "Ostatnia aktualizacja"
     }
+  },
+  "offline": {
+    "notice": "Jesteś offline. Informacje mogą być nieaktualne."
   }
 }
