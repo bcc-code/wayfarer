@@ -1267,6 +1267,37 @@ func (this MapPinQuestion) GetTranslationStatus() []TranslationFieldStatus {
 	return interfaceSlice
 }
 
+type MapPinResponse struct {
+	ID                   string            `json:"id"`
+	Submission           *QuizSubmission   `json:"submission"`
+	Question             QuizQuestion      `json:"question"`
+	AnsweredAt           *scalars.DateTime `json:"answeredAt,omitempty"`
+	TimeSpentSeconds     *int              `json:"timeSpentSeconds,omitempty"`
+	PointsEarned         *int              `json:"pointsEarned,omitempty"`
+	BetAmount            *int              `json:"betAmount,omitempty"`
+	JournalEntry         *ScoreJournal     `json:"journalEntry,omitempty"`
+	SubmittedPosition    *MapPoint         `json:"submittedPosition"`
+	Distance             *float64          `json:"distance,omitempty"`
+	IsCorrect            *bool             `json:"isCorrect,omitempty"`
+	SettledBetMultiplier *float64          `json:"settledBetMultiplier,omitempty"`
+	PointsEarnedValue    *int              `json:"-"`
+	QuestionID           string            `json:"-"`
+	ScoreJournalID       *string           `json:"-"`
+	SubmissionID         string            `json:"-"`
+}
+
+func (MapPinResponse) IsQuizResponse()                        {}
+func (this MapPinResponse) GetID() string                     { return this.ID }
+func (this MapPinResponse) GetSubmission() *QuizSubmission    { return this.Submission }
+func (this MapPinResponse) GetQuestion() QuizQuestion         { return this.Question }
+func (this MapPinResponse) GetAnsweredAt() *scalars.DateTime  { return this.AnsweredAt }
+func (this MapPinResponse) GetTimeSpentSeconds() *int         { return this.TimeSpentSeconds }
+func (this MapPinResponse) GetPointsEarned() *int             { return this.PointsEarned }
+func (this MapPinResponse) GetBetAmount() *int                { return this.BetAmount }
+func (this MapPinResponse) GetJournalEntry() *ScoreJournal    { return this.JournalEntry }
+func (this MapPinResponse) GetIsCorrect() *bool               { return this.IsCorrect }
+func (this MapPinResponse) GetSettledBetMultiplier() *float64 { return this.SettledBetMultiplier }
+
 type MapPoint struct {
 	X float64 `json:"x"`
 	Y float64 `json:"y"`
@@ -2332,14 +2363,15 @@ type SubmitFeedbackInput struct {
 }
 
 type SubmitQuizAnswerInput struct {
-	QuestionID        string   `json:"questionId"`
-	SelectedAnswerIds []string `json:"selectedAnswerIds,omitempty"`
-	TextResponse      *string  `json:"textResponse,omitempty"`
-	NumberResponse    *float64 `json:"numberResponse,omitempty"`
-	JSONResponse      *string  `json:"jsonResponse,omitempty"`
-	SubmittedOrder    []string `json:"submittedOrder,omitempty"`
-	TimeSpentSeconds  *int     `json:"timeSpentSeconds,omitempty"`
-	BetAmount         *int     `json:"betAmount,omitempty"`
+	QuestionID        string         `json:"questionId"`
+	SelectedAnswerIds []string       `json:"selectedAnswerIds,omitempty"`
+	TextResponse      *string        `json:"textResponse,omitempty"`
+	NumberResponse    *float64       `json:"numberResponse,omitempty"`
+	JSONResponse      *string        `json:"jsonResponse,omitempty"`
+	SubmittedOrder    []string       `json:"submittedOrder,omitempty"`
+	MapPosition       *MapPointInput `json:"mapPosition,omitempty"`
+	TimeSpentSeconds  *int           `json:"timeSpentSeconds,omitempty"`
+	BetAmount         *int           `json:"betAmount,omitempty"`
 }
 
 type SuperTeam struct {
@@ -2536,12 +2568,13 @@ type UpdateQuizAchievementInput struct {
 }
 
 type UpdateQuizAnswerInput struct {
-	SelectedAnswerIds []string `json:"selectedAnswerIds,omitempty"`
-	TextResponse      *string  `json:"textResponse,omitempty"`
-	NumberResponse    *float64 `json:"numberResponse,omitempty"`
-	JSONResponse      *string  `json:"jsonResponse,omitempty"`
-	SubmittedOrder    []string `json:"submittedOrder,omitempty"`
-	BetAmount         *int     `json:"betAmount,omitempty"`
+	SelectedAnswerIds []string       `json:"selectedAnswerIds,omitempty"`
+	TextResponse      *string        `json:"textResponse,omitempty"`
+	NumberResponse    *float64       `json:"numberResponse,omitempty"`
+	JSONResponse      *string        `json:"jsonResponse,omitempty"`
+	SubmittedOrder    []string       `json:"submittedOrder,omitempty"`
+	MapPosition       *MapPointInput `json:"mapPosition,omitempty"`
+	BetAmount         *int           `json:"betAmount,omitempty"`
 }
 
 type UpdateQuizInput struct {

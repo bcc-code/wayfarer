@@ -30,7 +30,15 @@ correct-answer geometry and the scoring differ:
   `{"x": …, "y": …}`, in both modes. A pin outside
   `[0, mapWidth] × [0, mapHeight]` is rejected. On `MAP_PIN` only
   `mapPosition` is accepted; other answer fields (including `jsonResponse`)
-  are rejected, so the stored JSON is always a validated point.
+  are rejected, so the stored JSON is always a validated point. Unlike the
+  other types, which accept an empty answer on submit, `mapPosition` is
+  required: there is no unanswered pin to score. `mapPosition` on any other
+  type is rejected too. This holds for `submitQuizAnswer`, `updateQuizAnswer`
+  and the M2M `createQuizSubmission`.
+- **Reading it back**, `MapPinResponse` has `submittedPosition`, the gated
+  `pointsEarned` and `distance` (computed on read from the cached question
+  with `MapPinScore`, so there's one formula), and an always-null `isCorrect`
+  and `settledBetMultiplier`.
 - **Individual answers.** Each participant pins and scores on their own. A
   team's score moves because team leaderboards average member points.
 - **No betting.** `MAP_PIN` always has points, and points and betting are
@@ -153,8 +161,16 @@ Frontend: review mode must not show a NULL verdict as "wrong".
 
 ## Visibility
 
-Hidden values are removed by the backend, not just by the UI, so a user cannot
-probe for the answer by moving their pin while the session is OPEN.
+Hidden values are removed by the backend, not just by the UI: no per-response
+field tells a user how their pin scored while the session is OPEN.
+
+**Known gap, shared with every question type.** `finalizeQuiz` works while the
+session is OPEN and returns the submission's `score`, and
+`resetQuizSessionSubmission` lets a user delete their own submission and start
+again. Submit, finalize, read the score and reset is a probe: a few rounds
+locate a POINT_RADIUS target, and each round tells whether a pin is inside a
+POLYGON. Each finalize also writes a QUIZ score journal entry that the reset
+doesn't remove. Not fixed here.
 
 | Field | Visible to |
 |---|---|

@@ -643,6 +643,26 @@ models:
       ScoreJournalID:
         type: "*string"
 
+  MapPinResponse:
+    fields:
+      submission:
+        resolver: true
+      question:
+        resolver: true
+      journalEntry:
+        resolver: true
+    extraFields:
+      SubmissionID:
+        type: string
+      QuestionID:
+        type: string
+      # The stored points; the pointsEarned resolver hides them while the
+      # session is OPEN.
+      PointsEarnedValue:
+        type: "*int"
+      ScoreJournalID:
+        type: "*string"
+
   QuizAchievement:
     fields:
       project:

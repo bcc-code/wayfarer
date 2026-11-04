@@ -359,6 +359,29 @@ type OrderingResponse implements QuizResponse {
     settledBetMultiplier: Float @goField(forceResolver: true)
 }
 
+# A pin on a MAP_PIN question. Only the respondent and project managers can
+# read a submission's responses.
+type MapPinResponse implements QuizResponse {
+    id: ID!
+    submission: QuizSubmission! @goField(forceResolver: true)
+    question: QuizQuestion! @goField(forceResolver: true)
+    answeredAt: DateTime
+    timeSpentSeconds: Int
+    # Scored by distance or area, from 0 to the question's points. Hidden while
+    # the submission's session is OPEN.
+    pointsEarned: Int @goField(forceResolver: true)
+    betAmount: Int
+    journalEntry: ScoreJournal @goField(forceResolver: true)
+    submittedPosition: MapPoint!
+    # Distance in pixels from the pin to the correct position. POINT_RADIUS
+    # only, and hidden while the session is OPEN, like pointsEarned.
+    distance: Float @goField(forceResolver: true)
+    # Always null: MAP_PIN is scored by points, not graded right or wrong.
+    isCorrect: Boolean
+    # Always null: MAP_PIN questions can't have betting.
+    settledBetMultiplier: Float
+}
+
 # ==================== Quiz Input Types ====================
 
 input CreateQuizInput {
@@ -509,6 +532,9 @@ input SubmitQuizAnswerInput {
     numberResponse: Float
     jsonResponse: JSON
     submittedOrder: [ID!]
+    # MAP_PIN: the pin, in the map image's natural pixels. Required for
+    # MAP_PIN and the only answer field it takes.
+    mapPosition: MapPointInput
 
     timeSpentSeconds: Int
     betAmount: Int
@@ -522,6 +548,7 @@ input UpdateQuizAnswerInput {
     numberResponse: Float
     jsonResponse: JSON
     submittedOrder: [ID!]
+    mapPosition: MapPointInput
 
     betAmount: Int
 }
