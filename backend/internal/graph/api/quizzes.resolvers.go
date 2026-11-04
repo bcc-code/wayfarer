@@ -144,6 +144,61 @@ func (r *jsonResponseResolver) SettledBetMultiplier(ctx context.Context, obj *mo
 	return SettledBetMultiplier(obj.ScoreJournalID, obj.BetAmount, obj.PointsEarned), nil
 }
 
+// Quiz is the resolver for the quiz field.
+func (r *mapPinQuestionResolver) Quiz(ctx context.Context, obj *model.MapPinQuestion) (*model.Quiz, error) {
+	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
+	quiz, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+	return r.ApplyTranslationToQuiz(ctx, quiz), nil
+}
+
+// Image is the resolver for the image field.
+func (r *mapPinQuestionResolver) Image(ctx context.Context, obj *model.MapPinQuestion) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.ImageURL)
+}
+
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *mapPinQuestionResolver) TranslationStatus(ctx context.Context, obj *model.MapPinQuestion) ([]model.TranslationFieldStatus, error) {
+	return r.quizQuestionTranslationStatus(ctx, obj.ID)
+}
+
+// ScoringMode is the resolver for the scoringMode field.
+func (r *mapPinQuestionResolver) ScoringMode(ctx context.Context, obj *model.MapPinQuestion) (model.MapPinScoringMode, error) {
+	return model.MapPinScoringMode(obj.MapPin.Mode), nil
+}
+
+// MapWidth is the resolver for the mapWidth field.
+func (r *mapPinQuestionResolver) MapWidth(ctx context.Context, obj *model.MapPinQuestion) (int, error) {
+	return obj.MapPin.Width, nil
+}
+
+// MapHeight is the resolver for the mapHeight field.
+func (r *mapPinQuestionResolver) MapHeight(ctx context.Context, obj *model.MapPinQuestion) (int, error) {
+	return obj.MapPin.Height, nil
+}
+
+// FullPointsRadius is the resolver for the fullPointsRadius field.
+func (r *mapPinQuestionResolver) FullPointsRadius(ctx context.Context, obj *model.MapPinQuestion) (*float64, error) {
+	return obj.MapPin.FullRadius, nil
+}
+
+// ZeroPointsRadius is the resolver for the zeroPointsRadius field.
+func (r *mapPinQuestionResolver) ZeroPointsRadius(ctx context.Context, obj *model.MapPinQuestion) (*float64, error) {
+	return obj.MapPin.ZeroRadius, nil
+}
+
+// CorrectPosition is the resolver for the correctPosition field.
+func (r *mapPinQuestionResolver) CorrectPosition(ctx context.Context, obj *model.MapPinQuestion) (*model.MapPoint, error) {
+	return r.correctMapPosition(ctx, obj)
+}
+
+// CorrectArea is the resolver for the correctArea field.
+func (r *mapPinQuestionResolver) CorrectArea(ctx context.Context, obj *model.MapPinQuestion) ([]model.MapPoint, error) {
+	return r.correctMapArea(ctx, obj)
+}
+
 // CreateQuiz is the resolver for the createQuiz field.
 func (r *mutationResolver) CreateQuiz(ctx context.Context, input model.CreateQuizInput) (*model.Quiz, error) {
 	// Get authenticated user ID from context
@@ -388,6 +443,26 @@ func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, i
 		maxAbs := int32(*input.BettingMaxAbsolute)
 		params.Bettingmaxabsolute = &maxAbs
 	}
+	// Before the betting rules, which would reject MAP_PIN betting with a
+	// message about points
+	mapPin, err := checkMapPinCreate(input)
+	if err != nil {
+		return nil, err
+	}
+	if mapPin != nil {
+		cols, err := mapPin.Columns()
+		if err != nil {
+			return nil, err
+		}
+		params.Mapscoringmode = cols.Mode
+		params.Mapwidth = cols.Width
+		params.Mapheight = cols.Height
+		params.Maptargetx = cols.TargetX
+		params.Maptargety = cols.TargetY
+		params.Mapfullpointsradius = cols.FullRadius
+		params.Mapzeropointsradius = cols.ZeroRadius
+		params.Mappolygon = cols.Polygon
+	}
 	if err := ValidateQuestionBetting(QuestionBettingSettings{
 		Points:            input.Points,
 		BettingEnabled:    input.BettingEnabled != nil && *input.BettingEnabled,
@@ -563,6 +638,37 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 	params.Clearbettingmaxabsolute = clearFlag(input.ClearBettingMaxAbsolute)
 	params.Clearbettingmultipliercorrect = clearFlag(input.ClearBettingMultiplierCorrect)
 	params.Clearbettingmultiplierwrong = clearFlag(input.ClearBettingMultiplierWrong)
+
+	// Before the betting rules, which would reject MAP_PIN betting with a
+	// message about points
+	mapPin, err := checkMapPinUpdate(question, input)
+	if err != nil {
+		return nil, err
+	}
+	if mapPin.LockedField != "" {
+		answered, err := qtx.QuestionHasResponses(ctx, id)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check responses: %w", err)
+		}
+		if answered {
+			return nil, mapPinAnsweredError(mapPin.LockedField)
+		}
+	}
+	if mapPin.Config != nil {
+		cols, err := mapPin.Config.Columns()
+		if err != nil {
+			return nil, err
+		}
+		params.Setmappin = true
+		params.Mapscoringmode = cols.Mode
+		params.Mapwidth = cols.Width
+		params.Mapheight = cols.Height
+		params.Maptargetx = cols.TargetX
+		params.Maptargety = cols.TargetY
+		params.Mapfullpointsradius = cols.FullRadius
+		params.Mapzeropointsradius = cols.ZeroRadius
+		params.Mappolygon = cols.Polygon
+	}
 
 	// Validate the settings the question will have after this update
 	next := storedBettingSettings(question)
@@ -2953,6 +3059,9 @@ func (r *Resolver) JsonQuestion() JsonQuestionResolver { return &jsonQuestionRes
 // JsonResponse returns JsonResponseResolver implementation.
 func (r *Resolver) JsonResponse() JsonResponseResolver { return &jsonResponseResolver{r} }
 
+// MapPinQuestion returns MapPinQuestionResolver implementation.
+func (r *Resolver) MapPinQuestion() MapPinQuestionResolver { return &mapPinQuestionResolver{r} }
+
 // NumberQuestion returns NumberQuestionResolver implementation.
 func (r *Resolver) NumberQuestion() NumberQuestionResolver { return &numberQuestionResolver{r} }
 
@@ -2993,6 +3102,7 @@ type freeTextQuestionResolver struct{ *Resolver }
 type freeTextResponseResolver struct{ *Resolver }
 type jsonQuestionResolver struct{ *Resolver }
 type jsonResponseResolver struct{ *Resolver }
+type mapPinQuestionResolver struct{ *Resolver }
 type numberQuestionResolver struct{ *Resolver }
 type numberResponseResolver struct{ *Resolver }
 type orderingQuestionResolver struct{ *Resolver }

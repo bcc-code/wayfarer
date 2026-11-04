@@ -53,6 +53,7 @@ type ResolverRoot interface {
 	LeaderboardConfig() LeaderboardConfigResolver
 	LeaderboardConnection() LeaderboardConnectionResolver
 	LeaderboardEntry() LeaderboardEntryResolver
+	MapPinQuestion() MapPinQuestionResolver
 	MarkdownText() MarkdownTextResolver
 	Mutation() MutationResolver
 	NumberQuestion() NumberQuestionResolver
@@ -570,6 +571,36 @@ type ComplexityRoot struct {
 		MyTeam         func(childComplexity int) int
 		SuperTeamID    func(childComplexity int) int
 		TeamID         func(childComplexity int) int
+	}
+
+	MapPinQuestion struct {
+		BettingEnabled           func(childComplexity int) int
+		BettingMaxAbsolute       func(childComplexity int) int
+		BettingMaxPercentage     func(childComplexity int) int
+		BettingMinAbsolute       func(childComplexity int) int
+		BettingMinPercentage     func(childComplexity int) int
+		BettingMultiplierCorrect func(childComplexity int) int
+		BettingMultiplierWrong   func(childComplexity int) int
+		CorrectArea              func(childComplexity int) int
+		CorrectPosition          func(childComplexity int) int
+		FullPointsRadius         func(childComplexity int) int
+		ID                       func(childComplexity int) int
+		Image                    func(childComplexity int) int
+		MapHeight                func(childComplexity int) int
+		MapWidth                 func(childComplexity int) int
+		Points                   func(childComplexity int) int
+		QuestionOrder            func(childComplexity int) int
+		QuestionText             func(childComplexity int) int
+		Quiz                     func(childComplexity int) int
+		ScoringMode              func(childComplexity int) int
+		TimeoutSeconds           func(childComplexity int) int
+		TranslationStatus        func(childComplexity int) int
+		ZeroPointsRadius         func(childComplexity int) int
+	}
+
+	MapPoint struct {
+		X func(childComplexity int) int
+		Y func(childComplexity int) int
 	}
 
 	MarkdownText struct {
@@ -1629,6 +1660,20 @@ type LeaderboardConnectionResolver interface {
 }
 type LeaderboardEntryResolver interface {
 	Image(ctx context.Context, obj *model.LeaderboardEntry) (*model.Image, error)
+}
+type MapPinQuestionResolver interface {
+	Quiz(ctx context.Context, obj *model.MapPinQuestion) (*model.Quiz, error)
+
+	Image(ctx context.Context, obj *model.MapPinQuestion) (*model.Image, error)
+
+	TranslationStatus(ctx context.Context, obj *model.MapPinQuestion) ([]model.TranslationFieldStatus, error)
+	ScoringMode(ctx context.Context, obj *model.MapPinQuestion) (model.MapPinScoringMode, error)
+	MapWidth(ctx context.Context, obj *model.MapPinQuestion) (int, error)
+	MapHeight(ctx context.Context, obj *model.MapPinQuestion) (int, error)
+	FullPointsRadius(ctx context.Context, obj *model.MapPinQuestion) (*float64, error)
+	ZeroPointsRadius(ctx context.Context, obj *model.MapPinQuestion) (*float64, error)
+	CorrectPosition(ctx context.Context, obj *model.MapPinQuestion) (*model.MapPoint, error)
+	CorrectArea(ctx context.Context, obj *model.MapPinQuestion) ([]model.MapPoint, error)
 }
 type MarkdownTextResolver interface {
 	HTML(ctx context.Context, obj *model.MarkdownText) (string, error)
@@ -4141,6 +4186,152 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.LeaderboardFilterView.TeamID(childComplexity), true
+
+	case "MapPinQuestion.bettingEnabled":
+		if e.complexity.MapPinQuestion.BettingEnabled == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestion.BettingEnabled(childComplexity), true
+	case "MapPinQuestion.bettingMaxAbsolute":
+		if e.complexity.MapPinQuestion.BettingMaxAbsolute == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestion.BettingMaxAbsolute(childComplexity), true
+	case "MapPinQuestion.bettingMaxPercentage":
+		if e.complexity.MapPinQuestion.BettingMaxPercentage == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestion.BettingMaxPercentage(childComplexity), true
+	case "MapPinQuestion.bettingMinAbsolute":
+		if e.complexity.MapPinQuestion.BettingMinAbsolute == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestion.BettingMinAbsolute(childComplexity), true
+	case "MapPinQuestion.bettingMinPercentage":
+		if e.complexity.MapPinQuestion.BettingMinPercentage == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestion.BettingMinPercentage(childComplexity), true
+	case "MapPinQuestion.bettingMultiplierCorrect":
+		if e.complexity.MapPinQuestion.BettingMultiplierCorrect == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestion.BettingMultiplierCorrect(childComplexity), true
+	case "MapPinQuestion.bettingMultiplierWrong":
+		if e.complexity.MapPinQuestion.BettingMultiplierWrong == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestion.BettingMultiplierWrong(childComplexity), true
+	case "MapPinQuestion.correctArea":
+		if e.complexity.MapPinQuestion.CorrectArea == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestion.CorrectArea(childComplexity), true
+	case "MapPinQuestion.correctPosition":
+		if e.complexity.MapPinQuestion.CorrectPosition == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestion.CorrectPosition(childComplexity), true
+	case "MapPinQuestion.fullPointsRadius":
+		if e.complexity.MapPinQuestion.FullPointsRadius == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestion.FullPointsRadius(childComplexity), true
+	case "MapPinQuestion.id":
+		if e.complexity.MapPinQuestion.ID == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestion.ID(childComplexity), true
+	case "MapPinQuestion.image":
+		if e.complexity.MapPinQuestion.Image == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestion.Image(childComplexity), true
+	case "MapPinQuestion.mapHeight":
+		if e.complexity.MapPinQuestion.MapHeight == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestion.MapHeight(childComplexity), true
+	case "MapPinQuestion.mapWidth":
+		if e.complexity.MapPinQuestion.MapWidth == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestion.MapWidth(childComplexity), true
+	case "MapPinQuestion.points":
+		if e.complexity.MapPinQuestion.Points == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestion.Points(childComplexity), true
+	case "MapPinQuestion.questionOrder":
+		if e.complexity.MapPinQuestion.QuestionOrder == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestion.QuestionOrder(childComplexity), true
+	case "MapPinQuestion.questionText":
+		if e.complexity.MapPinQuestion.QuestionText == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestion.QuestionText(childComplexity), true
+	case "MapPinQuestion.quiz":
+		if e.complexity.MapPinQuestion.Quiz == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestion.Quiz(childComplexity), true
+	case "MapPinQuestion.scoringMode":
+		if e.complexity.MapPinQuestion.ScoringMode == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestion.ScoringMode(childComplexity), true
+	case "MapPinQuestion.timeoutSeconds":
+		if e.complexity.MapPinQuestion.TimeoutSeconds == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestion.TimeoutSeconds(childComplexity), true
+	case "MapPinQuestion.translationStatus":
+		if e.complexity.MapPinQuestion.TranslationStatus == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestion.TranslationStatus(childComplexity), true
+	case "MapPinQuestion.zeroPointsRadius":
+		if e.complexity.MapPinQuestion.ZeroPointsRadius == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestion.ZeroPointsRadius(childComplexity), true
+
+	case "MapPoint.x":
+		if e.complexity.MapPoint.X == nil {
+			break
+		}
+
+		return e.complexity.MapPoint.X(childComplexity), true
+	case "MapPoint.y":
+		if e.complexity.MapPoint.Y == nil {
+			break
+		}
+
+		return e.complexity.MapPoint.Y(childComplexity), true
 
 	case "MarkdownText.html":
 		if e.complexity.MarkdownText.HTML == nil {
@@ -9684,6 +9875,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputGrantQuizSessionAccessInput,
 		ec.unmarshalInputLeaderboardConfigFilter,
 		ec.unmarshalInputLeaderboardFilter,
+		ec.unmarshalInputMapPinConfigInput,
+		ec.unmarshalInputMapPointInput,
 		ec.unmarshalInputProjectFilter,
 		ec.unmarshalInputQuizFilter,
 		ec.unmarshalInputRecordBetResultInput,
@@ -11627,6 +11820,16 @@ enum QuizQuestionType {
     NUMBER
     JSON
     ORDERING
+    MAP_PIN
+}
+
+# How a MAP_PIN question scores a pin.
+enum MapPinScoringMode {
+    # Full points within fullPointsRadius of the correct position, falling
+    # linearly to 0 at zeroPointsRadius.
+    POINT_RADIUS
+    # Full points inside the correct area or on its boundary, 0 outside.
+    POLYGON
 }
 
 # How a predefined question's alternatives are labelled. The label is derived
@@ -11794,6 +11997,47 @@ type OrderingQuestion implements QuizQuestion {
     bettingMultiplierWrong: Float
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
     orderingItems: [QuizOrderingItem!]! @goField(forceResolver: true)
+}
+
+# The participant drops one pin on the question's image, a map. Coordinates are
+# natural pixels of that image: origin top-left, x to the right, y down. See
+# notes/quiz-map-pin-coordinates.md.
+type MapPinQuestion implements QuizQuestion {
+    id: ID!
+    quiz: Quiz! @goField(forceResolver: true)
+    questionText: String!
+    # The map. Shown above the question text like any question image.
+    image: Image @goField(forceResolver: true)
+    questionOrder: Int!
+    timeoutSeconds: Int
+    # The most a pin can earn.
+    points: Int
+    bettingEnabled: Boolean!
+    bettingMinPercentage: Float
+    bettingMaxPercentage: Float
+    bettingMinAbsolute: Int
+    bettingMaxAbsolute: Int
+    bettingMultiplierCorrect: Float
+    bettingMultiplierWrong: Float
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
+    scoringMode: MapPinScoringMode! @goField(forceResolver: true)
+    # The map image's natural size in pixels; a pin must lie within it.
+    mapWidth: Int! @goField(forceResolver: true)
+    mapHeight: Int! @goField(forceResolver: true)
+    # POINT_RADIUS only; null for POLYGON.
+    fullPointsRadius: Float @goField(forceResolver: true)
+    zeroPointsRadius: Float @goField(forceResolver: true)
+    # The correct answer: correctPosition for POINT_RADIUS, correctArea for
+    # POLYGON, null for the other mode. Hidden from non-managers until the most
+    # recent session they can access is FINISHED, and while they have none.
+    correctPosition: MapPoint @goField(forceResolver: true)
+    correctArea: [MapPoint!] @goField(forceResolver: true)
+}
+
+# A position on a map image, in its natural pixels.
+type MapPoint {
+    x: Float!
+    y: Float!
 }
 
 type QuizOrderingItem {
@@ -11987,6 +12231,31 @@ input CreateQuizQuestionInput {
     stepValue: Float
 
     orderingItems: [CreateOrderingItemInput!]
+
+    # Required for MAP_PIN, rejected for every other type.
+    mapPin: MapPinConfigInput
+}
+
+# The correct answer of a MAP_PIN question, set as a whole. Give the fields of
+# scoringMode only; the other mode's fields are rejected.
+input MapPinConfigInput {
+    scoringMode: MapPinScoringMode!
+    mapWidth: Int!
+    mapHeight: Int!
+
+    # POINT_RADIUS
+    target: MapPointInput
+    fullPointsRadius: Float
+    zeroPointsRadius: Float
+
+    # POLYGON: 3 to 100 vertices in drawing order, clockwise or not. A closing
+    # vertex equal to the first is dropped.
+    polygon: [MapPointInput!]
+}
+
+input MapPointInput {
+    x: Float!
+    y: Float!
 }
 
 input CreatePredefinedAnswerInput {
@@ -12037,6 +12306,11 @@ input UpdateQuizQuestionInput {
     stepValue: Float
 
     orderingItems: [CreateOrderingItemInput!]
+
+    # MAP_PIN only. Replaces the whole map config, so switching scoringMode
+    # clears the other mode's fields; omit to leave it alone. It and points
+    # can't be changed once users have answered the question.
+    mapPin: MapPinConfigInput
 }
 
 input SubmitQuizAnswerInput {
@@ -26913,6 +27187,774 @@ func (ec *executionContext) fieldContext_LeaderboardFilterView_superTeamId(_ con
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestion_id(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestion_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestion_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestion_quiz(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestion_quiz,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.MapPinQuestion().Quiz(ctx, obj)
+		},
+		nil,
+		ec.marshalNQuiz2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuiz,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestion_quiz(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestion",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Quiz_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Quiz_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Quiz_description(ctx, field)
+			case "image":
+				return ec.fieldContext_Quiz_image(ctx, field)
+			case "project":
+				return ec.fieldContext_Quiz_project(ctx, field)
+			case "challenge":
+				return ec.fieldContext_Quiz_challenge(ctx, field)
+			case "timeoutSeconds":
+				return ec.fieldContext_Quiz_timeoutSeconds(ctx, field)
+			case "randomizeQuestions":
+				return ec.fieldContext_Quiz_randomizeQuestions(ctx, field)
+			case "revealCorrectAnswers":
+				return ec.fieldContext_Quiz_revealCorrectAnswers(ctx, field)
+			case "allowRetakes":
+				return ec.fieldContext_Quiz_allowRetakes(ctx, field)
+			case "completionPoints":
+				return ec.fieldContext_Quiz_completionPoints(ctx, field)
+			case "questions":
+				return ec.fieldContext_Quiz_questions(ctx, field)
+			case "endTime":
+				return ec.fieldContext_Quiz_endTime(ctx, field)
+			case "userSubmissions":
+				return ec.fieldContext_Quiz_userSubmissions(ctx, field)
+			case "userCanStart":
+				return ec.fieldContext_Quiz_userCanStart(ctx, field)
+			case "userActiveSubmission":
+				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
+			case "sessions":
+				return ec.fieldContext_Quiz_sessions(ctx, field)
+			case "userSessions":
+				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Quiz_translationStatus(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestion_questionText(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestion_questionText,
+		func(ctx context.Context) (any, error) {
+			return obj.QuestionText, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestion_questionText(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestion_image(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestion_image,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.MapPinQuestion().Image(ctx, obj)
+		},
+		nil,
+		ec.marshalOImage2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐImage,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestion_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestion",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "url":
+				return ec.fieldContext_Image_url(ctx, field)
+			case "width":
+				return ec.fieldContext_Image_width(ctx, field)
+			case "height":
+				return ec.fieldContext_Image_height(ctx, field)
+			case "blurhash":
+				return ec.fieldContext_Image_blurhash(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Image", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestion_questionOrder(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestion_questionOrder,
+		func(ctx context.Context) (any, error) {
+			return obj.QuestionOrder, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestion_questionOrder(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestion_timeoutSeconds(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestion_timeoutSeconds,
+		func(ctx context.Context) (any, error) {
+			return obj.TimeoutSeconds, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestion_timeoutSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestion_points(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestion_points,
+		func(ctx context.Context) (any, error) {
+			return obj.Points, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestion_points(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestion_bettingEnabled(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestion_bettingEnabled,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingEnabled, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestion_bettingEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestion_bettingMinPercentage(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestion_bettingMinPercentage,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMinPercentage, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestion_bettingMinPercentage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestion_bettingMaxPercentage(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestion_bettingMaxPercentage,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMaxPercentage, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestion_bettingMaxPercentage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestion_bettingMinAbsolute(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestion_bettingMinAbsolute,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMinAbsolute, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestion_bettingMinAbsolute(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestion_bettingMaxAbsolute(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestion_bettingMaxAbsolute,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMaxAbsolute, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestion_bettingMaxAbsolute(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestion_bettingMultiplierCorrect(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestion_bettingMultiplierCorrect,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMultiplierCorrect, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestion_bettingMultiplierCorrect(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestion_bettingMultiplierWrong(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestion_bettingMultiplierWrong,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMultiplierWrong, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestion_bettingMultiplierWrong(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestion_translationStatus(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestion_translationStatus,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.MapPinQuestion().TranslationStatus(ctx, obj)
+		},
+		nil,
+		ec.marshalNTranslationFieldStatus2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTranslationFieldStatusᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestion_translationStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestion",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "languageCode":
+				return ec.fieldContext_TranslationFieldStatus_languageCode(ctx, field)
+			case "fields":
+				return ec.fieldContext_TranslationFieldStatus_fields(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TranslationFieldStatus", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestion_scoringMode(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestion_scoringMode,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.MapPinQuestion().ScoringMode(ctx, obj)
+		},
+		nil,
+		ec.marshalNMapPinScoringMode2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMapPinScoringMode,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestion_scoringMode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestion",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type MapPinScoringMode does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestion_mapWidth(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestion_mapWidth,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.MapPinQuestion().MapWidth(ctx, obj)
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestion_mapWidth(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestion",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestion_mapHeight(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestion_mapHeight,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.MapPinQuestion().MapHeight(ctx, obj)
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestion_mapHeight(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestion",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestion_fullPointsRadius(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestion_fullPointsRadius,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.MapPinQuestion().FullPointsRadius(ctx, obj)
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestion_fullPointsRadius(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestion",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestion_zeroPointsRadius(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestion_zeroPointsRadius,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.MapPinQuestion().ZeroPointsRadius(ctx, obj)
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestion_zeroPointsRadius(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestion",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestion_correctPosition(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestion_correctPosition,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.MapPinQuestion().CorrectPosition(ctx, obj)
+		},
+		nil,
+		ec.marshalOMapPoint2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMapPoint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestion_correctPosition(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestion",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "x":
+				return ec.fieldContext_MapPoint_x(ctx, field)
+			case "y":
+				return ec.fieldContext_MapPoint_y(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MapPoint", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestion_correctArea(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestion_correctArea,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.MapPinQuestion().CorrectArea(ctx, obj)
+		},
+		nil,
+		ec.marshalOMapPoint2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMapPointᚄ,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestion_correctArea(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestion",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "x":
+				return ec.fieldContext_MapPoint_x(ctx, field)
+			case "y":
+				return ec.fieldContext_MapPoint_y(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MapPoint", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPoint_x(ctx context.Context, field graphql.CollectedField, obj *model.MapPoint) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPoint_x,
+		func(ctx context.Context) (any, error) {
+			return obj.X, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPoint_x(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPoint",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPoint_y(ctx context.Context, field graphql.CollectedField, obj *model.MapPoint) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPoint_y,
+		func(ctx context.Context) (any, error) {
+			return obj.Y, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPoint_y(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPoint",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
 		},
 	}
 	return fc, nil
@@ -63476,7 +64518,7 @@ func (ec *executionContext) unmarshalInputCreateQuizQuestionInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"questionType", "questionText", "imageUrl", "questionOrder", "timeoutSeconds", "points", "bettingEnabled", "bettingMinPercentage", "bettingMaxPercentage", "bettingMinAbsolute", "bettingMaxAbsolute", "bettingMultiplierCorrect", "bettingMultiplierWrong", "allowMultipleSelection", "answerLabelStyle", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
+	fieldsInOrder := [...]string{"questionType", "questionText", "imageUrl", "questionOrder", "timeoutSeconds", "points", "bettingEnabled", "bettingMinPercentage", "bettingMaxPercentage", "bettingMinAbsolute", "bettingMaxAbsolute", "bettingMultiplierCorrect", "bettingMultiplierWrong", "allowMultipleSelection", "answerLabelStyle", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems", "mapPin"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -63623,6 +64665,13 @@ func (ec *executionContext) unmarshalInputCreateQuizQuestionInput(ctx context.Co
 				return it, err
 			}
 			it.OrderingItems = data
+		case "mapPin":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("mapPin"))
+			data, err := ec.unmarshalOMapPinConfigInput2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMapPinConfigInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MapPin = data
 		}
 	}
 
@@ -64768,6 +65817,109 @@ func (ec *executionContext) unmarshalInputLeaderboardFilter(ctx context.Context,
 				return it, err
 			}
 			it.SuperTeamID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputMapPinConfigInput(ctx context.Context, obj any) (model.MapPinConfigInput, error) {
+	var it model.MapPinConfigInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"scoringMode", "mapWidth", "mapHeight", "target", "fullPointsRadius", "zeroPointsRadius", "polygon"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "scoringMode":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scoringMode"))
+			data, err := ec.unmarshalNMapPinScoringMode2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMapPinScoringMode(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScoringMode = data
+		case "mapWidth":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("mapWidth"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MapWidth = data
+		case "mapHeight":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("mapHeight"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MapHeight = data
+		case "target":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("target"))
+			data, err := ec.unmarshalOMapPointInput2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMapPointInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Target = data
+		case "fullPointsRadius":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("fullPointsRadius"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FullPointsRadius = data
+		case "zeroPointsRadius":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zeroPointsRadius"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ZeroPointsRadius = data
+		case "polygon":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("polygon"))
+			data, err := ec.unmarshalOMapPointInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMapPointInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Polygon = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputMapPointInput(ctx context.Context, obj any) (model.MapPointInput, error) {
+	var it model.MapPointInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"x", "y"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "x":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("x"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.X = data
+		case "y":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("y"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Y = data
 		}
 	}
 
@@ -66323,7 +67475,7 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"questionText", "imageUrl", "questionOrder", "timeoutSeconds", "points", "bettingEnabled", "bettingMinPercentage", "bettingMaxPercentage", "bettingMinAbsolute", "bettingMaxAbsolute", "bettingMultiplierCorrect", "bettingMultiplierWrong", "clearBettingMinPercentage", "clearBettingMaxPercentage", "clearBettingMinAbsolute", "clearBettingMaxAbsolute", "clearBettingMultiplierCorrect", "clearBettingMultiplierWrong", "allowMultipleSelection", "answerLabelStyle", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
+	fieldsInOrder := [...]string{"questionText", "imageUrl", "questionOrder", "timeoutSeconds", "points", "bettingEnabled", "bettingMinPercentage", "bettingMaxPercentage", "bettingMinAbsolute", "bettingMaxAbsolute", "bettingMultiplierCorrect", "bettingMultiplierWrong", "clearBettingMinPercentage", "clearBettingMaxPercentage", "clearBettingMinAbsolute", "clearBettingMaxAbsolute", "clearBettingMultiplierCorrect", "clearBettingMultiplierWrong", "allowMultipleSelection", "answerLabelStyle", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems", "mapPin"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -66505,6 +67657,13 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 				return it, err
 			}
 			it.OrderingItems = data
+		case "mapPin":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("mapPin"))
+			data, err := ec.unmarshalOMapPinConfigInput2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMapPinConfigInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MapPin = data
 		}
 	}
 
@@ -67000,6 +68159,13 @@ func (ec *executionContext) _QuizQuestion(ctx context.Context, sel ast.Selection
 			return graphql.Null
 		}
 		return ec._NumberQuestion(ctx, sel, obj)
+	case model.MapPinQuestion:
+		return ec._MapPinQuestion(ctx, sel, &obj)
+	case *model.MapPinQuestion:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._MapPinQuestion(ctx, sel, obj)
 	case model.JSONQuestion:
 		return ec._JsonQuestion(ctx, sel, &obj)
 	case *model.JSONQuestion:
@@ -71997,6 +73163,465 @@ func (ec *executionContext) _LeaderboardFilterView(ctx context.Context, sel ast.
 			out.Values[i] = ec._LeaderboardFilterView_teamId(ctx, field, obj)
 		case "superTeamId":
 			out.Values[i] = ec._LeaderboardFilterView_superTeamId(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var mapPinQuestionImplementors = []string{"MapPinQuestion", "QuizQuestion"}
+
+func (ec *executionContext) _MapPinQuestion(ctx context.Context, sel ast.SelectionSet, obj *model.MapPinQuestion) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, mapPinQuestionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MapPinQuestion")
+		case "id":
+			out.Values[i] = ec._MapPinQuestion_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "quiz":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MapPinQuestion_quiz(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "questionText":
+			out.Values[i] = ec._MapPinQuestion_questionText(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "image":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MapPinQuestion_image(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "questionOrder":
+			out.Values[i] = ec._MapPinQuestion_questionOrder(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "timeoutSeconds":
+			out.Values[i] = ec._MapPinQuestion_timeoutSeconds(ctx, field, obj)
+		case "points":
+			out.Values[i] = ec._MapPinQuestion_points(ctx, field, obj)
+		case "bettingEnabled":
+			out.Values[i] = ec._MapPinQuestion_bettingEnabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "bettingMinPercentage":
+			out.Values[i] = ec._MapPinQuestion_bettingMinPercentage(ctx, field, obj)
+		case "bettingMaxPercentage":
+			out.Values[i] = ec._MapPinQuestion_bettingMaxPercentage(ctx, field, obj)
+		case "bettingMinAbsolute":
+			out.Values[i] = ec._MapPinQuestion_bettingMinAbsolute(ctx, field, obj)
+		case "bettingMaxAbsolute":
+			out.Values[i] = ec._MapPinQuestion_bettingMaxAbsolute(ctx, field, obj)
+		case "bettingMultiplierCorrect":
+			out.Values[i] = ec._MapPinQuestion_bettingMultiplierCorrect(ctx, field, obj)
+		case "bettingMultiplierWrong":
+			out.Values[i] = ec._MapPinQuestion_bettingMultiplierWrong(ctx, field, obj)
+		case "translationStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MapPinQuestion_translationStatus(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "scoringMode":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MapPinQuestion_scoringMode(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "mapWidth":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MapPinQuestion_mapWidth(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "mapHeight":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MapPinQuestion_mapHeight(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "fullPointsRadius":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MapPinQuestion_fullPointsRadius(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "zeroPointsRadius":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MapPinQuestion_zeroPointsRadius(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "correctPosition":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MapPinQuestion_correctPosition(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "correctArea":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MapPinQuestion_correctArea(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var mapPointImplementors = []string{"MapPoint"}
+
+func (ec *executionContext) _MapPoint(ctx context.Context, sel ast.SelectionSet, obj *model.MapPoint) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, mapPointImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MapPoint")
+		case "x":
+			out.Values[i] = ec._MapPoint_x(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "y":
+			out.Values[i] = ec._MapPoint_y(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -86604,6 +88229,25 @@ func (ec *executionContext) marshalNLeaderboardLimitMode2githubᚗcomᚋbccᚑme
 	return v
 }
 
+func (ec *executionContext) unmarshalNMapPinScoringMode2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMapPinScoringMode(ctx context.Context, v any) (model.MapPinScoringMode, error) {
+	var res model.MapPinScoringMode
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNMapPinScoringMode2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMapPinScoringMode(ctx context.Context, sel ast.SelectionSet, v model.MapPinScoringMode) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNMapPoint2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMapPoint(ctx context.Context, sel ast.SelectionSet, v model.MapPoint) graphql.Marshaler {
+	return ec._MapPoint(ctx, sel, &v)
+}
+
+func (ec *executionContext) unmarshalNMapPointInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMapPointInput(ctx context.Context, v any) (model.MapPointInput, error) {
+	res, err := ec.unmarshalInputMapPointInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalNMarkdownText2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMarkdownText(ctx context.Context, sel ast.SelectionSet, v model.MarkdownText) graphql.Marshaler {
 	return ec._MarkdownText(ctx, sel, &v)
 }
@@ -89973,6 +91617,94 @@ func (ec *executionContext) marshalOLeaderboardLimitMode2ᚖgithubᚗcomᚋbcc�
 		return graphql.Null
 	}
 	return v
+}
+
+func (ec *executionContext) unmarshalOMapPinConfigInput2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMapPinConfigInput(ctx context.Context, v any) (*model.MapPinConfigInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputMapPinConfigInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOMapPoint2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMapPointᚄ(ctx context.Context, sel ast.SelectionSet, v []model.MapPoint) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNMapPoint2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMapPoint(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalOMapPoint2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMapPoint(ctx context.Context, sel ast.SelectionSet, v *model.MapPoint) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._MapPoint(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOMapPointInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMapPointInputᚄ(ctx context.Context, v any) ([]model.MapPointInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]model.MapPointInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNMapPointInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMapPointInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOMapPointInput2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMapPointInput(ctx context.Context, v any) (*model.MapPointInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputMapPointInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOMarkdownText2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMarkdownText(ctx context.Context, sel ast.SelectionSet, v *model.MarkdownText) graphql.Marshaler {

@@ -442,6 +442,20 @@ models:
       ImageURL:
         type: "*string"
 
+  MapPinQuestion:
+    fields:
+      quiz:
+        resolver: true
+    extraFields:
+      QuizID:
+        type: string
+      ImageURL:
+        type: "*string"
+      # The whole map config, correct answer included. The GraphQL fields read
+      # it through resolvers, which hide the correct answer.
+      MapPin:
+        type: "github.com/bcc-media/wayfarer/internal/services/quizgrading.MapPinConfig"
+
   QuizOrderingItem:
     fields:
       question:
