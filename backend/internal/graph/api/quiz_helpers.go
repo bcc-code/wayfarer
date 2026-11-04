@@ -612,6 +612,8 @@ func convertResponseRowToInterface(row *sqlc.QuizResponse, questionType string) 
 		return convertToJsonResponse(row, answeredAt, timeSpentSeconds, pointsEarned, betAmount)
 	case "ORDERING":
 		return convertToOrderingResponse(row, answeredAt, timeSpentSeconds, pointsEarned, betAmount)
+	case "MAP_PIN":
+		return convertToMapPinResponse(row, answeredAt, timeSpentSeconds, pointsEarned, betAmount)
 	default:
 		// Default to FreeTextResponse for unknown types
 		return convertToFreeTextResponse(row, answeredAt, timeSpentSeconds, pointsEarned, betAmount)

@@ -71,22 +71,48 @@ func (r *Resolver) responseVerdict(ctx context.Context, submissionID string, ver
 	if verdict == nil {
 		return nil, nil
 	}
+	visible, err := r.responseResultVisible(ctx, submissionID)
+	if err != nil || !visible {
+		return nil, err
+	}
+	return verdict, nil
+}
 
+// responsePoints returns a response's stored points under the same rule as
+// responseVerdict. Used where the points give the answer away (MAP_PIN).
+func (r *Resolver) responsePoints(ctx context.Context, submissionID string, points *int) (*int, error) {
+	if points == nil {
+		return nil, nil
+	}
+	visible, err := r.responseResultVisible(ctx, submissionID)
+	if err != nil || !visible {
+		return nil, err
+	}
+	return points, nil
+}
+
+// responseResultVisible reports whether a submission's results may be shown:
+// not while its session is OPEN, for anyone. A submission without a session
+// (M2M) has nothing to hide them behind. A submission or session that can't be
+// found hides them: the foreign keys rule that out, but this is access control.
+func (r *Resolver) responseResultVisible(ctx context.Context, submissionID string) (bool, error) {
 	submission, err := r.Loaders.QuizSubmissionByIDLoader.Load(ctx, submissionID)()
 	if err != nil {
-		return nil, fmt.Errorf("failed to load submission: %w", err)
+		return false, fmt.Errorf("failed to load submission: %w", err)
 	}
-	if submission == nil || submission.SessionID == nil || *submission.SessionID == "" {
-		return verdict, nil
+	if submission == nil {
+		return false, nil
+	}
+	if submission.SessionID == nil || *submission.SessionID == "" {
+		return true, nil
 	}
 
 	session, err := r.Loaders.QuizSessionByIDLoader.Load(ctx, *submission.SessionID)()
 	if err != nil {
-		return nil, fmt.Errorf("failed to load session: %w", err)
+		return false, fmt.Errorf("failed to load session: %w", err)
 	}
-	if session != nil && session.State == string(model.QuizSessionStateOpen) {
-		return nil, nil
+	if session == nil {
+		return false, nil
 	}
-
-	return verdict, nil
+	return session.State != string(model.QuizSessionStateOpen), nil
 }

@@ -93,11 +93,12 @@ RETURNING quiz_responses.id, quiz_responses.submission_id, quiz_responses.questi
 -- name: GetQuizResponseWithContext :one
 SELECT
     r.id, r.submission_id, r.question_id, r.points_earned, r.bet_amount, r.score_journal_id,
-    s.user_id, s.quiz_id,
+    s.user_id, s.quiz_id, qq.question_type,
     q.project_id, q.name as quiz_name, q.challenge_id,
     c.event_id
 FROM quiz_responses r
 JOIN quiz_submissions s ON r.submission_id = s.id
+JOIN quiz_questions qq ON r.question_id = qq.id
 JOIN quizzes q ON s.quiz_id = q.id
 LEFT JOIN challenges c ON q.challenge_id = c.id
 WHERE r.id = @id::char(28);
@@ -105,11 +106,12 @@ WHERE r.id = @id::char(28);
 -- name: GetQuizResponsesWithContext :many
 SELECT
     r.id, r.submission_id, r.question_id, r.points_earned, r.bet_amount, r.score_journal_id,
-    s.user_id, s.quiz_id,
+    s.user_id, s.quiz_id, qq.question_type,
     q.project_id, q.name as quiz_name, q.challenge_id,
     c.event_id
 FROM quiz_responses r
 JOIN quiz_submissions s ON r.submission_id = s.id
+JOIN quiz_questions qq ON r.question_id = qq.id
 JOIN quizzes q ON s.quiz_id = q.id
 LEFT JOIN challenges c ON q.challenge_id = c.id
 WHERE r.id = ANY(@ids::char(28)[]);

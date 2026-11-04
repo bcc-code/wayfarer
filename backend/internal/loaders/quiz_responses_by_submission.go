@@ -3,6 +3,7 @@ package loaders
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database"
@@ -161,6 +162,22 @@ func quizResponsesBySubmissionBatchFunc(db *database.DB, c *cache.CacheWithRegis
 						PointsEarned:     pointsEarned,
 						BetAmount:        betAmount,
 						ScoreJournalID:   row.ScoreJournalID,
+					}
+				case "MAP_PIN":
+					var position model.MapPoint
+					if err := json.Unmarshal(row.JsonResponse, &position); err != nil {
+						slog.Error("failed to read map pin response", "response_id", row.ID, "error", err)
+					}
+					response = &model.MapPinResponse{
+						ID:                row.ID,
+						SubmissionID:      row.SubmissionID,
+						QuestionID:        row.QuestionID,
+						SubmittedPosition: &position,
+						AnsweredAt:        answeredAt,
+						TimeSpentSeconds:  timeSpentSeconds,
+						PointsEarnedValue: pointsEarned,
+						BetAmount:         betAmount,
+						ScoreJournalID:    row.ScoreJournalID,
 					}
 				default:
 					// Default to FreeTextResponse for unknown types

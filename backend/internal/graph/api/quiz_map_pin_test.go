@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -360,4 +361,171 @@ func TestConvertMapPinQuestion(t *testing.T) {
 		assert.Equal(t, "POINT_RADIUS", translated.MapPin.Mode)
 		assert.Equal(t, "Where?", q.QuestionText, "the cached question must not be changed")
 	})
+}
+
+func TestScoreQuizResponseMapPin(t *testing.T) {
+	pointRadius := scoredQuestion{
+		Type:   "MAP_PIN",
+		Points: ptrTo(100),
+		MapPin: quizgrading.MapPinConfig{
+			Mode: "POINT_RADIUS", Width: 1000, Height: 800,
+			Target:     &quizgrading.MapPoint{X: 500, Y: 300},
+			FullRadius: ptrTo(40.0), ZeroRadius: ptrTo(200.0),
+		},
+	}
+	polygon := scoredQuestion{
+		Type:   "MAP_PIN",
+		Points: ptrTo(30),
+		MapPin: quizgrading.MapPinConfig{
+			Mode: "POLYGON", Width: 1000, Height: 800,
+			Polygon: []quizgrading.MapPoint{{X: 100, Y: 100}, {X: 300, Y: 100}, {X: 200, Y: 300}},
+		},
+	}
+
+	tests := []struct {
+		name     string
+		question scoredQuestion
+		pin      quizgrading.MapPoint
+		points   int32
+	}{
+		{name: "POINT_RADIUS within the full radius", question: pointRadius, pin: quizgrading.MapPoint{X: 530, Y: 300}, points: 100},
+		{name: "POINT_RADIUS halfway", question: pointRadius, pin: quizgrading.MapPoint{X: 620, Y: 300}, points: 50},
+		{name: "POINT_RADIUS beyond the zero radius earns 0, not nil", question: pointRadius, pin: quizgrading.MapPoint{X: 900, Y: 300}, points: 0},
+		{name: "POLYGON inside", question: polygon, pin: quizgrading.MapPoint{X: 200, Y: 150}, points: 30},
+		{name: "POLYGON on a vertex", question: polygon, pin: quizgrading.MapPoint{X: 300, Y: 100}, points: 30},
+		{name: "POLYGON outside earns 0, not nil", question: polygon, pin: quizgrading.MapPoint{X: 500, Y: 500}, points: 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// No loaders: MAP_PIN must not go near the graded path.
+			isCorrect, points, err := scoreQuizResponse(context.Background(), nil, tt.question, quizgrading.Response{MapPosition: &tt.pin})
+			require.NoError(t, err)
+			assert.Nil(t, isCorrect, "MAP_PIN is never graded")
+			require.NotNil(t, points)
+			assert.Equal(t, tt.points, *points)
+		})
+	}
+
+	t.Run("no pin is an error", func(t *testing.T) {
+		_, _, err := scoreQuizResponse(context.Background(), nil, polygon, quizgrading.Response{})
+		assertFieldError(t, err, "mapPosition")
+	})
+
+	t.Run("a broken config is an error, not 0 points", func(t *testing.T) {
+		broken := polygon
+		broken.MapPin.Polygon = nil
+		_, points, err := scoreQuizResponse(context.Background(), nil, broken, quizgrading.Response{MapPosition: &quizgrading.MapPoint{X: 1, Y: 1}})
+		require.Error(t, err)
+		assert.Nil(t, points)
+	})
+
+	t.Run("ungraded types still earn nothing", func(t *testing.T) {
+		isCorrect, points, err := scoreQuizResponse(context.Background(), nil, scoredQuestion{Type: "FREE_TEXT", Points: ptrTo(10)}, quizgrading.Response{})
+		require.NoError(t, err)
+		assert.Nil(t, isCorrect)
+		assert.Nil(t, points)
+	})
+}
+
+func TestScoredQuestion(t *testing.T) {
+	t.Run("from the model carries the map config", func(t *testing.T) {
+		q := &model.MapPinQuestion{ID: "QQ001", Points: ptrTo(100), MapPin: quizgrading.MapPinConfig{Mode: "POLYGON", Width: 10}}
+		s := scoredQuestionFromModel(q)
+		assert.Equal(t, scoredQuestion{Type: "MAP_PIN", ID: "QQ001", Points: ptrTo(100), MapPin: q.MapPin}, s)
+	})
+
+	t.Run("from a row reads the map columns", func(t *testing.T) {
+		s, err := scoredQuestionFromRow(storedMapPinRow(t))
+		require.NoError(t, err)
+		assert.Equal(t, "MAP_PIN", s.Type)
+		assert.Equal(t, ptrTo(100), s.Points)
+		assert.Equal(t, "POINT_RADIUS", s.MapPin.Mode)
+		assert.Equal(t, &quizgrading.MapPoint{X: 500, Y: 300}, s.MapPin.Target)
+	})
+
+	t.Run("from a row with an unreadable config is an error", func(t *testing.T) {
+		row := storedMapPinRow(t)
+		row.MapPolygon = []byte(`[1]`)
+		_, err := scoredQuestionFromRow(row)
+		assert.Error(t, err)
+	})
+
+	t.Run("other types ignore the map columns", func(t *testing.T) {
+		s, err := scoredQuestionFromRow(&sqlc.GetQuizQuestionByIDRow{ID: "QQ002", QuestionType: "PREDEFINED", MapPolygon: []byte(`[1]`)})
+		require.NoError(t, err)
+		assert.Equal(t, quizgrading.MapPinConfig{}, s.MapPin)
+	})
+}
+
+func TestMapPinAnswer(t *testing.T) {
+	c := quizgrading.MapPinConfig{Mode: "POLYGON", Width: 1000, Height: 800}
+
+	pin, stored, err := mapPinAnswer(&model.MapPointInput{X: 1000, Y: 0}, c)
+	require.NoError(t, err, "the map's edges are on the map")
+	assert.Equal(t, quizgrading.MapPoint{X: 1000, Y: 0}, pin)
+	assert.JSONEq(t, `{"x":1000,"y":0}`, string(stored))
+
+	for name, p := range map[string]*model.MapPointInput{
+		"missing":       nil,
+		"left of map":   {X: -0.5, Y: 10},
+		"below the map": {X: 10, Y: 800.01},
+	} {
+		t.Run("rejects "+name, func(t *testing.T) {
+			_, stored, err := mapPinAnswer(p, c)
+			assertFieldError(t, err, "mapPosition")
+			assert.Nil(t, stored)
+		})
+	}
+}
+
+func TestCheckMapPinAnswerFields(t *testing.T) {
+	pin := &model.MapPointInput{X: 1, Y: 1}
+	text := "here"
+
+	assert.NoError(t, checkMapPinAnswerFields("MAP_PIN", model.SubmitQuizAnswerInput{MapPosition: pin}))
+	assert.NoError(t, checkMapPinAnswerFields("MAP_PIN", model.SubmitQuizAnswerInput{MapPosition: pin, BetAmount: ptrTo(0)}),
+		"a zero bet is no bet")
+	assert.NoError(t, checkMapPinAnswerFields("FREE_TEXT", model.SubmitQuizAnswerInput{TextResponse: &text}))
+	assert.NoError(t, checkMapPinAnswerFields("FREE_TEXT", model.SubmitQuizAnswerInput{TextResponse: &text, SubmittedOrder: []string{"a"}}),
+		"other types keep ignoring each other's fields")
+
+	for name, input := range map[string]model.SubmitQuizAnswerInput{
+		"selectedAnswerIds": {MapPosition: pin, SelectedAnswerIds: []string{"A1"}},
+		"textResponse":      {MapPosition: pin, TextResponse: &text},
+		"numberResponse":    {MapPosition: pin, NumberResponse: ptrTo(1.0)},
+		"jsonResponse":      {JSONResponse: ptrTo(`{"x":1,"y":1}`)},
+		"submittedOrder":    {SubmittedOrder: []string{"a"}},
+	} {
+		t.Run("MAP_PIN rejects "+name, func(t *testing.T) {
+			err := checkMapPinAnswerFields("MAP_PIN", input)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "on a MAP_PIN question")
+		})
+	}
+
+	t.Run("other types reject mapPosition", func(t *testing.T) {
+		err := checkMapPinAnswerFields("JSON", model.SubmitQuizAnswerInput{MapPosition: pin})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "cannot set a MAP_PIN answer on a JSON question")
+	})
+}
+
+func TestConvertMapPinResponse(t *testing.T) {
+	row := &sqlc.QuizResponse{
+		ID:           "QR001",
+		SubmissionID: "QS001",
+		QuestionID:   "QQ001",
+		JsonResponse: []byte(`{"x": 512.5, "y": 300}`),
+		PointsEarned: ptrTo(int32(97)),
+	}
+
+	r, ok := convertResponseRowToInterface(row, "MAP_PIN").(*model.MapPinResponse)
+	require.True(t, ok, "MAP_PIN must not fall back to FreeTextResponse")
+	assert.Equal(t, "QR001", r.ID)
+	assert.Equal(t, "QS001", r.SubmissionID)
+	assert.Equal(t, "QQ001", r.QuestionID)
+	assert.Equal(t, &model.MapPoint{X: 512.5, Y: 300}, r.SubmittedPosition)
+	assert.Equal(t, ptrTo(97), r.PointsEarnedValue)
+	assert.Nil(t, r.PointsEarned, "the stored points only reach clients through the gated resolver")
+	assert.Nil(t, r.IsCorrect)
 }

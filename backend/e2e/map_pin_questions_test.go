@@ -47,6 +47,26 @@ type mapPinQuestion struct {
 	CorrectArea      []mapPoint `json:"correctArea"`
 }
 
+const mapPinResponseFields = `
+	__typename
+	... on MapPinResponse {
+		id
+		submittedPosition { x y }
+		pointsEarned
+		distance
+		isCorrect
+	}
+`
+
+type mapPinResponse struct {
+	Typename          string    `json:"__typename"`
+	ID                string    `json:"id"`
+	SubmittedPosition *mapPoint `json:"submittedPosition"`
+	PointsEarned      *int      `json:"pointsEarned"`
+	Distance          *float64  `json:"distance"`
+	IsCorrect         *bool     `json:"isCorrect"`
+}
+
 // pointRadiusMapPin is a 1000x800 map with full points within 40 px of
 // (500, 300) and none from 200 px on.
 func pointRadiusMapPin() map[string]any {
@@ -184,6 +204,21 @@ func TestMapPinQuestions(t *testing.T) {
 		}
 		require.NoError(t, resp.UnmarshalData(&result))
 		return result.AddQuizQuestion
+	}
+
+	// addMapPinQuestionAt adds a MAP_PIN question at the given position in the
+	// quiz and returns its ID.
+	addMapPinQuestionAt := func(t *testing.T, quizID string, order, points int, mapPin map[string]any) string {
+		t.Helper()
+		resp := addQuestionResp(t, quizID, map[string]any{
+			"questionType": "MAP_PIN", "questionOrder": order, "points": points, "mapPin": mapPin,
+		})
+		require.False(t, resp.HasErrors(), "failed to add question: %s", resp.ErrorMessage())
+		var result struct {
+			AddQuizQuestion mapPinQuestion `json:"addQuizQuestion"`
+		}
+		require.NoError(t, resp.UnmarshalData(&result))
+		return result.AddQuizQuestion.ID
 	}
 
 	updateQuestionResp := func(t *testing.T, questionID string, input map[string]any) *testutil.GraphQLResponse {
@@ -585,5 +620,339 @@ func TestMapPinQuestions(t *testing.T) {
 				})
 			})
 		}
+	})
+	submitAnswerResp := func(t *testing.T, submissionID string, input map[string]any) *testutil.GraphQLResponse {
+		t.Helper()
+		return client.WithAuth(userToken).MustExecute(t, `
+			mutation SubmitAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
+				submitQuizAnswer(submissionId: $submissionId, input: $input) {`+mapPinResponseFields+`}
+			}
+		`, map[string]any{"submissionId": submissionID, "input": input})
+	}
+
+	// submitPin answers a question with a pin and returns the response.
+	submitPin := func(t *testing.T, submissionID, questionID string, x, y float64) mapPinResponse {
+		t.Helper()
+		resp := submitAnswerResp(t, submissionID, map[string]any{
+			"questionId":  questionID,
+			"mapPosition": map[string]any{"x": x, "y": y},
+		})
+		require.False(t, resp.HasErrors(), "failed to submit pin: %s", resp.ErrorMessage())
+		var result struct {
+			SubmitQuizAnswer mapPinResponse `json:"submitQuizAnswer"`
+		}
+		require.NoError(t, resp.UnmarshalData(&result))
+		return result.SubmitQuizAnswer
+	}
+
+	updateAnswerResp := func(t *testing.T, responseID string, input map[string]any) *testutil.GraphQLResponse {
+		t.Helper()
+		return client.WithAuth(userToken).MustExecute(t, `
+			mutation UpdateAnswer($responseId: ID!, $input: UpdateQuizAnswerInput!) {
+				updateQuizAnswer(responseId: $responseId, input: $input) {`+mapPinResponseFields+`}
+			}
+		`, map[string]any{"responseId": responseID, "input": input})
+	}
+
+	// readResponses returns the submission's responses by question ID, as seen
+	// by the holder of token, through quizSubmission (the responses dataloader).
+	readResponses := func(t *testing.T, submissionID, token string) map[string]mapPinResponse {
+		t.Helper()
+		resp := client.WithAuth(token).MustExecute(t, `
+			query GetSubmission($id: ID!) {
+				quizSubmission(id: $id) { responses {`+mapPinResponseFields+` question { id } } }
+			}
+		`, map[string]any{"id": submissionID})
+		require.False(t, resp.HasErrors(), "failed to read submission: %s", resp.ErrorMessage())
+		var result struct {
+			QuizSubmission struct {
+				Responses []struct {
+					mapPinResponse
+					Question struct{ ID string } `json:"question"`
+				} `json:"responses"`
+			} `json:"quizSubmission"`
+		}
+		require.NoError(t, resp.UnmarshalData(&result))
+		byQuestion := make(map[string]mapPinResponse, len(result.QuizSubmission.Responses))
+		for _, r := range result.QuizSubmission.Responses {
+			byQuestion[r.Question.ID] = r.mapPinResponse
+		}
+		return byQuestion
+	}
+
+	storedPoints := func(t *testing.T, responseID string) *int32 {
+		t.Helper()
+		row, err := dbMgr.DB.Queries.GetQuizResponseByID(ctx, responseID)
+		require.NoError(t, err)
+		return row.PointsEarned
+	}
+
+	t.Run("answering scores the pin", func(t *testing.T) {
+		quizID := createQuiz(t, "Map pin answers")
+		near := addMapPinQuestionAt(t, quizID, 0, 100, pointRadiusMapPin())
+		halfway := addMapPinQuestionAt(t, quizID, 1, 100, pointRadiusMapPin())
+		far := addMapPinQuestionAt(t, quizID, 2, 100, pointRadiusMapPin())
+		inside := addMapPinQuestionAt(t, quizID, 3, 30, trianglePinArea())
+		onEdge := addMapPinQuestionAt(t, quizID, 4, 30, trianglePinArea())
+		outside := addMapPinQuestionAt(t, quizID, 5, 30, trianglePinArea())
+		sessionID, submissionID := startSession(t, quizID)
+
+		pins := []struct {
+			name       string
+			questionID string
+			x, y       float64
+			points     int32
+			distance   *float64
+		}{
+			{name: "POINT_RADIUS within the full radius", questionID: near, x: 530, y: 300, points: 100, distance: ptr(30.0)},
+			{name: "POINT_RADIUS halfway to the zero radius", questionID: halfway, x: 500, y: 420, points: 50, distance: ptr(120.0)},
+			{name: "POINT_RADIUS beyond the zero radius", questionID: far, x: 900, y: 700, points: 0, distance: ptr(565.685424949238)},
+			{name: "POLYGON inside", questionID: inside, x: 200, y: 150, points: 30},
+			{name: "POLYGON on an edge", questionID: onEdge, x: 200, y: 100, points: 30},
+			{name: "POLYGON outside", questionID: outside, x: 500, y: 500, points: 0},
+		}
+
+		for _, p := range pins {
+			t.Run("submit: "+p.name, func(t *testing.T) {
+				r := submitPin(t, submissionID, p.questionID, p.x, p.y)
+				assert.Equal(t, "MapPinResponse", r.Typename)
+				assert.Equal(t, &mapPoint{p.x, p.y}, r.SubmittedPosition)
+				assert.Nil(t, r.IsCorrect, "MAP_PIN is never graded")
+				assert.Nil(t, r.PointsEarned, "points are hidden while the session is OPEN")
+				assert.Nil(t, r.Distance, "distance is hidden while the session is OPEN")
+
+				assert.Equal(t, ptr(p.points), storedPoints(t, r.ID), "stored points_earned")
+			})
+		}
+
+		t.Run("hidden from everyone while the session is OPEN", func(t *testing.T) {
+			for name, token := range map[string]string{"respondent": userToken, "manager": adminToken} {
+				responses := readResponses(t, submissionID, token)
+				require.Len(t, responses, len(pins), name)
+				for _, p := range pins {
+					r := responses[p.questionID]
+					assert.Equal(t, "MapPinResponse", r.Typename, name)
+					assert.Equal(t, &mapPoint{p.x, p.y}, r.SubmittedPosition, name)
+					assert.Nil(t, r.PointsEarned, "%s: %s", name, p.name)
+					assert.Nil(t, r.Distance, "%s: %s", name, p.name)
+				}
+			}
+		})
+
+		t.Run("another user can't read the pins", func(t *testing.T) {
+			resp := client.WithAuth(otherUserToken).MustExecute(t, `
+				query GetSubmission($id: ID!) {
+					quizSubmission(id: $id) { responses { ... on MapPinResponse { submittedPosition { x y } } } }
+				}
+			`, map[string]any{"id": submissionID})
+			require.True(t, resp.HasErrors())
+			assert.Contains(t, resp.ErrorMessage(), "unauthorized")
+		})
+
+		lockSession(t, sessionID)
+		t.Run("shown once the session is LOCKED", func(t *testing.T) {
+			responses := readResponses(t, submissionID, userToken)
+			for _, p := range pins {
+				r := responses[p.questionID]
+				assert.Equal(t, ptr(int(p.points)), r.PointsEarned, p.name)
+				if p.distance == nil {
+					assert.Nil(t, r.Distance, "%s: POLYGON has no distance", p.name)
+				} else if assert.NotNil(t, r.Distance, p.name) {
+					assert.InDelta(t, *p.distance, *r.Distance, 1e-9, p.name)
+				}
+			}
+		})
+	})
+
+	t.Run("submit rejects", func(t *testing.T) {
+		quizID := createQuiz(t, "Map pin answer rules")
+		questionID := addMapPinQuestionAt(t, quizID, 0, 100, pointRadiusMapPin())
+		resp := addQuestionResp(t, quizID, map[string]any{"questionType": "FREE_TEXT", "questionOrder": 1})
+		require.False(t, resp.HasErrors(), "failed to add question: %s", resp.ErrorMessage())
+		questions, err := dbMgr.DB.Queries.GetQuizQuestionsByQuizID(ctx, quizID)
+		require.NoError(t, err)
+		require.Len(t, questions, 2)
+		freeTextID := questions[1].ID
+		_, submissionID := startSession(t, quizID)
+
+		for _, tt := range []struct {
+			name    string
+			input   map[string]any
+			message string
+		}{
+			{name: "no mapPosition", input: map[string]any{"questionId": questionID}, message: "mapPosition: is required"},
+			{name: "a pin right of the map", input: map[string]any{"questionId": questionID, "mapPosition": map[string]any{"x": 1000.5, "y": 10}}, message: "mapPosition"},
+			{name: "a pin above the map", input: map[string]any{"questionId": questionID, "mapPosition": map[string]any{"x": 10, "y": -1}}, message: "mapPosition"},
+			{name: "jsonResponse on MAP_PIN", input: map[string]any{"questionId": questionID, "jsonResponse": `{"x": 500, "y": 300}`}, message: "cannot set a JSON answer on a MAP_PIN question"},
+			{name: "a bet", input: map[string]any{"questionId": questionID, "mapPosition": map[string]any{"x": 500, "y": 300}, "betAmount": 5}, message: "betAmount"},
+			{name: "mapPosition on another type", input: map[string]any{"questionId": freeTextID, "mapPosition": map[string]any{"x": 1, "y": 1}}, message: "cannot set a MAP_PIN answer on a FREE_TEXT question"},
+		} {
+			t.Run(tt.name, func(t *testing.T) {
+				resp := submitAnswerResp(t, submissionID, tt.input)
+				require.True(t, resp.HasErrors(), "expected the answer to be rejected")
+				assert.Contains(t, resp.ErrorMessage(), tt.message)
+			})
+		}
+
+		responses, err := dbMgr.DB.Queries.GetQuizResponsesBySubmissionID(ctx, submissionID)
+		require.NoError(t, err)
+		assert.Empty(t, responses, "rejected answers must not be stored")
+	})
+
+	t.Run("updating a pin rescores it", func(t *testing.T) {
+		quizID := createQuiz(t, "Map pin answer updates")
+		pointQuestion := addMapPinQuestionAt(t, quizID, 0, 100, pointRadiusMapPin())
+		areaQuestion := addMapPinQuestionAt(t, quizID, 1, 30, trianglePinArea())
+		_, submissionID := startSession(t, quizID)
+
+		pointResponse := submitPin(t, submissionID, pointQuestion, 500, 300)
+		areaResponse := submitPin(t, submissionID, areaQuestion, 200, 150)
+		require.Equal(t, ptr(int32(100)), storedPoints(t, pointResponse.ID))
+		require.Equal(t, ptr(int32(30)), storedPoints(t, areaResponse.ID))
+
+		update := func(t *testing.T, responseID string, x, y float64) {
+			t.Helper()
+			resp := updateAnswerResp(t, responseID, map[string]any{"mapPosition": map[string]any{"x": x, "y": y}})
+			require.False(t, resp.HasErrors(), "failed to update pin: %s", resp.ErrorMessage())
+			var result struct {
+				UpdateQuizAnswer mapPinResponse `json:"updateQuizAnswer"`
+			}
+			require.NoError(t, resp.UnmarshalData(&result))
+			assert.Equal(t, "MapPinResponse", result.UpdateQuizAnswer.Typename)
+			assert.Equal(t, &mapPoint{x, y}, result.UpdateQuizAnswer.SubmittedPosition)
+		}
+
+		t.Run("POINT_RADIUS from the target to beyond the zero radius", func(t *testing.T) {
+			update(t, pointResponse.ID, 900, 300)
+			assert.Equal(t, ptr(int32(0)), storedPoints(t, pointResponse.ID), "the old 100 points must not be kept")
+			update(t, pointResponse.ID, 620, 300)
+			assert.Equal(t, ptr(int32(50)), storedPoints(t, pointResponse.ID))
+		})
+
+		t.Run("POLYGON from inside to outside", func(t *testing.T) {
+			update(t, areaResponse.ID, 500, 500)
+			assert.Equal(t, ptr(int32(0)), storedPoints(t, areaResponse.ID), "the old 30 points must not be kept")
+			update(t, areaResponse.ID, 100, 100)
+			assert.Equal(t, ptr(int32(30)), storedPoints(t, areaResponse.ID), "a vertex counts as inside")
+		})
+
+		t.Run("rejects", func(t *testing.T) {
+			for name, tt := range map[string]struct {
+				input   map[string]any
+				message string
+			}{
+				"a pin outside the map": {input: map[string]any{"mapPosition": map[string]any{"x": 10, "y": 801}}, message: "mapPosition"},
+				"jsonResponse":          {input: map[string]any{"jsonResponse": `{"x": 500, "y": 300}`}, message: "cannot set a JSON answer on a MAP_PIN question"},
+				"a bet":                 {input: map[string]any{"betAmount": 5}, message: "betAmount"},
+			} {
+				t.Run(name, func(t *testing.T) {
+					resp := updateAnswerResp(t, pointResponse.ID, tt.input)
+					require.True(t, resp.HasErrors(), "expected the update to be rejected")
+					assert.Contains(t, resp.ErrorMessage(), tt.message)
+				})
+			}
+			assert.Equal(t, ptr(int32(50)), storedPoints(t, pointResponse.ID), "rejected updates leave the points alone")
+			row, err := dbMgr.DB.Queries.GetQuizResponseByID(ctx, pointResponse.ID)
+			require.NoError(t, err)
+			assert.JSONEq(t, `{"x": 620, "y": 300}`, string(row.JsonResponse))
+		})
+	})
+
+	t.Run("M2M submissions score pins", func(t *testing.T) {
+		m2mToken, err := testutil.GenerateM2MToken()
+		require.NoError(t, err)
+
+		quizID := createQuiz(t, "Map pin M2M")
+		pointQuestion := addMapPinQuestionAt(t, quizID, 0, 100, pointRadiusMapPin())
+		areaQuestion := addMapPinQuestionAt(t, quizID, 1, 30, trianglePinArea())
+
+		submit := func(t *testing.T, responses []map[string]any) *testutil.GraphQLResponse {
+			t.Helper()
+			return client.WithAuth(m2mToken).MustExecute(t, `
+				mutation Submit($quizId: ID!, $userId: ID!, $responses: [SubmitQuizAnswerInput!]!, $completedAt: DateTime) {
+					createQuizSubmission(quizId: $quizId, userId: $userId, responses: $responses, completedAt: $completedAt) {
+						id score maxScore
+					}
+				}
+			`, map[string]any{
+				"quizId":      quizID,
+				"userId":      userID,
+				"responses":   responses,
+				"completedAt": time.Now().Format(time.RFC3339),
+			})
+		}
+
+		t.Run("rejects jsonResponse on MAP_PIN", func(t *testing.T) {
+			resp := submit(t, []map[string]any{{"questionId": pointQuestion, "jsonResponse": `{"x": 500, "y": 300}`}})
+			require.True(t, resp.HasErrors())
+			assert.Contains(t, resp.ErrorMessage(), "cannot set a JSON answer on a MAP_PIN question")
+		})
+
+		resp := submit(t, []map[string]any{
+			{"questionId": pointQuestion, "mapPosition": map[string]any{"x": 620, "y": 300}},
+			{"questionId": areaQuestion, "mapPosition": map[string]any{"x": 200, "y": 150}},
+		})
+		require.False(t, resp.HasErrors(), "failed to create submission: %s", resp.ErrorMessage())
+		var result struct {
+			CreateQuizSubmission struct {
+				ID       string `json:"id"`
+				Score    *int   `json:"score"`
+				MaxScore *int   `json:"maxScore"`
+			} `json:"createQuizSubmission"`
+		}
+		require.NoError(t, resp.UnmarshalData(&result))
+		assert.Equal(t, ptr(50+30), result.CreateQuizSubmission.Score)
+		assert.Equal(t, ptr(100+30), result.CreateQuizSubmission.MaxScore, "MAP_PIN points count towards the max score")
+
+		responses, err := dbMgr.DB.Queries.GetQuizResponsesBySubmissionID(ctx, result.CreateQuizSubmission.ID)
+		require.NoError(t, err)
+		require.Len(t, responses, 2)
+		points := map[string]*int32{}
+		for _, r := range responses {
+			points[r.QuestionID] = r.PointsEarned
+			assert.Nil(t, r.IsCorrect)
+		}
+		assert.Equal(t, ptr(int32(50)), points[pointQuestion])
+		assert.Equal(t, ptr(int32(30)), points[areaQuestion])
+
+		t.Run("results are visible without a session", func(t *testing.T) {
+			read := readResponses(t, result.CreateQuizSubmission.ID, userToken)
+			require.Len(t, read, 2)
+
+			pin := read[pointQuestion]
+			assert.Equal(t, "MapPinResponse", pin.Typename)
+			assert.Equal(t, &mapPoint{620, 300}, pin.SubmittedPosition)
+			assert.Equal(t, ptr(50), pin.PointsEarned)
+			if assert.NotNil(t, pin.Distance) {
+				assert.InDelta(t, 120.0, *pin.Distance, 1e-9)
+			}
+
+			area := read[areaQuestion]
+			assert.Equal(t, ptr(30), area.PointsEarned)
+			assert.Nil(t, area.Distance, "POLYGON has no distance")
+		})
+
+		t.Run("recordBetResult rejects a MAP_PIN response", func(t *testing.T) {
+			var responseID string
+			for _, r := range responses {
+				if r.QuestionID == pointQuestion {
+					responseID = r.ID
+				}
+			}
+
+			single := client.WithAuth(m2mToken).MustExecute(t, `
+				mutation Record($input: RecordBetResultInput!) { recordBetResult(input: $input) { id } }
+			`, map[string]any{"input": map[string]any{"responseId": responseID, "pointsEarned": 999}})
+			require.True(t, single.HasErrors())
+			assert.Contains(t, single.ErrorMessage(), "MAP_PIN")
+
+			batch := client.WithAuth(m2mToken).MustExecute(t, `
+				mutation Record($inputs: [RecordBetResultInput!]!) { recordBetResults(inputs: $inputs) { id } }
+			`, map[string]any{"inputs": []map[string]any{{"responseId": responseID, "pointsEarned": 999}}})
+			require.True(t, batch.HasErrors())
+			assert.Contains(t, batch.ErrorMessage(), "MAP_PIN")
+
+			assert.Equal(t, ptr(int32(50)), storedPoints(t, responseID), "the pin's points must not be overwritten")
+		})
 	})
 }
