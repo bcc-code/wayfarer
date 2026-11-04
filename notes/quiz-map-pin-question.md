@@ -50,10 +50,16 @@ Migration 00119 adds nullable columns to `quiz_questions`:
 
 One CHECK (`quiz_questions_map_pin_check`) enforces that each row has exactly
 the configuration it needs: every map column NULL for other question types;
-mode and a positive size for `MAP_PIN`; target in bounds and
-`0 <= full < zero` with no polygon for `POINT_RADIUS`; a 3–100 element array
-with no target or radii for `POLYGON`. Geometric validity (simple polygon,
-non-zero area) is enforced in Go — a CHECK cannot express it.
+mode, a positive size, `points > 0` and betting off for `MAP_PIN`; target in
+bounds and `0 <= full < zero` with no polygon for `POINT_RADIUS`; a 3–100
+element array with no target or radii for `POLYGON`. Geometric validity
+(simple polygon, non-zero area, the shape of each vertex) is enforced in Go —
+a CHECK cannot express it.
+
+A CHECK passes when its expression is NULL, so the constraint is wrapped in
+`COALESCE(…, false)`; without it, a missing width or target would make a
+comparison NULL and slip through. `e2e/map_pin_question_schema_test.go`
+exercises the constraint and the update semantics directly against Postgres.
 
 GraphQL takes the whole config as one `mapPin: MapPinConfigInput` on create
 and update. On update it replaces all map columns at once (omitted = leave
