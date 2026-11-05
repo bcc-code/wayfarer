@@ -118,6 +118,33 @@ type OrderingItemResult {
 }
 
 """
+Scored by points, not graded. The correct position or area is on the question.
+"""
+type MapPinQuestionResults implements QuizQuestionResults {
+    question: QuizQuestion!
+    responseCount: Int!
+    fullPointsCount: Int!
+    averagePoints: Float
+    """
+    POINT_RADIUS only.
+    """
+    averageDistance: Float
+    """
+    In the order last answered.
+    """
+    pins: [MapPinResult!]!
+}
+
+type MapPinResult {
+    position: MapPoint!
+    pointsEarned: Int
+    """
+    Pixels from the correct position. POINT_RADIUS only.
+    """
+    distance: Float
+}
+
+"""
 Arbitrary structured data, so only a count. Kept in the list so question
 numbering stays intact.
 """

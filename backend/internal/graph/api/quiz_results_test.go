@@ -5,6 +5,7 @@ import (
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/services/quizgrading"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -359,5 +360,106 @@ func TestBuildQuestionResults(t *testing.T) {
 		assert.Zero(t, got.ResponseCount)
 		assert.Zero(t, got.CorrectCount)
 		assert.Empty(t, got.Options)
+	})
+}
+
+func TestBuildMapPinResults(t *testing.T) {
+	pinRow := func(position string, points int32) *sqlc.GetQuizMapPinResponsesRow {
+		return &sqlc.GetQuizMapPinResponsesRow{QuestionID: "QQ001", Position: []byte(position), PointsEarned: &points}
+	}
+
+	// 100 points, full within 40 px of (500, 300), none from 200 px on.
+	pointRadius := &model.MapPinQuestion{
+		ID:     "QQ001",
+		Points: ptrTo(100),
+		MapPin: quizgrading.MapPinConfig{
+			Mode: "POINT_RADIUS", Width: 1000, Height: 800,
+			Target:     &quizgrading.MapPoint{X: 500, Y: 300},
+			FullRadius: ptrTo(40.0), ZeroRadius: ptrTo(200.0),
+		},
+	}
+	polygon := &model.MapPinQuestion{
+		ID:     "QQ002",
+		Points: ptrTo(30),
+		MapPin: quizgrading.MapPinConfig{
+			Mode: "POLYGON", Width: 1000, Height: 800,
+			Polygon: []quizgrading.MapPoint{{X: 100, Y: 100}, {X: 300, Y: 100}, {X: 200, Y: 300}},
+		},
+	}
+
+	t.Run("POINT_RADIUS", func(t *testing.T) {
+		res := buildMapPinResults(pointRadius, []*sqlc.GetQuizMapPinResponsesRow{
+			pinRow(`{"x": 530, "y": 300}`, 100),
+			// 40.5 px is beyond the full radius, but rounds up to the maximum.
+			pinRow(`{"x": 540.5, "y": 300}`, 100),
+			pinRow(`{"x": 620, "y": 300}`, 50),
+			pinRow(`{"x": 900, "y": 300}`, 0),
+		}, 4)
+
+		assert.Same(t, pointRadius, res.Question)
+		assert.Equal(t, 4, res.ResponseCount)
+		assert.Equal(t, 2, res.FullPointsCount, "counted by points earned, so the rounded-up pin counts")
+		require.NotNil(t, res.AveragePoints)
+		assert.InDelta(t, 62.5, *res.AveragePoints, 1e-9)
+		require.NotNil(t, res.AverageDistance)
+		assert.InDelta(t, (30+40.5+120+400)/4.0, *res.AverageDistance, 1e-9)
+
+		require.Len(t, res.Pins, 4)
+		wantDistances := []float64{30, 40.5, 120, 400}
+		for i, pin := range res.Pins {
+			require.NotNil(t, pin.Distance, "pin %d", i)
+			assert.InDelta(t, wantDistances[i], *pin.Distance, 1e-9, "pin %d", i)
+		}
+		assert.Equal(t, &model.MapPoint{X: 540.5, Y: 300}, res.Pins[1].Position)
+		assert.Equal(t, ptrTo(50), res.Pins[2].PointsEarned)
+	})
+
+	t.Run("POLYGON has no distances", func(t *testing.T) {
+		res := buildMapPinResults(polygon, []*sqlc.GetQuizMapPinResponsesRow{
+			pinRow(`{"x": 200, "y": 150}`, 30),
+			pinRow(`{"x": 500, "y": 500}`, 0),
+		}, 2)
+
+		assert.Equal(t, 1, res.FullPointsCount)
+		require.NotNil(t, res.AveragePoints)
+		assert.InDelta(t, 15.0, *res.AveragePoints, 1e-9)
+		assert.Nil(t, res.AverageDistance)
+		require.Len(t, res.Pins, 2)
+		for _, pin := range res.Pins {
+			assert.Nil(t, pin.Distance)
+		}
+		assert.Equal(t, &model.MapPoint{X: 200, Y: 150}, res.Pins[0].Position)
+		assert.Equal(t, ptrTo(30), res.Pins[0].PointsEarned)
+	})
+
+	t.Run("no responses", func(t *testing.T) {
+		res := buildMapPinResults(pointRadius, nil, 0)
+		assert.Equal(t, 0, res.FullPointsCount)
+		assert.Nil(t, res.AveragePoints, "no average rather than a confident 0")
+		assert.Nil(t, res.AverageDistance)
+		assert.NotNil(t, res.Pins, "an empty list, not null")
+		assert.Empty(t, res.Pins)
+	})
+
+	t.Run("a pin that can't be decoded is skipped", func(t *testing.T) {
+		res := buildMapPinResults(pointRadius, []*sqlc.GetQuizMapPinResponsesRow{
+			pinRow(`"not a pin"`, 100),
+			pinRow(`{"x": 620, "y": 300}`, 50),
+		}, 2)
+		require.Len(t, res.Pins, 1)
+		assert.Equal(t, 0, res.FullPointsCount)
+		assert.InDelta(t, 50.0, *res.AveragePoints, 1e-9)
+	})
+
+	t.Run("buildQuestionResults routes MAP_PIN to it", func(t *testing.T) {
+		in := quizResultsInputs{
+			responseCounts: map[string]*sqlc.GetQuizResponseCountsByQuestionRow{"QQ002": {QuestionID: "QQ002", ResponseCount: 1}},
+			mapPins:        map[string][]*sqlc.GetQuizMapPinResponsesRow{"QQ002": {pinRow(`{"x": 200, "y": 150}`, 30)}},
+		}
+		res, ok := buildQuestionResults(polygon, nil, in).(*model.MapPinQuestionResults)
+		require.True(t, ok, "MAP_PIN must not fall back to JsonQuestionResults")
+		assert.Equal(t, 1, res.ResponseCount)
+		assert.Equal(t, 1, res.FullPointsCount)
+		require.Len(t, res.Pins, 1)
 	})
 }
