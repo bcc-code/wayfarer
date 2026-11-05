@@ -1267,6 +1267,25 @@ func (this MapPinQuestion) GetTranslationStatus() []TranslationFieldStatus {
 	return interfaceSlice
 }
 
+// Scored by points, not graded. The correct position or area is on the question.
+type MapPinQuestionResults struct {
+	Question        QuizQuestion `json:"question"`
+	ResponseCount   int          `json:"responseCount"`
+	FullPointsCount int          `json:"fullPointsCount"`
+	AveragePoints   *float64     `json:"averagePoints,omitempty"`
+	// POINT_RADIUS only.
+	AverageDistance *float64 `json:"averageDistance,omitempty"`
+	// In the order last answered.
+	Pins []MapPinResult `json:"pins"`
+}
+
+func (MapPinQuestionResults) IsQuizQuestionResults()         {}
+func (this MapPinQuestionResults) GetQuestion() QuizQuestion { return this.Question }
+
+// Submissions that answered this question. Every percentage below is a share
+// of this, never of the quiz-wide submission count.
+func (this MapPinQuestionResults) GetResponseCount() int { return this.ResponseCount }
+
 type MapPinResponse struct {
 	ID                   string            `json:"id"`
 	Submission           *QuizSubmission   `json:"submission"`
@@ -1297,6 +1316,13 @@ func (this MapPinResponse) GetBetAmount() *int                { return this.BetA
 func (this MapPinResponse) GetJournalEntry() *ScoreJournal    { return this.JournalEntry }
 func (this MapPinResponse) GetIsCorrect() *bool               { return this.IsCorrect }
 func (this MapPinResponse) GetSettledBetMultiplier() *float64 { return this.SettledBetMultiplier }
+
+type MapPinResult struct {
+	Position     *MapPoint `json:"position"`
+	PointsEarned *int      `json:"pointsEarned,omitempty"`
+	// Pixels from the correct position. POINT_RADIUS only.
+	Distance *float64 `json:"distance,omitempty"`
+}
 
 type MapPoint struct {
 	X float64 `json:"x"`

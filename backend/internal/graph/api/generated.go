@@ -599,6 +599,15 @@ type ComplexityRoot struct {
 		ZeroPointsRadius         func(childComplexity int) int
 	}
 
+	MapPinQuestionResults struct {
+		AverageDistance func(childComplexity int) int
+		AveragePoints   func(childComplexity int) int
+		FullPointsCount func(childComplexity int) int
+		Pins            func(childComplexity int) int
+		Question        func(childComplexity int) int
+		ResponseCount   func(childComplexity int) int
+	}
+
 	MapPinResponse struct {
 		AnsweredAt           func(childComplexity int) int
 		BetAmount            func(childComplexity int) int
@@ -612,6 +621,12 @@ type ComplexityRoot struct {
 		Submission           func(childComplexity int) int
 		SubmittedPosition    func(childComplexity int) int
 		TimeSpentSeconds     func(childComplexity int) int
+	}
+
+	MapPinResult struct {
+		Distance     func(childComplexity int) int
+		PointsEarned func(childComplexity int) int
+		Position     func(childComplexity int) int
 	}
 
 	MapPoint struct {
@@ -4346,6 +4361,43 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.MapPinQuestion.ZeroPointsRadius(childComplexity), true
 
+	case "MapPinQuestionResults.averageDistance":
+		if e.complexity.MapPinQuestionResults.AverageDistance == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestionResults.AverageDistance(childComplexity), true
+	case "MapPinQuestionResults.averagePoints":
+		if e.complexity.MapPinQuestionResults.AveragePoints == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestionResults.AveragePoints(childComplexity), true
+	case "MapPinQuestionResults.fullPointsCount":
+		if e.complexity.MapPinQuestionResults.FullPointsCount == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestionResults.FullPointsCount(childComplexity), true
+	case "MapPinQuestionResults.pins":
+		if e.complexity.MapPinQuestionResults.Pins == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestionResults.Pins(childComplexity), true
+	case "MapPinQuestionResults.question":
+		if e.complexity.MapPinQuestionResults.Question == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestionResults.Question(childComplexity), true
+	case "MapPinQuestionResults.responseCount":
+		if e.complexity.MapPinQuestionResults.ResponseCount == nil {
+			break
+		}
+
+		return e.complexity.MapPinQuestionResults.ResponseCount(childComplexity), true
+
 	case "MapPinResponse.answeredAt":
 		if e.complexity.MapPinResponse.AnsweredAt == nil {
 			break
@@ -4418,6 +4470,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.MapPinResponse.TimeSpentSeconds(childComplexity), true
+
+	case "MapPinResult.distance":
+		if e.complexity.MapPinResult.Distance == nil {
+			break
+		}
+
+		return e.complexity.MapPinResult.Distance(childComplexity), true
+	case "MapPinResult.pointsEarned":
+		if e.complexity.MapPinResult.PointsEarned == nil {
+			break
+		}
+
+		return e.complexity.MapPinResult.PointsEarned(childComplexity), true
+	case "MapPinResult.position":
+		if e.complexity.MapPinResult.Position == nil {
+			break
+		}
+
+		return e.complexity.MapPinResult.Position(childComplexity), true
 
 	case "MapPoint.x":
 		if e.complexity.MapPoint.X == nil {
@@ -12772,6 +12843,33 @@ type OrderingItemResult {
     correctPosition: Int!
     correctlyPlacedCount: Int!
     percentage: Float!
+}
+
+"""
+Scored by points, not graded. The correct position or area is on the question.
+"""
+type MapPinQuestionResults implements QuizQuestionResults {
+    question: QuizQuestion!
+    responseCount: Int!
+    fullPointsCount: Int!
+    averagePoints: Float
+    """
+    POINT_RADIUS only.
+    """
+    averageDistance: Float
+    """
+    In the order last answered.
+    """
+    pins: [MapPinResult!]!
+}
+
+type MapPinResult {
+    position: MapPoint!
+    pointsEarned: Int
+    """
+    Pixels from the correct position. POINT_RADIUS only.
+    """
+    distance: Float
 }
 
 """
@@ -28028,6 +28126,188 @@ func (ec *executionContext) fieldContext_MapPinQuestion_correctArea(_ context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _MapPinQuestionResults_question(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestionResults) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestionResults_question,
+		func(ctx context.Context) (any, error) {
+			return obj.Question, nil
+		},
+		nil,
+		ec.marshalNQuizQuestion2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizQuestion,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestionResults_question(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestionResults",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestionResults_responseCount(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestionResults) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestionResults_responseCount,
+		func(ctx context.Context) (any, error) {
+			return obj.ResponseCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestionResults_responseCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestionResults",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestionResults_fullPointsCount(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestionResults) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestionResults_fullPointsCount,
+		func(ctx context.Context) (any, error) {
+			return obj.FullPointsCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestionResults_fullPointsCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestionResults",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestionResults_averagePoints(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestionResults) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestionResults_averagePoints,
+		func(ctx context.Context) (any, error) {
+			return obj.AveragePoints, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestionResults_averagePoints(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestionResults",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestionResults_averageDistance(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestionResults) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestionResults_averageDistance,
+		func(ctx context.Context) (any, error) {
+			return obj.AverageDistance, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestionResults_averageDistance(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestionResults",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinQuestionResults_pins(ctx context.Context, field graphql.CollectedField, obj *model.MapPinQuestionResults) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinQuestionResults_pins,
+		func(ctx context.Context) (any, error) {
+			return obj.Pins, nil
+		},
+		nil,
+		ec.marshalNMapPinResult2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMapPinResultᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinQuestionResults_pins(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinQuestionResults",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "position":
+				return ec.fieldContext_MapPinResult_position(ctx, field)
+			case "pointsEarned":
+				return ec.fieldContext_MapPinResult_pointsEarned(ctx, field)
+			case "distance":
+				return ec.fieldContext_MapPinResult_distance(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MapPinResult", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _MapPinResponse_id(ctx context.Context, field graphql.CollectedField, obj *model.MapPinResponse) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -28430,6 +28710,99 @@ func (ec *executionContext) _MapPinResponse_settledBetMultiplier(ctx context.Con
 func (ec *executionContext) fieldContext_MapPinResponse_settledBetMultiplier(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "MapPinResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinResult_position(ctx context.Context, field graphql.CollectedField, obj *model.MapPinResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinResult_position,
+		func(ctx context.Context) (any, error) {
+			return obj.Position, nil
+		},
+		nil,
+		ec.marshalNMapPoint2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMapPoint,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinResult_position(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "x":
+				return ec.fieldContext_MapPoint_x(ctx, field)
+			case "y":
+				return ec.fieldContext_MapPoint_y(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MapPoint", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinResult_pointsEarned(ctx context.Context, field graphql.CollectedField, obj *model.MapPinResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinResult_pointsEarned,
+		func(ctx context.Context) (any, error) {
+			return obj.PointsEarned, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinResult_pointsEarned(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapPinResult_distance(ctx context.Context, field graphql.CollectedField, obj *model.MapPinResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapPinResult_distance,
+		func(ctx context.Context) (any, error) {
+			return obj.Distance, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapPinResult_distance(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapPinResult",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -68762,6 +69135,13 @@ func (ec *executionContext) _QuizQuestionResults(ctx context.Context, sel ast.Se
 			return graphql.Null
 		}
 		return ec._NumberQuestionResults(ctx, sel, obj)
+	case model.MapPinQuestionResults:
+		return ec._MapPinQuestionResults(ctx, sel, &obj)
+	case *model.MapPinQuestionResults:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._MapPinQuestionResults(ctx, sel, obj)
 	case model.JSONQuestionResults:
 		return ec._JsonQuestionResults(ctx, sel, &obj)
 	case *model.JSONQuestionResults:
@@ -74160,6 +74540,64 @@ func (ec *executionContext) _MapPinQuestion(ctx context.Context, sel ast.Selecti
 	return out
 }
 
+var mapPinQuestionResultsImplementors = []string{"MapPinQuestionResults", "QuizQuestionResults"}
+
+func (ec *executionContext) _MapPinQuestionResults(ctx context.Context, sel ast.SelectionSet, obj *model.MapPinQuestionResults) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, mapPinQuestionResultsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MapPinQuestionResults")
+		case "question":
+			out.Values[i] = ec._MapPinQuestionResults_question(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "responseCount":
+			out.Values[i] = ec._MapPinQuestionResults_responseCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "fullPointsCount":
+			out.Values[i] = ec._MapPinQuestionResults_fullPointsCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "averagePoints":
+			out.Values[i] = ec._MapPinQuestionResults_averagePoints(ctx, field, obj)
+		case "averageDistance":
+			out.Values[i] = ec._MapPinQuestionResults_averageDistance(ctx, field, obj)
+		case "pins":
+			out.Values[i] = ec._MapPinQuestionResults_pins(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var mapPinResponseImplementors = []string{"MapPinResponse", "QuizResponse"}
 
 func (ec *executionContext) _MapPinResponse(ctx context.Context, sel ast.SelectionSet, obj *model.MapPinResponse) graphql.Marshaler {
@@ -74362,6 +74800,49 @@ func (ec *executionContext) _MapPinResponse(ctx context.Context, sel ast.Selecti
 			out.Values[i] = ec._MapPinResponse_isCorrect(ctx, field, obj)
 		case "settledBetMultiplier":
 			out.Values[i] = ec._MapPinResponse_settledBetMultiplier(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var mapPinResultImplementors = []string{"MapPinResult"}
+
+func (ec *executionContext) _MapPinResult(ctx context.Context, sel ast.SelectionSet, obj *model.MapPinResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, mapPinResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MapPinResult")
+		case "position":
+			out.Values[i] = ec._MapPinResult_position(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pointsEarned":
+			out.Values[i] = ec._MapPinResult_pointsEarned(ctx, field, obj)
+		case "distance":
+			out.Values[i] = ec._MapPinResult_distance(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -89011,6 +89492,54 @@ func (ec *executionContext) unmarshalNLeaderboardLimitMode2githubᚗcomᚋbccᚑ
 
 func (ec *executionContext) marshalNLeaderboardLimitMode2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardLimitMode(ctx context.Context, sel ast.SelectionSet, v model.LeaderboardLimitMode) graphql.Marshaler {
 	return v
+}
+
+func (ec *executionContext) marshalNMapPinResult2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMapPinResult(ctx context.Context, sel ast.SelectionSet, v model.MapPinResult) graphql.Marshaler {
+	return ec._MapPinResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNMapPinResult2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMapPinResultᚄ(ctx context.Context, sel ast.SelectionSet, v []model.MapPinResult) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNMapPinResult2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMapPinResult(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNMapPinScoringMode2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMapPinScoringMode(ctx context.Context, v any) (model.MapPinScoringMode, error) {

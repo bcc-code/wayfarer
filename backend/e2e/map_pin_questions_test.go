@@ -955,4 +955,158 @@ func TestMapPinQuestions(t *testing.T) {
 			assert.Equal(t, ptr(int32(50)), storedPoints(t, responseID), "the pin's points must not be overwritten")
 		})
 	})
+
+	t.Run("finalize and results", func(t *testing.T) {
+		m2mToken, err := testutil.GenerateM2MToken()
+		require.NoError(t, err)
+
+		quizID := createQuiz(t, "Map pin results")
+		resp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation UpdateQuiz($id: ID!, $input: UpdateQuizInput!) { updateQuiz(id: $id, input: $input) { id } }
+		`, map[string]any{"id": quizID, "input": map[string]any{"completionPoints": 10}})
+		require.False(t, resp.HasErrors(), "failed to set completion points: %s", resp.ErrorMessage())
+
+		pointQuestion := addMapPinQuestionAt(t, quizID, 0, 100, pointRadiusMapPin())
+		areaQuestion := addMapPinQuestionAt(t, quizID, 1, 30, trianglePinArea())
+
+		// 50 + 30 points. Locked first: finalizing while OPEN is the known gap.
+		sessionID, submissionID := startSession(t, quizID)
+		submitPin(t, submissionID, pointQuestion, 620, 300)
+		submitPin(t, submissionID, areaQuestion, 200, 150)
+		lockSession(t, sessionID)
+
+		resp = client.WithAuth(userToken).MustExecute(t, `
+			mutation Finalize($id: ID!) { finalizeQuiz(submissionId: $id) { score maxScore pointsAwarded } }
+		`, map[string]any{"id": submissionID})
+		require.False(t, resp.HasErrors(), "failed to finalize: %s", resp.ErrorMessage())
+		var finalized struct {
+			FinalizeQuiz struct {
+				Score         *int `json:"score"`
+				MaxScore      *int `json:"maxScore"`
+				PointsAwarded *int `json:"pointsAwarded"`
+			} `json:"finalizeQuiz"`
+		}
+		require.NoError(t, resp.UnmarshalData(&finalized))
+
+		t.Run("finalize sums the pins' points", func(t *testing.T) {
+			assert.Equal(t, ptr(50+30), finalized.FinalizeQuiz.Score)
+			assert.Equal(t, ptr(100+30), finalized.FinalizeQuiz.MaxScore)
+			assert.Equal(t, ptr(10+50+30), finalized.FinalizeQuiz.PointsAwarded, "completion points plus the pins")
+
+			var points, entries int
+			require.NoError(t, dbMgr.DB.Pool.QueryRow(ctx, `
+				SELECT COALESCE(SUM(points), 0), COUNT(*) FROM score_journal
+				WHERE user_id = $1 AND source_type = 'QUIZ' AND source_id = $2
+			`, userID, quizID).Scan(&points, &entries))
+			assert.Equal(t, 1, entries)
+			assert.Equal(t, 10+50+30, points, "the QUIZ journal entry carries the pins' points")
+		})
+
+		// M2M: 40.5 px out rounds up to full points; the second pin is outside.
+		resp = client.WithAuth(m2mToken).MustExecute(t, `
+			mutation Submit($quizId: ID!, $userId: ID!, $responses: [SubmitQuizAnswerInput!]!, $completedAt: DateTime) {
+				createQuizSubmission(quizId: $quizId, userId: $userId, responses: $responses, completedAt: $completedAt) { id }
+			}
+		`, map[string]any{
+			"quizId": quizID,
+			"userId": otherUserID,
+			"responses": []map[string]any{
+				{"questionId": pointQuestion, "mapPosition": map[string]any{"x": 540.5, "y": 300}},
+				{"questionId": areaQuestion, "mapPosition": map[string]any{"x": 500, "y": 500}},
+			},
+			"completedAt": time.Now().Format(time.RFC3339),
+		})
+		require.False(t, resp.HasErrors(), "failed to create submission: %s", resp.ErrorMessage())
+
+		type pinResult struct {
+			Position     mapPoint `json:"position"`
+			PointsEarned *int     `json:"pointsEarned"`
+			Distance     *float64 `json:"distance"`
+		}
+		type questionResults struct {
+			Typename        string         `json:"__typename"`
+			Question        mapPinQuestion `json:"question"`
+			ResponseCount   int            `json:"responseCount"`
+			FullPointsCount int            `json:"fullPointsCount"`
+			AveragePoints   *float64       `json:"averagePoints"`
+			AverageDistance *float64       `json:"averageDistance"`
+			Pins            []pinResult    `json:"pins"`
+		}
+		readResults := func(t *testing.T, token string) (*testutil.GraphQLResponse, []questionResults) {
+			t.Helper()
+			resp := client.WithAuth(token).MustExecute(t, `
+				query Results($quizId: ID!) {
+					quizResults(quizId: $quizId) {
+						questions {
+							__typename
+							responseCount
+							question {`+mapPinQuestionFields+`}
+							... on MapPinQuestionResults {
+								fullPointsCount
+								averagePoints
+								averageDistance
+								pins { position { x y } pointsEarned distance }
+							}
+						}
+					}
+				}
+			`, map[string]any{"quizId": quizID})
+			if resp.HasErrors() {
+				return resp, nil
+			}
+			var result struct {
+				QuizResults struct {
+					Questions []questionResults `json:"questions"`
+				} `json:"quizResults"`
+			}
+			require.NoError(t, resp.UnmarshalData(&result))
+			return resp, result.QuizResults.Questions
+		}
+
+		_, results := readResults(t, adminToken)
+		require.Len(t, results, 2)
+
+		t.Run("POINT_RADIUS results", func(t *testing.T) {
+			r := results[0]
+			assert.Equal(t, "MapPinQuestionResults", r.Typename)
+			assert.Equal(t, "MapPinQuestion", r.Question.Typename)
+			assert.Equal(t, pointQuestion, r.Question.ID)
+			assert.Equal(t, &mapPoint{500, 300}, r.Question.CorrectPosition, "the manager sees the target with the results")
+			assert.Equal(t, 2, r.ResponseCount)
+			assert.Equal(t, 1, r.FullPointsCount, "the pin 40.5 px out rounded up to full points")
+			if assert.NotNil(t, r.AveragePoints) {
+				assert.InDelta(t, (50+100)/2.0, *r.AveragePoints, 1e-9)
+			}
+			if assert.NotNil(t, r.AverageDistance) {
+				assert.InDelta(t, (120+40.5)/2, *r.AverageDistance, 1e-9)
+			}
+			assert.Equal(t, []pinResult{
+				{Position: mapPoint{620, 300}, PointsEarned: ptr(50), Distance: ptr(120.0)},
+				{Position: mapPoint{540.5, 300}, PointsEarned: ptr(100), Distance: ptr(40.5)},
+			}, r.Pins, "in the order they were answered")
+		})
+
+		t.Run("POLYGON results", func(t *testing.T) {
+			r := results[1]
+			assert.Equal(t, "MapPinQuestionResults", r.Typename)
+			assert.Equal(t, areaQuestion, r.Question.ID)
+			assert.Equal(t, triangleArea, r.Question.CorrectArea)
+			assert.Equal(t, 2, r.ResponseCount)
+			assert.Equal(t, 1, r.FullPointsCount)
+			if assert.NotNil(t, r.AveragePoints) {
+				assert.InDelta(t, 15.0, *r.AveragePoints, 1e-9)
+			}
+			assert.Nil(t, r.AverageDistance, "POLYGON has no distance")
+			assert.Equal(t, []pinResult{
+				{Position: mapPoint{200, 150}, PointsEarned: ptr(30)},
+				{Position: mapPoint{500, 500}, PointsEarned: ptr(0)},
+			}, r.Pins, "in the order they were answered")
+		})
+
+		t.Run("results are for managers only", func(t *testing.T) {
+			resp, _ := readResults(t, userToken)
+			require.True(t, resp.HasErrors())
+			assert.Contains(t, resp.ErrorMessage(), "unauthorized")
+		})
+	})
 }

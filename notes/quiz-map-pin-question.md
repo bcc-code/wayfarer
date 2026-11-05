@@ -227,7 +227,17 @@ note.
 - `averageDistance` — `POINT_RADIUS` only; null for `POLYGON`, where distance
   means nothing
 - `pins` — position, points and (`POINT_RADIUS` only) distance for every
-  response
+  response, in the order each answer was last changed (`answered_at`, then
+  the response ID for a stable order)
+
+Like every per-question result, it pools completed submissions only, across
+all sessions and M2M imports. One query (`GetQuizMapPinResponses`) loads the
+pins for the whole quiz; `buildMapPinResults` computes distances in Go with
+`MapPinScore`, so the panel and the scoring use the same formula. A pin that
+can't be decoded is skipped and logged rather than failing the page; the API
+only stores valid pins, so that only happens to damaged data, and
+`responseCount` (the same count as on every results type) then exceeds the
+number of pins. The averages are null when there is nothing to average.
 
 ## Implementation steps
 
@@ -236,8 +246,9 @@ note.
 3. Migration 00119 + `quiz_questions.sql`
 4. GraphQL `MapPinQuestion`: create/update/read, rules, geometry gating
 5. Answering: `mapPosition`, `MapPinResponse`, scoring helper, guards
-6. `MapPinQuestionResults`
-7. E2E tests for both modes
+6. `MapPinQuestionResults`, plus the remaining e2e checks (finalize and
+   results). The e2e test `e2e/map_pin_questions_test.go` grew with steps 4–6
+   instead of landing as a separate step 7.
 
 Frontend (zoomable map, admin target/polygon editor, `QuizChallenge.vue`
 typename allowlists, review mode) is not part of these steps.

@@ -47,6 +47,55 @@ func (q *Queries) GetQuizFreeTextResponses(ctx context.Context, quizid string) (
 	return items, nil
 }
 
+const GetQuizMapPinResponses = `-- name: GetQuizMapPinResponses :many
+SELECT
+    r.id,
+    r.question_id,
+    r.json_response AS position,
+    r.points_earned
+FROM quiz_responses r
+JOIN quiz_submissions s ON s.id = r.submission_id
+JOIN quiz_questions q ON q.id = r.question_id
+WHERE s.quiz_id = $1::char(28)
+    AND s.completed_at IS NOT NULL
+    AND q.question_type = 'MAP_PIN'
+    AND r.json_response IS NOT NULL
+ORDER BY r.question_id, r.answered_at, r.id
+`
+
+type GetQuizMapPinResponsesRow struct {
+	ID           string `json:"id"`
+	QuestionID   string `json:"question_id"`
+	Position     []byte `json:"position"`
+	PointsEarned *int32 `json:"points_earned"`
+}
+
+// The pin is {"x", "y"} in json_response; r.id breaks answered_at ties.
+func (q *Queries) GetQuizMapPinResponses(ctx context.Context, quizid string) ([]*GetQuizMapPinResponsesRow, error) {
+	rows, err := q.db.Query(ctx, GetQuizMapPinResponses, quizid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetQuizMapPinResponsesRow{}
+	for rows.Next() {
+		var i GetQuizMapPinResponsesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.QuestionID,
+			&i.Position,
+			&i.PointsEarned,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetQuizNumberResponses = `-- name: GetQuizNumberResponses :many
 SELECT
     r.question_id,

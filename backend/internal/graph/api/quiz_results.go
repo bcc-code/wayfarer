@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"math"
 	"sort"
 	"strings"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/services/quizgrading"
 )
 
 // Counting happens in SQL (queries/quiz_results.sql); these shape the rows into
@@ -226,6 +228,7 @@ type quizResultsInputs struct {
 	numbers        map[string][]float64
 	freeText       map[string][]string
 	ordering       map[string][][]byte
+	mapPins        map[string][]*sqlc.GetQuizMapPinResponsesRow
 }
 
 // `answers` carries predefined answers for PREDEFINED and ordering items for
@@ -245,7 +248,7 @@ func buildQuestionResults(
 		correctCount = int(counts.CorrectCount)
 	}
 
-	switch question.(type) {
+	switch q := question.(type) {
 	case *model.PredefinedQuestion:
 		return buildPredefinedResults(question, answers, in.answerCounts[id], responseCount, correctCount)
 	case *model.NumberQuestion:
@@ -272,6 +275,8 @@ func buildQuestionResults(
 		}
 	case *model.OrderingQuestion:
 		return buildOrderingResults(question, answers, in.ordering[id], responseCount, correctCount)
+	case *model.MapPinQuestion:
+		return buildMapPinResults(q, in.mapPins[id], responseCount)
 	default:
 		// JSON, and anything added to the enum since.
 		return &model.JSONQuestionResults{
@@ -344,7 +349,68 @@ func buildOrderingResults(
 	}
 }
 
-// Five queries for the whole page, whatever the question count.
+// Distances come from MapPinScore, as in scoring. A pin that can't be decoded
+// is logged and skipped, like decodeOrderingSubmissions.
+func buildMapPinResults(
+	question *model.MapPinQuestion,
+	rows []*sqlc.GetQuizMapPinResponsesRow,
+	responseCount int,
+) *model.MapPinQuestionResults {
+	pins := make([]model.MapPinResult, 0, len(rows))
+	fullPointsCount := 0
+	var points, distances []float64
+
+	for _, row := range rows {
+		var position quizgrading.MapPoint
+		if err := json.Unmarshal(row.Position, &position); err != nil {
+			slog.Error("failed to read MAP_PIN response", "question_id", row.QuestionID, "response_id", row.ID, "error", err)
+			continue
+		}
+		pin := model.MapPinResult{Position: &model.MapPoint{X: position.X, Y: position.Y}}
+
+		if row.PointsEarned != nil {
+			earned := int(*row.PointsEarned)
+			pin.PointsEarned = &earned
+			points = append(points, float64(earned))
+			if question.Points != nil && earned == *question.Points {
+				fullPointsCount++
+			}
+		}
+
+		if question.MapPin.Mode == quizgrading.MapPinModePointRadius {
+			if _, distance, err := quizgrading.MapPinScore(question.MapPin, 0, position); err == nil && distance != nil {
+				pin.Distance = distance
+				distances = append(distances, *distance)
+			}
+		}
+
+		pins = append(pins, pin)
+	}
+
+	return &model.MapPinQuestionResults{
+		Question:        question,
+		ResponseCount:   responseCount,
+		FullPointsCount: fullPointsCount,
+		AveragePoints:   average(points),
+		AverageDistance: average(distances),
+		Pins:            pins,
+	}
+}
+
+// Nil for no values, rather than a confident 0.
+func average(values []float64) *float64 {
+	if len(values) == 0 {
+		return nil
+	}
+	sum := 0.0
+	for _, v := range values {
+		sum += v
+	}
+	avg := sum / float64(len(values))
+	return &avg
+}
+
+// Six queries for the whole page, whatever the question count.
 func (r *Resolver) loadQuizResultsInputs(ctx context.Context, quizID string) (quizResultsInputs, error) {
 	in := quizResultsInputs{
 		responseCounts: map[string]*sqlc.GetQuizResponseCountsByQuestionRow{},
@@ -352,6 +418,7 @@ func (r *Resolver) loadQuizResultsInputs(ctx context.Context, quizID string) (qu
 		numbers:        map[string][]float64{},
 		freeText:       map[string][]string{},
 		ordering:       map[string][][]byte{},
+		mapPins:        map[string][]*sqlc.GetQuizMapPinResponsesRow{},
 	}
 
 	counts, err := r.DB.Queries.GetQuizResponseCountsByQuestion(ctx, quizID)
@@ -397,6 +464,14 @@ func (r *Resolver) loadQuizResultsInputs(ctx context.Context, quizID string) (qu
 	}
 	for _, row := range ordering {
 		in.ordering[row.QuestionID] = append(in.ordering[row.QuestionID], row.SubmittedOrder)
+	}
+
+	mapPins, err := r.DB.Queries.GetQuizMapPinResponses(ctx, quizID)
+	if err != nil {
+		return in, fmt.Errorf("failed to load quiz map pin responses: %w", err)
+	}
+	for _, row := range mapPins {
+		in.mapPins[row.QuestionID] = append(in.mapPins[row.QuestionID], row)
 	}
 
 	return in, nil
