@@ -279,11 +279,12 @@ func (q *Queries) GetQuizResponseScoreJournalID(ctx context.Context, id string) 
 const GetQuizResponseWithContext = `-- name: GetQuizResponseWithContext :one
 SELECT
     r.id, r.submission_id, r.question_id, r.points_earned, r.bet_amount, r.score_journal_id,
-    s.user_id, s.quiz_id,
+    s.user_id, s.quiz_id, qq.question_type,
     q.project_id, q.name as quiz_name, q.challenge_id,
     c.event_id
 FROM quiz_responses r
 JOIN quiz_submissions s ON r.submission_id = s.id
+JOIN quiz_questions qq ON r.question_id = qq.id
 JOIN quizzes q ON s.quiz_id = q.id
 LEFT JOIN challenges c ON q.challenge_id = c.id
 WHERE r.id = $1::char(28)
@@ -298,6 +299,7 @@ type GetQuizResponseWithContextRow struct {
 	ScoreJournalID *string `json:"score_journal_id"`
 	UserID         string  `json:"user_id"`
 	QuizID         string  `json:"quiz_id"`
+	QuestionType   string  `json:"question_type"`
 	ProjectID      string  `json:"project_id"`
 	QuizName       string  `json:"quiz_name"`
 	ChallengeID    string  `json:"challenge_id"`
@@ -316,6 +318,7 @@ func (q *Queries) GetQuizResponseWithContext(ctx context.Context, id string) (*G
 		&i.ScoreJournalID,
 		&i.UserID,
 		&i.QuizID,
+		&i.QuestionType,
 		&i.ProjectID,
 		&i.QuizName,
 		&i.ChallengeID,
@@ -447,11 +450,12 @@ func (q *Queries) GetQuizResponsesBySubmissionIDs(ctx context.Context, submissio
 const GetQuizResponsesWithContext = `-- name: GetQuizResponsesWithContext :many
 SELECT
     r.id, r.submission_id, r.question_id, r.points_earned, r.bet_amount, r.score_journal_id,
-    s.user_id, s.quiz_id,
+    s.user_id, s.quiz_id, qq.question_type,
     q.project_id, q.name as quiz_name, q.challenge_id,
     c.event_id
 FROM quiz_responses r
 JOIN quiz_submissions s ON r.submission_id = s.id
+JOIN quiz_questions qq ON r.question_id = qq.id
 JOIN quizzes q ON s.quiz_id = q.id
 LEFT JOIN challenges c ON q.challenge_id = c.id
 WHERE r.id = ANY($1::char(28)[])
@@ -466,6 +470,7 @@ type GetQuizResponsesWithContextRow struct {
 	ScoreJournalID *string `json:"score_journal_id"`
 	UserID         string  `json:"user_id"`
 	QuizID         string  `json:"quiz_id"`
+	QuestionType   string  `json:"question_type"`
 	ProjectID      string  `json:"project_id"`
 	QuizName       string  `json:"quiz_name"`
 	ChallengeID    string  `json:"challenge_id"`
@@ -490,6 +495,7 @@ func (q *Queries) GetQuizResponsesWithContext(ctx context.Context, ids []string)
 			&i.ScoreJournalID,
 			&i.UserID,
 			&i.QuizID,
+			&i.QuestionType,
 			&i.ProjectID,
 			&i.QuizName,
 			&i.ChallengeID,

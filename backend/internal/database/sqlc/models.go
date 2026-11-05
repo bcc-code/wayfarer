@@ -531,6 +531,14 @@ type QuizQuestion struct {
 	BettingMultiplierWrong   pgtype.Numeric     `json:"betting_multiplier_wrong"`
 	AnswerLabelStyle         string             `json:"answer_label_style"`
 	ImageUrl                 *string            `json:"image_url"`
+	MapScoringMode           *string            `json:"map_scoring_mode"`
+	MapWidth                 *int32             `json:"map_width"`
+	MapHeight                *int32             `json:"map_height"`
+	MapTargetX               *float64           `json:"map_target_x"`
+	MapTargetY               *float64           `json:"map_target_y"`
+	MapFullPointsRadius      *float64           `json:"map_full_points_radius"`
+	MapZeroPointsRadius      *float64           `json:"map_zero_points_radius"`
+	MapPolygon               []byte             `json:"map_polygon"`
 }
 
 type QuizQuestionTranslation struct {

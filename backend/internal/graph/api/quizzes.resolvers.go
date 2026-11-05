@@ -144,6 +144,99 @@ func (r *jsonResponseResolver) SettledBetMultiplier(ctx context.Context, obj *mo
 	return SettledBetMultiplier(obj.ScoreJournalID, obj.BetAmount, obj.PointsEarned), nil
 }
 
+// Quiz is the resolver for the quiz field.
+func (r *mapPinQuestionResolver) Quiz(ctx context.Context, obj *model.MapPinQuestion) (*model.Quiz, error) {
+	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
+	quiz, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+	return r.ApplyTranslationToQuiz(ctx, quiz), nil
+}
+
+// Image is the resolver for the image field.
+func (r *mapPinQuestionResolver) Image(ctx context.Context, obj *model.MapPinQuestion) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.ImageURL)
+}
+
+// TranslationStatus is the resolver for the translationStatus field.
+func (r *mapPinQuestionResolver) TranslationStatus(ctx context.Context, obj *model.MapPinQuestion) ([]model.TranslationFieldStatus, error) {
+	return r.quizQuestionTranslationStatus(ctx, obj.ID)
+}
+
+// ScoringMode is the resolver for the scoringMode field.
+func (r *mapPinQuestionResolver) ScoringMode(ctx context.Context, obj *model.MapPinQuestion) (model.MapPinScoringMode, error) {
+	return model.MapPinScoringMode(obj.MapPin.Mode), nil
+}
+
+// MapWidth is the resolver for the mapWidth field.
+func (r *mapPinQuestionResolver) MapWidth(ctx context.Context, obj *model.MapPinQuestion) (int, error) {
+	return obj.MapPin.Width, nil
+}
+
+// MapHeight is the resolver for the mapHeight field.
+func (r *mapPinQuestionResolver) MapHeight(ctx context.Context, obj *model.MapPinQuestion) (int, error) {
+	return obj.MapPin.Height, nil
+}
+
+// FullPointsRadius is the resolver for the fullPointsRadius field.
+func (r *mapPinQuestionResolver) FullPointsRadius(ctx context.Context, obj *model.MapPinQuestion) (*float64, error) {
+	return obj.MapPin.FullRadius, nil
+}
+
+// ZeroPointsRadius is the resolver for the zeroPointsRadius field.
+func (r *mapPinQuestionResolver) ZeroPointsRadius(ctx context.Context, obj *model.MapPinQuestion) (*float64, error) {
+	return obj.MapPin.ZeroRadius, nil
+}
+
+// CorrectPosition is the resolver for the correctPosition field.
+func (r *mapPinQuestionResolver) CorrectPosition(ctx context.Context, obj *model.MapPinQuestion) (*model.MapPoint, error) {
+	return r.correctMapPosition(ctx, obj)
+}
+
+// CorrectArea is the resolver for the correctArea field.
+func (r *mapPinQuestionResolver) CorrectArea(ctx context.Context, obj *model.MapPinQuestion) ([]model.MapPoint, error) {
+	return r.correctMapArea(ctx, obj)
+}
+
+// Submission is the resolver for the submission field.
+func (r *mapPinResponseResolver) Submission(ctx context.Context, obj *model.MapPinResponse) (*model.QuizSubmission, error) {
+	row, err := r.DB.Queries.GetQuizSubmissionByID(ctx, obj.SubmissionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load submission: %w", err)
+	}
+	return convertGetQuizSubmissionByIDRow(row), nil
+}
+
+// Question is the resolver for the question field.
+func (r *mapPinResponseResolver) Question(ctx context.Context, obj *model.MapPinResponse) (model.QuizQuestion, error) {
+	row, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load question: %w", err)
+	}
+	question := convertGetQuizQuestionByIDRowToInterface(row)
+	return r.ApplyTranslationToQuizQuestion(ctx, question), nil
+}
+
+// PointsEarned is the resolver for the pointsEarned field.
+func (r *mapPinResponseResolver) PointsEarned(ctx context.Context, obj *model.MapPinResponse) (*int, error) {
+	return r.responsePoints(ctx, obj.SubmissionID, obj.PointsEarnedValue)
+}
+
+// JournalEntry is the resolver for the journalEntry field.
+func (r *mapPinResponseResolver) JournalEntry(ctx context.Context, obj *model.MapPinResponse) (*model.ScoreJournal, error) {
+	if obj.ScoreJournalID == nil {
+		return nil, nil
+	}
+	thunk := r.Loaders.ScoreJournalByIDLoader.Load(ctx, *obj.ScoreJournalID)
+	return thunk()
+}
+
+// Distance is the resolver for the distance field.
+func (r *mapPinResponseResolver) Distance(ctx context.Context, obj *model.MapPinResponse) (*float64, error) {
+	return r.mapPinResponseDistance(ctx, obj)
+}
+
 // CreateQuiz is the resolver for the createQuiz field.
 func (r *mutationResolver) CreateQuiz(ctx context.Context, input model.CreateQuizInput) (*model.Quiz, error) {
 	// Get authenticated user ID from context
@@ -388,6 +481,26 @@ func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, i
 		maxAbs := int32(*input.BettingMaxAbsolute)
 		params.Bettingmaxabsolute = &maxAbs
 	}
+	// Before the betting rules, which would reject MAP_PIN betting with a
+	// message about points
+	mapPin, err := checkMapPinCreate(input)
+	if err != nil {
+		return nil, err
+	}
+	if mapPin != nil {
+		cols, err := mapPin.Columns()
+		if err != nil {
+			return nil, err
+		}
+		params.Mapscoringmode = cols.Mode
+		params.Mapwidth = cols.Width
+		params.Mapheight = cols.Height
+		params.Maptargetx = cols.TargetX
+		params.Maptargety = cols.TargetY
+		params.Mapfullpointsradius = cols.FullRadius
+		params.Mapzeropointsradius = cols.ZeroRadius
+		params.Mappolygon = cols.Polygon
+	}
 	if err := ValidateQuestionBetting(QuestionBettingSettings{
 		Points:            input.Points,
 		BettingEnabled:    input.BettingEnabled != nil && *input.BettingEnabled,
@@ -563,6 +676,37 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 	params.Clearbettingmaxabsolute = clearFlag(input.ClearBettingMaxAbsolute)
 	params.Clearbettingmultipliercorrect = clearFlag(input.ClearBettingMultiplierCorrect)
 	params.Clearbettingmultiplierwrong = clearFlag(input.ClearBettingMultiplierWrong)
+
+	// Before the betting rules, which would reject MAP_PIN betting with a
+	// message about points
+	mapPin, err := checkMapPinUpdate(question, input)
+	if err != nil {
+		return nil, err
+	}
+	if mapPin.LockedField != "" {
+		answered, err := qtx.QuestionHasResponses(ctx, id)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check responses: %w", err)
+		}
+		if answered {
+			return nil, mapPinAnsweredError(mapPin.LockedField)
+		}
+	}
+	if mapPin.Config != nil {
+		cols, err := mapPin.Config.Columns()
+		if err != nil {
+			return nil, err
+		}
+		params.Setmappin = true
+		params.Mapscoringmode = cols.Mode
+		params.Mapwidth = cols.Width
+		params.Mapheight = cols.Height
+		params.Maptargetx = cols.TargetX
+		params.Maptargety = cols.TargetY
+		params.Mapfullpointsradius = cols.FullRadius
+		params.Mapzeropointsradius = cols.ZeroRadius
+		params.Mappolygon = cols.Polygon
+	}
 
 	// Validate the settings the question will have after this update
 	next := storedBettingSettings(question)
@@ -1032,6 +1176,10 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 	}
 	questionType := quizQuestionTypeString(question)
 	span.SetAttributes(attribute.String("question.type", questionType))
+	if err := checkMapPinAnswerFields(questionType, input); err != nil {
+		return nil, err
+	}
+	scored := scoredQuestionFromModel(question)
 
 	// Validate bet - always validate when betting is enabled to enforce required
 	// bets. The check runs in the transaction that stores the answer, against
@@ -1074,6 +1222,10 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 	}
 
 	// Set type-specific response
+	answer := quizgrading.Response{
+		SelectedAnswerIDs: input.SelectedAnswerIds,
+		SubmittedOrder:    input.SubmittedOrder,
+	}
 	switch questionType {
 	case "PREDEFINED":
 		if input.SelectedAnswerIds != nil {
@@ -1101,22 +1253,22 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 			orderJSON, _ := json.Marshal(input.SubmittedOrder)
 			params.Jsonresponse = orderJSON
 		}
+	case "MAP_PIN":
+		// The validated pin, stored as {"x", "y"} in json_response
+		pin, stored, err := mapPinAnswer(input.MapPosition, scored.MapPin)
+		if err != nil {
+			return nil, err
+		}
+		params.Jsonresponse = stored
+		answer.MapPosition = &pin
 	}
 
-	// Calculate correctness (all or nothing; nil for ungraded types)
-	params.Iscorrect, err = gradeQuizResponse(ctx, r.Loaders, questionType, input.QuestionID, quizgrading.Response{
-		SelectedAnswerIDs: input.SelectedAnswerIds,
-		SubmittedOrder:    input.SubmittedOrder,
-	})
+	// Calculate correctness (all or nothing; nil for ungraded types) and the
+	// points earned: the question's points when correct, or a MAP_PIN's score
+	params.Iscorrect, params.Pointsearned, err = scoreQuizResponse(ctx, r.Loaders, scored, answer)
 	if err != nil {
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to grade answer: %w", err)
-	}
-
-	// Calculate points_earned for correct answers
-	if params.Iscorrect != nil && *params.Iscorrect && question.GetPoints() != nil {
-		pts := int32(*question.GetPoints())
-		params.Pointsearned = &pts
 	}
 
 	if input.TimeSpentSeconds != nil {
@@ -1227,17 +1379,27 @@ func (r *mutationResolver) UpdateQuizAnswer(ctx context.Context, responseID stri
 		params.Betamount = &betAmount
 	}
 
-	answerChanged, err := applyAnswerUpdate(&params, question.QuestionType, input)
+	scored, err := scoredQuestionFromRow(question)
+	if err != nil {
+		otel.RecordError(span, err)
+		return nil, err
+	}
+
+	answerChanged, err := applyAnswerUpdate(&params, question.QuestionType, scored.MapPin, input)
 	if err != nil {
 		otel.RecordError(span, err)
 		return nil, err
 	}
 
 	if answerChanged {
-		params.Iscorrect, err = gradeQuizResponse(ctx, r.Loaders, question.QuestionType, existingResponse.QuestionID, quizgrading.Response{
+		answer := quizgrading.Response{
 			SelectedAnswerIDs: input.SelectedAnswerIds,
 			SubmittedOrder:    input.SubmittedOrder,
-		})
+		}
+		if input.MapPosition != nil {
+			answer.MapPosition = &quizgrading.MapPoint{X: input.MapPosition.X, Y: input.MapPosition.Y}
+		}
+		params.Iscorrect, params.Pointsearned, err = scoreQuizResponse(ctx, r.Loaders, scored, answer)
 		if err != nil {
 			otel.RecordError(span, err)
 			return nil, fmt.Errorf("failed to grade answer: %w", err)
@@ -1245,11 +1407,10 @@ func (r *mutationResolver) UpdateQuizAnswer(ctx context.Context, responseID stri
 
 		// Always written: UpdateQuizResponse coalesces, so a nil would keep the
 		// points a previously-correct answer earned.
-		points := int32(0)
-		if params.Iscorrect != nil && *params.Iscorrect && question.Points != nil {
-			points = *question.Points
+		if params.Pointsearned == nil {
+			zero := int32(0)
+			params.Pointsearned = &zero
 		}
-		params.Pointsearned = &points
 	}
 
 	if !answerChanged && input.BetAmount == nil {
@@ -1632,7 +1793,7 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 	var maxScore int
 	for _, q := range questions {
 		switch q.(type) {
-		case *model.PredefinedQuestion, *model.NumberQuestion, *model.OrderingQuestion:
+		case *model.PredefinedQuestion, *model.NumberQuestion, *model.OrderingQuestion, *model.MapPinQuestion:
 			if q.GetPoints() != nil {
 				maxScore += *q.GetPoints()
 			}
@@ -1681,6 +1842,14 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 		}
 
 		questionID := foundQuestion.GetID()
+		scored := scoredQuestionFromModel(foundQuestion)
+		if err := checkMapPinAnswerFields(scored.Type, responseInput); err != nil {
+			return nil, err
+		}
+		answer := quizgrading.Response{
+			SelectedAnswerIDs: responseInput.SelectedAnswerIds,
+			SubmittedOrder:    responseInput.SubmittedOrder,
+		}
 
 		// Create response based on question type
 		responseID := ulid.NewQuizResponseID()
@@ -1731,22 +1900,21 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 				return nil, fmt.Errorf("failed to marshal submitted order: %w", err)
 			}
 			responseParams.Jsonresponse = orderJSON
+
+		case *model.MapPinQuestion:
+			pin, stored, err := mapPinAnswer(responseInput.MapPosition, scored.MapPin)
+			if err != nil {
+				return nil, err
+			}
+			responseParams.Jsonresponse = stored
+			answer.MapPosition = &pin
 		}
 
-		// Calculate correctness (all or nothing; nil for ungraded types)
-		isCorrect, err := gradeQuizResponse(ctx, r.Loaders, quizQuestionTypeString(foundQuestion), questionID, quizgrading.Response{
-			SelectedAnswerIDs: responseInput.SelectedAnswerIds,
-			SubmittedOrder:    responseInput.SubmittedOrder,
-		})
+		// Calculate correctness (all or nothing; nil for ungraded types) and the
+		// points earned: the question's points when correct, or a MAP_PIN's score
+		responseParams.Iscorrect, responseParams.Pointsearned, err = scoreQuizResponse(ctx, r.Loaders, scored, answer)
 		if err != nil {
 			return nil, fmt.Errorf("failed to grade answer: %w", err)
-		}
-		responseParams.Iscorrect = isCorrect
-
-		// Calculate points_earned for correct answers
-		if isCorrect != nil && *isCorrect && foundQuestion.GetPoints() != nil {
-			pts := int32(*foundQuestion.GetPoints())
-			responseParams.Pointsearned = &pts
 		}
 
 		if responseInput.TimeSpentSeconds != nil {
@@ -1827,6 +1995,9 @@ func (r *mutationResolver) RecordBetResult(ctx context.Context, input model.Reco
 			return nil, fmt.Errorf("quiz response not found: %s", input.ResponseID)
 		}
 		return nil, fmt.Errorf("failed to get response context: %w", err)
+	}
+	if responseCtx.QuestionType == "MAP_PIN" {
+		return nil, mapPinBetResultError(input.ResponseID)
 	}
 
 	// Begin transaction
@@ -1919,6 +2090,9 @@ func (r *mutationResolver) RecordBetResults(ctx context.Context, inputs []model.
 	// Build a map of response ID to context
 	contextMap := make(map[string]*sqlc.GetQuizResponsesWithContextRow)
 	for _, rc := range responseContexts {
+		if rc.QuestionType == "MAP_PIN" {
+			return nil, mapPinBetResultError(rc.ID)
+		}
 		contextMap[rc.ID] = rc
 	}
 
@@ -2953,6 +3127,12 @@ func (r *Resolver) JsonQuestion() JsonQuestionResolver { return &jsonQuestionRes
 // JsonResponse returns JsonResponseResolver implementation.
 func (r *Resolver) JsonResponse() JsonResponseResolver { return &jsonResponseResolver{r} }
 
+// MapPinQuestion returns MapPinQuestionResolver implementation.
+func (r *Resolver) MapPinQuestion() MapPinQuestionResolver { return &mapPinQuestionResolver{r} }
+
+// MapPinResponse returns MapPinResponseResolver implementation.
+func (r *Resolver) MapPinResponse() MapPinResponseResolver { return &mapPinResponseResolver{r} }
+
 // NumberQuestion returns NumberQuestionResolver implementation.
 func (r *Resolver) NumberQuestion() NumberQuestionResolver { return &numberQuestionResolver{r} }
 
@@ -2993,6 +3173,8 @@ type freeTextQuestionResolver struct{ *Resolver }
 type freeTextResponseResolver struct{ *Resolver }
 type jsonQuestionResolver struct{ *Resolver }
 type jsonResponseResolver struct{ *Resolver }
+type mapPinQuestionResolver struct{ *Resolver }
+type mapPinResponseResolver struct{ *Resolver }
 type numberQuestionResolver struct{ *Resolver }
 type numberResponseResolver struct{ *Resolver }
 type orderingQuestionResolver struct{ *Resolver }
