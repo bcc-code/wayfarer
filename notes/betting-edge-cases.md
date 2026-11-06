@@ -55,7 +55,7 @@ go test -v -count=1 -run 'TestValidateBet|TestNewBetCheck|TestPositiveBetAllowed
 | R7 | Bet limits are consistent (0..100 %, ≥ 0, min ≤ max) and rejected with a validation error, not a raw DB error |
 | R8 | A question can't award points and take bets at once (create, or an update that touches points/betting; older questions with both stay editable otherwise; the admin editor checks it too). Question points only go to users who finish the quiz themselves — auto-submitted users get none, but their bets are settled |
 
-Voiding a bet (question deleted, submission reset while OPEN, no answer given) is a refund and is fine.
+Voiding a bet (question deleted, in-progress submission reset while OPEN, no answer given) is a refund and is fine. A finalized submission can't be reset (see `quiz-session-reset.md`).
 
 ## Fixed along the way
 
