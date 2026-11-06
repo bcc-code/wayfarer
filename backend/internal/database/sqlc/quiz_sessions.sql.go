@@ -187,6 +187,30 @@ func (q *Queries) DeleteAllQuizSessionAccess(ctx context.Context, sessionid stri
 	return err
 }
 
+const DeleteInProgressSubmissionByUserAndSession = `-- name: DeleteInProgressSubmissionByUserAndSession :execrows
+DELETE FROM quiz_submissions
+WHERE session_id = $1::char(28)
+    AND user_id = $2::char(28)
+    AND completed_at IS NULL
+`
+
+type DeleteInProgressSubmissionByUserAndSessionParams struct {
+	Sessionid string `json:"sessionid"`
+	Userid    string `json:"userid"`
+}
+
+// Only in-progress submissions: a completed one has already been scored and
+// journaled, so deleting it would let the user start over and score again.
+// A concurrent finalize holds FOR UPDATE on the row; this DELETE waits for it
+// and then re-checks completed_at, so the two can't interleave.
+func (q *Queries) DeleteInProgressSubmissionByUserAndSession(ctx context.Context, arg DeleteInProgressSubmissionByUserAndSessionParams) (int64, error) {
+	result, err := q.db.Exec(ctx, DeleteInProgressSubmissionByUserAndSession, arg.Sessionid, arg.Userid)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const DeleteQuizSession = `-- name: DeleteQuizSession :exec
 DELETE FROM quiz_sessions
 WHERE id = $1::char(28)
@@ -210,22 +234,6 @@ type DeleteQuizSessionAccessParams struct {
 
 func (q *Queries) DeleteQuizSessionAccess(ctx context.Context, arg DeleteQuizSessionAccessParams) error {
 	_, err := q.db.Exec(ctx, DeleteQuizSessionAccess, arg.Sessionid, arg.Userids)
-	return err
-}
-
-const DeleteSubmissionByUserAndSession = `-- name: DeleteSubmissionByUserAndSession :exec
-DELETE FROM quiz_submissions
-WHERE session_id = $1::char(28)
-    AND user_id = $2::char(28)
-`
-
-type DeleteSubmissionByUserAndSessionParams struct {
-	Sessionid string `json:"sessionid"`
-	Userid    string `json:"userid"`
-}
-
-func (q *Queries) DeleteSubmissionByUserAndSession(ctx context.Context, arg DeleteSubmissionByUserAndSessionParams) error {
-	_, err := q.db.Exec(ctx, DeleteSubmissionByUserAndSession, arg.Sessionid, arg.Userid)
 	return err
 }
 
