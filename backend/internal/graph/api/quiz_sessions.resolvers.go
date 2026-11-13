@@ -816,14 +816,31 @@ func (r *mutationResolver) ResetQuizSessionSubmission(ctx context.Context, sessi
 		return false, fmt.Errorf("can only reset submission while session is open")
 	}
 
-	// Delete the user's submission for this session
-	err = r.DB.Queries.DeleteSubmissionByUserAndSession(ctx, sqlc.DeleteSubmissionByUserAndSessionParams{
+	// Delete the user's in-progress submission for this session. The
+	// completed_at check is part of the DELETE so it can't race finalizeQuiz.
+	deleted, err := r.DB.Queries.DeleteInProgressSubmissionByUserAndSession(ctx, sqlc.DeleteInProgressSubmissionByUserAndSessionParams{
 		Sessionid: sessionID,
 		Userid:    userID,
 	})
 	if err != nil {
 		otel.RecordError(span, err)
 		return false, fmt.Errorf("failed to delete submission: %w", err)
+	}
+
+	// Nothing deleted: either there is no submission (nothing to reset) or it
+	// is already completed and its points awarded, which must not be undone
+	if deleted == 0 {
+		existing, err := r.DB.Queries.GetSubmissionByUserAndSession(ctx, sqlc.GetSubmissionByUserAndSessionParams{
+			Sessionid: sessionID,
+			Userid:    userID,
+		})
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			otel.RecordError(span, err)
+			return false, fmt.Errorf("failed to load submission: %w", err)
+		}
+		if err == nil && existing.CompletedAt.Valid {
+			return false, fmt.Errorf("cannot reset a completed submission")
+		}
 	}
 
 	return true, nil

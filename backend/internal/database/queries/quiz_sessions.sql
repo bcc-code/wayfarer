@@ -215,10 +215,15 @@ SET
 WHERE session_id = @sessionid::char(28)
     AND completed_at IS NULL;
 
--- name: DeleteSubmissionByUserAndSession :exec
+-- name: DeleteInProgressSubmissionByUserAndSession :execrows
+-- Only in-progress submissions: a completed one has already been scored and
+-- journaled, so deleting it would let the user start over and score again.
+-- A concurrent finalize holds FOR UPDATE on the row; this DELETE waits for it
+-- and then re-checks completed_at, so the two can't interleave.
 DELETE FROM quiz_submissions
 WHERE session_id = @sessionid::char(28)
-    AND user_id = @userid::char(28);
+    AND user_id = @userid::char(28)
+    AND completed_at IS NULL;
 
 -- ==================== User Session Access ====================
 
