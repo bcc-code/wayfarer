@@ -6,7 +6,7 @@ participant app and in the admin preview.
 ## Storage
 
 `quiz_questions.image_url VARCHAR(500)` — migration
-`00113_add_quiz_question_image.sql`. Same shape and length as
+`00115_add_quiz_question_image.sql`. Same shape and length as
 `quizzes.image_url`; the value is a public URL produced by the file upload
 endpoint (`AdminFileUpload`), not a stored blob.
 

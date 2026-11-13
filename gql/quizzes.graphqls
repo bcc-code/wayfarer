@@ -8,6 +8,16 @@ enum QuizQuestionType {
     NUMBER
     JSON
     ORDERING
+    MAP_PIN
+}
+
+# How a MAP_PIN question scores a pin.
+enum MapPinScoringMode {
+    # Full points within fullPointsRadius of the correct position, falling
+    # linearly to 0 at zeroPointsRadius.
+    POINT_RADIUS
+    # Full points inside the correct area or on its boundary, 0 outside.
+    POLYGON
 }
 
 # How a predefined question's alternatives are labelled. The label is derived
@@ -177,6 +187,47 @@ type OrderingQuestion implements QuizQuestion {
     orderingItems: [QuizOrderingItem!]! @goField(forceResolver: true)
 }
 
+# The participant drops one pin on the question's image, a map. Coordinates are
+# natural pixels of that image: origin top-left, x to the right, y down. See
+# notes/quiz-map-pin-coordinates.md.
+type MapPinQuestion implements QuizQuestion {
+    id: ID!
+    quiz: Quiz! @goField(forceResolver: true)
+    questionText: String!
+    # The map. Shown above the question text like any question image.
+    image: Image @goField(forceResolver: true)
+    questionOrder: Int!
+    timeoutSeconds: Int
+    # The most a pin can earn.
+    points: Int
+    bettingEnabled: Boolean!
+    bettingMinPercentage: Float
+    bettingMaxPercentage: Float
+    bettingMinAbsolute: Int
+    bettingMaxAbsolute: Int
+    bettingMultiplierCorrect: Float
+    bettingMultiplierWrong: Float
+    translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
+    scoringMode: MapPinScoringMode! @goField(forceResolver: true)
+    # The map image's natural size in pixels; a pin must lie within it.
+    mapWidth: Int! @goField(forceResolver: true)
+    mapHeight: Int! @goField(forceResolver: true)
+    # POINT_RADIUS only; null for POLYGON.
+    fullPointsRadius: Float @goField(forceResolver: true)
+    zeroPointsRadius: Float @goField(forceResolver: true)
+    # The correct answer: correctPosition for POINT_RADIUS, correctArea for
+    # POLYGON, null for the other mode. Hidden from non-managers until the most
+    # recent session they can access is FINISHED, and while they have none.
+    correctPosition: MapPoint @goField(forceResolver: true)
+    correctArea: [MapPoint!] @goField(forceResolver: true)
+}
+
+# A position on a map image, in its natural pixels.
+type MapPoint {
+    x: Float!
+    y: Float!
+}
+
 type QuizOrderingItem {
     id: ID!
     question: QuizQuestion! @goField(forceResolver: true)
@@ -308,6 +359,29 @@ type OrderingResponse implements QuizResponse {
     settledBetMultiplier: Float @goField(forceResolver: true)
 }
 
+# A pin on a MAP_PIN question. Only the respondent and project managers can
+# read a submission's responses.
+type MapPinResponse implements QuizResponse {
+    id: ID!
+    submission: QuizSubmission! @goField(forceResolver: true)
+    question: QuizQuestion! @goField(forceResolver: true)
+    answeredAt: DateTime
+    timeSpentSeconds: Int
+    # Scored by distance or area, from 0 to the question's points. Hidden while
+    # the submission's session is OPEN.
+    pointsEarned: Int @goField(forceResolver: true)
+    betAmount: Int
+    journalEntry: ScoreJournal @goField(forceResolver: true)
+    submittedPosition: MapPoint!
+    # Distance in pixels from the pin to the correct position. POINT_RADIUS
+    # only, and hidden while the session is OPEN, like pointsEarned.
+    distance: Float @goField(forceResolver: true)
+    # Always null: MAP_PIN is scored by points, not graded right or wrong.
+    isCorrect: Boolean
+    # Always null: MAP_PIN questions can't have betting.
+    settledBetMultiplier: Float
+}
+
 # ==================== Quiz Input Types ====================
 
 input CreateQuizInput {
@@ -368,6 +442,31 @@ input CreateQuizQuestionInput {
     stepValue: Float
 
     orderingItems: [CreateOrderingItemInput!]
+
+    # Required for MAP_PIN, rejected for every other type.
+    mapPin: MapPinConfigInput
+}
+
+# The correct answer of a MAP_PIN question, set as a whole. Give the fields of
+# scoringMode only; the other mode's fields are rejected.
+input MapPinConfigInput {
+    scoringMode: MapPinScoringMode!
+    mapWidth: Int!
+    mapHeight: Int!
+
+    # POINT_RADIUS
+    target: MapPointInput
+    fullPointsRadius: Float
+    zeroPointsRadius: Float
+
+    # POLYGON: 3 to 100 vertices in drawing order, clockwise or not. A closing
+    # vertex equal to the first is dropped.
+    polygon: [MapPointInput!]
+}
+
+input MapPointInput {
+    x: Float!
+    y: Float!
 }
 
 input CreatePredefinedAnswerInput {
@@ -418,6 +517,11 @@ input UpdateQuizQuestionInput {
     stepValue: Float
 
     orderingItems: [CreateOrderingItemInput!]
+
+    # MAP_PIN only. Replaces the whole map config, so switching scoringMode
+    # clears the other mode's fields; omit to leave it alone. It and points
+    # can't be changed once users have answered the question.
+    mapPin: MapPinConfigInput
 }
 
 input SubmitQuizAnswerInput {
@@ -428,6 +532,9 @@ input SubmitQuizAnswerInput {
     numberResponse: Float
     jsonResponse: JSON
     submittedOrder: [ID!]
+    # MAP_PIN: the pin, in the map image's natural pixels. Required for
+    # MAP_PIN and the only answer field it takes.
+    mapPosition: MapPointInput
 
     timeSpentSeconds: Int
     betAmount: Int
@@ -441,6 +548,7 @@ input UpdateQuizAnswerInput {
     numberResponse: Float
     jsonResponse: JSON
     submittedOrder: [ID!]
+    mapPosition: MapPointInput
 
     betAmount: Int
 }

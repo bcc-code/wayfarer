@@ -2,12 +2,15 @@ package loaders
 
 import (
 	"context"
+	"log/slog"
 	"math"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database"
+	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/otel"
+	"github.com/bcc-media/wayfarer/internal/services/quizgrading"
 	"github.com/graph-gophers/dataloader/v7"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -50,155 +53,7 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 
 			// Group questions by quiz ID
 			for _, row := range rows {
-				var question model.QuizQuestion
-
-				// Convert points from *int32 to *int
-				var points *int
-				if row.Points != nil {
-					p := int(*row.Points)
-					points = &p
-				}
-
-				// Convert timeout_seconds from *int32 to *int
-				var timeoutSeconds *int
-				if row.TimeoutSeconds != nil {
-					ts := int(*row.TimeoutSeconds)
-					timeoutSeconds = &ts
-				}
-
-				// Convert betting fields
-				bettingMinPercentage := numericToFloat(row.BettingMinPercentage)
-				bettingMaxPercentage := numericToFloat(row.BettingMaxPercentage)
-				var bettingMinAbsolute, bettingMaxAbsolute *int
-				if row.BettingMinAbsolute != nil {
-					v := int(*row.BettingMinAbsolute)
-					bettingMinAbsolute = &v
-				}
-				if row.BettingMaxAbsolute != nil {
-					v := int(*row.BettingMaxAbsolute)
-					bettingMaxAbsolute = &v
-				}
-				bettingMultiplierCorrect := numericToFloat(row.BettingMultiplierCorrect)
-				bettingMultiplierWrong := numericToFloat(row.BettingMultiplierWrong)
-
-				switch row.QuestionType {
-				case "PREDEFINED":
-					allowMultiple := false
-					if row.AllowMultipleSelection != nil {
-						allowMultiple = *row.AllowMultipleSelection
-					}
-					question = &model.PredefinedQuestion{
-						ID:                       row.ID,
-						QuestionText:             row.QuestionText,
-						ImageURL:                 row.ImageUrl,
-						QuestionOrder:            int(row.QuestionOrder),
-						AllowMultipleSelection:   allowMultiple,
-						AnswerLabelStyle:         answerLabelStyle(row.AnswerLabelStyle),
-						QuizID:                   row.QuizID,
-						Points:                   points,
-						TimeoutSeconds:           timeoutSeconds,
-						BettingEnabled:           row.BettingEnabled,
-						BettingMinPercentage:     bettingMinPercentage,
-						BettingMaxPercentage:     bettingMaxPercentage,
-						BettingMinAbsolute:       bettingMinAbsolute,
-						BettingMaxAbsolute:       bettingMaxAbsolute,
-						BettingMultiplierCorrect: bettingMultiplierCorrect,
-						BettingMultiplierWrong:   bettingMultiplierWrong,
-					}
-				case "FREE_TEXT":
-					question = &model.FreeTextQuestion{
-						ID:                       row.ID,
-						QuestionText:             row.QuestionText,
-						ImageURL:                 row.ImageUrl,
-						QuestionOrder:            int(row.QuestionOrder),
-						QuizID:                   row.QuizID,
-						Points:                   points,
-						TimeoutSeconds:           timeoutSeconds,
-						BettingEnabled:           row.BettingEnabled,
-						BettingMinPercentage:     bettingMinPercentage,
-						BettingMaxPercentage:     bettingMaxPercentage,
-						BettingMinAbsolute:       bettingMinAbsolute,
-						BettingMaxAbsolute:       bettingMaxAbsolute,
-						BettingMultiplierCorrect: bettingMultiplierCorrect,
-						BettingMultiplierWrong:   bettingMultiplierWrong,
-					}
-				case "NUMBER":
-					minValue := numericToFloat(row.MinValue)
-					maxValue := numericToFloat(row.MaxValue)
-					stepValue := numericToFloat(row.StepValue)
-					question = &model.NumberQuestion{
-						ID:                       row.ID,
-						QuestionText:             row.QuestionText,
-						ImageURL:                 row.ImageUrl,
-						QuestionOrder:            int(row.QuestionOrder),
-						MinValue:                 minValue,
-						MaxValue:                 maxValue,
-						StepValue:                stepValue,
-						QuizID:                   row.QuizID,
-						Points:                   points,
-						TimeoutSeconds:           timeoutSeconds,
-						BettingEnabled:           row.BettingEnabled,
-						BettingMinPercentage:     bettingMinPercentage,
-						BettingMaxPercentage:     bettingMaxPercentage,
-						BettingMinAbsolute:       bettingMinAbsolute,
-						BettingMaxAbsolute:       bettingMaxAbsolute,
-						BettingMultiplierCorrect: bettingMultiplierCorrect,
-						BettingMultiplierWrong:   bettingMultiplierWrong,
-					}
-				case "JSON":
-					question = &model.JSONQuestion{
-						ID:                       row.ID,
-						QuestionText:             row.QuestionText,
-						ImageURL:                 row.ImageUrl,
-						QuestionOrder:            int(row.QuestionOrder),
-						QuizID:                   row.QuizID,
-						Points:                   points,
-						TimeoutSeconds:           timeoutSeconds,
-						BettingEnabled:           row.BettingEnabled,
-						BettingMinPercentage:     bettingMinPercentage,
-						BettingMaxPercentage:     bettingMaxPercentage,
-						BettingMinAbsolute:       bettingMinAbsolute,
-						BettingMaxAbsolute:       bettingMaxAbsolute,
-						BettingMultiplierCorrect: bettingMultiplierCorrect,
-						BettingMultiplierWrong:   bettingMultiplierWrong,
-					}
-				case "ORDERING":
-					question = &model.OrderingQuestion{
-						ID:                       row.ID,
-						QuestionText:             row.QuestionText,
-						ImageURL:                 row.ImageUrl,
-						QuestionOrder:            int(row.QuestionOrder),
-						QuizID:                   row.QuizID,
-						Points:                   points,
-						TimeoutSeconds:           timeoutSeconds,
-						BettingEnabled:           row.BettingEnabled,
-						BettingMinPercentage:     bettingMinPercentage,
-						BettingMaxPercentage:     bettingMaxPercentage,
-						BettingMinAbsolute:       bettingMinAbsolute,
-						BettingMaxAbsolute:       bettingMaxAbsolute,
-						BettingMultiplierCorrect: bettingMultiplierCorrect,
-						BettingMultiplierWrong:   bettingMultiplierWrong,
-					}
-				default:
-					// Default to FreeTextQuestion for unknown types
-					question = &model.FreeTextQuestion{
-						ID:                       row.ID,
-						QuestionText:             row.QuestionText,
-						ImageURL:                 row.ImageUrl,
-						QuestionOrder:            int(row.QuestionOrder),
-						QuizID:                   row.QuizID,
-						Points:                   points,
-						TimeoutSeconds:           timeoutSeconds,
-						BettingEnabled:           row.BettingEnabled,
-						BettingMinPercentage:     bettingMinPercentage,
-						BettingMaxPercentage:     bettingMaxPercentage,
-						BettingMinAbsolute:       bettingMinAbsolute,
-						BettingMaxAbsolute:       bettingMaxAbsolute,
-						BettingMultiplierCorrect: bettingMultiplierCorrect,
-						BettingMultiplierWrong:   bettingMultiplierWrong,
-					}
-				}
-
+				question := quizQuestionFromRow(row)
 				questionsMap[row.QuizID] = append(questionsMap[row.QuizID], question)
 			}
 
@@ -219,6 +74,192 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 		}
 		return results
 	}
+}
+
+// quizQuestionFromRow converts a row to the QuizQuestion type of its question_type.
+func quizQuestionFromRow(row *sqlc.GetQuizQuestionsByQuizIDsRow) model.QuizQuestion {
+	var question model.QuizQuestion
+
+	// Convert points from *int32 to *int
+	var points *int
+	if row.Points != nil {
+		p := int(*row.Points)
+		points = &p
+	}
+
+	// Convert timeout_seconds from *int32 to *int
+	var timeoutSeconds *int
+	if row.TimeoutSeconds != nil {
+		ts := int(*row.TimeoutSeconds)
+		timeoutSeconds = &ts
+	}
+
+	// Convert betting fields
+	bettingMinPercentage := numericToFloat(row.BettingMinPercentage)
+	bettingMaxPercentage := numericToFloat(row.BettingMaxPercentage)
+	var bettingMinAbsolute, bettingMaxAbsolute *int
+	if row.BettingMinAbsolute != nil {
+		v := int(*row.BettingMinAbsolute)
+		bettingMinAbsolute = &v
+	}
+	if row.BettingMaxAbsolute != nil {
+		v := int(*row.BettingMaxAbsolute)
+		bettingMaxAbsolute = &v
+	}
+	bettingMultiplierCorrect := numericToFloat(row.BettingMultiplierCorrect)
+	bettingMultiplierWrong := numericToFloat(row.BettingMultiplierWrong)
+
+	switch row.QuestionType {
+	case "PREDEFINED":
+		allowMultiple := false
+		if row.AllowMultipleSelection != nil {
+			allowMultiple = *row.AllowMultipleSelection
+		}
+		question = &model.PredefinedQuestion{
+			ID:                       row.ID,
+			QuestionText:             row.QuestionText,
+			ImageURL:                 row.ImageUrl,
+			QuestionOrder:            int(row.QuestionOrder),
+			AllowMultipleSelection:   allowMultiple,
+			AnswerLabelStyle:         answerLabelStyle(row.AnswerLabelStyle),
+			QuizID:                   row.QuizID,
+			Points:                   points,
+			TimeoutSeconds:           timeoutSeconds,
+			BettingEnabled:           row.BettingEnabled,
+			BettingMinPercentage:     bettingMinPercentage,
+			BettingMaxPercentage:     bettingMaxPercentage,
+			BettingMinAbsolute:       bettingMinAbsolute,
+			BettingMaxAbsolute:       bettingMaxAbsolute,
+			BettingMultiplierCorrect: bettingMultiplierCorrect,
+			BettingMultiplierWrong:   bettingMultiplierWrong,
+		}
+	case "FREE_TEXT":
+		question = &model.FreeTextQuestion{
+			ID:                       row.ID,
+			QuestionText:             row.QuestionText,
+			ImageURL:                 row.ImageUrl,
+			QuestionOrder:            int(row.QuestionOrder),
+			QuizID:                   row.QuizID,
+			Points:                   points,
+			TimeoutSeconds:           timeoutSeconds,
+			BettingEnabled:           row.BettingEnabled,
+			BettingMinPercentage:     bettingMinPercentage,
+			BettingMaxPercentage:     bettingMaxPercentage,
+			BettingMinAbsolute:       bettingMinAbsolute,
+			BettingMaxAbsolute:       bettingMaxAbsolute,
+			BettingMultiplierCorrect: bettingMultiplierCorrect,
+			BettingMultiplierWrong:   bettingMultiplierWrong,
+		}
+	case "NUMBER":
+		minValue := numericToFloat(row.MinValue)
+		maxValue := numericToFloat(row.MaxValue)
+		stepValue := numericToFloat(row.StepValue)
+		question = &model.NumberQuestion{
+			ID:                       row.ID,
+			QuestionText:             row.QuestionText,
+			ImageURL:                 row.ImageUrl,
+			QuestionOrder:            int(row.QuestionOrder),
+			MinValue:                 minValue,
+			MaxValue:                 maxValue,
+			StepValue:                stepValue,
+			QuizID:                   row.QuizID,
+			Points:                   points,
+			TimeoutSeconds:           timeoutSeconds,
+			BettingEnabled:           row.BettingEnabled,
+			BettingMinPercentage:     bettingMinPercentage,
+			BettingMaxPercentage:     bettingMaxPercentage,
+			BettingMinAbsolute:       bettingMinAbsolute,
+			BettingMaxAbsolute:       bettingMaxAbsolute,
+			BettingMultiplierCorrect: bettingMultiplierCorrect,
+			BettingMultiplierWrong:   bettingMultiplierWrong,
+		}
+	case "JSON":
+		question = &model.JSONQuestion{
+			ID:                       row.ID,
+			QuestionText:             row.QuestionText,
+			ImageURL:                 row.ImageUrl,
+			QuestionOrder:            int(row.QuestionOrder),
+			QuizID:                   row.QuizID,
+			Points:                   points,
+			TimeoutSeconds:           timeoutSeconds,
+			BettingEnabled:           row.BettingEnabled,
+			BettingMinPercentage:     bettingMinPercentage,
+			BettingMaxPercentage:     bettingMaxPercentage,
+			BettingMinAbsolute:       bettingMinAbsolute,
+			BettingMaxAbsolute:       bettingMaxAbsolute,
+			BettingMultiplierCorrect: bettingMultiplierCorrect,
+			BettingMultiplierWrong:   bettingMultiplierWrong,
+		}
+	case "ORDERING":
+		question = &model.OrderingQuestion{
+			ID:                       row.ID,
+			QuestionText:             row.QuestionText,
+			ImageURL:                 row.ImageUrl,
+			QuestionOrder:            int(row.QuestionOrder),
+			QuizID:                   row.QuizID,
+			Points:                   points,
+			TimeoutSeconds:           timeoutSeconds,
+			BettingEnabled:           row.BettingEnabled,
+			BettingMinPercentage:     bettingMinPercentage,
+			BettingMaxPercentage:     bettingMaxPercentage,
+			BettingMinAbsolute:       bettingMinAbsolute,
+			BettingMaxAbsolute:       bettingMaxAbsolute,
+			BettingMultiplierCorrect: bettingMultiplierCorrect,
+			BettingMultiplierWrong:   bettingMultiplierWrong,
+		}
+	case "MAP_PIN":
+		config, err := quizgrading.MapPinColumns{
+			Mode:       row.MapScoringMode,
+			Width:      row.MapWidth,
+			Height:     row.MapHeight,
+			TargetX:    row.MapTargetX,
+			TargetY:    row.MapTargetY,
+			FullRadius: row.MapFullPointsRadius,
+			ZeroRadius: row.MapZeroPointsRadius,
+			Polygon:    row.MapPolygon,
+		}.Config()
+		if err != nil {
+			// Keep the question loadable; scoring rejects the incomplete config.
+			slog.Error("failed to read MAP_PIN config", "question_id", row.ID, "error", err)
+		}
+		question = &model.MapPinQuestion{
+			ID:                       row.ID,
+			QuestionText:             row.QuestionText,
+			ImageURL:                 row.ImageUrl,
+			QuestionOrder:            int(row.QuestionOrder),
+			QuizID:                   row.QuizID,
+			Points:                   points,
+			TimeoutSeconds:           timeoutSeconds,
+			BettingEnabled:           row.BettingEnabled,
+			BettingMinPercentage:     bettingMinPercentage,
+			BettingMaxPercentage:     bettingMaxPercentage,
+			BettingMinAbsolute:       bettingMinAbsolute,
+			BettingMaxAbsolute:       bettingMaxAbsolute,
+			BettingMultiplierCorrect: bettingMultiplierCorrect,
+			BettingMultiplierWrong:   bettingMultiplierWrong,
+			MapPin:                   config,
+		}
+	default:
+		// Default to FreeTextQuestion for unknown types
+		question = &model.FreeTextQuestion{
+			ID:                       row.ID,
+			QuestionText:             row.QuestionText,
+			ImageURL:                 row.ImageUrl,
+			QuestionOrder:            int(row.QuestionOrder),
+			QuizID:                   row.QuizID,
+			Points:                   points,
+			TimeoutSeconds:           timeoutSeconds,
+			BettingEnabled:           row.BettingEnabled,
+			BettingMinPercentage:     bettingMinPercentage,
+			BettingMaxPercentage:     bettingMaxPercentage,
+			BettingMinAbsolute:       bettingMinAbsolute,
+			BettingMaxAbsolute:       bettingMaxAbsolute,
+			BettingMultiplierCorrect: bettingMultiplierCorrect,
+			BettingMultiplierWrong:   bettingMultiplierWrong,
+		}
+	}
+
+	return question
 }
 
 // numericToFloat converts a nullable NUMERIC to *float64, returning nil when it
