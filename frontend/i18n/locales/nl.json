@@ -50,10 +50,10 @@
       "pointsLost": "Punten verloren",
       "pointsEarned": "Punten behaald",
       "resultYourBet": "Je inzet",
-      "correctCount": "Je had {count} goed",
-      "correctCountAll": "Je had alle antwoorden goed",
-      "correctCountNone": "Je had niks goed ",
-      "bettingResult": "Voorspelling resultaat"
+      "outcomeCorrect": "Je hebt goed geantwoord",
+      "outcomeIncorrect": "Je hebt fout geantwoord",
+      "bettingResult": "Voorspelling resultaat",
+      "nothingToStake": "Je hebt geen punten om in te zetten."
     },
     "result": {
       "receivedNoPoints": "Je hebt geen punten verzameld.",
@@ -136,7 +136,9 @@
     "goToConsent": "Ga naar toestemming",
     "continue": "Ga verder",
     "changeDescription": "Om je toestemming te wijzigen, kun je contact met ons opnemen via {email}",
-    "changeConsent": "Wijzig toestemming"
+    "changeConsent": "Wijzig toestemming",
+    "required": "Vereist",
+    "requiredTitle": "Voordat je doorgaat"
   },
   "achievement": {
     "title": "Onderscheiding",
