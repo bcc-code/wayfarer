@@ -50,10 +50,10 @@
       "pointsLost": "Kaotatud punktid",
       "pointsEarned": "Teenitud punktid",
       "resultYourBet": "Sinu panus",
-      "correctCount": "Sul oli {count} õiget",
-      "correctCountAll": "Sul olid kõik õiged",
-      "correctCountNone": "Sul polnud ühtegi õiget",
-      "bettingResult": "Ennustuse tulemus"
+      "outcomeCorrect": "Sa vastasid õigesti",
+      "outcomeIncorrect": "Sa vastasid valesti",
+      "bettingResult": "Ennustuse tulemus",
+      "nothingToStake": "Sul pole panustamiseks punkte."
     },
     "result": {
       "receivedNoPoints": "Sa ei saanud ühtegi punkti.",
@@ -136,12 +136,18 @@
     "goToConsent": "Mine nõusoleku juurde",
     "continue": "Jätka",
     "changeDescription": "Kui soovid oma nõusolekut muuta, võta meiega ühendust aadressil {email}",
-    "changeConsent": "Muuda nõusolekut"
+    "changeConsent": "Muuda nõusolekut",
+    "required": "Kohustuslik",
+    "requiredTitle": "Enne jätkamist"
   },
   "achievement": {
     "title": "Autasu",
     "unlocked": "Saavutatud!",
-    "progress": "{completed}/{total} lõpetatud"
+    "progress": "{completed} / {total} lõpetatud"
+  },
+  "archive": {
+    "title": "Varasemad projektid",
+    "empty": "Sul pole veel varasemaid projekte."
   },
   "feedback": {
     "title": "Anna meile tagasisidet",
@@ -351,7 +357,7 @@
         "couldNotReopenBetting": "Ei saanud ennustamist uuesti avada",
         "couldNotFinishBetting": "Ennustamist ei õnnestunud lõpetada",
         "couldNotSendUnitLeaderAccess": "Ei saanud koodi üksuste juhtidele saata",
-        "couldNotGrantBettingAccess": "Kasutajatele ei saanud ennustamisele ligipääsu anda"
+        "couldNotGrantBettingAccess": "Kasutajatele ei saanud anda juurdepääsu kihlveole"
       }
     },
     "statistics": {
@@ -369,5 +375,8 @@
       "peopleInAUnit": "Üksuses olevad isikud",
       "lastUpdated": "Viimati uuendatud"
     }
+  },
+  "offline": {
+    "notice": "Oled võrguühenduseta. Teave võib olla aegunud."
   }
 }
