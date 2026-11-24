@@ -46,7 +46,7 @@ RUN pnpm rebuild
 RUN pnpm run build
 
 # Stage 2: Build Go backend
-FROM golang:1.25 AS backend-builder
+FROM golang:1.26 AS backend-builder
 
 WORKDIR /build
 
