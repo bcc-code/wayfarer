@@ -165,3 +165,25 @@ func TestNewMapPinColumns(t *testing.T) {
 		assert.Equal(t, MapPinColumns{}, NewMapPinColumns(nil, nil, nil, nil, nil, nil, nil, nil))
 	})
 }
+
+func TestDecodeMapPoint(t *testing.T) {
+	t.Run("reads a stored pin", func(t *testing.T) {
+		p, err := DecodeMapPoint([]byte(`{"x": 12.5, "y": 0}`))
+		require.NoError(t, err)
+		assert.Equal(t, MapPoint{X: 12.5, Y: 0}, p)
+	})
+
+	for name, raw := range map[string]string{
+		"null":      `null`,
+		"empty":     ``,
+		"no fields": `{}`,
+		"missing y": `{"x": 1}`,
+		"not a pin": `["a", "b"]`,
+		"string x":  `{"x": "1", "y": 2}`,
+	} {
+		t.Run("rejects "+name+" instead of reading (0, 0)", func(t *testing.T) {
+			_, err := DecodeMapPoint([]byte(raw))
+			assert.Error(t, err)
+		})
+	}
+}

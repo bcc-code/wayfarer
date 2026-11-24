@@ -38,7 +38,14 @@ correct-answer geometry and the scoring differ:
 - **Reading it back**, `MapPinResponse` has `submittedPosition`, the gated
   `pointsEarned` and `distance` (computed on read from the cached question
   with `MapPinScore`, so there's one formula), and an always-null `isCorrect`
-  and `settledBetMultiplier`.
+  and `settledBetMultiplier`. Every stored pin is read with
+  `quizgrading.DecodeMapPoint`, which needs both coordinates, present and
+  finite. A pin it can't read is logged and `submittedPosition` fails to
+  resolve: it is never shown as (0, 0), a pin nobody placed. The results page
+  skips such a pin instead.
+- **Errors.** Invalid input comes back as a `FieldValidationError` (formerly
+  `BetValidationError`, still an alias) naming the input field, e.g.
+  `mapPin.polygon[2]`, `mapPosition` or `textResponse`.
 - **Individual answers.** Each participant pins and scores on their own. A
   team's score moves because team leaderboards average member points.
 - **No betting.** `MAP_PIN` always has points, and points and betting are

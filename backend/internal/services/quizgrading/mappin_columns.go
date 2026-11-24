@@ -117,3 +117,24 @@ func copyFloat(f *float64) *float64 {
 	v := *f
 	return &v
 }
+
+// DecodeMapPoint reads a pin stored as {"x": …, "y": …} in json_response. Both
+// coordinates must be present and finite: json.Unmarshal alone would turn {} or
+// null into (0, 0), a pin nobody placed.
+func DecodeMapPoint(raw []byte) (MapPoint, error) {
+	var stored struct {
+		X *float64 `json:"x"`
+		Y *float64 `json:"y"`
+	}
+	if err := json.Unmarshal(raw, &stored); err != nil {
+		return MapPoint{}, fmt.Errorf("map pin is not a JSON object: %w", err)
+	}
+	if stored.X == nil || stored.Y == nil {
+		return MapPoint{}, fmt.Errorf("map pin %s lacks x or y", raw)
+	}
+	p := MapPoint{X: *stored.X, Y: *stored.Y}
+	if !isFinite(p.X) || !isFinite(p.Y) {
+		return MapPoint{}, fmt.Errorf("map pin %s is not finite", raw)
+	}
+	return p, nil
+}

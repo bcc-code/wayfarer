@@ -74,7 +74,7 @@ func scoredQuestionFromRow(q *sqlc.GetQuizQuestionByIDRow) (scoredQuestion, erro
 func scoreQuizResponse(ctx context.Context, l *loaders.Loaders, q scoredQuestion, response quizgrading.Response) (*bool, *int32, error) {
 	if q.Type == "MAP_PIN" {
 		if response.MapPosition == nil {
-			return nil, nil, &BetValidationError{Field: "mapPosition", Message: "is required for MAP_PIN questions"}
+			return nil, nil, fieldError("mapPosition", "is required for MAP_PIN questions")
 		}
 		maxPoints := 0
 		if q.Points != nil {

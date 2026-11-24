@@ -10,6 +10,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
+	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/services/quizgrading"
 )
 
@@ -39,24 +40,17 @@ func mapPinConfigFromInput(in *model.MapPinConfigInput) quizgrading.MapPinConfig
 // errors naming the input field ("mapPin.polygon[2]").
 func validateMapPinInput(in *model.MapPinConfigInput) (quizgrading.MapPinConfig, error) {
 	c, err := quizgrading.ValidateMapPinConfig(mapPinConfigFromInput(in))
-	if err != nil {
-		var mpErr *quizgrading.MapPinError
-		if errors.As(err, &mpErr) {
-			return c, &BetValidationError{Field: "mapPin." + mpErr.Field, Message: mpErr.Message}
-		}
-		return c, err
-	}
-	return c, nil
+	return c, mapPinFieldError("mapPin.", err)
 }
 
 // MAP_PIN always awards points, scored by MapPinScore, so it can't have a bet:
 // a settled bet would overwrite the points (quiz_questions_map_pin_check).
 func mapPinBettingError() error {
-	return &BetValidationError{Field: "bettingEnabled", Message: "MAP_PIN questions can't have betting"}
+	return fieldError("bettingEnabled", "MAP_PIN questions can't have betting")
 }
 
 func mapPinPointsError() error {
-	return &BetValidationError{Field: "points", Message: "must be greater than 0 for MAP_PIN questions"}
+	return fieldError("points", "must be greater than 0 for MAP_PIN questions")
 }
 
 // checkMapPinCreate applies the MAP_PIN rules to a new question. It returns the
@@ -64,13 +58,13 @@ func mapPinPointsError() error {
 func checkMapPinCreate(input model.CreateQuizQuestionInput) (*quizgrading.MapPinConfig, error) {
 	if input.QuestionType != model.QuizQuestionTypeMapPin {
 		if input.MapPin != nil {
-			return nil, &BetValidationError{Field: "mapPin", Message: "is only used by MAP_PIN questions"}
+			return nil, fieldError("mapPin", "is only used by MAP_PIN questions")
 		}
 		return nil, nil
 	}
 
 	if input.MapPin == nil {
-		return nil, &BetValidationError{Field: "mapPin", Message: "is required for MAP_PIN questions"}
+		return nil, fieldError("mapPin", "is required for MAP_PIN questions")
 	}
 	if input.Points == nil || *input.Points <= 0 {
 		return nil, mapPinPointsError()
@@ -101,7 +95,7 @@ type mapPinUpdate struct {
 func checkMapPinUpdate(stored *sqlc.GetQuizQuestionByIDRow, input model.UpdateQuizQuestionInput) (mapPinUpdate, error) {
 	if stored.QuestionType != "MAP_PIN" {
 		if input.MapPin != nil {
-			return mapPinUpdate{}, &BetValidationError{Field: "mapPin", Message: "is only used by MAP_PIN questions"}
+			return mapPinUpdate{}, fieldError("mapPin", "is only used by MAP_PIN questions")
 		}
 		return mapPinUpdate{}, nil
 	}
@@ -136,10 +130,7 @@ func checkMapPinUpdate(stored *sqlc.GetQuizQuestionByIDRow, input model.UpdateQu
 
 // mapPinAnsweredError rejects a scoring change on an answered question.
 func mapPinAnsweredError(field string) error {
-	return &BetValidationError{
-		Field:   field,
-		Message: "can't be changed after users have answered this question: their points would not be recalculated. Delete it and add a new one",
-	}
+	return fieldError(field, "can't be changed after users have answered this question: their points would not be recalculated. Delete it and add a new one")
 }
 
 // convertToMapPinQuestion builds a MapPinQuestion. A config that can't be read
@@ -208,15 +199,11 @@ func (r *Resolver) correctMapArea(ctx context.Context, q *model.MapPinQuestion) 
 // returns the pin and the JSON it is stored as in json_response.
 func mapPinAnswer(position *model.MapPointInput, c quizgrading.MapPinConfig) (quizgrading.MapPoint, []byte, error) {
 	if position == nil {
-		return quizgrading.MapPoint{}, nil, &BetValidationError{Field: "mapPosition", Message: "is required for MAP_PIN questions"}
+		return quizgrading.MapPoint{}, nil, fieldError("mapPosition", "is required for MAP_PIN questions")
 	}
 	p := quizgrading.MapPoint{X: position.X, Y: position.Y}
 	if err := quizgrading.ValidateMapPosition(p, c.Width, c.Height); err != nil {
-		var mpErr *quizgrading.MapPinError
-		if errors.As(err, &mpErr) {
-			return p, nil, &BetValidationError{Field: mpErr.Field, Message: mpErr.Message}
-		}
-		return p, nil, err
+		return p, nil, mapPinFieldError("", err)
 	}
 	stored, err := json.Marshal(p)
 	if err != nil {
@@ -232,10 +219,7 @@ func mapPinAnswer(position *model.MapPointInput, c quizgrading.MapPinConfig) (qu
 func checkMapPinAnswerFields(questionType string, input model.SubmitQuizAnswerInput) error {
 	if questionType != "MAP_PIN" {
 		if input.MapPosition != nil {
-			return &BetValidationError{
-				Field:   "mapPosition",
-				Message: fmt.Sprintf("cannot set a MAP_PIN answer on a %s question", questionType),
-			}
+			return fieldError("mapPosition", fmt.Sprintf("cannot set a MAP_PIN answer on a %s question", questionType))
 		}
 		return nil
 	}
@@ -250,28 +234,21 @@ func checkMapPinAnswerFields(questionType string, input model.SubmitQuizAnswerIn
 		{"submittedOrder", "ORDERING", input.SubmittedOrder != nil},
 	} {
 		if f.present {
-			return &BetValidationError{
-				Field:   f.field,
-				Message: fmt.Sprintf("cannot set a %s answer on a MAP_PIN question", f.questionType),
-			}
+			return fieldError(f.field, fmt.Sprintf("cannot set a %s answer on a MAP_PIN question", f.questionType))
 		}
 	}
 	return nil
 }
 
 // convertToMapPinResponse builds a MapPinResponse. json_response holds a pin
-// validated on the way in; one that can't be read is logged and shown at the
-// origin, as the other types show an unreadable answer as empty.
+// validated on the way in. One that can't be read is logged and left nil, so
+// reading submittedPosition fails instead of showing a pin nobody placed.
 func convertToMapPinResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int, pointsEarned *int, betAmount *int) *model.MapPinResponse {
-	var position model.MapPoint
-	if err := json.Unmarshal(row.JsonResponse, &position); err != nil {
-		slog.Error("failed to read map pin response", "response_id", row.ID, "error", err)
-	}
 	return &model.MapPinResponse{
 		ID:                row.ID,
 		SubmissionID:      row.SubmissionID,
 		QuestionID:        row.QuestionID,
-		SubmittedPosition: &position,
+		SubmittedPosition: loaders.MapPinPosition(row.ID, row.JsonResponse),
 		AnsweredAt:        answeredAt,
 		TimeSpentSeconds:  timeSpentSeconds,
 		PointsEarnedValue: pointsEarned,
@@ -326,5 +303,21 @@ func (r *Resolver) mapPinResponseDistance(ctx context.Context, response *model.M
 // MAP_PIN can't have a bet, and a bet result would overwrite the points the
 // pin was scored.
 func mapPinBetResultError(responseID string) error {
-	return fmt.Errorf("response %s answers a MAP_PIN question, which has no bet", responseID)
+	return fieldError("responseId", fmt.Sprintf("%s answers a MAP_PIN question, which has no bet", responseID))
+}
+
+// fieldError is invalid input on one input field.
+func fieldError(field, message string) error {
+	return &FieldValidationError{Field: field, Message: message}
+}
+
+// mapPinFieldError turns a quizgrading.MapPinError into a field error, its
+// field prefixed with the input it sits in ("mapPin."). Other errors and nil
+// pass through.
+func mapPinFieldError(prefix string, err error) error {
+	var mpErr *quizgrading.MapPinError
+	if errors.As(err, &mpErr) {
+		return fieldError(prefix+mpErr.Field, mpErr.Message)
+	}
+	return err
 }

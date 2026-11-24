@@ -361,8 +361,8 @@ func buildMapPinResults(
 	var points, distances []float64
 
 	for _, row := range rows {
-		var position quizgrading.MapPoint
-		if err := json.Unmarshal(row.Position, &position); err != nil {
+		position, err := quizgrading.DecodeMapPoint(row.Position)
+		if err != nil {
 			slog.Error("failed to read MAP_PIN response", "question_id", row.QuestionID, "response_id", row.ID, "error", err)
 			continue
 		}

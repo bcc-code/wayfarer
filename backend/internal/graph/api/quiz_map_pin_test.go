@@ -547,3 +547,30 @@ func TestConvertMapPinResponse(t *testing.T) {
 	assert.Nil(t, r.PointsEarned, "the stored points only reach clients through the gated resolver")
 	assert.Nil(t, r.IsCorrect)
 }
+
+func TestMapPinFieldError(t *testing.T) {
+	t.Run("prefixes a MapPinError's field", func(t *testing.T) {
+		_, err := quizgrading.ValidateMapPinConfig(quizgrading.MapPinConfig{Mode: quizgrading.MapPinModePolygon, Width: 0, Height: 10})
+		var fieldErr *FieldValidationError
+		require.ErrorAs(t, mapPinFieldError("mapPin.", err), &fieldErr)
+		assert.Equal(t, "mapPin.mapWidth", fieldErr.Field)
+		assert.Equal(t, "must be positive", fieldErr.Message)
+	})
+
+	t.Run("passes other errors and nil through", func(t *testing.T) {
+		other := errors.New("boom")
+		assert.Same(t, other, mapPinFieldError("mapPin.", other))
+		assert.NoError(t, mapPinFieldError("mapPin.", nil))
+	})
+
+	t.Run("a bet result on a MAP_PIN response names responseId", func(t *testing.T) {
+		var fieldErr *FieldValidationError
+		require.ErrorAs(t, mapPinBetResultError("QR1"), &fieldErr)
+		assert.Equal(t, "responseId", fieldErr.Field)
+	})
+}
+
+func TestConvertToMapPinResponseUnreadablePin(t *testing.T) {
+	response := convertToMapPinResponse(&sqlc.QuizResponse{ID: "QR1", JsonResponse: []byte(`{}`)}, nil, nil, nil, nil)
+	assert.Nil(t, response.SubmittedPosition, "an unreadable pin must not be shown at (0, 0)")
+}
