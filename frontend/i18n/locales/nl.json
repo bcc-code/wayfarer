@@ -135,7 +135,9 @@
     "goToConsent": "Ga naar toestemming",
     "continue": "Ga verder",
     "changeDescription": "Om je toestemming te wijzigen, kun je contact met ons opnemen via {email}",
-    "changeConsent": "Wijzig toestemming"
+    "changeConsent": "Wijzig toestemming",
+    "required": "Vereist",
+    "requiredTitle": "Voordat je doorgaat"
   },
   "achievement": {
     "title": "Onderscheiding",
