@@ -227,23 +227,33 @@ func mapPinAnswer(position *model.MapPointInput, c quizgrading.MapPinConfig) (qu
 
 // checkMapPinAnswerFields rejects mixing MAP_PIN with other answer fields on
 // submit: a MAP_PIN question takes only mapPosition, and only MAP_PIN takes it,
-// so the stored JSON is always a validated pin.
+// so the stored JSON is always a validated pin. The error names the offending
+// input field; with several, the first in input order.
 func checkMapPinAnswerFields(questionType string, input model.SubmitQuizAnswerInput) error {
 	if questionType != "MAP_PIN" {
 		if input.MapPosition != nil {
-			return fmt.Errorf("cannot set a MAP_PIN answer on a %s question", questionType)
+			return &BetValidationError{
+				Field:   "mapPosition",
+				Message: fmt.Sprintf("cannot set a MAP_PIN answer on a %s question", questionType),
+			}
 		}
 		return nil
 	}
-	for t, present := range map[string]bool{
-		"PREDEFINED": input.SelectedAnswerIds != nil,
-		"FREE_TEXT":  input.TextResponse != nil,
-		"NUMBER":     input.NumberResponse != nil,
-		"JSON":       input.JSONResponse != nil,
-		"ORDERING":   input.SubmittedOrder != nil,
+	for _, f := range []struct {
+		field, questionType string
+		present             bool
+	}{
+		{"selectedAnswerIds", "PREDEFINED", input.SelectedAnswerIds != nil},
+		{"textResponse", "FREE_TEXT", input.TextResponse != nil},
+		{"numberResponse", "NUMBER", input.NumberResponse != nil},
+		{"jsonResponse", "JSON", input.JSONResponse != nil},
+		{"submittedOrder", "ORDERING", input.SubmittedOrder != nil},
 	} {
-		if present {
-			return fmt.Errorf("cannot set a %s answer on a MAP_PIN question", t)
+		if f.present {
+			return &BetValidationError{
+				Field:   f.field,
+				Message: fmt.Sprintf("cannot set a %s answer on a MAP_PIN question", f.questionType),
+			}
 		}
 	}
 	return nil

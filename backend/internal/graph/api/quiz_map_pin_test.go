@@ -498,15 +498,33 @@ func TestCheckMapPinAnswerFields(t *testing.T) {
 	} {
 		t.Run("MAP_PIN rejects "+name, func(t *testing.T) {
 			err := checkMapPinAnswerFields("MAP_PIN", input)
-			require.Error(t, err)
-			assert.Contains(t, err.Error(), "on a MAP_PIN question")
+			var fieldErr *BetValidationError
+			require.ErrorAs(t, err, &fieldErr)
+			assert.Equal(t, name, fieldErr.Field)
+			assert.Contains(t, fieldErr.Message, "on a MAP_PIN question")
 		})
 	}
 
+	t.Run("several wrong fields name the first in input order, every time", func(t *testing.T) {
+		input := model.SubmitQuizAnswerInput{
+			MapPosition:    pin,
+			SubmittedOrder: []string{"a"},
+			NumberResponse: ptrTo(1.0),
+			TextResponse:   &text,
+		}
+		for range 20 {
+			var fieldErr *BetValidationError
+			require.ErrorAs(t, checkMapPinAnswerFields("MAP_PIN", input), &fieldErr)
+			assert.Equal(t, "textResponse", fieldErr.Field)
+		}
+	})
+
 	t.Run("other types reject mapPosition", func(t *testing.T) {
 		err := checkMapPinAnswerFields("JSON", model.SubmitQuizAnswerInput{MapPosition: pin})
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "cannot set a MAP_PIN answer on a JSON question")
+		var fieldErr *BetValidationError
+		require.ErrorAs(t, err, &fieldErr)
+		assert.Equal(t, "mapPosition", fieldErr.Field)
+		assert.Equal(t, "cannot set a MAP_PIN answer on a JSON question", fieldErr.Message)
 	})
 }
 
