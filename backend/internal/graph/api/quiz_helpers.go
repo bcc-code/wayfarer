@@ -183,16 +183,8 @@ func (r createQuizQuestionRowAdapter) GetBettingMultiplierWrong() pgtype.Numeric
 	return r.BettingMultiplierWrong
 }
 func (r createQuizQuestionRowAdapter) GetMapPinColumns() quizgrading.MapPinColumns {
-	return quizgrading.MapPinColumns{
-		Mode:       r.MapScoringMode,
-		Width:      r.MapWidth,
-		Height:     r.MapHeight,
-		TargetX:    r.MapTargetX,
-		TargetY:    r.MapTargetY,
-		FullRadius: r.MapFullPointsRadius,
-		ZeroRadius: r.MapZeroPointsRadius,
-		Polygon:    r.MapPolygon,
-	}
+	return quizgrading.NewMapPinColumns(r.MapScoringMode, r.MapWidth, r.MapHeight,
+		r.MapTargetX, r.MapTargetY, r.MapFullPointsRadius, r.MapZeroPointsRadius, r.MapPolygon)
 }
 
 // Adapter for sqlc.UpdateQuizQuestionRow
@@ -231,16 +223,8 @@ func (r updateQuizQuestionRowAdapter) GetBettingMultiplierWrong() pgtype.Numeric
 	return r.BettingMultiplierWrong
 }
 func (r updateQuizQuestionRowAdapter) GetMapPinColumns() quizgrading.MapPinColumns {
-	return quizgrading.MapPinColumns{
-		Mode:       r.MapScoringMode,
-		Width:      r.MapWidth,
-		Height:     r.MapHeight,
-		TargetX:    r.MapTargetX,
-		TargetY:    r.MapTargetY,
-		FullRadius: r.MapFullPointsRadius,
-		ZeroRadius: r.MapZeroPointsRadius,
-		Polygon:    r.MapPolygon,
-	}
+	return quizgrading.NewMapPinColumns(r.MapScoringMode, r.MapWidth, r.MapHeight,
+		r.MapTargetX, r.MapTargetY, r.MapFullPointsRadius, r.MapZeroPointsRadius, r.MapPolygon)
 }
 
 // Adapter for sqlc.GetQuizQuestionByIDRow
@@ -279,16 +263,8 @@ func (r getQuizQuestionByIDRowAdapter) GetBettingMultiplierWrong() pgtype.Numeri
 	return r.BettingMultiplierWrong
 }
 func (r getQuizQuestionByIDRowAdapter) GetMapPinColumns() quizgrading.MapPinColumns {
-	return quizgrading.MapPinColumns{
-		Mode:       r.MapScoringMode,
-		Width:      r.MapWidth,
-		Height:     r.MapHeight,
-		TargetX:    r.MapTargetX,
-		TargetY:    r.MapTargetY,
-		FullRadius: r.MapFullPointsRadius,
-		ZeroRadius: r.MapZeroPointsRadius,
-		Polygon:    r.MapPolygon,
-	}
+	return quizgrading.NewMapPinColumns(r.MapScoringMode, r.MapWidth, r.MapHeight,
+		r.MapTargetX, r.MapTargetY, r.MapFullPointsRadius, r.MapZeroPointsRadius, r.MapPolygon)
 }
 
 // convertQuizQuestionRowToInterface converts a database row to the appropriate QuizQuestion implementation

@@ -208,16 +208,8 @@ func quizQuestionFromRow(row *sqlc.GetQuizQuestionsByQuizIDsRow) model.QuizQuest
 			BettingMultiplierWrong:   bettingMultiplierWrong,
 		}
 	case "MAP_PIN":
-		config, err := quizgrading.MapPinColumns{
-			Mode:       row.MapScoringMode,
-			Width:      row.MapWidth,
-			Height:     row.MapHeight,
-			TargetX:    row.MapTargetX,
-			TargetY:    row.MapTargetY,
-			FullRadius: row.MapFullPointsRadius,
-			ZeroRadius: row.MapZeroPointsRadius,
-			Polygon:    row.MapPolygon,
-		}.Config()
+		config, err := quizgrading.NewMapPinColumns(row.MapScoringMode, row.MapWidth, row.MapHeight,
+			row.MapTargetX, row.MapTargetY, row.MapFullPointsRadius, row.MapZeroPointsRadius, row.MapPolygon).Config()
 		if err != nil {
 			// Keep the question loadable; scoring rejects the incomplete config.
 			slog.Error("failed to read MAP_PIN config", "question_id", row.ID, "error", err)

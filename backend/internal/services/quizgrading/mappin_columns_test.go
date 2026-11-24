@@ -140,3 +140,28 @@ func TestMapPinConfigEqual(t *testing.T) {
 		assert.True(t, stored.Equal(resent))
 	})
 }
+
+func TestNewMapPinColumns(t *testing.T) {
+	t.Run("puts each argument in its own field", func(t *testing.T) {
+		mode := MapPinModePointRadius
+		polygon := []byte(`[{"x":1,"y":2}]`)
+
+		cols := NewMapPinColumns(&mode, ptr(int32(10)), ptr(int32(20)),
+			ptr(1.0), ptr(2.0), ptr(3.0), ptr(4.0), polygon)
+
+		assert.Equal(t, MapPinColumns{
+			Mode:       &mode,
+			Width:      ptr(int32(10)),
+			Height:     ptr(int32(20)),
+			TargetX:    ptr(1.0),
+			TargetY:    ptr(2.0),
+			FullRadius: ptr(3.0),
+			ZeroRadius: ptr(4.0),
+			Polygon:    polygon,
+		}, cols)
+	})
+
+	t.Run("all nil for a question that isn't MAP_PIN", func(t *testing.T) {
+		assert.Equal(t, MapPinColumns{}, NewMapPinColumns(nil, nil, nil, nil, nil, nil, nil, nil))
+	})
+}

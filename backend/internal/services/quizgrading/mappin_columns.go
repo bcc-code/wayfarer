@@ -20,6 +20,21 @@ type MapPinColumns struct {
 	Polygon []byte
 }
 
+// NewMapPinColumns collects the map_* columns of a quiz_questions row, in
+// table order. The sqlc row types differ per query, so each passes its fields.
+func NewMapPinColumns(mode *string, width, height *int32, targetX, targetY, fullRadius, zeroRadius *float64, polygon []byte) MapPinColumns {
+	return MapPinColumns{
+		Mode:       mode,
+		Width:      width,
+		Height:     height,
+		TargetX:    targetX,
+		TargetY:    targetY,
+		FullRadius: fullRadius,
+		ZeroRadius: zeroRadius,
+		Polygon:    polygon,
+	}
+}
+
 // Columns returns the config as column values. c should be validated
 // (ValidateMapPinConfig); the fields of the other mode are nil.
 func (c MapPinConfig) Columns() (MapPinColumns, error) {
