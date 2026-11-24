@@ -17,7 +17,7 @@ function makeInput(
     hasCompletedSubmission: false,
     canStartQuiz: false,
     sessionState: undefined,
-    isSingleOrderingQuestion: false,
+    hasSettledBet: false,
     hasCurrentQuestion: false,
     isNotSubmitted: false,
     isQuizUnavailable: false,
@@ -142,21 +142,21 @@ describe('resolveQuizViewState', () => {
             hasCompletedSubmission: true,
             canStartQuiz: false,
             sessionState: 'LOCKED',
-            isSingleOrderingQuestion: false,
+            hasSettledBet: false,
             hasCurrentQuestion: true,
           }),
         ),
       ).toBe('active-question')
     })
 
-    it('shows active-question when LOCKED with single ordering question', () => {
+    it('shows active-question when LOCKED with a settled bet', () => {
       expect(
         resolveQuizViewState(
           makeInput({
             hasCompletedSubmission: true,
             canStartQuiz: false,
             sessionState: 'LOCKED',
-            isSingleOrderingQuestion: true,
+            hasSettledBet: true,
             hasCurrentQuestion: true,
           }),
         ),
@@ -164,15 +164,15 @@ describe('resolveQuizViewState', () => {
     })
   })
 
-  describe('session FINISHED — single ordering question', () => {
-    it('shows active-question for single ordering question (betting results)', () => {
+  describe('session FINISHED — with a settled bet', () => {
+    it('shows active-question so the bet result has somewhere to render', () => {
       expect(
         resolveQuizViewState(
           makeInput({
             hasCompletedSubmission: true,
             canStartQuiz: false,
             sessionState: 'FINISHED',
-            isSingleOrderingQuestion: true,
+            hasSettledBet: true,
             hasCurrentQuestion: true,
           }),
         ),
@@ -180,29 +180,29 @@ describe('resolveQuizViewState', () => {
     })
   })
 
-  describe('session FINISHED — multiple questions', () => {
-    it('shows results for multiple questions', () => {
+  describe('session FINISHED — no settled bet', () => {
+    it('shows results when no question carried a bet', () => {
       expect(
         resolveQuizViewState(
           makeInput({
             hasCompletedSubmission: true,
             canStartQuiz: false,
             sessionState: 'FINISHED',
-            isSingleOrderingQuestion: false,
+            hasSettledBet: false,
             hasCurrentQuestion: true,
           }),
         ),
       ).toBe('results')
     })
 
-    it('shows results for single non-ordering question', () => {
+    it('shows results for a single unbet question', () => {
       expect(
         resolveQuizViewState(
           makeInput({
             hasCompletedSubmission: true,
             canStartQuiz: false,
             sessionState: 'FINISHED',
-            isSingleOrderingQuestion: false,
+            hasSettledBet: false,
           }),
         ),
       ).toBe('results')
@@ -598,37 +598,32 @@ describe('resolveFooterState', () => {
   })
 
   describe('session-locked mode', () => {
-    it('shows locked betting module when betting enabled and answer not locked', () => {
-      const result = resolveFooterState(
-        makeFooterInput({
-          actionState: makeActionState({
-            mode: 'session-locked',
-            isAnswerLocked: false,
+    /**
+     * A locked session freezes the bet, so the module is a read-only summary.
+     * It used to be hidden once the answer was confirmed, which made it appear
+     * for ORDERING and not for PREDEFINED purely because the two types
+     * initialised that flag differently.
+     */
+    it.each([true, false])(
+      'shows the locked betting module whether or not the answer is locked (%s)',
+      (isAnswerLocked) => {
+        const result = resolveFooterState(
+          makeFooterInput({
+            actionState: makeActionState({
+              mode: 'session-locked',
+              isAnswerLocked,
+            }),
+            isBettingEnabled: true,
           }),
-          isBettingEnabled: true,
-        }),
-      )
-      expect(result.bettingModule).toEqual({
-        visible: true,
-        mode: 'locked',
-        disabled: false,
-      })
-      expect(result.button).toEqual({ type: 'close' })
-    })
-
-    it('hides betting module when answer is locked', () => {
-      const result = resolveFooterState(
-        makeFooterInput({
-          actionState: makeActionState({
-            mode: 'session-locked',
-            isAnswerLocked: true,
-          }),
-          isBettingEnabled: true,
-        }),
-      )
-      expect(result.bettingModule.visible).toBe(false)
-      expect(result.button).toEqual({ type: 'close' })
-    })
+        )
+        expect(result.bettingModule).toEqual({
+          visible: true,
+          mode: 'locked',
+          disabled: true,
+        })
+        expect(result.button).toEqual({ type: 'close' })
+      },
+    )
 
     it('hides betting module when betting not enabled', () => {
       const result = resolveFooterState(
@@ -758,19 +753,23 @@ describe('resolveFooterState', () => {
       expect(result.button).toEqual({ type: 'finalize' })
     })
 
-    it('LOCKED: shows close button with no betting module (answer already locked)', () => {
+    it('LOCKED: shows the close button and the frozen betting module', () => {
       const result = resolveFooterState(
         makeFooterInput({
           actionState: makeActionState({
             mode: 'session-locked',
             isAnswerLocked: true,
             isBetSaved: true,
-            canChangeBet: false,
+            canChangeBet: true,
           }),
           isBettingEnabled: true,
         }),
       )
-      expect(result.bettingModule.visible).toBe(false)
+      expect(result.bettingModule).toEqual({
+        visible: true,
+        mode: 'locked',
+        disabled: true,
+      })
       expect(result.button).toEqual({ type: 'close' })
     })
 

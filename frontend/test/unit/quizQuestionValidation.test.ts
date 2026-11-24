@@ -130,4 +130,82 @@ describe('validateQuizQuestion', () => {
       }),
     ).toBeUndefined()
   })
+
+  describe('betting payout multipliers', () => {
+    const betting = (extra: Record<string, unknown> = {}) => ({
+      questionType: QuizQuestionType.FreeText,
+      questionText: 'Hvorfor?',
+      bettingEnabled: true,
+      ...extra,
+    })
+
+    it('accepts a question that leaves the payout at the default', () => {
+      expect(validateQuizQuestion(betting())).toBeUndefined()
+    })
+
+    it('accepts a valid custom curve', () => {
+      expect(
+        validateQuizQuestion(
+          betting({
+            bettingMultiplierCorrect: 2.5,
+            bettingMultiplierWrong: 0.5,
+          }),
+        ),
+      ).toBeUndefined()
+    })
+
+    it.each([1.1, 2.3, 1.13])(
+      'accepts the valid decimal multiplier %s despite floating-point rounding',
+      (value) => {
+        expect(
+          validateQuizQuestion(betting({ bettingMultiplierCorrect: value })),
+        ).toBeUndefined()
+      },
+    )
+
+    it('rejects a wrong-answer payout above the correct one', () => {
+      expect(
+        validateQuizQuestion(
+          betting({ bettingMultiplierCorrect: 1, bettingMultiplierWrong: 2 }),
+        ),
+      ).toContain('kan ikke være høyere')
+    })
+
+    /**
+     * The default correct multiplier is 2, so an unset correct field still
+     * caps what the wrong field may be.
+     */
+    it('compares an unset correct multiplier against its default', () => {
+      expect(
+        validateQuizQuestion(betting({ bettingMultiplierWrong: 3 })),
+      ).toContain('kan ikke være høyere')
+      expect(
+        validateQuizQuestion(betting({ bettingMultiplierWrong: 1.5 })),
+      ).toBeUndefined()
+    })
+
+    it('rejects more than two decimals', () => {
+      expect(
+        validateQuizQuestion(betting({ bettingMultiplierCorrect: 1.234 })),
+      ).toContain('to desimaler')
+    })
+
+    it.each([-1, 101])('rejects an out-of-range multiplier (%s)', (value) => {
+      expect(
+        validateQuizQuestion(betting({ bettingMultiplierCorrect: value })),
+      ).toContain('mellom 0 og 100')
+    })
+
+    it('ignores the payout entirely when betting is off', () => {
+      expect(
+        validateQuizQuestion(
+          betting({
+            bettingEnabled: false,
+            bettingMultiplierCorrect: 1,
+            bettingMultiplierWrong: 99,
+          }),
+        ),
+      ).toBeUndefined()
+    })
+  })
 })

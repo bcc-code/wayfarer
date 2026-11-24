@@ -24,7 +24,10 @@ type LoadTestConfig struct {
 	// AdminToken is an admin-role token for -admin-user, used by scenarios
 	// that drive admin mutations (e.g. finishing a quiz session)
 	AdminToken *UserToken `json:"adminToken,omitempty"`
-	Generated  time.Time  `json:"generated"`
+	// Churches holds the load-test churches (admin + players) for
+	// k6/betting-multisession.js, when -church-prefix is set
+	Churches  []ChurchSession `json:"churches,omitempty"`
+	Generated time.Time       `json:"generated"`
 }
 
 // UserToken contains a user ID and their JWT token
@@ -51,6 +54,8 @@ func main() {
 	auth0Issuer := flag.String("auth0-issuer", "https://login.bcc.no/", "Issuer for simulated Auth0 tokens (must match the server's AUTH0_JWT_ISSUER)")
 	auth0Key := flag.String("auth0-key", "", "RSA private key (PEM or base64 PEM) for signing simulated Auth0 tokens (defaults to AUTH0_LOADTEST_PRIVATE_KEY env var; generated if empty)")
 	adminUser := flag.String("admin-user", "", "Also mint an admin-role token for this user ID (the user needs an ADMIN role in user_roles)")
+	churchPrefix := flag.String("church-prefix", "", "Also write the load-test churches with this ID prefix (bench/betting_box.sh reset-multi: CH01LOADTESTCHURCH), each with its church admin and players, for k6/betting-multisession.js")
+	projectID := flag.String("project", "PR00000000000000000000000001", "Project whose members are the players of each church (with -church-prefix)")
 	flag.Parse()
 
 	// Determine JWT secret
@@ -175,12 +180,38 @@ func main() {
 		adminToken = &UserToken{UserID: *adminUser, Token: tokenString}
 	}
 
+	var churches []ChurchSession
+	if *churchPrefix != "" {
+		admins, players, err := loadChurchMembers(ctx, db, *churchPrefix, *projectID)
+		if err != nil {
+			slog.Error("Failed to load church members", "error", err)
+			os.Exit(1)
+		}
+		auth0ByUser := make(map[string]string, len(auth0Tokens))
+		for _, t := range auth0Tokens {
+			auth0ByUser[t.UserID] = t.Token
+		}
+		// Church admins are authorized by their CHURCH_ADMIN row in the
+		// database (@requireRole loads roles from the DB), so they get a
+		// plain user token like the app's
+		mint := func(userID string) (string, error) {
+			return mintWayfarerToken(jwtSecret, userID, []string{"user"}, now, validity)
+		}
+		churches, err = buildChurchSessions(admins, players, mint, auth0ByUser)
+		if err != nil {
+			slog.Error("Failed to build church sessions", "error", err)
+			os.Exit(1)
+		}
+		slog.Info("Church sessions", "churches", len(churches), "players", len(players))
+	}
+
 	// Create output config
 	outputConfig := LoadTestConfig{
 		BaseURL:     *baseURL,
 		Tokens:      tokens,
 		Auth0Tokens: auth0Tokens,
 		AdminToken:  adminToken,
+		Churches:    churches,
 		Generated:   now,
 	}
 

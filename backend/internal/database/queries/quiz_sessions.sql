@@ -58,6 +58,9 @@ WHERE id = @id::char(28)
 RETURNING *;
 
 -- name: UpdateQuizSessionState :one
+-- Moves a session from @fromstate to @state. Returns no row (pgx.ErrNoRows)
+-- when the session is not in @fromstate, e.g. because a concurrent call moved
+-- it first, so only one caller acts on each transition.
 UPDATE quiz_sessions
 SET
     state = @state::text,
@@ -66,6 +69,7 @@ SET
     finish_at = CASE WHEN @state::text = 'FINISHED' AND finish_at IS NULL THEN now() ELSE finish_at END,
     updated_at = now()
 WHERE id = @id::char(28)
+  AND state = @fromstate::text
 RETURNING *;
 
 -- name: DeleteQuizSession :exec
@@ -195,13 +199,6 @@ WHERE session_id = @sessionid::char(28)
 ORDER BY started_at DESC
 LIMIT 1;
 
--- name: GetSubmissionsBySessionID :many
-SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at,
-       question_order, score, max_score, points_awarded, auto_submitted, created_at
-FROM quiz_submissions
-WHERE session_id = @sessionid::char(28)
-ORDER BY started_at DESC;
-
 -- name: WaitForSessionSubmissionLocks :exec
 -- Barrier: waits until no transaction holds a lock on any of the session's
 -- submissions, completed ones included (answer writes lock their submission).
@@ -218,10 +215,15 @@ SET
 WHERE session_id = @sessionid::char(28)
     AND completed_at IS NULL;
 
--- name: DeleteSubmissionByUserAndSession :exec
+-- name: DeleteInProgressSubmissionByUserAndSession :execrows
+-- Only in-progress submissions: a completed one has already been scored and
+-- journaled, so deleting it would let the user start over and score again.
+-- A concurrent finalize holds FOR UPDATE on the row; this DELETE waits for it
+-- and then re-checks completed_at, so the two can't interleave.
 DELETE FROM quiz_submissions
 WHERE session_id = @sessionid::char(28)
-    AND user_id = @userid::char(28);
+    AND user_id = @userid::char(28)
+    AND completed_at IS NULL;
 
 -- ==================== User Session Access ====================
 

@@ -402,7 +402,7 @@ func (m *TestDBManager) EnsureLeaderboardConsent(ctx context.Context) (string, e
 	// Check if consent exists
 	var consentID string
 	err := m.DB.Pool.QueryRow(ctx, `
-		SELECT id FROM consents WHERE key = 'leaderboard_consent' LIMIT 1
+		SELECT id FROM consents WHERE key = 'leaderboard_consent' ORDER BY version DESC LIMIT 1
 	`).Scan(&consentID)
 
 	if err == nil {
@@ -600,6 +600,23 @@ func (m *TestDBManager) CreateTestProjectConsent(ctx context.Context, key string
 	_, err := m.DB.Pool.Exec(ctx, query, consentID, key, title, projectID)
 	if err != nil {
 		return "", fmt.Errorf("failed to create test consent %s for project: %w", key, err)
+	}
+	return consentID, nil
+}
+
+// CreateTestConsentVersion creates one consent row with an explicit version,
+// scope and publication time: nil publishedAt is a draft, a future one is
+// scheduled.
+func (m *TestDBManager) CreateTestConsentVersion(ctx context.Context, key string, version int, projectID *string, publishedAt *time.Time) (string, error) {
+	consentID := ulid.NewConsentID()
+	query := `
+		INSERT INTO consents (id, key, version, title, short_text, body, published_at, is_remote, project_id)
+		VALUES ($1, $2, $3, $4, 'Short text for consent', 'Body of the consent document', $5, false, $6)
+	`
+	title := fmt.Sprintf("Test Consent: %s v%d", key, version)
+	_, err := m.DB.Pool.Exec(ctx, query, consentID, key, version, title, publishedAt, projectID)
+	if err != nil {
+		return "", fmt.Errorf("failed to create test consent %s v%d: %w", key, version, err)
 	}
 	return consentID, nil
 }

@@ -6,7 +6,7 @@ defineProps<{
 
 <template>
   <DesignImage
-    :image="superteam.imageObject"
+    :image="superteam.image"
     :alt="superteam.name"
     :style="{ 'background-color': superteam.color }"
     class="rounded-full"

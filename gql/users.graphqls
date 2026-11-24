@@ -14,8 +14,7 @@ type User {
     age: Int @goField(forceResolver: true)
     email: String!
     name: String!
-    image: String @deprecated(reason: "Use imageObject instead")
-    imageObject: Image @goField(forceResolver: true)
+    image: Image @goField(forceResolver: true)
     projects: [Project!]! @goField(forceResolver: true)
     events: [Event!]! @goField(forceResolver: true)
     teams: [Team!]! @goField(forceResolver: true)

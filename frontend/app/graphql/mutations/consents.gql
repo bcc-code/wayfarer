@@ -71,3 +71,17 @@ mutation UpdateConsent(
     title
   }
 }
+
+mutation ArchiveConsent($id: ID!) {
+  archiveConsent(id: $id) {
+    id
+    archivedAt
+  }
+}
+
+mutation UnarchiveConsent($id: ID!) {
+  unarchiveConsent(id: $id) {
+    id
+    archivedAt
+  }
+}

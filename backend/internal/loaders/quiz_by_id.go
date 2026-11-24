@@ -64,7 +64,7 @@ func quizByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context
 					ID:                   row.ID,
 					Name:                 row.Name,
 					Description:          row.Description,
-					Image:                row.ImageUrl,
+					ImageURL:             row.ImageUrl,
 					TimeoutSeconds:       timeoutSeconds,
 					RandomizeQuestions:   row.RandomizeQuestions,
 					RevealCorrectAnswers: row.RevealCorrectAnswers,

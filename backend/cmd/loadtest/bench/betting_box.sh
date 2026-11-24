@@ -11,6 +11,15 @@
 #                                  the previous run's submissions and points.
 #                                  Stop the server first (see loadtest-remote.sh).
 #                                  points = quiz completion points (default 10).
+#   betting_box.sh reset-multi [buckets] [webhook_url] [points]
+#                                  the betting quiz with NO session, plus
+#                                  load-test churches sized by buckets (default
+#                                  "885:1-9,90:10-49,20:50-99,5:100-500" =
+#                                  1000 churches, ~10k players), each with one
+#                                  church admin, for k6/betting-multisession.js.
+#                                  webhook_url registers the plugin's
+#                                  quiz_session_finished receiver. Stop the
+#                                  server first.
 #
 # Env: PSQL (default "sudo -u postgres psql -d interact"),
 #      BENCH_DIR (dir holding gendata.sql/gendata2.sql, default: this dir).
@@ -65,6 +74,12 @@ cmd_seed() {
 
 cmd_reset() {
     local points=${1:-10}
+    remove_previous_run
+    create_quiz "$points"
+    create_single_session
+}
+
+remove_previous_run() {
     echo "=== removing the previous betting run ==="
     # Apply the leaderboard updates still queued from the last run first, so
     # the deletes below subtract points the leaderboards already have. Run
@@ -103,7 +118,10 @@ DELETE FROM quiz_sessions WHERE quiz_id = :quiz_id;
 DELETE FROM quizzes WHERE id = :quiz_id;
 SQL
     psql_q -c "DELETE FROM challenges WHERE id = '$CHALLENGE_ID'"
+}
 
+create_quiz() {
+    local points=$1
     echo "=== creating the betting quiz (completion_points=$points) ==="
     psql_q -v project_id="'$PROJECT_ID'" -v points="$points" -v admin="'$ADMIN_USER'" <<'SQL'
 INSERT INTO challenges (id, project_id, challenge_type, name, description, button_text,
@@ -135,7 +153,11 @@ SELECT 'QA01LOADTESTBETTING0000000' || q || a,
               ['Solomon','David','Saul'],['Bethlehem','Nazareth','Jerusalem']])[q][a],
        a = 1, a
 FROM generate_series(1, 5) q, generate_series(1, 3) a;
+SQL
+}
 
+create_single_session() {
+    psql_q -v admin="'$ADMIN_USER'" <<'SQL'
 INSERT INTO quiz_sessions (id, quiz_id, name, state, created_by)
 VALUES ('QN01LOADTESTBETTING000000000','QZ01LOADTESTBETTING000000000',
     'Load Test Betting Session','OPEN', :admin);
@@ -149,11 +171,129 @@ SQL
     $PSQL -Atc "SELECT 'users with points to bet=' || count(*) FROM (SELECT user_id FROM score_journal WHERE project_id='$PROJECT_ID' GROUP BY user_id HAVING SUM(points) > 0) t"
 }
 
+# DEFAULT_BUCKETS: 5 big churches (100-500 players), 20 medium (50-99),
+# 90 small (10-49) and 885 tiny (1-9): 1000 churches, ~10k players
+DEFAULT_BUCKETS="885:1-9,90:10-49,20:50-99,5:100-500"
+
+# church_sizes <buckets> prints "<index>\t<players>" for each load-test church.
+# buckets is a comma-separated list of <churches>:<min>-<max>; each bucket's
+# sizes are spread evenly from min to max (fixed, not random, so every run
+# has the same mix). Sizes ascend with the index.
+church_sizes() {
+    echo "$1" | tr ',' '\n' | awk -F'[:-]' '
+    NF != 3 || $1 < 1 || $2 < 1 || $3 < $2 { print "bad bucket: " $0 > "/dev/stderr"; exit 1 }
+    { for (j = 0; j < $1; j++) print ($1 == 1 ? $3 : int($2 + ($3 - $2) * j / ($1 - 1) + 0.5)) }' |
+        sort -n | awk '{ printf "%d\t%d\n", NR, $1 }'
+}
+
+# reset-multi: the betting quiz with no sessions, plus load-test churches
+# sized by <buckets>, holding players (users in the project with points), and
+# one CHURCH_ADMIN each. The admin VUs of k6/betting-multisession.js create,
+# open, grant, lock and finish one session per church through GraphQL.
+# Users moved into the load-test churches are restored to their own church
+# first, so the reset can be rerun.
+cmd_reset_multi() {
+    local buckets=${1:-$DEFAULT_BUCKETS} webhook_url=${2:-} points=${3:-10}
+    remove_previous_run
+    create_quiz "$points"
+
+    local table churches players sizes
+    table=$(church_sizes "$buckets")
+    churches=$(echo "$table" | wc -l | tr -d ' ')
+    players=$(echo "$table" | awk -F'\t' '{ s += $2 } END { print s }')
+    echo "=== $churches load-test churches, $players players (buckets $buckets) ==="
+    sizes=$(echo "$table" | awk -F'\t' '{printf "%s(%d,%d)", (NR>1?",":""), $1, $2}')
+    # Right after the bulk seed the planner has no statistics yet: the first
+    # reset then took ~10 min instead of ~6s
+    psql_q -c "ANALYZE users" -c "ANALYZE user_projects" -c "ANALYZE score_journal" -c "ANALYZE churches"
+    psql_q -v project_id="'$PROJECT_ID'" -v admin="'$ADMIN_USER'" -v players="$players" -v churches="$churches" <<SQL
+BEGIN;
+-- Undo the previous multi reset
+CREATE TABLE IF NOT EXISTS loadtest_church_backup (
+    user_id CHAR(28) PRIMARY KEY, church_id CHAR(28) NOT NULL);
+UPDATE users u SET church_id = b.church_id FROM loadtest_church_backup b WHERE u.id = b.user_id;
+DELETE FROM loadtest_church_backup;
+DELETE FROM churches WHERE id LIKE 'CH01LOADTESTCHURCH%';  -- cascades admin roles
+
+CREATE TEMP TABLE sizes (idx INT, size INT) ON COMMIT DROP;
+INSERT INTO sizes VALUES $sizes;
+
+INSERT INTO churches (id, name, country, category, external_id)
+SELECT 'CH01LOADTESTCHURCH' || lpad(idx::text, 10, '0'), 'Load Test Church ' || idx, 'NO',
+       CASE WHEN size >= 50 THEN 'XL' WHEN size >= 15 THEN 'L' ELSE 'S' END, 900000 + idx
+FROM sizes;
+
+-- Players: users in the project with points, in id order, filling the
+-- churches by cumulative size
+CREATE TEMP TABLE bounds ON COMMIT DROP AS
+    SELECT idx, sum(size) OVER (ORDER BY idx) - size AS lo, sum(size) OVER (ORDER BY idx) AS hi FROM sizes;
+CREATE TEMP TABLE players ON COMMIT DROP AS
+    SELECT u.id, u.church_id, row_number() OVER (ORDER BY u.id) - 1 AS rn
+    FROM users u
+    JOIN user_projects up ON up.user_id = u.id AND up.project_id = :project_id
+    WHERE u.id IN (SELECT user_id FROM score_journal WHERE project_id = :project_id
+                   GROUP BY user_id HAVING sum(points) > 0)
+    ORDER BY u.id LIMIT :players;
+-- Admins: users outside the project (so they are never players), one per church
+CREATE TEMP TABLE admins ON COMMIT DROP AS
+    SELECT u.id, u.church_id, row_number() OVER (ORDER BY u.id) AS idx
+    FROM users u
+    WHERE u.id <> :admin
+      AND NOT EXISTS (SELECT 1 FROM user_projects up WHERE up.user_id = u.id AND up.project_id = :project_id)
+    ORDER BY u.id LIMIT :churches;
+
+INSERT INTO loadtest_church_backup (user_id, church_id)
+SELECT id, church_id FROM players UNION ALL SELECT id, church_id FROM admins;
+
+UPDATE users u SET church_id = 'CH01LOADTESTCHURCH' || lpad(b.idx::text, 10, '0')
+FROM players p JOIN bounds b ON p.rn >= b.lo AND p.rn < b.hi
+WHERE u.id = p.id;
+UPDATE users u SET church_id = 'CH01LOADTESTCHURCH' || lpad(a.idx::text, 10, '0')
+FROM admins a WHERE u.id = a.id;
+
+INSERT INTO user_roles (id, user_id, role, church_id, assigned_by, assigned_at)
+SELECT 'UR01LOADTESTADMIN' || lpad(a.idx::text, 11, '0'), a.id, 'CHURCH_ADMIN',
+       'CH01LOADTESTCHURCH' || lpad(a.idx::text, 10, '0'), :admin, now()
+FROM admins a;
+
+DO \$\$ BEGIN
+    IF (SELECT count(*) FROM players) < $players THEN
+        RAISE EXCEPTION 'only % users in the project have points, need %', (SELECT count(*) FROM players), $players;
+    END IF;
+    IF (SELECT count(*) FROM admins) < $churches THEN
+        RAISE EXCEPTION 'only % users outside the project for admins, need %', (SELECT count(*) FROM admins), $churches;
+    END IF;
+END \$\$;
+
+ALTER TABLE score_journal DISABLE TRIGGER trigger_score_journal_leaderboard;
+SELECT regenerate_leaderboards();
+ALTER TABLE score_journal ENABLE TRIGGER trigger_score_journal_leaderboard;
+COMMIT;
+SQL
+
+    # The ladder_to_heaven plugin receives quiz_session_finished as a webhook
+    # from the same server, as in prod. Without it every finish would skip the
+    # plugin's work.
+    psql_q -c "DELETE FROM webhooks WHERE id = 'WH01LOADTESTMULTI00000000000'"
+    if [ -n "$webhook_url" ]; then
+        psql_q -c "INSERT INTO webhooks (id, project_id, name, url, event_type)
+            VALUES ('WH01LOADTESTMULTI00000000000', '$PROJECT_ID', 'Load test plugin receiver', '$webhook_url', 'quiz_session_finished')"
+    fi
+
+    $PSQL -Atc "SELECT 'churches=' || count(*) || ' players=' || sum(n) || ' min=' || min(n) || ' median=' || percentile_disc(0.5) WITHIN GROUP (ORDER BY n) || ' max=' || max(n) || ' churches_100plus=' || count(*) FILTER (WHERE n >= 100)
+        FROM (SELECT c.id, count(up.user_id) AS n FROM churches c
+              JOIN users u ON u.church_id = c.id
+              JOIN user_projects up ON up.user_id = u.id AND up.project_id = '$PROJECT_ID'
+              WHERE c.id LIKE 'CH01LOADTESTCHURCH%' GROUP BY c.id) t"
+    $PSQL -Atc "SELECT 'church admins=' || count(*) FROM user_roles WHERE id LIKE 'UR01LOADTESTADMIN%'"
+}
+
 case "${1:-}" in
 seed) shift; cmd_seed "$@" ;;
 reset) shift; cmd_reset "$@" ;;
+reset-multi) shift; cmd_reset_multi "$@" ;;
 *)
-    sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'
     exit 1
     ;;
 esac

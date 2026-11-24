@@ -6,7 +6,6 @@ definePageMeta({
 
 const route = useRoute('admin-projects-projectId-superteams')
 const { canEditProject } = usePermissions()
-const { isSuperAdmin } = useAuth()
 const canEdit = computed(() => canEditProject(route.params.projectId))
 
 gql(`
@@ -18,7 +17,7 @@ gql(`
           name
           description
           color
-          imageObject {
+          image {
             ...ImageFields
           }
           teams {
@@ -46,19 +45,6 @@ const superteams = computed(
     <div class="mb-4 flex items-center justify-between gap-4">
       <h2 class="text-xl">Superlag</h2>
       <div class="flex gap-2">
-        <!-- The ladder-to-heaven distribution tool. Its own route since it is a
-             separate workflow, and superadmin-only. -->
-        <UButton
-          v-if="isSuperAdmin"
-          variant="soft"
-          icon="lucide:shuffle"
-          :to="{
-            name: 'admin-projects-projectId-superteams-distribute',
-            params: { projectId: route.params.projectId },
-          }"
-        >
-          LADD-fordeling
-        </UButton>
         <UButton
           v-if="canEdit"
           icon="lucide:plus"
@@ -79,7 +65,7 @@ const superteams = computed(
       :loading="fetching"
       :columns="[
         { accessorKey: 'color', header: 'Farge' },
-        { accessorKey: 'imageObject', header: 'Bilde' },
+        { accessorKey: 'image', header: 'Bilde' },
         { accessorKey: 'name', header: 'Navn' },
         { accessorKey: 'teams', header: 'Lag' },
         { id: 'actions' },
@@ -92,10 +78,10 @@ const superteams = computed(
           :style="{ backgroundColor: row.original.color }"
         />
       </template>
-      <template #imageObject-cell="{ row }">
+      <template #image-cell="{ row }">
         <img
-          v-if="row.original.imageObject?.url"
-          :src="row.original.imageObject.url"
+          v-if="row.original.image?.url"
+          :src="row.original.image.url"
           height="32"
           width="32"
           class="bg-muted size-8 rounded"

@@ -246,6 +246,7 @@ type ComplexityRoot struct {
 	}
 
 	Consent struct {
+		ArchivedAt        func(childComplexity int) int
 		Body              func(childComplexity int) int
 		ID                func(childComplexity int) int
 		IsRequired        func(childComplexity int) int
@@ -333,7 +334,6 @@ type ComplexityRoot struct {
 		Event                       func(childComplexity int) int
 		ID                          func(childComplexity int) int
 		Image                       func(childComplexity int) int
-		ImageObject                 func(childComplexity int) int
 		Name                        func(childComplexity int) int
 		NotificationText            func(childComplexity int) int
 		Project                     func(childComplexity int) int
@@ -431,7 +431,7 @@ type ComplexityRoot struct {
 		BettingMultiplierCorrect func(childComplexity int) int
 		BettingMultiplierWrong   func(childComplexity int) int
 		ID                       func(childComplexity int) int
-		ImageObject              func(childComplexity int) int
+		Image                    func(childComplexity int) int
 		Points                   func(childComplexity int) int
 		QuestionOrder            func(childComplexity int) int
 		QuestionText             func(childComplexity int) int
@@ -449,15 +449,17 @@ type ComplexityRoot struct {
 	}
 
 	FreeTextResponse struct {
-		AnsweredAt       func(childComplexity int) int
-		BetAmount        func(childComplexity int) int
-		ID               func(childComplexity int) int
-		JournalEntry     func(childComplexity int) int
-		PointsEarned     func(childComplexity int) int
-		Question         func(childComplexity int) int
-		Submission       func(childComplexity int) int
-		TextResponse     func(childComplexity int) int
-		TimeSpentSeconds func(childComplexity int) int
+		AnsweredAt           func(childComplexity int) int
+		BetAmount            func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		IsCorrect            func(childComplexity int) int
+		JournalEntry         func(childComplexity int) int
+		PointsEarned         func(childComplexity int) int
+		Question             func(childComplexity int) int
+		SettledBetMultiplier func(childComplexity int) int
+		Submission           func(childComplexity int) int
+		TextResponse         func(childComplexity int) int
+		TimeSpentSeconds     func(childComplexity int) int
 	}
 
 	Image struct {
@@ -476,7 +478,7 @@ type ComplexityRoot struct {
 		BettingMultiplierCorrect func(childComplexity int) int
 		BettingMultiplierWrong   func(childComplexity int) int
 		ID                       func(childComplexity int) int
-		ImageObject              func(childComplexity int) int
+		Image                    func(childComplexity int) int
 		Points                   func(childComplexity int) int
 		QuestionOrder            func(childComplexity int) int
 		QuestionText             func(childComplexity int) int
@@ -491,15 +493,17 @@ type ComplexityRoot struct {
 	}
 
 	JsonResponse struct {
-		AnsweredAt       func(childComplexity int) int
-		BetAmount        func(childComplexity int) int
-		ID               func(childComplexity int) int
-		JSONResponse     func(childComplexity int) int
-		JournalEntry     func(childComplexity int) int
-		PointsEarned     func(childComplexity int) int
-		Question         func(childComplexity int) int
-		Submission       func(childComplexity int) int
-		TimeSpentSeconds func(childComplexity int) int
+		AnsweredAt           func(childComplexity int) int
+		BetAmount            func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		IsCorrect            func(childComplexity int) int
+		JSONResponse         func(childComplexity int) int
+		JournalEntry         func(childComplexity int) int
+		PointsEarned         func(childComplexity int) int
+		Question             func(childComplexity int) int
+		SettledBetMultiplier func(childComplexity int) int
+		Submission           func(childComplexity int) int
+		TimeSpentSeconds     func(childComplexity int) int
 	}
 
 	LeaderboardConfig struct {
@@ -546,7 +550,6 @@ type ComplexityRoot struct {
 		Description func(childComplexity int) int
 		ID          func(childComplexity int) int
 		Image       func(childComplexity int) int
-		ImageObject func(childComplexity int) int
 		LastScoreAt func(childComplexity int) int
 		Name        func(childComplexity int) int
 		Rank        func(childComplexity int) int
@@ -612,6 +615,7 @@ type ComplexityRoot struct {
 		AddQuizQuestion                             func(childComplexity int, quizID string, input model.CreateQuizQuestionInput) int
 		AddTeamMembers                              func(childComplexity int, teamID string, userIds []string, force *bool) int
 		AdminSetUserConsent                         func(childComplexity int, userID string, consentID string, action model.ConsentAction) int
+		ArchiveConsent                              func(childComplexity int, id string) int
 		ArchiveProject                              func(childComplexity int, id string) int
 		AssignChallengeToEvent                      func(childComplexity int, challengeID string, eventID string) int
 		AssignRole                                  func(childComplexity int, input model.AssignRoleInput) int
@@ -721,6 +725,7 @@ type ComplexityRoot struct {
 		SubmitQuizAnswer                            func(childComplexity int, submissionID string, input model.SubmitQuizAnswerInput) int
 		SyncUser                                    func(childComplexity int, userID string) int
 		TestWebhook                                 func(childComplexity int, id string) int
+		UnarchiveConsent                            func(childComplexity int, id string) int
 		UncompleteChallenge                         func(childComplexity int, userID string, challengeID string) int
 		UnenrollFromChallenge                       func(childComplexity int, challengeID string) int
 		UnenrollUserFromChallenge                   func(childComplexity int, userID string, challengeID string) int
@@ -765,7 +770,7 @@ type ComplexityRoot struct {
 		BettingMultiplierCorrect func(childComplexity int) int
 		BettingMultiplierWrong   func(childComplexity int) int
 		ID                       func(childComplexity int) int
-		ImageObject              func(childComplexity int) int
+		Image                    func(childComplexity int) int
 		MaxValue                 func(childComplexity int) int
 		MinValue                 func(childComplexity int) int
 		Points                   func(childComplexity int) int
@@ -788,15 +793,17 @@ type ComplexityRoot struct {
 	}
 
 	NumberResponse struct {
-		AnsweredAt       func(childComplexity int) int
-		BetAmount        func(childComplexity int) int
-		ID               func(childComplexity int) int
-		JournalEntry     func(childComplexity int) int
-		NumberResponse   func(childComplexity int) int
-		PointsEarned     func(childComplexity int) int
-		Question         func(childComplexity int) int
-		Submission       func(childComplexity int) int
-		TimeSpentSeconds func(childComplexity int) int
+		AnsweredAt           func(childComplexity int) int
+		BetAmount            func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		IsCorrect            func(childComplexity int) int
+		JournalEntry         func(childComplexity int) int
+		NumberResponse       func(childComplexity int) int
+		PointsEarned         func(childComplexity int) int
+		Question             func(childComplexity int) int
+		SettledBetMultiplier func(childComplexity int) int
+		Submission           func(childComplexity int) int
+		TimeSpentSeconds     func(childComplexity int) int
 	}
 
 	OrderingItemResult struct {
@@ -815,7 +822,7 @@ type ComplexityRoot struct {
 		BettingMultiplierCorrect func(childComplexity int) int
 		BettingMultiplierWrong   func(childComplexity int) int
 		ID                       func(childComplexity int) int
-		ImageObject              func(childComplexity int) int
+		Image                    func(childComplexity int) int
 		OrderingItems            func(childComplexity int) int
 		Points                   func(childComplexity int) int
 		QuestionOrder            func(childComplexity int) int
@@ -833,16 +840,17 @@ type ComplexityRoot struct {
 	}
 
 	OrderingResponse struct {
-		AnsweredAt       func(childComplexity int) int
-		BetAmount        func(childComplexity int) int
-		ID               func(childComplexity int) int
-		IsCorrect        func(childComplexity int) int
-		JournalEntry     func(childComplexity int) int
-		PointsEarned     func(childComplexity int) int
-		Question         func(childComplexity int) int
-		Submission       func(childComplexity int) int
-		SubmittedOrder   func(childComplexity int) int
-		TimeSpentSeconds func(childComplexity int) int
+		AnsweredAt           func(childComplexity int) int
+		BetAmount            func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		IsCorrect            func(childComplexity int) int
+		JournalEntry         func(childComplexity int) int
+		PointsEarned         func(childComplexity int) int
+		Question             func(childComplexity int) int
+		SettledBetMultiplier func(childComplexity int) int
+		Submission           func(childComplexity int) int
+		SubmittedOrder       func(childComplexity int) int
+		TimeSpentSeconds     func(childComplexity int) int
 	}
 
 	PageInfo struct {
@@ -860,7 +868,6 @@ type ComplexityRoot struct {
 		Event                       func(childComplexity int) int
 		ID                          func(childComplexity int) int
 		Image                       func(childComplexity int) int
-		ImageObject                 func(childComplexity int) int
 		Name                        func(childComplexity int) int
 		NotificationText            func(childComplexity int) int
 		PluginChallengeID           func(childComplexity int) int
@@ -893,7 +900,7 @@ type ComplexityRoot struct {
 		BettingMultiplierCorrect func(childComplexity int) int
 		BettingMultiplierWrong   func(childComplexity int) int
 		ID                       func(childComplexity int) int
-		ImageObject              func(childComplexity int) int
+		Image                    func(childComplexity int) int
 		Points                   func(childComplexity int) int
 		PredefinedAnswers        func(childComplexity int) int
 		QuestionOrder            func(childComplexity int) int
@@ -911,17 +918,18 @@ type ComplexityRoot struct {
 	}
 
 	PredefinedResponse struct {
-		AnsweredAt        func(childComplexity int) int
-		BetAmount         func(childComplexity int) int
-		ID                func(childComplexity int) int
-		IsCorrect         func(childComplexity int) int
-		JournalEntry      func(childComplexity int) int
-		PointsEarned      func(childComplexity int) int
-		Question          func(childComplexity int) int
-		SelectedAnswerIds func(childComplexity int) int
-		SelectedAnswers   func(childComplexity int) int
-		Submission        func(childComplexity int) int
-		TimeSpentSeconds  func(childComplexity int) int
+		AnsweredAt           func(childComplexity int) int
+		BetAmount            func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		IsCorrect            func(childComplexity int) int
+		JournalEntry         func(childComplexity int) int
+		PointsEarned         func(childComplexity int) int
+		Question             func(childComplexity int) int
+		SelectedAnswerIds    func(childComplexity int) int
+		SelectedAnswers      func(childComplexity int) int
+		SettledBetMultiplier func(childComplexity int) int
+		Submission           func(childComplexity int) int
+		TimeSpentSeconds     func(childComplexity int) int
 	}
 
 	Project struct {
@@ -985,6 +993,7 @@ type ComplexityRoot struct {
 		Achievement                   func(childComplexity int, id string) int
 		Achievements                  func(childComplexity int, filter model.AchievementFilter, first *int, after *string, last *int, before *string) int
 		AdminCheckAchievementProgress func(childComplexity int, userID string, achievementID string) int
+		AdminConsents                 func(childComplexity int, projectID *string, includeArchived *bool) int
 		AdminDashboardStats           func(childComplexity int) int
 		AdminExternalContentEvents    func(childComplexity int, userID string, externalContentID string) int
 		AdminScoreJournal             func(childComplexity int, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) int
@@ -1051,27 +1060,27 @@ type ComplexityRoot struct {
 	}
 
 	Quiz struct {
-		AllowRetakes         func(childComplexity int) int
-		Challenge            func(childComplexity int) int
-		CompletionPoints     func(childComplexity int) int
-		Description          func(childComplexity int) int
-		EndTime              func(childComplexity int) int
-		ID                   func(childComplexity int) int
-		Image                func(childComplexity int) int
-		ImageObject          func(childComplexity int) int
-		Name                 func(childComplexity int) int
-		Project              func(childComplexity int) int
-		Questions            func(childComplexity int) int
-		RandomizeQuestions   func(childComplexity int) int
-		RevealCorrectAnswers func(childComplexity int) int
-		Sessions             func(childComplexity int, state *model.QuizSessionState) int
-		TimeoutSeconds       func(childComplexity int) int
-		TranslationStatus    func(childComplexity int) int
-		UserActiveSession    func(childComplexity int) int
-		UserActiveSubmission func(childComplexity int) int
-		UserCanStart         func(childComplexity int) int
-		UserSessions         func(childComplexity int) int
-		UserSubmissions      func(childComplexity int) int
+		AllowRetakes           func(childComplexity int) int
+		Challenge              func(childComplexity int) int
+		CompletionPoints       func(childComplexity int) int
+		Description            func(childComplexity int) int
+		EndTime                func(childComplexity int) int
+		ID                     func(childComplexity int) int
+		Image                  func(childComplexity int) int
+		Name                   func(childComplexity int) int
+		Project                func(childComplexity int) int
+		Questions              func(childComplexity int) int
+		RandomizeQuestions     func(childComplexity int) int
+		RevealCorrectAnswers   func(childComplexity int) int
+		Sessions               func(childComplexity int, state *model.QuizSessionState) int
+		TimeoutSeconds         func(childComplexity int) int
+		TranslationStatus      func(childComplexity int) int
+		UserActiveSession      func(childComplexity int) int
+		UserActiveSubmission   func(childComplexity int) int
+		UserAvailableBetPoints func(childComplexity int) int
+		UserCanStart           func(childComplexity int) int
+		UserSessions           func(childComplexity int) int
+		UserSubmissions        func(childComplexity int) int
 	}
 
 	QuizAchievement struct {
@@ -1107,7 +1116,6 @@ type ComplexityRoot struct {
 		Event                       func(childComplexity int) int
 		ID                          func(childComplexity int) int
 		Image                       func(childComplexity int) int
-		ImageObject                 func(childComplexity int) int
 		Name                        func(childComplexity int) int
 		NotificationText            func(childComplexity int) int
 		Project                     func(childComplexity int) int
@@ -1294,7 +1302,6 @@ type ComplexityRoot struct {
 		Event                       func(childComplexity int) int
 		ID                          func(childComplexity int) int
 		Image                       func(childComplexity int) int
-		ImageObject                 func(childComplexity int) int
 		Name                        func(childComplexity int) int
 		NotificationText            func(childComplexity int) int
 		Project                     func(childComplexity int) int
@@ -1339,7 +1346,7 @@ type ComplexityRoot struct {
 		Color         func(childComplexity int) int
 		Description   func(childComplexity int) int
 		ID            func(childComplexity int) int
-		ImageObject   func(childComplexity int) int
+		Image         func(childComplexity int) int
 		Members       func(childComplexity int, first *int, after *string, last *int, before *string) int
 		Name          func(childComplexity int) int
 		ParentProject func(childComplexity int) int
@@ -1391,12 +1398,13 @@ type ComplexityRoot struct {
 	}
 
 	TeamMember struct {
-		Church     func(childComplexity int) int
-		ID         func(childComplexity int) int
-		IsTeamLead func(childComplexity int) int
-		JoinedAt   func(childComplexity int) int
-		Name       func(childComplexity int) int
-		User       func(childComplexity int) int
+		Church             func(childComplexity int) int
+		CountsTowardScores func(childComplexity int) int
+		ID                 func(childComplexity int) int
+		IsTeamLead         func(childComplexity int) int
+		JoinedAt           func(childComplexity int) int
+		Name               func(childComplexity int) int
+		User               func(childComplexity int) int
 	}
 
 	TranslationFieldStatus struct {
@@ -1417,7 +1425,6 @@ type ComplexityRoot struct {
 		Gender            func(childComplexity int) int
 		ID                func(childComplexity int) int
 		Image             func(childComplexity int) int
-		ImageObject       func(childComplexity int) int
 		Language          func(childComplexity int) int
 		MembersID         func(childComplexity int) int
 		Name              func(childComplexity int) int
@@ -1566,7 +1573,7 @@ type EventResolver interface {
 	TranslationStatus(ctx context.Context, obj *model.Event) ([]model.TranslationFieldStatus, error)
 }
 type ExternalChallengeResolver interface {
-	ImageObject(ctx context.Context, obj *model.ExternalChallenge) (*model.Image, error)
+	Image(ctx context.Context, obj *model.ExternalChallenge) (*model.Image, error)
 	Project(ctx context.Context, obj *model.ExternalChallenge) (*model.Project, error)
 	Event(ctx context.Context, obj *model.ExternalChallenge) (*model.Event, error)
 
@@ -1582,7 +1589,7 @@ type ExternalContentResolver interface {
 type FreeTextQuestionResolver interface {
 	Quiz(ctx context.Context, obj *model.FreeTextQuestion) (*model.Quiz, error)
 
-	ImageObject(ctx context.Context, obj *model.FreeTextQuestion) (*model.Image, error)
+	Image(ctx context.Context, obj *model.FreeTextQuestion) (*model.Image, error)
 
 	TranslationStatus(ctx context.Context, obj *model.FreeTextQuestion) ([]model.TranslationFieldStatus, error)
 }
@@ -1591,11 +1598,14 @@ type FreeTextResponseResolver interface {
 	Question(ctx context.Context, obj *model.FreeTextResponse) (model.QuizQuestion, error)
 
 	JournalEntry(ctx context.Context, obj *model.FreeTextResponse) (*model.ScoreJournal, error)
+
+	IsCorrect(ctx context.Context, obj *model.FreeTextResponse) (*bool, error)
+	SettledBetMultiplier(ctx context.Context, obj *model.FreeTextResponse) (*float64, error)
 }
 type JsonQuestionResolver interface {
 	Quiz(ctx context.Context, obj *model.JSONQuestion) (*model.Quiz, error)
 
-	ImageObject(ctx context.Context, obj *model.JSONQuestion) (*model.Image, error)
+	Image(ctx context.Context, obj *model.JSONQuestion) (*model.Image, error)
 
 	TranslationStatus(ctx context.Context, obj *model.JSONQuestion) ([]model.TranslationFieldStatus, error)
 }
@@ -1604,6 +1614,9 @@ type JsonResponseResolver interface {
 	Question(ctx context.Context, obj *model.JSONResponse) (model.QuizQuestion, error)
 
 	JournalEntry(ctx context.Context, obj *model.JSONResponse) (*model.ScoreJournal, error)
+
+	IsCorrect(ctx context.Context, obj *model.JSONResponse) (*bool, error)
+	SettledBetMultiplier(ctx context.Context, obj *model.JSONResponse) (*float64, error)
 }
 type LeaderboardConfigResolver interface {
 	Project(ctx context.Context, obj *model.LeaderboardConfig) (*model.Project, error)
@@ -1615,7 +1628,7 @@ type LeaderboardConnectionResolver interface {
 	NearestChurchRivals(ctx context.Context, obj *model.LeaderboardConnection, first *int) ([]model.LeaderboardEntry, error)
 }
 type LeaderboardEntryResolver interface {
-	ImageObject(ctx context.Context, obj *model.LeaderboardEntry) (*model.Image, error)
+	Image(ctx context.Context, obj *model.LeaderboardEntry) (*model.Image, error)
 }
 type MarkdownTextResolver interface {
 	HTML(ctx context.Context, obj *model.MarkdownText) (string, error)
@@ -1712,6 +1725,8 @@ type MutationResolver interface {
 	RejectConsent(ctx context.Context, consentID string) (*model.UserConsent, error)
 	CreateConsent(ctx context.Context, key string, title string, shortText *string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string, projectID *string, isRequired *bool) (*model.Consent, error)
 	UpdateConsent(ctx context.Context, id string, title *string, shortText *string, body *string, url *string, publishedAt *scalars.DateTime, managedBy *string, isRequired *bool) (*model.Consent, error)
+	ArchiveConsent(ctx context.Context, id string) (*model.Consent, error)
+	UnarchiveConsent(ctx context.Context, id string) (*model.Consent, error)
 	AdminSetUserConsent(ctx context.Context, userID string, consentID string, action model.ConsentAction) (*model.UserConsentHistoryEntry, error)
 	CreateQuiz(ctx context.Context, input model.CreateQuizInput) (*model.Quiz, error)
 	UpdateQuiz(ctx context.Context, id string, input model.UpdateQuizInput) (*model.Quiz, error)
@@ -1764,7 +1779,7 @@ type MutationResolver interface {
 type NumberQuestionResolver interface {
 	Quiz(ctx context.Context, obj *model.NumberQuestion) (*model.Quiz, error)
 
-	ImageObject(ctx context.Context, obj *model.NumberQuestion) (*model.Image, error)
+	Image(ctx context.Context, obj *model.NumberQuestion) (*model.Image, error)
 
 	TranslationStatus(ctx context.Context, obj *model.NumberQuestion) ([]model.TranslationFieldStatus, error)
 }
@@ -1773,11 +1788,14 @@ type NumberResponseResolver interface {
 	Question(ctx context.Context, obj *model.NumberResponse) (model.QuizQuestion, error)
 
 	JournalEntry(ctx context.Context, obj *model.NumberResponse) (*model.ScoreJournal, error)
+
+	IsCorrect(ctx context.Context, obj *model.NumberResponse) (*bool, error)
+	SettledBetMultiplier(ctx context.Context, obj *model.NumberResponse) (*float64, error)
 }
 type OrderingQuestionResolver interface {
 	Quiz(ctx context.Context, obj *model.OrderingQuestion) (*model.Quiz, error)
 
-	ImageObject(ctx context.Context, obj *model.OrderingQuestion) (*model.Image, error)
+	Image(ctx context.Context, obj *model.OrderingQuestion) (*model.Image, error)
 
 	TranslationStatus(ctx context.Context, obj *model.OrderingQuestion) ([]model.TranslationFieldStatus, error)
 	OrderingItems(ctx context.Context, obj *model.OrderingQuestion) ([]model.QuizOrderingItem, error)
@@ -1789,9 +1807,10 @@ type OrderingResponseResolver interface {
 	JournalEntry(ctx context.Context, obj *model.OrderingResponse) (*model.ScoreJournal, error)
 
 	IsCorrect(ctx context.Context, obj *model.OrderingResponse) (*bool, error)
+	SettledBetMultiplier(ctx context.Context, obj *model.OrderingResponse) (*float64, error)
 }
 type PluginChallengeResolver interface {
-	ImageObject(ctx context.Context, obj *model.PluginChallenge) (*model.Image, error)
+	Image(ctx context.Context, obj *model.PluginChallenge) (*model.Image, error)
 	Project(ctx context.Context, obj *model.PluginChallenge) (*model.Project, error)
 	Event(ctx context.Context, obj *model.PluginChallenge) (*model.Event, error)
 
@@ -1803,7 +1822,7 @@ type PluginChallengeResolver interface {
 type PredefinedQuestionResolver interface {
 	Quiz(ctx context.Context, obj *model.PredefinedQuestion) (*model.Quiz, error)
 
-	ImageObject(ctx context.Context, obj *model.PredefinedQuestion) (*model.Image, error)
+	Image(ctx context.Context, obj *model.PredefinedQuestion) (*model.Image, error)
 
 	TranslationStatus(ctx context.Context, obj *model.PredefinedQuestion) ([]model.TranslationFieldStatus, error)
 
@@ -1816,6 +1835,8 @@ type PredefinedResponseResolver interface {
 	JournalEntry(ctx context.Context, obj *model.PredefinedResponse) (*model.ScoreJournal, error)
 
 	SelectedAnswers(ctx context.Context, obj *model.PredefinedResponse) ([]model.QuizPredefinedAnswer, error)
+	IsCorrect(ctx context.Context, obj *model.PredefinedResponse) (*bool, error)
+	SettledBetMultiplier(ctx context.Context, obj *model.PredefinedResponse) (*float64, error)
 }
 type ProjectResolver interface {
 	Rules(ctx context.Context, obj *model.Project) (*model.MarkdownText, error)
@@ -1874,6 +1895,7 @@ type QueryResolver interface {
 	ScoreJournal(ctx context.Context, projectID string, userID string, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error)
 	AdminScoreJournal(ctx context.Context, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error)
 	Consents(ctx context.Context) ([]model.Consent, error)
+	AdminConsents(ctx context.Context, projectID *string, includeArchived *bool) ([]model.Consent, error)
 	Consent(ctx context.Context, id string) (*model.Consent, error)
 	PendingConsents(ctx context.Context) ([]model.Consent, error)
 	Quiz(ctx context.Context, id string) (*model.Quiz, error)
@@ -1908,7 +1930,7 @@ type QueryResolver interface {
 	BulkJobs(ctx context.Context, filter *model.BulkJobFilter, first *int, after *string, last *int, before *string) (*model.BulkJobConnection, error)
 }
 type QuizResolver interface {
-	ImageObject(ctx context.Context, obj *model.Quiz) (*model.Image, error)
+	Image(ctx context.Context, obj *model.Quiz) (*model.Image, error)
 	Project(ctx context.Context, obj *model.Quiz) (*model.Project, error)
 	Challenge(ctx context.Context, obj *model.Quiz) (model.Challenge, error)
 
@@ -1917,6 +1939,7 @@ type QuizResolver interface {
 	UserSubmissions(ctx context.Context, obj *model.Quiz) ([]model.QuizSubmission, error)
 	UserCanStart(ctx context.Context, obj *model.Quiz) (bool, error)
 	UserActiveSubmission(ctx context.Context, obj *model.Quiz) (*model.QuizSubmission, error)
+	UserAvailableBetPoints(ctx context.Context, obj *model.Quiz) (*int, error)
 	Sessions(ctx context.Context, obj *model.Quiz, state *model.QuizSessionState) ([]model.QuizSession, error)
 	UserSessions(ctx context.Context, obj *model.Quiz) ([]model.QuizSession, error)
 	UserActiveSession(ctx context.Context, obj *model.Quiz) (*model.QuizSession, error)
@@ -1938,7 +1961,7 @@ type QuizAchievementResolver interface {
 	TranslationStatus(ctx context.Context, obj *model.QuizAchievement) ([]model.TranslationFieldStatus, error)
 }
 type QuizChallengeResolver interface {
-	ImageObject(ctx context.Context, obj *model.QuizChallenge) (*model.Image, error)
+	Image(ctx context.Context, obj *model.QuizChallenge) (*model.Image, error)
 	Project(ctx context.Context, obj *model.QuizChallenge) (*model.Project, error)
 	Event(ctx context.Context, obj *model.QuizChallenge) (*model.Event, error)
 
@@ -2013,7 +2036,7 @@ type SimpleAchievementResolver interface {
 	TranslationStatus(ctx context.Context, obj *model.SimpleAchievement) ([]model.TranslationFieldStatus, error)
 }
 type SimpleChallengeResolver interface {
-	ImageObject(ctx context.Context, obj *model.SimpleChallenge) (*model.Image, error)
+	Image(ctx context.Context, obj *model.SimpleChallenge) (*model.Image, error)
 	Project(ctx context.Context, obj *model.SimpleChallenge) (*model.Project, error)
 	Event(ctx context.Context, obj *model.SimpleChallenge) (*model.Event, error)
 
@@ -2041,7 +2064,7 @@ type StreakAchievementResolver interface {
 	TranslationStatus(ctx context.Context, obj *model.StreakAchievement) ([]model.TranslationFieldStatus, error)
 }
 type SuperTeamResolver interface {
-	ImageObject(ctx context.Context, obj *model.SuperTeam) (*model.Image, error)
+	Image(ctx context.Context, obj *model.SuperTeam) (*model.Image, error)
 
 	Members(ctx context.Context, obj *model.SuperTeam, first *int, after *string, last *int, before *string) (*model.UserConnection, error)
 	ParentProject(ctx context.Context, obj *model.SuperTeam) (*model.Project, error)
@@ -2064,7 +2087,7 @@ type UserResolver interface {
 
 	Age(ctx context.Context, obj *model.User) (*int, error)
 
-	ImageObject(ctx context.Context, obj *model.User) (*model.Image, error)
+	Image(ctx context.Context, obj *model.User) (*model.Image, error)
 	Projects(ctx context.Context, obj *model.User) ([]model.Project, error)
 	Events(ctx context.Context, obj *model.User) ([]model.Event, error)
 	Teams(ctx context.Context, obj *model.User) ([]model.Team, error)
@@ -2686,6 +2709,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Colors.Light(childComplexity), true
 
+	case "Consent.archivedAt":
+		if e.complexity.Consent.ArchivedAt == nil {
+			break
+		}
+
+		return e.complexity.Consent.ArchivedAt(childComplexity), true
 	case "Consent.body":
 		if e.complexity.Consent.Body == nil {
 			break
@@ -3094,12 +3123,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ExternalChallenge.Image(childComplexity), true
-	case "ExternalChallenge.imageObject":
-		if e.complexity.ExternalChallenge.ImageObject == nil {
-			break
-		}
-
-		return e.complexity.ExternalChallenge.ImageObject(childComplexity), true
 	case "ExternalChallenge.name":
 		if e.complexity.ExternalChallenge.Name == nil {
 			break
@@ -3495,12 +3518,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.FreeTextQuestion.ID(childComplexity), true
-	case "FreeTextQuestion.imageObject":
-		if e.complexity.FreeTextQuestion.ImageObject == nil {
+	case "FreeTextQuestion.image":
+		if e.complexity.FreeTextQuestion.Image == nil {
 			break
 		}
 
-		return e.complexity.FreeTextQuestion.ImageObject(childComplexity), true
+		return e.complexity.FreeTextQuestion.Image(childComplexity), true
 	case "FreeTextQuestion.points":
 		if e.complexity.FreeTextQuestion.Points == nil {
 			break
@@ -3587,6 +3610,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.FreeTextResponse.ID(childComplexity), true
+	case "FreeTextResponse.isCorrect":
+		if e.complexity.FreeTextResponse.IsCorrect == nil {
+			break
+		}
+
+		return e.complexity.FreeTextResponse.IsCorrect(childComplexity), true
 	case "FreeTextResponse.journalEntry":
 		if e.complexity.FreeTextResponse.JournalEntry == nil {
 			break
@@ -3605,6 +3634,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.FreeTextResponse.Question(childComplexity), true
+	case "FreeTextResponse.settledBetMultiplier":
+		if e.complexity.FreeTextResponse.SettledBetMultiplier == nil {
+			break
+		}
+
+		return e.complexity.FreeTextResponse.SettledBetMultiplier(childComplexity), true
 	case "FreeTextResponse.submission":
 		if e.complexity.FreeTextResponse.Submission == nil {
 			break
@@ -3697,12 +3732,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.JsonQuestion.ID(childComplexity), true
-	case "JsonQuestion.imageObject":
-		if e.complexity.JsonQuestion.ImageObject == nil {
+	case "JsonQuestion.image":
+		if e.complexity.JsonQuestion.Image == nil {
 			break
 		}
 
-		return e.complexity.JsonQuestion.ImageObject(childComplexity), true
+		return e.complexity.JsonQuestion.Image(childComplexity), true
 	case "JsonQuestion.points":
 		if e.complexity.JsonQuestion.Points == nil {
 			break
@@ -3771,6 +3806,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.JsonResponse.ID(childComplexity), true
+	case "JsonResponse.isCorrect":
+		if e.complexity.JsonResponse.IsCorrect == nil {
+			break
+		}
+
+		return e.complexity.JsonResponse.IsCorrect(childComplexity), true
 	case "JsonResponse.jsonResponse":
 		if e.complexity.JsonResponse.JSONResponse == nil {
 			break
@@ -3795,6 +3836,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.JsonResponse.Question(childComplexity), true
+	case "JsonResponse.settledBetMultiplier":
+		if e.complexity.JsonResponse.SettledBetMultiplier == nil {
+			break
+		}
+
+		return e.complexity.JsonResponse.SettledBetMultiplier(childComplexity), true
 	case "JsonResponse.submission":
 		if e.complexity.JsonResponse.Submission == nil {
 			break
@@ -3991,12 +4038,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.LeaderboardEntry.Image(childComplexity), true
-	case "LeaderboardEntry.imageObject":
-		if e.complexity.LeaderboardEntry.ImageObject == nil {
-			break
-		}
-
-		return e.complexity.LeaderboardEntry.ImageObject(childComplexity), true
 	case "LeaderboardEntry.lastScoreAt":
 		if e.complexity.LeaderboardEntry.LastScoreAt == nil {
 			break
@@ -4254,6 +4295,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.AdminSetUserConsent(childComplexity, args["userId"].(string), args["consentId"].(string), args["action"].(model.ConsentAction)), true
+	case "Mutation.archiveConsent":
+		if e.complexity.Mutation.ArchiveConsent == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_archiveConsent_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ArchiveConsent(childComplexity, args["id"].(string)), true
 	case "Mutation.archiveProject":
 		if e.complexity.Mutation.ArchiveProject == nil {
 			break
@@ -5433,6 +5485,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.TestWebhook(childComplexity, args["id"].(string)), true
+	case "Mutation.unarchiveConsent":
+		if e.complexity.Mutation.UnarchiveConsent == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_unarchiveConsent_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UnarchiveConsent(childComplexity, args["id"].(string)), true
 	case "Mutation.uncompleteChallenge":
 		if e.complexity.Mutation.UncompleteChallenge == nil {
 			break
@@ -5793,12 +5856,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.NumberQuestion.ID(childComplexity), true
-	case "NumberQuestion.imageObject":
-		if e.complexity.NumberQuestion.ImageObject == nil {
+	case "NumberQuestion.image":
+		if e.complexity.NumberQuestion.Image == nil {
 			break
 		}
 
-		return e.complexity.NumberQuestion.ImageObject(childComplexity), true
+		return e.complexity.NumberQuestion.Image(childComplexity), true
 	case "NumberQuestion.maxValue":
 		if e.complexity.NumberQuestion.MaxValue == nil {
 			break
@@ -5915,6 +5978,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.NumberResponse.ID(childComplexity), true
+	case "NumberResponse.isCorrect":
+		if e.complexity.NumberResponse.IsCorrect == nil {
+			break
+		}
+
+		return e.complexity.NumberResponse.IsCorrect(childComplexity), true
 	case "NumberResponse.journalEntry":
 		if e.complexity.NumberResponse.JournalEntry == nil {
 			break
@@ -5939,6 +6008,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.NumberResponse.Question(childComplexity), true
+	case "NumberResponse.settledBetMultiplier":
+		if e.complexity.NumberResponse.SettledBetMultiplier == nil {
+			break
+		}
+
+		return e.complexity.NumberResponse.SettledBetMultiplier(childComplexity), true
 	case "NumberResponse.submission":
 		if e.complexity.NumberResponse.Submission == nil {
 			break
@@ -6025,12 +6100,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.OrderingQuestion.ID(childComplexity), true
-	case "OrderingQuestion.imageObject":
-		if e.complexity.OrderingQuestion.ImageObject == nil {
+	case "OrderingQuestion.image":
+		if e.complexity.OrderingQuestion.Image == nil {
 			break
 		}
 
-		return e.complexity.OrderingQuestion.ImageObject(childComplexity), true
+		return e.complexity.OrderingQuestion.Image(childComplexity), true
 	case "OrderingQuestion.orderingItems":
 		if e.complexity.OrderingQuestion.OrderingItems == nil {
 			break
@@ -6141,6 +6216,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.OrderingResponse.Question(childComplexity), true
+	case "OrderingResponse.settledBetMultiplier":
+		if e.complexity.OrderingResponse.SettledBetMultiplier == nil {
+			break
+		}
+
+		return e.complexity.OrderingResponse.SettledBetMultiplier(childComplexity), true
 	case "OrderingResponse.submission":
 		if e.complexity.OrderingResponse.Submission == nil {
 			break
@@ -6227,12 +6308,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PluginChallenge.Image(childComplexity), true
-	case "PluginChallenge.imageObject":
-		if e.complexity.PluginChallenge.ImageObject == nil {
-			break
-		}
-
-		return e.complexity.PluginChallenge.ImageObject(childComplexity), true
 	case "PluginChallenge.name":
 		if e.complexity.PluginChallenge.Name == nil {
 			break
@@ -6391,12 +6466,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PredefinedQuestion.ID(childComplexity), true
-	case "PredefinedQuestion.imageObject":
-		if e.complexity.PredefinedQuestion.ImageObject == nil {
+	case "PredefinedQuestion.image":
+		if e.complexity.PredefinedQuestion.Image == nil {
 			break
 		}
 
-		return e.complexity.PredefinedQuestion.ImageObject(childComplexity), true
+		return e.complexity.PredefinedQuestion.Image(childComplexity), true
 	case "PredefinedQuestion.points":
 		if e.complexity.PredefinedQuestion.Points == nil {
 			break
@@ -6519,6 +6594,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PredefinedResponse.SelectedAnswers(childComplexity), true
+	case "PredefinedResponse.settledBetMultiplier":
+		if e.complexity.PredefinedResponse.SettledBetMultiplier == nil {
+			break
+		}
+
+		return e.complexity.PredefinedResponse.SettledBetMultiplier(childComplexity), true
 	case "PredefinedResponse.submission":
 		if e.complexity.PredefinedResponse.Submission == nil {
 			break
@@ -6820,6 +6901,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.AdminCheckAchievementProgress(childComplexity, args["userId"].(string), args["achievementId"].(string)), true
+	case "Query.adminConsents":
+		if e.complexity.Query.AdminConsents == nil {
+			break
+		}
+
+		args, err := ec.field_Query_adminConsents_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.AdminConsents(childComplexity, args["projectId"].(*string), args["includeArchived"].(*bool)), true
 	case "Query.adminDashboardStats":
 		if e.complexity.Query.AdminDashboardStats == nil {
 			break
@@ -7451,12 +7543,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Quiz.Image(childComplexity), true
-	case "Quiz.imageObject":
-		if e.complexity.Quiz.ImageObject == nil {
-			break
-		}
-
-		return e.complexity.Quiz.ImageObject(childComplexity), true
 	case "Quiz.name":
 		if e.complexity.Quiz.Name == nil {
 			break
@@ -7522,6 +7608,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Quiz.UserActiveSubmission(childComplexity), true
+	case "Quiz.userAvailableBetPoints":
+		if e.complexity.Quiz.UserAvailableBetPoints == nil {
+			break
+		}
+
+		return e.complexity.Quiz.UserAvailableBetPoints(childComplexity), true
 	case "Quiz.userCanStart":
 		if e.complexity.Quiz.UserCanStart == nil {
 			break
@@ -7716,12 +7808,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.QuizChallenge.Image(childComplexity), true
-	case "QuizChallenge.imageObject":
-		if e.complexity.QuizChallenge.ImageObject == nil {
-			break
-		}
-
-		return e.complexity.QuizChallenge.ImageObject(childComplexity), true
 	case "QuizChallenge.name":
 		if e.complexity.QuizChallenge.Name == nil {
 			break
@@ -8532,12 +8618,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SimpleChallenge.Image(childComplexity), true
-	case "SimpleChallenge.imageObject":
-		if e.complexity.SimpleChallenge.ImageObject == nil {
-			break
-		}
-
-		return e.complexity.SimpleChallenge.ImageObject(childComplexity), true
 	case "SimpleChallenge.name":
 		if e.complexity.SimpleChallenge.Name == nil {
 			break
@@ -8768,12 +8848,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SuperTeam.ID(childComplexity), true
-	case "SuperTeam.imageObject":
-		if e.complexity.SuperTeam.ImageObject == nil {
+	case "SuperTeam.image":
+		if e.complexity.SuperTeam.Image == nil {
 			break
 		}
 
-		return e.complexity.SuperTeam.ImageObject(childComplexity), true
+		return e.complexity.SuperTeam.Image(childComplexity), true
 	case "SuperTeam.members":
 		if e.complexity.SuperTeam.Members == nil {
 			break
@@ -8972,6 +9052,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.TeamMember.Church(childComplexity), true
+	case "TeamMember.countsTowardScores":
+		if e.complexity.TeamMember.CountsTowardScores == nil {
+			break
+		}
+
+		return e.complexity.TeamMember.CountsTowardScores(childComplexity), true
 	case "TeamMember.id":
 		if e.complexity.TeamMember.ID == nil {
 			break
@@ -9088,12 +9174,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.User.Image(childComplexity), true
-	case "User.imageObject":
-		if e.complexity.User.ImageObject == nil {
-			break
-		}
-
-		return e.complexity.User.ImageObject(childComplexity), true
 	case "User.language":
 		if e.complexity.User.Language == nil {
 			break
@@ -9880,8 +9960,7 @@ type LeaderboardEntry {
     score: Int!
     rank: Int
     tags: [LeaderboardEntryTag!]!
-    image: String @deprecated(reason: "Use imageObject instead")
-    imageObject: Image @goField(forceResolver: true)
+    image: Image @goField(forceResolver: true)
     lastScoreAt: DateTime
 }
 
@@ -10253,13 +10332,14 @@ type TeamMember {
     isTeamLead: Boolean!
     joinedAt: String!
     user: User! @goField(forceResolver: true)
+    countsTowardScores: Boolean!
 }
 
 type SuperTeam {
     id: ID!
     name: String!
     description: String!
-    imageObject: Image @goField(forceResolver: true)
+    image: Image @goField(forceResolver: true)
     color: String
     members(first: Int, after: String, last: Int, before: String): UserConnection! @goField(forceResolver: true)
     parentProject: Project! @goField(forceResolver: true)
@@ -10739,8 +10819,7 @@ interface Challenge {
     id: ID!
     name: String!
     description: HTML!
-    image: String @deprecated(reason: "Use imageObject instead")
-    imageObject: Image
+    image: Image
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String
@@ -10765,8 +10844,7 @@ type SimpleChallenge implements Challenge {
     id: ID!
     name: String!
     description: HTML!
-    image: String @deprecated(reason: "Use imageObject instead")
-    imageObject: Image @goField(forceResolver: true)
+    image: Image @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String!
@@ -10791,8 +10869,7 @@ type QuizChallenge implements Challenge {
     id: ID!
     name: String!
     description: HTML!
-    image: String @deprecated(reason: "Use imageObject instead")
-    imageObject: Image @goField(forceResolver: true)
+    image: Image @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String!
@@ -10817,8 +10894,7 @@ type ExternalChallenge implements Challenge {
     id: ID!
     name: String!
     description: HTML!
-    image: String @deprecated(reason: "Use imageObject instead")
-    imageObject: Image @goField(forceResolver: true)
+    image: Image @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String!
@@ -10843,8 +10919,7 @@ type PluginChallenge implements Challenge {
     id: ID!
     name: String!
     description: HTML!
-    image: String @deprecated(reason: "Use imageObject instead")
-    imageObject: Image @goField(forceResolver: true)
+    image: Image @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String
@@ -10871,7 +10946,7 @@ input CreateChallengeInput {
     type: ChallengeType!
     name: String!
     description: HTML
-    image: String
+    imageUrl: String
     buttonText: String            # Required for all types except PLUGIN
     notificationText: String      # Optional text for push notifications when admin enrolls user
     publishedAt: DateTime         # Optional, defaults to NOW() if not provided
@@ -10888,7 +10963,7 @@ input CreateChallengeInput {
 input UpdateChallengeInput {
     name: String
     description: HTML
-    image: String
+    imageUrl: String
     eventId: ID
     buttonText: String
     notificationText: String  # Optional text for push notifications when admin enrolls user
@@ -11119,8 +11194,7 @@ type User {
     age: Int @goField(forceResolver: true)
     email: String!
     name: String!
-    image: String @deprecated(reason: "Use imageObject instead")
-    imageObject: Image @goField(forceResolver: true)
+    image: Image @goField(forceResolver: true)
     projects: [Project!]! @goField(forceResolver: true)
     events: [Event!]! @goField(forceResolver: true)
     teams: [Team!]! @goField(forceResolver: true)
@@ -11445,6 +11519,7 @@ type Consent {
     publishedAt: DateTime
     managementType: ConsentManagementType!
     managedBy: String
+    archivedAt: DateTime
     # Must be accepted to take part in the project; cannot be rejected
     isRequired: Boolean!
     project: Project @goField(forceResolver: true)
@@ -11478,8 +11553,12 @@ type ConsentStatus {
 # ==================== Consent Queries ====================
 
 extend type Query {
-    # Get all latest published consents
+    # Live consents only, one version per key. Admin surfaces want adminConsents.
     consents: [Consent!]!
+
+    # Live consents plus drafts and scheduled versions. Admin-only, authorised
+    # in the resolver, not by @requireRole. ` + "`" + `projectId` + "`" + ` adds the global consents.
+    adminConsents(projectId: ID, includeArchived: Boolean): [Consent!]!
 
     # Get a specific consent by ID
     consent(id: ID!): Consent!
@@ -11523,6 +11602,12 @@ extend type Mutation {
         isRequired: Boolean
     ): Consent! @requireRole(roles: ["admin", "superadmin"])
 
+    # Retire a consent: users stop being asked for it, and a required one stops
+    # blocking participation. There is no delete — the history outlives it.
+    archiveConsent(id: ID!): Consent! @requireRole(roles: ["admin", "superadmin"])
+
+    unarchiveConsent(id: ID!): Consent! @requireRole(roles: ["admin", "superadmin"])
+
     # Manually set a user's consent action (admin action)
     # Only works for local consents. The admin's user ID is recorded in the source field.
     adminSetUserConsent(
@@ -11559,8 +11644,7 @@ type Quiz {
     id: ID!
     name: String!
     description: String!
-    image: String @deprecated(reason: "Use imageObject instead")
-    imageObject: Image @goField(forceResolver: true)
+    image: Image @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
     challenge: Challenge! @goField(forceResolver: true)
 
@@ -11579,6 +11663,9 @@ type Quiz {
     userCanStart: Boolean! @goField(forceResolver: true)
     userActiveSubmission: QuizSubmission @goField(forceResolver: true)
 
+    # Score minus the stakes the signed-in user has open. Null without a user.
+    userAvailableBetPoints: Int @goField(forceResolver: true)
+
     # Session-based access (new)
     sessions(state: QuizSessionState): [QuizSession!]! @goField(forceResolver: true)
     userSessions: [QuizSession!]! @goField(forceResolver: true)
@@ -11593,7 +11680,7 @@ interface QuizQuestion {
     quiz: Quiz! @goField(forceResolver: true)
     questionText: String!
     # Shown above the question text; null when the question has no image.
-    imageObject: Image @goField(forceResolver: true)
+    image: Image @goField(forceResolver: true)
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
@@ -11612,7 +11699,7 @@ type PredefinedQuestion implements QuizQuestion {
     quiz: Quiz! @goField(forceResolver: true)
     questionText: String!
     # Shown above the question text; null when the question has no image.
-    imageObject: Image @goField(forceResolver: true)
+    image: Image @goField(forceResolver: true)
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
@@ -11634,7 +11721,7 @@ type FreeTextQuestion implements QuizQuestion {
     quiz: Quiz! @goField(forceResolver: true)
     questionText: String!
     # Shown above the question text; null when the question has no image.
-    imageObject: Image @goField(forceResolver: true)
+    image: Image @goField(forceResolver: true)
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
@@ -11653,7 +11740,7 @@ type NumberQuestion implements QuizQuestion {
     quiz: Quiz! @goField(forceResolver: true)
     questionText: String!
     # Shown above the question text; null when the question has no image.
-    imageObject: Image @goField(forceResolver: true)
+    image: Image @goField(forceResolver: true)
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
@@ -11675,7 +11762,7 @@ type JsonQuestion implements QuizQuestion {
     quiz: Quiz! @goField(forceResolver: true)
     questionText: String!
     # Shown above the question text; null when the question has no image.
-    imageObject: Image @goField(forceResolver: true)
+    image: Image @goField(forceResolver: true)
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
@@ -11694,7 +11781,7 @@ type OrderingQuestion implements QuizQuestion {
     quiz: Quiz! @goField(forceResolver: true)
     questionText: String!
     # Shown above the question text; null when the question has no image.
-    imageObject: Image @goField(forceResolver: true)
+    image: Image @goField(forceResolver: true)
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
@@ -11724,6 +11811,7 @@ type QuizPredefinedAnswer {
     # Optional explanation shown with the answer; null when there is none.
     description: String
     answerOrder: Int!
+    # isCorrect is conditionally exposed - hidden from non-admins until the session is FINISHED to prevent cheating
     isCorrect: Boolean @goField(forceResolver: true)
     translationStatus: [TranslationFieldStatus!]! @goField(forceResolver: true)
 }
@@ -11762,6 +11850,10 @@ interface QuizResponse {
     pointsEarned: Int
     betAmount: Int
     journalEntry: ScoreJournal @goField(forceResolver: true)
+    # isCorrect is conditionally exposed - only returned once the submission's session is no longer OPEN
+    isCorrect: Boolean @goField(forceResolver: true)
+    # settledBetMultiplier is the payout actually applied to the bet, null until the bet is settled
+    settledBetMultiplier: Float @goField(forceResolver: true)
 }
 
 type PredefinedResponse implements QuizResponse {
@@ -11775,7 +11867,8 @@ type PredefinedResponse implements QuizResponse {
     journalEntry: ScoreJournal @goField(forceResolver: true)
     selectedAnswerIds: [ID!]!
     selectedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
-    isCorrect: Boolean
+    isCorrect: Boolean @goField(forceResolver: true)
+    settledBetMultiplier: Float @goField(forceResolver: true)
 }
 
 type FreeTextResponse implements QuizResponse {
@@ -11788,6 +11881,8 @@ type FreeTextResponse implements QuizResponse {
     betAmount: Int
     journalEntry: ScoreJournal @goField(forceResolver: true)
     textResponse: String!
+    isCorrect: Boolean @goField(forceResolver: true)
+    settledBetMultiplier: Float @goField(forceResolver: true)
 }
 
 type NumberResponse implements QuizResponse {
@@ -11800,6 +11895,8 @@ type NumberResponse implements QuizResponse {
     betAmount: Int
     journalEntry: ScoreJournal @goField(forceResolver: true)
     numberResponse: Float!
+    isCorrect: Boolean @goField(forceResolver: true)
+    settledBetMultiplier: Float @goField(forceResolver: true)
 }
 
 type JsonResponse implements QuizResponse {
@@ -11812,6 +11909,8 @@ type JsonResponse implements QuizResponse {
     betAmount: Int
     journalEntry: ScoreJournal @goField(forceResolver: true)
     jsonResponse: JSON!
+    isCorrect: Boolean @goField(forceResolver: true)
+    settledBetMultiplier: Float @goField(forceResolver: true)
 }
 
 type OrderingResponse implements QuizResponse {
@@ -11825,6 +11924,7 @@ type OrderingResponse implements QuizResponse {
     journalEntry: ScoreJournal @goField(forceResolver: true)
     submittedOrder: [ID!]!
     isCorrect: Boolean @goField(forceResolver: true)
+    settledBetMultiplier: Float @goField(forceResolver: true)
 }
 
 # ==================== Quiz Input Types ====================
@@ -11832,7 +11932,7 @@ type OrderingResponse implements QuizResponse {
 input CreateQuizInput {
     name: String!
     description: String!
-    image: String
+    imageUrl: String
     projectId: ID!
     challengeId: ID!
 
@@ -11849,7 +11949,7 @@ input CreateQuizInput {
 input UpdateQuizInput {
     name: String
     description: String
-    image: String
+    imageUrl: String
 
     timeoutSeconds: Int
 
@@ -11865,7 +11965,7 @@ input CreateQuizQuestionInput {
     questionType: QuizQuestionType!
     questionText: String!
     # URL of an image shown above the question. Blank is stored as no image.
-    image: String
+    imageUrl: String
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
@@ -11906,7 +12006,7 @@ input UpdateQuizQuestionInput {
     questionText: String
     # URL of an image shown above the question. Omit to leave it alone; pass a
     # blank string to remove the image.
-    image: String
+    imageUrl: String
     questionOrder: Int
     timeoutSeconds: Int
     points: Int
@@ -11919,8 +12019,14 @@ input UpdateQuizQuestionInput {
     bettingMultiplierCorrect: Float
     bettingMultiplierWrong: Float
     # Set to true to clear betting absolute values (set them to null)
+    # Emptying a betting field needs an explicit flag: an omitted value means
+    # "leave alone", so a cleared field would otherwise keep its old number.
+    clearBettingMinPercentage: Boolean
+    clearBettingMaxPercentage: Boolean
     clearBettingMinAbsolute: Boolean
     clearBettingMaxAbsolute: Boolean
+    clearBettingMultiplierCorrect: Boolean
+    clearBettingMultiplierWrong: Boolean
 
     allowMultipleSelection: Boolean
     answerLabelStyle: QuizAnswerLabelStyle
@@ -11947,7 +12053,14 @@ input SubmitQuizAnswerInput {
 }
 
 input UpdateQuizAnswerInput {
-    submittedOrder: [ID!]  # For ordering questions
+    # The answer fields mirror SubmitQuizAnswerInput; supply the one matching
+    # the question's type. Omit them all to change only the bet.
+    selectedAnswerIds: [ID!]
+    textResponse: String
+    numberResponse: Float
+    jsonResponse: JSON
+    submittedOrder: [ID!]
+
     betAmount: Int
 }
 
@@ -13040,6 +13153,17 @@ func (ec *executionContext) field_Mutation_adminSetUserConsent_args(ctx context.
 		return nil, err
 	}
 	args["action"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_archiveConsent_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -14538,6 +14662,17 @@ func (ec *executionContext) field_Mutation_testWebhook_args(ctx context.Context,
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_unarchiveConsent_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_uncompleteChallenge_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -15108,6 +15243,22 @@ func (ec *executionContext) field_Query_adminCheckAchievementProgress_args(ctx c
 		return nil, err
 	}
 	args["achievementId"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_adminConsents_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "projectId", ec.unmarshalOID2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["projectId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "includeArchived", ec.unmarshalOBoolean2ᚖbool)
+	if err != nil {
+		return nil, err
+	}
+	args["includeArchived"] = arg1
 	return args, nil
 }
 
@@ -19220,6 +19371,35 @@ func (ec *executionContext) fieldContext_Consent_managedBy(_ context.Context, fi
 	return fc, nil
 }
 
+func (ec *executionContext) _Consent_archivedAt(ctx context.Context, field graphql.CollectedField, obj *model.Consent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Consent_archivedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.ArchivedAt, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Consent_archivedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Consent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Consent_isRequired(ctx context.Context, field graphql.CollectedField, obj *model.Consent) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -19456,6 +19636,8 @@ func (ec *executionContext) fieldContext_ConsentStatus_pendingConsents(_ context
 				return ec.fieldContext_Consent_managementType(ctx, field)
 			case "managedBy":
 				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Consent_archivedAt(ctx, field)
 			case "isRequired":
 				return ec.fieldContext_Consent_isRequired(ctx, field)
 			case "project":
@@ -21165,36 +21347,7 @@ func (ec *executionContext) _ExternalChallenge_image(ctx context.Context, field 
 		field,
 		ec.fieldContext_ExternalChallenge_image,
 		func(ctx context.Context) (any, error) {
-			return obj.Image, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_ExternalChallenge_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ExternalChallenge",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ExternalChallenge_imageObject(ctx context.Context, field graphql.CollectedField, obj *model.ExternalChallenge) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ExternalChallenge_imageObject,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.ExternalChallenge().ImageObject(ctx, obj)
+			return ec.resolvers.ExternalChallenge().Image(ctx, obj)
 		},
 		nil,
 		ec.marshalOImage2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐImage,
@@ -21203,7 +21356,7 @@ func (ec *executionContext) _ExternalChallenge_imageObject(ctx context.Context, 
 	)
 }
 
-func (ec *executionContext) fieldContext_ExternalChallenge_imageObject(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ExternalChallenge_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ExternalChallenge",
 		Field:      field,
@@ -23182,8 +23335,6 @@ func (ec *executionContext) fieldContext_FreeTextQuestion_quiz(_ context.Context
 				return ec.fieldContext_Quiz_description(ctx, field)
 			case "image":
 				return ec.fieldContext_Quiz_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_Quiz_imageObject(ctx, field)
 			case "project":
 				return ec.fieldContext_Quiz_project(ctx, field)
 			case "challenge":
@@ -23208,6 +23359,8 @@ func (ec *executionContext) fieldContext_FreeTextQuestion_quiz(_ context.Context
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -23252,14 +23405,14 @@ func (ec *executionContext) fieldContext_FreeTextQuestion_questionText(_ context
 	return fc, nil
 }
 
-func (ec *executionContext) _FreeTextQuestion_imageObject(ctx context.Context, field graphql.CollectedField, obj *model.FreeTextQuestion) (ret graphql.Marshaler) {
+func (ec *executionContext) _FreeTextQuestion_image(ctx context.Context, field graphql.CollectedField, obj *model.FreeTextQuestion) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_FreeTextQuestion_imageObject,
+		ec.fieldContext_FreeTextQuestion_image,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.FreeTextQuestion().ImageObject(ctx, obj)
+			return ec.resolvers.FreeTextQuestion().Image(ctx, obj)
 		},
 		nil,
 		ec.marshalOImage2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐImage,
@@ -23268,7 +23421,7 @@ func (ec *executionContext) _FreeTextQuestion_imageObject(ctx context.Context, f
 	)
 }
 
-func (ec *executionContext) fieldContext_FreeTextQuestion_imageObject(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_FreeTextQuestion_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "FreeTextQuestion",
 		Field:      field,
@@ -24088,6 +24241,64 @@ func (ec *executionContext) fieldContext_FreeTextResponse_textResponse(_ context
 	return fc, nil
 }
 
+func (ec *executionContext) _FreeTextResponse_isCorrect(ctx context.Context, field graphql.CollectedField, obj *model.FreeTextResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FreeTextResponse_isCorrect,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.FreeTextResponse().IsCorrect(ctx, obj)
+		},
+		nil,
+		ec.marshalOBoolean2ᚖbool,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FreeTextResponse_isCorrect(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FreeTextResponse",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FreeTextResponse_settledBetMultiplier(ctx context.Context, field graphql.CollectedField, obj *model.FreeTextResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FreeTextResponse_settledBetMultiplier,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.FreeTextResponse().SettledBetMultiplier(ctx, obj)
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FreeTextResponse_settledBetMultiplier(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FreeTextResponse",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Image_url(ctx context.Context, field graphql.CollectedField, obj *model.Image) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -24265,8 +24476,6 @@ func (ec *executionContext) fieldContext_JsonQuestion_quiz(_ context.Context, fi
 				return ec.fieldContext_Quiz_description(ctx, field)
 			case "image":
 				return ec.fieldContext_Quiz_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_Quiz_imageObject(ctx, field)
 			case "project":
 				return ec.fieldContext_Quiz_project(ctx, field)
 			case "challenge":
@@ -24291,6 +24500,8 @@ func (ec *executionContext) fieldContext_JsonQuestion_quiz(_ context.Context, fi
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -24335,14 +24546,14 @@ func (ec *executionContext) fieldContext_JsonQuestion_questionText(_ context.Con
 	return fc, nil
 }
 
-func (ec *executionContext) _JsonQuestion_imageObject(ctx context.Context, field graphql.CollectedField, obj *model.JSONQuestion) (ret graphql.Marshaler) {
+func (ec *executionContext) _JsonQuestion_image(ctx context.Context, field graphql.CollectedField, obj *model.JSONQuestion) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_JsonQuestion_imageObject,
+		ec.fieldContext_JsonQuestion_image,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.JsonQuestion().ImageObject(ctx, obj)
+			return ec.resolvers.JsonQuestion().Image(ctx, obj)
 		},
 		nil,
 		ec.marshalOImage2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐImage,
@@ -24351,7 +24562,7 @@ func (ec *executionContext) _JsonQuestion_imageObject(ctx context.Context, field
 	)
 }
 
-func (ec *executionContext) fieldContext_JsonQuestion_imageObject(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_JsonQuestion_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "JsonQuestion",
 		Field:      field,
@@ -25071,6 +25282,64 @@ func (ec *executionContext) fieldContext_JsonResponse_jsonResponse(_ context.Con
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type JSON does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JsonResponse_isCorrect(ctx context.Context, field graphql.CollectedField, obj *model.JSONResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_JsonResponse_isCorrect,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.JsonResponse().IsCorrect(ctx, obj)
+		},
+		nil,
+		ec.marshalOBoolean2ᚖbool,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_JsonResponse_isCorrect(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JsonResponse",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JsonResponse_settledBetMultiplier(ctx context.Context, field graphql.CollectedField, obj *model.JSONResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_JsonResponse_settledBetMultiplier,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.JsonResponse().SettledBetMultiplier(ctx, obj)
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_JsonResponse_settledBetMultiplier(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JsonResponse",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
 		},
 	}
 	return fc, nil
@@ -25909,8 +26178,6 @@ func (ec *executionContext) fieldContext_LeaderboardConnection_me(_ context.Cont
 				return ec.fieldContext_LeaderboardEntry_tags(ctx, field)
 			case "image":
 				return ec.fieldContext_LeaderboardEntry_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_LeaderboardEntry_imageObject(ctx, field)
 			case "lastScoreAt":
 				return ec.fieldContext_LeaderboardEntry_lastScoreAt(ctx, field)
 			}
@@ -25959,8 +26226,6 @@ func (ec *executionContext) fieldContext_LeaderboardConnection_nearestChurchRiva
 				return ec.fieldContext_LeaderboardEntry_tags(ctx, field)
 			case "image":
 				return ec.fieldContext_LeaderboardEntry_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_LeaderboardEntry_imageObject(ctx, field)
 			case "lastScoreAt":
 				return ec.fieldContext_LeaderboardEntry_lastScoreAt(ctx, field)
 			}
@@ -26048,8 +26313,6 @@ func (ec *executionContext) fieldContext_LeaderboardEdge_node(_ context.Context,
 				return ec.fieldContext_LeaderboardEntry_tags(ctx, field)
 			case "image":
 				return ec.fieldContext_LeaderboardEntry_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_LeaderboardEntry_imageObject(ctx, field)
 			case "lastScoreAt":
 				return ec.fieldContext_LeaderboardEntry_lastScoreAt(ctx, field)
 			}
@@ -26240,36 +26503,7 @@ func (ec *executionContext) _LeaderboardEntry_image(ctx context.Context, field g
 		field,
 		ec.fieldContext_LeaderboardEntry_image,
 		func(ctx context.Context) (any, error) {
-			return obj.Image, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_LeaderboardEntry_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LeaderboardEntry",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _LeaderboardEntry_imageObject(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardEntry) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_LeaderboardEntry_imageObject,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.LeaderboardEntry().ImageObject(ctx, obj)
+			return ec.resolvers.LeaderboardEntry().Image(ctx, obj)
 		},
 		nil,
 		ec.marshalOImage2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐImage,
@@ -26278,7 +26512,7 @@ func (ec *executionContext) _LeaderboardEntry_imageObject(ctx context.Context, f
 	)
 }
 
-func (ec *executionContext) fieldContext_LeaderboardEntry_imageObject(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_LeaderboardEntry_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "LeaderboardEntry",
 		Field:      field,
@@ -26883,8 +27117,6 @@ func (ec *executionContext) fieldContext_MissingContentProgressUser_user(_ conte
 				return ec.fieldContext_User_name(ctx, field)
 			case "image":
 				return ec.fieldContext_User_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_User_imageObject(ctx, field)
 			case "projects":
 				return ec.fieldContext_User_projects(ctx, field)
 			case "events":
@@ -27082,8 +27314,6 @@ func (ec *executionContext) fieldContext_MissingScoreJournalUser_user(_ context.
 				return ec.fieldContext_User_name(ctx, field)
 			case "image":
 				return ec.fieldContext_User_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_User_imageObject(ctx, field)
 			case "projects":
 				return ec.fieldContext_User_projects(ctx, field)
 			case "events":
@@ -27281,8 +27511,6 @@ func (ec *executionContext) fieldContext_MissingStreakProgressUser_user(_ contex
 				return ec.fieldContext_User_name(ctx, field)
 			case "image":
 				return ec.fieldContext_User_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_User_imageObject(ctx, field)
 			case "projects":
 				return ec.fieldContext_User_projects(ctx, field)
 			case "events":
@@ -28829,8 +29057,8 @@ func (ec *executionContext) fieldContext_Mutation_createSuperTeam(ctx context.Co
 				return ec.fieldContext_SuperTeam_name(ctx, field)
 			case "description":
 				return ec.fieldContext_SuperTeam_description(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_SuperTeam_imageObject(ctx, field)
+			case "image":
+				return ec.fieldContext_SuperTeam_image(ctx, field)
 			case "color":
 				return ec.fieldContext_SuperTeam_color(ctx, field)
 			case "members":
@@ -28906,8 +29134,8 @@ func (ec *executionContext) fieldContext_Mutation_updateSuperTeam(ctx context.Co
 				return ec.fieldContext_SuperTeam_name(ctx, field)
 			case "description":
 				return ec.fieldContext_SuperTeam_description(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_SuperTeam_imageObject(ctx, field)
+			case "image":
+				return ec.fieldContext_SuperTeam_image(ctx, field)
 			case "color":
 				return ec.fieldContext_SuperTeam_color(ctx, field)
 			case "members":
@@ -29042,8 +29270,8 @@ func (ec *executionContext) fieldContext_Mutation_assignTeamsToSuperTeam(ctx con
 				return ec.fieldContext_SuperTeam_name(ctx, field)
 			case "description":
 				return ec.fieldContext_SuperTeam_description(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_SuperTeam_imageObject(ctx, field)
+			case "image":
+				return ec.fieldContext_SuperTeam_image(ctx, field)
 			case "color":
 				return ec.fieldContext_SuperTeam_color(ctx, field)
 			case "members":
@@ -31495,8 +31723,6 @@ func (ec *executionContext) fieldContext_Mutation_selfCompleteChallenge(ctx cont
 				return ec.fieldContext_SimpleChallenge_description(ctx, field)
 			case "image":
 				return ec.fieldContext_SimpleChallenge_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_SimpleChallenge_imageObject(ctx, field)
 			case "project":
 				return ec.fieldContext_SimpleChallenge_project(ctx, field)
 			case "event":
@@ -32654,8 +32880,6 @@ func (ec *executionContext) fieldContext_Mutation_updateAvatar(ctx context.Conte
 				return ec.fieldContext_User_name(ctx, field)
 			case "image":
 				return ec.fieldContext_User_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_User_imageObject(ctx, field)
 			case "projects":
 				return ec.fieldContext_User_projects(ctx, field)
 			case "events":
@@ -32761,8 +32985,6 @@ func (ec *executionContext) fieldContext_Mutation_assignUserToProject(ctx contex
 				return ec.fieldContext_User_name(ctx, field)
 			case "image":
 				return ec.fieldContext_User_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_User_imageObject(ctx, field)
 			case "projects":
 				return ec.fieldContext_User_projects(ctx, field)
 			case "events":
@@ -32868,8 +33090,6 @@ func (ec *executionContext) fieldContext_Mutation_removeUserFromProject(ctx cont
 				return ec.fieldContext_User_name(ctx, field)
 			case "image":
 				return ec.fieldContext_User_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_User_imageObject(ctx, field)
 			case "projects":
 				return ec.fieldContext_User_projects(ctx, field)
 			case "events":
@@ -32975,8 +33195,6 @@ func (ec *executionContext) fieldContext_Mutation_assignUserToEvent(ctx context.
 				return ec.fieldContext_User_name(ctx, field)
 			case "image":
 				return ec.fieldContext_User_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_User_imageObject(ctx, field)
 			case "projects":
 				return ec.fieldContext_User_projects(ctx, field)
 			case "events":
@@ -33155,8 +33373,6 @@ func (ec *executionContext) fieldContext_Mutation_lockUserChurch(ctx context.Con
 				return ec.fieldContext_User_name(ctx, field)
 			case "image":
 				return ec.fieldContext_User_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_User_imageObject(ctx, field)
 			case "projects":
 				return ec.fieldContext_User_projects(ctx, field)
 			case "events":
@@ -33262,8 +33478,6 @@ func (ec *executionContext) fieldContext_Mutation_unlockUserChurch(ctx context.C
 				return ec.fieldContext_User_name(ctx, field)
 			case "image":
 				return ec.fieldContext_User_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_User_imageObject(ctx, field)
 			case "projects":
 				return ec.fieldContext_User_projects(ctx, field)
 			case "events":
@@ -34055,6 +34269,8 @@ func (ec *executionContext) fieldContext_Mutation_createConsent(ctx context.Cont
 				return ec.fieldContext_Consent_managementType(ctx, field)
 			case "managedBy":
 				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Consent_archivedAt(ctx, field)
 			case "isRequired":
 				return ec.fieldContext_Consent_isRequired(ctx, field)
 			case "project":
@@ -34144,6 +34360,8 @@ func (ec *executionContext) fieldContext_Mutation_updateConsent(ctx context.Cont
 				return ec.fieldContext_Consent_managementType(ctx, field)
 			case "managedBy":
 				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Consent_archivedAt(ctx, field)
 			case "isRequired":
 				return ec.fieldContext_Consent_isRequired(ctx, field)
 			case "project":
@@ -34164,6 +34382,188 @@ func (ec *executionContext) fieldContext_Mutation_updateConsent(ctx context.Cont
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_updateConsent_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_archiveConsent(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_archiveConsent,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().ArchiveConsent(ctx, fc.Args["id"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				if err != nil {
+					var zeroVal *model.Consent
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.Consent
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNConsent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐConsent,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_archiveConsent(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Consent_id(ctx, field)
+			case "key":
+				return ec.fieldContext_Consent_key(ctx, field)
+			case "version":
+				return ec.fieldContext_Consent_version(ctx, field)
+			case "title":
+				return ec.fieldContext_Consent_title(ctx, field)
+			case "shortText":
+				return ec.fieldContext_Consent_shortText(ctx, field)
+			case "body":
+				return ec.fieldContext_Consent_body(ctx, field)
+			case "url":
+				return ec.fieldContext_Consent_url(ctx, field)
+			case "publishedAt":
+				return ec.fieldContext_Consent_publishedAt(ctx, field)
+			case "managementType":
+				return ec.fieldContext_Consent_managementType(ctx, field)
+			case "managedBy":
+				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Consent_archivedAt(ctx, field)
+			case "isRequired":
+				return ec.fieldContext_Consent_isRequired(ctx, field)
+			case "project":
+				return ec.fieldContext_Consent_project(ctx, field)
+			case "userHistory":
+				return ec.fieldContext_Consent_userHistory(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Consent_translationStatus(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Consent", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_archiveConsent_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_unarchiveConsent(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_unarchiveConsent,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UnarchiveConsent(ctx, fc.Args["id"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				if err != nil {
+					var zeroVal *model.Consent
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.Consent
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNConsent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐConsent,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_unarchiveConsent(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Consent_id(ctx, field)
+			case "key":
+				return ec.fieldContext_Consent_key(ctx, field)
+			case "version":
+				return ec.fieldContext_Consent_version(ctx, field)
+			case "title":
+				return ec.fieldContext_Consent_title(ctx, field)
+			case "shortText":
+				return ec.fieldContext_Consent_shortText(ctx, field)
+			case "body":
+				return ec.fieldContext_Consent_body(ctx, field)
+			case "url":
+				return ec.fieldContext_Consent_url(ctx, field)
+			case "publishedAt":
+				return ec.fieldContext_Consent_publishedAt(ctx, field)
+			case "managementType":
+				return ec.fieldContext_Consent_managementType(ctx, field)
+			case "managedBy":
+				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Consent_archivedAt(ctx, field)
+			case "isRequired":
+				return ec.fieldContext_Consent_isRequired(ctx, field)
+			case "project":
+				return ec.fieldContext_Consent_project(ctx, field)
+			case "userHistory":
+				return ec.fieldContext_Consent_userHistory(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Consent_translationStatus(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Consent", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_unarchiveConsent_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -34296,8 +34696,6 @@ func (ec *executionContext) fieldContext_Mutation_createQuiz(ctx context.Context
 				return ec.fieldContext_Quiz_description(ctx, field)
 			case "image":
 				return ec.fieldContext_Quiz_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_Quiz_imageObject(ctx, field)
 			case "project":
 				return ec.fieldContext_Quiz_project(ctx, field)
 			case "challenge":
@@ -34322,6 +34720,8 @@ func (ec *executionContext) fieldContext_Mutation_createQuiz(ctx context.Context
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -34399,8 +34799,6 @@ func (ec *executionContext) fieldContext_Mutation_updateQuiz(ctx context.Context
 				return ec.fieldContext_Quiz_description(ctx, field)
 			case "image":
 				return ec.fieldContext_Quiz_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_Quiz_imageObject(ctx, field)
 			case "project":
 				return ec.fieldContext_Quiz_project(ctx, field)
 			case "challenge":
@@ -34425,6 +34823,8 @@ func (ec *executionContext) fieldContext_Mutation_updateQuiz(ctx context.Context
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -37785,8 +38185,6 @@ func (ec *executionContext) fieldContext_NumberQuestion_quiz(_ context.Context, 
 				return ec.fieldContext_Quiz_description(ctx, field)
 			case "image":
 				return ec.fieldContext_Quiz_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_Quiz_imageObject(ctx, field)
 			case "project":
 				return ec.fieldContext_Quiz_project(ctx, field)
 			case "challenge":
@@ -37811,6 +38209,8 @@ func (ec *executionContext) fieldContext_NumberQuestion_quiz(_ context.Context, 
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -37855,14 +38255,14 @@ func (ec *executionContext) fieldContext_NumberQuestion_questionText(_ context.C
 	return fc, nil
 }
 
-func (ec *executionContext) _NumberQuestion_imageObject(ctx context.Context, field graphql.CollectedField, obj *model.NumberQuestion) (ret graphql.Marshaler) {
+func (ec *executionContext) _NumberQuestion_image(ctx context.Context, field graphql.CollectedField, obj *model.NumberQuestion) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_NumberQuestion_imageObject,
+		ec.fieldContext_NumberQuestion_image,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.NumberQuestion().ImageObject(ctx, obj)
+			return ec.resolvers.NumberQuestion().Image(ctx, obj)
 		},
 		nil,
 		ec.marshalOImage2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐImage,
@@ -37871,7 +38271,7 @@ func (ec *executionContext) _NumberQuestion_imageObject(ctx context.Context, fie
 	)
 }
 
-func (ec *executionContext) fieldContext_NumberQuestion_imageObject(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_NumberQuestion_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "NumberQuestion",
 		Field:      field,
@@ -38838,6 +39238,64 @@ func (ec *executionContext) fieldContext_NumberResponse_numberResponse(_ context
 	return fc, nil
 }
 
+func (ec *executionContext) _NumberResponse_isCorrect(ctx context.Context, field graphql.CollectedField, obj *model.NumberResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberResponse_isCorrect,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.NumberResponse().IsCorrect(ctx, obj)
+		},
+		nil,
+		ec.marshalOBoolean2ᚖbool,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberResponse_isCorrect(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberResponse",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NumberResponse_settledBetMultiplier(ctx context.Context, field graphql.CollectedField, obj *model.NumberResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberResponse_settledBetMultiplier,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.NumberResponse().SettledBetMultiplier(ctx, obj)
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberResponse_settledBetMultiplier(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberResponse",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _OrderingItemResult_item(ctx context.Context, field graphql.CollectedField, obj *model.OrderingItemResult) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -39025,8 +39483,6 @@ func (ec *executionContext) fieldContext_OrderingQuestion_quiz(_ context.Context
 				return ec.fieldContext_Quiz_description(ctx, field)
 			case "image":
 				return ec.fieldContext_Quiz_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_Quiz_imageObject(ctx, field)
 			case "project":
 				return ec.fieldContext_Quiz_project(ctx, field)
 			case "challenge":
@@ -39051,6 +39507,8 @@ func (ec *executionContext) fieldContext_OrderingQuestion_quiz(_ context.Context
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -39095,14 +39553,14 @@ func (ec *executionContext) fieldContext_OrderingQuestion_questionText(_ context
 	return fc, nil
 }
 
-func (ec *executionContext) _OrderingQuestion_imageObject(ctx context.Context, field graphql.CollectedField, obj *model.OrderingQuestion) (ret graphql.Marshaler) {
+func (ec *executionContext) _OrderingQuestion_image(ctx context.Context, field graphql.CollectedField, obj *model.OrderingQuestion) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_OrderingQuestion_imageObject,
+		ec.fieldContext_OrderingQuestion_image,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.OrderingQuestion().ImageObject(ctx, obj)
+			return ec.resolvers.OrderingQuestion().Image(ctx, obj)
 		},
 		nil,
 		ec.marshalOImage2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐImage,
@@ -39111,7 +39569,7 @@ func (ec *executionContext) _OrderingQuestion_imageObject(ctx context.Context, f
 	)
 }
 
-func (ec *executionContext) fieldContext_OrderingQuestion_imageObject(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_OrderingQuestion_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "OrderingQuestion",
 		Field:      field,
@@ -39972,6 +40430,35 @@ func (ec *executionContext) fieldContext_OrderingResponse_isCorrect(_ context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _OrderingResponse_settledBetMultiplier(ctx context.Context, field graphql.CollectedField, obj *model.OrderingResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingResponse_settledBetMultiplier,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.OrderingResponse().SettledBetMultiplier(ctx, obj)
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingResponse_settledBetMultiplier(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingResponse",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _PageInfo_hasNextPage(ctx context.Context, field graphql.CollectedField, obj *model.PageInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -40182,36 +40669,7 @@ func (ec *executionContext) _PluginChallenge_image(ctx context.Context, field gr
 		field,
 		ec.fieldContext_PluginChallenge_image,
 		func(ctx context.Context) (any, error) {
-			return obj.Image, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_PluginChallenge_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "PluginChallenge",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _PluginChallenge_imageObject(ctx context.Context, field graphql.CollectedField, obj *model.PluginChallenge) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_PluginChallenge_imageObject,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.PluginChallenge().ImageObject(ctx, obj)
+			return ec.resolvers.PluginChallenge().Image(ctx, obj)
 		},
 		nil,
 		ec.marshalOImage2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐImage,
@@ -40220,7 +40678,7 @@ func (ec *executionContext) _PluginChallenge_imageObject(ctx context.Context, fi
 	)
 }
 
-func (ec *executionContext) fieldContext_PluginChallenge_imageObject(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_PluginChallenge_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "PluginChallenge",
 		Field:      field,
@@ -40953,8 +41411,6 @@ func (ec *executionContext) fieldContext_PredefinedQuestion_quiz(_ context.Conte
 				return ec.fieldContext_Quiz_description(ctx, field)
 			case "image":
 				return ec.fieldContext_Quiz_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_Quiz_imageObject(ctx, field)
 			case "project":
 				return ec.fieldContext_Quiz_project(ctx, field)
 			case "challenge":
@@ -40979,6 +41435,8 @@ func (ec *executionContext) fieldContext_PredefinedQuestion_quiz(_ context.Conte
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -41023,14 +41481,14 @@ func (ec *executionContext) fieldContext_PredefinedQuestion_questionText(_ conte
 	return fc, nil
 }
 
-func (ec *executionContext) _PredefinedQuestion_imageObject(ctx context.Context, field graphql.CollectedField, obj *model.PredefinedQuestion) (ret graphql.Marshaler) {
+func (ec *executionContext) _PredefinedQuestion_image(ctx context.Context, field graphql.CollectedField, obj *model.PredefinedQuestion) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_PredefinedQuestion_imageObject,
+		ec.fieldContext_PredefinedQuestion_image,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.PredefinedQuestion().ImageObject(ctx, obj)
+			return ec.resolvers.PredefinedQuestion().Image(ctx, obj)
 		},
 		nil,
 		ec.marshalOImage2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐImage,
@@ -41039,7 +41497,7 @@ func (ec *executionContext) _PredefinedQuestion_imageObject(ctx context.Context,
 	)
 }
 
-func (ec *executionContext) fieldContext_PredefinedQuestion_imageObject(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_PredefinedQuestion_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "PredefinedQuestion",
 		Field:      field,
@@ -41987,7 +42445,7 @@ func (ec *executionContext) _PredefinedResponse_isCorrect(ctx context.Context, f
 		field,
 		ec.fieldContext_PredefinedResponse_isCorrect,
 		func(ctx context.Context) (any, error) {
-			return obj.IsCorrect, nil
+			return ec.resolvers.PredefinedResponse().IsCorrect(ctx, obj)
 		},
 		nil,
 		ec.marshalOBoolean2ᚖbool,
@@ -42000,10 +42458,39 @@ func (ec *executionContext) fieldContext_PredefinedResponse_isCorrect(_ context.
 	fc = &graphql.FieldContext{
 		Object:     "PredefinedResponse",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PredefinedResponse_settledBetMultiplier(ctx context.Context, field graphql.CollectedField, obj *model.PredefinedResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PredefinedResponse_settledBetMultiplier,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.PredefinedResponse().SettledBetMultiplier(ctx, obj)
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_PredefinedResponse_settledBetMultiplier(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PredefinedResponse",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
 		},
 	}
 	return fc, nil
@@ -43470,8 +43957,6 @@ func (ec *executionContext) fieldContext_Query_me(_ context.Context, field graph
 				return ec.fieldContext_User_name(ctx, field)
 			case "image":
 				return ec.fieldContext_User_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_User_imageObject(ctx, field)
 			case "projects":
 				return ec.fieldContext_User_projects(ctx, field)
 			case "events":
@@ -44468,8 +44953,8 @@ func (ec *executionContext) fieldContext_Query_superteam(ctx context.Context, fi
 				return ec.fieldContext_SuperTeam_name(ctx, field)
 			case "description":
 				return ec.fieldContext_SuperTeam_description(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_SuperTeam_imageObject(ctx, field)
+			case "image":
+				return ec.fieldContext_SuperTeam_image(ctx, field)
 			case "color":
 				return ec.fieldContext_SuperTeam_color(ctx, field)
 			case "members":
@@ -44892,8 +45377,6 @@ func (ec *executionContext) fieldContext_Query_user(ctx context.Context, field g
 				return ec.fieldContext_User_name(ctx, field)
 			case "image":
 				return ec.fieldContext_User_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_User_imageObject(ctx, field)
 			case "projects":
 				return ec.fieldContext_User_projects(ctx, field)
 			case "events":
@@ -45081,8 +45564,6 @@ func (ec *executionContext) fieldContext_Query_usersWithRole(ctx context.Context
 				return ec.fieldContext_User_name(ctx, field)
 			case "image":
 				return ec.fieldContext_User_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_User_imageObject(ctx, field)
 			case "projects":
 				return ec.fieldContext_User_projects(ctx, field)
 			case "events":
@@ -45381,6 +45862,8 @@ func (ec *executionContext) fieldContext_Query_consents(_ context.Context, field
 				return ec.fieldContext_Consent_managementType(ctx, field)
 			case "managedBy":
 				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Consent_archivedAt(ctx, field)
 			case "isRequired":
 				return ec.fieldContext_Consent_isRequired(ctx, field)
 			case "project":
@@ -45392,6 +45875,79 @@ func (ec *executionContext) fieldContext_Query_consents(_ context.Context, field
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Consent", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_adminConsents(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_adminConsents,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().AdminConsents(ctx, fc.Args["projectId"].(*string), fc.Args["includeArchived"].(*bool))
+		},
+		nil,
+		ec.marshalNConsent2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐConsentᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_adminConsents(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Consent_id(ctx, field)
+			case "key":
+				return ec.fieldContext_Consent_key(ctx, field)
+			case "version":
+				return ec.fieldContext_Consent_version(ctx, field)
+			case "title":
+				return ec.fieldContext_Consent_title(ctx, field)
+			case "shortText":
+				return ec.fieldContext_Consent_shortText(ctx, field)
+			case "body":
+				return ec.fieldContext_Consent_body(ctx, field)
+			case "url":
+				return ec.fieldContext_Consent_url(ctx, field)
+			case "publishedAt":
+				return ec.fieldContext_Consent_publishedAt(ctx, field)
+			case "managementType":
+				return ec.fieldContext_Consent_managementType(ctx, field)
+			case "managedBy":
+				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Consent_archivedAt(ctx, field)
+			case "isRequired":
+				return ec.fieldContext_Consent_isRequired(ctx, field)
+			case "project":
+				return ec.fieldContext_Consent_project(ctx, field)
+			case "userHistory":
+				return ec.fieldContext_Consent_userHistory(ctx, field)
+			case "translationStatus":
+				return ec.fieldContext_Consent_translationStatus(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Consent", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_adminConsents_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -45441,6 +45997,8 @@ func (ec *executionContext) fieldContext_Query_consent(ctx context.Context, fiel
 				return ec.fieldContext_Consent_managementType(ctx, field)
 			case "managedBy":
 				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Consent_archivedAt(ctx, field)
 			case "isRequired":
 				return ec.fieldContext_Consent_isRequired(ctx, field)
 			case "project":
@@ -45511,6 +46069,8 @@ func (ec *executionContext) fieldContext_Query_pendingConsents(_ context.Context
 				return ec.fieldContext_Consent_managementType(ctx, field)
 			case "managedBy":
 				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Consent_archivedAt(ctx, field)
 			case "isRequired":
 				return ec.fieldContext_Consent_isRequired(ctx, field)
 			case "project":
@@ -45577,8 +46137,6 @@ func (ec *executionContext) fieldContext_Query_quiz(ctx context.Context, field g
 				return ec.fieldContext_Quiz_description(ctx, field)
 			case "image":
 				return ec.fieldContext_Quiz_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_Quiz_imageObject(ctx, field)
 			case "project":
 				return ec.fieldContext_Quiz_project(ctx, field)
 			case "challenge":
@@ -45603,6 +46161,8 @@ func (ec *executionContext) fieldContext_Query_quiz(ctx context.Context, field g
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -47600,36 +48160,7 @@ func (ec *executionContext) _Quiz_image(ctx context.Context, field graphql.Colle
 		field,
 		ec.fieldContext_Quiz_image,
 		func(ctx context.Context) (any, error) {
-			return obj.Image, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_Quiz_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Quiz",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Quiz_imageObject(ctx context.Context, field graphql.CollectedField, obj *model.Quiz) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Quiz_imageObject,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Quiz().ImageObject(ctx, obj)
+			return ec.resolvers.Quiz().Image(ctx, obj)
 		},
 		nil,
 		ec.marshalOImage2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐImage,
@@ -47638,7 +48169,7 @@ func (ec *executionContext) _Quiz_imageObject(ctx context.Context, field graphql
 	)
 }
 
-func (ec *executionContext) fieldContext_Quiz_imageObject(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Quiz_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Quiz",
 		Field:      field,
@@ -48126,6 +48657,35 @@ func (ec *executionContext) fieldContext_Quiz_userActiveSubmission(_ context.Con
 				return ec.fieldContext_QuizSubmission_pointsAwarded(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type QuizSubmission", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Quiz_userAvailableBetPoints(ctx context.Context, field graphql.CollectedField, obj *model.Quiz) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Quiz_userAvailableBetPoints,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Quiz().UserAvailableBetPoints(ctx, obj)
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Quiz_userAvailableBetPoints(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Quiz",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -48999,8 +49559,6 @@ func (ec *executionContext) fieldContext_QuizAchievement_quiz(_ context.Context,
 				return ec.fieldContext_Quiz_description(ctx, field)
 			case "image":
 				return ec.fieldContext_Quiz_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_Quiz_imageObject(ctx, field)
 			case "project":
 				return ec.fieldContext_Quiz_project(ctx, field)
 			case "challenge":
@@ -49025,6 +49583,8 @@ func (ec *executionContext) fieldContext_QuizAchievement_quiz(_ context.Context,
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -49227,36 +49787,7 @@ func (ec *executionContext) _QuizChallenge_image(ctx context.Context, field grap
 		field,
 		ec.fieldContext_QuizChallenge_image,
 		func(ctx context.Context) (any, error) {
-			return obj.Image, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_QuizChallenge_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "QuizChallenge",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _QuizChallenge_imageObject(ctx context.Context, field graphql.CollectedField, obj *model.QuizChallenge) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_QuizChallenge_imageObject,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.QuizChallenge().ImageObject(ctx, obj)
+			return ec.resolvers.QuizChallenge().Image(ctx, obj)
 		},
 		nil,
 		ec.marshalOImage2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐImage,
@@ -49265,7 +49796,7 @@ func (ec *executionContext) _QuizChallenge_imageObject(ctx context.Context, fiel
 	)
 }
 
-func (ec *executionContext) fieldContext_QuizChallenge_imageObject(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_QuizChallenge_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "QuizChallenge",
 		Field:      field,
@@ -49808,8 +50339,6 @@ func (ec *executionContext) fieldContext_QuizChallenge_quiz(_ context.Context, f
 				return ec.fieldContext_Quiz_description(ctx, field)
 			case "image":
 				return ec.fieldContext_Quiz_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_Quiz_imageObject(ctx, field)
 			case "project":
 				return ec.fieldContext_Quiz_project(ctx, field)
 			case "challenge":
@@ -49834,6 +50363,8 @@ func (ec *executionContext) fieldContext_QuizChallenge_quiz(_ context.Context, f
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -50013,8 +50544,6 @@ func (ec *executionContext) fieldContext_QuizEdge_node(_ context.Context, field 
 				return ec.fieldContext_Quiz_description(ctx, field)
 			case "image":
 				return ec.fieldContext_Quiz_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_Quiz_imageObject(ctx, field)
 			case "project":
 				return ec.fieldContext_Quiz_project(ctx, field)
 			case "challenge":
@@ -50039,6 +50568,8 @@ func (ec *executionContext) fieldContext_QuizEdge_node(_ context.Context, field 
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -50411,8 +50942,6 @@ func (ec *executionContext) fieldContext_QuizResults_quiz(_ context.Context, fie
 				return ec.fieldContext_Quiz_description(ctx, field)
 			case "image":
 				return ec.fieldContext_Quiz_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_Quiz_imageObject(ctx, field)
 			case "project":
 				return ec.fieldContext_Quiz_project(ctx, field)
 			case "challenge":
@@ -50437,6 +50966,8 @@ func (ec *executionContext) fieldContext_QuizResults_quiz(_ context.Context, fie
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -50716,8 +51247,6 @@ func (ec *executionContext) fieldContext_QuizSession_quiz(_ context.Context, fie
 				return ec.fieldContext_Quiz_description(ctx, field)
 			case "image":
 				return ec.fieldContext_Quiz_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_Quiz_imageObject(ctx, field)
 			case "project":
 				return ec.fieldContext_Quiz_project(ctx, field)
 			case "challenge":
@@ -50742,6 +51271,8 @@ func (ec *executionContext) fieldContext_QuizSession_quiz(_ context.Context, fie
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -50950,8 +51481,6 @@ func (ec *executionContext) fieldContext_QuizSession_createdBy(_ context.Context
 				return ec.fieldContext_User_name(ctx, field)
 			case "image":
 				return ec.fieldContext_User_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_User_imageObject(ctx, field)
 			case "projects":
 				return ec.fieldContext_User_projects(ctx, field)
 			case "events":
@@ -51219,8 +51748,6 @@ func (ec *executionContext) fieldContext_QuizSubmission_quiz(_ context.Context, 
 				return ec.fieldContext_Quiz_description(ctx, field)
 			case "image":
 				return ec.fieldContext_Quiz_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_Quiz_imageObject(ctx, field)
 			case "project":
 				return ec.fieldContext_Quiz_project(ctx, field)
 			case "challenge":
@@ -51245,6 +51772,8 @@ func (ec *executionContext) fieldContext_QuizSubmission_quiz(_ context.Context, 
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "userAvailableBetPoints":
+				return ec.fieldContext_Quiz_userAvailableBetPoints(ctx, field)
 			case "sessions":
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
@@ -51365,8 +51894,6 @@ func (ec *executionContext) fieldContext_QuizSubmission_user(_ context.Context, 
 				return ec.fieldContext_User_name(ctx, field)
 			case "image":
 				return ec.fieldContext_User_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_User_imageObject(ctx, field)
 			case "projects":
 				return ec.fieldContext_User_projects(ctx, field)
 			case "events":
@@ -52386,8 +52913,6 @@ func (ec *executionContext) fieldContext_ScoreJournal_user(_ context.Context, fi
 				return ec.fieldContext_User_name(ctx, field)
 			case "image":
 				return ec.fieldContext_User_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_User_imageObject(ctx, field)
 			case "projects":
 				return ec.fieldContext_User_projects(ctx, field)
 			case "events":
@@ -52659,8 +53184,6 @@ func (ec *executionContext) fieldContext_ScoreJournal_awardedBy(_ context.Contex
 				return ec.fieldContext_User_name(ctx, field)
 			case "image":
 				return ec.fieldContext_User_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_User_imageObject(ctx, field)
 			case "projects":
 				return ec.fieldContext_User_projects(ctx, field)
 			case "events":
@@ -53997,36 +54520,7 @@ func (ec *executionContext) _SimpleChallenge_image(ctx context.Context, field gr
 		field,
 		ec.fieldContext_SimpleChallenge_image,
 		func(ctx context.Context) (any, error) {
-			return obj.Image, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_SimpleChallenge_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "SimpleChallenge",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _SimpleChallenge_imageObject(ctx context.Context, field graphql.CollectedField, obj *model.SimpleChallenge) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_SimpleChallenge_imageObject,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.SimpleChallenge().ImageObject(ctx, obj)
+			return ec.resolvers.SimpleChallenge().Image(ctx, obj)
 		},
 		nil,
 		ec.marshalOImage2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐImage,
@@ -54035,7 +54529,7 @@ func (ec *executionContext) _SimpleChallenge_imageObject(ctx context.Context, fi
 	)
 }
 
-func (ec *executionContext) fieldContext_SimpleChallenge_imageObject(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SimpleChallenge_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SimpleChallenge",
 		Field:      field,
@@ -55484,14 +55978,14 @@ func (ec *executionContext) fieldContext_SuperTeam_description(_ context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _SuperTeam_imageObject(ctx context.Context, field graphql.CollectedField, obj *model.SuperTeam) (ret graphql.Marshaler) {
+func (ec *executionContext) _SuperTeam_image(ctx context.Context, field graphql.CollectedField, obj *model.SuperTeam) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_SuperTeam_imageObject,
+		ec.fieldContext_SuperTeam_image,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.SuperTeam().ImageObject(ctx, obj)
+			return ec.resolvers.SuperTeam().Image(ctx, obj)
 		},
 		nil,
 		ec.marshalOImage2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐImage,
@@ -55500,7 +55994,7 @@ func (ec *executionContext) _SuperTeam_imageObject(ctx context.Context, field gr
 	)
 }
 
-func (ec *executionContext) fieldContext_SuperTeam_imageObject(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SuperTeam_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SuperTeam",
 		Field:      field,
@@ -55897,8 +56391,8 @@ func (ec *executionContext) fieldContext_SuperTeamEdge_node(_ context.Context, f
 				return ec.fieldContext_SuperTeam_name(ctx, field)
 			case "description":
 				return ec.fieldContext_SuperTeam_description(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_SuperTeam_imageObject(ctx, field)
+			case "image":
+				return ec.fieldContext_SuperTeam_image(ctx, field)
 			case "color":
 				return ec.fieldContext_SuperTeam_color(ctx, field)
 			case "members":
@@ -55962,8 +56456,6 @@ func (ec *executionContext) fieldContext_SyncUserResult_user(_ context.Context, 
 				return ec.fieldContext_User_name(ctx, field)
 			case "image":
 				return ec.fieldContext_User_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_User_imageObject(ctx, field)
 			case "projects":
 				return ec.fieldContext_User_projects(ctx, field)
 			case "events":
@@ -56346,6 +56838,8 @@ func (ec *executionContext) fieldContext_Team_members(_ context.Context, field g
 				return ec.fieldContext_TeamMember_joinedAt(ctx, field)
 			case "user":
 				return ec.fieldContext_TeamMember_user(ctx, field)
+			case "countsTowardScores":
+				return ec.fieldContext_TeamMember_countsTowardScores(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type TeamMember", field.Name)
 		},
@@ -56391,8 +56885,6 @@ func (ec *executionContext) fieldContext_Team_memberLeaderboard(_ context.Contex
 				return ec.fieldContext_LeaderboardEntry_tags(ctx, field)
 			case "image":
 				return ec.fieldContext_LeaderboardEntry_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_LeaderboardEntry_imageObject(ctx, field)
 			case "lastScoreAt":
 				return ec.fieldContext_LeaderboardEntry_lastScoreAt(ctx, field)
 			}
@@ -56515,8 +57007,8 @@ func (ec *executionContext) fieldContext_Team_superTeam(_ context.Context, field
 				return ec.fieldContext_SuperTeam_name(ctx, field)
 			case "description":
 				return ec.fieldContext_SuperTeam_description(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_SuperTeam_imageObject(ctx, field)
+			case "image":
+				return ec.fieldContext_SuperTeam_image(ctx, field)
 			case "color":
 				return ec.fieldContext_SuperTeam_color(ctx, field)
 			case "members":
@@ -56918,8 +57410,6 @@ func (ec *executionContext) fieldContext_TeamMember_user(_ context.Context, fiel
 				return ec.fieldContext_User_name(ctx, field)
 			case "image":
 				return ec.fieldContext_User_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_User_imageObject(ctx, field)
 			case "projects":
 				return ec.fieldContext_User_projects(ctx, field)
 			case "events":
@@ -56942,6 +57432,35 @@ func (ec *executionContext) fieldContext_TeamMember_user(_ context.Context, fiel
 				return ec.fieldContext_User_pointsByProject(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TeamMember_countsTowardScores(ctx context.Context, field graphql.CollectedField, obj *model.TeamMember) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TeamMember_countsTowardScores,
+		func(ctx context.Context) (any, error) {
+			return obj.CountsTowardScores, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TeamMember_countsTowardScores(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TeamMember",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -57341,36 +57860,7 @@ func (ec *executionContext) _User_image(ctx context.Context, field graphql.Colle
 		field,
 		ec.fieldContext_User_image,
 		func(ctx context.Context) (any, error) {
-			return obj.Image, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_User_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "User",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _User_imageObject(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_User_imageObject,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.User().ImageObject(ctx, obj)
+			return ec.resolvers.User().Image(ctx, obj)
 		},
 		nil,
 		ec.marshalOImage2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐImage,
@@ -57379,7 +57869,7 @@ func (ec *executionContext) _User_imageObject(ctx context.Context, field graphql
 	)
 }
 
-func (ec *executionContext) fieldContext_User_imageObject(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_User_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
@@ -57617,8 +58107,8 @@ func (ec *executionContext) fieldContext_User_superTeams(_ context.Context, fiel
 				return ec.fieldContext_SuperTeam_name(ctx, field)
 			case "description":
 				return ec.fieldContext_SuperTeam_description(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_SuperTeam_imageObject(ctx, field)
+			case "image":
+				return ec.fieldContext_SuperTeam_image(ctx, field)
 			case "color":
 				return ec.fieldContext_SuperTeam_color(ctx, field)
 			case "members":
@@ -58021,6 +58511,8 @@ func (ec *executionContext) fieldContext_UserConsent_consent(_ context.Context, 
 				return ec.fieldContext_Consent_managementType(ctx, field)
 			case "managedBy":
 				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Consent_archivedAt(ctx, field)
 			case "isRequired":
 				return ec.fieldContext_Consent_isRequired(ctx, field)
 			case "project":
@@ -58167,6 +58659,8 @@ func (ec *executionContext) fieldContext_UserConsentHistoryEntry_consent(_ conte
 				return ec.fieldContext_Consent_managementType(ctx, field)
 			case "managedBy":
 				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Consent_archivedAt(ctx, field)
 			case "isRequired":
 				return ec.fieldContext_Consent_isRequired(ctx, field)
 			case "project":
@@ -58404,8 +58898,6 @@ func (ec *executionContext) fieldContext_UserEdge_node(_ context.Context, field 
 				return ec.fieldContext_User_name(ctx, field)
 			case "image":
 				return ec.fieldContext_User_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_User_imageObject(ctx, field)
 			case "projects":
 				return ec.fieldContext_User_projects(ctx, field)
 			case "events":
@@ -58539,8 +59031,6 @@ func (ec *executionContext) fieldContext_UserFeedback_user(_ context.Context, fi
 				return ec.fieldContext_User_name(ctx, field)
 			case "image":
 				return ec.fieldContext_User_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_User_imageObject(ctx, field)
 			case "projects":
 				return ec.fieldContext_User_projects(ctx, field)
 			case "events":
@@ -59138,8 +59628,6 @@ func (ec *executionContext) fieldContext_UserRole_user(_ context.Context, field 
 				return ec.fieldContext_User_name(ctx, field)
 			case "image":
 				return ec.fieldContext_User_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_User_imageObject(ctx, field)
 			case "projects":
 				return ec.fieldContext_User_projects(ctx, field)
 			case "events":
@@ -62106,7 +62594,7 @@ func (ec *executionContext) unmarshalInputCreateChallengeInput(ctx context.Conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"type", "name", "description", "image", "buttonText", "notificationText", "publishedAt", "visibleAt", "endTime", "requiresTeamMembership", "requiresSuperTeamMembership", "allowSelfCompletion", "url", "pluginChallengeId"}
+	fieldsInOrder := [...]string{"type", "name", "description", "imageUrl", "buttonText", "notificationText", "publishedAt", "visibleAt", "endTime", "requiresTeamMembership", "requiresSuperTeamMembership", "allowSelfCompletion", "url", "pluginChallengeId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -62134,13 +62622,13 @@ func (ec *executionContext) unmarshalInputCreateChallengeInput(ctx context.Conte
 				return it, err
 			}
 			it.Description = data
-		case "image":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image"))
+		case "imageUrl":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imageUrl"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Image = data
+			it.ImageURL = data
 		case "buttonText":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("buttonText"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -62891,7 +63379,7 @@ func (ec *executionContext) unmarshalInputCreateQuizInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "image", "projectId", "challengeId", "timeoutSeconds", "randomizeQuestions", "revealCorrectAnswers", "allowRetakes", "completionPoints", "endTime"}
+	fieldsInOrder := [...]string{"name", "description", "imageUrl", "projectId", "challengeId", "timeoutSeconds", "randomizeQuestions", "revealCorrectAnswers", "allowRetakes", "completionPoints", "endTime"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -62912,13 +63400,13 @@ func (ec *executionContext) unmarshalInputCreateQuizInput(ctx context.Context, o
 				return it, err
 			}
 			it.Description = data
-		case "image":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image"))
+		case "imageUrl":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imageUrl"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Image = data
+			it.ImageURL = data
 		case "projectId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectId"))
 			data, err := ec.unmarshalNID2string(ctx, v)
@@ -62988,7 +63476,7 @@ func (ec *executionContext) unmarshalInputCreateQuizQuestionInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"questionType", "questionText", "image", "questionOrder", "timeoutSeconds", "points", "bettingEnabled", "bettingMinPercentage", "bettingMaxPercentage", "bettingMinAbsolute", "bettingMaxAbsolute", "bettingMultiplierCorrect", "bettingMultiplierWrong", "allowMultipleSelection", "answerLabelStyle", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
+	fieldsInOrder := [...]string{"questionType", "questionText", "imageUrl", "questionOrder", "timeoutSeconds", "points", "bettingEnabled", "bettingMinPercentage", "bettingMaxPercentage", "bettingMinAbsolute", "bettingMaxAbsolute", "bettingMultiplierCorrect", "bettingMultiplierWrong", "allowMultipleSelection", "answerLabelStyle", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -63009,13 +63497,13 @@ func (ec *executionContext) unmarshalInputCreateQuizQuestionInput(ctx context.Co
 				return it, err
 			}
 			it.QuestionText = data
-		case "image":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image"))
+		case "imageUrl":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imageUrl"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Image = data
+			it.ImageURL = data
 		case "questionOrder":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("questionOrder"))
 			data, err := ec.unmarshalNInt2int(ctx, v)
@@ -65105,7 +65593,7 @@ func (ec *executionContext) unmarshalInputUpdateChallengeInput(ctx context.Conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "image", "eventId", "buttonText", "notificationText", "publishedAt", "visibleAt", "startedAt", "endTime", "requiresTeamMembership", "requiresSuperTeamMembership", "allowSelfCompletion", "url", "pluginChallengeId"}
+	fieldsInOrder := [...]string{"name", "description", "imageUrl", "eventId", "buttonText", "notificationText", "publishedAt", "visibleAt", "startedAt", "endTime", "requiresTeamMembership", "requiresSuperTeamMembership", "allowSelfCompletion", "url", "pluginChallengeId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -65126,13 +65614,13 @@ func (ec *executionContext) unmarshalInputUpdateChallengeInput(ctx context.Conte
 				return it, err
 			}
 			it.Description = data
-		case "image":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image"))
+		case "imageUrl":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imageUrl"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Image = data
+			it.ImageURL = data
 		case "eventId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("eventId"))
 			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
@@ -65690,13 +66178,41 @@ func (ec *executionContext) unmarshalInputUpdateQuizAnswerInput(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"submittedOrder", "betAmount"}
+	fieldsInOrder := [...]string{"selectedAnswerIds", "textResponse", "numberResponse", "jsonResponse", "submittedOrder", "betAmount"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "selectedAnswerIds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("selectedAnswerIds"))
+			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SelectedAnswerIds = data
+		case "textResponse":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("textResponse"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TextResponse = data
+		case "numberResponse":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("numberResponse"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NumberResponse = data
+		case "jsonResponse":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("jsonResponse"))
+			data, err := ec.unmarshalOJSON2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.JSONResponse = data
 		case "submittedOrder":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("submittedOrder"))
 			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
@@ -65724,7 +66240,7 @@ func (ec *executionContext) unmarshalInputUpdateQuizInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "image", "timeoutSeconds", "randomizeQuestions", "revealCorrectAnswers", "allowRetakes", "completionPoints", "endTime"}
+	fieldsInOrder := [...]string{"name", "description", "imageUrl", "timeoutSeconds", "randomizeQuestions", "revealCorrectAnswers", "allowRetakes", "completionPoints", "endTime"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -65745,13 +66261,13 @@ func (ec *executionContext) unmarshalInputUpdateQuizInput(ctx context.Context, o
 				return it, err
 			}
 			it.Description = data
-		case "image":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image"))
+		case "imageUrl":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imageUrl"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Image = data
+			it.ImageURL = data
 		case "timeoutSeconds":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("timeoutSeconds"))
 			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
@@ -65807,7 +66323,7 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"questionText", "image", "questionOrder", "timeoutSeconds", "points", "bettingEnabled", "bettingMinPercentage", "bettingMaxPercentage", "bettingMinAbsolute", "bettingMaxAbsolute", "bettingMultiplierCorrect", "bettingMultiplierWrong", "clearBettingMinAbsolute", "clearBettingMaxAbsolute", "allowMultipleSelection", "answerLabelStyle", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
+	fieldsInOrder := [...]string{"questionText", "imageUrl", "questionOrder", "timeoutSeconds", "points", "bettingEnabled", "bettingMinPercentage", "bettingMaxPercentage", "bettingMinAbsolute", "bettingMaxAbsolute", "bettingMultiplierCorrect", "bettingMultiplierWrong", "clearBettingMinPercentage", "clearBettingMaxPercentage", "clearBettingMinAbsolute", "clearBettingMaxAbsolute", "clearBettingMultiplierCorrect", "clearBettingMultiplierWrong", "allowMultipleSelection", "answerLabelStyle", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -65821,13 +66337,13 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 				return it, err
 			}
 			it.QuestionText = data
-		case "image":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image"))
+		case "imageUrl":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imageUrl"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Image = data
+			it.ImageURL = data
 		case "questionOrder":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("questionOrder"))
 			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
@@ -65898,6 +66414,20 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 				return it, err
 			}
 			it.BettingMultiplierWrong = data
+		case "clearBettingMinPercentage":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearBettingMinPercentage"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClearBettingMinPercentage = data
+		case "clearBettingMaxPercentage":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearBettingMaxPercentage"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClearBettingMaxPercentage = data
 		case "clearBettingMinAbsolute":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearBettingMinAbsolute"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -65912,6 +66442,20 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 				return it, err
 			}
 			it.ClearBettingMaxAbsolute = data
+		case "clearBettingMultiplierCorrect":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearBettingMultiplierCorrect"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClearBettingMultiplierCorrect = data
+		case "clearBettingMultiplierWrong":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearBettingMultiplierWrong"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClearBettingMultiplierWrong = data
 		case "allowMultipleSelection":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowMultipleSelection"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -67885,6 +68429,8 @@ func (ec *executionContext) _Consent(ctx context.Context, sel ast.SelectionSet, 
 			}
 		case "managedBy":
 			out.Values[i] = ec._Consent_managedBy(ctx, field, obj)
+		case "archivedAt":
+			out.Values[i] = ec._Consent_archivedAt(ctx, field, obj)
 		case "isRequired":
 			out.Values[i] = ec._Consent_isRequired(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -69076,8 +69622,6 @@ func (ec *executionContext) _ExternalChallenge(ctx context.Context, sel ast.Sele
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "image":
-			out.Values[i] = ec._ExternalChallenge_image(ctx, field, obj)
-		case "imageObject":
 			field := field
 
 			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
@@ -69086,7 +69630,7 @@ func (ec *executionContext) _ExternalChallenge(ctx context.Context, sel ast.Sele
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._ExternalChallenge_imageObject(ctx, field, obj)
+				res = ec._ExternalChallenge_image(ctx, field, obj)
 				return res
 			}
 
@@ -70028,7 +70572,7 @@ func (ec *executionContext) _FreeTextQuestion(ctx context.Context, sel ast.Selec
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "imageObject":
+		case "image":
 			field := field
 
 			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
@@ -70037,7 +70581,7 @@ func (ec *executionContext) _FreeTextQuestion(ctx context.Context, sel ast.Selec
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._FreeTextQuestion_imageObject(ctx, field, obj)
+				res = ec._FreeTextQuestion_image(ctx, field, obj)
 				return res
 			}
 
@@ -70339,6 +70883,72 @@ func (ec *executionContext) _FreeTextResponse(ctx context.Context, sel ast.Selec
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "isCorrect":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._FreeTextResponse_isCorrect(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "settledBetMultiplier":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._FreeTextResponse_settledBetMultiplier(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -70464,7 +71074,7 @@ func (ec *executionContext) _JsonQuestion(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "imageObject":
+		case "image":
 			field := field
 
 			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
@@ -70473,7 +71083,7 @@ func (ec *executionContext) _JsonQuestion(ctx context.Context, sel ast.Selection
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._JsonQuestion_imageObject(ctx, field, obj)
+				res = ec._JsonQuestion_image(ctx, field, obj)
 				return res
 			}
 
@@ -70760,6 +71370,72 @@ func (ec *executionContext) _JsonResponse(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "isCorrect":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._JsonResponse_isCorrect(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "settledBetMultiplier":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._JsonResponse_settledBetMultiplier(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -71229,8 +71905,6 @@ func (ec *executionContext) _LeaderboardEntry(ctx context.Context, sel ast.Selec
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "image":
-			out.Values[i] = ec._LeaderboardEntry_image(ctx, field, obj)
-		case "imageObject":
 			field := field
 
 			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
@@ -71239,7 +71913,7 @@ func (ec *executionContext) _LeaderboardEntry(ctx context.Context, sel ast.Selec
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._LeaderboardEntry_imageObject(ctx, field, obj)
+				res = ec._LeaderboardEntry_image(ctx, field, obj)
 				return res
 			}
 
@@ -72353,6 +73027,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "archiveConsent":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_archiveConsent(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "unarchiveConsent":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_unarchiveConsent(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "adminSetUserConsent":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_adminSetUserConsent(ctx, field)
@@ -72823,7 +73511,7 @@ func (ec *executionContext) _NumberQuestion(ctx context.Context, sel ast.Selecti
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "imageObject":
+		case "image":
 			field := field
 
 			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
@@ -72832,7 +73520,7 @@ func (ec *executionContext) _NumberQuestion(ctx context.Context, sel ast.Selecti
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._NumberQuestion_imageObject(ctx, field, obj)
+				res = ec._NumberQuestion_image(ctx, field, obj)
 				return res
 			}
 
@@ -73138,6 +73826,72 @@ func (ec *executionContext) _NumberResponse(ctx context.Context, sel ast.Selecti
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "isCorrect":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NumberResponse_isCorrect(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "settledBetMultiplier":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NumberResponse_settledBetMultiplier(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -73272,7 +74026,7 @@ func (ec *executionContext) _OrderingQuestion(ctx context.Context, sel ast.Selec
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "imageObject":
+		case "image":
 			field := field
 
 			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
@@ -73281,7 +74035,7 @@ func (ec *executionContext) _OrderingQuestion(ctx context.Context, sel ast.Selec
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._OrderingQuestion_imageObject(ctx, field, obj)
+				res = ec._OrderingQuestion_image(ctx, field, obj)
 				return res
 			}
 
@@ -73647,6 +74401,39 @@ func (ec *executionContext) _OrderingResponse(ctx context.Context, sel ast.Selec
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "settledBetMultiplier":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._OrderingResponse_settledBetMultiplier(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -73745,8 +74532,6 @@ func (ec *executionContext) _PluginChallenge(ctx context.Context, sel ast.Select
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "image":
-			out.Values[i] = ec._PluginChallenge_image(ctx, field, obj)
-		case "imageObject":
 			field := field
 
 			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
@@ -73755,7 +74540,7 @@ func (ec *executionContext) _PluginChallenge(ctx context.Context, sel ast.Select
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._PluginChallenge_imageObject(ctx, field, obj)
+				res = ec._PluginChallenge_image(ctx, field, obj)
 				return res
 			}
 
@@ -74150,7 +74935,7 @@ func (ec *executionContext) _PredefinedQuestion(ctx context.Context, sel ast.Sel
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "imageObject":
+		case "image":
 			field := field
 
 			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
@@ -74159,7 +74944,7 @@ func (ec *executionContext) _PredefinedQuestion(ctx context.Context, sel ast.Sel
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._PredefinedQuestion_imageObject(ctx, field, obj)
+				res = ec._PredefinedQuestion_image(ctx, field, obj)
 				return res
 			}
 
@@ -74539,7 +75324,71 @@ func (ec *executionContext) _PredefinedResponse(ctx context.Context, sel ast.Sel
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "isCorrect":
-			out.Values[i] = ec._PredefinedResponse_isCorrect(ctx, field, obj)
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._PredefinedResponse_isCorrect(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "settledBetMultiplier":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._PredefinedResponse_settledBetMultiplier(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -76235,6 +77084,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "adminConsents":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_adminConsents(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "consent":
 			field := field
 
@@ -76985,8 +77856,6 @@ func (ec *executionContext) _Quiz(ctx context.Context, sel ast.SelectionSet, obj
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "image":
-			out.Values[i] = ec._Quiz_image(ctx, field, obj)
-		case "imageObject":
 			field := field
 
 			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
@@ -76995,7 +77864,7 @@ func (ec *executionContext) _Quiz(ctx context.Context, sel ast.SelectionSet, obj
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Quiz_imageObject(ctx, field, obj)
+				res = ec._Quiz_image(ctx, field, obj)
 				return res
 			}
 
@@ -77233,6 +78102,39 @@ func (ec *executionContext) _Quiz(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._Quiz_userActiveSubmission(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "userAvailableBetPoints":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Quiz_userAvailableBetPoints(ctx, field, obj)
 				return res
 			}
 
@@ -77880,8 +78782,6 @@ func (ec *executionContext) _QuizChallenge(ctx context.Context, sel ast.Selectio
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "image":
-			out.Values[i] = ec._QuizChallenge_image(ctx, field, obj)
-		case "imageObject":
 			field := field
 
 			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
@@ -77890,7 +78790,7 @@ func (ec *executionContext) _QuizChallenge(ctx context.Context, sel ast.Selectio
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._QuizChallenge_imageObject(ctx, field, obj)
+				res = ec._QuizChallenge_image(ctx, field, obj)
 				return res
 			}
 
@@ -80421,8 +81321,6 @@ func (ec *executionContext) _SimpleChallenge(ctx context.Context, sel ast.Select
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "image":
-			out.Values[i] = ec._SimpleChallenge_image(ctx, field, obj)
-		case "imageObject":
 			field := field
 
 			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
@@ -80431,7 +81329,7 @@ func (ec *executionContext) _SimpleChallenge(ctx context.Context, sel ast.Select
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._SimpleChallenge_imageObject(ctx, field, obj)
+				res = ec._SimpleChallenge_image(ctx, field, obj)
 				return res
 			}
 
@@ -81314,7 +82212,7 @@ func (ec *executionContext) _SuperTeam(ctx context.Context, sel ast.SelectionSet
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "imageObject":
+		case "image":
 			field := field
 
 			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
@@ -81323,7 +82221,7 @@ func (ec *executionContext) _SuperTeam(ctx context.Context, sel ast.SelectionSet
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._SuperTeam_imageObject(ctx, field, obj)
+				res = ec._SuperTeam_image(ctx, field, obj)
 				return res
 			}
 
@@ -82066,6 +82964,11 @@ func (ec *executionContext) _TeamMember(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "countsTowardScores":
+			out.Values[i] = ec._TeamMember_countsTowardScores(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -82253,8 +83156,6 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "image":
-			out.Values[i] = ec._User_image(ctx, field, obj)
-		case "imageObject":
 			field := field
 
 			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
@@ -82263,7 +83164,7 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._User_imageObject(ctx, field, obj)
+				res = ec._User_image(ctx, field, obj)
 				return res
 			}
 

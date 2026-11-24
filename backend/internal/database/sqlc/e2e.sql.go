@@ -7,6 +7,8 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const ApplyLeaderboardApplyQueuePerDelta = `-- name: ApplyLeaderboardApplyQueuePerDelta :one
@@ -94,6 +96,408 @@ func (q *Queries) SnapshotLeaderboardRows(ctx context.Context) ([]*SnapshotLeade
 	for rows.Next() {
 		var i SnapshotLeaderboardRowsRow
 		if err := rows.Scan(&i.TableName, &i.RowJson); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const StoredEventChurchLeaderboard = `-- name: StoredEventChurchLeaderboard :many
+WITH ranked_scores AS (
+    SELECT
+        c.id AS entity_id,
+        c.name,
+        NULL::text AS image,
+        lec.score,
+        lec.last_score_at,
+        DENSE_RANK() OVER (ORDER BY lec.score DESC) AS rank
+    FROM leaderboard_event_churches lec
+    INNER JOIN churches c ON lec.church_id = c.id
+    WHERE lec.event_id = $1::char(28)
+      AND lec.score >= COALESCE($2::int, 1)
+      AND ($3::int IS NULL OR lec.score <= $3::int)
+)
+SELECT entity_id, name, image, score, rank, last_score_at
+FROM ranked_scores
+ORDER BY rank ASC, last_score_at DESC NULLS LAST, name ASC
+`
+
+type StoredEventChurchLeaderboardParams struct {
+	Eventid  string `json:"eventid"`
+	Minscore int32  `json:"minscore"`
+	Maxscore int32  `json:"maxscore"`
+}
+
+type StoredEventChurchLeaderboardRow struct {
+	EntityID    string             `json:"entity_id"`
+	Name        string             `json:"name"`
+	Image       *string            `json:"image"`
+	Score       int64              `json:"score"`
+	Rank        int64              `json:"rank"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
+}
+
+func (q *Queries) StoredEventChurchLeaderboard(ctx context.Context, arg StoredEventChurchLeaderboardParams) ([]*StoredEventChurchLeaderboardRow, error) {
+	rows, err := q.db.Query(ctx, StoredEventChurchLeaderboard, arg.Eventid, arg.Minscore, arg.Maxscore)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*StoredEventChurchLeaderboardRow{}
+	for rows.Next() {
+		var i StoredEventChurchLeaderboardRow
+		if err := rows.Scan(
+			&i.EntityID,
+			&i.Name,
+			&i.Image,
+			&i.Score,
+			&i.Rank,
+			&i.LastScoreAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const StoredEventSuperTeamLeaderboard = `-- name: StoredEventSuperTeamLeaderboard :many
+WITH ranked_scores AS (
+    SELECT
+        st.id AS entity_id,
+        st.name,
+        NULL::text AS image,
+        lest.score,
+        lest.last_score_at,
+        DENSE_RANK() OVER (ORDER BY lest.score DESC) AS rank
+    FROM leaderboard_event_superteams lest
+    INNER JOIN super_teams st ON lest.super_team_id = st.id
+    WHERE lest.event_id = $1::char(28)
+      AND lest.score >= COALESCE($2::int, 1)
+      AND ($3::int IS NULL OR lest.score <= $3::int)
+)
+SELECT entity_id, name, image, score, rank, last_score_at
+FROM ranked_scores
+ORDER BY rank ASC, last_score_at DESC NULLS LAST, name ASC
+`
+
+type StoredEventSuperTeamLeaderboardParams struct {
+	Eventid  string `json:"eventid"`
+	Minscore int32  `json:"minscore"`
+	Maxscore int32  `json:"maxscore"`
+}
+
+type StoredEventSuperTeamLeaderboardRow struct {
+	EntityID    string             `json:"entity_id"`
+	Name        string             `json:"name"`
+	Image       *string            `json:"image"`
+	Score       int64              `json:"score"`
+	Rank        int64              `json:"rank"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
+}
+
+func (q *Queries) StoredEventSuperTeamLeaderboard(ctx context.Context, arg StoredEventSuperTeamLeaderboardParams) ([]*StoredEventSuperTeamLeaderboardRow, error) {
+	rows, err := q.db.Query(ctx, StoredEventSuperTeamLeaderboard, arg.Eventid, arg.Minscore, arg.Maxscore)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*StoredEventSuperTeamLeaderboardRow{}
+	for rows.Next() {
+		var i StoredEventSuperTeamLeaderboardRow
+		if err := rows.Scan(
+			&i.EntityID,
+			&i.Name,
+			&i.Image,
+			&i.Score,
+			&i.Rank,
+			&i.LastScoreAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const StoredEventTeamLeaderboard = `-- name: StoredEventTeamLeaderboard :many
+WITH ranked_scores AS (
+    SELECT
+        t.id AS entity_id,
+        t.name,
+        NULL::text AS image,
+        let.score,
+        let.last_score_at,
+        DENSE_RANK() OVER (ORDER BY let.score DESC) AS rank
+    FROM leaderboard_event_teams let
+    INNER JOIN teams t ON let.team_id = t.id
+    WHERE let.event_id = $1::char(28)
+      AND t.leaderboard_excluded = false
+      AND let.score >= COALESCE($2::int, 1)
+      AND ($3::int IS NULL OR let.score <= $3::int)
+      -- Church filter: team has ANY member from specified church
+      AND ($4::char(28) = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN users u ON tm.user_id = u.id
+          WHERE tm.team_id = t.id AND u.church_id = $4::char(28)
+      ))
+)
+SELECT entity_id, name, image, score, rank, last_score_at
+FROM ranked_scores
+ORDER BY rank ASC, last_score_at DESC NULLS LAST, name ASC
+`
+
+type StoredEventTeamLeaderboardParams struct {
+	Eventid  string `json:"eventid"`
+	Minscore int32  `json:"minscore"`
+	Maxscore int32  `json:"maxscore"`
+	Churchid string `json:"churchid"`
+}
+
+type StoredEventTeamLeaderboardRow struct {
+	EntityID    string             `json:"entity_id"`
+	Name        string             `json:"name"`
+	Image       *string            `json:"image"`
+	Score       int64              `json:"score"`
+	Rank        int64              `json:"rank"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
+}
+
+func (q *Queries) StoredEventTeamLeaderboard(ctx context.Context, arg StoredEventTeamLeaderboardParams) ([]*StoredEventTeamLeaderboardRow, error) {
+	rows, err := q.db.Query(ctx, StoredEventTeamLeaderboard,
+		arg.Eventid,
+		arg.Minscore,
+		arg.Maxscore,
+		arg.Churchid,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*StoredEventTeamLeaderboardRow{}
+	for rows.Next() {
+		var i StoredEventTeamLeaderboardRow
+		if err := rows.Scan(
+			&i.EntityID,
+			&i.Name,
+			&i.Image,
+			&i.Score,
+			&i.Rank,
+			&i.LastScoreAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const StoredProjectChurchLeaderboard = `-- name: StoredProjectChurchLeaderboard :many
+WITH ranked_scores AS (
+    SELECT
+        c.id AS entity_id,
+        c.name,
+        NULL::text AS image,
+        lpc.score,
+        lpc.last_score_at,
+        DENSE_RANK() OVER (ORDER BY lpc.score DESC) AS rank
+    FROM leaderboard_project_churches lpc
+    INNER JOIN churches c ON lpc.church_id = c.id
+    WHERE lpc.project_id = $1::char(28)
+      AND lpc.score >= COALESCE($2::int, 1)
+      AND ($3::int IS NULL OR lpc.score <= $3::int)
+)
+SELECT entity_id, name, image, score, rank, last_score_at
+FROM ranked_scores
+ORDER BY rank ASC, last_score_at DESC NULLS LAST, name ASC
+`
+
+type StoredProjectChurchLeaderboardParams struct {
+	Projectid string `json:"projectid"`
+	Minscore  int32  `json:"minscore"`
+	Maxscore  int32  `json:"maxscore"`
+}
+
+type StoredProjectChurchLeaderboardRow struct {
+	EntityID    string             `json:"entity_id"`
+	Name        string             `json:"name"`
+	Image       *string            `json:"image"`
+	Score       int64              `json:"score"`
+	Rank        int64              `json:"rank"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
+}
+
+func (q *Queries) StoredProjectChurchLeaderboard(ctx context.Context, arg StoredProjectChurchLeaderboardParams) ([]*StoredProjectChurchLeaderboardRow, error) {
+	rows, err := q.db.Query(ctx, StoredProjectChurchLeaderboard, arg.Projectid, arg.Minscore, arg.Maxscore)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*StoredProjectChurchLeaderboardRow{}
+	for rows.Next() {
+		var i StoredProjectChurchLeaderboardRow
+		if err := rows.Scan(
+			&i.EntityID,
+			&i.Name,
+			&i.Image,
+			&i.Score,
+			&i.Rank,
+			&i.LastScoreAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const StoredProjectSuperTeamLeaderboard = `-- name: StoredProjectSuperTeamLeaderboard :many
+WITH ranked_scores AS (
+    SELECT
+        st.id AS entity_id,
+        st.name,
+        NULL::text AS image,
+        lpst.score,
+        lpst.last_score_at,
+        DENSE_RANK() OVER (ORDER BY lpst.score DESC) AS rank
+    FROM leaderboard_project_superteams lpst
+    INNER JOIN super_teams st ON lpst.super_team_id = st.id
+    WHERE lpst.project_id = $1::char(28)
+      AND lpst.score >= COALESCE($2::int, 1)
+      AND ($3::int IS NULL OR lpst.score <= $3::int)
+)
+SELECT entity_id, name, image, score, rank, last_score_at
+FROM ranked_scores
+ORDER BY rank ASC, last_score_at DESC NULLS LAST, name ASC
+`
+
+type StoredProjectSuperTeamLeaderboardParams struct {
+	Projectid string `json:"projectid"`
+	Minscore  int32  `json:"minscore"`
+	Maxscore  int32  `json:"maxscore"`
+}
+
+type StoredProjectSuperTeamLeaderboardRow struct {
+	EntityID    string             `json:"entity_id"`
+	Name        string             `json:"name"`
+	Image       *string            `json:"image"`
+	Score       int64              `json:"score"`
+	Rank        int64              `json:"rank"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
+}
+
+func (q *Queries) StoredProjectSuperTeamLeaderboard(ctx context.Context, arg StoredProjectSuperTeamLeaderboardParams) ([]*StoredProjectSuperTeamLeaderboardRow, error) {
+	rows, err := q.db.Query(ctx, StoredProjectSuperTeamLeaderboard, arg.Projectid, arg.Minscore, arg.Maxscore)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*StoredProjectSuperTeamLeaderboardRow{}
+	for rows.Next() {
+		var i StoredProjectSuperTeamLeaderboardRow
+		if err := rows.Scan(
+			&i.EntityID,
+			&i.Name,
+			&i.Image,
+			&i.Score,
+			&i.Rank,
+			&i.LastScoreAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const StoredProjectTeamLeaderboard = `-- name: StoredProjectTeamLeaderboard :many
+
+WITH ranked_scores AS (
+    SELECT
+        t.id AS entity_id,
+        t.name,
+        NULL::text AS image,
+        lpt.score,
+        lpt.last_score_at,
+        DENSE_RANK() OVER (ORDER BY lpt.score DESC) AS rank
+    FROM leaderboard_project_teams lpt
+    INNER JOIN teams t ON lpt.team_id = t.id
+    WHERE lpt.project_id = $1::char(28)
+      AND t.leaderboard_excluded = false
+      AND lpt.score >= COALESCE($2::int, 1)
+      AND ($3::int IS NULL OR lpt.score <= $3::int)
+      -- Church filter: team has ANY member from specified church
+      AND ($4::char(28) = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN users u ON tm.user_id = u.id
+          WHERE tm.team_id = t.id AND u.church_id = $4::char(28)
+      ))
+)
+SELECT entity_id, name, image, score, rank, last_score_at
+FROM ranked_scores
+ORDER BY rank ASC, last_score_at DESC NULLS LAST, name ASC
+`
+
+type StoredProjectTeamLeaderboardParams struct {
+	Projectid string `json:"projectid"`
+	Minscore  int32  `json:"minscore"`
+	Maxscore  int32  `json:"maxscore"`
+	Churchid  string `json:"churchid"`
+}
+
+type StoredProjectTeamLeaderboardRow struct {
+	EntityID    string             `json:"entity_id"`
+	Name        string             `json:"name"`
+	Image       *string            `json:"image"`
+	Score       int64              `json:"score"`
+	Rank        int64              `json:"rank"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
+}
+
+// The group leaderboard queries as they read the stored group tables, before
+// the boards were computed from person totals: the reference the e2e tests
+// hold the new queries to. Removed together with the stored tables.
+func (q *Queries) StoredProjectTeamLeaderboard(ctx context.Context, arg StoredProjectTeamLeaderboardParams) ([]*StoredProjectTeamLeaderboardRow, error) {
+	rows, err := q.db.Query(ctx, StoredProjectTeamLeaderboard,
+		arg.Projectid,
+		arg.Minscore,
+		arg.Maxscore,
+		arg.Churchid,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*StoredProjectTeamLeaderboardRow{}
+	for rows.Next() {
+		var i StoredProjectTeamLeaderboardRow
+		if err := rows.Scan(
+			&i.EntityID,
+			&i.Name,
+			&i.Image,
+			&i.Score,
+			&i.Rank,
+			&i.LastScoreAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, &i)

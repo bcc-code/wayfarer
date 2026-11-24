@@ -49,6 +49,11 @@ func (m *mockRoleService) CanManageTeam(ctx context.Context, userID, teamID stri
 	return args.Bool(0)
 }
 
+func (m *mockRoleService) CanManageTeamAsAdmin(ctx context.Context, userID, teamID string) bool {
+	args := m.Called(ctx, userID, teamID)
+	return args.Bool(0)
+}
+
 // TestValidateUserAccess tests the validateUserAccess function
 func TestValidateUserAccess(t *testing.T) {
 	tests := []struct {
@@ -211,6 +216,7 @@ func TestCheckUserPermissions(t *testing.T) {
 				svc.On("IsAdmin", mock.Anything, "US123").Return(false)
 				svc.On("CanManageChurch", mock.Anything, "US123", "CH456").Return(false)
 				svc.On("CanManageTeam", mock.Anything, "US123", "TM999").Return(true)
+				svc.On("CanManageTeamAsAdmin", mock.Anything, "US123", "TM999").Return(false)
 				return svc
 			},
 			expectError: false,
@@ -220,6 +226,7 @@ func TestCheckUserPermissions(t *testing.T) {
 				assert.False(t, perms.IsProjectAdmin)
 				assert.True(t, perms.IsTeamLead)
 				assert.Equal(t, "TM999", perms.TeamID)
+				assert.True(t, perms.HideConsentBlocked, "a lead who is not an admin of the team must not see hidden members")
 			},
 		},
 		{
@@ -254,6 +261,7 @@ func TestCheckUserPermissions(t *testing.T) {
 				svc.On("CanManageChurch", mock.Anything, "US123", "CH456").Return(true)
 				svc.On("CanManageProject", mock.Anything, "US123", "PR789").Return(true)
 				svc.On("CanManageTeam", mock.Anything, "US123", "TM999").Return(true)
+				svc.On("CanManageTeamAsAdmin", mock.Anything, "US123", "TM999").Return(true)
 				return svc
 			},
 			expectError: false,
@@ -261,6 +269,7 @@ func TestCheckUserPermissions(t *testing.T) {
 				assert.True(t, perms.IsChurchAdmin)
 				assert.True(t, perms.IsProjectAdmin)
 				assert.True(t, perms.IsTeamLead)
+				assert.False(t, perms.HideConsentBlocked, "an admin of the team sees every member")
 			},
 		},
 	}

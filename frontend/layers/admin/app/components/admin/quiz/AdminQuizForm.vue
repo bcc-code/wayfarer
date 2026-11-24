@@ -57,6 +57,9 @@ export interface QuizQuestionFormData {
   bettingMaxPercentage?: number
   bettingMinAbsolute?: number
   bettingMaxAbsolute?: number
+  /** Undefined means the backend default (2x / 0x). */
+  bettingMultiplierCorrect?: number
+  bettingMultiplierWrong?: number
   translationStatus?: TranslationStatusFragment[]
 }
 

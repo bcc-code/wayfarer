@@ -143,6 +143,13 @@ export const PROJECT_NAV: AdminNavItem[] = [
     can: (p) => !!p.canAccessScores.value,
   },
   {
+    label: 'Samtykker',
+    icon: 'lucide:file-check',
+    to: 'admin-projects-projectId-consents',
+    match: 'admin-projects-projectId-consents',
+    can: (p) => !!p.canAccessConsents.value,
+  },
+  {
     label: 'Arrangement',
     icon: 'lucide:calendar',
     to: 'admin-projects-projectId-events',

@@ -11,7 +11,7 @@ gql(`
       name
       description
       color
-      imageObject {
+      image {
         ...ImageFields
       }
       teams {
@@ -74,7 +74,7 @@ watch(data, () => {
     const st = data.value.superteam
     state.name = st.name
     state.description = st.description
-    state.imageUrl = st.imageObject?.url ?? null
+    state.imageUrl = st.image?.url ?? null
     hasColor.value = !!st.color
     colorValue.value = st.color || '#000000'
   }

@@ -50,8 +50,8 @@
       "pointsLost": "Points perdus",
       "pointsEarned": "Points gagnés",
       "resultYourBet": "Ta mise",
-      "outcomeCorrect": "Bonne réponse",
-      "outcomeIncorrect": "Mauvaise réponse",
+      "outcomeCorrect": "Tu avais toutes les bonnes réponses.",
+      "outcomeIncorrect": "Tu n'avais aucune bonne réponse",
       "bettingResult": "Résultat des paris",
       "nothingToStake": "Vous n'avez aucun point à parier."
     },

@@ -169,9 +169,9 @@ const { data: filteredUserData } = useAdminFeedbackFilteredUserQuery({
 })
 
 // Refresh when Firestore notifies of updates
-useFirestoreRefresh(['AdminFeedbackPageDocument'], () => {
-  executeQuery({ requestPolicy: 'network-only' })
-})
+useFirestoreRefresh(['AdminFeedbackPageDocument'], () =>
+  executeQuery({ requestPolicy: 'network-only' }),
+)
 
 watch(
   () => data.value?.feedback,

@@ -53,13 +53,6 @@ async function copyLink() {
           <Icon name="lucide:flame" class="size-8 text-dimmed shrink-0" />
           {{ $t('admin.churchHome.kickOff') }}
         </NuxtLink>
-        <NuxtLink
-          :to="{ name: 'admin-my-church-gamenights' }"
-          class="rounded-2xl bg-muted p-12 gap-2 flex flex-col items-center justify-center text-center hover:bg-accented"
-        >
-          <Icon name="lucide:gamepad-2" class="size-8 text-dimmed shrink-0" />
-          {{ $t('admin.churchHome.gameNights') }}
-        </NuxtLink>
       </div>
       <UButton variant="soft" size="xl" class="mt-8" @click="copyLink">
         <Icon name="lucide:link" />

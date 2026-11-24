@@ -50,10 +50,9 @@
       "pointsLost": "Punkty stracone",
       "pointsEarned": "Punkty zdobyte",
       "resultYourBet": "Postawione punkty",
-      "outcomeCorrect": "Prawidłowa odpowiedź",
-      "outcomeIncorrect": "Zła odpowiedź",
-      "bettingResult": "Wynik obstawiania",
-      "nothingToStake": "Nie masz żadnych punktów do obstawienia."
+      "outcomeCorrect": "Wszystkie odpowiedzi poprawne",
+      "outcomeIncorrect": "Żadna odpowiedź nie była poprawna",
+      "bettingResult": "Wynik obstawiania"
     },
     "result": {
       "receivedNoPoints": "Nie zdobyłeś żadnych punktów.",

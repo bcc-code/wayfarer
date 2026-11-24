@@ -13,8 +13,7 @@ interface Challenge {
     id: ID!
     name: String!
     description: HTML!
-    image: String @deprecated(reason: "Use imageObject instead")
-    imageObject: Image
+    image: Image
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String
@@ -39,8 +38,7 @@ type SimpleChallenge implements Challenge {
     id: ID!
     name: String!
     description: HTML!
-    image: String @deprecated(reason: "Use imageObject instead")
-    imageObject: Image @goField(forceResolver: true)
+    image: Image @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String!
@@ -65,8 +63,7 @@ type QuizChallenge implements Challenge {
     id: ID!
     name: String!
     description: HTML!
-    image: String @deprecated(reason: "Use imageObject instead")
-    imageObject: Image @goField(forceResolver: true)
+    image: Image @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String!
@@ -91,8 +88,7 @@ type ExternalChallenge implements Challenge {
     id: ID!
     name: String!
     description: HTML!
-    image: String @deprecated(reason: "Use imageObject instead")
-    imageObject: Image @goField(forceResolver: true)
+    image: Image @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String!
@@ -117,8 +113,7 @@ type PluginChallenge implements Challenge {
     id: ID!
     name: String!
     description: HTML!
-    image: String @deprecated(reason: "Use imageObject instead")
-    imageObject: Image @goField(forceResolver: true)
+    image: Image @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String
@@ -145,7 +140,7 @@ input CreateChallengeInput {
     type: ChallengeType!
     name: String!
     description: HTML
-    image: String
+    imageUrl: String
     buttonText: String            # Required for all types except PLUGIN
     notificationText: String      # Optional text for push notifications when admin enrolls user
     publishedAt: DateTime         # Optional, defaults to NOW() if not provided
@@ -162,7 +157,7 @@ input CreateChallengeInput {
 input UpdateChallengeInput {
     name: String
     description: HTML
-    image: String
+    imageUrl: String
     eventId: ID
     buttonText: String
     notificationText: String  # Optional text for push notifications when admin enrolls user

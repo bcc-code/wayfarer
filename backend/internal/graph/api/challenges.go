@@ -495,7 +495,7 @@ func convertRowToChallenge(row *sqlc.Challenge) model.Challenge {
 			ID:                          row.ID,
 			Name:                        row.Name,
 			Description:                 scalars.HTML(row.Description),
-			Image:                       row.ImageUrl,
+			ImageURL:                    row.ImageUrl,
 			ButtonText:                  row.ButtonText,
 			ProjectID:                   row.ProjectID,
 			EventID:                     row.EventID,
@@ -515,7 +515,7 @@ func convertRowToChallenge(row *sqlc.Challenge) model.Challenge {
 			ID:                          row.ID,
 			Name:                        row.Name,
 			Description:                 scalars.HTML(row.Description),
-			Image:                       row.ImageUrl,
+			ImageURL:                    row.ImageUrl,
 			URL:                         url,
 			ButtonText:                  row.ButtonText,
 			ProjectID:                   row.ProjectID,
@@ -540,7 +540,7 @@ func convertRowToChallenge(row *sqlc.Challenge) model.Challenge {
 			ID:                          row.ID,
 			Name:                        row.Name,
 			Description:                 scalars.HTML(row.Description),
-			Image:                       row.ImageUrl,
+			ImageURL:                    row.ImageUrl,
 			PluginChallengeID:           pluginChallengeID,
 			ButtonText:                  buttonText,
 			ProjectID:                   row.ProjectID,
@@ -557,7 +557,7 @@ func convertRowToChallenge(row *sqlc.Challenge) model.Challenge {
 			ID:                          row.ID,
 			Name:                        row.Name,
 			Description:                 scalars.HTML(row.Description),
-			Image:                       row.ImageUrl,
+			ImageURL:                    row.ImageUrl,
 			ButtonText:                  row.ButtonText,
 			ProjectID:                   row.ProjectID,
 			EventID:                     row.EventID,
@@ -918,28 +918,28 @@ func getChallengePushInfo(c model.Challenge) push.ChallengeInfo {
 			ID:               v.ID,
 			Name:             v.Name,
 			NotificationText: v.NotificationText,
-			Image:            derefString(v.Image),
+			Image:            derefString(v.ImageURL),
 		}
 	case *model.QuizChallenge:
 		return push.ChallengeInfo{
 			ID:               v.ID,
 			Name:             v.Name,
 			NotificationText: v.NotificationText,
-			Image:            derefString(v.Image),
+			Image:            derefString(v.ImageURL),
 		}
 	case *model.ExternalChallenge:
 		return push.ChallengeInfo{
 			ID:               v.ID,
 			Name:             v.Name,
 			NotificationText: v.NotificationText,
-			Image:            derefString(v.Image),
+			Image:            derefString(v.ImageURL),
 		}
 	case *model.PluginChallenge:
 		return push.ChallengeInfo{
 			ID:               v.ID,
 			Name:             v.Name,
 			NotificationText: v.NotificationText,
-			Image:            derefString(v.Image),
+			Image:            derefString(v.ImageURL),
 		}
 	default:
 		return push.ChallengeInfo{}

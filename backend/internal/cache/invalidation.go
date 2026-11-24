@@ -184,7 +184,7 @@ func extractPrefixes(key string) []string {
 		PrefixUserProjects, PrefixUserEvents, PrefixTeamMembers, PrefixUserRoles,
 		PrefixUserChallengeEnrollments, PrefixUserChallengeCompletions,
 		PrefixUserContentProgress, PrefixUserAchievements, PrefixUserStreakProgress,
-		PrefixUserConsents, PrefixUserProjectPoints, PrefixActiveChallengesCount,
+		PrefixUserConsents, PrefixLatestConsents, PrefixUserProjectPoints, PrefixActiveChallengesCount,
 		PrefixUserTeamInProject, PrefixUserEnrolledChallenges, PrefixUserQuizSessionAccess,
 		PrefixUserActiveQuizSession,
 		PrefixUsersFilter, PrefixUsersCount,
@@ -445,6 +445,15 @@ func (c *CacheWithRegistry) InvalidateProject(projectID string) {
 	// Drop ALL whole-response cache entries: both shared and per-user entries
 	// embed project data (branding, info message, leaderboards), so admin
 	// project edits must surface immediately rather than after the TTL.
+	c.DeletePrefix(PrefixGQLResponse)
+}
+
+// InvalidateConsents drops everything holding consent state. A cached user
+// carries an embedded ConsentStatus, and per-user responses embed the gate; a
+// mutation only drops the caller's own responses, and the caller is an admin.
+func (c *CacheWithRegistry) InvalidateConsents() {
+	c.DeletePrefix(PrefixLatestConsents)
+	c.DeletePrefix(PrefixUser)
 	c.DeletePrefix(PrefixGQLResponse)
 }
 

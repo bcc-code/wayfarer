@@ -53,7 +53,7 @@ func resolveNearestChurchRivals(ctx context.Context, svc *services.LeaderboardSe
 			Score:       entry.Score,
 			Rank:        &rank,
 			Tags:        []model.LeaderboardEntryTag{},
-			Image:       entry.Image,
+			ImageURL:    entry.Image,
 			LastScoreAt: timeToDateTime(entry.LastScoreAt),
 		}
 	}
@@ -292,7 +292,7 @@ func buildLeaderboardConnection(
 				Score:       entry.Score,
 				Rank:        &rank,
 				Tags:        tags,
-				Image:       entry.Image,
+				ImageURL:    entry.Image,
 				LastScoreAt: timeToDateTime(entry.LastScoreAt),
 			},
 		}
@@ -327,7 +327,7 @@ func buildLeaderboardConnection(
 			Score:       meEntry.Score,
 			Rank:        &meRank,
 			Tags:        meTags,
-			Image:       meEntry.Image,
+			ImageURL:    meEntry.Image,
 			LastScoreAt: timeToDateTime(meEntry.LastScoreAt),
 		}
 	}

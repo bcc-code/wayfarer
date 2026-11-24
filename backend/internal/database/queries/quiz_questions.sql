@@ -82,12 +82,18 @@ SET
     timeout_seconds = COALESCE(sqlc.narg('timeoutseconds')::int, timeout_seconds),
     points = COALESCE(sqlc.narg('points')::int, points),
     betting_enabled = COALESCE(sqlc.narg('bettingenabled')::bool, betting_enabled),
-    betting_min_percentage = COALESCE(sqlc.narg('bettingminpercentage')::decimal, betting_min_percentage),
-    betting_max_percentage = COALESCE(sqlc.narg('bettingmaxpercentage')::decimal, betting_max_percentage),
-    betting_min_absolute = COALESCE(sqlc.narg('bettingminabsolute')::int, betting_min_absolute),
-    betting_max_absolute = COALESCE(sqlc.narg('bettingmaxabsolute')::int, betting_max_absolute),
-    betting_multiplier_correct = COALESCE(sqlc.narg('bettingmultipliercorrect')::decimal, betting_multiplier_correct),
-    betting_multiplier_wrong = COALESCE(sqlc.narg('bettingmultiplierwrong')::decimal, betting_multiplier_wrong),
+    betting_min_percentage = CASE WHEN @clearbettingminpercentage::bool THEN NULL
+                     ELSE COALESCE(sqlc.narg('bettingminpercentage')::decimal, betting_min_percentage) END,
+    betting_max_percentage = CASE WHEN @clearbettingmaxpercentage::bool THEN NULL
+                     ELSE COALESCE(sqlc.narg('bettingmaxpercentage')::decimal, betting_max_percentage) END,
+    betting_min_absolute = CASE WHEN @clearbettingminabsolute::bool THEN NULL
+                     ELSE COALESCE(sqlc.narg('bettingminabsolute')::int, betting_min_absolute) END,
+    betting_max_absolute = CASE WHEN @clearbettingmaxabsolute::bool THEN NULL
+                     ELSE COALESCE(sqlc.narg('bettingmaxabsolute')::int, betting_max_absolute) END,
+    betting_multiplier_correct = CASE WHEN @clearbettingmultipliercorrect::bool THEN NULL
+                     ELSE COALESCE(sqlc.narg('bettingmultipliercorrect')::decimal, betting_multiplier_correct) END,
+    betting_multiplier_wrong = CASE WHEN @clearbettingmultiplierwrong::bool THEN NULL
+                     ELSE COALESCE(sqlc.narg('bettingmultiplierwrong')::decimal, betting_multiplier_wrong) END,
     updated_at = now()
 WHERE id = @id::char(28)
 RETURNING id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at;

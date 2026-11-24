@@ -49,9 +49,8 @@
       "pointsLost": "Puntos perdidos",
       "pointsEarned": "Puntos ganados",
       "resultYourBet": "Tu esfuerzo",
-      "correctCount": "Tenías {count} razón",
-      "correctCountAll": "Las tenías todas correctas",
-      "correctCountNone": "No tenías ninguna correcta",
+      "outcomeCorrect": "Las tenías todas correctas",
+      "outcomeIncorrect": "No tenías ninguna correcta",
       "bettingResult": "Resultados de Tipping"
     },
     "result": {

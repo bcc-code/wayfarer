@@ -22,6 +22,16 @@
 #   loadtest-lt.sh smoke       ~200 users (RAMP_SCALE=0.02), settles bets
 #   loadtest-lt.sh run <label> [k6 --env args...]   full 10k betting rampspike
 #
+# Multi-session gamenight (k6/betting-multisession.js, notes/multi-session-loadtest-plan.md):
+#   loadtest-lt.sh multi-reset    stop the server, bench/betting_box.sh reset-multi
+#                                 (MULTI_BUCKETS, default 5 churches of 100-500,
+#                                 20 of 50-99, 90 of 10-49, 885 of 1-9: ~10k
+#                                 players), restart. Needed once before
+#                                 multi-config; every multi run resets again.
+#   loadtest-lt.sh multi-config   mint church admin + player tokens, fetch config.json
+#   loadtest-lt.sh multi-smoke    50 sampled churches, 5-minute session
+#   loadtest-lt.sh multi-run <label> [k6 --env args...]   the full 19:00 gamenight
+#
 # Generated secrets (DB password, JWT secret, Auth0 load-test key) are kept in
 # cmd/loadtest/results/lt-secrets.env (gitignored) so reruns reuse them; the
 # dedicated SSH key for the pair is cmd/loadtest/results/lt_ed25519.
@@ -220,6 +230,7 @@ cmd_seed() {
 }
 
 QUIZ=QZ01LOADTESTBETTING000000000
+PROJECT_ID=PR00000000000000000000000001
 # Exact rows exported after every run (server/<name>.csv in the run dir)
 EXPORT_SQL="bets|SELECT r.id AS response_id, s.user_id, r.question_id, r.bet_amount, r.is_correct, r.points_earned, r.answered_at, r.time_spent_seconds, r.score_journal_id, sj.created_at AS settled_at FROM quiz_responses r JOIN quiz_submissions s ON s.id = r.submission_id LEFT JOIN score_journal sj ON sj.id = r.score_journal_id WHERE s.quiz_id = '$QUIZ' ORDER BY r.answered_at
 submissions|SELECT id, user_id, started_at, completed_at, score, max_score, points_awarded, auto_submitted FROM quiz_submissions WHERE quiz_id = '$QUIZ' ORDER BY started_at
@@ -230,12 +241,21 @@ quiz_journal|SELECT id, user_id, points, created_at FROM score_journal WHERE sou
 # AUTH0_LOADTEST_PRIVATE_KEY the server fetches its own /jwks.json, which
 # fails at boot (not listening yet) and is retried every 30s; Auth0 dances
 # before that get 401. Prod loads the real Auth0 JWKS at boot.
+# The betting rampspike's settings; use_multi switches to the multi-session
+# gamenight
+K6_SCRIPT=k6/betting-quiz-rampspike.js
+SETTLE_SCRIPT=k6/betting-settle.js
+PREP_CMD="$REMOTE/loadtest/betting_box.sh reset"
+TOKENGEN_ARGS="-auth0-count ${LOADTEST_TOKENS:-13000} -admin-user $LT_ADMIN_USER"
+START_DELAY=""
+SAMPLE_SQL="SELECT count(*) FILTER (WHERE r.score_journal_id IS NOT NULL) || ' settled / ' || count(*) || ' bets, leaderboard queue ' || (SELECT count(*) FROM leaderboard_apply_queue) FROM quiz_responses r JOIN quiz_submissions s ON s.id = r.submission_id WHERE s.quiz_id = '$QUIZ' AND r.bet_amount > 0"
+
 remote() {
     sync_bench
     LOADTEST_SSH=$LT_SERVER \
     LOADTEST_SSH_KEY=$LT_SSH_KEY \
     LOADTEST_GENERATOR="$LT_CLIENTS" \
-    LOADTEST_SETTLE_SCRIPT=k6/betting-settle.js \
+    LOADTEST_SETTLE_SCRIPT=$SETTLE_SCRIPT \
     LOADTEST_HTTPSTATS_FILE=$REMOTE/httpstats.jsonl \
     LOADTEST_EXPORT_SQL="$EXPORT_SQL" \
     LOADTEST_WAIT_SQL="SELECT (SELECT count(*) FROM quiz_responses r JOIN quiz_submissions s ON s.id = r.submission_id WHERE s.quiz_id = '$QUIZ' AND r.bet_amount > 0 AND r.score_journal_id IS NULL) + (SELECT count(*) FROM leaderboard_apply_queue)" \
@@ -244,11 +264,72 @@ remote() {
     LOADTEST_SERVICE=active \
     LOADTEST_WARMUP=${LOADTEST_WARMUP:-40} \
     LOADTEST_PSQL="sudo -u postgres psql -d interact" \
-    LOADTEST_PREP_CMD="$REMOTE/loadtest/betting_box.sh reset" \
-    LOADTEST_K6_SCRIPT=k6/betting-quiz-rampspike.js \
-    LOADTEST_TOKENGEN_ARGS="-auth0-count ${LOADTEST_TOKENS:-13000} -admin-user $LT_ADMIN_USER" \
-    LOADTEST_SAMPLE_SQL="SELECT count(*) FILTER (WHERE r.score_journal_id IS NOT NULL) || ' settled / ' || count(*) || ' bets, leaderboard queue ' || (SELECT count(*) FROM leaderboard_apply_queue) FROM quiz_responses r JOIN quiz_submissions s ON s.id = r.submission_id WHERE s.quiz_id = '$QUIZ' AND r.bet_amount > 0" \
+    LOADTEST_PREP_CMD="$PREP_CMD" \
+    LOADTEST_K6_SCRIPT=$K6_SCRIPT \
+    LOADTEST_TOKENGEN_ARGS="$TOKENGEN_ARGS" \
+    LOADTEST_START_DELAY=$START_DELAY \
+    LOADTEST_SAMPLE_SQL="$SAMPLE_SQL" \
         "$SCRIPT_DIR/loadtest-remote.sh" "$@"
+}
+
+# Multi-session gamenight: one session per load-test church, created by the
+# admin VUs. The finish webhook goes to the server's own ladder_to_heaven
+# receiver, as in prod.
+use_multi() {
+    K6_SCRIPT=k6/betting-multisession.js
+    SETTLE_SCRIPT=""
+    PREP_CMD="$REMOTE/loadtest/betting_box.sh reset-multi ${MULTI_BUCKETS:-885:1-9,90:10-49,20:50-99,5:100-500} https://$LT_DOMAIN/plugins/ladder-to-heaven/quiz-finalized"
+    TOKENGEN_ARGS="-limit 1 -auth0-count ${LOADTEST_TOKENS:-13000} -church-prefix CH01LOADTESTCHURCH"
+    # k6 inits ~5k VUs per generator before the timeline starts
+    START_DELAY=${LOADTEST_START_DELAY:-120}
+    EXPORT_SQL="$EXPORT_SQL
+sessions|SELECT qs.id, c.id AS church_id, qs.state, qs.created_at, qs.open_at, qs.lock_at, qs.finish_at, (SELECT count(*) FROM quiz_session_access a WHERE a.session_id = qs.id) AS access FROM quiz_sessions qs JOIN users u ON u.id = qs.created_by JOIN churches c ON c.id = u.church_id WHERE qs.quiz_id = '$QUIZ' ORDER BY qs.open_at
+grants|SELECT id, input_params->>'session_id' AS session_id, status, total_count, success_count, created_at, started_at, completed_at FROM bulk_jobs WHERE operation_type = 'BULK_GRANT_QUIZ_SESSION_ACCESS' AND input_params->>'session_id' IN (SELECT id FROM quiz_sessions WHERE quiz_id = '$QUIZ') ORDER BY created_at
+session_submissions|SELECT id, session_id, user_id, started_at, completed_at, auto_submitted FROM quiz_submissions WHERE quiz_id = '$QUIZ' ORDER BY started_at
+finish_webhooks|SELECT request_payload->'data'->>'session_id' AS session_id, response_status_code, duration_ms, error_message, created_at FROM webhook_logs WHERE event_type = 'quiz_session_finished' AND webhook_id = 'WH01LOADTESTMULTI00000000000' ORDER BY created_at"
+    SAMPLE_SQL="SELECT count(*) FILTER (WHERE state = 'OPEN') || ' open / ' || count(*) FILTER (WHERE state = 'LOCKED') || ' locked / ' || count(*) FILTER (WHERE state = 'FINISHED') || ' finished sessions, ' || (SELECT count(*) FROM quiz_submissions WHERE quiz_id = '$QUIZ') || ' submissions, leaderboard queue ' || (SELECT count(*) FROM leaderboard_apply_queue) || ', lock waits ' || (SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock') || ', deadlocks ' || (SELECT deadlocks FROM pg_stat_database WHERE datname = current_database()) FROM quiz_sessions WHERE quiz_id = '$QUIZ'"
+}
+
+# After a multi run, the invariants that must hold for every session
+# (notes/multi-session-loadtest-plan.md §5). Prints the deadlocks since
+# $1 (the counter before the run).
+check_multi() {
+    local deadlocks_before=$1
+    echo ""
+    echo "=== multi-session checks (all must be 0) ==="
+    rssh "sudo -u postgres psql -d interact -qAt -c 'ANALYZE quiz_submissions' -c \"
+        WITH s AS (SELECT id, state FROM quiz_sessions WHERE quiz_id = '$QUIZ'),
+        dup AS (SELECT session_id, user_id FROM quiz_submissions WHERE quiz_id = '$QUIZ'
+                GROUP BY 1, 2 HAVING count(*) > 1),
+        hooks AS (SELECT request_payload->'data'->>'session_id' AS sid, count(*) AS n,
+                         count(*) FILTER (WHERE response_status_code IS DISTINCT FROM 200) AS failed
+                  FROM webhook_logs WHERE event_type = 'quiz_session_finished'
+                    AND webhook_id = 'WH01LOADTESTMULTI00000000000' GROUP BY 1),
+        quiz_rows AS (SELECT user_id, count(*) AS n FROM score_journal
+                      WHERE source_type = 'QUIZ' AND source_id = '$QUIZ' GROUP BY 1),
+        completed AS (SELECT user_id, count(*) AS n FROM quiz_submissions
+                      WHERE quiz_id = '$QUIZ' AND completed_at IS NOT NULL AND NOT auto_submitted
+                      GROUP BY 1),  -- auto-submitted ones get no completion points
+        lb AS (SELECT u.id FROM users u
+               JOIN user_projects up ON up.user_id = u.id AND up.project_id = '$PROJECT_ID'
+               LEFT JOIN leaderboard_project_persons l ON l.user_id = u.id AND l.project_id = '$PROJECT_ID'
+               LEFT JOIN (SELECT user_id, sum(points) AS pts FROM score_journal
+                          WHERE project_id = '$PROJECT_ID' GROUP BY 1) j ON j.user_id = u.id
+               WHERE u.church_id LIKE 'CH01LOADTESTCHURCH%'
+                 AND COALESCE(l.score, 0) <> COALESCE(j.pts, 0))
+        SELECT 'sessions=' || (SELECT count(*) FROM s)
+            || ' not_finished=' || (SELECT count(*) FROM s WHERE state <> 'FINISHED')
+            || ' duplicate_submissions=' || (SELECT count(*) FROM dup)
+            || ' finish_webhooks_not_once=' || (SELECT count(*) FROM s LEFT JOIN hooks h ON h.sid = s.id WHERE COALESCE(h.n, 0) <> 1)
+            || ' plugin_receiver_errors=' || COALESCE((SELECT sum(failed) FROM hooks), 0)
+            || ' quiz_journal_mismatch=' || (SELECT count(*) FROM completed c FULL JOIN quiz_rows q USING (user_id)
+                                              WHERE COALESCE(c.n, 0) <> COALESCE(q.n, 0))
+            || ' leaderboard_mismatch=' || (SELECT count(*) FROM lb)
+            || ' new_deadlocks=' || ((SELECT deadlocks FROM pg_stat_database WHERE datname = current_database()) - $deadlocks_before);\""
+}
+
+deadlocks_now() {
+    rssh "sudo -u postgres psql -d interact -qAt -c \"SELECT deadlocks FROM pg_stat_database WHERE datname = current_database()\""
 }
 
 # Per-user check after a run: every user's settled bet entries net out to what
@@ -281,11 +362,11 @@ check_settlement() {
 # 3% Auth0 dance, no Firebase token fetches
 K6_DEFAULTS=(--env REALISM=1 --env SKIP_FIREBASE_TOKEN=1 --env FIREBASE_REFRESH_FRACTION=0)
 
-usage() { sed -n '2,27p' "$0" | sed 's/^# \{0,1\}//'; exit 1; }
+usage() { sed -n '2,36p' "$0" | sed 's/^# \{0,1\}//'; exit 1; }
 
 case "${1:-}" in
 hosts) shift; cmd_hosts "$@"; exit 0 ;;
-provision | env | deploy | seed | config | smoke | run) load_hosts ;;
+provision | env | deploy | seed | config | smoke | run | multi-reset | multi-config | multi-smoke | multi-run) load_hosts ;;
 *) usage ;;
 esac
 
@@ -309,6 +390,28 @@ run)
     rc=0
     remote run "$label" "${K6_DEFAULTS[@]}" "$@" || rc=$?
     check_settlement
+    exit $rc
+    ;;
+multi-reset) shift; use_multi; remote prep ;;
+multi-config) shift; use_multi; remote config ;;
+multi-smoke | multi-run)
+    mode=$1
+    shift
+    use_multi
+    if [ "$mode" = multi-smoke ]; then
+        label=multi-smoke
+        args=(--env CHURCH_SAMPLE=50 --env SESSION_DURATION=300 --env STRAGGLER_WINDOW=60
+            --env PRECONNECT_WINDOW=60 --env THINK_SCALE=0.3 "$@")
+    else
+        label=${1:?usage: loadtest-lt.sh multi-run <label> [k6 args...]}
+        shift
+        args=("$@")
+    fi
+    before=$(deadlocks_now)
+    rc=0
+    remote run "$label" "${K6_DEFAULTS[@]}" ${args[@]+"${args[@]}"} || rc=$?
+    check_settlement
+    check_multi "$before"
     exit $rc
     ;;
 esac

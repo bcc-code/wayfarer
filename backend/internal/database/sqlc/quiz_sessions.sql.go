@@ -187,6 +187,30 @@ func (q *Queries) DeleteAllQuizSessionAccess(ctx context.Context, sessionid stri
 	return err
 }
 
+const DeleteInProgressSubmissionByUserAndSession = `-- name: DeleteInProgressSubmissionByUserAndSession :execrows
+DELETE FROM quiz_submissions
+WHERE session_id = $1::char(28)
+    AND user_id = $2::char(28)
+    AND completed_at IS NULL
+`
+
+type DeleteInProgressSubmissionByUserAndSessionParams struct {
+	Sessionid string `json:"sessionid"`
+	Userid    string `json:"userid"`
+}
+
+// Only in-progress submissions: a completed one has already been scored and
+// journaled, so deleting it would let the user start over and score again.
+// A concurrent finalize holds FOR UPDATE on the row; this DELETE waits for it
+// and then re-checks completed_at, so the two can't interleave.
+func (q *Queries) DeleteInProgressSubmissionByUserAndSession(ctx context.Context, arg DeleteInProgressSubmissionByUserAndSessionParams) (int64, error) {
+	result, err := q.db.Exec(ctx, DeleteInProgressSubmissionByUserAndSession, arg.Sessionid, arg.Userid)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const DeleteQuizSession = `-- name: DeleteQuizSession :exec
 DELETE FROM quiz_sessions
 WHERE id = $1::char(28)
@@ -210,22 +234,6 @@ type DeleteQuizSessionAccessParams struct {
 
 func (q *Queries) DeleteQuizSessionAccess(ctx context.Context, arg DeleteQuizSessionAccessParams) error {
 	_, err := q.db.Exec(ctx, DeleteQuizSessionAccess, arg.Sessionid, arg.Userids)
-	return err
-}
-
-const DeleteSubmissionByUserAndSession = `-- name: DeleteSubmissionByUserAndSession :exec
-DELETE FROM quiz_submissions
-WHERE session_id = $1::char(28)
-    AND user_id = $2::char(28)
-`
-
-type DeleteSubmissionByUserAndSessionParams struct {
-	Sessionid string `json:"sessionid"`
-	Userid    string `json:"userid"`
-}
-
-func (q *Queries) DeleteSubmissionByUserAndSession(ctx context.Context, arg DeleteSubmissionByUserAndSessionParams) error {
-	_, err := q.db.Exec(ctx, DeleteSubmissionByUserAndSession, arg.Sessionid, arg.Userid)
 	return err
 }
 
@@ -766,64 +774,6 @@ func (q *Queries) GetSubmissionByUserAndSession(ctx context.Context, arg GetSubm
 	return &i, err
 }
 
-const GetSubmissionsBySessionID = `-- name: GetSubmissionsBySessionID :many
-SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at,
-       question_order, score, max_score, points_awarded, auto_submitted, created_at
-FROM quiz_submissions
-WHERE session_id = $1::char(28)
-ORDER BY started_at DESC
-`
-
-type GetSubmissionsBySessionIDRow struct {
-	ID            string             `json:"id"`
-	QuizID        string             `json:"quiz_id"`
-	UserID        string             `json:"user_id"`
-	SessionID     *string            `json:"session_id"`
-	StartedAt     pgtype.Timestamptz `json:"started_at"`
-	CompletedAt   pgtype.Timestamptz `json:"completed_at"`
-	ExpiresAt     pgtype.Timestamptz `json:"expires_at"`
-	QuestionOrder []byte             `json:"question_order"`
-	Score         *int32             `json:"score"`
-	MaxScore      *int32             `json:"max_score"`
-	PointsAwarded *int32             `json:"points_awarded"`
-	AutoSubmitted bool               `json:"auto_submitted"`
-	CreatedAt     pgtype.Timestamptz `json:"created_at"`
-}
-
-func (q *Queries) GetSubmissionsBySessionID(ctx context.Context, sessionid string) ([]*GetSubmissionsBySessionIDRow, error) {
-	rows, err := q.db.Query(ctx, GetSubmissionsBySessionID, sessionid)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []*GetSubmissionsBySessionIDRow{}
-	for rows.Next() {
-		var i GetSubmissionsBySessionIDRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.QuizID,
-			&i.UserID,
-			&i.SessionID,
-			&i.StartedAt,
-			&i.CompletedAt,
-			&i.ExpiresAt,
-			&i.QuestionOrder,
-			&i.Score,
-			&i.MaxScore,
-			&i.PointsAwarded,
-			&i.AutoSubmitted,
-			&i.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const GetUserAccessibleOpenSessions = `-- name: GetUserAccessibleOpenSessions :many
 SELECT qs.id, qs.quiz_id, qs.name, qs.state, qs.open_at, qs.lock_at, qs.finish_at, qs.created_by, qs.created_at, qs.updated_at
 FROM quiz_sessions qs
@@ -1184,16 +1134,21 @@ SET
     finish_at = CASE WHEN $1::text = 'FINISHED' AND finish_at IS NULL THEN now() ELSE finish_at END,
     updated_at = now()
 WHERE id = $2::char(28)
+  AND state = $3::text
 RETURNING id, quiz_id, name, state, open_at, lock_at, finish_at, created_by, created_at, updated_at
 `
 
 type UpdateQuizSessionStateParams struct {
-	State string `json:"state"`
-	ID    string `json:"id"`
+	State     string `json:"state"`
+	ID        string `json:"id"`
+	Fromstate string `json:"fromstate"`
 }
 
+// Moves a session from @fromstate to @state. Returns no row (pgx.ErrNoRows)
+// when the session is not in @fromstate, e.g. because a concurrent call moved
+// it first, so only one caller acts on each transition.
 func (q *Queries) UpdateQuizSessionState(ctx context.Context, arg UpdateQuizSessionStateParams) (*QuizSession, error) {
-	row := q.db.QueryRow(ctx, UpdateQuizSessionState, arg.State, arg.ID)
+	row := q.db.QueryRow(ctx, UpdateQuizSessionState, arg.State, arg.ID, arg.Fromstate)
 	var i QuizSession
 	err := row.Scan(
 		&i.ID,

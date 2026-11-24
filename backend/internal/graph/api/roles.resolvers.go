@@ -193,7 +193,7 @@ func (r *queryResolver) UsersWithRole(ctx context.Context, role model.RoleType, 
 				Gender:    model.Gender(row.Gender),
 				Birthdate: birthdateStr,
 				ChurchID:  row.ChurchID,
-				Image:     row.AvatarUrl,
+				ImageURL:  row.AvatarUrl,
 			}
 		}
 	} else {
@@ -218,7 +218,7 @@ func (r *queryResolver) UsersWithRole(ctx context.Context, role model.RoleType, 
 					Gender:    model.Gender(row.Gender),
 					Birthdate: birthdateStr,
 					ChurchID:  row.ChurchID,
-					Image:     row.AvatarUrl,
+					ImageURL:  row.AvatarUrl,
 				}
 			}
 
@@ -242,7 +242,7 @@ func (r *queryResolver) UsersWithRole(ctx context.Context, role model.RoleType, 
 					Gender:    model.Gender(row.Gender),
 					Birthdate: birthdateStr,
 					ChurchID:  row.ChurchID,
-					Image:     row.AvatarUrl,
+					ImageURL:  row.AvatarUrl,
 				}
 			}
 
@@ -266,7 +266,7 @@ func (r *queryResolver) UsersWithRole(ctx context.Context, role model.RoleType, 
 					Gender:    model.Gender(row.Gender),
 					Birthdate: birthdateStr,
 					ChurchID:  row.ChurchID,
-					Image:     row.AvatarUrl,
+					ImageURL:  row.AvatarUrl,
 				}
 			}
 

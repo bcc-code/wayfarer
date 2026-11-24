@@ -124,6 +124,64 @@ func TestGetEnvAsDuration(t *testing.T) {
 	}
 }
 
+func TestGetEnvAsPositiveDuration(t *testing.T) {
+	tests := []struct {
+		name     string
+		envValue string
+		expected time.Duration
+		wantErr  bool
+	}{
+		{"returns default when not set", "", 10 * time.Second, false},
+		{"returns parsed value", "3s", 3 * time.Second, false},
+		{"rejects zero", "0", 0, true},
+		{"rejects zero with unit", "0s", 0, true},
+		{"rejects negative", "-5s", 0, true},
+		{"rejects invalid value", "ten", 0, true},
+		{"rejects value without unit", "10", 0, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			key := "TEST_POSITIVE_DURATION_VAR"
+			if tt.envValue != "" {
+				t.Setenv(key, tt.envValue)
+			}
+
+			result, err := getEnvAsPositiveDuration(key, 10*time.Second)
+			if tt.wantErr {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), key)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestLoad_RejectsInvalidDataloaderBatchTimeout(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://localhost/test")
+
+	for _, value := range []string{"0", "-1s", "soon"} {
+		t.Run(value, func(t *testing.T) {
+			t.Setenv("DATALOADER_BATCH_TIMEOUT", value)
+
+			cfg, err := Load()
+			require.Error(t, err)
+			assert.Nil(t, cfg)
+			assert.Contains(t, err.Error(), "DATALOADER_BATCH_TIMEOUT")
+		})
+	}
+
+	t.Run("valid value is used", func(t *testing.T) {
+		t.Setenv("DATALOADER_BATCH_TIMEOUT", "4s")
+
+		cfg, err := Load()
+		require.NoError(t, err)
+		assert.Equal(t, 4*time.Second, cfg.Database.LoaderBatchTimeout)
+	})
+}
+
 func TestParseRevokedUsers(t *testing.T) {
 	cutoff := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
 

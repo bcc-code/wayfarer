@@ -504,3 +504,43 @@ func TestKeyRegistry_ConcurrentRegisterNoDuplicates(t *testing.T) {
 	keys := registry.GetKeys(PrefixUserEnrolledChallenges)
 	assert.ElementsMatch(t, []string{key, otherKey}, keys)
 }
+
+// The consent resolvers have always called DeletePrefix(PrefixLatestConsents),
+// but the key was not registered under that prefix, so it matched nothing.
+func TestKeyRegistry_LatestConsentsKeyIsFoundByPrefix(t *testing.T) {
+	registry := NewKeyRegistry()
+	key := LatestConsentsKey("PR01ARZ3NDEKTSV4RRFFQ69G5FA")
+
+	registry.Register(key)
+
+	assert.Equal(t, []string{key}, registry.GetKeys(PrefixLatestConsents),
+		"DeletePrefix(PrefixLatestConsents) must be able to find the key")
+}
+
+// All three layers hold consent state; none may survive a consent change.
+func TestCacheWithRegistry_InvalidateConsents(t *testing.T) {
+	c, err := NewCacheWithRegistry(DefaultConfig())
+	assert.NoError(t, err)
+	defer c.Close()
+
+	projectID := "PR01ARZ3NDEKTSV4RRFFQ69G5FA"
+	userID := "US01ARZ3NDEKTSV4RRFFQ69G5FA"
+
+	c.Set(LatestConsentsKey(projectID), "live-set")
+	c.Set(UserKey(userID), "user-with-consent-status")
+	c.Set(GQLResponseUserPrefix(userID)+"queryhash:varshash:nb", "cached-gate-response")
+	c.Set(ProjectKey(projectID), "project-data")
+	c.Wait()
+
+	c.InvalidateConsents()
+
+	_, ok := c.Get(LatestConsentsKey(projectID))
+	assert.False(t, ok, "the project's live consent set must go")
+	_, ok = c.Get(UserKey(userID))
+	assert.False(t, ok, "a cached user still answers with the old ConsentStatus")
+	_, ok = c.Get(GQLResponseUserPrefix(userID) + "queryhash:varshash:nb")
+	assert.False(t, ok, "a cached gate response outlives a per-user mutation drop")
+
+	_, ok = c.Get(ProjectKey(projectID))
+	assert.True(t, ok, "unrelated entries are left alone")
+}

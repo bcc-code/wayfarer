@@ -31,8 +31,8 @@ const isCompleted = computed(() => {
 <template>
   <div class="shadow-large rounded-card overflow-clip">
     <DesignImage
-      v-if="challenge.imageObject"
-      :image="challenge.imageObject"
+      v-if="challenge.image"
+      :image="challenge.image"
       :alt="challenge.name"
       class="aspect-[1.25] w-full"
     />

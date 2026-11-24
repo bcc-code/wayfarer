@@ -49,6 +49,11 @@ function groupToItems(group: ConsentProject[]) {
 // projectId at all, which is what makes a consent apply to every project.
 const GLOBAL_PROJECT = '__all__'
 
+// Prefilled when arriving from a project's consent page.
+const route = useRoute('admin-consents-new')
+const requestedProjectId =
+  typeof route.query.projectId === 'string' ? route.query.projectId : null
+
 const projectItems = computed(() => [
   [{ label: 'Alle prosjekter', value: GLOBAL_PROJECT }],
   ...[currentProjects.value, futureProjects.value, pastProjects.value]
@@ -87,8 +92,21 @@ const state = reactive<Schema>({
   isRemote: false,
   isRequired: false,
   managedBy: '',
-  projectId: GLOBAL_PROJECT,
+  projectId: requestedProjectId ?? GLOBAL_PROJECT,
 })
+
+// An archived or unknown project never appears in the select, so a prefill
+// pointing at one would submit a scope the form does not show.
+watchOnce(
+  () => projects.value.length > 0,
+  () => {
+    if (!requestedProjectId) return
+    if (projects.value.some((project) => project.id === requestedProjectId)) {
+      return
+    }
+    state.projectId = GLOBAL_PROJECT
+  },
+)
 
 const { markSaved } = useUnsavedChanges(() => ({ ...state }))
 

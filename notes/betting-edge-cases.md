@@ -26,8 +26,8 @@ go test -v -count=1 -run 'TestValidateBet|TestNewBetCheck|TestPositiveBetAllowed
    (`LockUserBettableSubmissions`, in id order, before any other lock). Then `ValidateBet` checks the
    bet against the question limits and the user's **available points**: project score (sum of
    `score_journal`) minus their open stakes (`GetUserAvailableBetPoints`). A stake is open until it is
-   paid out; in a FINISHED session it stays open only if the core will still settle it (PREDEFINED,
-   betting on), other bets (ORDERING plugin, m2m) are released then. Percentage limits are a share of
+   paid out; in a FINISHED session it stays open only if the core will still settle it (PREDEFINED or
+   ORDERING, betting on), other bets (FREE_TEXT, NUMBER, m2m) are released then. Percentage limits are a share of
    the available points. One user's concurrent bets queue on those locks and each sees the ones
    before it (READ COMMITTED); different users never wait for each other.
 2. The bet is stored on `quiz_responses.bet_amount`. Nothing is journaled yet.
@@ -55,7 +55,7 @@ go test -v -count=1 -run 'TestValidateBet|TestNewBetCheck|TestPositiveBetAllowed
 | R7 | Bet limits are consistent (0..100 %, ≥ 0, min ≤ max) and rejected with a validation error, not a raw DB error |
 | R8 | A question can't award points and take bets at once (create, or an update that touches points/betting; older questions with both stay editable otherwise; the admin editor checks it too). Question points only go to users who finish the quiz themselves — auto-submitted users get none, but their bets are settled |
 
-Voiding a bet (question deleted, submission reset while OPEN, no answer given) is a refund and is fine.
+Voiding a bet (question deleted, in-progress submission reset while OPEN, no answer given) is a refund and is fine. A finalized submission can't be reset (see `quiz-session-reset.md`).
 
 ## Fixed along the way
 
@@ -72,8 +72,9 @@ Voiding a bet (question deleted, submission reset while OPEN, no answer given) i
 
 ## Open / follow-ups
 
-- The client doesn't know about open stakes: expose the available points (e.g. `availableBetPoints`)
-  so the bet maximum in the UI matches the server.
+- ~~The client doesn't know about open stakes: expose the available points (e.g. `availableBetPoints`)
+  so the bet maximum in the UI matches the server.~~ Done 2026-10-28 as `Quiz.userAvailableBetPoints`;
+  see the entry in `[[betting-module-genericity-review]]`.
 - Refund reason is translated for `en` and `nb`; other languages fall back to the default (`nb`).
 - Small window: an admin edit checks open bets, then commits; a bet placed in between isn't seen. Rare
   (admin edits during live betting), not locked on purpose.

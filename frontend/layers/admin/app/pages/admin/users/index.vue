@@ -28,7 +28,9 @@ gql(`
           id
           name
           email
-          image
+          image {
+            url
+          }
           church {
             id
             name

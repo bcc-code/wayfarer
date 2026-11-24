@@ -50,10 +50,9 @@
       "pointsLost": "Kaotatud punktid",
       "pointsEarned": "Teenitud punktid",
       "resultYourBet": "Sinu panus",
-      "outcomeCorrect": "Sa vastasid õigesti",
-      "outcomeIncorrect": "Sa vastasid valesti",
-      "bettingResult": "Ennustuse tulemus",
-      "nothingToStake": "Sul pole panustamiseks punkte."
+      "outcomeCorrect": "Sul olid kõik õiged",
+      "outcomeIncorrect": "Sul polnud ühtegi õiget",
+      "bettingResult": "Ennustuse tulemus"
     },
     "result": {
       "receivedNoPoints": "Sa ei saanud ühtegi punkti.",

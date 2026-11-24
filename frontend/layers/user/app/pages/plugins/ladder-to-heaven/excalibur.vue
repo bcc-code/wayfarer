@@ -19,7 +19,7 @@ const config = useRuntimeConfig()
 
 const { data, status } = useFetch<{ url: string }>(
   () =>
-    `${config.public.apiUrl.replace('/graphql', '')}/plugins/ladder-to-heaven/excalibur-user-url`,
+    `${config.public.apiUrl.replace('/graphql', '')}/plugins/excalibur/user-url`,
   {
     method: 'get',
     query: {

@@ -4,7 +4,12 @@ import type {
   QuizAnswerFormData,
   QuizQuestionFormData,
 } from './AdminQuizForm.vue'
-import { validateQuizQuestion } from '../../../utils/quizQuestionValidation'
+import {
+  DEFAULT_MULTIPLIER_CORRECT,
+  DEFAULT_MULTIPLIER_WRONG,
+  MAX_MULTIPLIER,
+  validateQuizQuestion,
+} from '../../../utils/quizQuestionValidation'
 
 const props = defineProps<{
   question: QuizQuestionFormData
@@ -181,6 +186,12 @@ function handleSave() {
     bettingMaxPercentage: toOptionalNumber(localQuestion.bettingMaxPercentage),
     bettingMinAbsolute: toOptionalNumber(localQuestion.bettingMinAbsolute),
     bettingMaxAbsolute: toOptionalNumber(localQuestion.bettingMaxAbsolute),
+    bettingMultiplierCorrect: toOptionalNumber(
+      localQuestion.bettingMultiplierCorrect,
+    ),
+    bettingMultiplierWrong: toOptionalNumber(
+      localQuestion.bettingMultiplierWrong,
+    ),
   }
 
   if (localQuestion.questionType === QuizQuestionType.Predefined) {
@@ -567,6 +578,48 @@ function handleSave() {
                     <UInputNumber
                       v-model="localQuestion.bettingMaxAbsolute"
                       :min="0"
+                      size="xl"
+                      class="w-full"
+                    />
+                  </UFormField>
+                </div>
+              </div>
+              <div>
+                <label class="text-sm font-medium">
+                  Multiplikator (valgfritt)
+                </label>
+                <p class="text-muted mt-1 text-sm">
+                  Hvor mye innsatsen er verdt. Tomt felt betyr standard:
+                  {{ DEFAULT_MULTIPLIER_CORRECT }}x ved riktig svar og
+                  {{ DEFAULT_MULTIPLIER_WRONG }}x ved feil.
+                </p>
+                <div class="grid grid-cols-2 gap-4 mt-2">
+                  <UFormField
+                    name="bettingMultiplierCorrect"
+                    label="Ved riktig svar"
+                    help="2 = innsatsen dobles"
+                  >
+                    <UInputNumber
+                      v-model="localQuestion.bettingMultiplierCorrect"
+                      :min="0"
+                      :max="MAX_MULTIPLIER"
+                      :step="0.25"
+                      :format-options="{ maximumFractionDigits: 2 }"
+                      size="xl"
+                      class="w-full"
+                    />
+                  </UFormField>
+                  <UFormField
+                    name="bettingMultiplierWrong"
+                    label="Ved feil svar"
+                    help="0 = hele innsatsen tapes"
+                  >
+                    <UInputNumber
+                      v-model="localQuestion.bettingMultiplierWrong"
+                      :min="0"
+                      :max="MAX_MULTIPLIER"
+                      :step="0.25"
+                      :format-options="{ maximumFractionDigits: 2 }"
                       size="xl"
                       class="w-full"
                     />

@@ -17,9 +17,9 @@ const {
 })
 
 // Listen for Firestore realtime updates
-useFirestoreRefresh(['ChallengePageDocument'], () => {
-  refresh({ requestPolicy: 'network-only' })
-})
+useFirestoreRefresh(['ChallengePageDocument'], () =>
+  refresh({ requestPolicy: 'network-only' }),
+)
 
 // Self-enroll via ?enroll=true query param (e.g. from QR code)
 const shouldEnroll = route.query.enroll === 'true'

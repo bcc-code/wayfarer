@@ -21,9 +21,9 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-// ImageObject is the resolver for the imageObject field.
-func (r *externalChallengeResolver) ImageObject(ctx context.Context, obj *model.ExternalChallenge) (*model.Image, error) {
-	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+// Image is the resolver for the image field.
+func (r *externalChallengeResolver) Image(ctx context.Context, obj *model.ExternalChallenge) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.ImageURL)
 }
 
 // Project is the resolver for the project field.
@@ -89,7 +89,7 @@ func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string
 		Challengetype: string(input.Type),
 		Name:          input.Name,
 		Description:   "", // Will be set below
-		Imageurl:      input.Image,
+		Imageurl:      input.ImageURL,
 		Buttontext:    buttonText,
 	}
 
@@ -190,7 +190,7 @@ func (r *mutationResolver) UpdateChallenge(ctx context.Context, id string, input
 		desc := string(*input.Description)
 		params.Description = &desc
 	}
-	params.Imageurl = input.Image
+	params.Imageurl = input.ImageURL
 	params.Eventid = input.EventID
 	params.Buttontext = input.ButtonText
 	params.Notificationtext = input.NotificationText
@@ -781,9 +781,14 @@ func (r *mutationResolver) BulkEnrollUsersInChallenge(ctx context.Context, targe
 	if err != nil {
 		return nil, fmt.Errorf("challenge not found: %w", err)
 	}
+	projectID := getChallengeProjectID(challenge)
 
-	// Bulk enroll
-	err = r.DB.Queries.BulkEnrollUsersInChallenge(ctx, sqlc.BulkEnrollUsersInChallengeParams{
+	if err := authorizeBulkEnrollment(ctx, r.RoleService, r.DB.Queries, adminID, projectID, userIds); err != nil {
+		return nil, err
+	}
+
+	// Bulk enroll; only users who were not enrolled yet come back
+	enrolled, err := r.DB.Queries.BulkEnrollUsersInChallenge(ctx, sqlc.BulkEnrollUsersInChallengeParams{
 		Userids:     userIds,
 		Challengeid: challengeID,
 	})
@@ -791,23 +796,23 @@ func (r *mutationResolver) BulkEnrollUsersInChallenge(ctx context.Context, targe
 		return nil, fmt.Errorf("failed to bulk enroll users: %w", err)
 	}
 
-	// Cache invalidation
-	for _, userID := range userIds {
+	// Cache invalidation and notifications for the newly enrolled users only:
+	// users already enrolled are not told again
+	for _, userID := range enrolled {
 		r.Cache.InvalidateUser(userID)
 	}
-	projectID := getChallengeProjectID(challenge)
 	eventID := getChallengeEventID(challenge)
 	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
 
 	// Notify Firestore listeners
-	for _, userID := range userIds {
+	for _, userID := range enrolled {
 		go r.FirebaseService.NotifyUserChallenges(context.Background(), userID)
 	}
 
-	// Send push notifications for each enrolled user
+	// Send push notifications for each newly enrolled user
 	if r.PushService != nil {
 		challengeInfo := getChallengePushInfo(challenge)
-		for _, userID := range userIds {
+		for _, userID := range enrolled {
 			go push.SendTranslatedChallengeEnrollmentNotification(
 				r.PushService,
 				r.Loaders,
@@ -1046,6 +1051,10 @@ func (r *mutationResolver) BulkEnrollUsersInChallengeAsync(ctx context.Context, 
 	}
 	projectID := getChallengeProjectID(challenge)
 
+	if err := authorizeBulkEnrollment(ctx, r.RoleService, r.DB.Queries, userID, projectID, userIDs); err != nil {
+		return nil, err
+	}
+
 	// Create and run the bulk job
 	return r.BulkService.CreateAndRunBulkJob(
 		ctx,
@@ -1185,9 +1194,9 @@ func (r *mutationResolver) BulkPublishChallengesAsync(ctx context.Context, ids [
 	)
 }
 
-// ImageObject is the resolver for the imageObject field.
-func (r *pluginChallengeResolver) ImageObject(ctx context.Context, obj *model.PluginChallenge) (*model.Image, error) {
-	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+// Image is the resolver for the image field.
+func (r *pluginChallengeResolver) Image(ctx context.Context, obj *model.PluginChallenge) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.ImageURL)
 }
 
 // Project is the resolver for the project field.
@@ -1349,9 +1358,9 @@ func (r *queryResolver) Challenges(ctx context.Context, filter *model.ChallengeF
 	return connection, nil
 }
 
-// ImageObject is the resolver for the imageObject field.
-func (r *quizChallengeResolver) ImageObject(ctx context.Context, obj *model.QuizChallenge) (*model.Image, error) {
-	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+// Image is the resolver for the image field.
+func (r *quizChallengeResolver) Image(ctx context.Context, obj *model.QuizChallenge) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.ImageURL)
 }
 
 // Project is the resolver for the project field.
@@ -1395,9 +1404,9 @@ func (r *quizChallengeResolver) Quiz(ctx context.Context, obj *model.QuizChallen
 	return r.ApplyTranslationToQuiz(ctx, quiz), nil
 }
 
-// ImageObject is the resolver for the imageObject field.
-func (r *simpleChallengeResolver) ImageObject(ctx context.Context, obj *model.SimpleChallenge) (*model.Image, error) {
-	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+// Image is the resolver for the image field.
+func (r *simpleChallengeResolver) Image(ctx context.Context, obj *model.SimpleChallenge) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.ImageURL)
 }
 
 // Project is the resolver for the project field.

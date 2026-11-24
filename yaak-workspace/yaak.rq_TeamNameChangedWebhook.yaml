@@ -20,7 +20,7 @@ body:
       }
     }
 bodyType: text/plain
-description: Trigger team name changed webhook for ladder_to_heaven plugin
+description: Trigger team name changed webhook for the teams plugin
 headers:
 - enabled: true
   name: Content-Type
@@ -29,5 +29,5 @@ headers:
 method: POST
 name: Team Name Changed Webhook
 sortPriority: 0.0
-url: ${[ HOST ]}/plugins/ladder-to-heaven/team-name-changed
+url: ${[ HOST ]}/plugins/teams/team-name-changed
 urlParameters: []

@@ -31,6 +31,7 @@ type Config struct {
 
 - `DATABASE_URL` - PostgreSQL connection string (required)
 - `DB_MAX_OPEN_CONNS` - Max open connections (default: 25)
+- `DATALOADER_BATCH_TIMEOUT` - Upper bound for one dataloader batch (default: 10s). Batches no longer end when the request that started them is cancelled, so this bounds a stuck query instead. Must be a positive Go duration such as `5s`; the server refuses to start on `0`, a negative value or one that doesn't parse
 - `DB_MAX_IDLE_CONNS` - Max idle connections (default: 5)
 - `DB_CONN_MAX_LIFETIME` - Connection max lifetime (default: 5m)
 - `DB_CONN_MAX_IDLE_TIME` - Connection max idle time (default: 5m)
@@ -153,14 +154,14 @@ no key in the table takes effect at all.
 `frontend_config` is a free-form JSON blob served by `Query.frontendConfig`,
 which reads it from the database per request — so edits are live. Its keys are
 ad hoc and project-specific (`team_name_changed_challenge_id`,
-`gamenight_1_betting_quiz_id`), consumed by the my-church kickoff and gamenight
-pages as entity ids. **No migration creates this row**; where it exists it was
+`gamenight_1_betting_quiz_id`), consumed by the my-church kickoff page as entity
+ids (the gamenight pages that read the `gamenight_*` keys were removed). **No migration creates this row**; where it exists it was
 inserted by hand, and `SetSetting` cannot create it.
 
 `current_project_id` is not configuration at all: it is application data naming
 the project every end user sees, read by `Query.currentProject` /
 `myCurrentProject` / `myProjects`, the church-admin statistics resolver, the
-Firebase token warmer and the two ladder-to-heaven URL handlers. It is
+Firebase token warmer and the Excalibur user URL handler (`internal/plugins/excalibur`). It is
 deliberately absent from `SettingSpecs`.
 
 ### How a value is read

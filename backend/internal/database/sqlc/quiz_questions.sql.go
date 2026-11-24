@@ -655,37 +655,49 @@ SET
     timeout_seconds = COALESCE($10::int, timeout_seconds),
     points = COALESCE($11::int, points),
     betting_enabled = COALESCE($12::bool, betting_enabled),
-    betting_min_percentage = COALESCE($13::decimal, betting_min_percentage),
-    betting_max_percentage = COALESCE($14::decimal, betting_max_percentage),
-    betting_min_absolute = COALESCE($15::int, betting_min_absolute),
-    betting_max_absolute = COALESCE($16::int, betting_max_absolute),
-    betting_multiplier_correct = COALESCE($17::decimal, betting_multiplier_correct),
-    betting_multiplier_wrong = COALESCE($18::decimal, betting_multiplier_wrong),
+    betting_min_percentage = CASE WHEN $13::bool THEN NULL
+                     ELSE COALESCE($14::decimal, betting_min_percentage) END,
+    betting_max_percentage = CASE WHEN $15::bool THEN NULL
+                     ELSE COALESCE($16::decimal, betting_max_percentage) END,
+    betting_min_absolute = CASE WHEN $17::bool THEN NULL
+                     ELSE COALESCE($18::int, betting_min_absolute) END,
+    betting_max_absolute = CASE WHEN $19::bool THEN NULL
+                     ELSE COALESCE($20::int, betting_max_absolute) END,
+    betting_multiplier_correct = CASE WHEN $21::bool THEN NULL
+                     ELSE COALESCE($22::decimal, betting_multiplier_correct) END,
+    betting_multiplier_wrong = CASE WHEN $23::bool THEN NULL
+                     ELSE COALESCE($24::decimal, betting_multiplier_wrong) END,
     updated_at = now()
-WHERE id = $19::char(28)
+WHERE id = $25::char(28)
 RETURNING id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
 `
 
 type UpdateQuizQuestionParams struct {
-	Questiontext             *string        `json:"questiontext"`
-	Clearimage               bool           `json:"clearimage"`
-	Imageurl                 *string        `json:"imageurl"`
-	Questionorder            *int32         `json:"questionorder"`
-	Allowmultipleselection   *bool          `json:"allowmultipleselection"`
-	Answerlabelstyle         *string        `json:"answerlabelstyle"`
-	Minvalue                 pgtype.Numeric `json:"minvalue"`
-	Maxvalue                 pgtype.Numeric `json:"maxvalue"`
-	Stepvalue                pgtype.Numeric `json:"stepvalue"`
-	Timeoutseconds           *int32         `json:"timeoutseconds"`
-	Points                   *int32         `json:"points"`
-	Bettingenabled           *bool          `json:"bettingenabled"`
-	Bettingminpercentage     pgtype.Numeric `json:"bettingminpercentage"`
-	Bettingmaxpercentage     pgtype.Numeric `json:"bettingmaxpercentage"`
-	Bettingminabsolute       *int32         `json:"bettingminabsolute"`
-	Bettingmaxabsolute       *int32         `json:"bettingmaxabsolute"`
-	Bettingmultipliercorrect pgtype.Numeric `json:"bettingmultipliercorrect"`
-	Bettingmultiplierwrong   pgtype.Numeric `json:"bettingmultiplierwrong"`
-	ID                       string         `json:"id"`
+	Questiontext                  *string        `json:"questiontext"`
+	Clearimage                    bool           `json:"clearimage"`
+	Imageurl                      *string        `json:"imageurl"`
+	Questionorder                 *int32         `json:"questionorder"`
+	Allowmultipleselection        *bool          `json:"allowmultipleselection"`
+	Answerlabelstyle              *string        `json:"answerlabelstyle"`
+	Minvalue                      pgtype.Numeric `json:"minvalue"`
+	Maxvalue                      pgtype.Numeric `json:"maxvalue"`
+	Stepvalue                     pgtype.Numeric `json:"stepvalue"`
+	Timeoutseconds                *int32         `json:"timeoutseconds"`
+	Points                        *int32         `json:"points"`
+	Bettingenabled                *bool          `json:"bettingenabled"`
+	Clearbettingminpercentage     bool           `json:"clearbettingminpercentage"`
+	Bettingminpercentage          pgtype.Numeric `json:"bettingminpercentage"`
+	Clearbettingmaxpercentage     bool           `json:"clearbettingmaxpercentage"`
+	Bettingmaxpercentage          pgtype.Numeric `json:"bettingmaxpercentage"`
+	Clearbettingminabsolute       bool           `json:"clearbettingminabsolute"`
+	Bettingminabsolute            *int32         `json:"bettingminabsolute"`
+	Clearbettingmaxabsolute       bool           `json:"clearbettingmaxabsolute"`
+	Bettingmaxabsolute            *int32         `json:"bettingmaxabsolute"`
+	Clearbettingmultipliercorrect bool           `json:"clearbettingmultipliercorrect"`
+	Bettingmultipliercorrect      pgtype.Numeric `json:"bettingmultipliercorrect"`
+	Clearbettingmultiplierwrong   bool           `json:"clearbettingmultiplierwrong"`
+	Bettingmultiplierwrong        pgtype.Numeric `json:"bettingmultiplierwrong"`
+	ID                            string         `json:"id"`
 }
 
 type UpdateQuizQuestionRow struct {
@@ -727,11 +739,17 @@ func (q *Queries) UpdateQuizQuestion(ctx context.Context, arg UpdateQuizQuestion
 		arg.Timeoutseconds,
 		arg.Points,
 		arg.Bettingenabled,
+		arg.Clearbettingminpercentage,
 		arg.Bettingminpercentage,
+		arg.Clearbettingmaxpercentage,
 		arg.Bettingmaxpercentage,
+		arg.Clearbettingminabsolute,
 		arg.Bettingminabsolute,
+		arg.Clearbettingmaxabsolute,
 		arg.Bettingmaxabsolute,
+		arg.Clearbettingmultipliercorrect,
 		arg.Bettingmultipliercorrect,
+		arg.Clearbettingmultiplierwrong,
 		arg.Bettingmultiplierwrong,
 		arg.ID,
 	)

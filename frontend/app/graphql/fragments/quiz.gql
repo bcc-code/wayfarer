@@ -13,7 +13,7 @@ fragment QuizQuestionFields on QuizQuestion {
   __typename
   id
   questionText
-  imageObject {
+  image {
     ...ImageFields
   }
   questionOrder
@@ -24,6 +24,8 @@ fragment QuizQuestionFields on QuizQuestion {
   bettingMaxPercentage
   bettingMinAbsolute
   bettingMaxAbsolute
+  bettingMultiplierCorrect
+  bettingMultiplierWrong
   translationStatus {
     ...TranslationStatus
   }
@@ -53,7 +55,7 @@ fragment QuizQuestionUserFields on QuizQuestion {
   __typename
   id
   questionText
-  imageObject {
+  image {
     ...ImageFields
   }
   questionOrder

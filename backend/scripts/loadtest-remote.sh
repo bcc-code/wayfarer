@@ -44,6 +44,10 @@
 #   LOADTEST_HTTPSTATS_FILE server HTTP stats file copied into the run
 #   LOADTEST_WAIT_SQL   query polled after k6 until it returns 0 (work that
 #                       outlives the request, e.g. bet settlement)
+#   LOADTEST_START_DELAY optional seconds: every shard gets the same
+#                       START_EPOCH_MS (now + delay, taken after prep), for
+#                       scripts with an absolute timeline (betting-multisession.js).
+#                       Leave enough time for k6 to init all VUs.
 #
 # Every run writes cmd/loadtest/results/<label>-<UTC timestamp>/: manifest,
 # per-shard k6 CSV + summary JSON + log + CPU, server/box CPU, SQL samples,
@@ -272,8 +276,13 @@ cmd_run() {
                 "${GENERATORS[$i]}:$LOADTEST_GENERATOR_DIR/"
         done
         echo "Running $shards k6 shard(s) against $LOADTEST_BASE_URL..."
+        local start_env=()
+        if [ -n "${LOADTEST_START_DELAY:-}" ]; then
+            start_env=(--env "START_EPOCH_MS=$(( ($(date +%s) + LOADTEST_START_DELAY) * 1000 ))")
+        fi
         for i in "${!GENERATORS[@]}"; do
-            run_generator "${GENERATORS[$i]}" "$i" "$shards" "$@" &
+            # ${a[@]+...}: an empty array is "unbound" under set -u in bash 3.2 (macOS)
+            run_generator "${GENERATORS[$i]}" "$i" "$shards" ${start_env[@]+"${start_env[@]}"} "$@" &
             pids+=($!)
         done
         for i in "${!pids[@]}"; do

@@ -19,9 +19,14 @@ var (
 		"bets_rejected_expected": true, "bets_wrong_outcome": true,
 		"quiz_completions": true, "quiz_failures": true, "quiz_skipped": true,
 		"dropped_iterations": true, "iterations": true, "graphql_errors": true,
+		"sessions_created": true, "sessions_finished": true, "admin_failures": true,
+		"session_wait_timeouts": true, "refetches": true, "refetch_cancelled": true,
+		"refetch_errors": true,
 	}
 	customTrends = map[string]bool{
 		"settlement_duration": true, "bet_amount": true, "iteration_duration": true,
+		"finish_duration": true, "time_to_session_visible": true, "refetch_completed_latency": true,
+		"refetch_send_lag": true,
 	}
 )
 

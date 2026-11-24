@@ -107,9 +107,9 @@ watch(availableChallengesBadge, (count) => syncAppBadge(navigator, count), {
 })
 
 // Listen for Firestore realtime updates
-useFirestoreRefresh(['CurrentProjectDocument'], () => {
-  refresh({ requestPolicy: 'network-only' })
-})
+useFirestoreRefresh(['CurrentProjectDocument'], () =>
+  refresh({ requestPolicy: 'network-only' }),
+)
 
 // `immediate`, because urql seeds `data` synchronously during setup when the
 // document cache already holds a result (callUseQuery subscribes in a

@@ -125,12 +125,11 @@ func TestGetOrComputeTags_TeamLeadCacheHit(t *testing.T) {
 	c.Set(cacheKey, teamLeadTags)
 	time.Sleep(10 * time.Millisecond)
 
-	// Call getOrComputeTags - TEAM_LEAD from cache, ME computed on-the-fly
-	tags := getOrComputeTags(context.Background(), nil, c, teamID, currentUserID, entries)
+	// Call getOrComputeTags - TEAM_LEAD from cache; ME is left to the resolver
+	tags := getOrComputeTags(context.Background(), nil, c, teamID, entries)
 
-	// Current user should have ME tag
-	assert.Contains(t, tags, currentUserID)
-	assert.Equal(t, []model.LeaderboardEntryTag{model.LeaderboardEntryTagMe}, tags[currentUserID])
+	// The batch's user must not get ME: batches are shared across viewers
+	assert.NotContains(t, tags, currentUserID)
 
 	// Team lead should have TEAM_LEAD tag
 	assert.Contains(t, tags, teamLeadUserID)
@@ -152,14 +151,10 @@ func TestGetOrComputeTags_CacheMiss(t *testing.T) {
 
 	// No pre-populated cache - should compute and cache TEAM_LEAD tags per team
 	// Note: passing nil for db means TEAM_LEAD tags won't be computed (requires role lookup)
-	// ME tag is computed on-the-fly (no caching needed)
-	tags := getOrComputeTags(context.Background(), nil, c, teamID, userID, entries)
+	tags := getOrComputeTags(context.Background(), nil, c, teamID, entries)
 
-	// User should have ME tag on their entry (computed on-the-fly)
-	assert.Contains(t, tags, userID)
-	assert.Equal(t, []model.LeaderboardEntryTag{model.LeaderboardEntryTagMe}, tags[userID])
-
-	// Other user's entry should not have any tags (no ME tag, and no TEAM_LEAD without db)
+	// No entry gets tags: no ME from the loader, and no TEAM_LEAD without db
+	assert.NotContains(t, tags, userID)
 	assert.NotContains(t, tags, otherUserID)
 
 	// Verify TEAM_LEAD tags were cached per team (even if empty)

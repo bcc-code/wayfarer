@@ -88,7 +88,7 @@ func storedBettingSettings(q *sqlc.GetQuizQuestionByIDRow) QuestionBettingSettin
 // payoutChanged reports whether new multipliers (nil = keep the stored one)
 // would pay a correct or wrong answer differently than the stored ones,
 // defaults included. The new values must be valid (ValidateBettingMultipliers).
-func payoutChanged(storedCorrect, storedWrong pgtype.Numeric, newCorrect, newWrong *float64) (bool, error) {
+func payoutChanged(storedCorrect, storedWrong pgtype.Numeric, newCorrect, newWrong *float64, clearCorrect, clearWrong bool) (bool, error) {
 	oldCorrect, err := numericToMultiplier(storedCorrect)
 	if err != nil {
 		return false, err
@@ -107,6 +107,14 @@ func payoutChanged(storedCorrect, storedWrong pgtype.Numeric, newCorrect, newWro
 		if nextWrong, err = multiplierToFixed("bettingMultiplierWrong", newWrong); err != nil {
 			return false, err
 		}
+	}
+	// Clearing falls back to the default, which changes the terms too. It wins
+	// over a supplied value, as in the UpdateQuizQuestion CASE.
+	if clearCorrect {
+		nextCorrect = nil
+	}
+	if clearWrong {
+		nextWrong = nil
 	}
 	for _, correct := range []bool{true, false} {
 		if betting.Multiplier(correct, oldCorrect, oldWrong) != betting.Multiplier(correct, nextCorrect, nextWrong) {

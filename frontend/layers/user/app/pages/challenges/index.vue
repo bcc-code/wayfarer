@@ -11,9 +11,9 @@ const {
 })
 
 // Listen for Firestore realtime updates
-useFirestoreRefresh(['ActiveChallengesPageDocument'], () => {
-  refreshActive({ requestPolicy: 'network-only' })
-})
+useFirestoreRefresh(['ActiveChallengesPageDocument'], () =>
+  refreshActive({ requestPolicy: 'network-only' }),
+)
 
 const tab = ref<'active' | 'completed'>('active')
 
@@ -33,11 +33,11 @@ const {
   pause: computed(() => !isAuthReady.value || !completedTabSelected.value),
 })
 
-useFirestoreRefresh(['CompletedChallengesPageDocument'], () => {
-  if (completedTabSelected.value) {
-    refreshCompleted({ requestPolicy: 'network-only' })
-  }
-})
+useFirestoreRefresh(['CompletedChallengesPageDocument'], () =>
+  completedTabSelected.value
+    ? refreshCompleted({ requestPolicy: 'network-only' })
+    : undefined,
+)
 
 const isInitialLoading = computed(() => {
   if (tab.value === 'active') {

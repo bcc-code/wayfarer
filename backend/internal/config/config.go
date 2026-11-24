@@ -77,12 +77,13 @@ type ServerConfig struct {
 
 // DatabaseConfig holds database connection configuration
 type DatabaseConfig struct {
-	URL             string
-	MaxOpenConns    int
-	MaxIdleConns    int
-	ConnMaxLifetime time.Duration
-	ConnMaxIdleTime time.Duration
-	LogQueries      bool // Enable query logging for debugging
+	URL                string
+	MaxOpenConns       int
+	MaxIdleConns       int
+	ConnMaxLifetime    time.Duration
+	ConnMaxIdleTime    time.Duration
+	LogQueries         bool // Enable query logging for debugging
+	LoaderBatchTimeout time.Duration
 }
 
 // JWTConfig holds JWT authentication configuration
@@ -208,12 +209,12 @@ type PhraseConfig struct {
 
 // PluginConfig holds configuration for plugins
 type PluginConfig struct {
-	LadderToHeavenAchievementID         string // Achievement ID for Ladder to Heaven plugin (empty = disabled)
-	LadderToHeavenSecretKey             string // Secret key for webhook signature verification
-	LadderToHeavenTeamRenameChallengeID string // Challenge ID to complete when team renames (empty = disabled)
-	LadderToHeavenCryptexSecretKey      string // Secret key for Cryptex JWT token signing (empty = endpoint disabled)
-	LadderToHeavenCryptexBaseURL        string // Base URL for Cryptex admin login (e.g., https://cryptex.example.com)
-	LadderToHeavenExcaliburBaseURL      string // Base URL for Excalibur user login (e.g., https://dev.excalibur.bcc.media)
+	TeamsSecretKey         string // Secret key for teams webhook signature verification
+	TeamsRenameChallengeID string // Challenge ID to complete when a team renames (empty = disabled)
+	SSFAchievementID       string // Achievement whose content items earn SSF deadline bonus points (empty = disabled)
+	SSFSecretKey           string // Secret key for SSF webhook signature verification
+	ExcaliburSecretKey     string // Secret key for Excalibur JWT token signing (empty = endpoint disabled)
+	ExcaliburBaseURL       string // Base URL for Excalibur user login (e.g., https://dev.excalibur.bcc.media)
 }
 
 // FirebaseConfig holds Firebase Admin SDK configuration
@@ -254,6 +255,13 @@ func Load() (*Config, error) {
 	// Load .env file if it exists (ignore error if file doesn't exist)
 	_ = godotenv.Load()
 
+	// A zero or negative batch timeout gives every dataloader batch an already
+	// expired context, which fails every load that misses the cache.
+	loaderBatchTimeout, err := getEnvAsPositiveDuration("DATALOADER_BATCH_TIMEOUT", 10*time.Second)
+	if err != nil {
+		return nil, err
+	}
+
 	cfg := &Config{
 		Server: ServerConfig{
 			Host:            getEnv("SERVER_HOST", "0.0.0.0"),
@@ -279,12 +287,13 @@ func Load() (*Config, error) {
 			OverrideEnv: getEnvAsBool("SETTINGS_OVERRIDE_ENV", false),
 		},
 		Database: DatabaseConfig{
-			URL:             getEnv("DATABASE_URL", ""),
-			MaxOpenConns:    getEnvAsInt("DB_MAX_OPEN_CONNS", 25),
-			MaxIdleConns:    getEnvAsInt("DB_MAX_IDLE_CONNS", 5),
-			ConnMaxLifetime: getEnvAsDuration("DB_CONN_MAX_LIFETIME", 10*time.Minute),
-			ConnMaxIdleTime: getEnvAsDuration("DB_CONN_MAX_IDLE_TIME", 1*time.Minute),
-			LogQueries:      getEnvAsBool("DB_LOG_QUERIES", false),
+			URL:                getEnv("DATABASE_URL", ""),
+			MaxOpenConns:       getEnvAsInt("DB_MAX_OPEN_CONNS", 25),
+			MaxIdleConns:       getEnvAsInt("DB_MAX_IDLE_CONNS", 5),
+			ConnMaxLifetime:    getEnvAsDuration("DB_CONN_MAX_LIFETIME", 10*time.Minute),
+			ConnMaxIdleTime:    getEnvAsDuration("DB_CONN_MAX_IDLE_TIME", 1*time.Minute),
+			LogQueries:         getEnvAsBool("DB_LOG_QUERIES", false),
+			LoaderBatchTimeout: loaderBatchTimeout,
 		},
 		JWT: JWTConfig{
 			Secret:            getEnv("JWT_SECRET", ""),
@@ -364,12 +373,14 @@ func Load() (*Config, error) {
 			ExportKey:   getEnv("TRANSLATIONS_EXPORT_KEY", ""),
 		},
 		Plugin: PluginConfig{
-			LadderToHeavenAchievementID:         getEnv("PLUGIN_LADDER_TO_HEAVEN_ACHIEVEMENT_ID", ""),
-			LadderToHeavenSecretKey:             getEnv("PLUGIN_LADDER_TO_HEAVEN_SECRET_KEY", ""),
-			LadderToHeavenTeamRenameChallengeID: getEnv("PLUGIN_LADDER_TO_HEAVEN_TEAM_RENAME_CHALLENGE_ID", ""),
-			LadderToHeavenCryptexSecretKey:      getEnv("PLUGIN_LADDER_TO_HEAVEN_CRYPTEX_SECRET_KEY", ""),
-			LadderToHeavenCryptexBaseURL:        getEnv("PLUGIN_LADDER_TO_HEAVEN_CRYPTEX_BASE_URL", ""),
-			LadderToHeavenExcaliburBaseURL:      getEnv("PLUGIN_LADDER_TO_HEAVEN_EXCALIBUR_BASE_URL", ""),
+			// The old Ladder to Heaven names still work, so existing deployments keep the feature
+			TeamsSecretKey:         getEnv("PLUGIN_TEAMS_SECRET_KEY", getEnv("PLUGIN_LADDER_TO_HEAVEN_SECRET_KEY", "")),
+			TeamsRenameChallengeID: getEnv("PLUGIN_TEAMS_RENAME_CHALLENGE_ID", getEnv("PLUGIN_LADDER_TO_HEAVEN_TEAM_RENAME_CHALLENGE_ID", "")),
+			// The old Ladder to Heaven names still work, so existing deployments keep the feature
+			SSFAchievementID:   getEnv("PLUGIN_SSF_ACHIEVEMENT_ID", getEnv("PLUGIN_LADDER_TO_HEAVEN_ACHIEVEMENT_ID", "")),
+			SSFSecretKey:       getEnv("PLUGIN_SSF_SECRET_KEY", getEnv("PLUGIN_LADDER_TO_HEAVEN_SECRET_KEY", "")),
+			ExcaliburSecretKey: getEnv("PLUGIN_EXCALIBUR_SECRET_KEY", getEnv("PLUGIN_LADDER_TO_HEAVEN_CRYPTEX_SECRET_KEY", "")),
+			ExcaliburBaseURL:   getEnv("PLUGIN_EXCALIBUR_BASE_URL", getEnv("PLUGIN_LADDER_TO_HEAVEN_EXCALIBUR_BASE_URL", "")),
 		},
 		Firebase: FirebaseConfig{
 			ServiceAccountJSON: getEnv("FIREBASE_SERVICE_ACCOUNT", ""),
@@ -435,6 +446,24 @@ func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration {
 		return defaultValue
 	}
 	return value
+}
+
+// getEnvAsPositiveDuration is like getEnvAsDuration, but returns an error for
+// a value that does not parse or is not greater than zero instead of falling
+// back to the default.
+func getEnvAsPositiveDuration(key string, defaultValue time.Duration) (time.Duration, error) {
+	valueStr := os.Getenv(key)
+	if valueStr == "" {
+		return defaultValue, nil
+	}
+	value, err := time.ParseDuration(valueStr)
+	if err != nil {
+		return 0, fmt.Errorf("%s: invalid duration %q: %w", key, valueStr, err)
+	}
+	if value <= 0 {
+		return 0, fmt.Errorf("%s must be greater than zero, got %q", key, valueStr)
+	}
+	return value, nil
 }
 
 // isCloudRun reports whether we're running on Cloud Run, either as a service

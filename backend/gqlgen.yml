@@ -99,6 +99,8 @@ models:
         type: string
       EventID:
         type: "*string"
+      ImageURL:
+        type: "*string"
 
   QuizChallenge:
     fields:
@@ -117,6 +119,8 @@ models:
         type: string
       EventID:
         type: "*string"
+      ImageURL:
+        type: "*string"
 
   ExternalChallenge:
     fields:
@@ -133,6 +137,8 @@ models:
         type: string
       EventID:
         type: "*string"
+      ImageURL:
+        type: "*string"
 
   PluginChallenge:
     fields:
@@ -148,6 +154,18 @@ models:
       ProjectID:
         type: string
       EventID:
+        type: "*string"
+      ImageURL:
+        type: "*string"
+
+  User:
+    extraFields:
+      ImageURL:
+        type: "*string"
+
+  LeaderboardEntry:
+    extraFields:
+      ImageURL:
         type: "*string"
 
   Event:
@@ -359,11 +377,15 @@ models:
         resolver: true
       userActiveSubmission:
         resolver: true
+      userAvailableBetPoints:
+        resolver: true
     extraFields:
       ProjectID:
         type: string
       ChallengeID:
         type: string
+      ImageURL:
+        type: "*string"
 
   # QuizQuestion implementations
   PredefinedQuestion:
@@ -501,6 +523,10 @@ models:
         resolver: true
       question:
         resolver: true
+      isCorrect:
+        resolver: true
+      settledBetMultiplier:
+        resolver: true
       selectedAnswers:
         resolver: true
       journalEntry:
@@ -510,6 +536,8 @@ models:
         type: string
       QuestionID:
         type: string
+      IsCorrectValue:
+        type: "*bool"
       ScoreJournalID:
         type: "*string"
 
@@ -519,6 +547,10 @@ models:
         resolver: true
       question:
         resolver: true
+      isCorrect:
+        resolver: true
+      settledBetMultiplier:
+        resolver: true
       journalEntry:
         resolver: true
     extraFields:
@@ -526,6 +558,8 @@ models:
         type: string
       QuestionID:
         type: string
+      IsCorrectValue:
+        type: "*bool"
       ScoreJournalID:
         type: "*string"
 
@@ -535,6 +569,10 @@ models:
         resolver: true
       question:
         resolver: true
+      isCorrect:
+        resolver: true
+      settledBetMultiplier:
+        resolver: true
       journalEntry:
         resolver: true
     extraFields:
@@ -542,6 +580,8 @@ models:
         type: string
       QuestionID:
         type: string
+      IsCorrectValue:
+        type: "*bool"
       ScoreJournalID:
         type: "*string"
 
@@ -551,6 +591,10 @@ models:
         resolver: true
       question:
         resolver: true
+      isCorrect:
+        resolver: true
+      settledBetMultiplier:
+        resolver: true
       journalEntry:
         resolver: true
     extraFields:
@@ -558,6 +602,8 @@ models:
         type: string
       QuestionID:
         type: string
+      IsCorrectValue:
+        type: "*bool"
       ScoreJournalID:
         type: "*string"
 
@@ -568,6 +614,8 @@ models:
       question:
         resolver: true
       isCorrect:
+        resolver: true
+      settledBetMultiplier:
         resolver: true
       journalEntry:
         resolver: true

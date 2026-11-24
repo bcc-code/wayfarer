@@ -11,11 +11,12 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const BulkEnrollUsersInChallenge = `-- name: BulkEnrollUsersInChallenge :exec
+const BulkEnrollUsersInChallenge = `-- name: BulkEnrollUsersInChallenge :many
 
 INSERT INTO user_challenge_enrollments (user_id, challenge_id)
 SELECT unnest($1::text[]), $2::text
 ON CONFLICT (user_id, challenge_id) DO NOTHING
+RETURNING user_id
 `
 
 type BulkEnrollUsersInChallengeParams struct {
@@ -24,9 +25,26 @@ type BulkEnrollUsersInChallengeParams struct {
 }
 
 // Bulk enrollment for admin/M2M
-func (q *Queries) BulkEnrollUsersInChallenge(ctx context.Context, arg BulkEnrollUsersInChallengeParams) error {
-	_, err := q.db.Exec(ctx, BulkEnrollUsersInChallenge, arg.Userids, arg.Challengeid)
-	return err
+// Returns the users that were newly enrolled; users already enrolled are
+// skipped and not returned, so callers notify only the new ones.
+func (q *Queries) BulkEnrollUsersInChallenge(ctx context.Context, arg BulkEnrollUsersInChallengeParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, BulkEnrollUsersInChallenge, arg.Userids, arg.Challengeid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var user_id string
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const BulkUnenrollUsersFromChallenge = `-- name: BulkUnenrollUsersFromChallenge :exec
@@ -252,6 +270,61 @@ func (q *Queries) GetUsersEnrolledChallengeIDsInProject(ctx context.Context, arg
 			return nil, err
 		}
 		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetUsersOutsideChurchAdminScope = `-- name: GetUsersOutsideChurchAdminScope :many
+SELECT t.user_id::text AS user_id
+FROM unnest($1::text[]) AS t(user_id)
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM user_projects up
+    JOIN users u ON u.id = up.user_id
+    WHERE up.user_id = t.user_id
+      AND up.project_id = $2::char(28)
+      AND (
+          u.church_id = ANY($3::char(28)[])
+          OR EXISTS (
+              SELECT 1
+              FROM team_members tm
+              JOIN teams tt ON tt.id = tm.team_id
+              JOIN team_members tm2 ON tm2.team_id = tt.id
+              JOIN users u2 ON u2.id = tm2.user_id
+              WHERE tm.user_id = t.user_id
+                AND tt.project_id = $2::char(28)
+                AND u2.church_id = ANY($3::char(28)[])
+          )
+      )
+)
+`
+
+type GetUsersOutsideChurchAdminScopeParams struct {
+	Userids   []string `json:"userids"`
+	Projectid string   `json:"projectid"`
+	Churchids []string `json:"churchids"`
+}
+
+// The users in @userids that a church admin of @churchids may not enroll in a
+// challenge of @projectid: users who are not members of the project, or who
+// are neither in one of those churches nor on a team in the project that has
+// a member from one of them.
+func (q *Queries) GetUsersOutsideChurchAdminScope(ctx context.Context, arg GetUsersOutsideChurchAdminScopeParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, GetUsersOutsideChurchAdminScope, arg.Userids, arg.Projectid, arg.Churchids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var user_id string
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

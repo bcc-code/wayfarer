@@ -167,6 +167,54 @@ make loadtest-betting-rampspike   # full 10k
 Setup, fixtures (`bench/betting_box.sh`) and every knob are described in
 `notes/loadtest-offbox.md` ("Betting load test on the LT pair").
 
+### 8. Multi-session Gamenight (`betting-multisession.js`)
+About 1,000 church admins each run their own betting session on the same
+quiz, around a coordinated 19:00 start (T0), with ~10k players in total:
+
+- **Fixture:** `bench/betting_box.sh reset-multi` builds 1,000 load-test
+  churches with ~10k players: 5 with 100–500, 20 with 50–99, 90 with 10–49
+  and 885 with 1–9 (sizes spread evenly within each bucket; `MULTI_BUCKETS`
+  changes the mix). Each church gets one church admin. No sessions are seeded.
+- **Admins:** one VU per church. Each one clicks start around T0 (70% within
+  about a minute, the rest spread over T0 ± 5 min), then waits through the
+  page's 10s countdown. It then creates, opens, grants access to its church and
+  bulk-enrolls through GraphQL, like the gamenight page. Around
+  T0 + `SESSION_DURATION` (45 min) it locks the session, then finishes it.
+- **Players:** connect before T0. Once their church's session is visible they
+  play the five betting questions and finalize.
+- **Firestore refetches:** every session transition pings one project-wide
+  doc. Each connected player refetches `ChallengePage` per ping, and the next
+  ping cancels a refetch that is still in flight, as today's frontend does.
+  `PING_DELIVERY=coalesce:<ms>` models fewer delivered snapshots, and
+  `REFETCH=0` turns the refetches off.
+
+The k6 run measures `time_to_session_visible`, `finish_duration`,
+`refetch_completed_latency` and the cancelled refetches. `refetch_send_lag`
+shows whether the generators keep up: if it grows, the run is measuring k6,
+not the server.
+
+The finish webhook reaches the server's own ladder_to_heaven receiver, as in
+prod, but the fixture quiz has only PREDEFINED questions. The receiver
+therefore only runs `BulkCompleteChallenges` and skips its ORDERING-bet
+branch, along with that branch's invalidations and pings. After every run,
+`loadtest-lt.sh` checks each session:
+
+- it ended FINISHED;
+- no duplicate submissions;
+- every bet is settled;
+- exactly one finish webhook;
+- the leaderboards match the score journal;
+- no new deadlocks.
+
+```bash
+make loadtest-multisession-reset    # fixture on the LT server (resets data)
+make loadtest-multisession-config   # church admin + player tokens (tokengen -church-prefix)
+make loadtest-multisession-smoke    # 50 sampled churches, 5-minute session
+make loadtest-multisession-run      # the full gamenight (~65 min)
+```
+
+Design and decisions: `notes/multi-session-loadtest-plan.md`.
+
 ## Configuration
 
 ### Environment Variables

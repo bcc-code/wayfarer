@@ -54,7 +54,7 @@ const props = defineProps<{
     id: string
     name: string
     email?: string | null
-    image?: string | null
+    image?: { url: string } | null
     age?: number | null
     language?: string | null
     membersId?: string | number | null
@@ -184,7 +184,7 @@ async function handleUnlock() {
   <div class="space-y-4">
     <div class="flex flex-wrap items-start justify-between gap-4">
       <div class="flex items-start gap-4">
-        <UAvatar :src="user.image ?? undefined" :alt="user.name" size="3xl" />
+        <UAvatar :src="user.image?.url" :alt="user.name" size="3xl" />
         <div class="min-w-0">
           <h1 class="text-3xl font-bold">{{ user.name }}</h1>
           <p v-if="user.email" class="text-muted text-sm">{{ user.email }}</p>

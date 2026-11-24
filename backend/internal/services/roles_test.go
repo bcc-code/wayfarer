@@ -762,3 +762,60 @@ func TestCanManageTeam_ChurchAdminCannotManageTeamFromOtherChurch(t *testing.T) 
 func stringPtr(s string) *string {
 	return &s
 }
+
+func TestCanManageTeamAsAdmin_TeamLeadOnlyIsNotAdmin(t *testing.T) {
+	mockQueries := mocks.NewMockRoleQuerier(t)
+	service := NewRoleService(mockQueries, newTestCache())
+
+	ctx := context.Background()
+	userID := "US01ARZ3NDEKTSV4RRFFQ69G5FAV"
+	teamID := "TM01ARZ3NDEKTSV4RRFFQ69G5FAV"
+	projectID := "PR01ARZ3NDEKTSV4RRFFQ69G5FAV"
+
+	mockQueries.On("HasRole", ctx, sqlc.HasRoleParams{UserID: userID, Role: string(RoleSuperAdmin)}).Return(false, nil)
+	mockQueries.On("HasRole", ctx, sqlc.HasRoleParams{UserID: userID, Role: string(RoleAdmin)}).Return(false, nil)
+	mockQueries.On("GetTeamProjectID", ctx, teamID).Return(projectID, nil)
+	mockQueries.On("HasRoleInProject", ctx, sqlc.HasRoleInProjectParams{
+		UserID:    userID,
+		Role:      string(RoleProjectAdmin),
+		ProjectID: &projectID,
+	}).Return(false, nil)
+	// The user's only role is team lead of this team. HasRoleInTeam is not
+	// mocked: CanManageTeamAsAdmin must not consult the team lead role at all.
+	mockQueries.On("GetUserRoles", ctx, userID).Return([]*sqlc.UserRole{
+		{ID: "UR01ARZ3NDEKTSV4RRFFQ69G5FAV", UserID: userID, Role: string(RoleTeamLead), TeamID: &teamID},
+	}, nil)
+
+	assert.False(t, service.CanManageTeamAsAdmin(ctx, userID, teamID),
+		"a team lead is a participant, not an admin of the team")
+}
+
+func TestCanManageTeamAsAdmin_ChurchAdminWithMemberFromChurch(t *testing.T) {
+	mockQueries := mocks.NewMockRoleQuerier(t)
+	service := NewRoleService(mockQueries, newTestCache())
+
+	ctx := context.Background()
+	userID := "US01ARZ3NDEKTSV4RRFFQ69G5FAV"
+	teamID := "TM01ARZ3NDEKTSV4RRFFQ69G5FAV"
+	projectID := "PR01ARZ3NDEKTSV4RRFFQ69G5FAV"
+	churchID := "CH01ARZ3NDEKTSV4RRFFQ69G5FAV"
+
+	mockQueries.On("HasRole", ctx, sqlc.HasRoleParams{UserID: userID, Role: string(RoleSuperAdmin)}).Return(false, nil)
+	mockQueries.On("HasRole", ctx, sqlc.HasRoleParams{UserID: userID, Role: string(RoleAdmin)}).Return(false, nil)
+	mockQueries.On("GetTeamProjectID", ctx, teamID).Return(projectID, nil)
+	mockQueries.On("HasRoleInProject", ctx, sqlc.HasRoleInProjectParams{
+		UserID:    userID,
+		Role:      string(RoleProjectAdmin),
+		ProjectID: &projectID,
+	}).Return(false, nil)
+	mockQueries.On("GetUserRoles", ctx, userID).Return([]*sqlc.UserRole{
+		{ID: "UR01ARZ3NDEKTSV4RRFFQ69G5FAV", UserID: userID, Role: string(RoleChurchAdmin), ChurchID: &churchID},
+	}, nil)
+	mockQueries.On("HasTeamMemberFromChurch", ctx, sqlc.HasTeamMemberFromChurchParams{
+		Teamid:   teamID,
+		Churchid: churchID,
+	}).Return(true, nil)
+
+	assert.True(t, service.CanManageTeamAsAdmin(ctx, userID, teamID),
+		"the church admin who placed people in the unit must see all of them")
+}

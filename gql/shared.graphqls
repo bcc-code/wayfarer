@@ -147,8 +147,7 @@ type LeaderboardEntry {
     score: Int!
     rank: Int
     tags: [LeaderboardEntryTag!]!
-    image: String @deprecated(reason: "Use imageObject instead")
-    imageObject: Image @goField(forceResolver: true)
+    image: Image @goField(forceResolver: true)
     lastScoreAt: DateTime
 }
 

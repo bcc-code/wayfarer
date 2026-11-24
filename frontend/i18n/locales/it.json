@@ -50,9 +50,8 @@
       "pointsLost": "Punti persi",
       "pointsEarned": "Punti guadagnati",
       "resultYourBet": "Il tuo impegno",
-      "correctCount": "Ne avevi{count} corretta",
-      "correctCountAll": "Avevi tutte le risposte corrette",
-      "correctCountNone": "Non avevi nessuna risposta corretta",
+      "outcomeCorrect": "Avevi tutte le risposte corrette",
+      "outcomeIncorrect": "Non avevi nessuna risposta corretta",
       "bettingResult": "Risultato delle scommesse"
     },
     "result": {

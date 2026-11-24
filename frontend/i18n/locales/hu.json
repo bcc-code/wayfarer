@@ -50,9 +50,8 @@
       "pointsLost": "Elvesztett pontok",
       "pointsEarned": "Megszerzett pontok",
       "resultYourBet": "A hozzájárulásod",
-      "correctCount": "{count} volt helyes.",
-      "correctCountAll": "Mindenre tudtad a helyes választ.",
-      "correctCountNone": "Semmire nem tudtad a helyes választ.",
+      "outcomeCorrect": "Mindenre tudtad a helyes választ.",
+      "outcomeIncorrect": "Semmire nem tudtad a helyes választ.",
       "bettingResult": "Tippelés eredménye"
     },
     "result": {

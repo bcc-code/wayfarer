@@ -18,7 +18,8 @@ export interface QuizViewStateInput {
   hasCompletedSubmission: boolean
   canStartQuiz: boolean
   sessionState: QuizSessionState | undefined
-  isSingleOrderingQuestion: boolean
+  /** A finished session shows the question inline so the bet result has somewhere to live. */
+  hasSettledBet: boolean
   hasCurrentQuestion: boolean
   isNotSubmitted: boolean
   isQuizUnavailable: boolean
@@ -39,8 +40,8 @@ export interface QuizViewStateInput {
  *
  * Special cases for session states:
  * - LOCKED: always show active-question (user views their locked answers)
- * - FINISHED with single ordering question: show active-question (betting results inline)
- * - FINISHED with multiple questions: show results screen
+ * - FINISHED with a settled bet: show active-question (betting results inline)
+ * - FINISHED otherwise: show results screen
  */
 export function resolveQuizViewState(input: QuizViewStateInput): QuizViewState {
   if (input.isLoading) return 'loading'
@@ -48,9 +49,14 @@ export function resolveQuizViewState(input: QuizViewStateInput): QuizViewState {
   if (input.quizCompleted && input.hasFinalResult) return 'just-completed'
 
   if (input.hasCompletedSubmission && !input.canStartQuiz) {
+    // LOCKED: the user sees their locked answer while waiting for the verdict.
+    // FINISHED with a settled bet: the payout lives in the question view's
+    // betting module, so the results screen would hide it.
+    // Known gap: in a multi-question quiz this lands on the last question and the
+    // session-results footer has no Previous/Next, so earlier bets are unreachable.
     const shouldShowQuestionView =
       input.sessionState === 'LOCKED' ||
-      (input.sessionState === 'FINISHED' && input.isSingleOrderingQuestion)
+      (input.sessionState === 'FINISHED' && input.hasSettledBet)
 
     if (!shouldShowQuestionView) return 'results'
   }
@@ -147,19 +153,13 @@ export function resolveFooterState(input: FooterInput): FooterState {
       }
     }
 
-    case 'session-locked': {
-      const showBettingModule = isBettingEnabled && !actionState.isAnswerLocked
+    case 'session-locked':
       return {
-        bettingModule: showBettingModule
-          ? {
-              visible: true,
-              mode: 'locked',
-              disabled: actionState.isBetSaved && !actionState.isEditing,
-            }
+        bettingModule: isBettingEnabled
+          ? { visible: true, mode: 'locked', disabled: true }
           : { visible: false },
         button: { type: 'close' },
       }
-    }
 
     case 'session-results':
       return {

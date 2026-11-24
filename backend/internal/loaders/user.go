@@ -84,7 +84,7 @@ func userByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context
 					Birthdate:         birthdateStr,
 					Email:             row.Email,
 					Name:              displayName,
-					Image:             row.AvatarUrl,
+					ImageURL:          row.AvatarUrl,
 					ConsentStatus:     consentStatus,
 					Language:          row.Language,
 					CreatedAt:         scalars.DateTime{Time: row.CreatedAt.Time},
@@ -127,7 +127,7 @@ func currentProjectID(ctx context.Context, db *database.DB) string {
 }
 
 // fetchConsentDataForUsers fetches all consent data needed to build ConsentStatus for users
-// Returns: latestConsents (map of consent ID -> Consent), userConsentsMap (map of userID -> map of consentID -> UserConsent)
+// Returns: latestConsents (map of consent ID -> Consent), userConsentsMap (map of userID -> map of consent ID -> UserConsent, per version)
 func fetchConsentDataForUsers(ctx context.Context, db *database.DB, c *cache.CacheWithRegistry, userIDs []string) (map[string]*model.Consent, map[string]map[string]*model.UserConsent) {
 	// 1. Get the latest published consents that apply to the current project
 	// (the project's own plus global ones), cached per project
@@ -150,6 +150,12 @@ func fetchConsentDataForUsers(ctx context.Context, db *database.DB, c *cache.Cac
 					publishedAt = &dt
 				}
 
+				var archivedAt *scalars.DateTime
+				if row.ArchivedAt.Valid {
+					dt := scalars.DateTime{Time: row.ArchivedAt.Time}
+					archivedAt = &dt
+				}
+
 				managementType := model.ConsentManagementTypeLocal
 				if row.IsRemote {
 					managementType = model.ConsentManagementTypeRemote
@@ -164,6 +170,7 @@ func fetchConsentDataForUsers(ctx context.Context, db *database.DB, c *cache.Cac
 					BodyMarkdown:   row.Body,
 					URL:            row.Url,
 					PublishedAt:    publishedAt,
+					ArchivedAt:     archivedAt,
 					ManagementType: managementType,
 					ManagedBy:      row.ManagedBy,
 					ProjectID:      row.ProjectID,
@@ -198,8 +205,9 @@ func fetchConsentDataForUsers(ctx context.Context, db *database.DB, c *cache.Cac
 				if userConsentsMap[row.UserID] == nil {
 					userConsentsMap[row.UserID] = make(map[string]*model.UserConsent)
 				}
-				// Index by consent_key, not consent_id, to handle version changes
-				userConsentsMap[row.UserID][row.ConsentKey] = userConsent
+				// Index by consent ID: answers are per version (00117), so an answer
+				// to an old version leaves the latest one pending
+				userConsentsMap[row.UserID][row.ConsentID] = userConsent
 			}
 		}
 	}
@@ -232,8 +240,8 @@ func buildConsentStatus(userID string, birthdate time.Time, latestConsents map[s
 			continue
 		}
 
-		// Check by consent key (to handle rejection persistence across versions)
-		if userConsent, hasAction := userConsents[consent.Key]; hasAction {
+		// Answers are per version: only an answer to this one counts
+		if userConsent, hasAction := userConsents[consent.ID]; hasAction {
 			// User has taken action on this consent
 			switch userConsent.Action {
 			case model.ConsentActionAccepted:

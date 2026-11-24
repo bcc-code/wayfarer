@@ -2,6 +2,8 @@ package loaders
 
 import (
 	"context"
+	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
@@ -55,7 +57,9 @@ type Loaders struct {
 	QuizSubmissionsByUserLoader              *dataloader.Loader[string, []*model.QuizSubmission]
 	QuizResponsesBySubmissionLoader          *dataloader.Loader[string, []model.QuizResponse]
 	QuizSessionByIDLoader                    *dataloader.Loader[string, *sqlc.QuizSession]
+	QuizSubmissionByIDLoader                 *dataloader.Loader[string, *sqlc.GetQuizSubmissionsByIDsRow]
 	UserIDsByTeamLoader                      *dataloader.Loader[string, []string]
+	ConsentBlockedIDsByTeamLoader            *dataloader.Loader[string, []string]
 	UserIDsBySuperTeamLoader                 *dataloader.Loader[string, []string]
 	UserIDsByChurchInProjectLoader           *dataloader.Loader[ChurchProjectKey, []string]
 	UserIDsInProjectLoader                   *dataloader.Loader[string, []string]
@@ -72,20 +76,53 @@ type Loaders struct {
 	AchievementAwardedUserCountLoader        *dataloader.Loader[string, int64]
 }
 
+// BatchTimeout bounds every batch function (DATALOADER_BATCH_TIMEOUT). Set it
+// before NewLoaders; each loader keeps the value it was built with.
+var BatchTimeout = 10 * time.Second
+
 // newBatchedLoader creates a new batched dataloader with standard configuration:
 //   - Batch capacity of 100
 //   - Cache disabled (we rely on Ristretto cache in batch functions instead)
 //   - 2ms batch window (library default is 16ms; resolvers await several loaders
 //     sequentially, so the default adds tens of ms of pure wait per request)
+//   - Batches detached from the caller's cancellation (detachedBatch)
 func newBatchedLoader[K comparable, V any](
 	batchFunc func(context.Context, []K) []*dataloader.Result[V],
 ) *dataloader.Loader[K, V] {
+	return newBatchedLoaderWithTimeout(batchFunc, BatchTimeout)
+}
+
+func newBatchedLoaderWithTimeout[K comparable, V any](
+	batchFunc func(context.Context, []K) []*dataloader.Result[V],
+	timeout time.Duration,
+) *dataloader.Loader[K, V] {
 	return dataloader.NewBatchedLoader(
-		batchFunc,
+		detachedBatch(batchFunc, timeout),
 		dataloader.WithBatchCapacity[K, V](100),
 		dataloader.WithWait[K, V](2*time.Millisecond),
 		dataloader.WithCache[K, V](&dataloader.NoCache[K, V]{}), // Disable internal cache, use Ristretto instead
 	)
+}
+
+// detachedBatch runs batchFunc without the cancellation of the context it is
+// handed. The loaders are shared by all requests and dataloader runs a batch
+// with the context of the first request in the window, so that request
+// disconnecting used to fail the loads of every other request in the batch
+// with "context canceled". The context's values are kept (the same first
+// request's, as before); the batch is bounded by its own timeout instead.
+func detachedBatch[K comparable, V any](
+	batchFunc func(context.Context, []K) []*dataloader.Result[V],
+	timeout time.Duration,
+) func(context.Context, []K) []*dataloader.Result[V] {
+	return func(ctx context.Context, keys []K) []*dataloader.Result[V] {
+		ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), timeout)
+		defer cancel()
+		results := batchFunc(ctx, keys)
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			slog.Warn("dataloader batch timed out", "keys", len(keys), "timeout", timeout)
+		}
+		return results
+	}
 }
 
 // NewLoaders creates all dataloaders with batch functions
@@ -134,7 +171,9 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		QuizSubmissionsByUserLoader:              newBatchedLoader(quizSubmissionsByUserBatchFunc(db, cache)),
 		QuizResponsesBySubmissionLoader:          newBatchedLoader(quizResponsesBySubmissionBatchFunc(db, cache)),
 		QuizSessionByIDLoader:                    newBatchedLoader(quizSessionByIDBatchFunc(db, cache)),
+		QuizSubmissionByIDLoader:                 newBatchedLoader(quizSubmissionByIDBatchFunc(db, cache)),
 		UserIDsByTeamLoader:                      newBatchedLoader(userIDsByTeamBatchFunc(db, cache)),
+		ConsentBlockedIDsByTeamLoader:            newBatchedLoader(consentBlockedIDsByTeamBatchFunc(db)),
 		UserIDsBySuperTeamLoader:                 newBatchedLoader(userIDsBySuperTeamBatchFunc(db, cache)),
 		UserIDsByChurchInProjectLoader:           newBatchedLoader(userIDsByChurchInProjectBatchFunc(db, cache)),
 		UserIDsInProjectLoader:                   newBatchedLoader(userIDsInProjectBatchFunc(db, cache)),

@@ -1,37 +1,95 @@
 -- Consent queries
 
 -- name: GetConsentByID :one
-SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at
+SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at, archived_at
 FROM consents WHERE id = @id::char(28);
 
 -- name: GetConsentsByIDs :many
-SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at
+SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at, archived_at
 FROM consents WHERE id = ANY(@ids::char(28)[]);
 
 -- name: GetLatestPublishedConsentByKey :one
-SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at
+-- Unfiltered by archived_at: the webhook path still records answers an external
+-- system reports for a retired consent.
+SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at, archived_at
 FROM consents
 WHERE key = @key::text AND published_at IS NOT NULL AND published_at <= now()
 ORDER BY version DESC LIMIT 1;
 
 -- name: GetAllLatestPublishedConsents :many
-SELECT DISTINCT ON (key) id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at
-FROM consents
-WHERE published_at IS NOT NULL AND published_at <= now()
-ORDER BY key, version DESC;
+-- archived_at is filtered OUTSIDE the DISTINCT ON: filtering inside would let
+-- archiving v2 resurrect v1 as the live consent.
+SELECT c.id, c.key, c.version, c.title, c.short_text, c.body, c.url, c.published_at, c.is_remote, c.managed_by, c.project_id, c.is_required, c.created_at, c.updated_at, c.archived_at
+FROM (
+    SELECT DISTINCT ON (key) id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at, archived_at
+    FROM consents
+    WHERE published_at IS NOT NULL AND published_at <= now()
+    ORDER BY key, version DESC
+) c
+WHERE c.archived_at IS NULL
+ORDER BY c.key;
 
 -- name: GetLatestPublishedConsentsForProject :many
 -- Latest published consents that apply to the given project: the project's own
 -- consents plus global ones (project_id IS NULL). Consent keys are globally
 -- unique, so DISTINCT ON (key) cannot hide another project's consent here.
-SELECT DISTINCT ON (key) id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at
-FROM consents
-WHERE published_at IS NOT NULL AND published_at <= now()
-  AND (project_id IS NULL OR project_id = @project_id::char(28))
-ORDER BY key, version DESC;
+-- See GetAllLatestPublishedConsents for why archived_at is filtered outside the
+-- DISTINCT ON.
+SELECT c.id, c.key, c.version, c.title, c.short_text, c.body, c.url, c.published_at, c.is_remote, c.managed_by, c.project_id, c.is_required, c.created_at, c.updated_at, c.archived_at
+FROM (
+    SELECT DISTINCT ON (key) id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at, archived_at
+    FROM consents
+    WHERE published_at IS NOT NULL AND published_at <= now()
+      AND (project_id IS NULL OR project_id = @project_id::char(28))
+    ORDER BY key, version DESC
+) c
+WHERE c.archived_at IS NULL
+ORDER BY c.key;
+
+-- name: GetAdminConsents :many
+-- The latest live version of each key, plus every not-yet-live version (draft
+-- or scheduled) as its own row — collapsing to one row per key would hide a
+-- draft behind the version it replaces, on the page that publishes it.
+-- @project_id NULL applies no filter; set, it adds the global consents.
+WITH live AS (
+    SELECT DISTINCT ON (key) id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at, archived_at
+    FROM consents
+    WHERE published_at IS NOT NULL AND published_at <= now()
+    ORDER BY key, version DESC
+), not_live AS (
+    SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at, archived_at
+    FROM consents
+    WHERE published_at IS NULL OR published_at > now()
+)
+SELECT c.id, c.key, c.version, c.title, c.short_text, c.body, c.url, c.published_at, c.is_remote, c.managed_by, c.project_id, c.is_required, c.created_at, c.updated_at, c.archived_at
+FROM (
+    SELECT * FROM live
+    UNION ALL
+    SELECT * FROM not_live
+) c
+WHERE (
+    sqlc.narg('project_id')::char(28) IS NULL
+    OR c.project_id IS NULL
+    OR c.project_id = sqlc.narg('project_id')::char(28)
+  )
+  AND (@include_archived::bool OR c.archived_at IS NULL)
+ORDER BY c.key, c.version DESC;
+
+-- name: ArchiveConsent :one
+-- Retires a consent. There is no delete: user_consent_history outlives it.
+UPDATE consents
+SET archived_at = now(), updated_at = now()
+WHERE id = @id::char(28)
+RETURNING id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at, archived_at;
+
+-- name: UnarchiveConsent :one
+UPDATE consents
+SET archived_at = NULL, updated_at = now()
+WHERE id = @id::char(28)
+RETURNING id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at, archived_at;
 
 -- name: GetLatestConsentByKey :one
-SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at
+SELECT id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at, archived_at
 FROM consents
 WHERE key = @key::text
 ORDER BY version DESC
@@ -40,7 +98,7 @@ LIMIT 1;
 -- name: CreateConsent :one
 INSERT INTO consents (id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required)
 VALUES (@id::text, @key::text, @version::int, @title::text, @short_text::text, @body::text, @url, @published_at, @is_remote::bool, @managed_by, @project_id, @is_required::bool)
-RETURNING id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at;
+RETURNING id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at, archived_at;
 
 -- name: UpdateConsent :one
 UPDATE consents SET
@@ -54,7 +112,7 @@ UPDATE consents SET
     published_at = @published_at,
     updated_at = now()
 WHERE id = @id::char(28)
-RETURNING id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at;
+RETURNING id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, project_id, is_required, created_at, updated_at, archived_at;
 
 -- name: GetNextVersionForConsentKey :one
 SELECT COALESCE(MAX(version), 0) + 1 as next_version FROM consents WHERE key = @key::text;
@@ -82,12 +140,13 @@ ORDER BY occurred_at DESC
 LIMIT 1;
 
 -- name: GetCurrentUserConsentStatusesByUsers :many
--- Gets the latest action for each consent key for multiple users
-SELECT DISTINCT ON (user_id, consent_key)
+-- Gets the latest action on each consent version for multiple users. Answers
+-- are per version (00117): an answer to an old version is not one to the new.
+SELECT DISTINCT ON (user_id, consent_id)
     id, user_id, consent_id, consent_key, action, occurred_at, source
 FROM user_consent_history
 WHERE user_id = ANY(@user_ids::char(28)[])
-ORDER BY user_id, consent_key, occurred_at DESC;
+ORDER BY user_id, consent_id, occurred_at DESC;
 
 -- name: GetUserConsentHistoryByUserAndKey :many
 SELECT id, user_id, consent_id, consent_key, action, occurred_at,
@@ -120,21 +179,27 @@ WHERE user_id = ANY(@user_ids::char(28)[])
 ORDER BY user_id, occurred_at DESC;
 
 -- name: GetMissingConsentsForUserWithRejections :many
--- Gets consents that user has never acted upon (no history)
+-- Gets the latest consents that the user has never acted upon (no history for
+-- that version; answers are per version, 00117)
 SELECT c.id, c.key, c.version, c.title, c.short_text, c.body, c.url, c.published_at,
-       c.is_remote, c.managed_by, c.project_id, c.is_required, c.created_at, c.updated_at
+       c.is_remote, c.managed_by, c.project_id, c.is_required, c.created_at, c.updated_at,
+       c.archived_at
 FROM (
     SELECT DISTINCT ON (key) id, key, version, title, short_text, body, url, published_at,
-           is_remote, managed_by, project_id, is_required, created_at, updated_at
+           is_remote, managed_by, project_id, is_required, created_at, updated_at,
+           archived_at
     FROM consents
     WHERE published_at IS NOT NULL AND published_at <= now()
       AND (project_id IS NULL OR project_id = @project_id::char(28))
     ORDER BY key, version DESC
 ) c
-WHERE NOT EXISTS (
+-- Outside the DISTINCT ON, so archiving cannot promote the version underneath.
+WHERE c.archived_at IS NULL
+AND NOT EXISTS (
     SELECT 1 FROM user_consent_history uch
     WHERE uch.user_id = @user_id::char(28)
     AND uch.consent_key = c.key
+    AND uch.consent_id = c.id
 );
 
 -- Translation queries
@@ -157,3 +222,24 @@ ON CONFLICT (consent_id, language_code) DO UPDATE SET
     body = EXCLUDED.body,
     updated_at = now()
 RETURNING consent_id, language_code, title, short_text, body, created_at, updated_at;
+
+-- Blocked users (00116): who a required consent keeps out of every count.
+-- Compared before and after a consent change, to find the users it moved.
+
+-- name: GetConsentBlockedProjectsOfUsers :many
+-- The projects in which each of the given users is blocked, checked per user.
+-- OFFSET 0 keeps the check a per-user subplan: as a join, the planner may
+-- compute whole projects' blocked sets instead.
+SELECT up.project_id::char(28) AS project_id, up.user_id::char(28) AS user_id
+FROM user_projects up
+WHERE up.user_id = ANY(@user_ids::char(28)[])
+  AND EXISTS (
+      SELECT 1 FROM consent_blocked_user_ids(up.project_id) b WHERE b.user_id = up.user_id OFFSET 0
+  );
+
+-- name: GetConsentBlockedUsersInProjects :many
+-- Every blocked user of the given projects, or of all projects when none are given
+SELECT p.id::char(28) AS project_id, b.user_id::char(28) AS user_id
+FROM projects p
+CROSS JOIN LATERAL consent_blocked_user_ids(p.id) AS b(user_id)
+WHERE @project_ids::char(28)[] IS NULL OR p.id = ANY(@project_ids::char(28)[]);
