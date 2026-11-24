@@ -18,8 +18,8 @@ func pointRadius() MapPinConfig {
 		Width:      1000,
 		Height:     1000,
 		Target:     &MapPoint{X: 500, Y: 300},
-		FullRadius: ptr(40.0),
-		ZeroRadius: ptr(200.0),
+		FullRadius: ptr(40),
+		ZeroRadius: ptr(200),
 	}
 }
 
@@ -48,7 +48,7 @@ func TestMapPinScorePointRadius(t *testing.T) {
 	tests := []struct {
 		name      string
 		pin       MapPoint
-		full      float64
+		full      int
 		maxPoints int
 		want      int
 		distance  float64
@@ -56,11 +56,14 @@ func TestMapPinScorePointRadius(t *testing.T) {
 		{name: "exact hit", pin: MapPoint{500, 300}, full: 40, maxPoints: 100, want: 100, distance: 0},
 		{name: "inside full radius", pin: MapPoint{506, 308}, full: 40, maxPoints: 100, want: 100, distance: 10},
 		{name: "exactly on full radius", pin: MapPoint{540, 300}, full: 40, maxPoints: 100, want: 100, distance: 40},
-		{name: "just beyond full radius rounds up to max", pin: MapPoint{540.5, 300}, full: 40, maxPoints: 100, want: 100, distance: 40.5},
+		// hypot(40, 6) ≈ 40.45: past the full radius, but round(99.72) is still the maximum.
+		{name: "just beyond full radius rounds up to max", pin: MapPoint{540, 306}, full: 40, maxPoints: 100, want: 100, distance: math.Hypot(40, 6)},
 		{name: "past the rounding band loses a point", pin: MapPoint{541, 300}, full: 40, maxPoints: 100, want: 99, distance: 41},
 		{name: "midpoint of falloff", pin: MapPoint{500, 420}, full: 40, maxPoints: 100, want: 50, distance: 120},
 		{name: "just inside zero radius still rounds up to 1", pin: MapPoint{699, 300}, full: 40, maxPoints: 100, want: 1, distance: 199},
-		{name: "just inside zero radius rounds down to 0", pin: MapPoint{699.6, 300}, full: 40, maxPoints: 100, want: 0, distance: 199.6},
+		// hypot(199, 20) ≈ 200.0025 is past the zero radius; hypot(199, 19) ≈ 199.905
+		// is just inside it and round(0.06) is 0.
+		{name: "just inside zero radius rounds down to 0", pin: MapPoint{699, 319}, full: 40, maxPoints: 100, want: 0, distance: math.Hypot(199, 19)},
 		{name: "exactly on zero radius", pin: MapPoint{500, 500}, full: 40, maxPoints: 100, want: 0, distance: 200},
 		{name: "beyond zero radius", pin: MapPoint{900, 900}, full: 40, maxPoints: 100, want: 0, distance: math.Hypot(400, 600)},
 		{name: "full 0: exact hit is max", pin: MapPoint{500, 300}, full: 0, maxPoints: 100, want: 100, distance: 0},
@@ -73,7 +76,7 @@ func TestMapPinScorePointRadius(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := pointRadius()
-			c.FullRadius = ptr(tt.full)
+			c.FullRadius = &tt.full
 
 			got, distance, err := MapPinScore(c, tt.maxPoints, tt.pin)
 			require.NoError(t, err)
@@ -164,12 +167,10 @@ func TestMapPinScoreRejectsInvalidPosition(t *testing.T) {
 		pin     MapPoint
 		message string
 	}{
-		{name: "NaN x", pin: MapPoint{math.NaN(), 300}, message: "finite"},
-		{name: "NaN y", pin: MapPoint{500, math.NaN()}, message: "finite"},
-		{name: "+Inf", pin: MapPoint{math.Inf(1), 300}, message: "finite"},
-		{name: "-Inf", pin: MapPoint{500, math.Inf(-1)}, message: "finite"},
 		{name: "left of the map", pin: MapPoint{-1, 300}, message: "outside"},
-		{name: "below the map", pin: MapPoint{500, 1000.5}, message: "outside"},
+		{name: "above the map", pin: MapPoint{500, -1}, message: "outside"},
+		{name: "right of the map", pin: MapPoint{1001, 300}, message: "outside"},
+		{name: "below the map", pin: MapPoint{500, 1001}, message: "outside"},
 	}
 
 	for mode, c := range configs {
@@ -215,8 +216,19 @@ func TestPointInPolygon(t *testing.T) {
 		{name: "on a vertical edge", polygon: rectangle, pin: MapPoint{400, 200}, want: true},
 		{name: "on a diagonal edge", polygon: triangle, pin: MapPoint{250, 200}, want: true},
 		{name: "on a vertex", polygon: rectangle, pin: MapPoint{100, 100}, want: true},
-		{name: "within epsilon of an edge", polygon: rectangle, pin: MapPoint{250, 100 - MapPinEpsilon/2}, want: true},
-		{name: "beyond epsilon of an edge", polygon: rectangle, pin: MapPoint{250, 100 - 10*MapPinEpsilon}, want: false},
+		{name: "one pixel outside an edge", polygon: rectangle, pin: MapPoint{250, 99}, want: false},
+		{name: "one pixel inside an edge", polygon: rectangle, pin: MapPoint{250, 101}, want: true},
+		// The diagonal from (300, 100) to (200, 300) passes (275, 150) exactly,
+		// and no other whole pixel on that row: the boundary test is exact.
+		{name: "on a diagonal edge, exactly", polygon: triangle, pin: MapPoint{275, 150}, want: true},
+		{name: "one pixel right of a diagonal edge", polygon: triangle, pin: MapPoint{276, 150}, want: false},
+		{name: "one pixel left of a diagonal edge", polygon: triangle, pin: MapPoint{274, 150}, want: true},
+		// The slanted edges of {0,0},{3,1},{0,2} pass between pixels: (1, 1) is
+		// strictly inside, (2, 0) strictly outside, and (3, 1) is the vertex.
+		{name: "thin triangle: strictly inside", polygon: []MapPoint{{0, 0}, {3, 1}, {0, 2}}, pin: MapPoint{1, 1}, want: true},
+		{name: "thin triangle: strictly outside", polygon: []MapPoint{{0, 0}, {3, 1}, {0, 2}}, pin: MapPoint{2, 0}, want: false},
+		{name: "thin triangle: on its vertex", polygon: []MapPoint{{0, 0}, {3, 1}, {0, 2}}, pin: MapPoint{3, 1}, want: true},
+		{name: "on a steep edge between its ends", polygon: []MapPoint{{0, 0}, {2, 6}, {0, 6}}, pin: MapPoint{1, 3}, want: true},
 
 		{name: "ray through a vertex, inside", polygon: diamond, pin: MapPoint{150, 200}, want: true},
 		{name: "ray through two vertices, outside", polygon: diamond, pin: MapPoint{50, 200}, want: false},
@@ -278,9 +290,8 @@ func TestValidateMapPinConfigPolygon(t *testing.T) {
 		{name: "too many vertices", polygon: regularPolygon(MapPinMaxVertices + 1), field: "polygon", message: "more than"},
 		{name: "vertex outside the map", polygon: []MapPoint{{100, 100}, {1001, 100}, {200, 300}}, field: "polygon[1]", message: "outside"},
 		{name: "negative coordinate", polygon: []MapPoint{{100, -1}, {300, 100}, {200, 300}}, field: "polygon[0]", message: "outside"},
-		{name: "NaN coordinate", polygon: []MapPoint{{100, 100}, {math.NaN(), 100}, {200, 300}}, field: "polygon[1]", message: "finite"},
-		{name: "+Inf coordinate", polygon: []MapPoint{{100, 100}, {300, 100}, {200, math.Inf(1)}}, field: "polygon[2]", message: "finite"},
-		{name: "-Inf coordinate", polygon: []MapPoint{{math.Inf(-1), 100}, {300, 100}, {200, 300}}, field: "polygon[0]", message: "finite"},
+		{name: "vertex below the map", polygon: []MapPoint{{100, 100}, {300, 100}, {200, 1001}}, field: "polygon[2]", message: "outside"},
+		{name: "triangle collapsed to a line by one pixel", polygon: []MapPoint{{100, 100}, {200, 101}, {300, 102}}, field: "polygon", message: "zero area"},
 		{name: "adjacent duplicate vertex", polygon: []MapPoint{{100, 100}, {300, 100}, {300, 100}, {200, 300}}, field: "polygon", message: "same point"},
 		{name: "non-adjacent duplicate vertex", polygon: []MapPoint{{100, 100}, {300, 100}, {200, 200}, {300, 300}, {100, 300}, {200, 200}}, field: "polygon", message: "same point"},
 		{name: "zero area", polygon: []MapPoint{{100, 100}, {200, 200}, {300, 300}}, field: "polygon", message: "zero area"},
@@ -289,6 +300,9 @@ func TestValidateMapPinConfigPolygon(t *testing.T) {
 		{name: "vertex touching a non-adjacent edge", polygon: []MapPoint{{100, 100}, {300, 100}, {300, 300}, {200, 100}, {100, 300}}, field: "polygon", message: "intersect"},
 		{name: "spike doubling back along an edge", polygon: []MapPoint{{100, 300}, {100, 100}, {400, 100}, {250, 100}}, field: "polygon", message: "intersect"},
 		{name: "spike doubling back past its start", polygon: []MapPoint{{100, 300}, {200, 100}, {400, 100}, {150, 100}, {150, 200}}, field: "polygon", message: "intersect"},
+		{name: "spike across the closing edge", polygon: []MapPoint{{250, 100}, {100, 300}, {100, 100}, {400, 100}}, field: "polygon", message: "intersect"},
+		{name: "edges crossing at a non-integer point", polygon: []MapPoint{{0, 0}, {3, 2}, {3, 0}, {0, 3}}, field: "polygon", message: "intersect"},
+		{name: "collinear overlap of non-adjacent edges", polygon: []MapPoint{{100, 100}, {300, 100}, {300, 200}, {200, 200}, {200, 100}, {150, 100}, {150, 300}, {100, 300}}, field: "polygon", message: "intersect"},
 	}
 
 	for _, tt := range tests {
@@ -307,7 +321,7 @@ func TestValidateMapPinConfigPointRadius(t *testing.T) {
 
 	t.Run("accepts full radius 0 and a target on the map's edge", func(t *testing.T) {
 		c := pointRadius()
-		c.FullRadius = ptr(0.0)
+		c.FullRadius = ptr(0)
 		c.Target = &MapPoint{X: 1000, Y: 0}
 		_, err := ValidateMapPinConfig(c)
 		assert.NoError(t, err)
@@ -322,13 +336,11 @@ func TestValidateMapPinConfigPointRadius(t *testing.T) {
 		{name: "missing target", modify: func(c *MapPinConfig) { c.Target = nil }, field: "target", message: "required"},
 		{name: "missing full radius", modify: func(c *MapPinConfig) { c.FullRadius = nil }, field: "fullPointsRadius", message: "required"},
 		{name: "missing zero radius", modify: func(c *MapPinConfig) { c.ZeroRadius = nil }, field: "zeroPointsRadius", message: "required"},
-		{name: "target outside the map", modify: func(c *MapPinConfig) { c.Target = &MapPoint{X: 500, Y: 1000.5} }, field: "target", message: "outside"},
-		{name: "NaN target", modify: func(c *MapPinConfig) { c.Target = &MapPoint{X: math.NaN(), Y: 300} }, field: "target", message: "finite"},
-		{name: "negative full radius", modify: func(c *MapPinConfig) { c.FullRadius = ptr(-1.0) }, field: "fullPointsRadius", message: "at least 0"},
-		{name: "NaN full radius", modify: func(c *MapPinConfig) { c.FullRadius = ptr(math.NaN()) }, field: "fullPointsRadius", message: "finite"},
-		{name: "infinite zero radius", modify: func(c *MapPinConfig) { c.ZeroRadius = ptr(math.Inf(1)) }, field: "zeroPointsRadius", message: "finite"},
-		{name: "zero radius equal to full radius", modify: func(c *MapPinConfig) { c.ZeroRadius = ptr(40.0) }, field: "zeroPointsRadius", message: "greater than"},
-		{name: "zero radius below full radius", modify: func(c *MapPinConfig) { c.ZeroRadius = ptr(10.0) }, field: "zeroPointsRadius", message: "greater than"},
+		{name: "target outside the map", modify: func(c *MapPinConfig) { c.Target = &MapPoint{X: 500, Y: 1001} }, field: "target", message: "outside"},
+		{name: "negative target", modify: func(c *MapPinConfig) { c.Target = &MapPoint{X: -1, Y: 300} }, field: "target", message: "outside"},
+		{name: "negative full radius", modify: func(c *MapPinConfig) { c.FullRadius = ptr(-1) }, field: "fullPointsRadius", message: "at least 0"},
+		{name: "zero radius equal to full radius", modify: func(c *MapPinConfig) { c.ZeroRadius = ptr(40) }, field: "zeroPointsRadius", message: "greater than"},
+		{name: "zero radius below full radius", modify: func(c *MapPinConfig) { c.ZeroRadius = ptr(10) }, field: "zeroPointsRadius", message: "greater than"},
 		{name: "polygon given", modify: func(c *MapPinConfig) { c.Polygon = rectangle }, field: "polygon", message: "only used in POLYGON"},
 		{name: "empty polygon given", modify: func(c *MapPinConfig) { c.Polygon = []MapPoint{} }, field: "polygon", message: "only used in POLYGON"},
 	}
@@ -350,13 +362,15 @@ func TestValidateMapPinConfigShared(t *testing.T) {
 		field   string
 		message string
 	}{
-		{name: "zero width", config: MapPinConfig{Mode: MapPinModePolygon, Width: 0, Height: 1000, Polygon: triangle}, field: "mapWidth", message: "positive"},
-		{name: "negative height", config: MapPinConfig{Mode: MapPinModePolygon, Width: 1000, Height: -1, Polygon: triangle}, field: "mapHeight", message: "positive"},
+		{name: "zero width", config: MapPinConfig{Mode: MapPinModePolygon, Width: 0, Height: 1000, Polygon: triangle}, field: "mapWidth", message: "between 1 and 100000"},
+		{name: "negative height", config: MapPinConfig{Mode: MapPinModePolygon, Width: 1000, Height: -1, Polygon: triangle}, field: "mapHeight", message: "between 1 and 100000"},
+		{name: "width above the maximum", config: MapPinConfig{Mode: MapPinModePolygon, Width: MapPinMaxSize + 1, Height: 1000, Polygon: triangle}, field: "mapWidth", message: "between 1 and 100000"},
+		{name: "height above the maximum", config: MapPinConfig{Mode: MapPinModePolygon, Width: 1000, Height: MapPinMaxSize + 1, Polygon: triangle}, field: "mapHeight", message: "between 1 and 100000"},
 		{name: "unknown mode", config: MapPinConfig{Mode: "CIRCLE", Width: 1000, Height: 1000}, field: "scoringMode", message: "unknown"},
 		{name: "empty mode", config: MapPinConfig{Width: 1000, Height: 1000}, field: "scoringMode", message: "unknown"},
 		{name: "POLYGON with a target", config: withPolygon(func(c *MapPinConfig) { c.Target = &MapPoint{X: 1, Y: 1} }), field: "target", message: "only used in POINT_RADIUS"},
-		{name: "POLYGON with a full radius", config: withPolygon(func(c *MapPinConfig) { c.FullRadius = ptr(0.0) }), field: "fullPointsRadius", message: "only used in POINT_RADIUS"},
-		{name: "POLYGON with a zero radius", config: withPolygon(func(c *MapPinConfig) { c.ZeroRadius = ptr(10.0) }), field: "zeroPointsRadius", message: "only used in POINT_RADIUS"},
+		{name: "POLYGON with a full radius", config: withPolygon(func(c *MapPinConfig) { c.FullRadius = ptr(0) }), field: "fullPointsRadius", message: "only used in POINT_RADIUS"},
+		{name: "POLYGON with a zero radius", config: withPolygon(func(c *MapPinConfig) { c.ZeroRadius = ptr(10) }), field: "zeroPointsRadius", message: "only used in POINT_RADIUS"},
 	}
 
 	for _, tt := range tests {
@@ -385,12 +399,10 @@ func TestValidateMapPosition(t *testing.T) {
 		{name: "inside", pin: MapPoint{500, 500}, valid: true},
 		{name: "top-left corner", pin: MapPoint{0, 0}, valid: true},
 		{name: "bottom-right corner", pin: MapPoint{1000, 800}, valid: true},
-		{name: "fractional", pin: MapPoint{123.456, 789.012}, valid: true},
-		{name: "left of the map", pin: MapPoint{-0.001, 500}, valid: false},
-		{name: "below the map", pin: MapPoint{500, 800.001}, valid: false},
-		{name: "right of the map", pin: MapPoint{1000.5, 500}, valid: false},
-		{name: "NaN", pin: MapPoint{math.NaN(), 500}, valid: false},
-		{name: "infinite", pin: MapPoint{500, math.Inf(1)}, valid: false},
+		{name: "left of the map", pin: MapPoint{-1, 500}, valid: false},
+		{name: "above the map", pin: MapPoint{500, -1}, valid: false},
+		{name: "below the map", pin: MapPoint{500, 801}, valid: false},
+		{name: "right of the map", pin: MapPoint{1001, 500}, valid: false},
 	}
 
 	for _, tt := range tests {
@@ -419,12 +431,13 @@ func withPolygon(modify func(*MapPinConfig)) MapPinConfig {
 }
 
 // regularPolygon returns n vertices evenly spaced on a circle in the middle of
-// a 1000x1000 map: a valid convex polygon of any size.
+// a 1000x1000 map, rounded to whole pixels: a valid convex polygon up to a
+// couple of hundred vertices.
 func regularPolygon(n int) []MapPoint {
 	vertices := make([]MapPoint, n)
 	for i := range vertices {
 		angle := 2 * math.Pi * float64(i) / float64(n)
-		vertices[i] = MapPoint{X: 500 + 400*math.Cos(angle), Y: 500 + 400*math.Sin(angle)}
+		vertices[i] = MapPoint{X: 500 + int(math.Round(400*math.Cos(angle))), Y: 500 + int(math.Round(400*math.Sin(angle)))}
 	}
 	return vertices
 }
@@ -437,4 +450,68 @@ func assertMapPinError(t *testing.T, err error, field, message string) {
 	}
 	assert.Equal(t, field, mapPinErr.Field)
 	assert.Contains(t, mapPinErr.Message, message)
+}
+
+func TestMapPinMaxSize(t *testing.T) {
+	t.Run("accepts a map at the maximum size", func(t *testing.T) {
+		c := MapPinConfig{Mode: MapPinModePolygon, Width: MapPinMaxSize, Height: MapPinMaxSize,
+			Polygon: []MapPoint{{0, 0}, {MapPinMaxSize, 0}, {MapPinMaxSize, MapPinMaxSize}, {0, MapPinMaxSize}}}
+		_, err := ValidateMapPinConfig(c)
+		assert.NoError(t, err)
+	})
+
+	t.Run("geometry at the maximum size doesn't overflow", func(t *testing.T) {
+		const m = MapPinMaxSize
+		// A sliver one pixel wide across the whole map: its doubled area is
+		// small, while each cross product term is about m²; an overflow would
+		// show up as a wrong area or a wrong side.
+		sliver := []MapPoint{{0, 0}, {m, m - 1}, {m, m}}
+		c := MapPinConfig{Mode: MapPinModePolygon, Width: m, Height: m, Polygon: sliver}
+		got, err := ValidateMapPinConfig(c)
+		require.NoError(t, err)
+
+		assert.Equal(t, int64(m), doubledArea(got.Polygon))
+		assert.True(t, PointInPolygon(MapPoint{m, m}, got.Polygon), "a vertex")
+		assert.True(t, PointInPolygon(MapPoint{m / 2, m / 2}, got.Polygon), "on the long edge")
+		assert.False(t, PointInPolygon(MapPoint{m / 2, m/2 - 1}, got.Polygon), "one pixel off the long edge")
+		assert.False(t, PointInPolygon(MapPoint{0, m}, got.Polygon), "the far corner")
+
+		square := []MapPoint{{0, 0}, {m, 0}, {m, m}, {0, m}}
+		assert.Equal(t, int64(2)*int64(m)*int64(m), doubledArea(square))
+	})
+
+	t.Run("a radius score across the whole map", func(t *testing.T) {
+		c := MapPinConfig{Mode: MapPinModePointRadius, Width: MapPinMaxSize, Height: MapPinMaxSize,
+			Target: &MapPoint{0, 0}, FullRadius: ptr(0), ZeroRadius: ptr(2 * MapPinMaxSize)}
+		points, distance, err := MapPinScore(c, 100, MapPoint{MapPinMaxSize, MapPinMaxSize})
+		require.NoError(t, err)
+		if assert.NotNil(t, distance) {
+			assert.InDelta(t, math.Sqrt2*MapPinMaxSize, *distance, 1e-6)
+		}
+		assert.Equal(t, 29, points, "round(100 × (2 − √2) / 2)")
+	})
+}
+
+func TestSegmentsTouch(t *testing.T) {
+	tests := []struct {
+		name       string
+		a, b, c, d MapPoint
+		want       bool
+	}{
+		{name: "proper crossing", a: MapPoint{0, 0}, b: MapPoint{10, 10}, c: MapPoint{0, 10}, d: MapPoint{10, 0}, want: true},
+		{name: "end on the other segment", a: MapPoint{0, 0}, b: MapPoint{10, 0}, c: MapPoint{5, 0}, d: MapPoint{5, 5}, want: true},
+		{name: "shared end", a: MapPoint{0, 0}, b: MapPoint{10, 0}, c: MapPoint{10, 0}, d: MapPoint{10, 10}, want: true},
+		{name: "collinear overlap", a: MapPoint{0, 0}, b: MapPoint{10, 0}, c: MapPoint{5, 0}, d: MapPoint{15, 0}, want: true},
+		{name: "collinear, one contains the other", a: MapPoint{0, 0}, b: MapPoint{10, 0}, c: MapPoint{2, 0}, d: MapPoint{8, 0}, want: true},
+		{name: "collinear with a gap", a: MapPoint{0, 0}, b: MapPoint{10, 0}, c: MapPoint{11, 0}, d: MapPoint{20, 0}, want: false},
+		{name: "parallel", a: MapPoint{0, 0}, b: MapPoint{10, 0}, c: MapPoint{0, 1}, d: MapPoint{10, 1}, want: false},
+		{name: "would cross if extended", a: MapPoint{0, 0}, b: MapPoint{4, 4}, c: MapPoint{10, 0}, d: MapPoint{6, 4}, want: false},
+		{name: "end one pixel short", a: MapPoint{0, 0}, b: MapPoint{10, 0}, c: MapPoint{5, 1}, d: MapPoint{5, 5}, want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, segmentsTouch(tt.a, tt.b, tt.c, tt.d))
+			assert.Equal(t, tt.want, segmentsTouch(tt.c, tt.d, tt.a, tt.b), "symmetric")
+		})
+	}
 }

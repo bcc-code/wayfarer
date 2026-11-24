@@ -167,7 +167,7 @@ func quizResponsesBySubmissionBatchFunc(db *database.DB, c *cache.CacheWithRegis
 						ID:                row.ID,
 						SubmissionID:      row.SubmissionID,
 						QuestionID:        row.QuestionID,
-						SubmittedPosition: MapPinPosition(row.ID, row.JsonResponse),
+						SubmittedPosition: MapPinPosition(row.ID, row.MapPosition),
 						AnsweredAt:        answeredAt,
 						TimeSpentSeconds:  timeSpentSeconds,
 						PointsEarnedValue: pointsEarned,

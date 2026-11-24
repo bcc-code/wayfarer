@@ -1701,8 +1701,8 @@ type MapPinQuestionResolver interface {
 	ScoringMode(ctx context.Context, obj *model.MapPinQuestion) (model.MapPinScoringMode, error)
 	MapWidth(ctx context.Context, obj *model.MapPinQuestion) (int, error)
 	MapHeight(ctx context.Context, obj *model.MapPinQuestion) (int, error)
-	FullPointsRadius(ctx context.Context, obj *model.MapPinQuestion) (*float64, error)
-	ZeroPointsRadius(ctx context.Context, obj *model.MapPinQuestion) (*float64, error)
+	FullPointsRadius(ctx context.Context, obj *model.MapPinQuestion) (*int, error)
+	ZeroPointsRadius(ctx context.Context, obj *model.MapPinQuestion) (*int, error)
 	CorrectPosition(ctx context.Context, obj *model.MapPinQuestion) (*model.MapPoint, error)
 	CorrectArea(ctx context.Context, obj *model.MapPinQuestion) ([]model.MapPoint, error)
 }
@@ -12170,7 +12170,7 @@ type OrderingQuestion implements QuizQuestion {
 }
 
 # The participant drops one pin on the question's image, a map. Coordinates are
-# natural pixels of that image: origin top-left, x to the right, y down. See
+# whole natural pixels of that image: origin top-left, x to the right, y down. See
 # notes/quiz-map-pin-coordinates.md.
 type MapPinQuestion implements QuizQuestion {
     id: ID!
@@ -12195,8 +12195,8 @@ type MapPinQuestion implements QuizQuestion {
     mapWidth: Int! @goField(forceResolver: true)
     mapHeight: Int! @goField(forceResolver: true)
     # POINT_RADIUS only; null for POLYGON.
-    fullPointsRadius: Float @goField(forceResolver: true)
-    zeroPointsRadius: Float @goField(forceResolver: true)
+    fullPointsRadius: Int @goField(forceResolver: true)
+    zeroPointsRadius: Int @goField(forceResolver: true)
     # The correct answer: correctPosition for POINT_RADIUS, correctArea for
     # POLYGON, null for the other mode. Hidden from non-managers until the most
     # recent session they can access is FINISHED, and while they have none.
@@ -12204,10 +12204,10 @@ type MapPinQuestion implements QuizQuestion {
     correctArea: [MapPoint!] @goField(forceResolver: true)
 }
 
-# A position on a map image, in its natural pixels.
+# A position on a map image, in whole natural pixels.
 type MapPoint {
-    x: Float!
-    y: Float!
+    x: Int!
+    y: Int!
 }
 
 type QuizOrderingItem {
@@ -12438,8 +12438,8 @@ input MapPinConfigInput {
 
     # POINT_RADIUS
     target: MapPointInput
-    fullPointsRadius: Float
-    zeroPointsRadius: Float
+    fullPointsRadius: Int
+    zeroPointsRadius: Int
 
     # POLYGON: 3 to 100 vertices in drawing order, clockwise or not. A closing
     # vertex equal to the first is dropped.
@@ -12447,8 +12447,8 @@ input MapPinConfigInput {
 }
 
 input MapPointInput {
-    x: Float!
-    y: Float!
+    x: Int!
+    y: Int!
 }
 
 input CreatePredefinedAnswerInput {
@@ -28008,7 +28008,7 @@ func (ec *executionContext) _MapPinQuestion_fullPointsRadius(ctx context.Context
 			return ec.resolvers.MapPinQuestion().FullPointsRadius(ctx, obj)
 		},
 		nil,
-		ec.marshalOFloat2ᚖfloat64,
+		ec.marshalOInt2ᚖint,
 		true,
 		false,
 	)
@@ -28021,7 +28021,7 @@ func (ec *executionContext) fieldContext_MapPinQuestion_fullPointsRadius(_ conte
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Float does not have child fields")
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -28037,7 +28037,7 @@ func (ec *executionContext) _MapPinQuestion_zeroPointsRadius(ctx context.Context
 			return ec.resolvers.MapPinQuestion().ZeroPointsRadius(ctx, obj)
 		},
 		nil,
-		ec.marshalOFloat2ᚖfloat64,
+		ec.marshalOInt2ᚖint,
 		true,
 		false,
 	)
@@ -28050,7 +28050,7 @@ func (ec *executionContext) fieldContext_MapPinQuestion_zeroPointsRadius(_ conte
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Float does not have child fields")
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -28823,7 +28823,7 @@ func (ec *executionContext) _MapPoint_x(ctx context.Context, field graphql.Colle
 			return obj.X, nil
 		},
 		nil,
-		ec.marshalNFloat2float64,
+		ec.marshalNInt2int,
 		true,
 		true,
 	)
@@ -28836,7 +28836,7 @@ func (ec *executionContext) fieldContext_MapPoint_x(_ context.Context, field gra
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Float does not have child fields")
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -28852,7 +28852,7 @@ func (ec *executionContext) _MapPoint_y(ctx context.Context, field graphql.Colle
 			return obj.Y, nil
 		},
 		nil,
-		ec.marshalNFloat2float64,
+		ec.marshalNInt2int,
 		true,
 		true,
 	)
@@ -28865,7 +28865,7 @@ func (ec *executionContext) fieldContext_MapPoint_y(_ context.Context, field gra
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Float does not have child fields")
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -66778,14 +66778,14 @@ func (ec *executionContext) unmarshalInputMapPinConfigInput(ctx context.Context,
 			it.Target = data
 		case "fullPointsRadius":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("fullPointsRadius"))
-			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.FullPointsRadius = data
 		case "zeroPointsRadius":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zeroPointsRadius"))
-			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -66819,14 +66819,14 @@ func (ec *executionContext) unmarshalInputMapPointInput(ctx context.Context, obj
 		switch k {
 		case "x":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("x"))
-			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			data, err := ec.unmarshalNInt2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.X = data
 		case "y":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("y"))
-			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			data, err := ec.unmarshalNInt2int(ctx, v)
 			if err != nil {
 				return it, err
 			}

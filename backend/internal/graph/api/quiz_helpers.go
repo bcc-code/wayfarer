@@ -184,7 +184,7 @@ func (r createQuizQuestionRowAdapter) GetBettingMultiplierWrong() pgtype.Numeric
 }
 func (r createQuizQuestionRowAdapter) GetMapPinColumns() quizgrading.MapPinColumns {
 	return quizgrading.NewMapPinColumns(r.MapScoringMode, r.MapWidth, r.MapHeight,
-		r.MapTargetX, r.MapTargetY, r.MapFullPointsRadius, r.MapZeroPointsRadius, r.MapPolygon)
+		r.MapTarget, r.MapFullPointsRadius, r.MapZeroPointsRadius, r.MapPolygon)
 }
 
 // Adapter for sqlc.UpdateQuizQuestionRow
@@ -224,7 +224,7 @@ func (r updateQuizQuestionRowAdapter) GetBettingMultiplierWrong() pgtype.Numeric
 }
 func (r updateQuizQuestionRowAdapter) GetMapPinColumns() quizgrading.MapPinColumns {
 	return quizgrading.NewMapPinColumns(r.MapScoringMode, r.MapWidth, r.MapHeight,
-		r.MapTargetX, r.MapTargetY, r.MapFullPointsRadius, r.MapZeroPointsRadius, r.MapPolygon)
+		r.MapTarget, r.MapFullPointsRadius, r.MapZeroPointsRadius, r.MapPolygon)
 }
 
 // Adapter for sqlc.GetQuizQuestionByIDRow
@@ -264,7 +264,7 @@ func (r getQuizQuestionByIDRowAdapter) GetBettingMultiplierWrong() pgtype.Numeri
 }
 func (r getQuizQuestionByIDRowAdapter) GetMapPinColumns() quizgrading.MapPinColumns {
 	return quizgrading.NewMapPinColumns(r.MapScoringMode, r.MapWidth, r.MapHeight,
-		r.MapTargetX, r.MapTargetY, r.MapFullPointsRadius, r.MapZeroPointsRadius, r.MapPolygon)
+		r.MapTarget, r.MapFullPointsRadius, r.MapZeroPointsRadius, r.MapPolygon)
 }
 
 // convertQuizQuestionRowToInterface converts a database row to the appropriate QuizQuestion implementation
@@ -711,6 +711,7 @@ func convertUpdateBetResultRowToQuizResponse(row *sqlc.UpdateBetResultRow) *sqlc
 		TextResponse:      row.TextResponse,
 		NumberResponse:    row.NumberResponse,
 		JsonResponse:      row.JsonResponse,
+		MapPosition:       row.MapPosition,
 		IsCorrect:         row.IsCorrect,
 		PointsEarned:      row.PointsEarned,
 		AnsweredAt:        row.AnsweredAt,
@@ -729,6 +730,7 @@ func convertUpdateBetResultsRowToQuizResponse(row *sqlc.UpdateBetResultsRow) *sq
 		TextResponse:      row.TextResponse,
 		NumberResponse:    row.NumberResponse,
 		JsonResponse:      row.JsonResponse,
+		MapPosition:       row.MapPosition,
 		IsCorrect:         row.IsCorrect,
 		PointsEarned:      row.PointsEarned,
 		AnsweredAt:        row.AnsweredAt,
@@ -747,6 +749,7 @@ func convertUpdateBetResultWithJournalRowToQuizResponse(row *sqlc.UpdateBetResul
 		TextResponse:      row.TextResponse,
 		NumberResponse:    row.NumberResponse,
 		JsonResponse:      row.JsonResponse,
+		MapPosition:       row.MapPosition,
 		IsCorrect:         row.IsCorrect,
 		PointsEarned:      row.PointsEarned,
 		AnsweredAt:        row.AnsweredAt,
@@ -766,6 +769,7 @@ func convertUpdateBetResultsWithJournalRowToQuizResponse(row *sqlc.UpdateBetResu
 		TextResponse:      row.TextResponse,
 		NumberResponse:    row.NumberResponse,
 		JsonResponse:      row.JsonResponse,
+		MapPosition:       row.MapPosition,
 		IsCorrect:         row.IsCorrect,
 		PointsEarned:      row.PointsEarned,
 		AnsweredAt:        row.AnsweredAt,

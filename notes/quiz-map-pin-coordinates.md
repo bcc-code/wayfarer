@@ -10,7 +10,15 @@ vertices of the correct area (`POLYGON` mode), and every submitted pin.
 - one unit is one pixel of the image file as uploaded (its intrinsic size,
   `naturalWidth` × `naturalHeight` in the browser) — not a CSS pixel and not a
   screen pixel
-- values are floats; a pin is allowed anywhere in `[0, mapWidth] × [0, mapHeight]`
+- values are **whole pixels** (GraphQL `Int`, Go `int`); a pin is allowed
+  anywhere in `[0, mapWidth] × [0, mapHeight]`. The frontend rounds the
+  inverse-transformed tap to the nearest pixel before sending it; the radii
+  are whole pixels too. Only computed values (`distance`, `averageDistance`)
+  are floats.
+- in Postgres, positions are the built-in `point` type (float8 underneath,
+  `p[0]` = x, `p[1]` = y). Go converts them to integers as soon as a row is
+  read (`quizgrading.PointFromPG`), and the CHECKs require whole numbers for
+  the target and the pin.
 
 The question stores `mapWidth` / `mapHeight` alongside the geometry. They
 describe the image the target or polygon was placed on.

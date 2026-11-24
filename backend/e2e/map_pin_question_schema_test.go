@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"testing"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -58,8 +58,8 @@ func TestMapPinQuestionSchema(t *testing.T) {
 		}{
 			{name: "POINT_RADIUS", modify: func(p *sqlc.CreateQuizQuestionParams) {}},
 			{name: "POINT_RADIUS with full radius 0 and the target on the map's corner", modify: func(p *sqlc.CreateQuizQuestionParams) {
-				p.Mapfullpointsradius = ptr(0.0)
-				p.Maptargetx, p.Maptargety = ptr(1000.0), ptr(800.0)
+				p.Mapfullpointsradius = ptr(int32(0))
+				p.Maptarget = pgPoint(1000, 800)
 			}},
 			{name: "POLYGON with 3 vertices", modify: toPolygon(t, 3)},
 			{name: "POLYGON with 100 vertices", modify: toPolygon(t, 100)},
@@ -81,7 +81,7 @@ func TestMapPinQuestionSchema(t *testing.T) {
 	t.Run("create rejects", func(t *testing.T) {
 		// Built here, not inside the cases: require must run on this test's goroutine.
 		toTriangle := toPolygon(t, 3)
-		triangleJSON := polygonJSON(t, 3)
+		triangle := polygonPoints(3)
 
 		tests := []struct {
 			name   string
@@ -99,34 +99,32 @@ func TestMapPinQuestionSchema(t *testing.T) {
 			{name: "missing points", modify: func(p *sqlc.CreateQuizQuestionParams) { p.Points = nil }},
 			{name: "zero points", modify: func(p *sqlc.CreateQuizQuestionParams) { p.Points = ptr(int32(0)) }},
 			{name: "betting enabled", modify: func(p *sqlc.CreateQuizQuestionParams) { p.Bettingenabled = ptr(true) }},
-			{name: "POINT_RADIUS without a target", modify: func(p *sqlc.CreateQuizQuestionParams) { p.Maptargetx = nil }},
-			{name: "POINT_RADIUS target right of the map", modify: func(p *sqlc.CreateQuizQuestionParams) { p.Maptargetx = ptr(1000.5) }},
-			{name: "POINT_RADIUS target above the map", modify: func(p *sqlc.CreateQuizQuestionParams) { p.Maptargety = ptr(-1.0) }},
+			{name: "POINT_RADIUS without a target", modify: func(p *sqlc.CreateQuizQuestionParams) { p.Maptarget = pgtype.Point{} }},
+			{name: "POINT_RADIUS target right of the map", modify: func(p *sqlc.CreateQuizQuestionParams) { p.Maptarget = pgPoint(1001, 300) }},
+			{name: "POINT_RADIUS target above the map", modify: func(p *sqlc.CreateQuizQuestionParams) { p.Maptarget = pgPoint(500, -1) }},
+			{name: "POINT_RADIUS target not on a whole pixel (x)", modify: func(p *sqlc.CreateQuizQuestionParams) { p.Maptarget = pgPoint(500.5, 300) }},
+			{name: "POINT_RADIUS target not on a whole pixel (y)", modify: func(p *sqlc.CreateQuizQuestionParams) { p.Maptarget = pgPoint(500, 300.25) }},
 			{name: "POINT_RADIUS without a zero radius", modify: func(p *sqlc.CreateQuizQuestionParams) { p.Mapzeropointsradius = nil }},
-			{name: "POINT_RADIUS negative full radius", modify: func(p *sqlc.CreateQuizQuestionParams) { p.Mapfullpointsradius = ptr(-1.0) }},
-			{name: "POINT_RADIUS zero radius equal to full radius", modify: func(p *sqlc.CreateQuizQuestionParams) { p.Mapzeropointsradius = ptr(40.0) }},
-			{name: "POINT_RADIUS with a polygon", modify: func(p *sqlc.CreateQuizQuestionParams) { p.Mappolygon = triangleJSON }},
+			{name: "POINT_RADIUS negative full radius", modify: func(p *sqlc.CreateQuizQuestionParams) { p.Mapfullpointsradius = ptr(int32(-1)) }},
+			{name: "POINT_RADIUS zero radius equal to full radius", modify: func(p *sqlc.CreateQuizQuestionParams) { p.Mapzeropointsradius = ptr(int32(40)) }},
+			{name: "POINT_RADIUS with a polygon", modify: func(p *sqlc.CreateQuizQuestionParams) { p.Mappolygon = triangle }},
 			{name: "POLYGON without a polygon", modify: func(p *sqlc.CreateQuizQuestionParams) {
 				toTriangle(p)
 				p.Mappolygon = nil
 			}},
-			{name: "POLYGON that is a JSON number", modify: func(p *sqlc.CreateQuizQuestionParams) {
+			{name: "POLYGON with no vertices", modify: func(p *sqlc.CreateQuizQuestionParams) {
 				toTriangle(p)
-				p.Mappolygon = []byte(`5`)
-			}},
-			{name: "POLYGON that is a JSON object", modify: func(p *sqlc.CreateQuizQuestionParams) {
-				toTriangle(p)
-				p.Mappolygon = []byte(`{"x": 1, "y": 1}`)
+				p.Mappolygon = []pgtype.Point{}
 			}},
 			{name: "POLYGON with 2 vertices", modify: toPolygon(t, 2)},
 			{name: "POLYGON with 101 vertices", modify: toPolygon(t, 101)},
 			{name: "POLYGON with a target", modify: func(p *sqlc.CreateQuizQuestionParams) {
 				toTriangle(p)
-				p.Maptargetx, p.Maptargety = ptr(500.0), ptr(300.0)
+				p.Maptarget = pgPoint(500, 300)
 			}},
 			{name: "POLYGON with a full radius", modify: func(p *sqlc.CreateQuizQuestionParams) {
 				toTriangle(p)
-				p.Mapfullpointsradius = ptr(40.0)
+				p.Mapfullpointsradius = ptr(int32(40))
 			}},
 		}
 		for _, tt := range tests {
@@ -151,13 +149,13 @@ func TestMapPinQuestionSchema(t *testing.T) {
 
 			assert.Equal(t, "Where was this taken?", row.QuestionText)
 			assert.Equal(t, ptr("POINT_RADIUS"), row.MapScoringMode)
-			assert.Equal(t, ptr(500.0), row.MapTargetX)
-			assert.Equal(t, ptr(40.0), row.MapFullPointsRadius)
+			assert.Equal(t, pgPoint(500, 300), row.MapTarget)
+			assert.Equal(t, ptr(int32(40)), row.MapFullPointsRadius)
 		})
 
 		t.Run("switching to POLYGON clears the POINT_RADIUS columns", func(t *testing.T) {
 			id := pointRadiusQuestion(t)
-			polygon := polygonJSON(t, 4)
+			polygon := polygonPoints(4)
 			row, err := queries.UpdateQuizQuestion(ctx, sqlc.UpdateQuizQuestionParams{
 				ID:             id,
 				Setmappin:      true,
@@ -170,9 +168,8 @@ func TestMapPinQuestionSchema(t *testing.T) {
 
 			assert.Equal(t, ptr("POLYGON"), row.MapScoringMode)
 			assert.Equal(t, ptr(int32(1200)), row.MapWidth)
-			assert.JSONEq(t, string(polygon), string(row.MapPolygon))
-			assert.Nil(t, row.MapTargetX)
-			assert.Nil(t, row.MapTargetY)
+			assert.Equal(t, polygon, row.MapPolygon)
+			assert.False(t, row.MapTarget.Valid)
 			assert.Nil(t, row.MapFullPointsRadius)
 			assert.Nil(t, row.MapZeroPointsRadius)
 		})
@@ -187,15 +184,14 @@ func TestMapPinQuestionSchema(t *testing.T) {
 				Mapscoringmode:      ptr("POINT_RADIUS"),
 				Mapwidth:            ptr(int32(1000)),
 				Mapheight:           ptr(int32(800)),
-				Maptargetx:          ptr(100.0),
-				Maptargety:          ptr(200.0),
-				Mapfullpointsradius: ptr(10.0),
-				Mapzeropointsradius: ptr(50.0),
+				Maptarget:           pgPoint(100, 200),
+				Mapfullpointsradius: ptr(int32(10)),
+				Mapzeropointsradius: ptr(int32(50)),
 			})
 			require.NoError(t, err)
 
 			assert.Equal(t, ptr("POINT_RADIUS"), updated.MapScoringMode)
-			assert.Equal(t, ptr(100.0), updated.MapTargetX)
+			assert.Equal(t, pgPoint(100, 200), updated.MapTarget)
 			assert.Nil(t, updated.MapPolygon)
 		})
 
@@ -212,7 +208,7 @@ func TestMapPinQuestionSchema(t *testing.T) {
 
 			stored, err := queries.GetQuizQuestionByID(ctx, id)
 			require.NoError(t, err)
-			assert.Equal(t, ptr(500.0), stored.MapTargetX, "the rejected update must leave the row as it was")
+			assert.Equal(t, pgPoint(500, 300), stored.MapTarget, "the rejected update must leave the row as it was")
 		})
 
 		t.Run("enabling betting on a MAP_PIN question is rejected", func(t *testing.T) {
@@ -244,23 +240,20 @@ func pointRadiusQuestionParams(quizID string, order int32) sqlc.CreateQuizQuesti
 		Mapscoringmode:      ptr("POINT_RADIUS"),
 		Mapwidth:            ptr(int32(1000)),
 		Mapheight:           ptr(int32(800)),
-		Maptargetx:          ptr(500.0),
-		Maptargety:          ptr(300.0),
-		Mapfullpointsradius: ptr(40.0),
-		Mapzeropointsradius: ptr(200.0),
+		Maptarget:           pgPoint(500, 300),
+		Mapfullpointsradius: ptr(int32(40)),
+		Mapzeropointsradius: ptr(int32(200)),
 	}
 }
 
 // toPolygon turns valid POINT_RADIUS params into POLYGON params with n
 // vertices. The CHECK only looks at the vertex count; geometry is Go's job.
-// The JSON is built up front, on the caller's goroutine, so call it in the
-// test that owns t, not inside a subtest's closure.
 func toPolygon(t *testing.T, n int) func(*sqlc.CreateQuizQuestionParams) {
 	t.Helper()
-	polygon := polygonJSON(t, n)
+	polygon := polygonPoints(n)
 	return func(p *sqlc.CreateQuizQuestionParams) {
 		p.Mapscoringmode = ptr("POLYGON")
-		p.Maptargetx, p.Maptargety = nil, nil
+		p.Maptarget = pgtype.Point{}
 		p.Mapfullpointsradius, p.Mapzeropointsradius = nil, nil
 		p.Mappolygon = polygon
 	}
@@ -269,21 +262,23 @@ func toPolygon(t *testing.T, n int) func(*sqlc.CreateQuizQuestionParams) {
 func toPredefined(p *sqlc.CreateQuizQuestionParams) {
 	p.Questiontype = "PREDEFINED"
 	p.Mapscoringmode, p.Mapwidth, p.Mapheight = nil, nil, nil
-	p.Maptargetx, p.Maptargety = nil, nil
+	p.Maptarget = pgtype.Point{}
 	p.Mapfullpointsradius, p.Mapzeropointsradius = nil, nil
 	p.Mappolygon = nil
 }
 
-func polygonJSON(t *testing.T, n int) []byte {
-	t.Helper()
-
-	vertices := make([]map[string]float64, n)
+// polygonPoints is n whole-pixel vertices. The CHECK only counts them.
+func polygonPoints(n int) []pgtype.Point {
+	vertices := make([]pgtype.Point, n)
 	for i := range vertices {
-		vertices[i] = map[string]float64{"x": float64(10 + i), "y": float64(10 + (i%2)*5)}
+		vertices[i] = pgPoint(float64(10+i), float64(10+(i%2)*5))
 	}
-	b, err := json.Marshal(vertices)
-	require.NoError(t, err)
-	return b
+	return vertices
+}
+
+// pgPoint is a non-NULL Postgres point.
+func pgPoint(x, y float64) pgtype.Point {
+	return pgtype.Point{P: pgtype.Vec2{X: x, Y: y}, Valid: true}
 }
 
 func ptr[T any](v T) *T { return &v }

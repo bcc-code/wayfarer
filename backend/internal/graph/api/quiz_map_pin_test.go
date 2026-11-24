@@ -3,7 +3,10 @@ package api
 import (
 	"context"
 	"errors"
+	"math"
 	"testing"
+
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,8 +23,8 @@ func pointRadiusInput() *model.MapPinConfigInput {
 		MapWidth:         1000,
 		MapHeight:        800,
 		Target:           &model.MapPointInput{X: 500, Y: 300},
-		FullPointsRadius: ptrTo(40.0),
-		ZeroPointsRadius: ptrTo(200.0),
+		FullPointsRadius: ptrTo(40),
+		ZeroPointsRadius: ptrTo(200),
 	}
 }
 
@@ -65,8 +68,8 @@ func TestCheckMapPinCreate(t *testing.T) {
 		assert.Equal(t, 1000, c.Width)
 		assert.Equal(t, 800, c.Height)
 		assert.Equal(t, &quizgrading.MapPoint{X: 500, Y: 300}, c.Target)
-		assert.Equal(t, 40.0, *c.FullRadius)
-		assert.Equal(t, 200.0, *c.ZeroRadius)
+		assert.Equal(t, 40, *c.FullRadius)
+		assert.Equal(t, 200, *c.ZeroRadius)
 		assert.Nil(t, c.Polygon)
 	})
 
@@ -110,7 +113,7 @@ func TestCheckMapPinCreate(t *testing.T) {
 		{name: "betting", input: mapPin(func(in *model.CreateQuizQuestionInput) { in.BettingEnabled = ptrTo(true) }), field: "bettingEnabled"},
 		{
 			name:  "invalid geometry names the input field",
-			input: mapPin(func(in *model.CreateQuizQuestionInput) { in.MapPin.ZeroPointsRadius = ptrTo(10.0) }),
+			input: mapPin(func(in *model.CreateQuizQuestionInput) { in.MapPin.ZeroPointsRadius = ptrTo(10) }),
 			field: "mapPin.zeroPointsRadius",
 		},
 		{
@@ -157,8 +160,7 @@ func storedMapPinRow(t *testing.T) *sqlc.GetQuizQuestionByIDRow {
 		MapPin:       pointRadiusInput(),
 	})
 	require.NoError(t, err)
-	cols, err := c.Columns()
-	require.NoError(t, err)
+	cols := c.Columns()
 	return &sqlc.GetQuizQuestionByIDRow{
 		ID:                  "QQ001",
 		QuestionType:        "MAP_PIN",
@@ -166,8 +168,7 @@ func storedMapPinRow(t *testing.T) *sqlc.GetQuizQuestionByIDRow {
 		MapScoringMode:      cols.Mode,
 		MapWidth:            cols.Width,
 		MapHeight:           cols.Height,
-		MapTargetX:          cols.TargetX,
-		MapTargetY:          cols.TargetY,
+		MapTarget:           cols.Target,
 		MapFullPointsRadius: cols.FullRadius,
 		MapZeroPointsRadius: cols.ZeroRadius,
 		MapPolygon:          cols.Polygon,
@@ -197,10 +198,9 @@ func TestCheckMapPinUpdate(t *testing.T) {
 			QuestionType: model.QuizQuestionTypeMapPin, Points: ptrTo(100), MapPin: triangleInput(),
 		})
 		require.NoError(t, err)
-		cols, err := c.Columns()
-		require.NoError(t, err)
+		cols := c.Columns()
 		stored.MapScoringMode, stored.MapPolygon = cols.Mode, cols.Polygon
-		stored.MapTargetX, stored.MapTargetY = nil, nil
+		stored.MapTarget = pgtype.Point{}
 		stored.MapFullPointsRadius, stored.MapZeroPointsRadius = nil, nil
 
 		resent := triangleInput()
@@ -212,11 +212,11 @@ func TestCheckMapPinUpdate(t *testing.T) {
 
 	t.Run("changing the config locks on mapPin", func(t *testing.T) {
 		changed := pointRadiusInput()
-		changed.FullPointsRadius = ptrTo(50.0)
+		changed.FullPointsRadius = ptrTo(50)
 		u, err := checkMapPinUpdate(storedMapPinRow(t), model.UpdateQuizQuestionInput{MapPin: changed})
 		require.NoError(t, err)
 		require.NotNil(t, u.Config)
-		assert.Equal(t, 50.0, *u.Config.FullRadius)
+		assert.Equal(t, 50, *u.Config.FullRadius)
 		assert.Equal(t, "mapPin", u.LockedField)
 	})
 
@@ -226,12 +226,10 @@ func TestCheckMapPinUpdate(t *testing.T) {
 		require.NotNil(t, u.Config)
 		assert.Equal(t, "mapPin", u.LockedField)
 
-		cols, err := u.Config.Columns()
-		require.NoError(t, err)
+		cols := u.Config.Columns()
 		assert.Equal(t, quizgrading.MapPinModePolygon, *cols.Mode)
 		assert.NotNil(t, cols.Polygon)
-		assert.Nil(t, cols.TargetX, "the old mode's columns must be written as NULL")
-		assert.Nil(t, cols.TargetY)
+		assert.False(t, cols.Target.Valid, "the old mode's columns must be written as NULL")
 		assert.Nil(t, cols.FullRadius)
 		assert.Nil(t, cols.ZeroRadius)
 	})
@@ -246,9 +244,9 @@ func TestCheckMapPinUpdate(t *testing.T) {
 	t.Run("an unreadable stored config counts as changed", func(t *testing.T) {
 		stored := storedMapPinRow(t)
 		stored.MapScoringMode = ptrTo(quizgrading.MapPinModePolygon)
-		stored.MapTargetX, stored.MapTargetY = nil, nil
+		stored.MapTarget = pgtype.Point{}
 		stored.MapFullPointsRadius, stored.MapZeroPointsRadius = nil, nil
-		stored.MapPolygon = []byte(`[1, 2, 3]`)
+		stored.MapPolygon = []pgtype.Point{pgPoint(1, 1), {}, pgPoint(3, 1)} // a NULL vertex
 
 		u, err := checkMapPinUpdate(stored, model.UpdateQuizQuestionInput{MapPin: triangleInput()})
 		require.NoError(t, err)
@@ -305,7 +303,7 @@ func TestConvertMapPinQuestion(t *testing.T) {
 			points: int32Ptr(100),
 			mapPin: quizgrading.MapPinColumns{
 				Mode: ptrTo("POINT_RADIUS"), Width: ptrTo(int32(1000)), Height: ptrTo(int32(800)),
-				TargetX: ptrTo(500.0), TargetY: ptrTo(300.0), FullRadius: ptrTo(40.0), ZeroRadius: ptrTo(200.0),
+				Target: pgPoint(500, 300), FullRadius: ptrTo(int32(40)), ZeroRadius: ptrTo(int32(200)),
 			},
 		}
 
@@ -318,7 +316,7 @@ func TestConvertMapPinQuestion(t *testing.T) {
 		assert.Equal(t, quizgrading.MapPinConfig{
 			Mode: "POINT_RADIUS", Width: 1000, Height: 800,
 			Target:     &quizgrading.MapPoint{X: 500, Y: 300},
-			FullRadius: ptrTo(40.0), ZeroRadius: ptrTo(200.0),
+			FullRadius: ptrTo(40), ZeroRadius: ptrTo(200),
 		}, q.MapPin)
 		assert.Equal(t, "MAP_PIN", quizQuestionTypeString(q))
 	})
@@ -328,7 +326,7 @@ func TestConvertMapPinQuestion(t *testing.T) {
 			id: "QQ002", questionType: "MAP_PIN",
 			mapPin: quizgrading.MapPinColumns{
 				Mode: ptrTo("POLYGON"), Width: ptrTo(int32(1000)), Height: ptrTo(int32(800)),
-				Polygon: []byte(`[{"x":100,"y":100},{"x":300,"y":100},{"x":200,"y":300}]`),
+				Polygon: []pgtype.Point{pgPoint(100, 100), pgPoint(300, 100), pgPoint(200, 300)},
 			},
 		}
 
@@ -343,7 +341,7 @@ func TestConvertMapPinQuestion(t *testing.T) {
 			id: "QQ003", questionType: "MAP_PIN",
 			mapPin: quizgrading.MapPinColumns{
 				Mode: ptrTo("POLYGON"), Width: ptrTo(int32(1000)), Height: ptrTo(int32(800)),
-				Polygon: []byte(`"not a polygon"`),
+				Polygon: []pgtype.Point{pgPoint(100, 100), {P: pgtype.Vec2{X: math.NaN(), Y: 1}, Valid: true}, pgPoint(200, 300)},
 			},
 		}
 
@@ -370,7 +368,7 @@ func TestScoreQuizResponseMapPin(t *testing.T) {
 		MapPin: quizgrading.MapPinConfig{
 			Mode: "POINT_RADIUS", Width: 1000, Height: 800,
 			Target:     &quizgrading.MapPoint{X: 500, Y: 300},
-			FullRadius: ptrTo(40.0), ZeroRadius: ptrTo(200.0),
+			FullRadius: ptrTo(40), ZeroRadius: ptrTo(200),
 		},
 	}
 	polygon := scoredQuestion{
@@ -445,13 +443,13 @@ func TestScoredQuestion(t *testing.T) {
 
 	t.Run("from a row with an unreadable config is an error", func(t *testing.T) {
 		row := storedMapPinRow(t)
-		row.MapPolygon = []byte(`[1]`)
+		row.MapPolygon = []pgtype.Point{{}} // a NULL vertex
 		_, err := scoredQuestionFromRow(row)
 		assert.Error(t, err)
 	})
 
 	t.Run("other types ignore the map columns", func(t *testing.T) {
-		s, err := scoredQuestionFromRow(&sqlc.GetQuizQuestionByIDRow{ID: "QQ002", QuestionType: "PREDEFINED", MapPolygon: []byte(`[1]`)})
+		s, err := scoredQuestionFromRow(&sqlc.GetQuizQuestionByIDRow{ID: "QQ002", QuestionType: "PREDEFINED", MapPolygon: []pgtype.Point{{}}})
 		require.NoError(t, err)
 		assert.Equal(t, quizgrading.MapPinConfig{}, s.MapPin)
 	})
@@ -460,20 +458,18 @@ func TestScoredQuestion(t *testing.T) {
 func TestMapPinAnswer(t *testing.T) {
 	c := quizgrading.MapPinConfig{Mode: "POLYGON", Width: 1000, Height: 800}
 
-	pin, stored, err := mapPinAnswer(&model.MapPointInput{X: 1000, Y: 0}, c)
+	pin, err := mapPinAnswer(&model.MapPointInput{X: 1000, Y: 0}, c)
 	require.NoError(t, err, "the map's edges are on the map")
 	assert.Equal(t, quizgrading.MapPoint{X: 1000, Y: 0}, pin)
-	assert.JSONEq(t, `{"x":1000,"y":0}`, string(stored))
 
 	for name, p := range map[string]*model.MapPointInput{
 		"missing":       nil,
-		"left of map":   {X: -0.5, Y: 10},
-		"below the map": {X: 10, Y: 800.01},
+		"left of map":   {X: -1, Y: 10},
+		"below the map": {X: 10, Y: 801},
 	} {
 		t.Run("rejects "+name, func(t *testing.T) {
-			_, stored, err := mapPinAnswer(p, c)
+			_, err := mapPinAnswer(p, c)
 			assertFieldError(t, err, "mapPosition")
-			assert.Nil(t, stored)
 		})
 	}
 }
@@ -533,7 +529,7 @@ func TestConvertMapPinResponse(t *testing.T) {
 		ID:           "QR001",
 		SubmissionID: "QS001",
 		QuestionID:   "QQ001",
-		JsonResponse: []byte(`{"x": 512.5, "y": 300}`),
+		MapPosition:  pgPoint(512, 300),
 		PointsEarned: ptrTo(int32(97)),
 	}
 
@@ -542,7 +538,7 @@ func TestConvertMapPinResponse(t *testing.T) {
 	assert.Equal(t, "QR001", r.ID)
 	assert.Equal(t, "QS001", r.SubmissionID)
 	assert.Equal(t, "QQ001", r.QuestionID)
-	assert.Equal(t, &model.MapPoint{X: 512.5, Y: 300}, r.SubmittedPosition)
+	assert.Equal(t, &model.MapPoint{X: 512, Y: 300}, r.SubmittedPosition)
 	assert.Equal(t, ptrTo(97), r.PointsEarnedValue)
 	assert.Nil(t, r.PointsEarned, "the stored points only reach clients through the gated resolver")
 	assert.Nil(t, r.IsCorrect)
@@ -554,7 +550,7 @@ func TestMapPinFieldError(t *testing.T) {
 		var fieldErr *FieldValidationError
 		require.ErrorAs(t, mapPinFieldError("mapPin.", err), &fieldErr)
 		assert.Equal(t, "mapPin.mapWidth", fieldErr.Field)
-		assert.Equal(t, "must be positive", fieldErr.Message)
+		assert.Equal(t, "must be between 1 and 100000", fieldErr.Message)
 	})
 
 	t.Run("passes other errors and nil through", func(t *testing.T) {
@@ -570,7 +566,26 @@ func TestMapPinFieldError(t *testing.T) {
 	})
 }
 
-func TestConvertToMapPinResponseUnreadablePin(t *testing.T) {
-	response := convertToMapPinResponse(&sqlc.QuizResponse{ID: "QR1", JsonResponse: []byte(`{}`)}, nil, nil, nil, nil)
-	assert.Nil(t, response.SubmittedPosition, "an unreadable pin must not be shown at (0, 0)")
+func TestConvertToMapPinResponseMissingPin(t *testing.T) {
+	t.Run("a NULL map_position is nil, not (0, 0)", func(t *testing.T) {
+		response := convertToMapPinResponse(&sqlc.QuizResponse{ID: "QR1"}, nil, nil, nil, nil)
+		assert.Nil(t, response.SubmittedPosition, "a missing pin must not be shown at (0, 0)")
+	})
+
+	t.Run("json_response is ignored for MAP_PIN", func(t *testing.T) {
+		response := convertToMapPinResponse(&sqlc.QuizResponse{ID: "QR1", JsonResponse: []byte(`{"x": 1, "y": 2}`)}, nil, nil, nil, nil)
+		assert.Nil(t, response.SubmittedPosition)
+	})
+
+	t.Run("a non-finite point is nil", func(t *testing.T) {
+		response := convertToMapPinResponse(&sqlc.QuizResponse{
+			ID: "QR1", MapPosition: pgtype.Point{P: pgtype.Vec2{X: math.Inf(1), Y: 2}, Valid: true},
+		}, nil, nil, nil, nil)
+		assert.Nil(t, response.SubmittedPosition)
+	})
+}
+
+// pgPoint is a non-NULL Postgres point.
+func pgPoint(x, y float64) pgtype.Point {
+	return pgtype.Point{P: pgtype.Vec2{X: x, Y: y}, Valid: true}
 }

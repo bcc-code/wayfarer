@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -196,25 +195,21 @@ func (r *Resolver) correctMapArea(ctx context.Context, q *model.MapPinQuestion) 
 }
 
 // mapPinAnswer validates a MAP_PIN answer against the question's map and
-// returns the pin and the JSON it is stored as in json_response.
-func mapPinAnswer(position *model.MapPointInput, c quizgrading.MapPinConfig) (quizgrading.MapPoint, []byte, error) {
+// returns the pin, stored in map_position.
+func mapPinAnswer(position *model.MapPointInput, c quizgrading.MapPinConfig) (quizgrading.MapPoint, error) {
 	if position == nil {
-		return quizgrading.MapPoint{}, nil, fieldError("mapPosition", "is required for MAP_PIN questions")
+		return quizgrading.MapPoint{}, fieldError("mapPosition", "is required for MAP_PIN questions")
 	}
 	p := quizgrading.MapPoint{X: position.X, Y: position.Y}
 	if err := quizgrading.ValidateMapPosition(p, c.Width, c.Height); err != nil {
-		return p, nil, mapPinFieldError("", err)
+		return p, mapPinFieldError("", err)
 	}
-	stored, err := json.Marshal(p)
-	if err != nil {
-		return p, nil, fmt.Errorf("failed to encode map position: %w", err)
-	}
-	return p, stored, nil
+	return p, nil
 }
 
 // checkMapPinAnswerFields rejects mixing MAP_PIN with other answer fields on
 // submit: a MAP_PIN question takes only mapPosition, and only MAP_PIN takes it,
-// so the stored JSON is always a validated pin. The error names the offending
+// so map_position only ever holds a validated pin. The error names the offending
 // input field; with several, the first in input order.
 func checkMapPinAnswerFields(questionType string, input model.SubmitQuizAnswerInput) error {
 	if questionType != "MAP_PIN" {
@@ -240,15 +235,15 @@ func checkMapPinAnswerFields(questionType string, input model.SubmitQuizAnswerIn
 	return nil
 }
 
-// convertToMapPinResponse builds a MapPinResponse. json_response holds a pin
-// validated on the way in. One that can't be read is logged and left nil, so
-// reading submittedPosition fails instead of showing a pin nobody placed.
+// convertToMapPinResponse builds a MapPinResponse from its map_position. A
+// missing pin is logged and left nil, so reading submittedPosition fails
+// instead of showing a pin nobody placed.
 func convertToMapPinResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int, pointsEarned *int, betAmount *int) *model.MapPinResponse {
 	return &model.MapPinResponse{
 		ID:                row.ID,
 		SubmissionID:      row.SubmissionID,
 		QuestionID:        row.QuestionID,
-		SubmittedPosition: loaders.MapPinPosition(row.ID, row.JsonResponse),
+		SubmittedPosition: loaders.MapPinPosition(row.ID, row.MapPosition),
 		AnsweredAt:        answeredAt,
 		TimeSpentSeconds:  timeSpentSeconds,
 		PointsEarnedValue: pointsEarned,

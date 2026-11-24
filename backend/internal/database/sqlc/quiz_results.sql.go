@@ -7,6 +7,8 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const GetQuizFreeTextResponses = `-- name: GetQuizFreeTextResponses :many
@@ -51,7 +53,7 @@ const GetQuizMapPinResponses = `-- name: GetQuizMapPinResponses :many
 SELECT
     r.id,
     r.question_id,
-    r.json_response AS position,
+    r.map_position,
     r.points_earned
 FROM quiz_responses r
 JOIN quiz_submissions s ON s.id = r.submission_id
@@ -59,18 +61,18 @@ JOIN quiz_questions q ON q.id = r.question_id
 WHERE s.quiz_id = $1::char(28)
     AND s.completed_at IS NOT NULL
     AND q.question_type = 'MAP_PIN'
-    AND r.json_response IS NOT NULL
+    AND r.map_position IS NOT NULL
 ORDER BY r.question_id, r.answered_at, r.id
 `
 
 type GetQuizMapPinResponsesRow struct {
-	ID           string `json:"id"`
-	QuestionID   string `json:"question_id"`
-	Position     []byte `json:"position"`
-	PointsEarned *int32 `json:"points_earned"`
+	ID           string       `json:"id"`
+	QuestionID   string       `json:"question_id"`
+	MapPosition  pgtype.Point `json:"map_position"`
+	PointsEarned *int32       `json:"points_earned"`
 }
 
-// The pin is {"x", "y"} in json_response; r.id breaks answered_at ties.
+// r.id breaks answered_at ties.
 func (q *Queries) GetQuizMapPinResponses(ctx context.Context, quizid string) ([]*GetQuizMapPinResponsesRow, error) {
 	rows, err := q.db.Query(ctx, GetQuizMapPinResponses, quizid)
 	if err != nil {
@@ -83,7 +85,7 @@ func (q *Queries) GetQuizMapPinResponses(ctx context.Context, quizid string) ([]
 		if err := rows.Scan(
 			&i.ID,
 			&i.QuestionID,
-			&i.Position,
+			&i.MapPosition,
 			&i.PointsEarned,
 		); err != nil {
 			return nil, err

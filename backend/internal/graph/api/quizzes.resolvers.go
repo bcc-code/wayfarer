@@ -180,12 +180,12 @@ func (r *mapPinQuestionResolver) MapHeight(ctx context.Context, obj *model.MapPi
 }
 
 // FullPointsRadius is the resolver for the fullPointsRadius field.
-func (r *mapPinQuestionResolver) FullPointsRadius(ctx context.Context, obj *model.MapPinQuestion) (*float64, error) {
+func (r *mapPinQuestionResolver) FullPointsRadius(ctx context.Context, obj *model.MapPinQuestion) (*int, error) {
 	return obj.MapPin.FullRadius, nil
 }
 
 // ZeroPointsRadius is the resolver for the zeroPointsRadius field.
-func (r *mapPinQuestionResolver) ZeroPointsRadius(ctx context.Context, obj *model.MapPinQuestion) (*float64, error) {
+func (r *mapPinQuestionResolver) ZeroPointsRadius(ctx context.Context, obj *model.MapPinQuestion) (*int, error) {
 	return obj.MapPin.ZeroRadius, nil
 }
 
@@ -488,15 +488,11 @@ func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, i
 		return nil, err
 	}
 	if mapPin != nil {
-		cols, err := mapPin.Columns()
-		if err != nil {
-			return nil, err
-		}
+		cols := mapPin.Columns()
 		params.Mapscoringmode = cols.Mode
 		params.Mapwidth = cols.Width
 		params.Mapheight = cols.Height
-		params.Maptargetx = cols.TargetX
-		params.Maptargety = cols.TargetY
+		params.Maptarget = cols.Target
 		params.Mapfullpointsradius = cols.FullRadius
 		params.Mapzeropointsradius = cols.ZeroRadius
 		params.Mappolygon = cols.Polygon
@@ -693,16 +689,12 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 		}
 	}
 	if mapPin.Config != nil {
-		cols, err := mapPin.Config.Columns()
-		if err != nil {
-			return nil, err
-		}
+		cols := mapPin.Config.Columns()
 		params.Setmappin = true
 		params.Mapscoringmode = cols.Mode
 		params.Mapwidth = cols.Width
 		params.Mapheight = cols.Height
-		params.Maptargetx = cols.TargetX
-		params.Maptargety = cols.TargetY
+		params.Maptarget = cols.Target
 		params.Mapfullpointsradius = cols.FullRadius
 		params.Mapzeropointsradius = cols.ZeroRadius
 		params.Mappolygon = cols.Polygon
@@ -1254,12 +1246,12 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 			params.Jsonresponse = orderJSON
 		}
 	case "MAP_PIN":
-		// The validated pin, stored as {"x", "y"} in json_response
-		pin, stored, err := mapPinAnswer(input.MapPosition, scored.MapPin)
+		// The validated pin, stored in map_position
+		pin, err := mapPinAnswer(input.MapPosition, scored.MapPin)
 		if err != nil {
 			return nil, err
 		}
-		params.Jsonresponse = stored
+		params.Mapposition = quizgrading.PointToPG(&pin)
 		answer.MapPosition = &pin
 	}
 
@@ -1436,6 +1428,7 @@ func (r *mutationResolver) UpdateQuizAnswer(ctx context.Context, responseID stri
 		TextResponse:      updatedResponse.TextResponse,
 		NumberResponse:    updatedResponse.NumberResponse,
 		JsonResponse:      updatedResponse.JsonResponse,
+		MapPosition:       updatedResponse.MapPosition,
 		IsCorrect:         updatedResponse.IsCorrect,
 		PointsEarned:      updatedResponse.PointsEarned,
 		AnsweredAt:        updatedResponse.AnsweredAt,
@@ -1902,11 +1895,11 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 			responseParams.Jsonresponse = orderJSON
 
 		case *model.MapPinQuestion:
-			pin, stored, err := mapPinAnswer(responseInput.MapPosition, scored.MapPin)
+			pin, err := mapPinAnswer(responseInput.MapPosition, scored.MapPin)
 			if err != nil {
 				return nil, err
 			}
-			responseParams.Jsonresponse = stored
+			responseParams.Mapposition = quizgrading.PointToPG(&pin)
 			answer.MapPosition = &pin
 		}
 

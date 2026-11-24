@@ -188,7 +188,7 @@ type OrderingQuestion implements QuizQuestion {
 }
 
 # The participant drops one pin on the question's image, a map. Coordinates are
-# natural pixels of that image: origin top-left, x to the right, y down. See
+# whole natural pixels of that image: origin top-left, x to the right, y down. See
 # notes/quiz-map-pin-coordinates.md.
 type MapPinQuestion implements QuizQuestion {
     id: ID!
@@ -213,8 +213,8 @@ type MapPinQuestion implements QuizQuestion {
     mapWidth: Int! @goField(forceResolver: true)
     mapHeight: Int! @goField(forceResolver: true)
     # POINT_RADIUS only; null for POLYGON.
-    fullPointsRadius: Float @goField(forceResolver: true)
-    zeroPointsRadius: Float @goField(forceResolver: true)
+    fullPointsRadius: Int @goField(forceResolver: true)
+    zeroPointsRadius: Int @goField(forceResolver: true)
     # The correct answer: correctPosition for POINT_RADIUS, correctArea for
     # POLYGON, null for the other mode. Hidden from non-managers until the most
     # recent session they can access is FINISHED, and while they have none.
@@ -222,10 +222,10 @@ type MapPinQuestion implements QuizQuestion {
     correctArea: [MapPoint!] @goField(forceResolver: true)
 }
 
-# A position on a map image, in its natural pixels.
+# A position on a map image, in whole natural pixels.
 type MapPoint {
-    x: Float!
-    y: Float!
+    x: Int!
+    y: Int!
 }
 
 type QuizOrderingItem {
@@ -456,8 +456,8 @@ input MapPinConfigInput {
 
     # POINT_RADIUS
     target: MapPointInput
-    fullPointsRadius: Float
-    zeroPointsRadius: Float
+    fullPointsRadius: Int
+    zeroPointsRadius: Int
 
     # POLYGON: 3 to 100 vertices in drawing order, clockwise or not. A closing
     # vertex equal to the first is dropped.
@@ -465,8 +465,8 @@ input MapPinConfigInput {
 }
 
 input MapPointInput {
-    x: Float!
-    y: Float!
+    x: Int!
+    y: Int!
 }
 
 input CreatePredefinedAnswerInput {

@@ -21,20 +21,20 @@ const (
 )
 
 const (
-	// MapPinEpsilon is the tolerance, in natural pixels, for every geometric
-	// comparison: the polygon boundary, duplicate vertices, touching edges and
-	// zero area. It absorbs float noise from the frontend's zoom transform.
-	MapPinEpsilon = 1e-6
+	// MapPinMaxSize caps a map's width and height in pixels. It keeps every
+	// cross product of two coordinate differences well inside int64, so the
+	// geometry below is exact integer arithmetic.
+	MapPinMaxSize = 100_000
 	// MapPinMaxVertices caps a polygon's size, which also bounds the O(n²)
 	// self-intersection check.
 	MapPinMaxVertices = 100
 )
 
-// MapPoint is a position in the natural pixel space of the map image:
-// origin top-left, x to the right, y down.
+// MapPoint is a position in the natural pixel space of the map image, in whole
+// pixels: origin top-left, x to the right, y down.
 type MapPoint struct {
-	X float64 `json:"x"`
-	Y float64 `json:"y"`
+	X int `json:"x"`
+	Y int `json:"y"`
 }
 
 // MapPinConfig is the correct answer of a MAP_PIN question. Only the fields of
@@ -46,8 +46,8 @@ type MapPinConfig struct {
 
 	// POINT_RADIUS
 	Target     *MapPoint
-	FullRadius *float64
-	ZeroRadius *float64
+	FullRadius *int
+	ZeroRadius *int
 
 	// POLYGON, vertices in drawing order without a closing vertex.
 	Polygon []MapPoint
@@ -72,11 +72,11 @@ func mapPinError(field, format string, args ...any) error {
 // needs and that its geometry is usable. It returns the config normalized: a
 // polygon's closing vertex, if given, is stripped.
 func ValidateMapPinConfig(c MapPinConfig) (MapPinConfig, error) {
-	if c.Width <= 0 {
-		return c, mapPinError("mapWidth", "must be positive")
+	if c.Width <= 0 || c.Width > MapPinMaxSize {
+		return c, mapPinError("mapWidth", "must be between 1 and %d", MapPinMaxSize)
 	}
-	if c.Height <= 0 {
-		return c, mapPinError("mapHeight", "must be positive")
+	if c.Height <= 0 || c.Height > MapPinMaxSize {
+		return c, mapPinError("mapHeight", "must be between 1 and %d", MapPinMaxSize)
 	}
 
 	switch c.Mode {
@@ -125,11 +125,8 @@ func validatePointRadius(c MapPinConfig) error {
 	}
 
 	full, zero := *c.FullRadius, *c.ZeroRadius
-	if !isFinite(full) || full < 0 {
-		return mapPinError("fullPointsRadius", "must be a finite number of at least 0")
-	}
-	if !isFinite(zero) {
-		return mapPinError("zeroPointsRadius", "must be a finite number")
+	if full < 0 {
+		return mapPinError("fullPointsRadius", "must be at least 0")
 	}
 	if zero <= full {
 		return mapPinError("zeroPointsRadius", "must be greater than fullPointsRadius")
@@ -147,7 +144,7 @@ func normalizePolygon(polygon []MapPoint, width, height int) ([]MapPoint, error)
 	}
 
 	vertices := polygon
-	if n := len(vertices); n > 1 && samePoint(vertices[0], vertices[n-1]) {
+	if n := len(vertices); n > 1 && vertices[0] == vertices[n-1] {
 		vertices = vertices[:n-1]
 	}
 	n := len(vertices)
@@ -167,13 +164,13 @@ func normalizePolygon(polygon []MapPoint, width, height int) ([]MapPoint, error)
 
 	for i := range vertices {
 		for j := i + 1; j < n; j++ {
-			if samePoint(vertices[i], vertices[j]) {
+			if vertices[i] == vertices[j] {
 				return nil, mapPinError("polygon", "vertices %d and %d are the same point", i, j)
 			}
 		}
 	}
 
-	if math.Abs(signedArea(vertices)) <= MapPinEpsilon {
+	if doubledArea(vertices) == 0 {
 		return nil, mapPinError("polygon", "has zero area")
 	}
 
@@ -197,28 +194,24 @@ func normalizePolygon(polygon []MapPoint, width, height int) ([]MapPoint, error)
 	return append([]MapPoint(nil), vertices...), nil
 }
 
-// ValidateMapPosition checks that a submitted pin is a finite point on the
-// map, edges included.
+// ValidateMapPosition checks that a submitted pin is on the map, edges
+// included.
 func ValidateMapPosition(p MapPoint, width, height int) error {
 	return checkInBounds("mapPosition", p, width, height)
 }
 
 func checkInBounds(field string, p MapPoint, width, height int) error {
-	if !isFinite(p.X) || !isFinite(p.Y) {
-		return mapPinError(field, "coordinates must be finite numbers")
-	}
-	if p.X < 0 || p.Y < 0 || p.X > float64(width) || p.Y > float64(height) {
-		return mapPinError(field, "(%g, %g) is outside the %dx%d map", p.X, p.Y, width, height)
+	if p.X < 0 || p.Y < 0 || p.X > width || p.Y > height {
+		return mapPinError(field, "(%d, %d) is outside the %dx%d map", p.X, p.Y, width, height)
 	}
 	return nil
 }
 
 // MapPinScore returns the points a pin at p earns, in [0, maxPoints], and for
 // POINT_RADIUS its distance to the target (nil for POLYGON). c must have
-// passed ValidateMapPinConfig. A pin that fails ValidateMapPosition is an
-// error, not 0 points: NaN would otherwise fail every comparison and score
-// as a miss. A negative maxPoints is an error too, since it would score
-// negative.
+// passed ValidateMapPinConfig. A pin off the map is an error, not 0 points:
+// the API never stores one, so it means broken data. A negative maxPoints is
+// an error too, since it would score negative.
 func MapPinScore(c MapPinConfig, maxPoints int, p MapPoint) (int, *float64, error) {
 	if maxPoints < 0 {
 		return 0, nil, fmt.Errorf("maxPoints must not be negative, got %d", maxPoints)
@@ -232,7 +225,7 @@ func MapPinScore(c MapPinConfig, maxPoints int, p MapPoint) (int, *float64, erro
 		if c.Target == nil || c.FullRadius == nil || c.ZeroRadius == nil {
 			return 0, nil, errors.New("map pin config is missing its target or radii")
 		}
-		d := math.Hypot(p.X-c.Target.X, p.Y-c.Target.Y)
+		d := math.Hypot(float64(p.X-c.Target.X), float64(p.Y-c.Target.Y))
 		return radiusPoints(d, *c.FullRadius, *c.ZeroRadius, maxPoints), &d, nil
 
 	case MapPinModePolygon:
@@ -251,23 +244,24 @@ func MapPinScore(c MapPinConfig, maxPoints int, p MapPoint) (int, *float64, erro
 
 // radiusPoints is maxPoints within full, 0 from zero on, and linear in
 // between, rounded to the nearest integer.
-func radiusPoints(d, full, zero float64, maxPoints int) int {
-	if d <= full {
+func radiusPoints(d float64, full, zero, maxPoints int) int {
+	f, z := float64(full), float64(zero)
+	if d <= f {
 		return maxPoints
 	}
-	if d >= zero {
+	if d >= z {
 		return 0
 	}
-	return int(math.Round(float64(maxPoints) * (zero - d) / (zero - full)))
+	return int(math.Round(float64(maxPoints) * (z - d) / (z - f)))
 }
 
-// PointInPolygon reports whether p is inside the polygon or within
-// MapPinEpsilon of its boundary. Works for concave polygons and either
-// winding.
+// PointInPolygon reports whether p is inside the polygon or on its boundary.
+// Works for concave polygons and either winding. Exact: integer arithmetic
+// only.
 func PointInPolygon(p MapPoint, polygon []MapPoint) bool {
 	n := len(polygon)
 	for i := range n {
-		if pointSegmentDistance(p, polygon[i], polygon[(i+1)%n]) <= MapPinEpsilon {
+		if onSegment(p, polygon[i], polygon[(i+1)%n]) {
 			return true
 		}
 	}
@@ -281,8 +275,12 @@ func PointInPolygon(p MapPoint, polygon []MapPoint) bool {
 	for i, j := 0, n-1; i < n; j, i = i, i+1 {
 		a, b := polygon[i], polygon[j]
 		if (a.Y > p.Y) != (b.Y > p.Y) {
-			crossX := a.X + (p.Y-a.Y)*(b.X-a.X)/(b.Y-a.Y)
-			if p.X < crossX {
+			// p.X < the edge's x at p.Y, multiplied out by dy to stay exact;
+			// the comparison flips when dy is negative.
+			dy := int64(b.Y - a.Y)
+			lhs := int64(p.X-a.X) * dy
+			rhs := int64(p.Y-a.Y) * int64(b.X-a.X)
+			if (dy > 0 && lhs < rhs) || (dy < 0 && lhs > rhs) {
 				inside = !inside
 			}
 		}
@@ -290,61 +288,44 @@ func PointInPolygon(p MapPoint, polygon []MapPoint) bool {
 	return inside
 }
 
-// pointSegmentDistance is the distance from p to the closest point of the
-// segment ab.
-func pointSegmentDistance(p, a, b MapPoint) float64 {
-	dx, dy := b.X-a.X, b.Y-a.Y
-	lengthSquared := dx*dx + dy*dy
-	if lengthSquared == 0 {
-		return math.Hypot(p.X-a.X, p.Y-a.Y)
-	}
-	t := ((p.X-a.X)*dx + (p.Y-a.Y)*dy) / lengthSquared
-	t = max(0, min(1, t))
-	return math.Hypot(p.X-(a.X+t*dx), p.Y-(a.Y+t*dy))
+// onSegment reports whether p lies on the segment ab, ends included.
+func onSegment(p, a, b MapPoint) bool {
+	return cross(a, b, p) == 0 &&
+		min(a.X, b.X) <= p.X && p.X <= max(a.X, b.X) &&
+		min(a.Y, b.Y) <= p.Y && p.Y <= max(a.Y, b.Y)
 }
 
-// segmentsTouch reports whether segments ab and cd cross or come within
-// MapPinEpsilon of each other.
+// segmentsTouch reports whether segments ab and cd share any point: a proper
+// crossing, an end on the other segment, or a collinear overlap.
 func segmentsTouch(a, b, c, d MapPoint) bool {
-	if segmentsCross(a, b, c, d) {
-		return true
-	}
-	return pointSegmentDistance(a, c, d) <= MapPinEpsilon ||
-		pointSegmentDistance(b, c, d) <= MapPinEpsilon ||
-		pointSegmentDistance(c, a, b) <= MapPinEpsilon ||
-		pointSegmentDistance(d, a, b) <= MapPinEpsilon
-}
-
-// segmentsCross reports whether ab and cd cross at a single point strictly
-// inside both. Touching and collinear cases are left to the distance checks
-// in segmentsTouch.
-func segmentsCross(a, b, c, d MapPoint) bool {
 	d1, d2 := cross(c, d, a), cross(c, d, b)
 	d3, d4 := cross(a, b, c), cross(a, b, d)
-	return ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) &&
-		((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0))
+	if ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) &&
+		((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0)) {
+		return true
+	}
+	return (d1 == 0 && onSegment(a, c, d)) ||
+		(d2 == 0 && onSegment(b, c, d)) ||
+		(d3 == 0 && onSegment(c, a, b)) ||
+		(d4 == 0 && onSegment(d, a, b))
 }
 
 // cross is the z component of (a−o) × (b−o): positive when o→a→b turns
-// counter-clockwise in a y-up frame.
-func cross(o, a, b MapPoint) float64 {
-	return (a.X-o.X)*(b.Y-o.Y) - (a.Y-o.Y)*(b.X-o.X)
+// counter-clockwise in a y-up frame. int64 can't overflow for coordinates up
+// to MapPinMaxSize.
+func cross(o, a, b MapPoint) int64 {
+	return int64(a.X-o.X)*int64(b.Y-o.Y) - int64(a.Y-o.Y)*int64(b.X-o.X)
 }
 
-// signedArea is the shoelace area of the polygon; its sign is the winding.
-func signedArea(vertices []MapPoint) float64 {
-	sum := 0.0
+// doubledArea is twice the polygon's area (shoelace), so it stays an integer.
+func doubledArea(vertices []MapPoint) int64 {
+	var sum int64
 	for i, a := range vertices {
 		b := vertices[(i+1)%len(vertices)]
-		sum += a.X*b.Y - b.X*a.Y
+		sum += int64(a.X)*int64(b.Y) - int64(b.X)*int64(a.Y)
 	}
-	return sum / 2
-}
-
-func samePoint(a, b MapPoint) bool {
-	return math.Hypot(a.X-b.X, a.Y-b.Y) <= MapPinEpsilon
-}
-
-func isFinite(f float64) bool {
-	return !math.IsNaN(f) && !math.IsInf(f, 0)
+	if sum < 0 {
+		return -sum
+	}
+	return sum
 }

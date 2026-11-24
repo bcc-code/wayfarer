@@ -26,11 +26,11 @@ correct-answer geometry and the scoring differ:
 - **The map** is the question's existing `image_url`. The photo is shown only
   on the physical screen, so there is no second image column.
 - **Maximum points** is the existing `quiz_questions.points` (required, > 0).
-- **The answer** is stored in `quiz_responses.json_response` as
-  `{"x": …, "y": …}`, in both modes. A pin outside
+- **The answer** is stored in `quiz_responses.map_position` (a `point`, whole
+  pixels), in both modes; `json_response` stays NULL. A pin outside
   `[0, mapWidth] × [0, mapHeight]` is rejected. On `MAP_PIN` only
   `mapPosition` is accepted; other answer fields (including `jsonResponse`)
-  are rejected, so the stored JSON is always a validated point. Unlike the
+  are rejected, so `map_position` only ever holds a validated pin. Unlike the
   other types, which accept an empty answer on submit, `mapPosition` is
   required: there is no unanswered pin to score. `mapPosition` on any other
   type is rejected too. This holds for `submitQuizAnswer`, `updateQuizAnswer`
@@ -39,10 +39,10 @@ correct-answer geometry and the scoring differ:
   `pointsEarned` and `distance` (computed on read from the cached question
   with `MapPinScore`, so there's one formula), and an always-null `isCorrect`
   and `settledBetMultiplier`. Every stored pin is read with
-  `quizgrading.DecodeMapPoint`, which needs both coordinates, present and
-  finite. A pin it can't read is logged and `submittedPosition` fails to
-  resolve: it is never shown as (0, 0), a pin nobody placed. The results page
-  skips such a pin instead.
+  `quizgrading.PointFromPG` (via `loaders.MapPinPosition`). A missing or
+  non-finite pin is logged and `submittedPosition` fails to resolve: it is
+  never shown as (0, 0), a pin nobody placed. The results page skips such a
+  pin instead.
 - **Errors.** Invalid input comes back as a `FieldValidationError` (formerly
   `BetValidationError`, still an alias) naming the input field, e.g.
   `mapPin.polygon[2]`, `mapPosition` or `textResponse`.
@@ -58,18 +58,26 @@ Migration 00119 adds nullable columns to `quiz_questions`:
 | Column | Used by |
 |---|---|
 | `map_scoring_mode` (`POINT_RADIUS` / `POLYGON`) | both |
-| `map_width`, `map_height` | both |
-| `map_target_x`, `map_target_y` | `POINT_RADIUS` |
-| `map_full_points_radius`, `map_zero_points_radius` | `POINT_RADIUS` |
-| `map_polygon` JSONB `[{"x","y"}, …]` | `POLYGON` |
+| `map_width`, `map_height` INT | both |
+| `map_target` POINT | `POINT_RADIUS` |
+| `map_full_points_radius`, `map_zero_points_radius` INT | `POINT_RADIUS` |
+| `map_polygon` POINT[] | `POLYGON` |
+
+and `quiz_responses.map_position` POINT for the pin, with
+`quiz_responses_map_position_check` requiring whole numbers (or NULL).
+
+Everything is whole pixels. Postgres's `point` is float8 underneath, so Go
+converts to `int` as soon as a row is read (`quizgrading.PointFromPG`,
+rounding; NaN or infinity is an error) and writes with `PointToPG`.
 
 One CHECK (`quiz_questions_map_pin_check`) enforces that each row has exactly
 the configuration it needs: every map column NULL for other question types;
-mode, a positive size, `points > 0` and betting off for `MAP_PIN`; target in
-bounds and `0 <= full < zero` with no polygon for `POINT_RADIUS`; a 3–100
-element array with no target or radii for `POLYGON`. Geometric validity
-(simple polygon, non-zero area, the shape of each vertex) is enforced in Go —
-a CHECK cannot express it.
+mode, a positive size, `points > 0` and betting off for `MAP_PIN`; a
+whole-pixel target in bounds and `0 <= full < zero` with no polygon for
+`POINT_RADIUS`; a 3–100 element array with no target or radii for `POLYGON`.
+Geometric validity (simple polygon, non-zero area) and each vertex being a
+non-NULL whole-pixel point are enforced in Go: a CHECK can't loop over array
+elements, and `point` has no equality operator for `array_position`.
 
 A CHECK passes when its expression is NULL, so the constraint is wrapped in
 `COALESCE(…, false)`; without it, a missing width or target would make a
@@ -81,10 +89,10 @@ and update. On update it replaces all map columns at once (omitted = leave
 alone), so switching modes clears the other mode's columns. Fields that belong
 to the other mode are rejected, not ignored.
 
-`quizgrading.MapPinColumns` converts between the config and the eight columns,
+`quizgrading.MapPinColumns` converts between the config and the seven columns,
 for the resolvers and the questions dataloader alike. The loaded config rides
 along on `MapPinQuestion` (a gqlgen extra field), so the gated fields need no
-second query. A `map_polygon` that can't be decoded is logged and the question
+second query. A `map_polygon` with a NULL or non-finite vertex is logged and the question
 still loads without its polygon; `MapPinScore` rejects that config, so it can't
 award points.
 
@@ -106,7 +114,8 @@ falloff.
 
 Rounding blurs both radii slightly. A pin just outside `fullPointsRadius`
 can still round up to the maximum (`points = 100`, `full = 40`,
-`zero = 200`: `d = 40.5` gives `round(99.69) = 100`), and a pin just inside
+`zero = 200`: a pin at offset (40, 6) has `d ≈ 40.45` and gets
+`round(99.72) = 100`), and a pin just inside
 `zeroPointsRadius` can round down to 0. The radii mark where the exact
 formula reaches max and 0. The awarded integer only matches them to within
 half a point.
@@ -116,14 +125,16 @@ half a point.
 Max points when the pin is inside the polygon **or on its boundary** (an edge
 or a vertex), otherwise 0. No partial points.
 
-The test checks the boundary first — a pin within `Epsilon` of any edge is
+The test checks the boundary first — a pin exactly on an edge or vertex is
 inside — then uses the crossing-number rule with half-open edges
 (`(yi > y) != (yj > y)`), which handles a ray passing exactly through a vertex
 and works for concave polygons.
 
-**Precision.** One constant, `Epsilon = 1e-6` px, is used both for the
-boundary test and for polygon validation. It absorbs floating-point noise from
-the frontend's zoom transform and is far below one pixel.
+**Exact.** With whole-pixel coordinates every geometric test (boundary,
+duplicate vertices, touching edges, zero area, the crossing comparison) is
+integer arithmetic in `int64`, with no tolerance. `MapPinMaxSize = 100000`
+caps the map's width and height so cross products can't overflow. Only the
+`POINT_RADIUS` distance (`hypot`) is a float.
 
 **Where points are written.** `submitQuizAnswer`, `updateQuizAnswer` and the
 M2M `createQuizSubmission` all go through one helper, `scoreQuizResponse`.
@@ -140,11 +151,10 @@ Applied on create and update, in this order:
 1. One closing vertex equal to the first is stripped (the polygon is stored
    open).
 2. 3 to 100 vertices.
-3. All coordinates finite.
-4. All vertices inside `[0, mapWidth] × [0, mapHeight]`.
-5. No duplicate vertices, adjacent or not.
-6. Shoelace area greater than `Epsilon`.
-7. Not self-intersecting: non-adjacent edges may not touch at all, and
+3. All vertices inside `[0, mapWidth] × [0, mapHeight]`.
+4. No duplicate vertices, adjacent or not.
+5. Non-zero area (shoelace, exact).
+6. Not self-intersecting: non-adjacent edges may not touch at all, and
    adjacent edges may not overlap (a backtracking spike). The first and last
    edges count as adjacent.
 

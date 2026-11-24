@@ -9,9 +9,14 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/services/quizgrading"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 func ptr[T any](v T) *T { return &v }
+
+func pgPoint(x, y float64) pgtype.Point {
+	return pgtype.Point{P: pgtype.Vec2{X: x, Y: y}, Valid: true}
+}
 
 func TestQuizQuestionFromRowMapPin(t *testing.T) {
 	t.Run("POINT_RADIUS", func(t *testing.T) {
@@ -26,10 +31,9 @@ func TestQuizQuestionFromRowMapPin(t *testing.T) {
 			MapScoringMode:      ptr("POINT_RADIUS"),
 			MapWidth:            ptr(int32(1000)),
 			MapHeight:           ptr(int32(800)),
-			MapTargetX:          ptr(500.0),
-			MapTargetY:          ptr(300.0),
-			MapFullPointsRadius: ptr(40.0),
-			MapZeroPointsRadius: ptr(200.0),
+			MapTarget:           pgPoint(500, 300),
+			MapFullPointsRadius: ptr(int32(40)),
+			MapZeroPointsRadius: ptr(int32(200)),
 		}).(*model.MapPinQuestion)
 		require.True(t, ok, "MAP_PIN must not fall back to FreeTextQuestion")
 
@@ -44,8 +48,8 @@ func TestQuizQuestionFromRowMapPin(t *testing.T) {
 			Width:      1000,
 			Height:     800,
 			Target:     &quizgrading.MapPoint{X: 500, Y: 300},
-			FullRadius: ptr(40.0),
-			ZeroRadius: ptr(200.0),
+			FullRadius: ptr(40),
+			ZeroRadius: ptr(200),
 		}, q.MapPin)
 	})
 
@@ -57,7 +61,7 @@ func TestQuizQuestionFromRowMapPin(t *testing.T) {
 			MapScoringMode: ptr("POLYGON"),
 			MapWidth:       ptr(int32(1000)),
 			MapHeight:      ptr(int32(800)),
-			MapPolygon:     []byte(`[{"x": 100, "y": 100}, {"x": 300, "y": 100}, {"x": 200, "y": 300}]`),
+			MapPolygon:     []pgtype.Point{pgPoint(100, 100), pgPoint(300, 100), pgPoint(200, 300)},
 		}).(*model.MapPinQuestion)
 		require.True(t, ok)
 
@@ -69,14 +73,14 @@ func TestQuizQuestionFromRowMapPin(t *testing.T) {
 		}, q.MapPin)
 	})
 
-	t.Run("an unreadable polygon still loads the question", func(t *testing.T) {
+	t.Run("a polygon with a NULL vertex still loads the question", func(t *testing.T) {
 		q, ok := quizQuestionFromRow(&sqlc.GetQuizQuestionsByQuizIDsRow{
 			ID:             "QQ003",
 			QuestionType:   "MAP_PIN",
 			MapScoringMode: ptr("POLYGON"),
 			MapWidth:       ptr(int32(1000)),
 			MapHeight:      ptr(int32(800)),
-			MapPolygon:     []byte(`[1, 2, 3]`),
+			MapPolygon:     []pgtype.Point{pgPoint(100, 100), {}, pgPoint(200, 300)},
 		}).(*model.MapPinQuestion)
 		require.True(t, ok)
 		assert.Equal(t, "POLYGON", q.MapPin.Mode)

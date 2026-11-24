@@ -209,7 +209,7 @@ func quizQuestionFromRow(row *sqlc.GetQuizQuestionsByQuizIDsRow) model.QuizQuest
 		}
 	case "MAP_PIN":
 		config, err := quizgrading.NewMapPinColumns(row.MapScoringMode, row.MapWidth, row.MapHeight,
-			row.MapTargetX, row.MapTargetY, row.MapFullPointsRadius, row.MapZeroPointsRadius, row.MapPolygon).Config()
+			row.MapTarget, row.MapFullPointsRadius, row.MapZeroPointsRadius, row.MapPolygon).Config()
 		if err != nil {
 			// Keep the question loadable; scoring rejects the incomplete config.
 			slog.Error("failed to read MAP_PIN config", "question_id", row.ID, "error", err)

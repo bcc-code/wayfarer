@@ -86,6 +86,7 @@ func (r *Resolver) createQuizResponseLocked(ctx context.Context, userID string, 
 			TextResponse:      existing.TextResponse,
 			NumberResponse:    existing.NumberResponse,
 			JsonResponse:      existing.JsonResponse,
+			MapPosition:       existing.MapPosition,
 			IsCorrect:         existing.IsCorrect,
 			PointsEarned:      existing.PointsEarned,
 			AnsweredAt:        existing.AnsweredAt,
@@ -119,6 +120,7 @@ func (r *Resolver) createQuizResponseLocked(ctx context.Context, userID string, 
 		TextResponse:      response.TextResponse,
 		NumberResponse:    response.NumberResponse,
 		JsonResponse:      response.JsonResponse,
+		MapPosition:       response.MapPosition,
 		IsCorrect:         response.IsCorrect,
 		PointsEarned:      response.PointsEarned,
 		AnsweredAt:        response.AnsweredAt,
@@ -221,11 +223,11 @@ func applyAnswerUpdate(params *sqlc.UpdateQuizResponseParams, questionType strin
 		}
 		params.Jsonresponse = orderJSON
 	case "MAP_PIN":
-		_, stored, err := mapPinAnswer(input.MapPosition, mapPin)
+		pin, err := mapPinAnswer(input.MapPosition, mapPin)
 		if err != nil {
 			return false, err
 		}
-		params.Jsonresponse = stored
+		params.Mapposition = quizgrading.PointToPG(&pin)
 	}
 	return true, nil
 }

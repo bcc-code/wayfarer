@@ -2,12 +2,14 @@ package e2e
 
 import (
 	"context"
+	"math"
 	"testing"
 	"time"
 
 	"github.com/bcc-media/wayfarer/e2e/testutil"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/ulid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -29,8 +31,8 @@ const mapPinQuestionFields = `
 `
 
 type mapPoint struct {
-	X float64 `json:"x"`
-	Y float64 `json:"y"`
+	X int `json:"x"`
+	Y int `json:"y"`
 }
 
 type mapPinQuestion struct {
@@ -41,8 +43,8 @@ type mapPinQuestion struct {
 	ScoringMode      string     `json:"scoringMode"`
 	MapWidth         int        `json:"mapWidth"`
 	MapHeight        int        `json:"mapHeight"`
-	FullPointsRadius *float64   `json:"fullPointsRadius"`
-	ZeroPointsRadius *float64   `json:"zeroPointsRadius"`
+	FullPointsRadius *int       `json:"fullPointsRadius"`
+	ZeroPointsRadius *int       `json:"zeroPointsRadius"`
 	CorrectPosition  *mapPoint  `json:"correctPosition"`
 	CorrectArea      []mapPoint `json:"correctArea"`
 }
@@ -313,8 +315,8 @@ func TestMapPinQuestions(t *testing.T) {
 				assert.Equal(t, "POINT_RADIUS", q.ScoringMode)
 				assert.Equal(t, 1000, q.MapWidth)
 				assert.Equal(t, 800, q.MapHeight)
-				assert.Equal(t, ptr(40.0), q.FullPointsRadius)
-				assert.Equal(t, ptr(200.0), q.ZeroPointsRadius)
+				assert.Equal(t, ptr(40), q.FullPointsRadius)
+				assert.Equal(t, ptr(200), q.ZeroPointsRadius)
 				assert.Equal(t, &mapPoint{500, 300}, q.CorrectPosition, "a manager sees the target")
 				assert.Nil(t, q.CorrectArea, "POINT_RADIUS has no area")
 			})
@@ -432,8 +434,7 @@ func TestMapPinQuestions(t *testing.T) {
 
 		row, err := dbMgr.DB.Queries.GetQuizQuestionByID(ctx, q.ID)
 		require.NoError(t, err)
-		assert.Nil(t, row.MapTargetX)
-		assert.Nil(t, row.MapTargetY)
+		assert.False(t, row.MapTarget.Valid)
 		assert.Nil(t, row.MapFullPointsRadius)
 		assert.Nil(t, row.MapZeroPointsRadius)
 
@@ -550,7 +551,7 @@ func TestMapPinQuestions(t *testing.T) {
 		row, err := dbMgr.DB.Queries.GetQuizQuestionByID(ctx, q.ID)
 		require.NoError(t, err)
 		assert.Equal(t, ptr(int32(100)), row.Points)
-		assert.Equal(t, ptr(200.0), row.MapZeroPointsRadius)
+		assert.Equal(t, ptr(int32(200)), row.MapZeroPointsRadius)
 		assert.Equal(t, "Where exactly was this taken?", row.QuestionText)
 	})
 
@@ -631,7 +632,7 @@ func TestMapPinQuestions(t *testing.T) {
 	}
 
 	// submitPin answers a question with a pin and returns the response.
-	submitPin := func(t *testing.T, submissionID, questionID string, x, y float64) mapPinResponse {
+	submitPin := func(t *testing.T, submissionID, questionID string, x, y int) mapPinResponse {
 		t.Helper()
 		resp := submitAnswerResp(t, submissionID, map[string]any{
 			"questionId":  questionID,
@@ -700,7 +701,7 @@ func TestMapPinQuestions(t *testing.T) {
 		pins := []struct {
 			name       string
 			questionID string
-			x, y       float64
+			x, y       int
 			points     int32
 			distance   *float64
 		}{
@@ -781,7 +782,8 @@ func TestMapPinQuestions(t *testing.T) {
 			message string
 		}{
 			{name: "no mapPosition", input: map[string]any{"questionId": questionID}, message: "mapPosition: is required"},
-			{name: "a pin right of the map", input: map[string]any{"questionId": questionID, "mapPosition": map[string]any{"x": 1000.5, "y": 10}}, message: "mapPosition"},
+			{name: "a pin right of the map", input: map[string]any{"questionId": questionID, "mapPosition": map[string]any{"x": 1001, "y": 10}}, message: "mapPosition"},
+			{name: "a pin between pixels", input: map[string]any{"questionId": questionID, "mapPosition": map[string]any{"x": 10.5, "y": 10}}, message: "Int"},
 			{name: "a pin above the map", input: map[string]any{"questionId": questionID, "mapPosition": map[string]any{"x": 10, "y": -1}}, message: "mapPosition"},
 			{name: "jsonResponse on MAP_PIN", input: map[string]any{"questionId": questionID, "jsonResponse": `{"x": 500, "y": 300}`}, message: "cannot set a JSON answer on a MAP_PIN question"},
 			{name: "a bet", input: map[string]any{"questionId": questionID, "mapPosition": map[string]any{"x": 500, "y": 300}, "betAmount": 5}, message: "betAmount"},
@@ -810,7 +812,7 @@ func TestMapPinQuestions(t *testing.T) {
 		require.Equal(t, ptr(int32(100)), storedPoints(t, pointResponse.ID))
 		require.Equal(t, ptr(int32(30)), storedPoints(t, areaResponse.ID))
 
-		update := func(t *testing.T, responseID string, x, y float64) {
+		update := func(t *testing.T, responseID string, x, y int) {
 			t.Helper()
 			resp := updateAnswerResp(t, responseID, map[string]any{"mapPosition": map[string]any{"x": x, "y": y}})
 			require.False(t, resp.HasErrors(), "failed to update pin: %s", resp.ErrorMessage())
@@ -842,6 +844,7 @@ func TestMapPinQuestions(t *testing.T) {
 				message string
 			}{
 				"a pin outside the map": {input: map[string]any{"mapPosition": map[string]any{"x": 10, "y": 801}}, message: "mapPosition"},
+				"a pin between pixels":  {input: map[string]any{"mapPosition": map[string]any{"x": 10, "y": 20.5}}, message: "Int"},
 				"jsonResponse":          {input: map[string]any{"jsonResponse": `{"x": 500, "y": 300}`}, message: "cannot set a JSON answer on a MAP_PIN question"},
 				"a bet":                 {input: map[string]any{"betAmount": 5}, message: "betAmount"},
 			} {
@@ -854,7 +857,19 @@ func TestMapPinQuestions(t *testing.T) {
 			assert.Equal(t, ptr(int32(50)), storedPoints(t, pointResponse.ID), "rejected updates leave the points alone")
 			row, err := dbMgr.DB.Queries.GetQuizResponseByID(ctx, pointResponse.ID)
 			require.NoError(t, err)
-			assert.JSONEq(t, `{"x": 620, "y": 300}`, string(row.JsonResponse))
+			assert.Equal(t, pgPoint(620, 300), row.MapPosition, "rejected updates leave the pin alone")
+			assert.Nil(t, row.JsonResponse, "a MAP_PIN pin is stored in map_position only")
+		})
+
+		t.Run("map_position holds NULL or whole pixels only", func(t *testing.T) {
+			setPosition := func(position any) error {
+				_, err := dbMgr.DB.Pool.Exec(ctx, `UPDATE quiz_responses SET map_position = $2 WHERE id = $1`, areaResponse.ID, position)
+				return err
+			}
+			assert.NoError(t, setPosition(pgPoint(7, 8)))
+			assertCheckViolation(t, setPosition(pgPoint(7.5, 8)), "quiz_responses_map_position_check")
+			assertCheckViolation(t, setPosition(pgPoint(7, 8.25)), "quiz_responses_map_position_check")
+			assert.NoError(t, setPosition(pgtype.Point{}), "NULL is fine: only MAP_PIN responses have a pin")
 		})
 	})
 
@@ -1002,7 +1017,7 @@ func TestMapPinQuestions(t *testing.T) {
 			assert.Equal(t, 10+50+30, points, "the QUIZ journal entry carries the pins' points")
 		})
 
-		// M2M: 40.5 px out rounds up to full points; the second pin is outside.
+		// M2M: √1649 ≈ 40.61 px out rounds up to full points; the second pin is outside.
 		resp = client.WithAuth(m2mToken).MustExecute(t, `
 			mutation Submit($quizId: ID!, $userId: ID!, $responses: [SubmitQuizAnswerInput!]!, $completedAt: DateTime) {
 				createQuizSubmission(quizId: $quizId, userId: $userId, responses: $responses, completedAt: $completedAt) { id }
@@ -1011,7 +1026,7 @@ func TestMapPinQuestions(t *testing.T) {
 			"quizId": quizID,
 			"userId": otherUserID,
 			"responses": []map[string]any{
-				{"questionId": pointQuestion, "mapPosition": map[string]any{"x": 540.5, "y": 300}},
+				{"questionId": pointQuestion, "mapPosition": map[string]any{"x": 532, "y": 325}},
 				{"questionId": areaQuestion, "mapPosition": map[string]any{"x": 500, "y": 500}},
 			},
 			"completedAt": time.Now().Format(time.RFC3339),
@@ -1073,16 +1088,24 @@ func TestMapPinQuestions(t *testing.T) {
 			assert.Equal(t, pointQuestion, r.Question.ID)
 			assert.Equal(t, &mapPoint{500, 300}, r.Question.CorrectPosition, "the manager sees the target with the results")
 			assert.Equal(t, 2, r.ResponseCount)
-			assert.Equal(t, 1, r.FullPointsCount, "the pin 40.5 px out rounded up to full points")
+			assert.Equal(t, 1, r.FullPointsCount, "the pin about 40.6 px out rounded up to full points")
 			if assert.NotNil(t, r.AveragePoints) {
 				assert.InDelta(t, (50+100)/2.0, *r.AveragePoints, 1e-9)
 			}
 			if assert.NotNil(t, r.AverageDistance) {
-				assert.InDelta(t, (120+40.5)/2, *r.AverageDistance, 1e-9)
+				assert.InDelta(t, (120+math.Sqrt(1649))/2, *r.AverageDistance, 1e-9)
+			}
+			require.Len(t, r.Pins, 2)
+			wantDistances := []float64{120, math.Sqrt(1649)}
+			for i := range r.Pins {
+				if assert.NotNil(t, r.Pins[i].Distance, "pin %d", i) {
+					assert.InDelta(t, wantDistances[i], *r.Pins[i].Distance, 1e-9, "pin %d", i)
+				}
+				r.Pins[i].Distance = nil
 			}
 			assert.Equal(t, []pinResult{
-				{Position: mapPoint{620, 300}, PointsEarned: ptr(50), Distance: ptr(120.0)},
-				{Position: mapPoint{540.5, 300}, PointsEarned: ptr(100), Distance: ptr(40.5)},
+				{Position: mapPoint{620, 300}, PointsEarned: ptr(50)},
+				{Position: mapPoint{532, 325}, PointsEarned: ptr(100)},
 			}, r.Pins, "in the order they were answered")
 		})
 

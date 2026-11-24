@@ -82,11 +82,11 @@ WHERE s.quiz_id = @quizid::char(28)
 ORDER BY r.question_id;
 
 -- name: GetQuizMapPinResponses :many
--- The pin is {"x", "y"} in json_response; r.id breaks answered_at ties.
+-- r.id breaks answered_at ties.
 SELECT
     r.id,
     r.question_id,
-    r.json_response AS position,
+    r.map_position,
     r.points_earned
 FROM quiz_responses r
 JOIN quiz_submissions s ON s.id = r.submission_id
@@ -94,5 +94,5 @@ JOIN quiz_questions q ON q.id = r.question_id
 WHERE s.quiz_id = @quizid::char(28)
     AND s.completed_at IS NOT NULL
     AND q.question_type = 'MAP_PIN'
-    AND r.json_response IS NOT NULL
+    AND r.map_position IS NOT NULL
 ORDER BY r.question_id, r.answered_at, r.id;

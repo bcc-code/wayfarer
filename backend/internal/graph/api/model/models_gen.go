@@ -1206,8 +1206,8 @@ type MapPinConfigInput struct {
 	MapWidth         int               `json:"mapWidth"`
 	MapHeight        int               `json:"mapHeight"`
 	Target           *MapPointInput    `json:"target,omitempty"`
-	FullPointsRadius *float64          `json:"fullPointsRadius,omitempty"`
-	ZeroPointsRadius *float64          `json:"zeroPointsRadius,omitempty"`
+	FullPointsRadius *int              `json:"fullPointsRadius,omitempty"`
+	ZeroPointsRadius *int              `json:"zeroPointsRadius,omitempty"`
 	Polygon          []MapPointInput   `json:"polygon,omitempty"`
 }
 
@@ -1230,8 +1230,8 @@ type MapPinQuestion struct {
 	ScoringMode              MapPinScoringMode        `json:"scoringMode"`
 	MapWidth                 int                      `json:"mapWidth"`
 	MapHeight                int                      `json:"mapHeight"`
-	FullPointsRadius         *float64                 `json:"fullPointsRadius,omitempty"`
-	ZeroPointsRadius         *float64                 `json:"zeroPointsRadius,omitempty"`
+	FullPointsRadius         *int                     `json:"fullPointsRadius,omitempty"`
+	ZeroPointsRadius         *int                     `json:"zeroPointsRadius,omitempty"`
 	CorrectPosition          *MapPoint                `json:"correctPosition,omitempty"`
 	CorrectArea              []MapPoint               `json:"correctArea,omitempty"`
 	ImageURL                 *string                  `json:"-"`
@@ -1325,13 +1325,13 @@ type MapPinResult struct {
 }
 
 type MapPoint struct {
-	X float64 `json:"x"`
-	Y float64 `json:"y"`
+	X int `json:"x"`
+	Y int `json:"y"`
 }
 
 type MapPointInput struct {
-	X float64 `json:"x"`
-	Y float64 `json:"y"`
+	X int `json:"x"`
+	Y int `json:"y"`
 }
 
 type MissingContentProgressPreview struct {

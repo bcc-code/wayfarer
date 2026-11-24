@@ -111,29 +111,31 @@ func TestApplyAnswerUpdate(t *testing.T) {
 	t.Run("MAP_PIN", func(t *testing.T) {
 		mapPin := quizgrading.MapPinConfig{Mode: "POLYGON", Width: 1000, Height: 800}
 
-		t.Run("stores the pin as JSON", func(t *testing.T) {
+		t.Run("stores the pin in map_position, not json_response", func(t *testing.T) {
 			var params sqlc.UpdateQuizResponseParams
 			changed, err := applyAnswerUpdate(&params, "MAP_PIN", mapPin,
-				model.UpdateQuizAnswerInput{MapPosition: &model.MapPointInput{X: 12.5, Y: 800}})
+				model.UpdateQuizAnswerInput{MapPosition: &model.MapPointInput{X: 12, Y: 800}})
 			require.NoError(t, err)
 			assert.True(t, changed)
-			assert.JSONEq(t, `{"x":12.5,"y":800}`, string(params.Jsonresponse))
+			assert.Equal(t, quizgrading.PointToPG(&quizgrading.MapPoint{X: 12, Y: 800}), params.Mapposition)
+			assert.Nil(t, params.Jsonresponse)
 		})
 
 		t.Run("rejects a pin outside the map", func(t *testing.T) {
 			var params sqlc.UpdateQuizResponseParams
 			_, err := applyAnswerUpdate(&params, "MAP_PIN", mapPin,
-				model.UpdateQuizAnswerInput{MapPosition: &model.MapPointInput{X: 1000.5, Y: 10}})
+				model.UpdateQuizAnswerInput{MapPosition: &model.MapPointInput{X: 1001, Y: 10}})
 			assertFieldError(t, err, "mapPosition")
-			assert.Nil(t, params.Jsonresponse)
+			assert.False(t, params.Mapposition.Valid)
 		})
 
-		t.Run("rejects jsonResponse, so the stored JSON is always a validated pin", func(t *testing.T) {
+		t.Run("rejects jsonResponse, so map_position is the only MAP_PIN answer", func(t *testing.T) {
 			var params sqlc.UpdateQuizResponseParams
 			_, err := applyAnswerUpdate(&params, "MAP_PIN", mapPin, model.UpdateQuizAnswerInput{JSONResponse: &jsonVal})
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), "cannot set a JSON answer on a MAP_PIN question")
 			assert.Nil(t, params.Jsonresponse)
+			assert.False(t, params.Mapposition.Valid)
 		})
 
 		t.Run("rejects mapPosition on another type", func(t *testing.T) {

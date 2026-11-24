@@ -1,34 +1,35 @@
 package quizgrading
 
 import (
-	"encoding/json"
 	"fmt"
+	"math"
 	"slices"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 // MapPinColumns is a MAP_PIN config as stored in the map_* columns of
-// quiz_questions. Every field is nil for other question types.
+// quiz_questions. Positions are Postgres points (float8 underneath); Config
+// turns them into whole-pixel MapPoints straight away. Every field is NULL for
+// other question types.
 type MapPinColumns struct {
 	Mode       *string
 	Width      *int32
 	Height     *int32
-	TargetX    *float64
-	TargetY    *float64
-	FullRadius *float64
-	ZeroRadius *float64
-	// Polygon is a JSON array of {"x", "y"} objects.
-	Polygon []byte
+	Target     pgtype.Point
+	FullRadius *int32
+	ZeroRadius *int32
+	Polygon    []pgtype.Point
 }
 
 // NewMapPinColumns collects the map_* columns of a quiz_questions row, in
 // table order. The sqlc row types differ per query, so each passes its fields.
-func NewMapPinColumns(mode *string, width, height *int32, targetX, targetY, fullRadius, zeroRadius *float64, polygon []byte) MapPinColumns {
+func NewMapPinColumns(mode *string, width, height *int32, target pgtype.Point, fullRadius, zeroRadius *int32, polygon []pgtype.Point) MapPinColumns {
 	return MapPinColumns{
 		Mode:       mode,
 		Width:      width,
 		Height:     height,
-		TargetX:    targetX,
-		TargetY:    targetY,
+		Target:     target,
 		FullRadius: fullRadius,
 		ZeroRadius: zeroRadius,
 		Polygon:    polygon,
@@ -36,35 +37,32 @@ func NewMapPinColumns(mode *string, width, height *int32, targetX, targetY, full
 }
 
 // Columns returns the config as column values. c should be validated
-// (ValidateMapPinConfig); the fields of the other mode are nil.
-func (c MapPinConfig) Columns() (MapPinColumns, error) {
+// (ValidateMapPinConfig), which also keeps every value within int32; the
+// fields of the other mode are NULL.
+func (c MapPinConfig) Columns() MapPinColumns {
 	mode := c.Mode
-	width, height := int32(c.Width), int32(c.Height)
 	cols := MapPinColumns{
 		Mode:       &mode,
-		Width:      &width,
-		Height:     &height,
-		FullRadius: copyFloat(c.FullRadius),
-		ZeroRadius: copyFloat(c.ZeroRadius),
-	}
-	if c.Target != nil {
-		x, y := c.Target.X, c.Target.Y
-		cols.TargetX, cols.TargetY = &x, &y
+		Width:      Int32Ptr(&c.Width),
+		Height:     Int32Ptr(&c.Height),
+		Target:     PointToPG(c.Target),
+		FullRadius: Int32Ptr(c.FullRadius),
+		ZeroRadius: Int32Ptr(c.ZeroRadius),
 	}
 	if c.Polygon != nil {
-		polygon, err := json.Marshal(c.Polygon)
-		if err != nil {
-			return MapPinColumns{}, fmt.Errorf("failed to encode polygon: %w", err)
+		cols.Polygon = make([]pgtype.Point, len(c.Polygon))
+		for i := range c.Polygon {
+			cols.Polygon[i] = PointToPG(&c.Polygon[i])
 		}
-		cols.Polygon = polygon
 	}
-	return cols, nil
+	return cols
 }
 
-// Config reads a stored question's config back. The DB CHECK guarantees the
-// columns its mode needs are set, but not the shape of each polygon vertex: an
-// error means map_polygon isn't a list of points. The config is then returned
-// without its polygon, which MapPinScore rejects, so a broken row can't score.
+// Config reads a stored question's config back, converting points to whole
+// pixels. The DB CHECK guarantees the columns its mode needs are set, but
+// can't check each polygon vertex: an error means a vertex is NULL or not a
+// finite number. The config is then returned without its polygon, which
+// MapPinScore rejects, so a broken row can't score.
 func (c MapPinColumns) Config() (MapPinConfig, error) {
 	var cfg MapPinConfig
 	if c.Mode != nil {
@@ -76,15 +74,26 @@ func (c MapPinColumns) Config() (MapPinConfig, error) {
 	if c.Height != nil {
 		cfg.Height = int(*c.Height)
 	}
-	if c.TargetX != nil && c.TargetY != nil {
-		cfg.Target = &MapPoint{X: *c.TargetX, Y: *c.TargetY}
+	cfg.FullRadius = IntPtr(c.FullRadius)
+	cfg.ZeroRadius = IntPtr(c.ZeroRadius)
+
+	target, err := PointFromPG(c.Target)
+	if err != nil {
+		return cfg, fmt.Errorf("map_target: %w", err)
 	}
-	cfg.FullRadius = copyFloat(c.FullRadius)
-	cfg.ZeroRadius = copyFloat(c.ZeroRadius)
+	cfg.Target = target
+
 	if c.Polygon != nil {
-		var polygon []MapPoint
-		if err := json.Unmarshal(c.Polygon, &polygon); err != nil {
-			return cfg, fmt.Errorf("map_polygon is not a list of points: %w", err)
+		polygon := make([]MapPoint, len(c.Polygon))
+		for i, v := range c.Polygon {
+			p, err := PointFromPG(v)
+			if err != nil {
+				return cfg, fmt.Errorf("map_polygon[%d]: %w", i, err)
+			}
+			if p == nil {
+				return cfg, fmt.Errorf("map_polygon[%d] is NULL", i)
+			}
+			polygon[i] = *p
 		}
 		cfg.Polygon = polygon
 	}
@@ -103,38 +112,50 @@ func (c MapPinConfig) Equal(o MapPinConfig) bool {
 		slices.Equal(c.Polygon, o.Polygon)
 }
 
+// PointFromPG converts a Postgres point to a whole-pixel MapPoint, rounding to
+// the nearest pixel; the API only writes whole pixels, so that is exact. A
+// NULL point is nil. NaN or infinity is an error rather than a pin at some
+// arbitrary int.
+func PointFromPG(p pgtype.Point) (*MapPoint, error) {
+	if !p.Valid {
+		return nil, nil
+	}
+	x, y := p.P.X, p.P.Y
+	if math.IsNaN(x) || math.IsInf(x, 0) || math.IsNaN(y) || math.IsInf(y, 0) {
+		return nil, fmt.Errorf("point (%g, %g) is not finite", x, y)
+	}
+	return &MapPoint{X: int(math.Round(x)), Y: int(math.Round(y))}, nil
+}
+
+// PointToPG converts a MapPoint for a point column; nil is NULL.
+func PointToPG(p *MapPoint) pgtype.Point {
+	if p == nil {
+		return pgtype.Point{}
+	}
+	return pgtype.Point{P: pgtype.Vec2{X: float64(p.X), Y: float64(p.Y)}, Valid: true}
+}
+
+// Int32Ptr converts a validated value for an INT column; nil stays nil.
+func Int32Ptr(v *int) *int32 {
+	if v == nil {
+		return nil
+	}
+	n := int32(*v)
+	return &n
+}
+
+// IntPtr converts an INT column's value; nil stays nil.
+func IntPtr(v *int32) *int {
+	if v == nil {
+		return nil
+	}
+	n := int(*v)
+	return &n
+}
+
 func equalPtr[T comparable](a, b *T) bool {
 	if a == nil || b == nil {
 		return a == b
 	}
 	return *a == *b
-}
-
-func copyFloat(f *float64) *float64 {
-	if f == nil {
-		return nil
-	}
-	v := *f
-	return &v
-}
-
-// DecodeMapPoint reads a pin stored as {"x": …, "y": …} in json_response. Both
-// coordinates must be present and finite: json.Unmarshal alone would turn {} or
-// null into (0, 0), a pin nobody placed.
-func DecodeMapPoint(raw []byte) (MapPoint, error) {
-	var stored struct {
-		X *float64 `json:"x"`
-		Y *float64 `json:"y"`
-	}
-	if err := json.Unmarshal(raw, &stored); err != nil {
-		return MapPoint{}, fmt.Errorf("map pin is not a JSON object: %w", err)
-	}
-	if stored.X == nil || stored.Y == nil {
-		return MapPoint{}, fmt.Errorf("map pin %s lacks x or y", raw)
-	}
-	p := MapPoint{X: *stored.X, Y: *stored.Y}
-	if !isFinite(p.X) || !isFinite(p.Y) {
-		return MapPoint{}, fmt.Errorf("map pin %s is not finite", raw)
-	}
-	return p, nil
 }

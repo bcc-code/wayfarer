@@ -1,22 +1,22 @@
 -- name: GetQuizQuestionsByQuizID :many
-SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, map_scoring_mode, map_width, map_height, map_target_x, map_target_y, map_full_points_radius, map_zero_points_radius, map_polygon, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, map_scoring_mode, map_width, map_height, map_target, map_full_points_radius, map_zero_points_radius, map_polygon, created_at, updated_at
 FROM quiz_questions
 WHERE quiz_id = @quizid::char(28)
 ORDER BY question_order ASC;
 
 -- name: GetQuizQuestionsByQuizIDs :many
-SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, map_scoring_mode, map_width, map_height, map_target_x, map_target_y, map_full_points_radius, map_zero_points_radius, map_polygon, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, map_scoring_mode, map_width, map_height, map_target, map_full_points_radius, map_zero_points_radius, map_polygon, created_at, updated_at
 FROM quiz_questions
 WHERE quiz_id = ANY(@quiz_ids::char(28)[])
 ORDER BY quiz_id, question_order ASC;
 
 -- name: GetQuizQuestionByID :one
-SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, map_scoring_mode, map_width, map_height, map_target_x, map_target_y, map_full_points_radius, map_zero_points_radius, map_polygon, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, map_scoring_mode, map_width, map_height, map_target, map_full_points_radius, map_zero_points_radius, map_polygon, created_at, updated_at
 FROM quiz_questions
 WHERE id = @id::char(28);
 
 -- name: GetQuizQuestionsByIDs :many
-SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, map_scoring_mode, map_width, map_height, map_target_x, map_target_y, map_full_points_radius, map_zero_points_radius, map_polygon, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, map_scoring_mode, map_width, map_height, map_target, map_full_points_radius, map_zero_points_radius, map_polygon, created_at, updated_at
 FROM quiz_questions
 WHERE id = ANY(@ids::char(28)[]);
 
@@ -45,8 +45,7 @@ INSERT INTO quiz_questions (
     map_scoring_mode,
     map_width,
     map_height,
-    map_target_x,
-    map_target_y,
+    map_target,
     map_full_points_radius,
     map_zero_points_radius,
     map_polygon
@@ -77,13 +76,12 @@ VALUES (
     sqlc.narg('mapscoringmode')::text,
     sqlc.narg('mapwidth')::int,
     sqlc.narg('mapheight')::int,
-    sqlc.narg('maptargetx')::float8,
-    sqlc.narg('maptargety')::float8,
-    sqlc.narg('mapfullpointsradius')::float8,
-    sqlc.narg('mapzeropointsradius')::float8,
-    sqlc.narg('mappolygon')::jsonb
+    sqlc.narg('maptarget')::point,
+    sqlc.narg('mapfullpointsradius')::int,
+    sqlc.narg('mapzeropointsradius')::int,
+    sqlc.narg('mappolygon')::point[]
 )
-RETURNING id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, map_scoring_mode, map_width, map_height, map_target_x, map_target_y, map_full_points_radius, map_zero_points_radius, map_polygon, created_at, updated_at;
+RETURNING id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, map_scoring_mode, map_width, map_height, map_target, map_full_points_radius, map_zero_points_radius, map_polygon, created_at, updated_at;
 
 -- name: UpdateQuizQuestion :one
 UPDATE quiz_questions
@@ -118,14 +116,13 @@ SET
     map_scoring_mode = CASE WHEN @setmappin::bool THEN sqlc.narg('mapscoringmode')::text ELSE map_scoring_mode END,
     map_width = CASE WHEN @setmappin::bool THEN sqlc.narg('mapwidth')::int ELSE map_width END,
     map_height = CASE WHEN @setmappin::bool THEN sqlc.narg('mapheight')::int ELSE map_height END,
-    map_target_x = CASE WHEN @setmappin::bool THEN sqlc.narg('maptargetx')::float8 ELSE map_target_x END,
-    map_target_y = CASE WHEN @setmappin::bool THEN sqlc.narg('maptargety')::float8 ELSE map_target_y END,
-    map_full_points_radius = CASE WHEN @setmappin::bool THEN sqlc.narg('mapfullpointsradius')::float8 ELSE map_full_points_radius END,
-    map_zero_points_radius = CASE WHEN @setmappin::bool THEN sqlc.narg('mapzeropointsradius')::float8 ELSE map_zero_points_radius END,
-    map_polygon = CASE WHEN @setmappin::bool THEN sqlc.narg('mappolygon')::jsonb ELSE map_polygon END,
+    map_target = CASE WHEN @setmappin::bool THEN sqlc.narg('maptarget')::point ELSE map_target END,
+    map_full_points_radius = CASE WHEN @setmappin::bool THEN sqlc.narg('mapfullpointsradius')::int ELSE map_full_points_radius END,
+    map_zero_points_radius = CASE WHEN @setmappin::bool THEN sqlc.narg('mapzeropointsradius')::int ELSE map_zero_points_radius END,
+    map_polygon = CASE WHEN @setmappin::bool THEN sqlc.narg('mappolygon')::point[] ELSE map_polygon END,
     updated_at = now()
 WHERE id = @id::char(28)
-RETURNING id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, map_scoring_mode, map_width, map_height, map_target_x, map_target_y, map_full_points_radius, map_zero_points_radius, map_polygon, created_at, updated_at;
+RETURNING id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, map_scoring_mode, map_width, map_height, map_target, map_full_points_radius, map_zero_points_radius, map_polygon, created_at, updated_at;
 
 -- name: DeleteQuizQuestion :exec
 DELETE FROM quiz_questions

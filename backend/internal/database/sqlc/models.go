@@ -534,11 +534,10 @@ type QuizQuestion struct {
 	MapScoringMode           *string            `json:"map_scoring_mode"`
 	MapWidth                 *int32             `json:"map_width"`
 	MapHeight                *int32             `json:"map_height"`
-	MapTargetX               *float64           `json:"map_target_x"`
-	MapTargetY               *float64           `json:"map_target_y"`
-	MapFullPointsRadius      *float64           `json:"map_full_points_radius"`
-	MapZeroPointsRadius      *float64           `json:"map_zero_points_radius"`
-	MapPolygon               []byte             `json:"map_polygon"`
+	MapTarget                pgtype.Point       `json:"map_target"`
+	MapFullPointsRadius      *int32             `json:"map_full_points_radius"`
+	MapZeroPointsRadius      *int32             `json:"map_zero_points_radius"`
+	MapPolygon               []pgtype.Point     `json:"map_polygon"`
 }
 
 type QuizQuestionTranslation struct {
@@ -563,6 +562,7 @@ type QuizResponse struct {
 	PointsEarned      *int32             `json:"points_earned"`
 	BetAmount         *int32             `json:"bet_amount"`
 	ScoreJournalID    *string            `json:"score_journal_id"`
+	MapPosition       pgtype.Point       `json:"map_position"`
 }
 
 type QuizSession struct {

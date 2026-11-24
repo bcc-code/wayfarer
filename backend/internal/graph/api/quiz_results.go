@@ -361,9 +361,9 @@ func buildMapPinResults(
 	var points, distances []float64
 
 	for _, row := range rows {
-		position, err := quizgrading.DecodeMapPoint(row.Position)
-		if err != nil {
-			slog.Error("failed to read MAP_PIN response", "question_id", row.QuestionID, "response_id", row.ID, "error", err)
+		position, err := quizgrading.PointFromPG(row.MapPosition)
+		if err != nil || position == nil {
+			slog.Error("MAP_PIN response has no readable pin", "question_id", row.QuestionID, "response_id", row.ID, "error", err)
 			continue
 		}
 		pin := model.MapPinResult{Position: &model.MapPoint{X: position.X, Y: position.Y}}
@@ -378,7 +378,7 @@ func buildMapPinResults(
 		}
 
 		if question.MapPin.Mode == quizgrading.MapPinModePointRadius {
-			if _, distance, err := quizgrading.MapPinScore(question.MapPin, 0, position); err == nil && distance != nil {
+			if _, distance, err := quizgrading.MapPinScore(question.MapPin, 0, *position); err == nil && distance != nil {
 				pin.Distance = distance
 				distances = append(distances, *distance)
 			}
