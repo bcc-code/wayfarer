@@ -10,6 +10,7 @@ import (
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/services/quizgrading"
 	pgx "github.com/jackc/pgx/v5"
 )
 
@@ -85,6 +86,7 @@ func (r *Resolver) createQuizResponseLocked(ctx context.Context, userID string, 
 			TextResponse:      existing.TextResponse,
 			NumberResponse:    existing.NumberResponse,
 			JsonResponse:      existing.JsonResponse,
+			MapPosition:       existing.MapPosition,
 			IsCorrect:         existing.IsCorrect,
 			PointsEarned:      existing.PointsEarned,
 			AnsweredAt:        existing.AnsweredAt,
@@ -118,6 +120,7 @@ func (r *Resolver) createQuizResponseLocked(ctx context.Context, userID string, 
 		TextResponse:      response.TextResponse,
 		NumberResponse:    response.NumberResponse,
 		JsonResponse:      response.JsonResponse,
+		MapPosition:       response.MapPosition,
 		IsCorrect:         response.IsCorrect,
 		PointsEarned:      response.PointsEarned,
 		AnsweredAt:        response.AnsweredAt,
@@ -178,14 +181,16 @@ func (r *Resolver) updateQuizResponseLocked(ctx context.Context, submissionID st
 
 // applyAnswerUpdate writes the answer field matching questionType onto params
 // and reports whether the answer changed. A field belonging to another type is
-// rejected rather than silently dropped.
-func applyAnswerUpdate(params *sqlc.UpdateQuizResponseParams, questionType string, input model.UpdateQuizAnswerInput) (bool, error) {
+// rejected rather than silently dropped. mapPin is the question's map config,
+// which a MAP_PIN pin is validated against.
+func applyAnswerUpdate(params *sqlc.UpdateQuizResponseParams, questionType string, mapPin quizgrading.MapPinConfig, input model.UpdateQuizAnswerInput) (bool, error) {
 	given := map[string]bool{
 		"PREDEFINED": input.SelectedAnswerIds != nil,
 		"FREE_TEXT":  input.TextResponse != nil,
 		"NUMBER":     input.NumberResponse != nil,
 		"JSON":       input.JSONResponse != nil,
 		"ORDERING":   input.SubmittedOrder != nil,
+		"MAP_PIN":    input.MapPosition != nil,
 	}
 	for t, present := range given {
 		if present && t != questionType {
@@ -217,6 +222,12 @@ func applyAnswerUpdate(params *sqlc.UpdateQuizResponseParams, questionType strin
 			return false, fmt.Errorf("failed to encode submitted order: %w", err)
 		}
 		params.Jsonresponse = orderJSON
+	case "MAP_PIN":
+		pin, err := mapPinAnswer(input.MapPosition, mapPin)
+		if err != nil {
+			return false, err
+		}
+		params.Mapposition = quizgrading.PointToPG(&pin)
 	}
 	return true, nil
 }

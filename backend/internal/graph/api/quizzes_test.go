@@ -10,6 +10,7 @@ import (
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/services/quizgrading"
 )
 
 // TestBuildQuizFilterParamsCursor tests the buildQuizFilterParamsCursor function
@@ -475,6 +476,7 @@ type mockQuestionRow struct {
 	bettingMaxAbsolute     *int32
 	bettingMultCorrect     pgtype.Numeric
 	bettingMultWrong       pgtype.Numeric
+	mapPin                 quizgrading.MapPinColumns
 }
 
 func (m *mockQuestionRow) GetID() string                           { return m.id }
@@ -498,7 +500,8 @@ func (m *mockQuestionRow) GetBettingMaxAbsolute() *int32           { return m.be
 func (m *mockQuestionRow) GetBettingMultiplierCorrect() pgtype.Numeric {
 	return m.bettingMultCorrect
 }
-func (m *mockQuestionRow) GetBettingMultiplierWrong() pgtype.Numeric { return m.bettingMultWrong }
+func (m *mockQuestionRow) GetBettingMultiplierWrong() pgtype.Numeric   { return m.bettingMultWrong }
+func (m *mockQuestionRow) GetMapPinColumns() quizgrading.MapPinColumns { return m.mapPin }
 
 // Helper functions for tests
 func int32Ptr(v int32) *int32 {

@@ -18,10 +18,11 @@ type Answer struct {
 	IsCorrect bool
 }
 
-// Response holds the gradable parts of a submitted answer.
+// Response holds the parts of a submitted answer that grading and scoring use.
 type Response struct {
-	SelectedAnswerIDs []string // PREDEFINED
-	SubmittedOrder    []string // ORDERING
+	SelectedAnswerIDs []string  // PREDEFINED
+	SubmittedOrder    []string  // ORDERING
+	MapPosition       *MapPoint // MAP_PIN, scored by MapPinScore
 }
 
 // IsGradable reports whether responses to the question type are graded,

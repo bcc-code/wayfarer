@@ -10,13 +10,18 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-// BetValidationError represents an error during bet validation
-type BetValidationError struct {
+// FieldValidationError is invalid input. Field names the input field it is
+// about, so a client can show the message next to it.
+type FieldValidationError struct {
 	Field   string
 	Message string
 }
 
-func (e *BetValidationError) Error() string {
+// BetValidationError is the original name of FieldValidationError, from when
+// only bet validation used it.
+type BetValidationError = FieldValidationError
+
+func (e *FieldValidationError) Error() string {
 	return fmt.Sprintf("%s: %s", e.Field, e.Message)
 }
 

@@ -85,7 +85,14 @@ INSERT INTO quiz_questions (
     betting_min_absolute,
     betting_max_absolute,
     betting_multiplier_correct,
-    betting_multiplier_wrong
+    betting_multiplier_wrong,
+    map_scoring_mode,
+    map_width,
+    map_height,
+    map_target,
+    map_full_points_radius,
+    map_zero_points_radius,
+    map_polygon
 )
 VALUES (
     $1::text,
@@ -107,9 +114,18 @@ VALUES (
     $17::int,
     $18::int,
     $19::decimal,
-    $20::decimal
+    $20::decimal,
+    -- Nullable params, not @x::type: a non-null param would write 0 instead
+    -- of NULL and break quiz_questions_map_pin_check for every other type.
+    $21::text,
+    $22::int,
+    $23::int,
+    $24::point,
+    $25::int,
+    $26::int,
+    $27::point[]
 )
-RETURNING id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
+RETURNING id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, map_scoring_mode, map_width, map_height, map_target, map_full_points_radius, map_zero_points_radius, map_polygon, created_at, updated_at
 `
 
 type CreateQuizQuestionParams struct {
@@ -133,6 +149,13 @@ type CreateQuizQuestionParams struct {
 	Bettingmaxabsolute       *int32         `json:"bettingmaxabsolute"`
 	Bettingmultipliercorrect pgtype.Numeric `json:"bettingmultipliercorrect"`
 	Bettingmultiplierwrong   pgtype.Numeric `json:"bettingmultiplierwrong"`
+	Mapscoringmode           *string        `json:"mapscoringmode"`
+	Mapwidth                 *int32         `json:"mapwidth"`
+	Mapheight                *int32         `json:"mapheight"`
+	Maptarget                pgtype.Point   `json:"maptarget"`
+	Mapfullpointsradius      *int32         `json:"mapfullpointsradius"`
+	Mapzeropointsradius      *int32         `json:"mapzeropointsradius"`
+	Mappolygon               []pgtype.Point `json:"mappolygon"`
 }
 
 type CreateQuizQuestionRow struct {
@@ -156,6 +179,13 @@ type CreateQuizQuestionRow struct {
 	BettingMaxAbsolute       *int32             `json:"betting_max_absolute"`
 	BettingMultiplierCorrect pgtype.Numeric     `json:"betting_multiplier_correct"`
 	BettingMultiplierWrong   pgtype.Numeric     `json:"betting_multiplier_wrong"`
+	MapScoringMode           *string            `json:"map_scoring_mode"`
+	MapWidth                 *int32             `json:"map_width"`
+	MapHeight                *int32             `json:"map_height"`
+	MapTarget                pgtype.Point       `json:"map_target"`
+	MapFullPointsRadius      *int32             `json:"map_full_points_radius"`
+	MapZeroPointsRadius      *int32             `json:"map_zero_points_radius"`
+	MapPolygon               []pgtype.Point     `json:"map_polygon"`
 	CreatedAt                pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                pgtype.Timestamptz `json:"updated_at"`
 }
@@ -182,6 +212,13 @@ func (q *Queries) CreateQuizQuestion(ctx context.Context, arg CreateQuizQuestion
 		arg.Bettingmaxabsolute,
 		arg.Bettingmultipliercorrect,
 		arg.Bettingmultiplierwrong,
+		arg.Mapscoringmode,
+		arg.Mapwidth,
+		arg.Mapheight,
+		arg.Maptarget,
+		arg.Mapfullpointsradius,
+		arg.Mapzeropointsradius,
+		arg.Mappolygon,
 	)
 	var i CreateQuizQuestionRow
 	err := row.Scan(
@@ -205,6 +242,13 @@ func (q *Queries) CreateQuizQuestion(ctx context.Context, arg CreateQuizQuestion
 		&i.BettingMaxAbsolute,
 		&i.BettingMultiplierCorrect,
 		&i.BettingMultiplierWrong,
+		&i.MapScoringMode,
+		&i.MapWidth,
+		&i.MapHeight,
+		&i.MapTarget,
+		&i.MapFullPointsRadius,
+		&i.MapZeroPointsRadius,
+		&i.MapPolygon,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -356,7 +400,7 @@ func (q *Queries) GetPredefinedAnswersByQuestionIDs(ctx context.Context, questio
 }
 
 const GetQuizQuestionByID = `-- name: GetQuizQuestionByID :one
-SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, map_scoring_mode, map_width, map_height, map_target, map_full_points_radius, map_zero_points_radius, map_polygon, created_at, updated_at
 FROM quiz_questions
 WHERE id = $1::char(28)
 `
@@ -382,6 +426,13 @@ type GetQuizQuestionByIDRow struct {
 	BettingMaxAbsolute       *int32             `json:"betting_max_absolute"`
 	BettingMultiplierCorrect pgtype.Numeric     `json:"betting_multiplier_correct"`
 	BettingMultiplierWrong   pgtype.Numeric     `json:"betting_multiplier_wrong"`
+	MapScoringMode           *string            `json:"map_scoring_mode"`
+	MapWidth                 *int32             `json:"map_width"`
+	MapHeight                *int32             `json:"map_height"`
+	MapTarget                pgtype.Point       `json:"map_target"`
+	MapFullPointsRadius      *int32             `json:"map_full_points_radius"`
+	MapZeroPointsRadius      *int32             `json:"map_zero_points_radius"`
+	MapPolygon               []pgtype.Point     `json:"map_polygon"`
 	CreatedAt                pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                pgtype.Timestamptz `json:"updated_at"`
 }
@@ -410,6 +461,13 @@ func (q *Queries) GetQuizQuestionByID(ctx context.Context, id string) (*GetQuizQ
 		&i.BettingMaxAbsolute,
 		&i.BettingMultiplierCorrect,
 		&i.BettingMultiplierWrong,
+		&i.MapScoringMode,
+		&i.MapWidth,
+		&i.MapHeight,
+		&i.MapTarget,
+		&i.MapFullPointsRadius,
+		&i.MapZeroPointsRadius,
+		&i.MapPolygon,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -417,7 +475,7 @@ func (q *Queries) GetQuizQuestionByID(ctx context.Context, id string) (*GetQuizQ
 }
 
 const GetQuizQuestionsByIDs = `-- name: GetQuizQuestionsByIDs :many
-SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, map_scoring_mode, map_width, map_height, map_target, map_full_points_radius, map_zero_points_radius, map_polygon, created_at, updated_at
 FROM quiz_questions
 WHERE id = ANY($1::char(28)[])
 `
@@ -443,6 +501,13 @@ type GetQuizQuestionsByIDsRow struct {
 	BettingMaxAbsolute       *int32             `json:"betting_max_absolute"`
 	BettingMultiplierCorrect pgtype.Numeric     `json:"betting_multiplier_correct"`
 	BettingMultiplierWrong   pgtype.Numeric     `json:"betting_multiplier_wrong"`
+	MapScoringMode           *string            `json:"map_scoring_mode"`
+	MapWidth                 *int32             `json:"map_width"`
+	MapHeight                *int32             `json:"map_height"`
+	MapTarget                pgtype.Point       `json:"map_target"`
+	MapFullPointsRadius      *int32             `json:"map_full_points_radius"`
+	MapZeroPointsRadius      *int32             `json:"map_zero_points_radius"`
+	MapPolygon               []pgtype.Point     `json:"map_polygon"`
 	CreatedAt                pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                pgtype.Timestamptz `json:"updated_at"`
 }
@@ -477,6 +542,13 @@ func (q *Queries) GetQuizQuestionsByIDs(ctx context.Context, ids []string) ([]*G
 			&i.BettingMaxAbsolute,
 			&i.BettingMultiplierCorrect,
 			&i.BettingMultiplierWrong,
+			&i.MapScoringMode,
+			&i.MapWidth,
+			&i.MapHeight,
+			&i.MapTarget,
+			&i.MapFullPointsRadius,
+			&i.MapZeroPointsRadius,
+			&i.MapPolygon,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -491,7 +563,7 @@ func (q *Queries) GetQuizQuestionsByIDs(ctx context.Context, ids []string) ([]*G
 }
 
 const GetQuizQuestionsByQuizID = `-- name: GetQuizQuestionsByQuizID :many
-SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, map_scoring_mode, map_width, map_height, map_target, map_full_points_radius, map_zero_points_radius, map_polygon, created_at, updated_at
 FROM quiz_questions
 WHERE quiz_id = $1::char(28)
 ORDER BY question_order ASC
@@ -518,6 +590,13 @@ type GetQuizQuestionsByQuizIDRow struct {
 	BettingMaxAbsolute       *int32             `json:"betting_max_absolute"`
 	BettingMultiplierCorrect pgtype.Numeric     `json:"betting_multiplier_correct"`
 	BettingMultiplierWrong   pgtype.Numeric     `json:"betting_multiplier_wrong"`
+	MapScoringMode           *string            `json:"map_scoring_mode"`
+	MapWidth                 *int32             `json:"map_width"`
+	MapHeight                *int32             `json:"map_height"`
+	MapTarget                pgtype.Point       `json:"map_target"`
+	MapFullPointsRadius      *int32             `json:"map_full_points_radius"`
+	MapZeroPointsRadius      *int32             `json:"map_zero_points_radius"`
+	MapPolygon               []pgtype.Point     `json:"map_polygon"`
 	CreatedAt                pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                pgtype.Timestamptz `json:"updated_at"`
 }
@@ -552,6 +631,13 @@ func (q *Queries) GetQuizQuestionsByQuizID(ctx context.Context, quizid string) (
 			&i.BettingMaxAbsolute,
 			&i.BettingMultiplierCorrect,
 			&i.BettingMultiplierWrong,
+			&i.MapScoringMode,
+			&i.MapWidth,
+			&i.MapHeight,
+			&i.MapTarget,
+			&i.MapFullPointsRadius,
+			&i.MapZeroPointsRadius,
+			&i.MapPolygon,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -566,7 +652,7 @@ func (q *Queries) GetQuizQuestionsByQuizID(ctx context.Context, quizid string) (
 }
 
 const GetQuizQuestionsByQuizIDs = `-- name: GetQuizQuestionsByQuizIDs :many
-SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, map_scoring_mode, map_width, map_height, map_target, map_full_points_radius, map_zero_points_radius, map_polygon, created_at, updated_at
 FROM quiz_questions
 WHERE quiz_id = ANY($1::char(28)[])
 ORDER BY quiz_id, question_order ASC
@@ -593,6 +679,13 @@ type GetQuizQuestionsByQuizIDsRow struct {
 	BettingMaxAbsolute       *int32             `json:"betting_max_absolute"`
 	BettingMultiplierCorrect pgtype.Numeric     `json:"betting_multiplier_correct"`
 	BettingMultiplierWrong   pgtype.Numeric     `json:"betting_multiplier_wrong"`
+	MapScoringMode           *string            `json:"map_scoring_mode"`
+	MapWidth                 *int32             `json:"map_width"`
+	MapHeight                *int32             `json:"map_height"`
+	MapTarget                pgtype.Point       `json:"map_target"`
+	MapFullPointsRadius      *int32             `json:"map_full_points_radius"`
+	MapZeroPointsRadius      *int32             `json:"map_zero_points_radius"`
+	MapPolygon               []pgtype.Point     `json:"map_polygon"`
 	CreatedAt                pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                pgtype.Timestamptz `json:"updated_at"`
 }
@@ -627,6 +720,13 @@ func (q *Queries) GetQuizQuestionsByQuizIDs(ctx context.Context, quizIds []strin
 			&i.BettingMaxAbsolute,
 			&i.BettingMultiplierCorrect,
 			&i.BettingMultiplierWrong,
+			&i.MapScoringMode,
+			&i.MapWidth,
+			&i.MapHeight,
+			&i.MapTarget,
+			&i.MapFullPointsRadius,
+			&i.MapZeroPointsRadius,
+			&i.MapPolygon,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -667,9 +767,19 @@ SET
                      ELSE COALESCE($22::decimal, betting_multiplier_correct) END,
     betting_multiplier_wrong = CASE WHEN $23::bool THEN NULL
                      ELSE COALESCE($24::decimal, betting_multiplier_wrong) END,
+    -- The map config is replaced as a whole when @setmappin is true, NULLs
+    -- included, so switching scoring mode clears the other mode's columns.
+    -- COALESCE would keep them and fail quiz_questions_map_pin_check.
+    map_scoring_mode = CASE WHEN $25::bool THEN $26::text ELSE map_scoring_mode END,
+    map_width = CASE WHEN $25::bool THEN $27::int ELSE map_width END,
+    map_height = CASE WHEN $25::bool THEN $28::int ELSE map_height END,
+    map_target = CASE WHEN $25::bool THEN $29::point ELSE map_target END,
+    map_full_points_radius = CASE WHEN $25::bool THEN $30::int ELSE map_full_points_radius END,
+    map_zero_points_radius = CASE WHEN $25::bool THEN $31::int ELSE map_zero_points_radius END,
+    map_polygon = CASE WHEN $25::bool THEN $32::point[] ELSE map_polygon END,
     updated_at = now()
-WHERE id = $25::char(28)
-RETURNING id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, created_at, updated_at
+WHERE id = $33::char(28)
+RETURNING id, quiz_id, question_type, question_text, image_url, question_order, allow_multiple_selection, answer_label_style, min_value, max_value, step_value, timeout_seconds, points, betting_enabled, betting_min_percentage, betting_max_percentage, betting_min_absolute, betting_max_absolute, betting_multiplier_correct, betting_multiplier_wrong, map_scoring_mode, map_width, map_height, map_target, map_full_points_radius, map_zero_points_radius, map_polygon, created_at, updated_at
 `
 
 type UpdateQuizQuestionParams struct {
@@ -697,6 +807,14 @@ type UpdateQuizQuestionParams struct {
 	Bettingmultipliercorrect      pgtype.Numeric `json:"bettingmultipliercorrect"`
 	Clearbettingmultiplierwrong   bool           `json:"clearbettingmultiplierwrong"`
 	Bettingmultiplierwrong        pgtype.Numeric `json:"bettingmultiplierwrong"`
+	Setmappin                     bool           `json:"setmappin"`
+	Mapscoringmode                *string        `json:"mapscoringmode"`
+	Mapwidth                      *int32         `json:"mapwidth"`
+	Mapheight                     *int32         `json:"mapheight"`
+	Maptarget                     pgtype.Point   `json:"maptarget"`
+	Mapfullpointsradius           *int32         `json:"mapfullpointsradius"`
+	Mapzeropointsradius           *int32         `json:"mapzeropointsradius"`
+	Mappolygon                    []pgtype.Point `json:"mappolygon"`
 	ID                            string         `json:"id"`
 }
 
@@ -721,6 +839,13 @@ type UpdateQuizQuestionRow struct {
 	BettingMaxAbsolute       *int32             `json:"betting_max_absolute"`
 	BettingMultiplierCorrect pgtype.Numeric     `json:"betting_multiplier_correct"`
 	BettingMultiplierWrong   pgtype.Numeric     `json:"betting_multiplier_wrong"`
+	MapScoringMode           *string            `json:"map_scoring_mode"`
+	MapWidth                 *int32             `json:"map_width"`
+	MapHeight                *int32             `json:"map_height"`
+	MapTarget                pgtype.Point       `json:"map_target"`
+	MapFullPointsRadius      *int32             `json:"map_full_points_radius"`
+	MapZeroPointsRadius      *int32             `json:"map_zero_points_radius"`
+	MapPolygon               []pgtype.Point     `json:"map_polygon"`
 	CreatedAt                pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                pgtype.Timestamptz `json:"updated_at"`
 }
@@ -751,6 +876,14 @@ func (q *Queries) UpdateQuizQuestion(ctx context.Context, arg UpdateQuizQuestion
 		arg.Bettingmultipliercorrect,
 		arg.Clearbettingmultiplierwrong,
 		arg.Bettingmultiplierwrong,
+		arg.Setmappin,
+		arg.Mapscoringmode,
+		arg.Mapwidth,
+		arg.Mapheight,
+		arg.Maptarget,
+		arg.Mapfullpointsradius,
+		arg.Mapzeropointsradius,
+		arg.Mappolygon,
 		arg.ID,
 	)
 	var i UpdateQuizQuestionRow
@@ -775,6 +908,13 @@ func (q *Queries) UpdateQuizQuestion(ctx context.Context, arg UpdateQuizQuestion
 		&i.BettingMaxAbsolute,
 		&i.BettingMultiplierCorrect,
 		&i.BettingMultiplierWrong,
+		&i.MapScoringMode,
+		&i.MapWidth,
+		&i.MapHeight,
+		&i.MapTarget,
+		&i.MapFullPointsRadius,
+		&i.MapZeroPointsRadius,
+		&i.MapPolygon,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

@@ -162,6 +162,18 @@ func quizResponsesBySubmissionBatchFunc(db *database.DB, c *cache.CacheWithRegis
 						BetAmount:        betAmount,
 						ScoreJournalID:   row.ScoreJournalID,
 					}
+				case "MAP_PIN":
+					response = &model.MapPinResponse{
+						ID:                row.ID,
+						SubmissionID:      row.SubmissionID,
+						QuestionID:        row.QuestionID,
+						SubmittedPosition: MapPinPosition(row.ID, row.MapPosition),
+						AnsweredAt:        answeredAt,
+						TimeSpentSeconds:  timeSpentSeconds,
+						PointsEarnedValue: pointsEarned,
+						BetAmount:         betAmount,
+						ScoreJournalID:    row.ScoreJournalID,
+					}
 				default:
 					// Default to FreeTextResponse for unknown types
 					textResponse := ""
